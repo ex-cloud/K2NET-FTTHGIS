@@ -1,35 +1,52 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
-  ShieldCheck, 
-  ArrowUpRight, 
-  Info, 
-  ShieldAlert, 
-  KeyRound, 
-  UserCheck, 
-  Trash2, 
-  RefreshCw, 
-  Bot, 
-  AlertTriangle,
-  Building,
   RotateCcw,
-  Download,
-  Settings,
-  Activity,
-  Lock,
-  CheckSquare,
-  FileCode,
-  Sparkles,
-  Flame
+  Loader2,
+  FolderKanban
 } from "lucide-react";
-import { Link } from "@/lib/navigation-compat";
-import { Button } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import type { SecurityAuditItem } from "../recent-operations-types";
 import { SecurityAuditLogDetailModal } from "../SecurityAuditLogDetailModal";
+import { formatActionDisplay } from "../SecurityAuditModalUtils";
+import { useOverviewTableControls, type FilterPillOption } from "../use-overview-table-controls";
+import { OverviewTabToolbar } from "../OverviewTabToolbar";
+import { OverviewSortableHeader } from "../OverviewSortableHeader";
+import { SecurityAuditContextMenu } from "../OverviewContextMenu";
 
 interface SecurityAuditTabProps {
   items: SecurityAuditItem[];
   loading: boolean;
+}
+
+function getSeverityWeight(severity?: string): number {
+  const u = (severity ?? "").toUpperCase();
+  if (u === "CRITICAL") return 3;
+  if (u === "WARNING" || u === "WARN") return 2;
+  return 1;
+}
+
+function compareAuditItems(a: SecurityAuditItem, b: SecurityAuditItem, field: string, dir: "asc" | "desc"): number {
+  if (field === "severity") {
+    const diff = getSeverityWeight(a.severity) - getSeverityWeight(b.severity);
+    return dir === "asc" ? diff : -diff;
+  }
+  const map: Record<string, string> = {
+    timestamp: a.rawTimestamp || a.timestamp || "",
+    actor: a.actor || a.rawActor || "",
+    targetTenant: a.targetTenant || a.tenantSlug || "",
+    action: a.action || a.rawAction || "",
+  };
+  const mapB: Record<string, string> = {
+    timestamp: b.rawTimestamp || b.timestamp || "",
+    actor: b.actor || b.rawActor || "",
+    targetTenant: b.targetTenant || b.tenantSlug || "",
+    action: b.action || b.rawAction || "",
+  };
+  const valA = map[field] ?? "";
+  const valB = mapB[field] ?? "";
+  if (valA < valB) return dir === "asc" ? -1 : 1;
+  if (valA > valB) return dir === "asc" ? 1 : -1;
+  return 0;
 }
 
 function getSeverityMeta(severity: string) {
@@ -63,7 +80,6 @@ function getSeverityMeta(severity: string) {
 function formatActor(actor: string): { main: string; sub?: string } {
   if (!actor) return { main: "System Ingress" };
   
-  // Format: "Super Admin (superadmin@example.com)"
   const match = actor.match(/^([^(]+)\(([^)]+)\)$/);
   if (match) {
     return { main: match[1].trim(), sub: match[2].trim() };
@@ -81,214 +97,297 @@ function formatActor(actor: string): { main: string; sub?: string } {
   return { main: actor };
 }
 
-const ACTION_PATTERNS: { keywords: string[]; label: string; icon: React.ReactNode }[] = [
-  { keywords: ["IMPERSONATION_STARTED"], label: "Impersonasi Dimulai", icon: <UserCheck className="size-3 text-amber-500 shrink-0" /> },
-  { keywords: ["IMPERSONATION_ENDED"], label: "Impersonasi Diakhiri", icon: <ShieldCheck className="size-3 text-sky-500 shrink-0" /> },
-  { keywords: ["NUCLEAR", "TENANT_NUCLEAR_DELETED"], label: "Hapus Tenant Permanen (Nuke)", icon: <Trash2 className="size-3 text-rose-500 shrink-0" /> },
-  { keywords: ["TENANT_CREATED"], label: "Pendaftaran Tenant Baru", icon: <Building className="size-3 text-primary shrink-0" /> },
-  { keywords: ["TENANT_RESTORED"], label: "Pemulihan Tenant (Restore)", icon: <RotateCcw className="size-3 text-primary shrink-0" /> },
-  { keywords: ["TENANT_IMPORTED"], label: "Impor Backup Tenant", icon: <Download className="size-3 text-primary shrink-0" /> },
-  { keywords: ["TOKEN_REVOKED", "SCOPED_TOKEN_REVOKED"], label: "Token Akses Dicabut", icon: <KeyRound className="size-3 text-amber-500 shrink-0" /> },
-  { keywords: ["TOKEN_CREATED", "SCOPED_TOKEN_CREATED"], label: "Token Akses Dibuat", icon: <KeyRound className="size-3 text-primary shrink-0" /> },
-  { keywords: ["WEBHOOK", "SECRET_ROLLED"], label: "Webhook Secret Dirotasi", icon: <RefreshCw className="size-3 text-amber-500 shrink-0" /> },
-  { keywords: ["API_KEY"], label: "API Key Dibuat Ulang", icon: <RefreshCw className="size-3 text-amber-500 shrink-0" /> },
-  { keywords: ["AI_SOP_GENERATE"], label: "AI Generate SOP", icon: <Sparkles className="size-3 text-primary shrink-0" /> },
-  { keywords: ["AI_", "CHAT"], label: "AI Fiber Copilot Session", icon: <Bot className="size-3 text-indigo-500 shrink-0" /> },
-  { keywords: ["RATE_LIMIT"], label: "Rate Limit Gateway", icon: <AlertTriangle className="size-3 text-amber-500 shrink-0" /> },
-  { keywords: ["LOGIN_SUCCESS", "LOGIN"], label: "User Login Sukses", icon: <ShieldCheck className="size-3 text-primary shrink-0" /> },
-  { keywords: ["LOGIN_FAILED", "LOGIN_ERROR"], label: "Gagal Autentikasi", icon: <ShieldAlert className="size-3 text-rose-500 shrink-0" /> },
-  { keywords: ["PASSWORD_RESET"], label: "Reset Password Akun", icon: <Lock className="size-3 text-amber-500 shrink-0" /> },
-  { keywords: ["GLOBAL_SETTINGS", "SETTINGS"], label: "Konfigurasi Sistem Diperbarui", icon: <Settings className="size-3 text-sky-500 shrink-0" /> },
-  { keywords: ["OBSIDIAN"], label: "Sinkronisasi Obsidian Vault", icon: <FileCode className="size-3 text-primary shrink-0" /> },
-  { keywords: ["TASK"], label: "Manajemen Task & Work Order", icon: <CheckSquare className="size-3 text-primary shrink-0" /> },
-  { keywords: ["CACHE", "PURGE"], label: "Purge Cache Gateway", icon: <Flame className="size-3 text-amber-500 shrink-0" /> },
-  { keywords: ["SERVICE"], label: "Status Layanan Sistem", icon: <Activity className="size-3 text-sky-500 shrink-0" /> },
-];
-
-/** Format technical action name to user-friendly label with icon */
-function formatActionDisplay(action: string): { label: string; icon: React.ReactNode } {
-  const a = (action ?? "").toUpperCase();
-  const matched = ACTION_PATTERNS.find((pattern) => pattern.keywords.some((k) => a.includes(k)));
-  if (matched) {
-    return { label: matched.label, icon: matched.icon };
-  }
-
-  // Dynamic fallback for any other action name
-  const cleanLabel = action
-    .replace(/^(POST|PUT|DELETE|GET):/, "")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (l) => l.toUpperCase());
-
-  return { label: cleanLabel, icon: <Activity className="size-3 text-muted-foreground shrink-0" /> };
-}
-
 export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
-  const [selectedAudit, setSelectedAudit] = useState<SecurityAuditItem | null>(null);
+  const [selectedLog, setSelectedLog] = useState<SecurityAuditItem | null>(null);
 
-  if (loading) {
+  // Dynamic filter pill options with real counts
+  const filterOptions = useMemo<FilterPillOption[]>(() => {
+    const criticalCount = items.filter((a) => (a.severity ?? "").toUpperCase() === "CRITICAL").length;
+    const warningCount = items.filter((a) => {
+      const s = (a.severity ?? "").toUpperCase();
+      return s === "WARNING" || s === "WARN";
+    }).length;
+    const infoCount = items.filter((a) => {
+      const s = (a.severity ?? "").toUpperCase();
+      return s !== "CRITICAL" && s !== "WARNING" && s !== "WARN";
+    }).length;
+
+    return [
+      { id: "ALL", label: "Semua", count: items.length },
+      { id: "CRITICAL", label: "Critical", count: criticalCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
+      { id: "WARNING", label: "Warning", count: warningCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
+      { id: "INFO", label: "Info", count: infoCount, badgeVariant: "info", dotColor: "bg-sky-400" },
+    ];
+  }, [items]);
+
+  const {
+    searchQuery,
+    setSearchQuery,
+    activeFilter,
+    setActiveFilter,
+    sortField,
+    sortDir,
+    handleSort,
+    visibleItems,
+    totalFilteredCount,
+    totalCount,
+    hasMore,
+    sentinelRef,
+    resetFilters,
+  } = useOverviewTableControls<SecurityAuditItem>({
+    items,
+    defaultSortField: "timestamp",
+    defaultSortDir: "desc",
+    initialLimit: 10,
+    batchSize: 10,
+    filterPredicate: (item, filter) => {
+      const sev = (item.severity ?? "").toUpperCase();
+      if (filter === "CRITICAL") return sev === "CRITICAL";
+      if (filter === "WARNING") return sev === "WARNING" || sev === "WARN";
+      if (filter === "INFO") return sev === "INFO" || (sev !== "CRITICAL" && sev !== "WARNING" && sev !== "WARN");
+      return true;
+    },
+    searchPredicate: (item, q) => {
+      return (
+        (item.actor ?? "").toLowerCase().includes(q) ||
+        (item.rawActor ?? "").toLowerCase().includes(q) ||
+        (item.targetTenant ?? "").toLowerCase().includes(q) ||
+        (item.tenantSlug ?? "").toLowerCase().includes(q) ||
+        (item.action ?? "").toLowerCase().includes(q) ||
+        (item.rawAction ?? "").toLowerCase().includes(q) ||
+        (item.details ?? "").toLowerCase().includes(q) ||
+        (item.ipAddress ?? "").toLowerCase().includes(q) ||
+        (item.eventMessage ?? "").toLowerCase().includes(q) ||
+        (item.requestPath ?? "").toLowerCase().includes(q)
+      );
+    },
+    sortComparator: compareAuditItems,
+  });
+
+  if (loading && items.length === 0) {
     return (
       <div className="space-y-2">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="h-12 animate-pulse rounded-xl border border-border bg-card/20" />
         ))}
       </div>
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <div className="rounded-xl border border-border bg-card/40 p-8 text-center space-y-3">
-        <div className="flex justify-center">
-          <div className="p-2.5 rounded-full bg-primary/10 border border-primary/20 text-primary">
-            <ShieldCheck className="size-6" />
-          </div>
-        </div>
-        <div>
-          <h4 className="text-sm font-semibold text-foreground">Tidak Ada Event Berisiko Tinggi</h4>
-          <p className="text-[11px] text-muted-foreground mt-1 max-w-xs mx-auto">
-            Tidak ada aktivitas keamanan sensitif (impersonasi, privilege change, realm sync)
-            yang terdeteksi dalam 24 jam terakhir.
-          </p>
-        </div>
-        <Button variant="ghost" size="sm" asChild className="h-7 px-2.5 text-[11px] gap-1 text-muted-foreground hover:text-primary">
-          <Link href="/logs">
-            <Info className="size-3" />
-            <span>Lihat Semua Audit Logs</span>
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <>
-      <div className="overflow-hidden rounded-xl border border-border bg-card/60">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-border/80 bg-muted/40 text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                <th className="py-2.5 px-3.5 whitespace-nowrap">Waktu (WIB)</th>
-                <th className="py-2.5 px-3.5">Aktor / Akun</th>
-                <th className="py-2.5 px-3.5">Target Tenant</th>
-                <th className="py-2.5 px-3.5">Aksi Keamanan</th>
-                <th className="py-2.5 px-3.5 whitespace-nowrap">Tingkat Risiko</th>
-                <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Log Details</th>
+    <div className="space-y-3">
+      {/* ── Search & Filter Toolbar ── */}
+      <OverviewTabToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Cari aktor, tenant, aksi keamanan, IP..."
+        filterOptions={filterOptions}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+        totalFilteredCount={totalFilteredCount}
+        totalCount={totalCount}
+        onResetFilters={resetFilters}
+      />
+
+      {/* ── Table with Infinite Scroll Container ── */}
+      <div className="rounded-xl border border-border bg-card/10 overflow-hidden flex flex-col">
+        <div className="max-h-[460px] overflow-auto custom-scrollbar-thin">
+          <table className="w-full text-left text-xs border-collapse">
+            {/* Sticky Header */}
+            <thead className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border shadow-xs">
+              <tr className="divide-x divide-border/30">
+                <th className="py-2.5 px-3.5 w-32">
+                  <OverviewSortableHeader
+                    title="Waktu (WIB)"
+                    field="timestamp"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="py-2.5 px-3.5 min-w-[170px]">
+                  <OverviewSortableHeader
+                    title="Aktor / Akun"
+                    field="actor"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="py-2.5 px-3.5 min-w-[140px]">
+                  <OverviewSortableHeader
+                    title="Target Tenant"
+                    field="targetTenant"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="py-2.5 px-3.5 min-w-[220px]">
+                  <OverviewSortableHeader
+                    title="Aksi Keamanan"
+                    field="action"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="py-2.5 px-3.5 w-28 text-center">
+                  <OverviewSortableHeader
+                    title="Tingkat Risiko"
+                    field="severity"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                    align="center"
+                  />
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/40">
-              {items.map((audit) => {
-                const meta = getSeverityMeta(audit.severity);
-                const actor = formatActor(audit.actor);
-                const actionDisplay = formatActionDisplay(audit.action);
 
-                return (
-                  <tr
-                    key={audit.id}
-                    onClick={() => setSelectedAudit(audit)}
-                    className={cn(
-                      "group transition-colors duration-150 cursor-pointer",
-                      meta.row
-                    )}
-                  >
-                    {/* Waktu (WIB) */}
-                    <td className="py-2.5 px-3.5 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className={cn("size-1.5 rounded-full shrink-0", meta.dot)} />
-                        <span className="font-mono text-[11px] text-muted-foreground font-medium">
-                          {(audit.timestamp ?? "").replace(/ WIB$/, "")}
-                        </span>
-                        <span className="text-[9px] text-muted-foreground/50 font-mono">WIB</span>
-                      </div>
-                    </td>
-
-                    {/* Aktor / Akun */}
-                    <td className="py-2.5 px-3.5">
-                      <span className="font-semibold text-foreground block truncate max-w-[150px]">
-                        {actor.main}
-                      </span>
-                      {actor.sub && (
-                        <span className="text-[10px] font-mono text-muted-foreground/70 block truncate max-w-[150px]">
-                          {actor.sub}
-                        </span>
-                      )}
-                      {audit.ipAddress && (
-                        <span className="text-[9px] font-mono text-muted-foreground/50 block">
-                          IP: {audit.ipAddress}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Target Tenant */}
-                    <td className="py-2.5 px-3.5">
-                      <span className="text-foreground/90 font-medium text-[11px] truncate block max-w-[130px]">
-                        {audit.targetTenant || "Platform Wide"}
-                      </span>
-                    </td>
-
-                    {/* Aksi Keamanan */}
-                    <td className="py-2.5 px-3.5">
-                      <div className="flex items-center gap-1.5">
-                        {actionDisplay.icon}
-                        <span
-                          className="font-medium text-[11px] text-foreground truncate block max-w-[200px]"
-                          title={audit.action}
+            {/* Rows with Context Menu & Modal Open */}
+            <tbody className="divide-y divide-border/30">
+              {visibleItems.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <FolderKanban className="size-8 text-muted-foreground/40" />
+                      <p className="text-sm font-semibold text-foreground">
+                        {activeFilter !== "ALL"
+                          ? `Tidak ada event dengan status ${activeFilter}`
+                          : "Tidak ada data audit log ditemukan"}
+                      </p>
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        {searchQuery
+                          ? `Tidak ada log yang cocok dengan kata kunci "${searchQuery}".`
+                          : "Semua operasi keamanan sistem berjalan normal."}
+                      </p>
+                      {(searchQuery || activeFilter !== "ALL") && (
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all cursor-pointer"
                         >
-                          {actionDisplay.label}
-                        </span>
-                      </div>
-                      {audit.details && (
-                        <span
-                          className="text-[10px] text-muted-foreground/80 truncate block max-w-[220px] mt-0.5"
-                          title={audit.details}
-                        >
-                          {audit.details}
-                        </span>
+                          <RotateCcw className="size-3" />
+                          <span>Reset Filter</span>
+                        </button>
                       )}
-                    </td>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                visibleItems.map((audit) => {
+                  const meta = getSeverityMeta(audit.severity);
+                  const actor = formatActor(audit.actor);
+                  const actionDisplay = formatActionDisplay(audit.action);
 
-                    {/* Tingkat Risiko */}
-                    <td className="py-2.5 px-3.5 whitespace-nowrap">
-                      <span
+                  return (
+                    <SecurityAuditContextMenu
+                      key={audit.id}
+                      item={audit}
+                      onOpenDetail={setSelectedLog}
+                    >
+                      <tr
+                        onClick={() => setSelectedLog(audit)}
                         className={cn(
-                          "inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[9px] font-mono font-bold",
-                          meta.badge
+                          "transition-colors group cursor-pointer divide-x divide-border/20 select-none",
+                          meta.row
                         )}
                       >
-                        <span>{meta.emoji}</span>
-                        <span>{meta.label}</span>
-                      </span>
-                    </td>
+                        {/* Waktu (WIB) */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className={cn("size-1.5 rounded-full shrink-0", meta.dot)} />
+                            <span className="font-mono text-[11px] text-muted-foreground font-medium">
+                              {(audit.timestamp ?? "").replace(/ WIB$/, "")}
+                            </span>
+                            <span className="text-[9px] text-muted-foreground/50 font-mono">WIB</span>
+                          </div>
+                        </td>
 
-                    {/* Log Details Action Button */}
-                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedAudit(audit);
-                        }}
-                        className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary gap-1 cursor-pointer"
-                        title="Buka detail log event"
-                      >
-                        <span>View Logs</span>
-                        <ArrowUpRight className="size-3" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
+                        {/* Aktor / Akun */}
+                        <td className="py-2.5 px-3.5">
+                          <span className="font-semibold text-foreground block truncate max-w-[170px]">
+                            {actor.main}
+                          </span>
+                          {actor.sub && (
+                            <span className="text-[10px] font-mono text-muted-foreground/70 block truncate max-w-[170px]">
+                              {actor.sub}
+                            </span>
+                          )}
+                          {audit.ipAddress && (
+                            <span className="text-[9px] font-mono text-muted-foreground/50 block">
+                              IP: {audit.ipAddress}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Target Tenant */}
+                        <td className="py-2.5 px-3.5">
+                          <span className="text-foreground/90 font-medium text-[11px] truncate block max-w-[150px]">
+                            {audit.targetTenant || "Platform Wide"}
+                          </span>
+                        </td>
+
+                        {/* Aksi Keamanan */}
+                        <td className="py-2.5 px-3.5">
+                          <div className="flex items-center gap-1.5">
+                            {actionDisplay.icon}
+                            <span
+                              className="font-medium text-[11px] text-foreground truncate block max-w-[240px]"
+                              title={audit.action}
+                            >
+                              {actionDisplay.label}
+                            </span>
+                          </div>
+                          {audit.details && (
+                            <span
+                              className="text-[10px] text-muted-foreground/80 truncate block max-w-[260px] mt-0.5"
+                              title={audit.details}
+                            >
+                              {audit.details}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Tingkat Risiko */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap text-center">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border",
+                              meta.badge
+                            )}
+                          >
+                            <span className="text-[9px]">{meta.emoji}</span>
+                            <span>{meta.label}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    </SecurityAuditContextMenu>
+                  );
+                })
+              )}
             </tbody>
           </table>
+
+          {/* Infinite Scroll Sentinel */}
+          <div ref={sentinelRef} className="py-2 flex items-center justify-center">
+            {hasMore && (
+              <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground font-mono">
+                <Loader2 className="size-3.5 animate-spin text-primary" />
+                <span>Memuat log berikutnya ({visibleItems.length} / {totalFilteredCount})...</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Log Details Modal Dialog */}
+      {/* ── Modal Dialog Detail Log ── */}
       <SecurityAuditLogDetailModal
-        audit={selectedAudit}
-        isOpen={!!selectedAudit}
-        onClose={() => setSelectedAudit(null)}
+        isOpen={Boolean(selectedLog)}
+        onClose={() => setSelectedLog(null)}
+        audit={selectedLog}
       />
-    </>
+    </div>
   );
 }

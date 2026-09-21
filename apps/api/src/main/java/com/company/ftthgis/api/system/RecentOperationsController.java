@@ -92,7 +92,7 @@ public class RecentOperationsController {
                 "FROM organizations o " +
                 "LEFT JOIN subscription_plans p ON o.plan_id = p.id " +
                 "WHERE o.deleted_at IS NULL " +
-                "ORDER BY (o.status = 'ACTIVE') DESC, o.name ASC LIMIT 10"
+                "ORDER BY (o.status = 'ACTIVE') DESC, o.name ASC LIMIT 50"
             );
 
             for (Map<String, Object> row : rows) {
@@ -144,7 +144,7 @@ public class RecentOperationsController {
                 "LEFT JOIN users u ON (u.email = ae.actor_id OR u.id::text = ae.actor_id OR u.username = ae.actor_id) " +
                 "LEFT JOIN organizations o ON (o.slug = ae.tenant_slug OR o.id::text = ae.tenant_slug) " +
                 "ORDER BY ae.occurred_at DESC " +
-                "LIMIT 10"
+                "LIMIT 50"
             );
 
             for (Map<String, Object> row : rows) {
@@ -175,7 +175,7 @@ public class RecentOperationsController {
                 String serviceSource = resolveServiceSource(rawMetadata);
                 String httpMethod = resolveHttpMethod(rawAction, rawMetadata);
                 Integer httpStatus = 200;
-                String requestPath = resourceId != null && !resourceId.isEmpty() ? resourceId : (tenantSlug != null ? tenantSlug : "/api/v1/system");
+                String requestPath = resolveRequestPath(resourceType, resourceId, tenantSlug, rawAction, rawMetadata);
                 String eventMessage = rawAction != null ? rawAction + " completed" : "Audit event completed";
                 String eventId = row.get("id") != null ? row.get("id").toString() : java.util.UUID.randomUUID().toString();
 
@@ -468,6 +468,53 @@ public class RecentOperationsController {
             act.contains("START") || act.contains("REGENERATE") || act.contains("ROTAT")) return "POST";
         if (act.contains("UPDATE") || act.contains("EDIT") || act.contains("MODIFY") || act.contains("RESTORE")) return "PUT";
         return "GET";
+    }
+
+    private String resolveRequestPath(String resourceType, String resourceId, String tenantSlug, String action, String metadataJson) {
+        if (metadataJson != null && !metadataJson.isEmpty()) {
+            try {
+                JsonNode node = OBJECT_MAPPER.readTree(metadataJson);
+                if (node.has("pathname") && !node.get("pathname").asText().isEmpty()) {
+                    return node.get("pathname").asText();
+                }
+                if (node.has("path") && !node.get("path").asText().isEmpty()) {
+                    return node.get("path").asText();
+                }
+            } catch (Exception ignored) {}
+        }
+
+        String rt = resourceType != null ? resourceType.toUpperCase() : "";
+        String id = resourceId != null ? resourceId.trim() : "";
+
+        if ("ORGANIZATION".equals(rt) || "TENANT".equals(rt)) {
+            return "/api/v1/organizations/" + (id.isEmpty() ? (tenantSlug != null ? tenantSlug : "") : id);
+        }
+        if ("IMPERSONATION_SESSION".equals(rt) || "IMPERSONATION".equals(rt)) {
+            return "/api/v1/impersonation/sessions/" + (id.isEmpty() ? "active" : id);
+        }
+        if ("TOKEN".equals(rt) || "SCOPED_TOKEN".equals(rt)) {
+            return "/api/v1/tenants/" + (tenantSlug != null && !tenantSlug.isEmpty() ? tenantSlug : "system") + "/tokens/" + id;
+        }
+        if ("WEBHOOK".equals(rt)) {
+            return "/api/v1/tenants/" + (tenantSlug != null && !tenantSlug.isEmpty() ? tenantSlug : "system") + "/webhooks/" + id;
+        }
+        if ("API_KEY".equals(rt)) {
+            return "/api/v1/tenants/" + (tenantSlug != null && !tenantSlug.isEmpty() ? tenantSlug : "system") + "/api-keys";
+        }
+        if ("USER".equals(rt)) {
+            return "/api/v1/users/" + id;
+        }
+        if (!id.isEmpty()) {
+            if (id.startsWith("/")) return id;
+            if (!rt.isEmpty()) {
+                return "/api/v1/" + rt.toLowerCase() + "s/" + id;
+            }
+            return "/api/v1/resources/" + id;
+        }
+        if (tenantSlug != null && !tenantSlug.isEmpty() && !"system".equals(tenantSlug)) {
+            return "/api/v1/tenants/" + tenantSlug;
+        }
+        return "/api/v1/system/security";
     }
 
     private String buildRawJsonPayload(

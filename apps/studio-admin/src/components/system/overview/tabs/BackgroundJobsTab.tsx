@@ -1,8 +1,20 @@
-import { CheckCircle2, Clock, AlertCircle, ArrowUpRight, Database, RefreshCw, Shield } from "lucide-react";
-import { Link } from "@/lib/navigation-compat";
-import { Button } from "@k2net/ui";
+import { useMemo } from "react";
+import { useRouter } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
+import {
+  Clock,
+  Database,
+  RefreshCw,
+  Shield,
+  RotateCcw,
+  Loader2,
+  FolderKanban,
+} from "lucide-react";
 import type { BackgroundJobItem } from "../recent-operations-types";
+import { useOverviewTableControls, type FilterPillOption } from "../use-overview-table-controls";
+import { OverviewTabToolbar } from "../OverviewTabToolbar";
+import { OverviewSortableHeader } from "../OverviewSortableHeader";
+import { BackgroundJobContextMenu } from "../OverviewContextMenu";
 
 interface BackgroundJobsTabProps {
   items: BackgroundJobItem[];
@@ -24,154 +36,292 @@ function getJobIcon(jobType: string) {
   return { emoji: "⚙️", Icon: Clock };
 }
 
+function getJobStatusBadge(status: string) {
+  const s = (status ?? "").toUpperCase();
+  if (s === "RUNNING" || s === "IN_PROGRESS") {
+    return {
+      label: "RUNNING",
+      className: "border-amber-500/40 bg-amber-500/10 text-amber-400 animate-pulse",
+      dot: "bg-amber-400",
+    };
+  }
+  if (s === "COMPLETED" || s === "SUCCESS") {
+    return {
+      label: "COMPLETED",
+      className: "border-primary/40 bg-primary/10 text-primary",
+      dot: "bg-primary",
+    };
+  }
+  if (s === "FAILED" || s === "ERROR") {
+    return {
+      label: "FAILED",
+      className: "border-rose-500/40 bg-rose-500/10 text-rose-400",
+      dot: "bg-rose-500",
+    };
+  }
+  return {
+    label: s || "IDLE",
+    className: "border-border bg-muted/20 text-muted-foreground",
+    dot: "bg-muted-foreground",
+  };
+}
+
 export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
-  if (loading) {
+  const router = useRouter();
+
+  // Dynamic filter pills
+  const filterOptions = useMemo<FilterPillOption[]>(() => {
+    const runningCount = items.filter((j) => (j.status ?? "").toUpperCase() === "RUNNING").length;
+    const completedCount = items.filter((j) => (j.status ?? "").toUpperCase() === "COMPLETED" || (j.status ?? "").toUpperCase() === "SUCCESS").length;
+    const failedCount = items.filter((j) => (j.status ?? "").toUpperCase() === "FAILED" || (j.status ?? "").toUpperCase() === "ERROR").length;
+
+    return [
+      { id: "ALL", label: "Semua", count: items.length },
+      { id: "RUNNING", label: "Running", count: runningCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
+      { id: "COMPLETED", label: "Completed", count: completedCount, badgeVariant: "success", dotColor: "bg-primary" },
+      { id: "FAILED", label: "Failed", count: failedCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
+    ];
+  }, [items]);
+
+  const {
+    searchQuery,
+    setSearchQuery,
+    activeFilter,
+    setActiveFilter,
+    sortField,
+    sortDir,
+    handleSort,
+    visibleItems,
+    totalFilteredCount,
+    totalCount,
+    hasMore,
+    sentinelRef,
+    resetFilters,
+  } = useOverviewTableControls<BackgroundJobItem>({
+    items,
+    defaultSortField: "jobType",
+    defaultSortDir: "asc",
+    initialLimit: 10,
+    batchSize: 10,
+    filterPredicate: (item, filter) => {
+      const s = (item.status ?? "").toUpperCase();
+      if (filter === "RUNNING") return s === "RUNNING" || s === "IN_PROGRESS";
+      if (filter === "COMPLETED") return s === "COMPLETED" || s === "SUCCESS";
+      if (filter === "FAILED") return s === "FAILED" || s === "ERROR";
+      return true;
+    },
+    searchPredicate: (item, q) => {
+      return (
+        (item.jobType ?? "").toLowerCase().includes(q) ||
+        (item.targetOrg ?? "").toLowerCase().includes(q) ||
+        (item.status ?? "").toLowerCase().includes(q) ||
+        (item.id ?? "").toLowerCase().includes(q) ||
+        (item.duration ?? "").toLowerCase().includes(q)
+      );
+    },
+    sortComparator: (a, b, field, dir) => {
+      let valA: string | number = "";
+      let valB: string | number = "";
+
+      if (field === "jobType") {
+        valA = a.jobType ?? "";
+        valB = b.jobType ?? "";
+      } else if (field === "targetOrg") {
+        valA = a.targetOrg ?? "";
+        valB = b.targetOrg ?? "";
+      } else if (field === "status") {
+        valA = a.status ?? "";
+        valB = b.status ?? "";
+      } else if (field === "startedAt") {
+        valA = a.startedAt ?? "";
+        valB = b.startedAt ?? "";
+      }
+
+      if (valA < valB) return dir === "asc" ? -1 : 1;
+      if (valA > valB) return dir === "asc" ? 1 : -1;
+      return 0;
+    },
+  });
+
+  if (loading && items.length === 0) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-28 animate-pulse rounded-xl border border-border bg-card/20" />
+      <div className="space-y-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-12 animate-pulse rounded-xl border border-border bg-card/20" />
         ))}
       </div>
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-border bg-card/30 p-8 text-center space-y-2">
-        <CheckCircle2 className="mx-auto size-8 text-primary opacity-60" />
-        <p className="text-sm font-semibold text-foreground">Tidak Ada Background Jobs Aktif</p>
-        <p className="text-[11px] text-muted-foreground">
-          Antrean GIS provisioning, impor ODP, dan migrasi skema PostGIS dalam kondisi idle.
-        </p>
-      </div>
-    );
-  }
+  const handleRowClick = () => {
+    router.push("/observability/scheduler");
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-      {items.map((job) => {
-        const isRunning = job.status === "RUNNING";
-        const isFailed = job.status === "FAILED";
-        const { emoji, Icon } = getJobIcon(job.jobType);
+    <div className="space-y-3">
+      {/* ── Search & Filter Toolbar ── */}
+      <OverviewTabToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Cari tipe job, target worker, ID job..."
+        filterOptions={filterOptions}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+        totalFilteredCount={totalFilteredCount}
+        totalCount={totalCount}
+        onResetFilters={resetFilters}
+      />
 
-        return (
-          <div
-            key={job.id}
-            className={cn(
-              "flex flex-col justify-between rounded-xl border p-3.5 transition-all duration-200 space-y-3",
-              isRunning
-                ? "border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/8 hover:border-amber-500/40"
-                : isFailed
-                ? "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/8"
-                : "border-border bg-card/60 hover:bg-card/95 hover:border-primary/30"
+      {/* ── Table with Infinite Scroll Container ── */}
+      <div className="rounded-xl border border-border bg-card/10 overflow-hidden flex flex-col">
+        <div className="max-h-[460px] overflow-auto custom-scrollbar-thin">
+          <table className="w-full text-left text-xs border-collapse">
+            {/* Sticky Header */}
+            <thead className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border shadow-xs">
+              <tr className="divide-x divide-border/30">
+                <th className="py-2.5 px-3.5 min-w-[220px]">
+                  <OverviewSortableHeader
+                    title="Tipe Background Job"
+                    field="jobType"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="py-2.5 px-3.5 min-w-[170px]">
+                  <OverviewSortableHeader
+                    title="Target Engine / Platform"
+                    field="targetOrg"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="py-2.5 px-3.5 w-36">
+                  <OverviewSortableHeader
+                    title="Jadwal / Mulai"
+                    field="startedAt"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="py-2.5 px-3.5 w-28 text-center">
+                  <OverviewSortableHeader
+                    title="Status"
+                    field="status"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                    align="center"
+                  />
+                </th>
+              </tr>
+            </thead>
+
+            {/* Rows with Right-Click Context Menu & Left-Click Navigation */}
+            <tbody className="divide-y divide-border/30">
+              {visibleItems.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <FolderKanban className="size-8 text-muted-foreground/40" />
+                      <p className="text-sm font-semibold text-foreground">
+                        {activeFilter !== "ALL"
+                          ? `Tidak ada job dengan status ${activeFilter}`
+                          : "Tidak ada background job aktif"}
+                      </p>
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        {searchQuery
+                          ? `Tidak ada job yang cocok dengan "${searchQuery}".`
+                          : "Semua scheduler GIS provisioning & maintenance idle."}
+                      </p>
+                      {(searchQuery || activeFilter !== "ALL") && (
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all cursor-pointer"
+                        >
+                          <RotateCcw className="size-3" />
+                          <span>Reset Filter</span>
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                visibleItems.map((job) => {
+                  const { emoji } = getJobIcon(job.jobType);
+                  const statusInfo = getJobStatusBadge(job.status);
+
+                  return (
+                    <BackgroundJobContextMenu key={job.id} item={job}>
+                      <tr
+                        onClick={handleRowClick}
+                        className="hover:bg-card/90 transition-colors group cursor-pointer divide-x divide-border/20 select-none"
+                      >
+                        {/* Tipe Job */}
+                        <td className="py-3 px-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted/40 border border-border text-foreground text-xs">
+                              {emoji}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-semibold text-foreground block truncate max-w-[260px] group-hover:text-primary transition-colors">
+                                {job.jobType}
+                              </span>
+                              <span className="text-[10px] font-mono text-muted-foreground/70 block truncate max-w-[200px]">
+                                ID: {job.id} {job.duration ? `• ${job.duration}` : ""}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Target Engine */}
+                        <td className="py-3 px-3.5">
+                          <span className="text-foreground/90 font-medium text-[11px] truncate block max-w-[200px]">
+                            {job.targetOrg || "Platform Core"}
+                          </span>
+                        </td>
+
+                        {/* Jadwal / Mulai */}
+                        <td className="py-3 px-3.5 whitespace-nowrap">
+                          <span className="font-mono text-[11px] text-muted-foreground">
+                            {job.startedAt || "-"}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3 px-3.5 whitespace-nowrap text-center">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold border",
+                              statusInfo.className
+                            )}
+                          >
+                            <span className={cn("size-1.5 rounded-full shrink-0", statusInfo.dot)} />
+                            <span>{statusInfo.label}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    </BackgroundJobContextMenu>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+
+          {/* Infinite Scroll Sentinel */}
+          <div ref={sentinelRef} className="py-2 flex items-center justify-center">
+            {hasMore && (
+              <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground font-mono">
+                <Loader2 className="size-3.5 animate-spin text-primary" />
+                <span>Memuat job berikutnya ({visibleItems.length} / {totalFilteredCount})...</span>
+              </div>
             )}
-          >
-            {/* Header: Job icon, title, and status badge */}
-            <div className="space-y-1.5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-sm shrink-0" aria-hidden>
-                    {emoji}
-                  </span>
-                  <h4
-                    className="text-xs font-semibold text-foreground truncate"
-                    title={job.jobType}
-                  >
-                    {job.jobType}
-                  </h4>
-                </div>
-
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-mono font-medium shrink-0",
-                    isRunning
-                      ? "bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse"
-                      : isFailed
-                      ? "bg-rose-500/15 text-rose-400 border-rose-500/25"
-                      : "bg-primary/15 text-primary border-primary/25"
-                  )}
-                >
-                  {isRunning ? (
-                    <Clock className="size-2.5 animate-spin" />
-                  ) : isFailed ? (
-                    <AlertCircle className="size-2.5" />
-                  ) : (
-                    <CheckCircle2 className="size-2.5" />
-                  )}
-                  {isRunning ? "RUNNING" : isFailed ? "FAILED" : "COMPLETED"}
-                </span>
-              </div>
-
-              <p className="text-[11px] text-muted-foreground truncate">
-                <span className="text-foreground/60">Target: </span>
-                <span className="font-medium text-foreground/85">{job.targetOrg}</span>
-              </p>
-            </div>
-
-            {/* Progress bar (RUNNING) or completion summary */}
-            {isRunning ? (
-              <div className="space-y-1.5 bg-amber-500/8 rounded-lg border border-amber-500/20 p-2">
-                <div className="flex items-center justify-between text-[10px] font-mono">
-                  <span className="text-amber-400/80">Progress</span>
-                  <span className="text-amber-400 font-bold">{job.progressPercent}%</span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-500/20">
-                  <div
-                    style={{ width: `${job.progressPercent}%` }}
-                    className="h-full rounded-full bg-amber-400 transition-all duration-500 relative overflow-hidden"
-                  >
-                    {/* Shimmer animation on progress bar */}
-                    <span className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                  </div>
-                </div>
-                <p className="text-[10px] font-mono text-amber-400/70">
-                  Started: {job.startedAt}
-                </p>
-              </div>
-            ) : (
-              <div
-                className={cn(
-                  "flex items-center justify-between p-2 rounded-lg border text-[10px] font-mono",
-                  isFailed
-                    ? "bg-rose-500/10 border-rose-500/20"
-                    : "bg-muted/30 border-border/50"
-                )}
-              >
-                <span className="text-muted-foreground">Execution</span>
-                <span
-                  className={cn(
-                    "font-semibold",
-                    isFailed ? "text-rose-400" : "text-primary"
-                  )}
-                >
-                  {isFailed
-                    ? "❌ Error encountered"
-                    : `✅ COMPLETED in ${job.duration || "—"}`}
-                </span>
-              </div>
-            )}
-
-            {/* Footer */}
-            <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground pt-1 border-t border-border/40">
-              <span className="truncate flex items-center gap-1">
-                <Icon className="size-2.5 opacity-50" />
-                <span>{isRunning ? "Started" : "Finished"}: {job.startedAt}</span>
-              </span>
-              <Button
-                variant="link"
-                size="sm"
-                asChild
-                className="h-auto p-0 text-[10px] font-mono text-primary hover:text-primary/80 gap-0.5 shrink-0"
-              >
-                <Link href="/observability/scheduler">
-                  <span>Queue Details</span>
-                  <ArrowUpRight className="size-2.5" />
-                </Link>
-              </Button>
-            </div>
           </div>
-        );
-      })}
+        </div>
+      </div>
     </div>
   );
 }

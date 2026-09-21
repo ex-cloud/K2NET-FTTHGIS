@@ -1,14 +1,17 @@
-import { Button } from "@k2net/ui";
-import { Link, useRouter } from "@/lib/navigation-compat";
+import { useMemo } from "react";
+import { useRouter } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
 import {
-  Building2,
-  UserCheck,
-  ArrowUpRight,
-  ExternalLink,
-  PackageCheck,
+  RotateCcw,
+  Loader2,
+  FolderKanban,
 } from "lucide-react";
 import type { OrganizationItem } from "../recent-operations-types";
+import { useOverviewTableControls, type FilterPillOption } from "../use-overview-table-controls";
+import { OverviewTabToolbar } from "../OverviewTabToolbar";
+import { OverviewSortableHeader } from "../OverviewSortableHeader";
+import { OrganizationContextMenu } from "@/components/organizations/OrganizationContextMenu";
+import { enrichOrganization } from "@/components/organizations/types";
 
 interface OrganizationsTabProps {
   items: OrganizationItem[];
@@ -34,6 +37,7 @@ function getStatusDisplay(status: string, isTrial: boolean) {
       dot: "bg-amber-400",
       label: "TRIAL",
       color: "text-amber-400",
+      badge: "border-amber-500/30 bg-amber-500/10 text-amber-400",
     };
   const s = (status ?? "").toUpperCase();
   if (s === "ACTIVE")
@@ -41,149 +45,292 @@ function getStatusDisplay(status: string, isTrial: boolean) {
       dot: "bg-primary animate-pulse shadow-[0_0_5px_hsl(var(--primary)/0.8)]",
       label: "ACTIVE",
       color: "text-primary",
+      badge: "border-primary/30 bg-primary/10 text-primary",
     };
   if (s === "OVERDUE" || s === "TRIAL_EXPIRED")
-    return { dot: "bg-rose-500", label: s, color: "text-rose-400" };
+    return { 
+      dot: "bg-rose-500", 
+      label: s, 
+      color: "text-rose-400",
+      badge: "border-rose-500/30 bg-rose-500/10 text-rose-400",
+    };
   if (s === "SUSPENDED")
-    return { dot: "bg-muted-foreground", label: "SUSPENDED", color: "text-muted-foreground" };
-  return { dot: "bg-muted-foreground", label: s || "UNKNOWN", color: "text-muted-foreground" };
+    return { 
+      dot: "bg-muted-foreground", 
+      label: "SUSPENDED", 
+      color: "text-muted-foreground",
+      badge: "border-border bg-muted/20 text-muted-foreground",
+    };
+  return { 
+    dot: "bg-muted-foreground", 
+    label: s || "UNKNOWN", 
+    color: "text-muted-foreground",
+    badge: "border-border bg-muted/20 text-muted-foreground",
+  };
 }
 
 export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
   const router = useRouter();
 
-  if (loading) {
+  // Dynamic filter pill options
+  const filterOptions = useMemo<FilterPillOption[]>(() => {
+    const activeCount = items.filter((o) => (o.status ?? "").toUpperCase() === "ACTIVE" && !o.isTrial).length;
+    const trialCount = items.filter((o) => o.isTrial || (o.status ?? "").toUpperCase() === "TRIAL").length;
+    const overdueCount = items.filter((o) => {
+      const s = (o.status ?? "").toUpperCase();
+      return s === "OVERDUE" || s === "SUSPENDED" || s === "TRIAL_EXPIRED";
+    }).length;
+
+    return [
+      { id: "ALL", label: "Semua", count: items.length },
+      { id: "ACTIVE", label: "Active", count: activeCount, badgeVariant: "success", dotColor: "bg-primary" },
+      { id: "TRIAL", label: "Trial", count: trialCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
+      { id: "OVERDUE", label: "Overdue", count: overdueCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
+    ];
+  }, [items]);
+
+  const {
+    searchQuery,
+    setSearchQuery,
+    activeFilter,
+    setActiveFilter,
+    sortField,
+    sortDir,
+    handleSort,
+    visibleItems,
+    totalFilteredCount,
+    totalCount,
+    hasMore,
+    sentinelRef,
+    resetFilters,
+  } = useOverviewTableControls<OrganizationItem>({
+    items,
+    defaultSortField: "name",
+    defaultSortDir: "asc",
+    initialLimit: 10,
+    batchSize: 10,
+    filterPredicate: (item, filter) => {
+      const s = (item.status ?? "").toUpperCase();
+      if (filter === "ACTIVE") return s === "ACTIVE" && !item.isTrial;
+      if (filter === "TRIAL") return item.isTrial || s === "TRIAL";
+      if (filter === "OVERDUE") return s === "OVERDUE" || s === "SUSPENDED" || s === "TRIAL_EXPIRED";
+      return true;
+    },
+    searchPredicate: (item, q) => {
+      return (
+        (item.name ?? "").toLowerCase().includes(q) ||
+        (item.slug ?? "").toLowerCase().includes(q) ||
+        (item.planTier ?? "").toLowerCase().includes(q) ||
+        (item.status ?? "").toLowerCase().includes(q)
+      );
+    },
+    sortComparator: (a, b, field, dir) => {
+      let valA: string | number = "";
+      let valB: string | number = "";
+
+      if (field === "name") {
+        valA = a.name ?? "";
+        valB = b.name ?? "";
+      } else if (field === "planTier") {
+        const getPlanWeight = (p?: string) => {
+          const u = (p ?? "").toUpperCase();
+          if (u === "ENTERPRISE") return 4;
+          if (u === "PRO" || u === "PROFESSIONAL") return 3;
+          if (u === "STARTER") return 2;
+          return 1;
+        };
+        const weightA = getPlanWeight(a.planTier);
+        const weightB = getPlanWeight(b.planTier);
+        return dir === "asc" ? weightA - weightB : weightB - weightA;
+      } else if (field === "status") {
+        valA = a.isTrial ? "TRIAL" : a.status || "";
+        valB = b.isTrial ? "TRIAL" : b.status || "";
+      }
+
+      if (valA < valB) return dir === "asc" ? -1 : 1;
+      if (valA > valB) return dir === "asc" ? 1 : -1;
+      return 0;
+    },
+  });
+
+  if (loading && items.length === 0) {
     return (
       <div className="space-y-2">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="h-12 animate-pulse rounded-xl border border-border bg-card/20" />
         ))}
       </div>
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-border bg-card/30 p-10 text-center space-y-3">
-        <div className="flex justify-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/40 border border-border text-muted-foreground">
-            <Building2 className="size-6 opacity-50" />
-          </div>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground">Belum ada organisasi terdaftar</p>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            Organisasi ISP akan muncul di sini setelah didaftarkan ke platform.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" asChild className="h-7 px-3 text-xs gap-1.5">
-          <Link href="/organizations">
-            <ExternalLink className="size-3" />
-            <span>Tambah Organisasi</span>
-          </Link>
-        </Button>
-      </div>
-    );
-  }
+  const handleRowClick = (org: OrganizationItem) => {
+    router.push(org.id ? `/organizations/${org.id}` : `/organizations`);
+  };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card/60">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-border/80 bg-muted/40 text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-              <th className="py-2.5 px-3.5">Organisasi</th>
-              <th className="py-2.5 px-3.5">Subdomain / Identifier</th>
-              <th className="py-2.5 px-3.5">Paket SaaS</th>
-              <th className="py-2.5 px-3.5">Status Tenant</th>
-              <th className="py-2.5 px-3.5 text-right">Aksi Cepat</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/40">
-            {items.map((org) => {
-              const statusDisplay = getStatusDisplay(org.status, org.isTrial);
-              const planTierRaw = (org.planTier ?? "").toUpperCase();
-              // Normalize: PRO → PROFESSIONAL display
-              const planDisplay =
-                planTierRaw === "PRO" ? "PROFESSIONAL" : planTierRaw || "PROFESSIONAL";
+    <div className="space-y-3">
+      {/* ── Search & Filter Toolbar ── */}
+      <OverviewTabToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Cari nama tenant, slug, plan tier..."
+        filterOptions={filterOptions}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+        totalFilteredCount={totalFilteredCount}
+        totalCount={totalCount}
+        onResetFilters={resetFilters}
+      />
 
-              return (
-                <tr
-                  key={org.id || org.slug}
-                  className="group hover:bg-card/90 transition-colors duration-150"
-                >
-                  {/* Organisasi */}
-                  <td className="py-2.5 px-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 border border-primary/20 text-primary shrink-0 group-hover:scale-110 transition-transform duration-150">
-                        <Building2 className="size-3.5" />
-                      </div>
-                      <span className="font-semibold text-foreground truncate block max-w-[160px]">
-                        {org.name}
-                      </span>
-                    </div>
-                  </td>
+      {/* ── Table with Infinite Scroll Container ── */}
+      <div className="rounded-xl border border-border bg-card/10 overflow-hidden flex flex-col">
+        <div className="max-h-[460px] overflow-auto custom-scrollbar-thin">
+          <table className="w-full text-left text-xs border-collapse">
+            {/* Sticky Header */}
+            <thead className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border shadow-xs">
+              <tr className="divide-x divide-border/30">
+                <th className="py-2.5 px-3.5 min-w-[200px]">
+                  <OverviewSortableHeader
+                    title="Organisasi / ISP"
+                    field="name"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="py-2.5 px-3.5 min-w-[140px]">
+                  <OverviewSortableHeader
+                    title="Plan Tier"
+                    field="planTier"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                <th className="py-2.5 px-3.5 min-w-[130px] text-center">
+                  <OverviewSortableHeader
+                    title="Status Langganan"
+                    field="status"
+                    currentSortField={sortField}
+                    currentSortDir={sortDir}
+                    onSort={handleSort}
+                    align="center"
+                  />
+                </th>
+              </tr>
+            </thead>
 
-                  {/* Subdomain */}
-                  <td className="py-2.5 px-3.5 font-mono text-[11px]">
-                    <span className="text-foreground/80">{org.slug}</span>
-                    <span className="text-muted-foreground/60">.gis.kdua.net</span>
-                  </td>
-
-                  {/* Paket SaaS */}
-                  <td className="py-2.5 px-3.5">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[9px] uppercase font-mono font-bold",
-                        getPlanBadgeStyle(planDisplay)
+            {/* Rows with Right-Click Context Menu & Left-Click Navigation */}
+            <tbody className="divide-y divide-border/30">
+              {visibleItems.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <FolderKanban className="size-8 text-muted-foreground/40" />
+                      <p className="text-sm font-semibold text-foreground">
+                        {activeFilter !== "ALL"
+                          ? `Tidak ada organisasi dengan status ${activeFilter}`
+                          : "Tidak ada data organisasi ditemukan"}
+                      </p>
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        {searchQuery
+                          ? `Tidak ada organisasi yang cocok dengan "${searchQuery}".`
+                          : "Belum ada tenant ISP terdaftar di platform."}
+                      </p>
+                      {(searchQuery || activeFilter !== "ALL") && (
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all cursor-pointer"
+                        >
+                          <RotateCcw className="size-3" />
+                          <span>Reset Filter</span>
+                        </button>
                       )}
-                    >
-                      <PackageCheck className="size-2.5" />
-                      {planDisplay}
-                    </span>
-                  </td>
-
-                  {/* Status Tenant */}
-                  <td className="py-2.5 px-3.5">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium">
-                      <span className={cn("size-1.5 rounded-full", statusDisplay.dot)} />
-                      <span className={statusDisplay.color}>{statusDisplay.label}</span>
-                    </span>
-                  </td>
-
-                  {/* Aksi Cepat */}
-                  <td className="py-2.5 px-3.5 text-right">
-                    <div className="inline-flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        asChild
-                        className="h-7 px-2.5 text-[11px] text-primary hover:text-primary/80 hover:bg-primary/10 gap-1"
-                      >
-                        <Link href={`/organizations/${org.slug}`}>
-                          <span>Manage</span>
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          router.push(`/organizations/impersonation?target=${org.slug}`)
-                        }
-                        className="h-7 px-2 text-[11px] gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 cursor-pointer"
-                        title={`Impersonate ${org.name}`}
-                      >
-                        <UserCheck className="size-2.5" />
-                        <span>Impersonate</span>
-                        <ArrowUpRight className="size-2.5 opacity-70" />
-                      </Button>
                     </div>
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ) : (
+                visibleItems.map((org) => {
+                  const statusInfo = getStatusDisplay(org.status, org.isTrial);
+                  const enrichedOrg = enrichOrganization({
+                    id: org.id,
+                    name: org.name,
+                    slug: org.slug,
+                    status: (org.status as any) || "ACTIVE",
+                    subscriptionPlan: { name: org.planTier },
+                    trialExpiresAt: org.isTrial ? new Date(Date.now() + 7 * 86400000).toISOString() : undefined,
+                  });
+
+                  return (
+                    <OrganizationContextMenu
+                      key={org.id || org.slug}
+                      organization={enrichedOrg}
+                      onViewDetail={(o) => router.push(o.id ? `/organizations/${o.id}` : `/organizations`)}
+                    >
+                      <tr
+                        onClick={() => handleRowClick(org)}
+                        className="hover:bg-card/90 transition-colors group cursor-pointer divide-x divide-border/20 select-none"
+                      >
+                        {/* Nama Tenant */}
+                        <td className="py-3 px-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 font-bold text-primary text-xs uppercase">
+                              {org.name?.charAt(0) || "O"}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-semibold text-foreground block truncate max-w-[240px] group-hover:text-primary transition-colors">
+                                {org.name}
+                              </span>
+                              <span className="text-[10px] font-mono text-muted-foreground/70 block truncate max-w-[200px]">
+                                {org.slug}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Plan Tier */}
+                        <td className="py-3 px-3.5">
+                          <span
+                            className={cn(
+                              "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border uppercase tracking-wider",
+                              getPlanBadgeStyle(org.planTier)
+                            )}
+                          >
+                            {org.planTier || "PRO"}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3 px-3.5 whitespace-nowrap text-center">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold border",
+                              statusInfo.badge
+                            )}
+                          >
+                            <span className={cn("size-1.5 rounded-full shrink-0", statusInfo.dot)} />
+                            <span>{statusInfo.label}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    </OrganizationContextMenu>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+
+          {/* Infinite Scroll Sentinel */}
+          <div ref={sentinelRef} className="py-2 flex items-center justify-center">
+            {hasMore && (
+              <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground font-mono">
+                <Loader2 className="size-3.5 animate-spin text-primary" />
+                <span>Memuat tenant berikutnya ({visibleItems.length} / {totalFilteredCount})...</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
