@@ -5,15 +5,15 @@ import {
   Users,
   Activity,
   Layers,
-  ArrowUpRight,
+  ArrowRight,
   TrendingUp,
   Zap,
   Ticket,
-  ChevronRight,
 } from "lucide-react";
 import {
   Badge,
   Button,
+  Card,
   PageHeader,
   PageContentShell,
   cn,
@@ -32,48 +32,63 @@ interface KpiStatItem {
   icon: React.ElementType;
 }
 
-// ── 1. KPI Cards Row Component ─────────────────────────────────────────────
+// ── 1. KPI Cards Row Component (1:1 with studio-admin OverviewMetricCard) ──
 function KpiCardsGrid({ items, onNavigate }: { items: KpiStatItem[]; onNavigate: (path: string) => void }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3 sm:gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {items.map((item) => {
         const Icon = item.icon;
         return (
-          <div
+          <Card
             key={item.title}
-            className="flex flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-xs transition-all hover:border-primary/40"
+            glowingEffect
+            className="flex flex-col justify-between transition-all duration-200 p-0"
           >
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-muted-foreground tracking-tight">
-                  {item.title}
-                </span>
-                <Icon className="h-4 w-4 text-muted-foreground/60" />
-              </div>
-
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-bold font-mono tracking-tight text-foreground">
-                  {item.value}
-                </span>
-                {item.badgeText && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-primary/30 bg-primary/10 text-primary font-medium">
-                    {item.badgeText}
+            <div className="p-3.5 sm:p-4 pb-1.5 flex flex-col justify-between">
+              {/* Top Header Row */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-mono text-[10px] sm:text-xs uppercase font-semibold tracking-wider text-muted-foreground/90 truncate">
+                    {item.title}
                   </span>
-                )}
+                  {item.badgeText && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-primary/30 bg-primary/10 text-primary font-medium">
+                      {item.badgeText}
+                    </span>
+                  )}
+                </div>
+                <div className="p-1 sm:p-1.5 rounded-lg bg-muted/40 border border-border/40 text-muted-foreground/80 shrink-0">
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                </div>
+              </div>
+
+              {/* Main Metric Value Row */}
+              <div className="mt-2 text-2xl sm:text-3xl font-bold text-foreground tracking-tight flex items-baseline flex-wrap gap-2">
+                {item.value}
               </div>
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="font-mono">{item.subLeft}</span>
-              <button
-                onClick={() => onNavigate(item.actionPath)}
-                className="flex items-center gap-0.5 text-primary hover:underline font-medium cursor-pointer"
-              >
-                <span>{item.actionText}</span>
-                <ChevronRight className="h-3 w-3" />
-              </button>
+            {/* Helper Stats & Footer Link */}
+            <div className="px-3.5 sm:px-4 pb-3.5 sm:pb-4 pt-1 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground font-medium">
+                <span className="truncate min-w-0 font-mono">{item.subLeft}</span>
+                <span className="shrink-0 ml-2 font-mono">{item.subRight}</span>
+              </div>
+
+              <div className="pt-2 border-groove-t flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
+                <span className="truncate mr-1 text-muted-foreground/70">
+                  Operasional
+                </span>
+                <button
+                  onClick={() => onNavigate(item.actionPath)}
+                  className="flex items-center gap-1 transition-colors shrink-0 ml-auto font-medium text-foreground/85 hover:text-primary cursor-pointer"
+                >
+                  <span>{item.actionText}</span>
+                  <ArrowRight className="h-3 w-3 ml-0.5" />
+                </button>
+              </div>
             </div>
-          </div>
+          </Card>
         );
       })}
     </div>
@@ -91,9 +106,9 @@ function ThroughputAndPortCharts({
   setTrafficFilter: (filter: "all" | "download" | "upload") => void;
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4">
       {/* Col 1: Realtime Throughput Stream Bar Chart (8 cols) */}
-      <div className="lg:col-span-8 rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs">
+      <Card glowingEffect className="lg:col-span-8 p-5 space-y-4 flex flex-col justify-between">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
           <div>
             <div className="flex items-center gap-2">
@@ -144,7 +159,7 @@ function ThroughputAndPortCharts({
           </div>
         </div>
 
-        {/* CSS Bar Chart Simulation */}
+        {/* Bar Chart Bars */}
         <div className="pt-2">
           <div className="h-44 w-full flex items-end gap-2 sm:gap-3 px-1">
             {hourlyBars.map((bar) => {
@@ -169,23 +184,23 @@ function ThroughputAndPortCharts({
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs font-mono text-muted-foreground">
+        <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-primary" />
-              <span>Current Download: 1.84 Gbps</span>
+              <span>Download: <strong className="text-foreground font-mono">1.84 Gbps</strong></span>
             </span>
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-primary/40" />
-              <span>Current Upload: 640 Mbps</span>
+              <span>Upload: <strong className="text-foreground font-mono">640 Mbps</strong></span>
             </span>
           </div>
-          <span className="text-primary font-semibold">99.98% Network SLA</span>
+          <span className="text-primary font-semibold text-xs">99.98% Network SLA</span>
         </div>
-      </div>
+      </Card>
 
       {/* Col 2: FAT Port & Redaman Distribution (4 cols) */}
-      <div className="lg:col-span-4 rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs flex flex-col justify-between">
+      <Card glowingEffect className="lg:col-span-4 p-5 space-y-4 flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between border-b border-border/60 pb-3">
             <div className="flex items-center gap-2">
@@ -201,9 +216,9 @@ function ThroughputAndPortCharts({
 
           <div className="space-y-3.5 pt-3">
             <div>
-              <div className="flex justify-between text-xs font-mono mb-1">
-                <span className="text-foreground font-semibold">Optimal (-15 s/d -22 dBm)</span>
-                <span className="text-primary font-bold">1.184 ONU (92.5%)</span>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-foreground font-medium">Optimal (-15 s/d -22 dBm)</span>
+                <span className="text-primary font-bold font-mono">1.184 ONU (92.5%)</span>
               </div>
               <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
                 <div className="bg-primary h-full rounded-full" style={{ width: "92.5%" }} />
@@ -211,9 +226,9 @@ function ThroughputAndPortCharts({
             </div>
 
             <div>
-              <div className="flex justify-between text-xs font-mono mb-1">
-                <span className="text-foreground font-semibold">Waspada (-23 s/d -26 dBm)</span>
-                <span className="text-amber-500 font-bold">93 ONU (7.2%)</span>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-foreground font-medium">Waspada (-23 s/d -26 dBm)</span>
+                <span className="text-amber-500 font-bold font-mono">93 ONU (7.2%)</span>
               </div>
               <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
                 <div className="bg-amber-500 h-full rounded-full" style={{ width: "7.2%" }} />
@@ -221,9 +236,9 @@ function ThroughputAndPortCharts({
             </div>
 
             <div>
-              <div className="flex justify-between text-xs font-mono mb-1">
-                <span className="text-foreground font-semibold">Kritis (&gt; -27 dBm / LOS)</span>
-                <span className="text-destructive font-bold">3 ONU (0.3%)</span>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-foreground font-medium">Kritis (&gt; -27 dBm / LOS)</span>
+                <span className="text-destructive font-bold font-mono">3 ONU (0.3%)</span>
               </div>
               <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
                 <div className="bg-destructive h-full rounded-full" style={{ width: "0.3%" }} />
@@ -233,21 +248,21 @@ function ThroughputAndPortCharts({
         </div>
 
         <div className="p-3 rounded-lg border border-border/70 bg-muted/20 text-xs space-y-1">
-          <div className="flex items-center justify-between font-semibold text-foreground">
+          <div className="flex items-center justify-between font-medium text-foreground">
             <span>Rata-rata Optical Rx:</span>
             <span className="font-mono text-primary font-bold">-19.8 dBm</span>
           </div>
           <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-            <span>Splitter Budget Rata-rata:</span>
+            <span>Splitter Budget:</span>
             <span className="font-mono">1:8 ODC + 1:8 ODP</span>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
 
-// ── 3. Operations Hub Table Section ─────────────────────────────────────────
+// ── 3. Operations Hub Table Section (1:1 with studio-admin Table Density) ──
 function OperationsHubTable({
   activeTab,
   setActiveTab,
@@ -264,7 +279,7 @@ function OperationsHubTable({
   onNavigate: (path: string) => void;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs">
+    <Card glowingEffect className="p-5 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
         {/* Tab Controls */}
         <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/60 text-xs">
@@ -311,15 +326,15 @@ function OperationsHubTable({
           className="h-7 px-2.5 text-xs font-medium gap-1 shadow-xs cursor-pointer rounded-md border-border text-foreground hover:bg-muted"
         >
           <span>Buka Inventaris Penuh</span>
-          <ArrowUpRight className="h-3 w-3" />
+          <ArrowRight className="h-3 w-3" />
         </Button>
       </div>
 
       {/* Tab: OLT Status */}
       {activeTab === "olts" && (
         <div className="rounded-lg border border-border/80 overflow-hidden">
-          <table className="w-full text-left text-xs font-mono">
-            <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-semibold text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">Nama OLT</th>
                 <th className="px-4 py-3">Vendor / Tipe</th>
@@ -333,15 +348,15 @@ function OperationsHubTable({
             <tbody className="divide-y divide-border/60">
               {olts.map((olt) => (
                 <tr key={olt.name} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3 font-bold text-foreground flex items-center gap-2">
+                  <td className="px-4 py-3 font-medium text-foreground flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-primary" />
                     <span>{olt.name}</span>
                   </td>
-                  <td className="px-4 py-3 text-foreground">{olt.vendor}</td>
-                  <td className="px-4 py-3 text-primary">{olt.ip}</td>
-                  <td className="px-4 py-3 text-foreground font-semibold">{olt.pon} ({olt.onUs} ONU)</td>
-                  <td className="px-4 py-3 text-foreground">{olt.load}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{olt.latency}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{olt.vendor}</td>
+                  <td className="px-4 py-3 font-mono text-primary">{olt.ip}</td>
+                  <td className="px-4 py-3 text-foreground font-medium">{olt.pon} <span className="text-muted-foreground">({olt.onUs} ONU)</span></td>
+                  <td className="px-4 py-3 font-mono text-foreground">{olt.load}</td>
+                  <td className="px-4 py-3 font-mono text-muted-foreground">{olt.latency}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[10px] font-mono">
                       {olt.status}
@@ -357,8 +372,8 @@ function OperationsHubTable({
       {/* Tab: Critical Attenuation */}
       {activeTab === "attenuation" && (
         <div className="rounded-lg border border-border/80 overflow-hidden">
-          <table className="w-full text-left text-xs font-mono">
-            <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-semibold text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">Pelanggan</th>
                 <th className="px-4 py-3">User PPPoE</th>
@@ -371,10 +386,10 @@ function OperationsHubTable({
             <tbody className="divide-y divide-border/60">
               {attenuationIssues.map((issue) => (
                 <tr key={issue.pppoe} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3 font-bold text-foreground">{issue.customer}</td>
-                  <td className="px-4 py-3 text-primary">{issue.pppoe}</td>
-                  <td className="px-4 py-3 text-foreground font-semibold">{issue.odp} · Port #{issue.port}</td>
-                  <td className="px-4 py-3 text-destructive font-bold">{issue.rx}</td>
+                  <td className="px-4 py-3 font-medium text-foreground">{issue.customer}</td>
+                  <td className="px-4 py-3 font-mono text-primary">{issue.pppoe}</td>
+                  <td className="px-4 py-3 text-foreground font-medium">{issue.odp} <span className="text-muted-foreground">· Port #{issue.port}</span></td>
+                  <td className="px-4 py-3 font-mono text-destructive font-bold">{issue.rx}</td>
                   <td className="px-4 py-3 text-muted-foreground">{issue.cause}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className="border-destructive/40 bg-destructive/10 text-destructive text-[10px] font-mono">
@@ -391,8 +406,8 @@ function OperationsHubTable({
       {/* Tab: Customers */}
       {activeTab === "customers" && (
         <div className="rounded-lg border border-border/80 overflow-hidden">
-          <table className="w-full text-left text-xs font-mono">
-            <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-semibold text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">Nama Pelanggan</th>
                 <th className="px-4 py-3">User PPPoE</th>
@@ -405,11 +420,11 @@ function OperationsHubTable({
             <tbody className="divide-y divide-border/60">
               {recentCustomers.map((c) => (
                 <tr key={c.pppoe} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3 font-bold text-foreground">{c.name}</td>
-                  <td className="px-4 py-3 text-primary">{c.pppoe}</td>
-                  <td className="px-4 py-3 text-foreground font-semibold">{c.odp}</td>
-                  <td className="px-4 py-3 text-foreground">{c.speed}</td>
-                  <td className="px-4 py-3 text-primary font-bold">{c.rx}</td>
+                  <td className="px-4 py-3 font-medium text-foreground">{c.name}</td>
+                  <td className="px-4 py-3 font-mono text-primary">{c.pppoe}</td>
+                  <td className="px-4 py-3 text-foreground font-medium">{c.odp}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{c.speed}</td>
+                  <td className="px-4 py-3 font-mono text-primary font-bold">{c.rx}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[10px] font-mono">
                       {c.status}
@@ -421,7 +436,7 @@ function OperationsHubTable({
           </table>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -541,7 +556,7 @@ export function DashboardPage() {
       />
 
       {/* ── 2. Content Body ────────────────────────────────────────── */}
-      <PageContentShell maxWidth="full" className="space-y-5 pb-8">
+      <PageContentShell maxWidth="full" className="space-y-4 sm:space-y-5 pb-8">
         <KpiCardsGrid items={kpiStats} onNavigate={(path) => navigate({ to: path })} />
         <ThroughputAndPortCharts
           hourlyBars={hourlyBars}

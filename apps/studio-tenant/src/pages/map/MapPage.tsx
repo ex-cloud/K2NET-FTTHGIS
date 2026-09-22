@@ -121,11 +121,11 @@ export function MapPage() {
             </Badge>
           </div>
 
-          <div className="space-y-1.5 text-xs font-mono">
+          <div className="space-y-1.5 text-xs">
             <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/40 cursor-pointer">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: MAP_COLORS.backboneCable }} />
-                <span className="text-foreground">Kabel Backbone</span>
+                <span className="text-foreground font-medium">Kabel Backbone</span>
               </div>
               <input
                 type="checkbox"
@@ -138,7 +138,7 @@ export function MapPage() {
             <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/40 cursor-pointer">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: MAP_COLORS.distributionCable }} />
-                <span className="text-foreground">Kabel Distribusi</span>
+                <span className="text-foreground font-medium">Kabel Distribusi</span>
               </div>
               <input
                 type="checkbox"
@@ -151,7 +151,7 @@ export function MapPage() {
             <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/40 cursor-pointer">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: MAP_COLORS.odcClosure }} />
-                <span className="text-foreground">ODC (Closure)</span>
+                <span className="text-foreground font-medium">ODC (Closure)</span>
               </div>
               <input
                 type="checkbox"
@@ -164,7 +164,7 @@ export function MapPage() {
             <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/40 cursor-pointer">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: MAP_COLORS.odpFatBox }} />
-                <span className="text-foreground">ODP (FAT Port)</span>
+                <span className="text-foreground font-medium">ODP (FAT Port)</span>
               </div>
               <input
                 type="checkbox"
@@ -178,7 +178,7 @@ export function MapPage() {
 
         {/* Floating Simulation Panel */}
         {showSimModal && (
-          <div className="absolute top-4 right-16 z-20 w-80 rounded-xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur-xl space-y-3 text-xs font-mono">
+          <div className="absolute top-4 right-16 z-20 w-80 rounded-xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur-xl space-y-3 text-xs">
             <div className="flex items-center justify-between border-b border-border/70 pb-2">
               <span className="font-bold text-foreground flex items-center gap-1.5">
                 <Calculator className="h-4 w-4 text-primary" />
@@ -194,7 +194,7 @@ export function MapPage() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Panjang Fiber (km):</span>
+                <span className="text-muted-foreground font-medium">Panjang Fiber (km):</span>
                 <input
                   type="number"
                   step="0.5"
@@ -202,27 +202,27 @@ export function MapPage() {
                   max="30"
                   value={simKm}
                   onChange={(e) => setSimKm(Number(e.target.value))}
-                  className="w-20 rounded border border-border bg-background px-2 py-1 text-right text-foreground"
+                  className="w-20 rounded border border-border bg-background px-2 py-1 text-right text-foreground font-mono"
                 />
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Fiber Loss (0.35dB/km):</span>
-                <span className="text-foreground font-bold">{attenuationResult.fiberLossDb} dB</span>
+                <span className="text-foreground font-bold font-mono">{attenuationResult.fiberLossDb} dB</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Splitter (1:8 + 1:8):</span>
-                <span className="text-foreground font-bold">{attenuationResult.splitterLossDb} dB</span>
+                <span className="text-foreground font-bold font-mono">{attenuationResult.splitterLossDb} dB</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Splice + Connector:</span>
-                <span className="text-foreground font-bold">
+                <span className="text-foreground font-bold font-mono">
                   {(attenuationResult.spliceLossDb + attenuationResult.connectorLossDb).toFixed(2)} dB
                 </span>
               </div>
               <div className="border-t border-border pt-2 flex justify-between items-center">
                 <span className="font-bold text-foreground">Total Estimasi Loss:</span>
                 <span
-                  className={`text-sm font-bold ${
+                  className={`text-sm font-bold font-mono ${
                     attenuationResult.isWithinStandard ? "text-primary" : "text-destructive"
                   }`}
                 >
@@ -234,11 +234,11 @@ export function MapPage() {
         )}
 
         {/* Floating Bottom Status Bar */}
-        <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card/90 px-4 py-2.5 shadow-lg backdrop-blur-xl text-xs font-mono">
+        <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card/90 px-4 py-2.5 shadow-lg backdrop-blur-xl text-xs">
           <div className="flex items-center gap-3 text-muted-foreground">
-            <span>Engine: MapLibre GL v5</span>
+            <span className="font-medium">Engine: MapLibre GL v5</span>
             <span>·</span>
-            <span>Tile Source: Martin PostGIS MVT</span>
+            <span className="font-medium">Tile Source: Martin PostGIS MVT</span>
             <span>·</span>
             <span className="text-primary font-medium flex items-center gap-1">
               <Activity className="h-3.5 w-3.5" /> Ready for Geospatial Queries

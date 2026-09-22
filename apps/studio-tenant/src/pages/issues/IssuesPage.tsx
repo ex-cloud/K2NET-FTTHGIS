@@ -7,10 +7,12 @@ import {
   Wrench,
   Zap,
   Activity,
+  ArrowRight,
 } from "lucide-react";
 import {
   Badge,
   Button,
+  Card,
   PageHeader,
   PageContentShell,
   cn,
@@ -38,10 +40,10 @@ export function IssuesPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
 
   const kpis = [
-    { label: "TOTAL ISU AKTIF", value: "6 Kasus", subtext: "2 Kritis • 4 Degradasi", icon: AlertCircle },
-    { label: "LOSS OF SIGNAL (LOS)", value: "2 Titik", subtext: "Kabel Drop Putus / Loss", icon: Zap },
-    { label: "DEGRADASI REDAMAN", value: "4 Titik", subtext: "Rx > -27.0 dBm (Bending)", icon: AlertTriangle },
-    { label: "MTTR RATA-RATA (24H)", value: "38 Menit", subtext: "Target SLA < 60 Menit", icon: Clock },
+    { label: "TOTAL ISU AKTIF", value: "6 Kasus", subLeft: "2 Kritis", subRight: "4 Degradasi", icon: AlertCircle, action: "Semua Tiket" },
+    { label: "LOSS OF SIGNAL (LOS)", value: "2 Titik", subLeft: "Drop Cut", subRight: "Darurat", icon: Zap, action: "Prioritas LOS" },
+    { label: "DEGRADASI REDAMAN", value: "4 Titik", subLeft: "Rx > -27dBm", subRight: "Bending", icon: AlertTriangle, action: "Investigasi" },
+    { label: "MTTR RATA-RATA (24H)", value: "38 Menit", subLeft: "Target SLA", subRight: "< 60 Mnt", icon: Clock, action: "Laporan SLA" },
   ];
 
   const issuesList: IssueItem[] = [
@@ -194,26 +196,56 @@ export function IssuesPage() {
       />
 
       {/* ── 2. Content Body ────────────────────────────────────────── */}
-      <PageContentShell maxWidth="full" className="space-y-5 pb-8">
-        {/* Row 1: KPI Stats */}
+      <PageContentShell maxWidth="full" className="space-y-4 sm:space-y-5 pb-8">
+        {/* Row 1: KPI Stats — 1:1 with studio-admin OverviewMetricCard */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {kpis.map((k) => {
             const Icon = k.icon;
             return (
-              <div key={k.label} className="rounded-xl border border-border bg-card p-4 shadow-xs">
-                <div className="flex items-center justify-between text-muted-foreground text-xs">
-                  <span className="font-semibold text-[11px]">{k.label}</span>
-                  <Icon className="h-4 w-4" />
+              <Card
+                key={k.label}
+                glowingEffect
+                className="flex flex-col justify-between transition-all duration-200 p-0"
+              >
+                <div className="p-3.5 sm:p-4 pb-1.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-[10px] sm:text-xs uppercase font-semibold tracking-wider text-muted-foreground/90 truncate">
+                      {k.label}
+                    </span>
+                    <div className="p-1 sm:p-1.5 rounded-lg bg-muted/40 border border-border/40 text-muted-foreground/80 shrink-0">
+                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+                    {k.value}
+                  </div>
                 </div>
-                <div className="mt-2 text-2xl font-bold font-mono text-foreground">{k.value}</div>
-                <div className="mt-1 text-[11px] text-muted-foreground font-mono">{k.subtext}</div>
-              </div>
+
+                <div className="px-3.5 sm:px-4 pb-3.5 sm:pb-4 pt-1 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground font-medium">
+                    <span className="truncate min-w-0 font-mono">{k.subLeft}</span>
+                    <span className="shrink-0 ml-2 font-mono">{k.subRight}</span>
+                  </div>
+                  <div className="pt-2 border-groove-t flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
+                    <span className="truncate mr-1 text-muted-foreground/70">
+                      Operasional
+                    </span>
+                    <button
+                      onClick={() => {}}
+                      className="flex items-center gap-1 transition-colors shrink-0 ml-auto font-medium text-foreground/85 hover:text-primary cursor-pointer"
+                    >
+                      <span>{k.action}</span>
+                      <ArrowRight className="h-3 w-3 ml-0.5" />
+                    </button>
+                  </div>
+                </div>
+              </Card>
             );
           })}
         </div>
 
         {/* Row 2: Issues Table Container */}
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs">
+        <Card glowingEffect className="p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
             {/* Filter Tabs */}
             <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/60 text-xs">
@@ -278,8 +310,8 @@ export function IssuesPage() {
 
           {/* Table */}
           <div className="rounded-lg border border-border/80 overflow-hidden">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-semibold text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">Tiket &amp; Pelanggan</th>
                   <th className="px-4 py-3">Titik Distribusi (ODP / Port)</th>
@@ -295,16 +327,16 @@ export function IssuesPage() {
                     {/* Tiket & Pelanggan */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-foreground">{item.ticketCode}</span>
+                        <span className="font-mono font-medium text-primary">{item.ticketCode}</span>
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {item.customerName} (<span className="text-primary">{item.pppoeUser}</span>)
+                        <span className="text-foreground font-medium">{item.customerName}</span> (<span className="font-mono text-muted-foreground">{item.pppoeUser}</span>)
                       </div>
                     </td>
 
                     {/* Titik Distribusi */}
                     <td className="px-4 py-3">
-                      <div className="font-bold text-foreground">{item.odpCode} · Port #{item.portNumber}</div>
+                      <div className="font-mono font-medium text-foreground">{item.odpCode} · Port #{item.portNumber}</div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">{item.oltName}</div>
                     </td>
 
@@ -313,7 +345,7 @@ export function IssuesPage() {
                       <div className="flex items-center gap-1.5">
                         <span
                           className={cn(
-                            "font-bold text-xs",
+                            "font-mono font-bold text-xs",
                             item.rxStatus === "critical"
                               ? "text-destructive"
                               : item.rxStatus === "warning"
@@ -331,12 +363,12 @@ export function IssuesPage() {
 
                     {/* Diagnosa Isu */}
                     <td className="px-4 py-3">
-                      <div className="text-foreground font-semibold">{item.issueType}</div>
+                      <div className="text-foreground font-medium">{item.issueType}</div>
                     </td>
 
                     {/* Teknisi PIC */}
                     <td className="px-4 py-3 text-muted-foreground">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <Wrench className="h-3 w-3 text-muted-foreground" />
                         <span>{item.technician}</span>
                       </div>
@@ -368,7 +400,7 @@ export function IssuesPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       </PageContentShell>
     </div>
   );

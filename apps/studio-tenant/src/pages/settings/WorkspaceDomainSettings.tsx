@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Info
 } from "lucide-react";
-import { Badge, Button, PageHeader, PageContentShell } from "@k2net/ui";
+import { Badge, Button, Card, PageHeader, PageContentShell } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 import { extractTenantSlug } from "../../lib/keycloak-config";
 
@@ -134,7 +134,7 @@ export function WorkspaceDomainSettings() {
 
       {/* Success Banner (During Redirect) */}
       {migrationSuccess && (
-        <div className="rounded-xl border border-primary/30 bg-primary/10 p-6 space-y-3 animate-in fade-in duration-300">
+        <Card glowingEffect className="border-primary/30 bg-primary/10 p-6 space-y-3 animate-in fade-in duration-300">
           <div className="flex items-center gap-2 text-primary font-bold text-sm">
             <CheckCircle2 className="size-5" />
             Subdomain Workspace Berhasil Diperbarui!
@@ -150,11 +150,11 @@ export function WorkspaceDomainSettings() {
               {migrationSuccess.newUrl} <ExternalLink className="size-3.5" />
             </a>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Active Domain Card */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs">
+      <Card glowingEffect className="p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
           <div>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Subdomain Aktif Saat Ini</span>
@@ -197,11 +197,11 @@ export function WorkspaceDomainSettings() {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Free Tier Notice or Pro Migration Form */}
       {isFreeTier ? (
-        <div className="rounded-xl border border-border bg-card/60 p-6 space-y-4">
+        <Card glowingEffect className="p-6 space-y-4">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 shrink-0">
               <Lock className="size-5" />
@@ -225,10 +225,10 @@ export function WorkspaceDomainSettings() {
               Upgrade ke Paket Pro
             </Button>
           </div>
-        </div>
+        </Card>
       ) : (
         /* PRO Tier Subdomain Customization / Migration Form */
-        <div className="rounded-xl border border-border bg-card p-6 space-y-5 shadow-xs">
+        <Card glowingEffect className="p-6 space-y-5">
           <div>
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Sparkles className="size-4 text-primary" />
@@ -273,7 +273,7 @@ export function WorkspaceDomainSettings() {
               <ArrowRight className="size-3.5 ml-1" />
             </Button>
           </form>
-        </div>
+        </Card>
       )}
 
       {/* Controlled Migration Confirmation Modal */}

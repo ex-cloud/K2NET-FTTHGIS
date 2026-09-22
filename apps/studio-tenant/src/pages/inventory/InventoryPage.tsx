@@ -6,10 +6,12 @@ import {
   Search,
   Cpu,
   MapPin,
+  ArrowRight,
 } from "lucide-react";
 import {
   Badge,
   Button,
+  Card,
   PageHeader,
   PageContentShell,
   cn,
@@ -22,10 +24,10 @@ export function InventoryPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
 
   const kpis = [
-    { label: "TOTAL PERANGKAT OLT", value: "4 Unit", subtext: "100% UP Online", icon: Server },
-    { label: "PORT PON AKTIF", value: "48 Ports", subtext: "68% Utilisasi", icon: Cpu },
-    { label: "ODC DISTRIBUSI", value: "38 Box", subtext: "Backbone Closure", icon: Layers },
-    { label: "ODP (FAT) BOX", value: "212 Box", subtext: "1.420 Kapasitas Port", icon: Radio },
+    { label: "TOTAL PERANGKAT OLT", value: "4 Unit", subLeft: "Online: 4/4", subRight: "100% UP", icon: Server, action: "Inventaris OLT", path: "/inventory" },
+    { label: "PORT PON AKTIF", value: "48 Ports", subLeft: "Terpakai: 32", subRight: "68% Utilisasi", icon: Cpu, action: "Detail Port", path: "/inventory" },
+    { label: "ODC DISTRIBUSI", value: "38 Box", subLeft: "Active: 37", subRight: "1 Warning", icon: Layers, action: "Sebaran ODC", path: "/inventory" },
+    { label: "ODP (FAT) BOX", value: "212 Box", subLeft: "Terpakai: 84%", subRight: "1.420 Kapasitas", icon: Radio, action: "Sebaran ODP", path: "/inventory" },
   ];
 
   const olts = [
@@ -77,26 +79,56 @@ export function InventoryPage() {
         }
       />
 
-      <PageContentShell maxWidth="full" className="space-y-5 pb-8">
-        {/* Row 1: KPI Stats */}
+      <PageContentShell maxWidth="full" className="space-y-4 sm:space-y-5 pb-8">
+        {/* Row 1: KPI Stats — 1:1 with studio-admin OverviewMetricCard */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {kpis.map((k) => {
             const Icon = k.icon;
             return (
-              <div key={k.label} className="rounded-xl border border-border bg-card p-4 shadow-xs">
-                <div className="flex items-center justify-between text-muted-foreground text-xs">
-                  <span className="font-semibold text-[11px]">{k.label}</span>
-                  <Icon className="h-4 w-4" />
+              <Card
+                key={k.label}
+                glowingEffect
+                className="flex flex-col justify-between transition-all duration-200 p-0"
+              >
+                <div className="p-3.5 sm:p-4 pb-1.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-[10px] sm:text-xs uppercase font-semibold tracking-wider text-muted-foreground/90 truncate">
+                      {k.label}
+                    </span>
+                    <div className="p-1 sm:p-1.5 rounded-lg bg-muted/40 border border-border/40 text-muted-foreground/80 shrink-0">
+                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+                    {k.value}
+                  </div>
                 </div>
-                <div className="mt-2 text-2xl font-bold font-mono text-foreground">{k.value}</div>
-                <div className="mt-1 text-[11px] text-muted-foreground font-mono">{k.subtext}</div>
-              </div>
+
+                <div className="px-3.5 sm:px-4 pb-3.5 sm:pb-4 pt-1 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground font-medium">
+                    <span className="truncate min-w-0 font-mono">{k.subLeft}</span>
+                    <span className="shrink-0 ml-2 font-mono">{k.subRight}</span>
+                  </div>
+                  <div className="pt-2 border-groove-t flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
+                    <span className="truncate mr-1 text-muted-foreground/70">
+                      Operasional
+                    </span>
+                    <button
+                      onClick={() => navigate({ to: k.path })}
+                      className="flex items-center gap-1 transition-colors shrink-0 ml-auto font-medium text-foreground/85 hover:text-primary cursor-pointer"
+                    >
+                      <span>{k.action}</span>
+                      <ArrowRight className="h-3 w-3 ml-0.5" />
+                    </button>
+                  </div>
+                </div>
+              </Card>
             );
           })}
         </div>
 
         {/* Row 2: Inventory Table Section */}
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs">
+        <Card glowingEffect className="p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
             {/* Tabs */}
             <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/60 text-xs">
@@ -151,8 +183,8 @@ export function InventoryPage() {
           {/* OLT Table */}
           {activeTab === "olts" && (
             <div className="rounded-lg border border-border/80 overflow-hidden">
-              <table className="w-full text-left text-xs font-mono">
-                <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-semibold text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">Nama OLT &amp; Code</th>
                     <th className="px-4 py-3">Vendor &amp; Type</th>
@@ -165,13 +197,13 @@ export function InventoryPage() {
                 <tbody className="divide-y divide-border/60">
                   {olts.map((item) => (
                     <tr key={item.name} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-bold text-foreground flex items-center gap-2">
+                      <td className="px-4 py-3 font-medium text-foreground flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-primary" />
                         <span>{item.name}</span>
                       </td>
-                      <td className="px-4 py-3 text-foreground">{item.vendor}</td>
-                      <td className="px-4 py-3 text-primary">{item.ip}</td>
-                      <td className="px-4 py-3 text-foreground font-semibold">{item.pon} ({item.onUs} ONU)</td>
+                      <td className="px-4 py-3 text-muted-foreground">{item.vendor}</td>
+                      <td className="px-4 py-3 font-mono text-primary">{item.ip}</td>
+                      <td className="px-4 py-3 text-foreground font-medium">{item.pon} <span className="text-muted-foreground">({item.onUs} ONU)</span></td>
                       <td className="px-4 py-3 text-muted-foreground">{item.location}</td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[10px] font-mono">
@@ -188,8 +220,8 @@ export function InventoryPage() {
           {/* ODC Table */}
           {activeTab === "odcs" && (
             <div className="rounded-lg border border-border/80 overflow-hidden">
-              <table className="w-full text-left text-xs font-mono">
-                <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-semibold text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">Kode ODC</th>
                     <th className="px-4 py-3">Kapasitas Core</th>
@@ -202,10 +234,10 @@ export function InventoryPage() {
                 <tbody className="divide-y divide-border/60">
                   {odcs.map((item) => (
                     <tr key={item.code} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-bold text-foreground">{item.code}</td>
-                      <td className="px-4 py-3 text-foreground">{item.capacity}</td>
-                      <td className="px-4 py-3 text-primary font-bold">{item.used}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{item.ratio}</td>
+                      <td className="px-4 py-3 font-mono font-medium text-primary">{item.code}</td>
+                      <td className="px-4 py-3 text-foreground font-mono">{item.capacity}</td>
+                      <td className="px-4 py-3 font-mono text-foreground font-semibold">{item.used}</td>
+                      <td className="px-4 py-3 text-muted-foreground font-mono">{item.ratio}</td>
                       <td className="px-4 py-3 text-muted-foreground">{item.area}</td>
                       <td className="px-4 py-3">
                         <Badge
@@ -229,8 +261,8 @@ export function InventoryPage() {
           {/* ODP Table */}
           {activeTab === "odps" && (
             <div className="rounded-lg border border-border/80 overflow-hidden">
-              <table className="w-full text-left text-xs font-mono">
-                <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-semibold text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">Kode ODP</th>
                     <th className="px-4 py-3">Tipe Box &amp; Port</th>
@@ -243,11 +275,11 @@ export function InventoryPage() {
                 <tbody className="divide-y divide-border/60">
                   {odps.map((item) => (
                     <tr key={item.code} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-bold text-foreground">{item.code}</td>
+                      <td className="px-4 py-3 font-mono font-medium text-primary">{item.code}</td>
                       <td className="px-4 py-3 text-foreground">{item.type}</td>
-                      <td className="px-4 py-3 text-primary font-bold">{item.ports}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{item.odc}</td>
-                      <td className="px-4 py-3 font-semibold text-foreground">{item.rxAvg}</td>
+                      <td className="px-4 py-3 font-mono text-foreground font-semibold">{item.ports}</td>
+                      <td className="px-4 py-3 text-muted-foreground font-mono">{item.odc}</td>
+                      <td className="px-4 py-3 font-mono font-semibold text-foreground">{item.rxAvg}</td>
                       <td className="px-4 py-3">
                         <Badge
                           variant="outline"
@@ -268,7 +300,7 @@ export function InventoryPage() {
               </table>
             </div>
           )}
-        </div>
+        </Card>
       </PageContentShell>
     </div>
   );

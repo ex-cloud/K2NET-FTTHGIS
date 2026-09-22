@@ -7,10 +7,12 @@ import {
   AlertTriangle,
   Wifi,
   RefreshCw,
+  ArrowRight,
 } from "lucide-react";
 import {
   Badge,
   Button,
+  Card,
   PageHeader,
   PageContentShell,
   cn,
@@ -35,10 +37,10 @@ export function CustomersPage() {
   const [activeTab, setActiveTab] = React.useState<"all" | "active" | "isolir" | "high_loss">("all");
 
   const kpis = [
-    { label: "TOTAL PELANGGAN", value: "5 Akun", subtext: "100% Terverifikasi", icon: Users },
-    { label: "PELANGGAN AKTIF", value: "4 Online", subtext: "80% Terhubung Normal", icon: Wifi },
-    { label: "STATUS ISOLIR", value: "1 Akun", subtext: "Tunggakan Tagihan", icon: AlertTriangle },
-    { label: "RATA-RATA REDAMAN", value: "-21.2 dBm", subtext: "Standar ITU-T G.984", icon: Activity },
+    { label: "TOTAL PELANGGAN", value: "5 Akun", subLeft: "Aktif: 4", subRight: "100% Terdata", icon: Users, action: "Lihat Semua" },
+    { label: "PELANGGAN AKTIF", value: "4 Online", subLeft: "Normal: 4", subRight: "80% Terhubung", icon: Wifi, action: "Filter Aktif" },
+    { label: "STATUS ISOLIR", value: "1 Akun", subLeft: "Tunggakan", subRight: "1 Tagihan", icon: AlertTriangle, action: "Kelola Isolir" },
+    { label: "RATA-RATA REDAMAN", value: "-21.2 dBm", subLeft: "Standar ITU-T", subRight: "G.984 Optik", icon: Activity, action: "Cek Redaman" },
   ];
 
   const customers: CustomerRecord[] = [
@@ -159,26 +161,56 @@ export function CustomersPage() {
       />
 
       {/* ── 2. Content Body ────────────────────────────────────────── */}
-      <PageContentShell maxWidth="full" className="space-y-5 pb-8">
-        {/* Row 1: KPI Stats */}
+      <PageContentShell maxWidth="full" className="space-y-4 sm:space-y-5 pb-8">
+        {/* Row 1: KPI Stats — 1:1 with studio-admin OverviewMetricCard */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {kpis.map((k) => {
             const Icon = k.icon;
             return (
-              <div key={k.label} className="rounded-xl border border-border bg-card p-4 shadow-xs">
-                <div className="flex items-center justify-between text-muted-foreground text-xs">
-                  <span className="font-semibold text-[11px]">{k.label}</span>
-                  <Icon className="h-4 w-4" />
+              <Card
+                key={k.label}
+                glowingEffect
+                className="flex flex-col justify-between transition-all duration-200 p-0"
+              >
+                <div className="p-3.5 sm:p-4 pb-1.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-[10px] sm:text-xs uppercase font-semibold tracking-wider text-muted-foreground/90 truncate">
+                      {k.label}
+                    </span>
+                    <div className="p-1 sm:p-1.5 rounded-lg bg-muted/40 border border-border/40 text-muted-foreground/80 shrink-0">
+                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+                    {k.value}
+                  </div>
                 </div>
-                <div className="mt-2 text-2xl font-bold font-mono text-foreground">{k.value}</div>
-                <div className="mt-1 text-[11px] text-muted-foreground font-mono">{k.subtext}</div>
-              </div>
+
+                <div className="px-3.5 sm:px-4 pb-3.5 sm:pb-4 pt-1 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground font-medium">
+                    <span className="truncate min-w-0 font-mono">{k.subLeft}</span>
+                    <span className="shrink-0 ml-2 font-mono">{k.subRight}</span>
+                  </div>
+                  <div className="pt-2 border-groove-t flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
+                    <span className="truncate mr-1 text-muted-foreground/70">
+                      Operasional
+                    </span>
+                    <button
+                      onClick={() => {}}
+                      className="flex items-center gap-1 transition-colors shrink-0 ml-auto font-medium text-foreground/85 hover:text-primary cursor-pointer"
+                    >
+                      <span>{k.action}</span>
+                      <ArrowRight className="h-3 w-3 ml-0.5" />
+                    </button>
+                  </div>
+                </div>
+              </Card>
             );
           })}
         </div>
 
         {/* Row 2: Customer Table Container */}
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-xs">
+        <Card glowingEffect className="p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
             {/* Filter Tabs */}
             <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/60 text-xs">
@@ -243,8 +275,8 @@ export function CustomersPage() {
 
           {/* Table */}
           <div className="rounded-lg border border-border/80 overflow-hidden">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-semibold text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">Nama &amp; PPPoE User</th>
                   <th className="px-4 py-3">Titik ODP &amp; Port</th>
@@ -258,21 +290,21 @@ export function CustomersPage() {
                 {filtered.map((cust) => (
                   <tr key={cust.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="font-bold text-foreground">{cust.name}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">{cust.pppoeUser}</div>
+                      <div className="font-medium text-foreground">{cust.name}</div>
+                      <div className="text-[11px] font-mono text-muted-foreground mt-0.5">{cust.pppoeUser}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-bold text-foreground">{cust.odpCode}</div>
-                      <div className="text-[11px] text-primary mt-0.5">Port #{cust.portNumber}</div>
+                      <div className="font-mono font-medium text-foreground">{cust.odpCode}</div>
+                      <div className="text-[11px] font-mono text-primary mt-0.5">Port #{cust.portNumber}</div>
                     </td>
-                    <td className="px-4 py-3 text-foreground font-semibold">
+                    <td className="px-4 py-3 text-foreground font-medium">
                       {cust.packageSpeed}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span
                           className={cn(
-                            "font-bold text-xs",
+                            "font-mono font-bold text-xs",
                             cust.rxPowerNum <= -27.0
                               ? "text-amber-500"
                               : "text-primary"
@@ -322,7 +354,7 @@ export function CustomersPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       </PageContentShell>
     </div>
   );
