@@ -4,6 +4,8 @@ import { TenantLayout } from "./layouts/TenantLayout";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { MapPage } from "./pages/map/MapPage";
 import { CustomersPage } from "./pages/customers/CustomersPage";
+import { InventoryPage } from "./pages/inventory/InventoryPage";
+import { IssuesPage } from "./pages/issues/IssuesPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { WorkspaceDomainSettings } from "./pages/settings/WorkspaceDomainSettings";
 
@@ -48,13 +50,13 @@ const customersRoute = createRoute({
 const inventoryRoute = createRoute({
   getParentRoute: () => authenticatedLayoutRoute,
   path: "/inventory",
-  component: DashboardPage,
+  component: InventoryPage,
 });
 
 const issuesRoute = createRoute({
   getParentRoute: () => authenticatedLayoutRoute,
   path: "/issues",
-  component: DashboardPage,
+  component: IssuesPage,
 });
 
 const settingsRoute = createRoute({

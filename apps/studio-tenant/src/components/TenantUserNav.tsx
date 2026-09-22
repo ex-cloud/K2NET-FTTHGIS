@@ -11,9 +11,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  useTheme,
 } from "@k2net/ui";
 import { Dot, ShieldCheck } from "lucide-react";
-import { useTheme } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 
 function useThemeCustomizations(mounted: boolean) {
@@ -118,7 +118,7 @@ function UserNavThemeSection({
 }: {
   theme?: string;
   isMono: boolean;
-  onSetTheme: (theme: any) => void;
+  onSetTheme: (theme: "system" | "dark" | "light") => void;
   onToggleMono: () => void;
 }) {
   return (

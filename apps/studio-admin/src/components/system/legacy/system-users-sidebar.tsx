@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   History,
   ChevronDown,
-  PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
 import {

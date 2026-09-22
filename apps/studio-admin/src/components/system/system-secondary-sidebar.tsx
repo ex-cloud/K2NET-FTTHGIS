@@ -13,7 +13,6 @@ import {
   ScrollText,
   ShieldAlert,
   ChevronDown,
-  PanelLeftClose,
   PanelLeftOpen,
   BarChart3,
   MessageSquare,

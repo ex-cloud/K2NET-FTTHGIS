@@ -10,25 +10,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@k2net/ui";
-
-export type SidebarMode = "expanded" | "collapsed" | "hover";
-
-interface TenantSidebarControlProps {
-  sidebarMode: SidebarMode;
-  setSidebarMode: (mode: SidebarMode) => void;
-  isExpanded?: boolean;
-}
+import { useSidebarMode, type SidebarMode } from "./sidebar-mode-context";
 
 export function TenantSidebarControl({
-  sidebarMode,
-  setSidebarMode,
   isExpanded: _isExpanded = false,
-}: TenantSidebarControlProps) {
+}: {
+  isExpanded?: boolean;
+}) {
+  const { sidebarMode, setSidebarMode } = useSidebarMode();
+
   const handleModeChange = (newMode: SidebarMode) => {
     setSidebarMode(newMode);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("tenant-sidebar-mode", newMode);
-    }
   };
 
   return (
@@ -112,3 +104,4 @@ export function TenantSidebarControl({
     </div>
   );
 }
+export { type SidebarMode };

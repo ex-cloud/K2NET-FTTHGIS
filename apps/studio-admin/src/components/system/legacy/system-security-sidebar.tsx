@@ -10,7 +10,6 @@ import {
   History,
   FileText,
   ChevronDown,
-  PanelLeftClose,
   PanelLeftOpen,
   ScrollText,
   ShieldAlert,
