@@ -18,7 +18,7 @@ export function SystemHeader() {
   const logoUrl = settings.find((s) => s.key === "logo_url")?.value || "";
 
   return (
-    <header className="flex h-12 shrink-0 w-full items-center justify-between border-groove-shell-b bg-background px-3 sm:px-4 z-40 py-2">
+    <header className="flex h-12 shrink-0 w-full items-center justify-between border-b border-border/40 bg-background px-3 sm:px-4 z-40 py-2">
       {/* LEFT SECTION: Logo + Dynamic App Name + Breadcrumb */}
       <div className="flex items-center gap-1 sm:gap-2 min-w-0">
         <Link href="/overview" className="flex items-center cursor-pointer shrink-0" title={`${appName} Overview`}>

@@ -35,11 +35,14 @@ export type NavItem = {
   requiredPermission?: string | string[];
 };
 
-export const ADMIN_NAV_ITEMS: NavItem[] = [
+export const ADMIN_CORE_NAV_ITEMS: NavItem[] = [
   { title: "Overview", icon: LayoutDashboard, href: "/overview" },
   { title: "Organizations", icon: Building2, href: "/organizations", requiredPermission: ["system.organizations.view", "orgs.view"] },
   { title: "Global Users", icon: Users, href: "/users", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
   { title: "Projects & Issues", icon: ClipboardList, href: "/tasks", requiredPermission: ["system.task.manage", "system.observability.view"] },
+];
+
+export const ADMIN_PLATFORM_NAV_ITEMS: NavItem[] = [
   { title: "Observability", icon: ScanLine, href: "/observability", requiredPermission: "system.observability.view" },
   { title: "Global Logs", icon: Terminal, href: "/logs", requiredPermission: "system.audit.view" },
   { title: "Security", icon: Lock, href: "/security/roles", requiredPermission: "system.security.manage" },
@@ -48,13 +51,15 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "3D Assets", icon: Box, href: "/assets-3d", requiredPermission: "system.settings.manage" },
 ];
 
+export const ADMIN_NAV_ITEMS: NavItem[] = [
+  ...ADMIN_CORE_NAV_ITEMS,
+  ...ADMIN_PLATFORM_NAV_ITEMS,
+];
+
 export const ADMIN_BOTTOM_NAV_ITEMS: NavItem[] = [
   { title: "Recycle Bin", icon: Trash2, href: "/system/trash", requiredPermission: "system.trash.manage" },
   { title: "Settings", icon: Settings, href: "/settings", requiredPermission: "system.settings.manage" },
 ];
-
-/** Items that get a divider rendered BELOW them to separate logical groups. */
-const DIVIDER_AFTER = ["/tasks"];
 
 export const checkIsActive = (href: string, pathname: string) => {
   if (href === "/overview") return pathname === "/overview";
@@ -74,8 +79,13 @@ export function AdminSidebar() {
   const unreadB2BCount = useTaskStore((state) => state.unreadB2BCount);
   const { canAccess } = usePermissions();
 
-  const visibleNavItems = React.useMemo(
-    () => ADMIN_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
+  const visibleCoreItems = React.useMemo(
+    () => ADMIN_CORE_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
+    [canAccess]
+  );
+
+  const visiblePlatformItems = React.useMemo(
+    () => ADMIN_PLATFORM_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
     [canAccess]
   );
 
@@ -136,26 +146,18 @@ export function AdminSidebar() {
 
     if (!isExpanded) {
       return (
-        <React.Fragment key={item.title}>
-          <Tooltip>
-            <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">
-              {item.title}
-            </TooltipContent>
-          </Tooltip>
-          {DIVIDER_AFTER.includes(item.href) && (
-            <div className="my-1.5 mx-1 border-groove-t" />
-          )}
-        </React.Fragment>
+        <Tooltip key={item.title}>
+          <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
+          <TooltipContent side="right" className="text-xs">
+            {item.title}
+          </TooltipContent>
+        </Tooltip>
       );
     }
 
     return (
       <React.Fragment key={item.title}>
         {wrapped}
-        {DIVIDER_AFTER.includes(item.href) && (
-          <div className="my-1.5 mx-1 border-groove-t" />
-        )}
       </React.Fragment>
     );
   };
@@ -177,21 +179,31 @@ export function AdminSidebar() {
           zIndex: 50,
           boxShadow: "none",
         } : undefined}
-        className={`hidden md:flex border-groove-shell-r flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${isFloating ? "" : "z-50"
+        className={`hidden md:flex border-r border-border/40 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${isFloating ? "" : "z-50"
           } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
       >
         <div className="flex flex-col h-full py-4">
           <TooltipProvider delayDuration={0}>
-            {/* Top Primary Navigation Items */}
+            {/* Top Primary Navigation Items — grouped semantically */}
             <nav className="flex flex-col gap-1 px-2">
-              {visibleNavItems.map(renderNavButton)}
+              {/* Group 1: Core Workspace Navigation */}
+              <div className="flex flex-col gap-1">
+                {visibleCoreItems.map(renderNavButton)}
+              </div>
+
+              {/* Group 2: Platform & Telemetry Operations */}
+              {visiblePlatformItems.length > 0 && (
+                <div className="pt-2 mt-1 border-t border-border/30 flex flex-col gap-1">
+                  {visiblePlatformItems.map(renderNavButton)}
+                </div>
+              )}
             </nav>
 
             {/* Dynamic Spacer pushing bottom items to the bottom */}
             <div className="flex-1" />
 
             {/* Bottom Utility Items (Recycle Bin & Settings right above SidebarControl) */}
-            <nav className="flex flex-col gap-1 px-2 border-groove-t pt-2.5 mb-2">
+            <nav className="flex flex-col gap-1 px-2 border-t border-border/30 pt-2.5 mb-2">
               {visibleBottomNavItems.map(renderNavButton)}
             </nav>
           </TooltipProvider>
