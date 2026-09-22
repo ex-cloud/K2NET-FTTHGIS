@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Info
 } from "lucide-react";
-import { Badge, Button } from "@k2net/ui";
+import { Badge, Button, PageHeader, PageContentShell } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 import { extractTenantSlug } from "../../lib/keycloak-config";
 
@@ -108,17 +108,29 @@ export function WorkspaceDomainSettings() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <Globe className="size-5 text-primary" />
-          Pengaturan Domain & Identitas Workspace
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          Kelola nama subdomain teknis dan routing gateway portal ISP mitra Anda.
-        </p>
-      </div>
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* ── 1. Standard Page Header ────────────────────────────────────────── */}
+      <PageHeader
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "Pengaturan Domain & Identitas" },
+        ]}
+        title="Pengaturan Domain & Identitas Workspace"
+        badge={
+          isFreeTier ? (
+            <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-500 font-mono text-[10px]">
+              FREE TIER
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px]">
+              PRO TIER
+            </Badge>
+          )
+        }
+      />
+
+      {/* ── 2. Standard Page Content Shell ─────────────────────────────────── */}
+      <PageContentShell maxWidth="4xl" className="space-y-6 pb-12">
 
       {/* Success Banner (During Redirect) */}
       {migrationSuccess && (
@@ -329,6 +341,7 @@ export function WorkspaceDomainSettings() {
           </div>
         </div>
       )}
+      </PageContentShell>
     </div>
   );
 }

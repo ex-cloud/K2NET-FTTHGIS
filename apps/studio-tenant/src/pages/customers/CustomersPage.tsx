@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Users, Search, Plus } from "lucide-react";
-import { Badge, Button } from "@k2net/ui";
+import { Search, Plus } from "lucide-react";
+import { Badge, Button, PageHeader, PageContentShell } from "@k2net/ui";
 import type { CustomerDto } from "@k2net/api-client";
 
 export function CustomersPage() {
@@ -22,83 +22,88 @@ export function CustomersPage() {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-border bg-card/80 p-6 shadow-xs backdrop-blur-md">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-bold text-foreground">Manajemen Pelanggan & Provisioning</h2>
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* ── 1. Standard Page Header ────────────────────────────────────────── */}
+      <PageHeader
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "Data Pelanggan" },
+        ]}
+        title="Manajemen Pelanggan & Provisioning"
+        badge={
+          <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px]">
+            {customers.length} TERDAFTAR
+          </Badge>
+        }
+        actions={
+          <Button size="sm" className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer rounded-md">
+            <Plus className="h-3.5 w-3.5" />
+            <span>Tambah Pelanggan</span>
+          </Button>
+        }
+      />
+
+      {/* ── 2. Standard Page Content Shell ─────────────────────────────────── */}
+      <PageContentShell maxWidth="7xl" className="space-y-6">
+        {/* Filter & Search Bar */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Cari nama, user PPPoE, atau kode ODP..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-8 w-full rounded-md border border-border bg-card pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+            />
           </div>
-          <p className="text-xs text-muted-foreground">
-            Kelola akun PPPoE/IPoE, penempatan port FAT/ODP, status isolir tagihan, dan telemetri sinyal optik ONU.
-          </p>
         </div>
 
-        <Button size="sm" className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer rounded-md">
-          <Plus className="h-3.5 w-3.5" />
-          <span>Tambah Pelanggan Baru</span>
-        </Button>
-      </div>
-
-      {/* Filter & Search Bar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Cari nama, user PPPoE, atau kode ODP..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-8 w-full rounded-md border border-border bg-card pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-          />
-        </div>
-      </div>
-
-      {/* Customer Table */}
-      <div className="rounded-xl border border-border bg-card/70 overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono">
-            <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
-              <tr>
-                <th className="px-5 py-3">Nama Pelanggan</th>
-                <th className="px-5 py-3">PPPoE User</th>
-                <th className="px-5 py-3">Lokasi ODP & Port</th>
-                <th className="px-5 py-3">Paket Layanan</th>
-                <th className="px-5 py-3">Redaman ONU</th>
-                <th className="px-5 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {filtered.map((cust) => (
-                <tr key={cust.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-5 py-3 font-semibold text-foreground">{cust.name}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{cust.pppoeUser}</td>
-                  <td className="px-5 py-3 text-foreground font-bold">{cust.odpCode} · Port #{cust.portNumber}</td>
-                  <td className="px-5 py-3 text-foreground">{cust.packageSpeed}</td>
-                  <td className="px-5 py-3">
-                    <span className={cust.rxPower.includes("-27") ? "text-amber-500 font-medium" : "text-primary font-medium"}>
-                      {cust.rxPower}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <Badge
-                      variant="outline"
-                      className={
-                        cust.status === "ACTIVE"
-                          ? "border-primary/40 bg-primary/10 text-primary text-[10px]"
-                          : "border-destructive/40 bg-destructive/10 text-destructive text-[10px]"
-                      }
-                    >
-                      {cust.status}
-                    </Badge>
-                  </td>
+        {/* Customer Table */}
+        <div className="rounded-xl border border-border bg-card/70 overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="border-b border-border/80 bg-muted/40 text-[11px] uppercase font-bold text-foreground/80">
+                <tr>
+                  <th className="px-5 py-3">Nama Pelanggan</th>
+                  <th className="px-5 py-3">PPPoE User</th>
+                  <th className="px-5 py-3">Lokasi ODP & Port</th>
+                  <th className="px-5 py-3">Paket Layanan</th>
+                  <th className="px-5 py-3">Redaman ONU</th>
+                  <th className="px-5 py-3">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filtered.map((cust) => (
+                  <tr key={cust.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-foreground">{cust.name}</td>
+                    <td className="px-5 py-3 text-muted-foreground">{cust.pppoeUser}</td>
+                    <td className="px-5 py-3 text-foreground font-bold">{cust.odpCode} · Port #{cust.portNumber}</td>
+                    <td className="px-5 py-3 text-foreground">{cust.packageSpeed}</td>
+                    <td className="px-5 py-3">
+                      <span className={cust.rxPower.includes("-27") ? "text-amber-500 font-medium" : "text-primary font-medium"}>
+                        {cust.rxPower}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <Badge
+                        variant="outline"
+                        className={
+                          cust.status === "ACTIVE"
+                            ? "border-primary/40 bg-primary/10 text-primary text-[10px]"
+                            : "border-destructive/40 bg-destructive/10 text-destructive text-[10px]"
+                        }
+                      >
+                        {cust.status}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      </PageContentShell>
     </div>
   );
 }

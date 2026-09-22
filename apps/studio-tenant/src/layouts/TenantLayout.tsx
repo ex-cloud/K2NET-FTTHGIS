@@ -66,23 +66,23 @@ export function TenantLayout() {
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col justify-between border-r border-border bg-card/95 backdrop-blur-xl transition-all duration-300 md:static ${
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col justify-between border-r border-border/40 bg-sidebar transition-all duration-300 md:static ${
           isSidebarOpen ? "w-64" : "w-18"
         }`}
       >
         <div className="flex flex-col">
           {/* Tenant Logo / Header */}
-          <div className="flex h-16 items-center justify-between border-b border-border/80 px-4">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs font-bold text-xs">
+          <div className="flex h-12 items-center justify-between border-b border-border/40 px-3 bg-sidebar">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs font-bold text-xs">
                 K2
               </div>
               {isSidebarOpen && (
                 <div className="flex flex-col truncate">
-                  <span className="font-extrabold text-xs tracking-tight text-foreground">
+                  <span className="font-extrabold text-xs tracking-tight text-sidebar-foreground">
                     FTTH GIS PORTAL
                   </span>
-                  <span className="font-mono text-[10px] text-muted-foreground truncate">
+                  <span className="font-mono text-[9px] text-muted-foreground truncate">
                     {user?.tenantSlug?.toUpperCase() || "ISP TENANT"}
                   </span>
                 </div>
@@ -90,7 +90,7 @@ export function TenantLayout() {
             </div>
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="hidden rounded-lg p-1.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground md:flex"
+              className="hidden rounded-lg p-1.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground md:flex cursor-pointer"
             >
               <Menu className="h-4 w-4" />
             </button>
@@ -105,10 +105,10 @@ export function TenantLayout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
+                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
                     isActive
-                      ? "bg-muted text-foreground shadow-xs"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      ? "bg-sidebar-accent text-sidebar-foreground font-semibold shadow-2xs"
+                      : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   } ${!isSidebarOpen ? "justify-center px-0" : ""}`}
                   title={!isSidebarOpen ? item.label : undefined}
                 >
@@ -121,10 +121,10 @@ export function TenantLayout() {
         </div>
 
         {/* User Profile & Footer Actions */}
-        <div className="border-t border-border/80 p-3 space-y-2">
+        <div className="border-t border-border/40 p-2.5 space-y-2">
           {isSidebarOpen && (
             <div className="flex items-center gap-2.5 rounded-lg bg-muted/40 p-2 text-xs">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-xs">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-xs">
                 {user?.username?.charAt(0).toUpperCase() || "U"}
               </div>
               <div className="flex flex-col truncate">
@@ -242,29 +242,29 @@ export function TenantLayout() {
         )}
 
         {/* Top Bar */}
-        <header className="flex h-14 items-center justify-between border-b border-border/70 bg-card/60 px-6 backdrop-blur-md">
+        <header className="flex h-12 items-center justify-between border-b border-border/40 bg-background/95 px-4 md:px-6 backdrop-blur-sm shrink-0 select-none">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted/60 md:hidden"
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted/60 md:hidden cursor-pointer"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-4 w-4" />
             </button>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Tenant ISP Platform</span>
-              <span>/</span>
-              <span className="font-semibold text-foreground capitalize">
-                {currentPath.replace("/", "") || "Dashboard"}
+              <span className="font-medium text-foreground">Tenant ISP Portal</span>
+              <span>›</span>
+              <span className="font-semibold text-primary capitalize">
+                {currentPath === "/" ? "Dashboard" : currentPath.replace("/", "")}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
               variant="outline"
               onClick={() => navigate({ to: "/map" })}
-              className="h-8 px-3 text-xs border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 gap-1.5 font-semibold cursor-pointer"
+              className="h-7 px-2.5 text-xs border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 gap-1.5 font-medium cursor-pointer shadow-2xs"
             >
               <Layers className="h-3.5 w-3.5" />
               <span>Buka Peta GIS</span>
@@ -273,16 +273,16 @@ export function TenantLayout() {
             <Button
               size="sm"
               variant="ghost"
-              className="relative h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              className="relative h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
+              <Bell className="h-3.5 w-3.5" />
+              <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             </Button>
           </div>
         </header>
 
         {/* Dynamic Nested Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 min-h-0 overflow-y-auto flex flex-col bg-background">
           <Outlet />
         </main>
       </div>
