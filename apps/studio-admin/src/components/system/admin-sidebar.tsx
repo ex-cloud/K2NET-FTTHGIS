@@ -177,7 +177,7 @@ export function AdminSidebar() {
           zIndex: 50,
           boxShadow: "none",
         } : undefined}
-        className={`hidden md:flex border-groove-r flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${isFloating ? "" : "z-50"
+        className={`hidden md:flex border-groove-shell-r flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${isFloating ? "" : "z-50"
           } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
       >
         <div className="flex flex-col h-full py-4">
