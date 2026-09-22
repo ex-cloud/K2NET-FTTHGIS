@@ -34,7 +34,7 @@ export const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
       <div
         ref={ref}
         className={cn(
-          "px-6 py-3.5 border-b border-border/40 shrink-0 flex items-center justify-between bg-background/95 backdrop-blur-sm select-none",
+          "h-12 py-2 px-6 border-b border-border/40 shrink-0 flex items-center justify-between bg-background/95 backdrop-blur-sm select-none",
           className
         )}
         {...props}
