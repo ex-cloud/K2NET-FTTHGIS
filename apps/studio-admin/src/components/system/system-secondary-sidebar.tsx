@@ -278,7 +278,7 @@ export function SystemSecondarySidebar() {
           <LogsFilterSidebar onCollapse={handleCollapse} />
         ) : (
           <>
-            <div className="py-5 border-b border-border/40 shrink-0 flex items-center justify-between px-5 min-w-[240px]">
+            <div className="py-2 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
               <h3 className="text-sm font-semibold text-foreground tracking-tight">
                 {currentConfig?.title}
               </h3>
@@ -326,7 +326,7 @@ export function SystemSecondarySidebar() {
       {isCollapsed && (
         <button
           onClick={() => setIsCollapsed(false)}
-          className="absolute top-4 left-3 z-40 p-1.5 rounded-md bg-muted border border-border shadow-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-300"
+          className="absolute top-2.5 left-3 z-40 p-1.5 rounded-md bg-muted border border-border shadow-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-300"
         >
           <PanelLeftOpen className="w-4 h-4" />
         </button>

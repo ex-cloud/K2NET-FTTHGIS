@@ -324,7 +324,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
   return (
     <div className="flex flex-col h-full w-[240px] font-sans text-xs bg-sidebar select-none border-r border-border/60 shrink-0">
       {onCollapse !== undefined && (
-        <div className="py-3.5 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
+        <div className="py-2 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
           <h3 className="text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest">
             Logs Explorer
           </h3>

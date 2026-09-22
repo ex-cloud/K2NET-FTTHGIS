@@ -69,7 +69,7 @@ export function SystemSecuritySidebar() {
         className={`${isCollapsed ? "w-0 border-r-0" : "w-[240px] border-r"} transition-all duration-300 ease-in-out shrink-0 border-border bg-sidebar h-full hidden md:flex flex-col overflow-hidden`}
       >
         {/* Title with Toggle */}
-        <div className="py-5 border-b border-border/40 shrink-0 flex items-center justify-between px-5 min-w-[240px]">
+        <div className="py-2 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
           <h3 className="text-sm font-semibold text-foreground tracking-tight">
             Security Settings
           </h3>
