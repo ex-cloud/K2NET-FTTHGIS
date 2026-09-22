@@ -25,7 +25,7 @@ export function OverviewMetricCardsSkeleton() {
           </div>
 
           {/* Footer link */}
-          <div className="pt-2 border-t border-border/50 flex items-center justify-between">
+          <div className="pt-2 border-groove-t flex items-center justify-between">
             <div className="h-2.5 w-16 rounded bg-muted/40 animate-pulse" />
             <div className="h-2.5 w-12 rounded bg-muted/50 animate-pulse" />
           </div>

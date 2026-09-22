@@ -55,7 +55,7 @@ export function OverviewMetricCard({
         </div>
 
         {/* Footer Action Bar */}
-        <div className="pt-2 border-t border-border/30 flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
+        <div className="pt-2 border-groove-t flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
           <span className="truncate mr-1 hidden @[220px]/card:inline min-w-0 text-muted-foreground/70">
             {footer}
           </span>

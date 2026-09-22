@@ -2,7 +2,7 @@ export function OverviewRecentHubSkeleton() {
   return (
     <div className="space-y-4">
       {/* Header + Tabs row skeleton */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-groove-b pb-3">
         <div className="flex items-center gap-2.5">
           <div className="size-8 rounded-lg bg-muted/60 animate-pulse" />
           <div className="space-y-1">

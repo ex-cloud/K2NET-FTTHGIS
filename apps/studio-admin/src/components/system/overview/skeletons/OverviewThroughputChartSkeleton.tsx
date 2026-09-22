@@ -9,7 +9,7 @@ export function OverviewThroughputChartSkeleton({ className }: OverviewThroughpu
   return (
     <Card className={cn("border-border bg-card p-5 md:p-6 flex flex-col justify-between h-[360px]", className)}>
       {/* Header toolbar skeleton */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-groove-b pb-4">
         <div className="space-y-1.5">
           <div className="h-4 w-48 rounded bg-muted/60 animate-pulse" />
           <div className="h-3 w-64 rounded bg-muted/40 animate-pulse" />
@@ -34,7 +34,7 @@ export function OverviewThroughputChartSkeleton({ className }: OverviewThroughpu
       </div>
 
       {/* Footer KPI metrics skeleton */}
-      <div className="pt-4 border-t border-border/50 flex flex-wrap items-center justify-between gap-3">
+      <div className="pt-4 border-groove-t flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-6">
           <div className="space-y-1">
             <div className="h-2.5 w-16 rounded bg-muted/40 animate-pulse" />

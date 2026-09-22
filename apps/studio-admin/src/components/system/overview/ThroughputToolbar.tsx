@@ -25,7 +25,7 @@ export function ThroughputToolbar({
   setChartMode,
 }: ThroughputToolbarProps) {
   return (
-    <div className="flex flex-col justify-between gap-4 border-b border-border pb-4 lg:flex-row lg:items-center">
+    <div className="flex flex-col justify-between gap-4 border-groove-b pb-4 lg:flex-row lg:items-center">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <Activity className="h-4.5 w-4.5 text-primary" />

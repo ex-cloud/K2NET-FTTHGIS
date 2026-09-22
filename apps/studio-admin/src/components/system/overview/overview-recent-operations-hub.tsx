@@ -135,7 +135,7 @@ export function OverviewRecentOperationsHub() {
   return (
     <section className="space-y-3.5">
       {/* Header with Title and Global Navigation Link */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-2.5">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-groove-b pb-2.5">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary shrink-0">
             <Activity className="size-4" />

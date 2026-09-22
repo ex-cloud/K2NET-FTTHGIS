@@ -147,7 +147,7 @@ export function OverviewTrafficDistributionCard({
       )}
     >
       {/* Top Header Row */}
-      <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3.5">
+      <div className="flex items-center justify-between gap-2 border-groove-b pb-3.5">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary">
             <Activity className="size-3.5" />
@@ -228,7 +228,7 @@ export function OverviewTrafficDistributionCard({
       </div>
 
       {/* Legend & Breakdown List */}
-      <div className="space-y-1.5 pt-2 border-t border-border/40">
+      <div className="space-y-1.5 pt-2 border-groove-t">
         {segments.map((seg) => {
           const isHovered = hoveredSegment === seg.id;
           const isOtherHovered = hoveredSegment && hoveredSegment !== seg.id;
@@ -272,7 +272,7 @@ export function OverviewTrafficDistributionCard({
       </div>
 
       {/* Footer Navigation Link */}
-      <div className="pt-2 border-t border-border/40 mt-1 flex items-center justify-between text-[11px]">
+      <div className="pt-2 border-groove-t mt-1 flex items-center justify-between text-[11px]">
         <span className="text-muted-foreground/80">Microservices Telemetry</span>
         <Button
           variant="link"

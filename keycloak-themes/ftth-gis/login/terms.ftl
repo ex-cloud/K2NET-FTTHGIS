@@ -18,7 +18,7 @@
     <div class="ftth-login-container" style="display:flex;min-height:100vh;width:100%;font-family:'Inter',sans-serif;background:#09090b;color:#f4f4f5;overflow-x:hidden;">
 
       <!-- LEFT COLUMN -->
-      <div id="ftth-left" style="min-height:100vh;overflow-y:auto;background:#09090b;display:flex;flex-direction:column;justify-content:space-between;position:relative;border-right:1px solid rgba(39,39,42,0.8);z-index:10;">
+      <div id="ftth-left" style="min-height:100vh;overflow-y:auto;background:#09090b;display:flex;flex-direction:column;justify-content:space-between;position:relative;border-right:1px solid rgba(0,0,0,0.95);box-shadow:1px 0 0 0 rgba(255,255,255,0.065);z-index:10;">
 
         <!-- Header -->
         <div id="ftth-header" style="display:flex;align-items:center;justify-content:space-between;width:100%;z-index:20;flex-shrink:0;">
@@ -121,7 +121,7 @@
           </div>
 
           <!-- Footer notice -->
-          <div id="ftth-footer" style="font-size:11px;color:#71717a;border-top:1px solid rgba(63,63,70,0.6);padding-top:12px;margin-top:14px;">
+          <div id="ftth-footer" style="font-size:11px;color:#71717a;border-top:1px solid rgba(0,0,0,0.95);box-shadow:inset 0 1px 0 0 rgba(255,255,255,0.065);padding-top:12px;margin-top:14px;">
             <span>&copy; 2026 K2NET Enterprise SaaS Platform. Terms & Privacy Governance.</span>
           </div>
 

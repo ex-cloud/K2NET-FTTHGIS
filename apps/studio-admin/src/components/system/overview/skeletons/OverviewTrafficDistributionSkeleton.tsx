@@ -9,7 +9,7 @@ export function OverviewTrafficDistributionSkeleton({ className }: OverviewTraff
   return (
     <Card className={cn("border-border bg-card p-5 md:p-6 flex flex-col justify-between h-[360px]", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/50 pb-3">
+      <div className="flex items-center justify-between border-groove-b pb-3">
         <div className="flex items-center gap-2">
           <div className="size-6 rounded-md bg-muted/50 animate-pulse" />
           <div className="space-y-1">
@@ -31,7 +31,7 @@ export function OverviewTrafficDistributionSkeleton({ className }: OverviewTraff
       </div>
 
       {/* Breakdown list skeleton */}
-      <div className="space-y-2 border-t border-border/50 pt-3">
+      <div className="space-y-2 border-groove-t pt-3">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="flex items-center justify-between">
             <div className="flex items-center gap-2">
