@@ -144,7 +144,7 @@ export function AdminSidebar() {
             </TooltipContent>
           </Tooltip>
           {DIVIDER_AFTER.includes(item.href) && (
-            <div className="my-1 mx-1 border-t border-border/30" />
+            <div className="my-1.5 mx-1 border-groove-t" />
           )}
         </React.Fragment>
       );
@@ -154,7 +154,7 @@ export function AdminSidebar() {
       <React.Fragment key={item.title}>
         {wrapped}
         {DIVIDER_AFTER.includes(item.href) && (
-          <div className="my-1 mx-1 border-t border-border/30" />
+          <div className="my-1.5 mx-1 border-groove-t" />
         )}
       </React.Fragment>
     );
@@ -177,7 +177,7 @@ export function AdminSidebar() {
           zIndex: 50,
           boxShadow: "none",
         } : undefined}
-        className={`hidden md:flex border-r border-border flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${isFloating ? "" : "z-50"
+        className={`hidden md:flex border-groove-r flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${isFloating ? "" : "z-50"
           } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
       >
         <div className="flex flex-col h-full py-4">
@@ -191,7 +191,7 @@ export function AdminSidebar() {
             <div className="flex-1" />
 
             {/* Bottom Utility Items (Recycle Bin & Settings right above SidebarControl) */}
-            <nav className="flex flex-col gap-1 px-2 border-t border-border/30 pt-2 mb-2">
+            <nav className="flex flex-col gap-1 px-2 border-groove-t pt-2.5 mb-2">
               {visibleBottomNavItems.map(renderNavButton)}
             </nav>
           </TooltipProvider>
