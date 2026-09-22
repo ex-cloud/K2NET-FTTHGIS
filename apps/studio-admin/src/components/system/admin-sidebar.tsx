@@ -193,7 +193,7 @@ export function AdminSidebar() {
 
               {/* Group 2: Platform & Telemetry Operations */}
               {visiblePlatformItems.length > 0 && (
-                <div className="pt-2 mt-1 border-t border-border/30 flex flex-col gap-1">
+                <div className="pt-2 mt-1.5 border-groove-t flex flex-col gap-1">
                   {visiblePlatformItems.map(renderNavButton)}
                 </div>
               )}
@@ -203,7 +203,7 @@ export function AdminSidebar() {
             <div className="flex-1" />
 
             {/* Bottom Utility Items (Recycle Bin & Settings right above SidebarControl) */}
-            <nav className="flex flex-col gap-1 px-2 border-t border-border/30 pt-2.5 mb-2">
+            <nav className="flex flex-col gap-1 px-2 border-groove-t pt-2.5 mb-2">
               {visibleBottomNavItems.map(renderNavButton)}
             </nav>
           </TooltipProvider>
