@@ -126,31 +126,62 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SystemNavSection[] = [
 
 ---
 
-### 🔹 Langkah 4: Registrasi Halaman & Granular UI Guard
-Bungkus halaman dan tombol aksi mutasi data sensitif dengan `PermissionGuard`:
+### 🔹 Langkah 4: Registrasi Halaman, Standar Layout Shell & Granular UI Guard
+Bungkus halaman dengan komponen Shell Layout terstandarisasi (`PageHeader`, `PageContentShell`) dan tombol aksi mutasi data sensitif dengan `PermissionGuard`:
 
 ```tsx
-import { PageLayout } from "@k2net/ui";
+import { 
+  PageHeader, 
+  PageHeaderTabs, 
+  PageContentShell, 
+  MetricCard, 
+  Button 
+} from "@k2net/ui";
 import { PermissionGuard, usePermissions } from "@/hooks/use-permissions";
-import { Button } from "@k2net/ui";
 
 export default function DevicePage() {
   const { canAccess } = usePermissions();
+  const [activeTab, setActiveTab] = React.useState("devices");
 
   return (
-    <PageLayout variant="dashboard" title="Manajemen Perangkat" description="Inventaris aset perangkat FTTH">
-      <PermissionGuard permission="network.view" fallback={<AccessDeniedCard />}>
-        <div className="flex justify-between mb-4">
-          <h2>Daftar Perangkat</h2>
-          <PermissionGuard permission="network.manage">
-            <Button onClick={handleCreate} className="bg-primary text-primary-foreground">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* 1. Standard Page Header dengan Breadcrumbs & Quick Action */}
+      <PageHeader
+        title="Manajemen Perangkat"
+        breadcrumbs={[
+          { label: "Operations", href: "/operations" },
+          { label: "Perangkat & Inventaris" }
+        ]}
+        actions={
+          <PermissionGuard permission="system.inventory.manage">
+            <Button size="sm" onClick={handleCreate} className="bg-primary text-primary-foreground">
               + Tambah Perangkat
             </Button>
           </PermissionGuard>
-        </div>
-        <DeviceTable />
-      </PermissionGuard>
-    </PageLayout>
+        }
+      />
+
+      {/* 2. Linear Tabs Bar */}
+      <PageHeaderTabs
+        tabs={[
+          { id: "devices", label: "Daftar Perangkat", count: 48 },
+          { id: "topology", label: "Topologi Jaringan" },
+          { id: "settings", label: "Konfigurasi SNMP" },
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+
+      {/* 3. Standard Content Shell */}
+      <PageContentShell maxWidth="7xl">
+        <PermissionGuard permission="system.inventory.view" fallback={<AccessDeniedCard />}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <MetricCard label="Total Perangkat Aktif" value="48 Unit" variant="groove" />
+          </div>
+          <DeviceTable />
+        </PermissionGuard>
+      </PageContentShell>
+    </div>
   );
 }
 ```

@@ -146,6 +146,17 @@ Badge Status:
 * **Modal**: `bg-card/95 backdrop-blur-2xl border border-border shadow-2xl rounded-xl p-6`
 * **Modal Footer**: `flex justify-end gap-2 pt-4 border-t border-border` — Cancel outline kiri, Save primary kanan.
 
+### E. Standar Shell Layout & Ketinggian Bar (Anti-Layout Shift)
+
+* **Header Sub-Sidebar**: Wajib tinggi compact terstandarisasi `h-12 py-2 px-4 border-b border-border/40` via `<SecondarySidebarHeader />` dari `@k2net/ui`. Dilarang menggunakan `py-5`, `py-6`, atau `py-8`.
+* **Page Header**: Wajib `px-6 py-3.5 border-b border-border/40` via `<PageHeader />` dari `@k2net/ui` dengan navigasi breadcrumb dan tombol aksi cepat.
+* **Linear Tabs Bar**: Wajib `px-6 border-b border-border/40 bg-background/50` via `<PageHeaderTabs />`.
+* **Metric Cards**: Gunakan `<MetricCard variant="groove" />` untuk visualisasi KPI dengan aksen halus `.border-groove-t` dan `.border-groove-b`.
+* **Batas Luar Shell vs Kartu Dalam**:
+  * Batas luar shell (Header utama, batas kanan Sidebar) menggunakan flat border halus `border-border/40`.
+  * Pembatas dalam sidebar menu menggunakan hairline `border-groove-t`.
+  * Efek groove penuh digunakan di dalam kartu dashboard untuk memberikan pantulan bevel premium.
+
 ---
 
 ## ⏳ 5. Skeleton Loading State — Route Coverage Wajib

@@ -14,6 +14,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
+  SecondarySidebarHeader,
 } from "@k2net/ui";
 
 type MenuSection = {
@@ -54,17 +55,10 @@ export function SystemUsersSidebar() {
         className={`${isCollapsed ? "w-0 border-r-0" : "w-[240px] border-r"} transition-all duration-300 ease-in-out shrink-0 border-border bg-sidebar h-full hidden md:flex flex-col overflow-hidden`}
       >
         {/* Title with Toggle */}
-        <div className="py-2 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
-          <h3 className="text-sm font-semibold text-foreground tracking-tight">
-            User Registry
-          </h3>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          >
-            <PanelLeftClose className="w-4 h-4" />
-          </button>
-        </div>
+        <SecondarySidebarHeader
+          title="User Registry"
+          onCollapse={() => setIsCollapsed(!isCollapsed)}
+        />
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6 min-w-[240px]">
           {sections.map((section, sIdx) => (

@@ -4,6 +4,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
+  SecondarySidebarHeader,
 } from "@k2net/ui";
 import {
   Search,
@@ -324,22 +325,23 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
   return (
     <div className="flex flex-col h-full w-[240px] font-sans text-xs bg-sidebar select-none border-r border-border/60 shrink-0">
       {onCollapse !== undefined && (
-        <div className="py-2 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
-          <h3 className="text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest">
-            Logs Explorer
-          </h3>
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={resetAllFilters}
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
-              title="Reset all filters"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
-            </button>
-          )}
-        </div>
+        <SecondarySidebarHeader
+          title="Logs Explorer"
+          onCollapse={onCollapse}
+          actions={
+            hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={resetAllFilters}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 cursor-pointer"
+                title="Reset all filters"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            ) : null
+          }
+        />
       )}
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-thin p-3 space-y-4">

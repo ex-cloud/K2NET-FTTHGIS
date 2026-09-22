@@ -354,5 +354,12 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Single Source of Truth Database**: Dilarang mengandalkan ingatan atau katalog dokumen manual yang rawan usang. Data role & permission wajib diverifikasi langsung via live DB query (`scripts/audit-security-matrix.sh` / `pnpm audit:security`).
 - **Pola Mutasi Terikat Project (Spatial ABAC)**: Dilarang menggunakan `hasAuthority('network.manage')` polos untuk endpoint yang mengubah aset fisik. Wajib menggunakan pola `@PreAuthorize("@spatialSecurityEvaluator.hasProjectPermission(#dto.projectId, 'network.manage')")` atau `@PreAuthorize("@spatialSecurityEvaluator.canAccessNode(#id, 'network.manage')")`.
 
-
-
+### 🏛️ Standar Baku Shell Layout & Komponen Bersama (September 2026)
+- **Komponen Shared (`@k2net/ui`)**: Seluruh tata letak dashboard wajib menggunakan komponen shell terstandarisasi dari `@k2net/ui`:
+  - `<SecondarySidebarHeader />`: Header sub-sidebar seragam (`h-12 py-2 px-4 border-b border-border/40 min-w-[240px]`). Dilarang menggunakan padding manual seperti `py-5` atau `py-6`.
+  - `<PageHeader />`: Header judul halaman terintegrasi dengan breadcrumbs hierarkis dan action buttons.
+  - `<PageHeaderTabs />`: Bar tab navigasi linear di bawah `PageHeader`.
+  - `<PageContentShell />`: Kontainer konten dengan padding responsif (`p-6 md:p-8`).
+  - `<MetricCard />`: Kartu KPI metrik terpadu dengan opsi varian `groove` (`.border-groove-t` / `.border-groove-b`) dan shimmer skeleton bawaan.
+- **Dokumentasi Lengkap**: Tersimpan di [docs/06_Archive_Dev_History/Server/UI/theme/Shared-Layout-Component-System.md](file:///opt/project5/docs/06_Archive_Dev_History/Server/UI/theme/Shared-Layout-Component-System.md).
+- **Rule 12 Audit CI Gate**: Script `pnpm audit:design-system` (atau `bash packages/ui/scripts/audit-design-system.sh all`) otomatis memverifikasi 12 aturan kepatuhan desain sistem termasuk konsistensi padding header sub-sidebar.

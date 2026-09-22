@@ -38,8 +38,14 @@ Rute pada tenant portal dipetakan di bawah scope organisasi dan proyek:
 ## 📦 2. Kebijakan Monorepo & Shared UI Component (`@k2net/ui`)
 
 * **Larangan Duplikasi Primitif**: Seluruh komponen primitif UI (seperti `Button`, `Input`, `Dialog`, `Skeleton`, `DropdownMenu`) **wajib** diimpor dari paket `@k2net/ui`. Dilarang menyalin komponen UI Shadcn baru secara lokal ke dalam direktori `components/ui/` di masing-masing aplikasi.
-* **Siklus Modifikasi Komponen**: Jika komponen primitif perlu disesuaikan (misalnya menambahkan variant baru pada `Button`), modifikasi harus dilakukan langsung di `packages/ui/src/components/...` kemudian lakukan kompilasi ulang paket (`pnpm build` di root package).
-* **Pemetaan Impor**: Selalu gunakan path `@k2net/ui` alih-alih import path lokal relative (`../../ui`) untuk menjaga integritas bundler Next.js.
+* **Standar Shell Layout Terpusat (`@k2net/ui`)**:
+  * **Header Sub-Sidebar**: Wajib menggunakan `<SecondarySidebarHeader title="..." onCollapse={...} />` dari `@k2net/ui` (skala baku `h-12 py-2 px-4 border-b border-border/40 min-w-[240px]`). Dilarang keras hardcode padding manual seperti `py-5`, `py-6`, atau `py-8`.
+  * **Header Halaman (Breadcrumbs + Actions)**: Wajib menggunakan `<PageHeader breadcrumbs={[...]} actions={...} />` dari `@k2net/ui` untuk konsistensi breadcrumbs dan tombol aksi di seluruh portal.
+  * **Tab Halaman Linear**: Gunakan `<PageHeaderTabs tabs={[...]} activeTab={...} onTabChange={...} />`.
+  * **Body Konten Halaman**: Gunakan `<PageContentShell maxWidth="7xl">` untuk padding responsif standar (`p-6 md:p-8`).
+  * **Kartu Metrik / KPI**: Gunakan `<MetricCard variant="groove" label="..." value="..." />` dengan dukungan varian `.border-groove-t` dan `.border-groove-b`.
+* **Siklus Modifikasi Komponen**: Jika komponen primitif/layout perlu disesuaikan, modifikasi harus dilakukan langsung di `packages/ui/src/components/...` kemudian diverifikasi dengan `bash packages/ui/scripts/audit-design-system.sh all`.
+* **Pemetaan Impor**: Selalu gunakan path `@k2net/ui` alih-alih import path lokal relative (`../../ui`) untuk menjaga integritas bundler Vite/CSR.
 
 ---
 

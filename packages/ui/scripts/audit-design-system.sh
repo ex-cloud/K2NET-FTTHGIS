@@ -360,7 +360,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 11: Container Queries Adoption Audit (@container/card)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [11/11] Memeriksa Adopsi Container Queries (@container)...${NC}"
+echo -e "${CYAN}▶ [11/12] Memeriksa Adopsi Container Queries (@container)...${NC}"
 CARD_FILE="/opt/project5/packages/ui/src/components/card.tsx"
 CONTAINER_QUERY_OK=true
 
@@ -378,6 +378,27 @@ fi
 echo ""
 
 # ------------------------------------------------------------------------------
+# ATURAN 12: Sidebar Header & Shell Layout Height Consistency
+# ------------------------------------------------------------------------------
+echo -e "${CYAN}▶ [12/12] Memeriksa Konsistensi Ketinggian Header Sidebar (Anti Oversized Padding)...${NC}"
+OVERSIZED_SIDEBAR_REGEX="py-5.*border-b.*min-w-\[240px\]|py-6.*border-b.*min-w-\[240px\]|py-8.*border-b.*min-w-\[240px\]"
+SIDEBAR_VIOLATIONS=$(grep -rnE "$OVERSIZED_SIDEBAR_REGEX" "${VALID_DIRS[@]}" \
+  --include="*.tsx" --include="*.ts" 2>/dev/null \
+  --exclude="audit-design-system.sh" \
+  --exclude="*.test.tsx" --exclude="*.stories.tsx" || true)
+
+if [ -n "$SIDEBAR_VIOLATIONS" ]; then
+  echo -e "  ${RED}❌ Ditemukan header sidebar sekunder dengan padding oversized (wajib py-2 / h-12 via SecondarySidebarHeader):${NC}"
+  echo "$SIDEBAR_VIOLATIONS" | while IFS= read -r line; do
+    echo -e "     ${YELLOW}$line${NC}"
+  done
+  FATAL_ERRORS=$((FATAL_ERRORS + 1))
+else
+  echo -e "  ${GREEN}✓ Header sidebar konsisten (100% menggunakan scale compact py-2 / h-12).${NC}"
+fi
+echo ""
+
+# ------------------------------------------------------------------------------
 # RINGKASAN HASIL AUDIT
 # ------------------------------------------------------------------------------
 echo -e "${BLUE}======================================================================${NC}"
@@ -391,7 +412,7 @@ if [ "$FATAL_ERRORS" -eq 0 ]; then
   if [ "$ADVISORY_WARNS" -gt 0 ]; then
     echo -e "${YELLOW}     (Catatan: Ada $ADVISORY_WARNS advisory warnings untuk optimasi visual)     ${NC}"
   fi
-  echo -e "${GREEN}     Codebase 100% selaras dengan 11 Aturan Supabase Design System.   ${NC}"
+  echo -e "${GREEN}     Codebase 100% selaras dengan 12 Aturan Supabase Design System.   ${NC}"
   echo -e "${BLUE}======================================================================${NC}\n"
   exit 0
 else

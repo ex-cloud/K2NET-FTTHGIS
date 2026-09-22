@@ -57,6 +57,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
+  SecondarySidebarHeader,
 } from "@k2net/ui";
 import { SYSTEM_SIDEBAR_NAVIGATION } from "@/config/system-sidebar-navigation";
 import { LogsFilterSidebar } from "@/components/logs/logs-filter-sidebar";
@@ -278,17 +279,10 @@ export function SystemSecondarySidebar() {
           <LogsFilterSidebar onCollapse={handleCollapse} />
         ) : (
           <>
-            <div className="py-2 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
-              <h3 className="text-sm font-semibold text-foreground tracking-tight">
-                {currentConfig?.title}
-              </h3>
-              <button
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              >
-                <PanelLeftClose className="w-4 h-4" />
-              </button>
-            </div>
+            <SecondarySidebarHeader
+              title={currentConfig?.title || ""}
+              onCollapse={() => setIsCollapsed(!isCollapsed)}
+            />
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6 min-w-[240px]">
               {currentConfig?.sections.map((section, sIdx) => {
