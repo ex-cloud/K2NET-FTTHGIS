@@ -39,6 +39,9 @@
   --font-mono-family: 'JetBrains Mono', monospace;
 }
 
+/* ============================================================
+   🎨 Global Page Consistency — semua halaman pakai bg-background
+   ============================================================ */
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -50,7 +53,9 @@ body {
   background-color: var(--background);
 }
 
-/* Custom Scrollbar */
+/* ============================================================
+   🖱️ Custom Scrollbar — consistent across all pages
+   ============================================================ */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -101,4 +106,415 @@ body {
 }
 .custom-scrollbar-thin:hover {
   scrollbar-color: var(--border) transparent;
+}
+
+/* ============================================================
+   ☀️ Light Mode Global CSS Safety Net
+   Memastikan seluruh utility class zinc-* & white/* yang
+   di-hardcode di komponen tetap terbaca di light mode
+   ============================================================ */
+.light {
+  /* === Zinc Color Inversion ===
+     Dark Mode:  zinc-50=sangat terang, zinc-950=sangat gelap
+     Light Mode: kebalikannya — zinc-50=sangat gelap, zinc-950=sangat terang */
+  --color-zinc-50:  #09090b;  /* text-zinc-50  → hitam pekat          */
+  --color-zinc-100: #18181b;  /* text-zinc-100 → hitam sangat gelap   */
+  --color-zinc-200: #27272a;  /* text-zinc-200 → abu sangat gelap     */
+  --color-zinc-300: #3f3f46;  /* text-zinc-300 → abu gelap            */
+  --color-zinc-400: #71717a;  /* text-zinc-400 → abu medium (readable)*/
+  --color-zinc-500: #71717a;  /* text-zinc-500 → abu medium           */
+  --color-zinc-600: #52525b;  /* text-zinc-600 → abu lebih gelap      */
+  --color-zinc-700: #e4e4e7;  /* border-zinc-700 → abu sangat terang  */
+  --color-zinc-800: #f4f4f5;  /* bg-zinc-800 → hampir putih           */
+  --color-zinc-900: #f9f9f9;  /* bg-zinc-900 → putih sangat terang    */
+  --color-zinc-950: #ffffff;  /* bg-zinc-950 → putih murni            */
+
+  --tw-text-opacity: 1;
+}
+
+/* Extra safety: input/card bg yang menggunakan opacity white overlay */
+.light .bg-zinc-950\/80,
+.light .bg-zinc-950\/60,
+.light .bg-zinc-950\/40 {
+  background-color: hsl(0 0% 100%) !important;
+}
+
+.light .bg-zinc-900\/90,
+.light .bg-zinc-900\/80,
+.light .bg-zinc-900\/60,
+.light .bg-zinc-900\/40,
+.light .bg-zinc-900\/30 {
+  background-color: hsl(0 0% 97%) !important;
+}
+
+/* border-white/* menjadi border-border di light mode */
+.light .border-white\/10,
+.light .border-white\/8,
+.light .border-white\/5 {
+  border-color: hsl(0 0% 89%) !important;
+}
+
+/* bg-white/* overlay di light mode */
+.light .bg-white\/3,
+.light .bg-white\/4,
+.light .bg-white\/5,
+.light .bg-white\/6,
+.light .bg-white\/8 {
+  background-color: hsl(0 0% 96%) !important;
+}
+
+/* hover:bg-white/* → hover:bg-accent */
+.light .hover\:bg-white\/5:hover,
+.light .hover\:bg-white\/3:hover {
+  background-color: hsl(0 0% 92%) !important;
+}
+
+/* hover:bg-zinc-900 → hover:bg-accent */
+.light .hover\:bg-zinc-900:hover {
+  background-color: hsl(0 0% 92%) !important;
+}
+
+/* hover:bg-zinc-800 → hover:bg-muted */
+.light .hover\:bg-zinc-800:hover {
+  background-color: hsl(0 0% 94%) !important;
+}
+
+/* hover:text-zinc-100, hover:text-white, hover:text-zinc-200 → dark text */
+.light .hover\:text-zinc-100:hover,
+.light .hover\:text-zinc-200:hover,
+.light .hover\:text-white:hover {
+  color: hsl(0 0% 9%) !important;
+}
+
+/* Button outline styling in light mode */
+.light button[data-variant="outline"],
+.light .border-border[role="button"],
+.light button.border,
+.light a.border {
+  background-color: hsl(0 0% 100%) !important;
+  border-color: hsl(0 0% 80%) !important;
+  color: hsl(0 0% 9%) !important;
+}
+
+.light button[data-variant="outline"]:hover,
+.light button.border:hover,
+.light a.border:hover {
+  background-color: hsl(0 0% 96%) !important;
+  border-color: hsl(0 0% 70%) !important;
+}
+
+/* ============================================================
+   ✨ Glassmorphism Design System (Dark & Light Mode + Hover Glow)
+   ============================================================ */
+.light .bg-card,
+.light .bg-card\/80,
+.light .bg-card\/60 {
+  background-color: hsl(0 0% 100% / 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: hsl(0 0% 89%);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.light .bg-card:hover,
+.light .bg-card\/80:hover,
+.light .bg-card\/60:hover {
+  background-color: hsl(0 0% 100% / 0.98);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+}
+
+/* ============================================================
+   💫 Animated Traveling Border Beam (Hover Animation)
+   ============================================================ */
+@keyframes border-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-border-spin {
+  animation: border-rotate 4s linear infinite;
+}
+
+/* ============================================================
+   🔵 Infrastructure Map — Vercel/Railway Style Flow Animations
+   ============================================================ */
+@keyframes flow-particle {
+  0%   { stroke-dashoffset: 174; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { stroke-dashoffset: 0;   opacity: 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { stroke-opacity: 0.10; }
+  50%       { stroke-opacity: 0.35; }
+}
+
+@keyframes orbit-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-flow-particle {
+  animation: flow-particle 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.animate-flow-particle-slow {
+  animation: flow-particle 5.0s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.animate-flow-particle-fast {
+  animation: flow-particle 2.0s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.animate-glow-pulse {
+  animation: glow-pulse 3.5s ease-in-out infinite;
+}
+.animate-glow-pulse-warn {
+  animation: glow-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.orbit-delay-0  { animation-delay: 0ms; }
+.orbit-delay-1  { animation-delay: 40ms; }
+.orbit-delay-2  { animation-delay: 80ms; }
+.orbit-delay-3  { animation-delay: 120ms; }
+.orbit-delay-4  { animation-delay: 160ms; }
+.orbit-delay-5  { animation-delay: 200ms; }
+.orbit-delay-6  { animation-delay: 240ms; }
+.orbit-delay-7  { animation-delay: 280ms; }
+.orbit-delay-8  { animation-delay: 320ms; }
+
+/* ============================================================
+   📝 TipTap Headless Editor Typography & Table Design System
+   ============================================================ */
+.ProseMirror {
+  outline: none;
+  min-height: 280px;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: var(--foreground);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  padding-bottom: 0.35rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.ProseMirror h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 0.75rem;
+  margin-bottom: 0.35rem;
+  color: var(--foreground);
+}
+
+.ProseMirror p {
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+  color: var(--foreground);
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid var(--primary);
+  background-color: color-mix(in srgb, var(--muted) 40%, transparent);
+  padding: 0.5rem 0.85rem;
+  margin: 0.75rem 0;
+  border-radius: 0 0.375rem 0.375rem 0;
+  font-style: italic;
+  color: var(--foreground);
+}
+
+.ProseMirror code {
+  font-family: var(--font-mono-family, 'JetBrains Mono', monospace);
+  font-size: 0.75rem;
+  background-color: color-mix(in srgb, var(--muted) 60%, transparent);
+  color: var(--primary);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.ProseMirror pre {
+  background-color: color-mix(in srgb, var(--muted) 50%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+}
+
+.ProseMirror pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--foreground);
+}
+
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.25rem 0;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 0.75rem 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  min-width: 1em;
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ProseMirror table th {
+  font-weight: 600;
+  text-align: left;
+  background-color: color-mix(in srgb, var(--muted) 70%, transparent);
+  color: var(--foreground);
+}
+
+.ProseMirror table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  pointer-events: none;
+}
+
+.ProseMirror table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--primary);
+  pointer-events: none;
+}
+
+/* ============================================================
+   📐 Debossed / Sunken Groove Seams (Garis Cekung ke Dalam Tipis)
+   Skeuomorphic Modern subtle carved divider lines
+   ============================================================ */
+.border-groove-t {
+  border-top: 1px solid rgba(0, 0, 0, 0.85);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.065);
+}
+
+.border-groove-b {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.85);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.065);
+}
+
+.border-groove-r {
+  border-right: 1px solid rgba(0, 0, 0, 0.85);
+  box-shadow: 1px 0 0 0 rgba(255, 255, 255, 0.065);
+}
+
+.border-groove-l {
+  border-left: 1px solid rgba(0, 0, 0, 0.85);
+  box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.065);
+}
+
+.light .border-groove-t {
+  border-top: 1px solid hsl(0 0% 86%);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+}
+
+.light .border-groove-b {
+  border-bottom: 1px solid hsl(0 0% 86%);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.95);
+}
+
+.light .border-groove-r {
+  border-right: 1px solid hsl(0 0% 86%);
+  box-shadow: 1px 0 0 0 rgba(255, 255, 255, 0.95);
+}
+
+.light .border-groove-l {
+  border-left: 1px solid hsl(0 0% 86%);
+  box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Standalone Horizontal Groove Seam (for 0-height separator lines) */
+.border-groove-seam-h {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.85);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.055);
+  height: 0;
+}
+
+.light .border-groove-seam-h {
+  border: none;
+  border-top: 1px solid hsl(0 0% 86%);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.9);
+  height: 0;
 }
