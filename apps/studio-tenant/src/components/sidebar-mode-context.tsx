@@ -55,17 +55,19 @@ export function SidebarModeProvider({
 
   return (
     <SidebarModeContext.Provider value={contextValue}>
-      <div className={isInitialized ? "h-full w-full" : "invisible h-full w-full"}>
-        {children}
-      </div>
+      <div className={isInitialized ? "" : "invisible"}>{children}</div>
     </SidebarModeContext.Provider>
   );
 }
 
+const defaultContext: SidebarModeContextProps = {
+  sidebarMode: "expanded",
+  setSidebarMode: () => {},
+  open: true,
+  setOpen: () => {},
+};
+
 export function useSidebarMode() {
   const context = React.useContext(SidebarModeContext);
-  if (!context) {
-    throw new Error("useSidebarMode must be used within a SidebarModeProvider");
-  }
-  return context;
+  return context || defaultContext;
 }

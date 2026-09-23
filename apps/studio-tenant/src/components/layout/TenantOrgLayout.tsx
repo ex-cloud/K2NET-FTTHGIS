@@ -22,8 +22,9 @@ import { TenantUserNav } from "../TenantUserNav";
 import { TenantOrgSidebar } from "./TenantOrgSidebar";
 import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
 import { TenantMobileFloatingDock } from "../system/TenantMobileFloatingDock";
+import { SidebarModeProvider } from "../sidebar-mode-context";
 
-export function TenantOrgLayout() {
+function TenantOrgLayoutContent() {
   const { user } = useAuth();
   const {
     isImpersonating,
@@ -219,5 +220,13 @@ export function TenantOrgLayout() {
         onOpenNotif={() => setNotifOpen(true)}
       />
     </div>
+  );
+}
+
+export function TenantOrgLayout() {
+  return (
+    <SidebarModeProvider>
+      <TenantOrgLayoutContent />
+    </SidebarModeProvider>
   );
 }

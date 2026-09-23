@@ -24,8 +24,9 @@ import { ProjectSwitcher } from "./ProjectSwitcher";
 import { ProjectCreateWizard } from "../project/ProjectCreateWizard";
 import { TenantMobileFloatingDock } from "../system/TenantMobileFloatingDock";
 import { useMapStore } from "../../store/map-store";
+import { SidebarModeProvider } from "../sidebar-mode-context";
 
-export function TenantProjectLayout() {
+function TenantProjectLayoutContent() {
   const params = useParams({ strict: false }) as { projectId?: string };
   const routerState = useRouterState();
   const setActiveProjectId = useMapStore((s) => s.setActiveProjectId);
@@ -241,5 +242,13 @@ export function TenantProjectLayout() {
         onOpenNotif={() => setNotifOpen(true)}
       />
     </div>
+  );
+}
+
+export function TenantProjectLayout() {
+  return (
+    <SidebarModeProvider>
+      <TenantProjectLayoutContent />
+    </SidebarModeProvider>
   );
 }
