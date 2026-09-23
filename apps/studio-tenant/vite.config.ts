@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3002,
     host: "0.0.0.0",
     watch: {
       ignored: [
@@ -34,10 +34,6 @@ export default defineConfig({
       },
       "/api/gateway": {
         target: process.env.VITE_KONG_URL || "http://127.0.0.1:8000",
-        changeOrigin: true,
-      },
-      "/tiles": {
-        target: process.env.VITE_MARTIN_URL || "http://127.0.0.1:3000",
         changeOrigin: true,
       },
     },

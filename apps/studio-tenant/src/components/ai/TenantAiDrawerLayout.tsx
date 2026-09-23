@@ -81,7 +81,7 @@ export function TenantAiDrawerLayout({
         showCloseButton={false}
         style={{ width: "480px", maxWidth: "100vw" }}
         className={cn(
-          "fixed inset-y-0 right-0 z-50 p-0 flex flex-col bg-background/98 backdrop-blur-2xl border-l border-border transition-all duration-200 select-text sm:max-w-none shadow-2xl"
+          "fixed inset-y-0 right-0 z-50 p-0 flex flex-col bg-background/98 backdrop-blur-2xl border-l border-border transition-all duration-200 select-text sm:max-w-none shadow-xl"
         )}
       >
         <div className="flex h-12 items-center justify-between border-b border-border/60 px-4 bg-background/95 backdrop-blur-md shrink-0 select-none">
