@@ -82,7 +82,7 @@ export function TenantCommandPalette({
         placeholder="Cari halaman, aksi teknis, atau utilitas..."
       />
 
-      <div className="max-h-[360px] overflow-y-auto divide-y divide-border/40">
+      <div className="flex-1 overflow-y-auto p-1 divide-y divide-border/40">
         {/* Navigation Group */}
         {filteredPages.length > 0 && (
           <CommandPaletteGroup heading="Halaman & Modul">
@@ -149,6 +149,24 @@ export function TenantCommandPalette({
             Keluar dari Sesi Portal
           </CommandPaletteItem>
         </CommandPaletteGroup>
+
+        {filteredPages.length === 0 && query.trim() !== "" && (
+          <div className="py-12 text-center text-xs text-muted-foreground">
+            Tidak ada hasil untuk &quot;<span className="font-semibold text-foreground">{query}</span>&quot;
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between border-t border-border/80 px-4 py-2 bg-muted/20 text-[10px] text-muted-foreground shrink-0">
+        <div className="flex items-center gap-3">
+          <span>
+            <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">↑↓</kbd> Select
+          </span>
+          <span>
+            <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">↵</kbd> Open
+          </span>
+        </div>
+        <span>K2NET Enterprise Tenant</span>
       </div>
     </CommandPaletteRoot>
   );

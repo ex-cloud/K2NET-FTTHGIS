@@ -1,15 +1,20 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="K2NET FTTH GIS — Portal Tenant ISP & Network Management" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <title>K2NET FTTH GIS — Portal Tenant ISP</title>
+    <!-- DNS prefetch as fallback for older browsers -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <!-- Preconnect for TLS handshake early -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <!-- Non-blocking font load: preload as style, swap to stylesheet on load -->
     <link
       rel="preload"
       as="style"
@@ -29,9 +34,20 @@
           window.__REACT_DEVTOOLS_GLOBAL_HOOK__[key] = typeof value === 'function' ? () => {} : null;
         }
       }
+      (function () {
+        try {
+          const theme = localStorage.getItem("k2net-theme") || localStorage.getItem("theme");
+          const supportDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          if (theme === "dark" || (!theme && supportDarkMode)) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        } catch (e) {}
+      })();
     </script>
   </head>
-  <body class="bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground min-h-screen">
+  <body class="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

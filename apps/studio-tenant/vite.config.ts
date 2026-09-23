@@ -51,19 +51,70 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            if (id.includes("maplibre-gl") || id.includes("react-map-gl") || id.includes("@mapbox")) {
+            // ── Map (WebGL GIS map engine) ───────────────────────────────────
+            if (
+              id.includes("maplibre-gl") ||
+              id.includes("react-map-gl") ||
+              id.includes("@vis.gl") ||
+              id.includes("@mapbox")
+            ) {
               return "maplibre";
             }
-            if (id.includes("@tanstack/react-router")) {
-              return "router";
+            // ── Markdown Renderer (react-markdown, remark, mdast) ────────────
+            if (
+              id.includes("react-markdown") ||
+              id.includes("remark-gfm") ||
+              id.includes("micromark") ||
+              id.includes("mdast-") ||
+              id.includes("unist-")
+            ) {
+              return "markdown";
             }
-            if (id.includes("@tanstack/react-query")) {
-              return "query";
+            // ── Charts (recharts + d3 ecosystem) ─────────────────────────────
+            if (
+              id.includes("recharts") ||
+              id.includes("d3-") ||
+              id.includes("victory-vendor")
+            ) {
+              return "charts";
             }
+            // ── Icons (lucide-react) ──────────────────────────────────────────
             if (id.includes("lucide-react")) {
               return "icons";
             }
-            if (id.includes("react") || id.includes("react-dom") || id.includes("clsx") || id.includes("tailwind-merge")) {
+            // ── Form handling (react-hook-form + resolvers + zod) ────────────
+            if (
+              id.includes("react-hook-form") ||
+              id.includes("@hookform/resolvers") ||
+              id.includes("zod")
+            ) {
+              return "form";
+            }
+            // ── Date utilities ────────────────────────────────────────────────
+            if (id.includes("date-fns") || id.includes("react-day-picker")) {
+              return "date";
+            }
+            // ── TanStack Query (state / fetching) ─────────────────────────────
+            if (id.includes("@tanstack/react-query")) {
+              return "tanstack-query";
+            }
+            // ── TanStack Router ───────────────────────────────────────────────
+            if (id.includes("@tanstack/react-router")) {
+              return "router";
+            }
+            // ── TanStack Table ────────────────────────────────────────────────
+            if (id.includes("@tanstack/react-table")) {
+              return "tanstack-table";
+            }
+            // ── Core vendor (react, zustand, utilities) ───────────────────────
+            if (
+              id.includes("react/") ||
+              id.includes("react-dom") ||
+              id.includes("zustand") ||
+              id.includes("clsx") ||
+              id.includes("tailwind-merge") ||
+              id.includes("class-variance-authority")
+            ) {
               return "vendor";
             }
           }

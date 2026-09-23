@@ -204,12 +204,12 @@ export function TenantUserNav() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-64 bg-popover border-border text-muted-foreground shadow-lg"
+        className="w-64 bg-popover border-border text-muted-foreground"
         side="bottom"
         align="end"
         forceMount
       >
-        <DropdownMenuLabel className="font-semibold p-2">
+        <DropdownMenuLabel className="font-semibold">
           <div className="flex flex-col space-y-1">
             <div className="flex items-center justify-between">
               <p className="text-sm leading-none text-foreground font-bold">

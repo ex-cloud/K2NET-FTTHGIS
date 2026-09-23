@@ -22,7 +22,8 @@ import { TenantSidebarControl } from "../TenantSidebarControl";
 export interface TenantNavItem {
   title: string;
   icon: React.ElementType;
-  href: string;
+  href?: string;
+  onClick?: () => void;
 }
 
 export const TENANT_CORE_NAV_ITEMS: TenantNavItem[] = [
@@ -33,11 +34,8 @@ export const TENANT_CORE_NAV_ITEMS: TenantNavItem[] = [
   { title: "Gangguan & Redaman", icon: AlertCircle, href: "/issues" },
 ];
 
-export const TENANT_BOTTOM_NAV_ITEMS: TenantNavItem[] = [
-  { title: "Pengaturan Tenant", icon: Settings, href: "/settings" },
-];
-
-export const checkIsActive = (href: string, pathname: string) => {
+export const checkIsActive = (href: string | undefined, pathname: string) => {
+  if (!href) return false;
   if (href === "/" || href === "/dashboard") {
     return pathname === "/" || pathname === "/dashboard";
   }
@@ -54,6 +52,14 @@ export function TenantSidebar({ onOpenHelp }: TenantSidebarProps) {
   const { sidebarMode } = useSidebarMode();
   const [isHovering, setIsHovering] = React.useState(false);
 
+  const bottomNavItems: TenantNavItem[] = React.useMemo(
+    () => [
+      { title: "Pengaturan Tenant", icon: Settings, href: "/settings" },
+      { title: "Panduan & SOP", icon: BookOpen, onClick: onOpenHelp },
+    ],
+    [onOpenHelp]
+  );
+
   // Determine visual expansion
   const isExpanded =
     sidebarMode === "expanded" || (sidebarMode === "hover" && isHovering);
@@ -66,6 +72,7 @@ export function TenantSidebar({ onOpenHelp }: TenantSidebarProps) {
 
     const button = (
       <div
+        onClick={item.onClick}
         className={cn(
           "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative",
           isActive
@@ -88,15 +95,17 @@ export function TenantSidebar({ onOpenHelp }: TenantSidebarProps) {
       </div>
     );
 
-    const wrapped = (
-      <Link key={item.href} to={item.href}>
+    const wrapped = item.href ? (
+      <Link key={item.title} to={item.href}>
         {button}
       </Link>
+    ) : (
+      <div key={item.title}>{button}</div>
     );
 
     if (!isExpanded) {
       return (
-        <Tooltip key={item.href}>
+        <Tooltip key={item.title}>
           <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
           <TooltipContent side="right" className="text-xs">
             {item.title}
@@ -105,7 +114,7 @@ export function TenantSidebar({ onOpenHelp }: TenantSidebarProps) {
       );
     }
 
-    return <React.Fragment key={item.href}>{wrapped}</React.Fragment>;
+    return <React.Fragment key={item.title}>{wrapped}</React.Fragment>;
   };
 
   return (
@@ -147,41 +156,7 @@ export function TenantSidebar({ onOpenHelp }: TenantSidebarProps) {
 
             {/* Bottom Utility Items */}
             <nav className="flex flex-col gap-1 px-2 border-groove-t pt-2.5 mb-2">
-              {TENANT_BOTTOM_NAV_ITEMS.map(renderNavButton)}
-
-              {/* SOP Guide Trigger */}
-              {(() => {
-                const button = (
-                  <div
-                    onClick={onOpenHelp}
-                    className="flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-sidebar-foreground/90 dark:text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent font-medium"
-                  >
-                    <div className="relative flex items-center justify-center shrink-0">
-                      <BookOpen className="h-4 w-4" />
-                    </div>
-                    <span
-                      className={cn(
-                        "text-sm whitespace-nowrap transition-all duration-300 flex-1",
-                        isExpanded ? "opacity-100 w-auto ml-3 font-medium" : "opacity-0 w-0 overflow-hidden ml-0"
-                      )}
-                    >
-                      Panduan &amp; SOP
-                    </span>
-                  </div>
-                );
-
-                if (!isExpanded) {
-                  return (
-                    <Tooltip key="sop-help">
-                      <TooltipTrigger asChild>{button}</TooltipTrigger>
-                      <TooltipContent side="right" className="text-xs">
-                        Panduan &amp; SOP
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                }
-                return <React.Fragment key="sop-help">{button}</React.Fragment>;
-              })()}
+              {bottomNavItems.map(renderNavButton)}
             </nav>
           </TooltipProvider>
 
