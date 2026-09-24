@@ -96,47 +96,49 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
   return (
     <Card
       glowingEffect
-      className="p-4 sm:p-5 border-border/60 bg-card rounded-xl shadow-xs space-y-4 transition-all duration-200"
+      className="group relative flex flex-col justify-between p-5 border-border/60 bg-card transition-all duration-200"
     >
-      {/* Header with border-groove-b */}
-      <div className="flex items-start justify-between gap-3 pb-3.5 border-groove-b">
-        <div>
-          <h3 className="text-sm font-bold text-foreground">Pro plan usage</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Current billing cycle</p>
-        </div>
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          className="h-7 px-3 text-xs font-medium rounded-lg border-border/80 hover:bg-muted/50"
-        >
-          <Link to="/billing">
-            Upgrade to Pro
-          </Link>
-        </Button>
-      </div>
-
-      {/* Usage list with border-groove-t dividers */}
-      <div className="pt-0.5">
-        {usageItems.map((item, idx) => (
-          <div
-            key={idx}
-            className={cn(
-              "flex items-center justify-between py-2.5 text-xs",
-              idx > 0 && "border-groove-t"
-            )}
+      <div className="space-y-3.5">
+        {/* Header with border-groove-b */}
+        <div className="flex items-start justify-between gap-3 pb-3.5 border-groove-b">
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Pro plan usage</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Current billing cycle</p>
+          </div>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-7 px-3 text-xs font-medium rounded-lg border-border/80 hover:bg-muted/50"
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <CircularMeter percent={item.percent} />
-              <span className="font-medium text-foreground/90 truncate">
-                {item.label}
+            <Link to="/billing">
+              Upgrade to Pro
+            </Link>
+          </Button>
+        </div>
+
+        {/* Usage list with border-groove-t dividers */}
+        <div>
+          {usageItems.map((item, idx) => (
+            <div
+              key={idx}
+              className={cn(
+                "flex items-center justify-between py-2 text-xs",
+                idx > 0 && "border-groove-t"
+              )}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <CircularMeter percent={item.percent} />
+                <span className="font-medium text-foreground/90 truncate">
+                  {item.label}
+                </span>
+              </div>
+              <span className="font-mono font-bold text-foreground shrink-0 ml-3">
+                {item.value}
               </span>
             </div>
-            <span className="font-mono font-bold text-foreground shrink-0 ml-3">
-              {item.value}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </Card>
   );

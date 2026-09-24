@@ -127,15 +127,16 @@ const GlowingEffect = memo(
                 #ffffff,
                 #ffffff calc(25% / var(--repeating-conic-gradient-times))
               )`
-                : `radial-gradient(circle, var(--primary) 15%, transparent 35%),
-              radial-gradient(circle at 50% 50%, var(--primary) 10%, transparent 25%),
+                : `radial-gradient(circle, var(--primary) 10%, transparent 20%),
+              radial-gradient(circle at 40% 40%, var(--primary) 5%, transparent 15%),
+              radial-gradient(circle at 60% 60%, #06b6d4 10%, transparent 20%), 
               repeating-conic-gradient(
                 from 236.84deg at 50% 50%,
                 var(--primary) 0%,
-                color-mix(in srgb, var(--primary) 70%, transparent) calc(25% / var(--repeating-conic-gradient-times)),
-                color-mix(in srgb, var(--primary) 20%, transparent) calc(50% / var(--repeating-conic-gradient-times)), 
+                #8b5cf6 calc(25% / var(--repeating-conic-gradient-times)),
+                #06b6d4 calc(50% / var(--repeating-conic-gradient-times)), 
                 var(--primary) calc(75% / var(--repeating-conic-gradient-times)),
-                color-mix(in srgb, var(--primary) 70%, transparent) calc(100% / var(--repeating-conic-gradient-times))
+                #8b5cf6 calc(100% / var(--repeating-conic-gradient-times))
               )`,
           } as React.CSSProperties
         }
@@ -153,7 +154,7 @@ const GlowingEffect = memo(
             "rounded-[inherit]",
             'after:content-[""] after:rounded-[inherit] after:absolute after:inset-[calc(-1*var(--glowingeffect-border-width))]',
             "after:[border:var(--glowingeffect-border-width)_solid_transparent]",
-            "after:[background:var(--gradient)]",
+            "after:[background:var(--gradient)] after:[background-attachment:fixed]",
             "after:opacity-[var(--active)] after:transition-opacity after:duration-300",
             "after:[mask-clip:padding-box,border-box]",
             "after:[mask-composite:intersect]",
