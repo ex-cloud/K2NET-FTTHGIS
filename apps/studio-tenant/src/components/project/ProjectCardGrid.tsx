@@ -51,7 +51,8 @@ export function ProjectCardGrid({
         {projects.map((project) => (
           <Card
             key={project.id}
-            className="group p-3.5 sm:p-4 border-border/60 bg-card hover:border-primary/40 hover:shadow-xs transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3"
+            glowingEffect
+            className="group p-3.5 sm:p-4 border-border/60 bg-card hover:bg-card hover:from-transparent hover:via-transparent hover:to-transparent transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3"
           >
             {/* Left: Icon + Info */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -167,7 +168,8 @@ export function ProjectCardGrid({
       {projects.map((project) => (
         <Card
           key={project.id}
-          className="group relative flex flex-col justify-between p-5 border-border/60 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-200"
+          glowingEffect
+          className="group relative flex flex-col justify-between p-5 border-border/60 bg-card hover:bg-card hover:from-transparent hover:via-transparent hover:to-transparent transition-all duration-200"
         >
           {/* Header Row: Title, Code & Actions */}
           <div className="space-y-2.5">
@@ -235,8 +237,8 @@ export function ProjectCardGrid({
               {project.description || "Proyek operasional infrastruktur jaringan fiber optik FTTH."}
             </p>
 
-            {/* Asset Metrics Grid */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/40">
+            {/* Asset Metrics Grid with border-groove-t */}
+            <div className="grid grid-cols-2 gap-2 pt-3 border-groove-t">
               <div className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30 border border-border/40">
                 <Users className="h-3.5 w-3.5 text-primary shrink-0" />
                 <div className="text-[11px] truncate">
@@ -283,8 +285,8 @@ export function ProjectCardGrid({
             </div>
           </div>
 
-          {/* Bottom Card Footer Actions */}
-          <div className="flex items-center justify-between gap-2 pt-4 mt-2 border-t border-border/40">
+          {/* Bottom Card Footer Actions with border-groove-t */}
+          <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-groove-t">
             <Link
               to="/project/$projectId/infrastructure/topology"
               params={{ projectId: project.id }}

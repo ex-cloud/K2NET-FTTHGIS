@@ -7,17 +7,11 @@ import {
   TooltipTrigger,
   cn,
 } from "@k2net/ui";
-import { Sparkles, HelpCircle } from "lucide-react";
 import { useSidebarMode } from "../sidebar-mode-context";
 import { TenantSidebarControl } from "../TenantSidebarControl";
 import { ORG_NAV_ITEMS, type NavItem } from "../../config/tenant-sidebar-navigation";
 
-interface TenantOrgSidebarProps {
-  onOpenAi: () => void;
-  onOpenHelp: () => void;
-}
-
-export function TenantOrgSidebar({ onOpenAi, onOpenHelp }: TenantOrgSidebarProps) {
+export function TenantOrgSidebar() {
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const { sidebarMode } = useSidebarMode();
@@ -43,12 +37,12 @@ export function TenantOrgSidebar({ onOpenAi, onOpenHelp }: TenantOrgSidebarProps
         className={cn(
           "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative select-none",
           isActive
-            ? "text-sidebar-foreground bg-sidebar-accent font-semibold shadow-xs"
+            ? "text-sidebar-foreground bg-sidebar-accent font-semibold"
             : "text-sidebar-foreground/90 dark:text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent font-medium"
         )}
       >
         <div className="relative flex items-center justify-center shrink-0">
-          <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+          <Icon className={cn("h-4 w-4", isActive ? "text-sidebar-foreground" : "text-muted-foreground group-hover:text-foreground")} />
         </div>
         <span
           className={cn(
@@ -107,60 +101,20 @@ export function TenantOrgSidebar({ onOpenAi, onOpenHelp }: TenantOrgSidebarProps
           isFloating ? "" : "z-50"
         } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
       >
-        <div className="flex flex-col h-full py-3">
+        <div className="flex flex-col h-full py-4">
           <TooltipProvider delayDuration={0}>
-            {/* Top Primary Org Navigation */}
+            {/* Top Primary Org Navigation Items */}
             <nav className="flex flex-col gap-1 px-2">
               <div className="flex flex-col gap-1">
                 {ORG_NAV_ITEMS.map(renderNavButton)}
               </div>
             </nav>
 
+            {/* Dynamic Spacer pushing footer to the bottom */}
             <div className="flex-1" />
-
-            {/* Bottom Actions: AI & SOP */}
-            <nav className="flex flex-col gap-1 px-2 border-t border-border/40 pt-2 mb-2">
-              <div
-                onClick={onOpenAi}
-                className={cn(
-                  "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-sidebar-foreground/85 hover:text-sidebar-foreground hover:bg-sidebar-accent font-medium select-none"
-                )}
-              >
-                <div className="relative flex items-center justify-center shrink-0 text-amber-500">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <span
-                  className={cn(
-                    "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
-                    isExpanded ? "opacity-100 w-auto ml-3 font-semibold text-amber-600 dark:text-amber-400" : "opacity-0 w-0 overflow-hidden ml-0"
-                  )}
-                >
-                  K2 AI Assistant
-                </span>
-              </div>
-
-              <div
-                onClick={onOpenHelp}
-                className={cn(
-                  "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-sidebar-foreground/85 hover:text-sidebar-foreground hover:bg-sidebar-accent font-medium select-none"
-                )}
-              >
-                <div className="relative flex items-center justify-center shrink-0 text-muted-foreground group-hover:text-foreground">
-                  <HelpCircle className="h-4 w-4" />
-                </div>
-                <span
-                  className={cn(
-                    "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
-                    isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
-                  )}
-                >
-                  Panduan & SOP
-                </span>
-              </div>
-            </nav>
           </TooltipProvider>
 
-          {/* Bottom Sidebar Collapse Control */}
+          {/* Bottom Sidebar Collapse Control Only */}
           <div className="flex flex-col gap-2 px-2">
             <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
               <TenantSidebarControl isExpanded={isExpanded} />

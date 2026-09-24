@@ -215,11 +215,7 @@ function TenantProjectLayoutContent() {
 
       {/* ── 3. Main Workspace Area (Primary Sidebar + Secondary Sidebar + Content) ─ */}
       <div className="flex flex-1 overflow-hidden relative">
-        <TenantProjectSidebar
-          projectId={projectId}
-          onOpenAi={() => setAiOpen(true)}
-          onOpenHelp={() => setHelpOpen(true)}
-        />
+        <TenantProjectSidebar projectId={projectId} />
 
         {/* Secondary Modular Sidebar for Infrastructure, Inventory, Core, Users, Issues, Settings */}
         <TenantSecondarySidebar projectId={projectId} />

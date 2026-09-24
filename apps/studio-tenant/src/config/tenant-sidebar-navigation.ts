@@ -98,7 +98,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
   },
   {
     id: "settings",
-    title: "Organization Settings",
+    title: "Settings",
     href: "/settings/general",
     icon: Settings,
     hasSecondarySidebar: true,

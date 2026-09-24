@@ -94,9 +94,12 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
   ];
 
   return (
-    <Card className="p-4 sm:p-5 border-border/60 bg-card rounded-xl shadow-xs space-y-4">
-      {/* Header matching Supabase style */}
-      <div className="flex items-start justify-between gap-3">
+    <Card
+      glowingEffect
+      className="p-4 sm:p-5 border-border/60 bg-card hover:bg-card hover:from-transparent hover:via-transparent hover:to-transparent rounded-xl shadow-xs space-y-4 transition-all duration-200"
+    >
+      {/* Header with border-groove-b */}
+      <div className="flex items-start justify-between gap-3 pb-3.5 border-groove-b">
         <div>
           <h3 className="text-sm font-bold text-foreground">Pro plan usage</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Current billing cycle</p>
@@ -113,12 +116,15 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
         </Button>
       </div>
 
-      {/* Usage list matching Supabase style */}
-      <div className="divide-y divide-border/40 pt-1">
+      {/* Usage list with border-groove-t dividers */}
+      <div className="pt-0.5">
         {usageItems.map((item, idx) => (
           <div
             key={idx}
-            className="flex items-center justify-between py-3 first:pt-2 last:pb-1 text-xs"
+            className={cn(
+              "flex items-center justify-between py-2.5 text-xs",
+              idx > 0 && "border-groove-t"
+            )}
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <CircularMeter percent={item.percent} />

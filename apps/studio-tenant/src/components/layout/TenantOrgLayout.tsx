@@ -194,10 +194,7 @@ function TenantOrgLayoutContent() {
 
       {/* ── 3. Main Workspace Area (Primary Sidebar + Secondary Sidebar + Content) ─ */}
       <div className="flex flex-1 overflow-hidden relative">
-        <TenantOrgSidebar
-          onOpenAi={() => setAiOpen(true)}
-          onOpenHelp={() => setHelpOpen(true)}
-        />
+        <TenantOrgSidebar />
 
         {/* Secondary Modular Sidebar (shown dynamically for /team/*, /settings/*) */}
         <TenantSecondarySidebar />
