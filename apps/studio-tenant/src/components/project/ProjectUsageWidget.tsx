@@ -1,10 +1,49 @@
 import * as React from "react";
-import { Activity, Layers, Users, Network, HardDrive } from "lucide-react";
-import { Card, Progress } from "@k2net/ui";
+import { Link } from "@tanstack/react-router";
+import { Button, Card, cn } from "@k2net/ui";
 import { type Project } from "../../hooks/useProjects";
 
 interface ProjectUsageWidgetProps {
   projects: Project[];
+}
+
+function CircularMeter({ percent }: { percent: number }) {
+  const radius = 6;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (Math.min(100, Math.max(0, percent)) / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center shrink-0 w-4 h-4">
+      <svg className="w-4 h-4 -rotate-90" viewBox="0 0 16 16">
+        {/* Background track circle */}
+        <circle
+          cx="8"
+          cy="8"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          className="text-muted-foreground/30 dark:text-muted/60"
+        />
+        {/* Active progress arc */}
+        <circle
+          cx="8"
+          cy="8"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className={cn(
+            "transition-all duration-500",
+            percent > 85 ? "text-amber-500" : percent > 0 ? "text-primary" : "text-transparent"
+          )}
+        />
+      </svg>
+    </div>
+  );
 }
 
 export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
@@ -15,89 +54,83 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
 
   const subscriberQuota = 10000;
   const projectQuota = 10;
+  const cableQuotaKm = 100;
   const subscriberPercent = Math.min(100, Math.round((totalSubscribers / subscriberQuota) * 100));
   const projectPercent = Math.min(100, Math.round((projects.length / projectQuota) * 100));
+  const cablePercent = Math.min(100, Math.round((totalCableKm / cableQuotaKm) * 100));
+  const odcOdpPercent = Math.min(100, Math.round(((totalOdc + totalOdp) / 550) * 100));
+
+  const usageItems = [
+    {
+      label: "Proyek FTTH Aktif",
+      value: `${projects.length} / ${projectQuota}`,
+      percent: projectPercent,
+    },
+    {
+      label: "Total Pelanggan",
+      value: `${totalSubscribers.toLocaleString()} / ${subscriberQuota.toLocaleString()}`,
+      percent: subscriberPercent,
+    },
+    {
+      label: "Bentang Kabel Fiber",
+      value: `${totalCableKm.toFixed(1)} / ${cableQuotaKm} Km`,
+      percent: cablePercent,
+    },
+    {
+      label: "Perangkat ODC & ODP",
+      value: `${totalOdc} ODC / ${totalOdp} ODP`,
+      percent: odcOdpPercent,
+    },
+    {
+      label: "Database size",
+      value: "26 / 500 MB",
+      percent: 5.2,
+    },
+    {
+      label: "File storage",
+      value: "0.00 / 1 GB",
+      percent: 0,
+    },
+  ];
 
   return (
-    <Card className="p-4 border-border/60 bg-card/80 backdrop-blur-xs shadow-xs space-y-4">
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <Activity className="h-3.5 w-3.5" />
-          </div>
-          <span className="text-xs font-bold text-foreground">Pemakaian Kuota Organisasi</span>
+    <Card className="p-4 sm:p-5 border-border/60 bg-card rounded-xl shadow-xs space-y-4">
+      {/* Header matching Supabase style */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-foreground">Pro plan usage</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Current billing cycle</p>
         </div>
-        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-          PRO PLAN
-        </span>
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="h-7 px-3 text-xs font-medium rounded-lg border-border/80 hover:bg-muted/50"
+        >
+          <Link to="/billing">
+            Upgrade to Pro
+          </Link>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Project Quota */}
-        <div className="p-3 rounded-lg bg-muted/30 border border-border/40 space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-              Proyek Aktif
-            </span>
-            <span className="font-mono font-bold text-foreground">
-              {projects.length} / {projectQuota}
-            </span>
-          </div>
-          <Progress value={projectPercent} className="h-1.5" />
-          <span className="text-[10px] text-muted-foreground block text-right font-mono">
-            {projectPercent}% terpakai
-          </span>
-        </div>
-
-        {/* Subscriber Quota */}
-        <div className="p-3 rounded-lg bg-muted/30 border border-border/40 space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5 text-muted-foreground" />
-              Total Pelanggan
-            </span>
-            <span className="font-mono font-bold text-foreground">
-              {totalSubscribers.toLocaleString()} / {subscriberQuota.toLocaleString()}
+      {/* Usage list matching Supabase style */}
+      <div className="divide-y divide-border/40 pt-1">
+        {usageItems.map((item, idx) => (
+          <div
+            key={idx}
+            className="flex items-center justify-between py-3 first:pt-2 last:pb-1 text-xs"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <CircularMeter percent={item.percent} />
+              <span className="font-medium text-foreground/90 truncate">
+                {item.label}
+              </span>
+            </div>
+            <span className="font-mono font-bold text-foreground shrink-0 ml-3">
+              {item.value}
             </span>
           </div>
-          <Progress value={subscriberPercent} className="h-1.5" />
-          <span className="text-[10px] text-muted-foreground block text-right font-mono">
-            {subscriberPercent}% terpakai
-          </span>
-        </div>
-
-        {/* Cable Metric */}
-        <div className="p-3 rounded-lg bg-muted/30 border border-border/40 flex items-center justify-between">
-          <div className="space-y-0.5">
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <Network className="h-3.5 w-3.5 text-muted-foreground" />
-              Total Bentang Kabel
-            </span>
-            <span className="text-sm font-bold font-mono text-foreground">
-              {totalCableKm.toFixed(1)} Km
-            </span>
-          </div>
-          <span className="text-[10px] text-primary font-mono">
-            Mapped GIS
-          </span>
-        </div>
-
-        {/* Enclosure Metric */}
-        <div className="p-3 rounded-lg bg-muted/30 border border-border/40 flex items-center justify-between">
-          <div className="space-y-0.5">
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <HardDrive className="h-3.5 w-3.5 text-muted-foreground" />
-              Total ODC / ODP
-            </span>
-            <span className="text-sm font-bold font-mono text-foreground">
-              {totalOdc} ODC / {totalOdp} ODP
-            </span>
-          </div>
-          <span className="text-[10px] text-sky-600 dark:text-sky-400 font-mono">
-            Online
-          </span>
-        </div>
+        ))}
       </div>
     </Card>
   );

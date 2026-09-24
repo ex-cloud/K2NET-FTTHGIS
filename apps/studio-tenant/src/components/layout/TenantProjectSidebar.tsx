@@ -48,7 +48,7 @@ export function TenantProjectSidebar({
     const button = (
       <div
         className={cn(
-          "flex items-center rounded-lg h-8.5 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative select-none",
+          "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative select-none",
           isActive
             ? "text-sidebar-foreground bg-sidebar-accent font-semibold shadow-xs"
             : "text-sidebar-foreground/90 dark:text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent font-medium"
@@ -64,7 +64,7 @@ export function TenantProjectSidebar({
         </div>
         <span
           className={cn(
-            "text-xs whitespace-nowrap transition-all duration-300 flex-1 truncate",
+            "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
             isActive ? "font-semibold text-sidebar-foreground" : "font-medium",
             isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
           )}
@@ -134,7 +134,7 @@ export function TenantProjectSidebar({
                   </div>
                   <span
                     className={cn(
-                      "text-xs whitespace-nowrap transition-all duration-300 flex-1 truncate",
+                      "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
                       isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
                     )}
                   >
@@ -158,7 +158,7 @@ export function TenantProjectSidebar({
               <div
                 onClick={onOpenAi}
                 className={cn(
-                  "flex items-center rounded-lg h-8.5 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-sidebar-foreground/85 hover:text-sidebar-foreground hover:bg-sidebar-accent font-medium select-none"
+                  "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-sidebar-foreground/85 hover:text-sidebar-foreground hover:bg-sidebar-accent font-medium select-none"
                 )}
               >
                 <div className="relative flex items-center justify-center shrink-0 text-amber-500">
@@ -166,7 +166,7 @@ export function TenantProjectSidebar({
                 </div>
                 <span
                   className={cn(
-                    "text-xs whitespace-nowrap transition-all duration-300 flex-1 truncate",
+                    "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
                     isExpanded ? "opacity-100 w-auto ml-3 font-semibold text-amber-600 dark:text-amber-400" : "opacity-0 w-0 overflow-hidden ml-0"
                   )}
                 >
@@ -177,7 +177,7 @@ export function TenantProjectSidebar({
               <div
                 onClick={onOpenHelp}
                 className={cn(
-                  "flex items-center rounded-lg h-8.5 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-sidebar-foreground/85 hover:text-sidebar-foreground hover:bg-sidebar-accent font-medium select-none"
+                  "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-sidebar-foreground/85 hover:text-sidebar-foreground hover:bg-sidebar-accent font-medium select-none"
                 )}
               >
                 <div className="relative flex items-center justify-center shrink-0 text-muted-foreground group-hover:text-foreground">
@@ -185,7 +185,7 @@ export function TenantProjectSidebar({
                 </div>
                 <span
                   className={cn(
-                    "text-xs whitespace-nowrap transition-all duration-300 flex-1 truncate",
+                    "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
                     isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
                   )}
                 >
