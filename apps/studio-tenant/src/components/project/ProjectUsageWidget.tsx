@@ -96,7 +96,7 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
   return (
     <Card
       glowingEffect
-      className="p-4 sm:p-5 border-border/60 bg-card hover:bg-card hover:from-transparent hover:via-transparent hover:to-transparent rounded-xl shadow-xs space-y-4 transition-all duration-200"
+      className="p-4 sm:p-5 border-border/60 bg-card rounded-xl shadow-xs space-y-4 transition-all duration-200"
     >
       {/* Header with border-groove-b */}
       <div className="flex items-start justify-between gap-3 pb-3.5 border-groove-b">

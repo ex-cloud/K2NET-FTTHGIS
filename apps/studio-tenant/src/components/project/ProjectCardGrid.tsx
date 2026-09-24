@@ -52,7 +52,7 @@ export function ProjectCardGrid({
           <Card
             key={project.id}
             glowingEffect
-            className="group p-3.5 sm:p-4 border-border/60 bg-card hover:bg-card hover:from-transparent hover:via-transparent hover:to-transparent transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3"
+            className="group p-3.5 sm:p-4 border-border/60 bg-card transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3"
           >
             {/* Left: Icon + Info */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -169,7 +169,7 @@ export function ProjectCardGrid({
         <Card
           key={project.id}
           glowingEffect
-          className="group relative flex flex-col justify-between p-5 border-border/60 bg-card hover:bg-card hover:from-transparent hover:via-transparent hover:to-transparent transition-all duration-200"
+          className="group relative flex flex-col justify-between p-5 border-border/60 bg-card transition-all duration-200"
         >
           {/* Header Row: Title, Code & Actions */}
           <div className="space-y-2.5">
