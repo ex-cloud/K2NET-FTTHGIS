@@ -5,7 +5,7 @@ import {
   fetchAgentAuthorization,
   type AgentAuthorizationData,
 } from "@/lib/actions/gateways";
-import type { DrawerView } from "./FloatingAiAssistantHeader";
+import type { DrawerView } from "@k2net/ui";
 
 export const DEFAULT_MODELS = [
   { value: "gemini-3.7-flash", label: "Gemini 3.7 Flash", badge: "Google" },

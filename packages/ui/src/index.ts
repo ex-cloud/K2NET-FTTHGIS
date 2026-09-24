@@ -52,6 +52,9 @@ export * from "./components/status-dot";
 // Technical Isometric Wireframe Figures & Pure SVG Animated Mascot (Linear Style)
 export * from "./components/linear-isometric";
 
+// Shared AI Assistant Components
+export * from "./components/ai";
+
 // Shared Auth Components (Linear Style)
 export * from "./components/auth";
 

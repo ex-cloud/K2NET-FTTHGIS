@@ -5,6 +5,7 @@ import { ShieldAlert, ShieldCheck, Sparkles, Search, HelpCircle, MessageSquare }
 import {
   Button,
   Separator,
+  ActionTooltip,
   ImpersonationBanner,
   Dialog,
   DialogContent,
@@ -139,52 +140,59 @@ function TenantOrgLayoutContent() {
 
         {/* RIGHT SECTION: Tools + UserNav */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => setCommandPaletteOpen(true)}
-            className="hidden md:flex items-center justify-between w-48 h-7 px-2.5 text-xs rounded-md border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground shadow-xs cursor-pointer mr-1"
-          >
-            <div className="flex items-center gap-1.5">
-              <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <span className="truncate">Cari perintah...</span>
-            </div>
-            <kbd className="pointer-events-none inline-flex h-4.5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground shrink-0">
-              ⌘K
-            </kbd>
-          </button>
+          {/* Desktop Search / Command Palette Trigger (⌘K) */}
+          <ActionTooltip label="Cari perintah..." shortcut="⌘K" side="bottom">
+            <button
+              type="button"
+              onClick={() => setCommandPaletteOpen(true)}
+              className="hidden md:flex items-center justify-between w-48 h-7 px-2.5 text-xs rounded-md border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground shadow-xs cursor-pointer mr-1"
+            >
+              <div className="flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className="truncate">Cari perintah...</span>
+              </div>
+              <kbd className="pointer-events-none inline-flex h-4.5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground shrink-0">
+                ⌘K
+              </kbd>
+            </button>
+          </ActionTooltip>
 
-          <button
-            type="button"
-            onClick={() => setAiOpen(true)}
-            className="hidden md:flex items-center gap-1.5 h-7 px-2.5 text-xs rounded-md border border-border/80 bg-muted/30 hover:bg-muted/60 text-foreground font-medium transition-all shadow-xs cursor-pointer mr-1"
-            title="K2NET AI Copilot (Ctrl+J)"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-            <span className="hidden sm:inline">Ask AI</span>
-            <kbd className="pointer-events-none hidden lg:inline-flex h-4 select-none items-center rounded border border-border bg-muted px-1 font-mono text-[9px] text-muted-foreground">
-              Ctrl+J
-            </kbd>
-          </button>
+          {/* Ask AI Copilot Button (Icon-only with interactive tooltip) */}
+          <ActionTooltip label="Ask AI Copilot" shortcut="Ctrl+J" side="bottom">
+            <button
+              type="button"
+              onClick={() => setAiOpen(true)}
+              className="hidden md:flex items-center justify-center h-7 w-7 rounded-md border border-border/80 bg-muted/30 hover:bg-muted/60 text-primary hover:text-primary transition-all shadow-xs cursor-pointer mr-0.5"
+              aria-label="Ask AI Copilot"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+            </button>
+          </ActionTooltip>
 
+          {/* Desktop Help & Feedback Buttons */}
           <div className="hidden md:flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setHelpOpen(true)}
-              className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
-              title="Help & Support"
-            >
-              <HelpCircle className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setNotifOpen(true)}
-              className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
-              title="Notifikasi & Alerts"
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-            </Button>
+            <ActionTooltip label="Help & Support" shortcut="?" side="bottom">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setHelpOpen(true)}
+                className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
+                aria-label="Help & Support"
+              >
+                <HelpCircle className="h-3.5 w-3.5" />
+              </Button>
+            </ActionTooltip>
+            <ActionTooltip label="Notifikasi & Alerts" shortcut="M" side="bottom">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setNotifOpen(true)}
+                className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
+                aria-label="Notifikasi & Alerts"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+              </Button>
+            </ActionTooltip>
           </div>
 
           <Separator orientation="vertical" className="hidden md:block mx-0.5 h-4 bg-border/60" />

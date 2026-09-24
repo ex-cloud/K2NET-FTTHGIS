@@ -3,33 +3,29 @@
  */
 
 import { useState } from "react";
-import { Sheet, SheetContent } from "@k2net/ui";
-import { GripVertical } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { incrementAiPromptUsage, type SuggestedPromptItem } from "@/lib/actions/gateways";
+import {
+  AiAssistantDrawer,
+  AiAssistantFullscreen,
+  type DrawerView,
+  type QuickIdea,
+} from "@k2net/ui";
+import { incrementAiPromptUsage, sendAiFeedback } from "@/lib/actions/gateways";
 import { useAiChatStream, exportChatToMarkdown } from "@/hooks/useAiChatStream";
 import { AiDrawerOnboarding } from "./ai-drawer-onboarding";
 import { AiDrawerPermissions, AiDrawerSettings } from "./ai-drawer-permissions";
-import { AiDrawerChat } from "./ai-drawer-chat";
-import { AiFullscreenLayout } from "./ai-fullscreen-layout";
-import {
-  FloatingAiAssistantHeader,
-  type DrawerView,
-} from "./assistant/FloatingAiAssistantHeader";
-import { useAssistantResize } from "./assistant/useAssistantResize";
+import { FullscreenRightPanel } from "./assistant/FullscreenRightPanel";
 import { useAssistantKeyboard } from "./assistant/useAssistantKeyboard";
 import { useAssistantPermissions } from "./assistant/useAssistantPermissions";
 import { useAssistantInit } from "./assistant/useAssistantInit";
+import { useFullscreenPermissions } from "./assistant/useFullscreenPermissions";
+import { toast } from "sonner";
 
 export function FloatingAiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [view, setView] = useState<DrawerView>("chat");
-  const [input, setInput] = useState("");
-  const [showTokenMenu, setShowTokenMenu] = useState(false);
-  const [showHistoryInDrawer, setShowHistoryInDrawer] = useState(false);
-
-  const { drawerWidth, isDragging, startResizing } = useAssistantResize();
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [rightPanelView, setRightPanelView] = useState<"summary" | "permissions">("summary");
 
   const {
     selectedModel,
@@ -50,6 +46,23 @@ export function FloatingAiAssistant() {
   } = useAssistantPermissions(view, agentAuth, setAgentAuth, setView);
 
   const {
+    permCatalog,
+    permLoading,
+    permSaving: fsPermSaving,
+    permRevoking: fsPermRevoking,
+    permTier,
+    setPermTier,
+    permSelected,
+    setPermSelected,
+    permSearch: fsPermSearch,
+    setPermSearch: setFsPermSearch,
+    permExpandedDomains,
+    setPermExpandedDomains,
+    handleSavePermissions,
+    handleRevokePermissions,
+  } = useFullscreenPermissions(rightPanelOpen, rightPanelView, setRightPanelView, agentAuth);
+
+  const {
     messages,
     isStreaming,
     error,
@@ -57,7 +70,6 @@ export function FloatingAiAssistant() {
     activeSessionId,
     sendMessage,
     stopStreaming,
-    clearMessages,
     createNewSession,
     loadSession,
     deleteSession,
@@ -75,152 +87,178 @@ export function FloatingAiAssistant() {
     setIsOpen,
     setIsFullscreen,
     setView,
-    setInput,
-    setShowHistoryInDrawer,
+    setInput: () => {},
+    setShowHistoryInDrawer: () => {},
     createNewSession,
   });
 
-  const handleSendChat = async () => {
-    const msg = input.trim();
-    if (!msg || isStreaming) return;
-    setInput("");
-    await sendMessage(msg);
+  const handleSendChat = async (text?: string) => {
+    if (!text?.trim() || isStreaming) return;
+    await sendMessage(text.trim());
   };
 
-  const handleSelectIdea = (idea: SuggestedPromptItem) => {
-    setInput(idea.prompt);
+  const handleSelectIdea = (idea: QuickIdea) => {
+    handleSendChat(idea.prompt);
     if (idea.id && !idea.id.startsWith("fb-")) incrementAiPromptUsage(idea.id);
   };
 
-  return (
-    <>
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetContent
-          side="right"
-          showCloseButton={false}
-          style={{ width: `${drawerWidth}px`, maxWidth: "95vw" }}
-          className={cn(
-            "p-0 flex flex-col bg-background border-l border-border transition-[width] duration-75 select-text sm:max-w-none",
-            isDragging && "transition-none select-none"
-          )}
-        >
-          <div
-            onMouseDown={startResizing}
-            className={cn(
-              "absolute -left-1.5 top-0 bottom-0 w-3 cursor-ew-resize group z-50 flex items-center justify-center",
-              isDragging && "bg-primary/20"
-            )}
-          >
-            <div className="w-1 h-12 rounded-full bg-border group-hover:bg-primary/70 transition-colors flex items-center justify-center">
-              <GripVertical className="w-2.5 h-2.5 text-muted-foreground group-hover:text-primary opacity-60" />
-            </div>
-          </div>
+  const handleFeedback = async (messageId: string, feedbackType: "like" | "dislike") => {
+    if (feedbackType === "like") toast.success("Terima kasih atas tanggapan positif Anda!");
+    else toast.success("Tanggapan dicatat untuk peningkatan kualitas model.");
+    try {
+      const targetMsg = messages.find((m) => m.id === messageId);
+      await sendAiFeedback({
+        messageId,
+        responseText: targetMsg?.content || "",
+        feedbackType,
+      });
+    } catch (e) {
+      console.warn("Feedback recording failed:", e);
+    }
+  };
 
-          <FloatingAiAssistantHeader
-            view={view}
+  const quickIdeas: QuickIdea[] = pinnedIdeas.map((idea) => ({
+    id: idea.id,
+    title: idea.title,
+    prompt: idea.prompt,
+    desc: idea.description || idea.prompt,
+    icon: idea.icon,
+  }));
+
+  const activeModelLabel =
+    availableModels.find((m) => m.value === selectedModel)?.label || "Gemini 2.5 Flash";
+
+  if (isFullscreen) {
+    return (
+      <AiAssistantFullscreen
+        open={isFullscreen}
+        title="Ask AI"
+        subtitle="RAG Knowledge Base • Spasial PostGIS"
+        messages={messages}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        quickIdeas={quickIdeas}
+        isStreaming={isStreaming}
+        error={error}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+        availableModels={availableModels}
+        showSettingsButton={true}
+        showExportButton={true}
+        onSend={handleSendChat}
+        onStop={stopStreaming}
+        onNewChat={createNewSession}
+        onSelectSession={loadSession}
+        onDeleteSession={deleteSession}
+        onSelectIdea={handleSelectIdea}
+        onFeedback={handleFeedback}
+        onExportMarkdown={() => exportChatToMarkdown(messages)}
+        onExitFullscreen={() => setIsFullscreen(false)}
+        rightPanelOpen={rightPanelOpen}
+        onToggleRightPanel={() => {
+          setRightPanelOpen((p) => !p);
+          setRightPanelView("summary");
+        }}
+        rightPanelContent={
+          <FullscreenRightPanel
+            rightPanelOpen={rightPanelOpen}
+            setRightPanelOpen={setRightPanelOpen}
+            rightPanelView={rightPanelView}
+            setRightPanelView={setRightPanelView}
             agentAuth={agentAuth}
-            messages={messages}
-            sessionsCount={sessions.length}
-            showHistoryInDrawer={showHistoryInDrawer}
-            setView={setView}
-            setIsOpen={setIsOpen}
-            setIsFullscreen={setIsFullscreen}
-            setShowHistoryInDrawer={setShowHistoryInDrawer}
-            setShowTokenMenu={setShowTokenMenu}
-            setPermSearch={setPermSearch}
-            createNewSession={createNewSession}
-            exportChatToMarkdown={exportChatToMarkdown}
+            activeModelLabel={activeModelLabel}
+            permCatalog={permCatalog}
+            permLoading={permLoading}
+            permSaving={fsPermSaving}
+            permRevoking={fsPermRevoking}
+            permTier={permTier}
+            setPermTier={setPermTier}
+            permSelected={permSelected}
+            setPermSelected={setPermSelected}
+            permSearch={fsPermSearch}
+            setPermSearch={setFsPermSearch}
+            permExpandedDomains={permExpandedDomains}
+            setPermExpandedDomains={setPermExpandedDomains}
+            onSavePermissions={handleSavePermissions}
+            onRevokePermissions={handleRevokePermissions}
           />
+        }
+      />
+    );
+  }
 
-          {view === "onboarding" && (
-            <AiDrawerOnboarding
-              onReviewPermissions={() => {
-                setPermSearch("");
-                setView("permissions");
-              }}
-            />
-          )}
-
-          {view === "permissions" && (
-            <AiDrawerPermissions
-              {...permSharedProps}
-              saving={permSaving}
-              onCancel={() => setView("onboarding")}
-              onAuthorize={handleAuthorize}
-            />
-          )}
-
-          {view === "settings" && (
-            <AiDrawerSettings
-              {...permSharedProps}
-              accessTier={agentAuth?.access_tier || "FULL"}
-              saving={permSaving}
-              revoking={permRevoking}
-              onSave={handleAuthorize}
-              onRevoke={handleRevoke}
-            />
-          )}
-
-          {view === "chat" && (
-            <AiDrawerChat
-              messages={messages}
-              pinnedIdeas={pinnedIdeas}
-              input={input}
-              onInputChange={setInput}
-              onSend={handleSendChat}
-              onStop={stopStreaming}
-              onClear={clearMessages}
-              onSelectIdea={handleSelectIdea}
-              isStreaming={isStreaming}
-              error={error}
-              sessions={sessions}
-              activeSessionId={activeSessionId}
-              onNewChat={createNewSession}
-              onLoadSession={loadSession}
-              onDeleteSession={deleteSession}
-              showHistory={showHistoryInDrawer}
-              onToggleHistory={() => setShowHistoryInDrawer((p) => !p)}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {isFullscreen && (
-        <AiFullscreenLayout
-          messages={messages}
-          pinnedIdeas={pinnedIdeas}
-          input={input}
-          onInputChange={setInput}
-          onSend={handleSendChat}
-          onStop={stopStreaming}
-          onClear={clearMessages}
-          onSelectIdea={handleSelectIdea}
-          onConfigurePermissions={() => {
-            setIsFullscreen(false);
-            setIsOpen(true);
-            setShowTokenMenu(false);
+  const customViewContent = (
+    <>
+      {view === "onboarding" && (
+        <AiDrawerOnboarding
+          onReviewPermissions={() => {
             setPermSearch("");
-            setView("settings");
+            setView("permissions");
           }}
-          isStreaming={isStreaming}
-          error={error}
-          agentAuth={agentAuth}
-          showTokenMenu={showTokenMenu}
-          onToggleTokenMenu={() => setShowTokenMenu((p) => !p)}
-          selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
-          availableModels={availableModels}
-          onExitFullscreen={() => {
-            setIsFullscreen(false);
-            setIsOpen(true);
-          }}
-          sessions={sessions}
-          activeSessionId={activeSessionId}
-          onNewChat={createNewSession}
-          onLoadSession={loadSession}
-          onDeleteSession={deleteSession}
+        />
+      )}
+
+      {view === "permissions" && (
+        <AiDrawerPermissions
+          {...permSharedProps}
+          saving={permSaving}
+          onCancel={() => setView("onboarding")}
+          onAuthorize={handleAuthorize}
+        />
+      )}
+
+      {view === "settings" && (
+        <AiDrawerSettings
+          {...permSharedProps}
+          accessTier={agentAuth?.access_tier || "FULL"}
+          saving={permSaving}
+          revoking={permRevoking}
+          onSave={handleAuthorize}
+          onRevoke={handleRevoke}
         />
       )}
     </>
+  );
+
+  return (
+    <AiAssistantDrawer
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      title="Ask AI"
+      subtitle={
+        view === "chat"
+          ? "RAG Knowledge Base • Spasial PostGIS"
+          : view === "settings"
+          ? `Scope: PLATFORM_INTERNAL • ${agentAuth?.access_tier || "FULL"}`
+          : "K2NET Core Platform (Root HQ)"
+      }
+      messages={messages}
+      sessions={sessions}
+      activeSessionId={activeSessionId}
+      quickIdeas={quickIdeas}
+      isStreaming={isStreaming}
+      error={error}
+      showSettingsButton={true}
+      showExportButton={true}
+      customView={view}
+      customViewContent={customViewContent}
+      onBack={() => setView(view === "settings" ? "chat" : "onboarding")}
+      onSend={handleSendChat}
+      onStop={stopStreaming}
+      onNewChat={createNewSession}
+      onSelectSession={loadSession}
+      onDeleteSession={deleteSession}
+      onSelectIdea={handleSelectIdea}
+      onFeedback={handleFeedback}
+      onToggleSettings={() => {
+        setPermSearch("");
+        setView(view === "settings" ? "chat" : "settings");
+      }}
+      onExportMarkdown={() => exportChatToMarkdown(messages)}
+      onMaximize={() => {
+        setIsOpen(false);
+        setIsFullscreen(true);
+      }}
+    />
   );
 }

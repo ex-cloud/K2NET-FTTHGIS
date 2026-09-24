@@ -1,7 +1,6 @@
 import * as React from "react";
+import { AiAssistantDrawer, AiAssistantFullscreen } from "@k2net/ui";
 import { useTenantAiChat } from "./ai/useTenantAiChat";
-import { TenantAiFullscreenLayout } from "./ai/TenantAiFullscreenLayout";
-import { TenantAiDrawerLayout } from "./ai/TenantAiDrawerLayout";
 
 interface TenantAiAssistantProps {
   open: boolean;
@@ -10,17 +9,11 @@ interface TenantAiAssistantProps {
 
 export function TenantAiAssistant({ open, onOpenChange }: TenantAiAssistantProps) {
   const [isFullscreen, setIsFullscreen] = React.useState(false);
-  const [sidebarOpen, setSidebarOpen] = React.useState(true);
-  const [sidebarSearch, setSidebarSearch] = React.useState("");
-  const [showConfig, setShowConfig] = React.useState(false);
   const [selectedModel, setSelectedModel] = React.useState("gemini-2.5-flash");
 
   const {
     messages,
-    input,
-    setInput,
     isTyping,
-    copiedId,
     greeting,
     quickIdeas,
     sessions,
@@ -38,9 +31,6 @@ export function TenantAiAssistant({ open, onOpenChange }: TenantAiAssistantProps
         e.preventDefault();
         onOpenChange(!open);
       }
-      if (e.key === "Escape" && isFullscreen) {
-        setIsFullscreen(false);
-      }
     };
 
     const handleCustomEvent = () => onOpenChange(true);
@@ -51,62 +41,56 @@ export function TenantAiAssistant({ open, onOpenChange }: TenantAiAssistantProps
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("k2net-toggle-ai-assistant", handleCustomEvent);
     };
-  }, [open, onOpenChange, isFullscreen]);
+  }, [open, onOpenChange]);
 
-  const filteredSessions = React.useMemo(() => {
-    return sessions.filter((s) => s.title.toLowerCase().includes(sidebarSearch.toLowerCase()));
-  }, [sessions, sidebarSearch]);
+  const availableModels = [
+    { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash", badge: "Default" },
+    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro", badge: "Deep Analysis" },
+  ];
 
   if (isFullscreen && open) {
     return (
-      <TenantAiFullscreenLayout
+      <AiAssistantFullscreen
+        open={open}
+        title="Ask AI"
+        subtitle="RAG Knowledge Base • Spasial PostGIS"
         greeting={greeting}
         messages={messages}
-        input={input}
-        setInput={setInput}
-        isTyping={isTyping}
-        copiedId={copiedId}
-        onCopy={handleCopy}
-        onSend={handleSend}
-        onExitFullscreen={() => setIsFullscreen(false)}
-        onClose={() => {
-          setIsFullscreen(false);
-          onOpenChange(false);
-        }}
-        quickIdeas={quickIdeas}
+        isStreaming={isTyping}
         sessions={sessions}
         activeSessionId={activeSessionId}
-        onNewChat={handleNewChat}
-        onLoadSession={handleLoadSession}
-        onDeleteSession={handleDeleteSession}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        sidebarSearch={sidebarSearch}
-        setSidebarSearch={setSidebarSearch}
-        filteredSessions={filteredSessions}
+        quickIdeas={quickIdeas}
         selectedModel={selectedModel}
-        setSelectedModel={setSelectedModel}
-        showConfig={showConfig}
-        setShowConfig={setShowConfig}
+        onModelChange={setSelectedModel}
+        availableModels={availableModels}
+        onSend={handleSend}
+        onNewChat={handleNewChat}
+        onSelectSession={handleLoadSession}
+        onDeleteSession={handleDeleteSession}
+        onCopyMessage={handleCopy}
+        onExitFullscreen={() => setIsFullscreen(false)}
       />
     );
   }
 
   return (
-    <TenantAiDrawerLayout
+    <AiAssistantDrawer
       open={open}
       onOpenChange={onOpenChange}
-      onMaximize={() => setIsFullscreen(true)}
+      title="Ask AI"
+      subtitle="RAG Knowledge Base • Spasial PostGIS"
       greeting={greeting}
       messages={messages}
-      input={input}
-      setInput={setInput}
-      isTyping={isTyping}
-      copiedId={copiedId}
-      onCopy={handleCopy}
+      isStreaming={isTyping}
+      sessions={sessions}
+      activeSessionId={activeSessionId}
+      quickIdeas={quickIdeas}
       onSend={handleSend}
       onNewChat={handleNewChat}
-      quickIdeas={quickIdeas}
+      onSelectSession={handleLoadSession}
+      onDeleteSession={handleDeleteSession}
+      onCopyMessage={handleCopy}
+      onMaximize={() => setIsFullscreen(true)}
     />
   );
 }

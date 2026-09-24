@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { exportChatToMarkdown, type ChatMessage as Message } from "@/hooks/useAiChatStream";
-import type { DrawerView } from "./FloatingAiAssistantHeader";
+import type { DrawerView } from "@k2net/ui";
 
 interface UseAssistantKeyboardProps {
   isOpen: boolean;
