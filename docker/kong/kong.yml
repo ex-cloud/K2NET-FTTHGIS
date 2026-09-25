@@ -35,6 +35,8 @@ services:
       # Public pre-login routes — no JWT needed (Spring Boot Security handles permitAll)
       - name: backend-public-routes
         paths:
+          - /api/v1/public/organizations
+          - /api/v1/public
           - /api/v1/auth
           - /api/v1/organizations/check-slug
           - /api/v1/organizations/register
