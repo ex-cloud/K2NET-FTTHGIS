@@ -2,6 +2,7 @@ import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { ActionTooltip, cn } from "@k2net/ui";
 import { Sparkles, Zap, Shield } from "lucide-react";
+import { useTenantInfo } from "../../hooks/useTenantInfo";
 
 export type TenantTier = "starter" | "pro" | "enterprise" | "free" | "basic" | "business";
 
@@ -43,6 +44,12 @@ const TIER_CONFIGS: Record<string, TierConfig> = {
     tooltipLabel: "Paket Pro Aktif • Klik untuk kelola kuota",
     icon: Zap,
   },
+  professional: {
+    label: "Pro",
+    badgeClass: "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:border-primary/40 shadow-[0_0_8px_rgba(16,185,129,0.1)]",
+    tooltipLabel: "Paket Professional Aktif • Klik untuk kelola kuota",
+    icon: Zap,
+  },
   business: {
     label: "Business",
     badgeClass: "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:border-primary/40 shadow-[0_0_8px_rgba(16,185,129,0.1)]",
@@ -58,23 +65,26 @@ const TIER_CONFIGS: Record<string, TierConfig> = {
 };
 
 export function TenantTierBadge({
-  tier = "pro",
+  tier,
   showLink = true,
   className,
 }: TenantTierBadgeProps) {
-  const normalizedTier = (tier || "pro").toLowerCase();
+  const { planTier } = useTenantInfo();
+  const effectiveTier = tier ?? planTier;
+
+  const normalizedTier = (effectiveTier || "pro").toLowerCase();
   const config = TIER_CONFIGS[normalizedTier] || TIER_CONFIGS.pro;
   const Icon = config.icon;
 
   const badgeElement = (
     <span
       className={cn(
-        "inline-flex items-center gap-1 h-5 px-2 text-[10px] font-semibold uppercase tracking-wider rounded-full border transition-all duration-200 cursor-pointer select-none",
+        "inline-flex items-center gap-0.5 h-4 px-1.5 text-[9px] font-medium uppercase tracking-wide rounded-full border transition-all duration-200 cursor-pointer select-none",
         config.badgeClass,
         className
       )}
     >
-      {Icon && <Icon className="size-2.5 shrink-0" />}
+      {Icon && <Icon className="size-2 shrink-0" />}
       <span>{config.label}</span>
     </span>
   );
@@ -82,7 +92,10 @@ export function TenantTierBadge({
   return (
     <ActionTooltip label={config.tooltipLabel} side="bottom">
       {showLink ? (
-        <Link to="/billing" className="inline-flex focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-full">
+        <Link
+          to="/billing"
+          className="inline-flex focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-full"
+        >
           {badgeElement}
         </Link>
       ) : (

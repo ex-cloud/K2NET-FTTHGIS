@@ -2,8 +2,7 @@ import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { ActionTooltip, cn } from "@k2net/ui";
 import { Boxes } from "lucide-react";
-import { useAuth } from "@k2net/auth/client";
-import { useImpersonationSession } from "../../lib/useImpersonationSession";
+import { useTenantInfo } from "../../hooks/useTenantInfo";
 
 export interface TenantLogoProps {
   logoUrl?: string;
@@ -14,10 +13,14 @@ export interface TenantLogoProps {
 
 export function TenantLogo({
   logoUrl,
-  name = "Organisasi",
+  name,
   href = "/projects",
   className,
 }: TenantLogoProps) {
+  const { logoUrl: resolvedLogoUrl, organizationName } = useTenantInfo();
+  const effectiveLogoUrl = logoUrl ?? resolvedLogoUrl;
+  const effectiveName = name ?? organizationName;
+
   const content = (
     <div
       className={cn(
@@ -25,8 +28,12 @@ export function TenantLogo({
         className
       )}
     >
-      {logoUrl ? (
-        <img src={logoUrl} alt={name} className="size-full object-contain p-0.5" />
+      {effectiveLogoUrl ? (
+        <img
+          src={effectiveLogoUrl}
+          alt={effectiveName}
+          className="size-full object-contain p-0.5"
+        />
       ) : (
         <Boxes className="size-3.5 sm:size-4 text-foreground/80" />
       )}
@@ -34,7 +41,7 @@ export function TenantLogo({
   );
 
   return (
-    <ActionTooltip label={`Logo ${name} • Klik untuk daftar proyek`} side="bottom">
+    <ActionTooltip label="Back to Organization Home" side="bottom">
       {href ? (
         <Link
           to={href}
@@ -62,23 +69,8 @@ export function TenantOrgName({
   className,
   maxTruncateWidthClass = "max-w-[140px] xs:max-w-[180px] sm:max-w-[240px] md:max-w-[320px]",
 }: TenantOrgNameProps) {
-  const { user } = useAuth();
-  const { isImpersonating, tenantName: impersonatedTenantName } = useImpersonationSession();
-
-  // Resolve official organization name with dynamic fallbacks
-  const resolvedName = React.useMemo(() => {
-    if (name) return name;
-    if (isImpersonating && impersonatedTenantName) return impersonatedTenantName;
-    const customTenantName = (user as { tenantName?: string } | null)?.tenantName;
-    if (customTenantName) return customTenantName;
-    if (user?.tenantSlug) {
-      if (user.tenantSlug.toLowerCase() === "kircon") {
-        return "PT Kircon Mandiri Telekom";
-      }
-      return `PT ${user.tenantSlug.toUpperCase()} Networks`;
-    }
-    return "PT Kircon Mandiri Telekom";
-  }, [name, isImpersonating, impersonatedTenantName, user]);
+  const { organizationName } = useTenantInfo();
+  const resolvedName = name ?? organizationName;
 
   const content = (
     <span
@@ -93,7 +85,7 @@ export function TenantOrgName({
   );
 
   return (
-    <ActionTooltip label={`Organisasi: ${resolvedName} • Klik untuk daftar proyek`} side="bottom">
+    <ActionTooltip label={`Organization: ${resolvedName}`} side="bottom">
       {href ? (
         <Link
           to={href}

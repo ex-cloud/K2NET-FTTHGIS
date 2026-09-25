@@ -35,7 +35,14 @@ const queryClient = new QueryClient({
 });
 
 async function bootstrap() {
-  const { realm } = await resolveTenantRealm();
+  const { realm, resolvedTenant } = await resolveTenantRealm();
+  if (resolvedTenant && typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem("k2net_resolved_tenant", JSON.stringify(resolvedTenant));
+    } catch {
+      // ignore
+    }
+  }
   const keycloakConfig = getTenantKeycloakConfig(realm);
 
   keycloakConfig.onTokens = (tokens) => {
