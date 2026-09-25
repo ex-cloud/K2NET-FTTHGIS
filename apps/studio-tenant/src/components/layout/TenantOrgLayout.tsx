@@ -1,7 +1,7 @@
 import * as React from "react";
-import { Outlet, Link } from "@tanstack/react-router";
+import { Outlet } from "@tanstack/react-router";
 import { useAuth } from "@k2net/auth/client";
-import { ShieldAlert, ShieldCheck, Sparkles, Search, HelpCircle, MessageSquare } from "lucide-react";
+import { ShieldAlert, Sparkles, Search, HelpCircle, MessageSquare } from "lucide-react";
 import {
   Button,
   Separator,
@@ -20,6 +20,8 @@ import { TenantAiAssistant } from "../TenantAiAssistant";
 import { TenantHelpDialog } from "../TenantHelpDialog";
 import { TenantNotificationsSheet } from "../TenantNotificationsSheet";
 import { TenantUserNav } from "../TenantUserNav";
+import { TenantOrgBrand } from "../system/TenantOrgBrand";
+import { TenantTierBadge } from "../system/TenantTierBadge";
 import { TenantOrgSidebar } from "./TenantOrgSidebar";
 import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
 import { TenantMobileFloatingDock } from "../system/TenantMobileFloatingDock";
@@ -43,10 +45,6 @@ function TenantOrgLayoutContent() {
   const [aiOpen, setAiOpen] = React.useState(false);
   const [helpOpen, setHelpOpen] = React.useState(false);
   const [notifOpen, setNotifOpen] = React.useState(false);
-
-  const appName = user?.tenantSlug
-    ? `FTTH GIS • ${user.tenantSlug.toUpperCase()}`
-    : "FTTH GIS PORTAL";
 
   return (
     <div className="flex flex-col h-screen w-full bg-background overflow-hidden font-sans text-foreground">
@@ -121,21 +119,10 @@ function TenantOrgLayoutContent() {
 
       {/* ── 2. Top Header (Organization Scope) ─────────────────────────────── */}
       <header className="flex h-12 shrink-0 w-full items-center justify-between border-b border-border/40 bg-background px-3 sm:px-4 z-40 py-2 select-none">
-        {/* LEFT SECTION: Logo + Org Badge */}
+        {/* LEFT SECTION: Logo + Org Brand + Tier Badge */}
         <div className="flex items-center gap-2 min-w-0">
-          <Link to="/projects" className="flex items-center gap-2 cursor-pointer shrink-0" title="Beranda Organisasi">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 border border-primary/30 group overflow-hidden">
-              <ShieldCheck className="size-4 text-primary shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-            </div>
-            <span className="text-xs font-bold uppercase tracking-wider text-primary truncate">
-              {appName}
-            </span>
-          </Link>
-
-          <Separator orientation="vertical" className="mx-1 h-4 bg-border/40 shrink-0" />
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/40">
-            ORGANIZATION SCOPE
-          </span>
+          <TenantOrgBrand href="/projects" showSeparator={false} />
+          <TenantTierBadge tier="pro" />
         </div>
 
         {/* RIGHT SECTION: Tools + UserNav */}

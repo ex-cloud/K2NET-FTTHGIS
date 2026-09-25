@@ -7,10 +7,12 @@ import {
   ClipboardList,
   MapPin,
   Menu,
-  X,
 } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger, Button } from "@k2net/ui";
-import { cn } from "@/lib/utils";
+import {
+  MobileNavigationSheet as SharedMobileNavigationSheet,
+  type MobileTabHeaderItem,
+  type MobileTabId,
+} from "@k2net/ui";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useTaskStore } from "@/store/task-store";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -56,9 +58,10 @@ export function MobileNavigationSheet({
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeSecondaryKey, setActiveSecondaryKey] = React.useState<string | null>(null);
 
-  const handleTabSelect = (tab: MobileTab) => {
-    if (onTabChange) onTabChange(tab);
-    setInternalTab(tab);
+  const handleTabSelect = (tab: MobileTabId) => {
+    const castedTab = tab as MobileTab;
+    if (onTabChange) onTabChange(castedTab);
+    setInternalTab(castedTab);
   };
 
   // Sync active secondary sidebar with current pathname when opening
@@ -87,166 +90,70 @@ export function MobileNavigationSheet({
     }
   };
 
+  const adminTabs: MobileTabHeaderItem[] = [
+    { id: "search", title: "Search & Commands", icon: Search },
+    { id: "help", title: "Help & Support", icon: HelpCircle },
+    { id: "ai", title: "Ask AI Copilot", icon: Sparkles },
+    { id: "tasks", title: "Projects & Issues", icon: ClipboardList, badgeCount: unreadB2BCount },
+    { id: "gis", title: "GIS Diagnostics", icon: MapPin },
+    { id: "menu", title: "Navigation Menu", icon: Menu, variant: "primary" },
+  ];
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      {trigger && <SheetTrigger asChild>{trigger}</SheetTrigger>}
-      <SheetContent
-        side="bottom"
-        showCloseButton={false}
-        className="w-full h-[88vh] max-h-[90vh] sm:max-w-2xl sm:mx-auto bg-sidebar border-t border-border rounded-t-2xl p-0 dark text-foreground flex flex-col overflow-hidden shadow-xl"
-      >
-        {/* TOP GRAB HANDLE */}
-        <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted-foreground/30 shrink-0" />
-
-        {/* TOP DOCK HEADER (Directly Aligned Icons) */}
-        <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/70 bg-background/95 backdrop-blur-xl shrink-0">
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              type="button"
-              onClick={() => handleTabSelect("search")}
-              className={cn(
-                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
-                activeTab === "search"
-                  ? "bg-muted text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-              )}
-              title="Search & Commands"
-            >
-              <Search className="size-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect("help")}
-              className={cn(
-                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
-                activeTab === "help"
-                  ? "bg-muted text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-              )}
-              title="Help & Support"
-            >
-              <HelpCircle className="size-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect("ai")}
-              className={cn(
-                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
-                activeTab === "ai"
-                  ? "bg-primary/10 text-primary font-semibold border border-primary/20 shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-              )}
-              title="K2NET AI Copilot"
-            >
-              <Sparkles className="size-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect("tasks")}
-              className={cn(
-                "size-8 rounded-lg flex items-center justify-center transition-all relative cursor-pointer",
-                activeTab === "tasks"
-                  ? "bg-muted text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-              )}
-              title="Projects & Issues"
-            >
-              <ClipboardList className="size-4" />
-              {unreadB2BCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 size-2 bg-destructive rounded-full" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect("gis")}
-              className={cn(
-                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
-                activeTab === "gis"
-                  ? "bg-muted text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-              )}
-              title="GIS Diagnostics"
-            >
-              <MapPin className="size-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect("menu")}
-              className={cn(
-                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
-                activeTab === "menu"
-                  ? "bg-muted text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-              )}
-              title="Navigation Menu"
-            >
-              <Menu className="size-4" />
-            </button>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onOpenChange(false)}
-            className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer shrink-0"
-            title="Tutup Modal"
-          >
-            <X className="size-4" />
-          </Button>
+    <SharedMobileNavigationSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      activeTab={activeTab}
+      onTabChange={handleTabSelect}
+      tabs={adminTabs}
+      trigger={trigger}
+    >
+      {/* TAB 1: DESKTOP-ALIGNED SEARCH & COMMAND ENGINE */}
+      {activeTab === "search" && (
+        <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in-0 duration-200">
+          <CommandPaletteContent
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            onSelectItem={handleSearchSelect}
+            className="h-full"
+          />
         </div>
+      )}
 
-        {/* TAB 1: DESKTOP-ALIGNED SEARCH & COMMAND ENGINE */}
-        {activeTab === "search" && (
-          <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in-0 duration-200">
-            <CommandPaletteContent
-              query={searchQuery}
-              onQueryChange={setSearchQuery}
-              onSelectItem={handleSearchSelect}
-              className="h-full"
-            />
-          </div>
-        )}
+      {/* TAB 2: HELP & SUPPORT */}
+      {activeTab === "help" && (
+        <MobileHelpTab
+          onNavigate={handleNavigate}
+          onOpenAi={() => handleTabSelect("ai")}
+        />
+      )}
 
-        {/* TAB 2: HELP & SUPPORT */}
-        {activeTab === "help" && (
-          <MobileHelpTab
-            onNavigate={handleNavigate}
-            onOpenAi={() => handleTabSelect("ai")}
-          />
-        )}
+      {/* TAB 3: AUTHENTIC AI ASSISTANT */}
+      {activeTab === "ai" && <MobileAiTab onClose={() => onOpenChange(false)} />}
 
-        {/* TAB 3: AUTHENTIC K2NET AI ASSISTANT */}
-        {activeTab === "ai" && <MobileAiTab onClose={() => onOpenChange(false)} />}
+      {/* TAB 4: TASKS & ISSUES INBOX */}
+      {activeTab === "tasks" && (
+        <MobileTasksTab onNavigate={handleNavigate} />
+      )}
 
-        {/* TAB 4: TASKS & ISSUES INBOX */}
-        {activeTab === "tasks" && (
-          <MobileTasksTab onNavigate={handleNavigate} />
-        )}
+      {/* TAB 5: GIS SPATIAL DIAGNOSTICS */}
+      {activeTab === "gis" && (
+        <MobileGisTab onNavigate={handleNavigate} />
+      )}
 
-        {/* TAB 5: GIS SPATIAL DIAGNOSTICS */}
-        {activeTab === "gis" && (
-          <MobileGisTab onNavigate={handleNavigate} />
-        )}
-
-        {/* TAB 6: NAVIGATION MENU (Level 1 Main <-> Level 2 Secondary) */}
-        {activeTab === "menu" && (
-          <MobileMenu2Tier
-            activeSecondaryKey={activeSecondaryKey}
-            onSelectSecondaryKey={setActiveSecondaryKey}
-            onNavigate={handleNavigate}
-            pathname={pathname}
-            appName={appName}
-            logoUrl={logoUrl}
-            unreadB2BCount={unreadB2BCount}
-            canAccess={canAccess}
-          />
-        )}
-      </SheetContent>
-    </Sheet>
+      {/* TAB 6: NAVIGATION MENU (Level 1 Main <-> Level 2 Secondary) */}
+      {activeTab === "menu" && (
+        <MobileMenu2Tier
+          activeSecondaryKey={activeSecondaryKey}
+          onSelectSecondaryKey={setActiveSecondaryKey}
+          onNavigate={handleNavigate}
+          pathname={pathname}
+          appName={appName}
+          logoUrl={logoUrl}
+          unreadB2BCount={unreadB2BCount}
+          canAccess={canAccess}
+        />
+      )}
+    </SharedMobileNavigationSheet>
   );
 }

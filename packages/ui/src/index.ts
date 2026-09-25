@@ -58,6 +58,9 @@ export * from "./components/ai";
 // Shared Auth Components (Linear Style)
 export * from "./components/auth";
 
+// Shared Mobile Floating Command Dock & Navigation Sheet Suite
+export * from "./components/mobile-dock";
+
 // Error Pages
 export * from "./components/errors/NotFoundError";
 export * from "./components/errors/TenantDomainError";

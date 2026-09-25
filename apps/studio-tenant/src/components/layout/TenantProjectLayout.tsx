@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Outlet, useParams, useRouterState, Link } from "@tanstack/react-router";
-import { ShieldAlert, ShieldCheck, Sparkles, Search, HelpCircle, MessageSquare } from "lucide-react";
+import { Outlet, useParams, useRouterState } from "@tanstack/react-router";
+import { ShieldAlert, Sparkles, Search, HelpCircle, MessageSquare } from "lucide-react";
 import {
   Button,
   Separator,
@@ -19,6 +19,7 @@ import { TenantAiAssistant } from "../TenantAiAssistant";
 import { TenantHelpDialog } from "../TenantHelpDialog";
 import { TenantNotificationsSheet } from "../TenantNotificationsSheet";
 import { TenantUserNav } from "../TenantUserNav";
+import { TenantOrgBrand } from "../system/TenantOrgBrand";
 import { TenantProjectSidebar } from "./TenantProjectSidebar";
 import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
 import { ProjectSwitcher } from "./ProjectSwitcher";
@@ -142,15 +143,13 @@ function TenantProjectLayoutContent() {
 
       {/* ── 2. Top Header (Project Scope with ProjectSwitcher) ─────────────── */}
       <header className="flex h-12 shrink-0 w-full items-center justify-between border-b border-border/40 bg-background px-3 sm:px-4 z-40 py-2 select-none">
-        {/* LEFT SECTION: Logo + Project Switcher Dropdown */}
+        {/* LEFT SECTION: Logo + Org Brand (Link ke /projects) + Project Switcher Dropdown */}
         <div className="flex items-center gap-2 min-w-0">
-          <Link to="/projects" className="flex items-center gap-1.5 cursor-pointer shrink-0" title="Kembali ke Daftar Proyek">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 border border-primary/30 group overflow-hidden">
-              <ShieldCheck className="size-4 text-primary shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-            </div>
-          </Link>
-
-          <Separator orientation="vertical" className="mx-0.5 h-4 bg-border/40 shrink-0" />
+          <TenantOrgBrand
+            href="/projects"
+            showSeparator={true}
+            maxTruncateWidthClass="max-w-[100px] xs:max-w-[140px] sm:max-w-[180px] md:max-w-[220px]"
+          />
 
           {/* Project Switcher Dropdown with + New Project Trigger */}
           <ProjectSwitcher
@@ -240,6 +239,7 @@ function TenantProjectLayoutContent() {
 
       {/* ── 4. Mobile Floating Command Dock ───────────────────────────────── */}
       <TenantMobileFloatingDock
+        projectId={projectId}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
         onOpenAi={() => setAiOpen(true)}
         onOpenHelp={() => setHelpOpen(true)}

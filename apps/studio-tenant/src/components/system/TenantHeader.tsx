@@ -1,9 +1,9 @@
 import * as React from "react";
-import { Link } from "@tanstack/react-router";
-import { HelpCircle, MessageSquare, ShieldCheck, Search, Sparkles } from "lucide-react";
+import { HelpCircle, MessageSquare, Search, Sparkles } from "lucide-react";
 import { Button, Separator, ActionTooltip } from "@k2net/ui";
-import { useAuth } from "@k2net/auth/client";
 import { TenantUserNav } from "../TenantUserNav";
+import { TenantOrgBrand } from "./TenantOrgBrand";
+import { TenantTierBadge } from "./TenantTierBadge";
 
 interface TenantHeaderProps {
   onOpenCommandPalette: () => void;
@@ -18,28 +18,12 @@ export function TenantHeader({
   onOpenHelp,
   onOpenNotif,
 }: TenantHeaderProps) {
-  const { user } = useAuth();
-
-  const appName = user?.tenantSlug
-    ? `FTTH GIS ${user.tenantSlug.toUpperCase()}`
-    : "FTTH GIS PORTAL";
-
   return (
     <header className="flex h-12 shrink-0 w-full items-center justify-between border-b border-border/40 bg-background px-3 sm:px-4 z-40 py-2 select-none">
-      {/* LEFT SECTION: Logo + Dynamic App Name */}
-      <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-        <Link to="/" className="flex items-center cursor-pointer shrink-0" title={`${appName} Dashboard`}>
-          <div className="flex size-6 items-center justify-center rounded bg-primary/10 border border-primary/30 group overflow-hidden">
-            <ShieldCheck className="size-3.5 text-primary shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-          </div>
-        </Link>
-
-        <Separator orientation="vertical" className="mx-0.5 h-4 bg-border/40 shrink-0" />
-
-        {/* Dynamic App Name (Visible across Desktop & Mobile) */}
-        <span className="text-[11px] font-bold uppercase tracking-widest text-primary truncate max-w-[140px] sm:max-w-none shrink-0">
-          {appName}
-        </span>
+      {/* LEFT SECTION: Logo + Org Brand + Tier Badge */}
+      <div className="flex items-center gap-2 min-w-0">
+        <TenantOrgBrand href="/projects" showSeparator={false} />
+        <TenantTierBadge tier="pro" />
       </div>
 
       {/* RIGHT SECTION: Desktop Tools + User Nav */}
