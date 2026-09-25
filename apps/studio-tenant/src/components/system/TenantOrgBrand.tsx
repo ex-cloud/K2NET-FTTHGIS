@@ -69,8 +69,19 @@ export function TenantOrgName({
   className,
   maxTruncateWidthClass = "max-w-[140px] xs:max-w-[180px] sm:max-w-[240px] md:max-w-[320px]",
 }: TenantOrgNameProps) {
-  const { organizationName } = useTenantInfo();
+  const { organizationName, isLoading } = useTenantInfo();
   const resolvedName = name ?? organizationName;
+
+  if (isLoading && !name) {
+    return (
+      <div
+        className={cn(
+          "h-4 w-20 sm:w-28 bg-muted/60 animate-pulse rounded select-none shrink-0",
+          className
+        )}
+      />
+    );
+  }
 
   const content = (
     <span

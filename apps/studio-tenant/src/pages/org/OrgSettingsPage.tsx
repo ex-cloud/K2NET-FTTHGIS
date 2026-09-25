@@ -19,9 +19,11 @@ import {
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { useAuth } from "@k2net/auth/client";
+import { useTenantInfo } from "../../hooks/useTenantInfo";
 
 export function OrgSettingsPage() {
   const { user } = useAuth();
+  const { organizationName, slug } = useTenantInfo();
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
 
@@ -93,7 +95,7 @@ export function OrgSettingsPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Nama Resmi Organisasi / ISP</Label>
               <Input
-                defaultValue="PT Kircon Mandiri Telekomunikasi"
+                defaultValue={organizationName || "Organization Workspace"}
                 className="h-8.5 text-xs"
               />
             </div>
@@ -103,7 +105,7 @@ export function OrgSettingsPage() {
                 <Label className="text-xs font-semibold">Subdomain Tenant</Label>
                 <div className="flex items-center">
                   <Input
-                    defaultValue={user?.tenantSlug || "kircon"}
+                    defaultValue={slug || user?.tenantSlug || "workspace"}
                     disabled
                     className="h-8.5 text-xs font-mono bg-muted/40 rounded-r-none"
                   />
@@ -117,7 +119,8 @@ export function OrgSettingsPage() {
                 <Label className="text-xs font-semibold">Email Kontak Resmi</Label>
                 <Input
                   type="email"
-                  defaultValue="noc@kircon.net.id"
+                  defaultValue={user?.email || ""}
+                  placeholder="admin@isp.net.id"
                   className="h-8.5 text-xs"
                 />
               </div>
@@ -126,7 +129,8 @@ export function OrgSettingsPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Alamat Kantor Pusat / NOC</Label>
               <Textarea
-                defaultValue="Jl. Soekarno Hatta No. 450, Arcamanik, Kota Bandung, Jawa Barat 40293"
+                defaultValue=""
+                placeholder="Masukkan alamat kantor pusat operasional atau NOC..."
                 className="text-xs min-h-[60px] resize-none"
               />
             </div>
@@ -192,7 +196,7 @@ export function OrgSettingsPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Issuer URL</Label>
               <Input
-                defaultValue={`https://auth-gis.kdua.net/realms/${user?.tenantSlug || "kircon"}`}
+                defaultValue={`https://auth-gis.kdua.net/realms/${slug || user?.tenantSlug || "realm"}`}
                 disabled
                 className="h-8.5 text-xs font-mono bg-muted/40"
               />

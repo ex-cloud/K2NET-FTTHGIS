@@ -88,7 +88,7 @@ export function useTenantAiChat() {
       } else if (lower.includes("health") || lower.includes("service") || lower.includes("poller")) {
         replyText = `🩺 **Kesehatan Sistem & Microservices Tenant:**\n\n- **Database PostGIS:** Active Pool Connection 100% OK\n- **Map & Spatial Gateway:** Latency 14ms (Healthy)\n- **Redis Cache & Poller:** Connected (Buffer OK)\n- **Storage S3 Gateway:** Operational (Bucket MinIO Synced)\n\nSemua gateway beroperasi normal tanpa bottleneck antrean.`;
       } else {
-        replyText = `✅ **Jawaban AI Copilot:**\n\nUntuk konfigurasi operasional **${content}** pada portal tenant ${user?.tenantSlug?.toUpperCase() || "ISP"}:\n- Seluruh perubahan tercatat pada audit log gateway.\n- Anda dapat memverifikasi visualisasi rute penarikan secara real-time pada modul **Peta Spasial GIS**.`;
+        replyText = `✅ **Jawaban AI Copilot:**\n\nUntuk konfigurasi operasional **${content}** pada portal tenant:\n- Seluruh perubahan tercatat pada audit log gateway.\n- Anda dapat memverifikasi visualisasi rute penarikan secara real-time pada modul **Peta Spasial GIS**.`;
       }
 
       const aiMsg: Message = {

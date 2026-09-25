@@ -52,11 +52,37 @@ export async function resolveTenantRealm(): Promise<{ realm: string; resolvedTen
     return { realm: import.meta.env.VITE_KEYCLOAK_REALM || "ftth-realm" };
   }
 
+  // 1. Check existing sessionStorage cache for instant frame-0 resolution
+  if (typeof window !== "undefined") {
+    try {
+      const cachedStr = sessionStorage.getItem("k2net_resolved_tenant");
+      if (cachedStr) {
+        const cached: ResolvedTenant = JSON.parse(cachedStr);
+        if (cached && (cached.slug === currentSlug || cached.targetSlug === currentSlug)) {
+          return {
+            realm: cached.realmKey || currentSlug,
+            resolvedTenant: cached,
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   try {
     const res = await fetch(`/api/v1/public/organizations/resolve?slug=${encodeURIComponent(currentSlug)}`);
     if (res.ok) {
       const data: ResolvedTenant = await res.json();
       
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("k2net_resolved_tenant", JSON.stringify(data));
+        } catch {
+          // ignore
+        }
+      }
+
       // If the slug is an alias of a migrated workspace, smoothly redirect to new domain
       if (data.isAlias && data.targetSlug && data.targetSlug !== currentSlug) {
         if (typeof window !== "undefined") {

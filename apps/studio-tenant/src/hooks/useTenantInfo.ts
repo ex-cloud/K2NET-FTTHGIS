@@ -42,31 +42,31 @@ export function useTenantInfo() {
   const organizationName = React.useMemo(() => {
     if (isImpersonating && impersonatedTenantName) return impersonatedTenantName;
     if (resolvedTenant?.organizationName) return resolvedTenant.organizationName;
+    if (initialData?.organizationName) return initialData.organizationName;
     const customTenantName = (user as { tenantName?: string } | null)?.tenantName;
     if (customTenantName) return customTenantName;
-    if (currentSlug && currentSlug !== "ftth-realm" && currentSlug !== "system") {
-      return currentSlug.charAt(0).toUpperCase() + currentSlug.slice(1);
-    }
+    // Human-readable fallback only: NEVER uppercase raw random slug strings
     return "Organization Workspace";
-  }, [isImpersonating, impersonatedTenantName, resolvedTenant?.organizationName, user, currentSlug]);
+  }, [isImpersonating, impersonatedTenantName, resolvedTenant?.organizationName, initialData?.organizationName, user]);
 
   const planTier = React.useMemo(() => {
-    const rawTier = (resolvedTenant?.planTier || "PRO").toLowerCase();
+    const rawTier = (resolvedTenant?.planTier || initialData?.planTier || "PRO").toLowerCase();
     if (rawTier.includes("enterprise") || rawTier.includes("sla")) return "enterprise";
     if (rawTier.includes("pro") || rawTier.includes("business")) return "pro";
     if (rawTier.includes("free") || rawTier.includes("starter") || rawTier.includes("basic")) return "free";
     return "pro";
-  }, [resolvedTenant?.planTier]);
+  }, [resolvedTenant?.planTier, initialData?.planTier]);
 
-  const logoUrl = resolvedTenant?.logoUrl || undefined;
+  const logoUrl = resolvedTenant?.logoUrl || initialData?.logoUrl || undefined;
+  const isResolving = isLoading && !resolvedTenant && !initialData;
 
   return {
     organizationName,
     planTier,
     logoUrl,
     slug: currentSlug,
-    resolvedTenant,
-    isLoading,
+    resolvedTenant: resolvedTenant || initialData || null,
+    isLoading: isResolving,
     refetch,
   };
 }

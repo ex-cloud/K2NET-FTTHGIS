@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Avatar,
   AvatarFallback,
@@ -13,8 +14,10 @@ import {
   DropdownMenuTrigger,
   useTheme,
 } from "@k2net/ui";
-import { Dot, ShieldCheck } from "lucide-react";
+import { Dot, ShieldAlert, Building, Users, CreditCard, LogOut } from "lucide-react";
 import { useAuth } from "@k2net/auth/client";
+import { useTenantInfo } from "../hooks/useTenantInfo";
+import { useImpersonationSession } from "../lib/useImpersonationSession";
 
 function useThemeCustomizations(mounted: boolean) {
   const [isMono, setIsMono] = React.useState(false);
@@ -161,8 +164,11 @@ function UserNavThemeSection({
 }
 
 export function TenantUserNav() {
-  const { user, logout, isSuperAdmin } = useAuth();
+  const { user, logout } = useAuth();
   const { setTheme, resolvedTheme } = useTheme();
+  const { organizationName } = useTenantInfo();
+  const { isImpersonating, exitSession, isExiting } = useImpersonationSession();
+  const navigate = useNavigate();
 
   const mounted = React.useSyncExternalStore(
     () => () => {},
@@ -185,7 +191,7 @@ export function TenantUserNav() {
   if (!mounted) return <div className="h-8 w-8 rounded-full bg-muted/50 animate-pulse border border-border" />;
 
   const displayName = user?.name || user?.username || "Tenant Admin";
-  const subText = user?.email || (user?.tenantSlug ? `${user.tenantSlug.toUpperCase()} WORKSPACE` : "admin@isp.net");
+  const subText = user?.email || (organizationName ? `${organizationName} Workspace` : "Organization Workspace");
   const initial = (user?.username?.[0] || user?.name?.[0] || "U").toUpperCase();
 
   return (
@@ -212,16 +218,16 @@ export function TenantUserNav() {
         <DropdownMenuLabel className="font-semibold">
           <div className="flex flex-col space-y-1">
             <div className="flex items-center justify-between">
-              <p className="text-sm leading-none text-foreground font-bold">
+              <p className="text-sm leading-none text-foreground font-bold truncate">
                 {displayName}
               </p>
-              {isSuperAdmin() && (
-                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-primary/40 bg-primary/10 text-primary">
-                  SUPER
+              {isImpersonating && (
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-500">
+                  ASSIST
                 </span>
               )}
             </div>
-            <p className="text-xs leading-none text-muted-foreground font-medium">
+            <p className="text-xs leading-none text-muted-foreground font-medium truncate">
               {subText}
             </p>
           </div>
@@ -230,29 +236,39 @@ export function TenantUserNav() {
         <DropdownMenuSeparator className="bg-border" />
         <DropdownMenuGroup>
           <DropdownMenuItem
-            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer"
-            onClick={() => window.location.assign("/settings")}
+            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
+            onClick={() => navigate({ to: "/settings" })}
           >
-            Account preferences
+            <Building className="size-3.5 text-muted-foreground" />
+            <span>Pengaturan Organisasi</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer">
-            Feature previews
+          <DropdownMenuItem
+            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
+            onClick={() => navigate({ to: "/team" })}
+          >
+            <Users className="size-3.5 text-muted-foreground" />
+            <span>Anggota & Tim</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer">
-            Changelog
+          <DropdownMenuItem
+            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
+            onClick={() => navigate({ to: "/billing" })}
+          >
+            <CreditCard className="size-3.5 text-muted-foreground" />
+            <span>Langganan & Billing</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
 
-        {isSuperAdmin() && (
+        {isImpersonating && (
           <>
             <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuGroup>
               <DropdownMenuItem
-                className="focus:bg-primary/10 focus:text-primary text-xs font-bold cursor-pointer gap-2"
-                onClick={() => window.location.assign("https://system-gis.kdua.net/organizations")}
+                className="focus:bg-amber-500/10 focus:text-amber-500 text-xs font-bold cursor-pointer gap-2 text-amber-500"
+                onClick={exitSession}
+                disabled={isExiting}
               >
-                <ShieldCheck className="size-3.5" />
-                Back to System Admin
+                <ShieldAlert className="size-3.5 text-amber-500" />
+                <span>{isExiting ? "Menutup Sesi..." : "Akhiri Sesi Bantuan Admin"}</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </>
@@ -268,10 +284,11 @@ export function TenantUserNav() {
 
         <DropdownMenuSeparator className="bg-border" />
         <DropdownMenuItem
-          className="text-xs focus:bg-accent cursor-pointer text-destructive focus:text-destructive font-semibold"
+          className="text-xs focus:bg-accent cursor-pointer text-destructive focus:text-destructive font-semibold gap-2"
           onClick={handleLogout}
         >
-          Log out
+          <LogOut className="size-3.5" />
+          <span>Keluar (Log out)</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

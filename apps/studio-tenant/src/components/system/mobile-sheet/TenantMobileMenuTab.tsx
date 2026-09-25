@@ -17,6 +17,7 @@ import {
   type SecondarySidebarConfig,
 } from "../../../config/tenant-sidebar-navigation";
 import { useAuth } from "@k2net/auth/client";
+import { useTenantInfo } from "../../../hooks/useTenantInfo";
 
 interface TenantMobileMenuTabProps {
   pathname: string;
@@ -32,6 +33,7 @@ export function TenantMobileMenuTab({
   onClose,
 }: TenantMobileMenuTabProps) {
   const { user } = useAuth();
+  const { organizationName } = useTenantInfo();
   const resolvedProjectId = projectId || "proj-bdg-01";
   const isProjectScope = Boolean(pathname.startsWith(`/project/`));
 
@@ -154,7 +156,7 @@ export function TenantMobileMenuTab({
           <span className="text-xs font-bold text-foreground truncate">
             {isProjectScope
               ? `Project Workspace (${resolvedProjectId.toUpperCase()})`
-              : `${user?.tenantSlug ? user.tenantSlug.toUpperCase() : "Tenant"} Organization`}
+              : (organizationName ? `${organizationName} Organization` : "Organization Workspace")}
           </span>
         </div>
 
