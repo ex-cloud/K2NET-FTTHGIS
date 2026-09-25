@@ -13,6 +13,9 @@ import {
   LogOut,
   Plus,
   HelpCircle,
+  FolderKanban,
+  CreditCard,
+  UserCheck,
 } from "lucide-react";
 import {
   CommandPaletteRoot,
@@ -23,62 +26,115 @@ import {
 } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 
-interface TenantCommandPaletteProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface TenantCommandPaletteContentProps {
+  query: string;
+  onQueryChange: (query: string) => void;
+  onSelectAction: (action: () => void) => void;
   onOpenAi?: () => void;
   onOpenHelp?: () => void;
+  projectId?: string;
+  className?: string;
 }
 
-export function TenantCommandPalette({
-  open,
-  onOpenChange,
+export function TenantCommandPaletteContent({
+  query,
+  onQueryChange,
+  onSelectAction,
   onOpenAi,
   onOpenHelp,
-}: TenantCommandPaletteProps) {
-  const [query, setQuery] = React.useState("");
+  projectId,
+  className,
+}: TenantCommandPaletteContentProps) {
   const navigate = useNavigate();
   const { setTheme, resolvedTheme } = useTheme();
   const { logout } = useAuth();
   const isDark = resolvedTheme === "dark";
 
-  // Global Keyboard listener for Cmd+K / Ctrl+K
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        onOpenChange(!open);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onOpenChange]);
+  const resolvedProjectId = projectId || "proj-bdg-01";
 
-  const handleSelect = (action: () => void) => {
-    action();
-    onOpenChange(false);
-    setQuery("");
-  };
+  const pages = React.useMemo(() => {
+    return [
+      {
+        id: "nav-dash",
+        label: "Dashboard Operasional",
+        path: `/project/${resolvedProjectId}/dashboard`,
+        icon: LayoutDashboard,
+        badge: "Home",
+      },
+      {
+        id: "nav-gis",
+        label: "Peta Spasial GIS (Web-QGIS)",
+        path: `/project/${resolvedProjectId}/gis/topology`,
+        icon: MapIcon,
+        badge: "GIS",
+      },
+      {
+        id: "nav-inv",
+        label: "Inventaris Jaringan (OLT & ODP)",
+        path: `/project/${resolvedProjectId}/core/olt`,
+        icon: Server,
+        badge: "Inventory",
+      },
+      {
+        id: "nav-cust",
+        label: "Data Pelanggan & PPPoE",
+        path: `/project/${resolvedProjectId}/subscribers/list`,
+        icon: Users,
+        badge: "ONU/PPPoE",
+      },
+      {
+        id: "nav-issues",
+        label: "Monitoring Gangguan & Redaman",
+        path: `/project/${resolvedProjectId}/issues/tickets`,
+        icon: AlertCircle,
+        badge: "Alerts",
+      },
+      {
+        id: "nav-org-projects",
+        label: "Daftar Semua Proyek Workspace",
+        path: "/projects",
+        icon: FolderKanban,
+        badge: "Projects",
+      },
+      {
+        id: "nav-org-billing",
+        label: "Tagihan & Paket Langganan",
+        path: "/billing",
+        icon: CreditCard,
+        badge: "Billing",
+      },
+      {
+        id: "nav-org-members",
+        label: "Manajemen Anggota & Akses",
+        path: "/members",
+        icon: UserCheck,
+        badge: "IAM",
+      },
+      {
+        id: "nav-settings",
+        label: "Pengaturan Domain & Workspace",
+        path: "/settings",
+        icon: Settings,
+        badge: "Config",
+      },
+    ];
+  }, [resolvedProjectId]);
 
-  const pages = [
-    { label: "Dashboard Operasional", path: "/", icon: LayoutDashboard, badge: "Home" },
-    { label: "Peta Spasial GIS (Web-QGIS)", path: "/map", icon: MapIcon, badge: "GIS" },
-    { label: "Inventaris Jaringan (OLT & ODP)", path: "/inventory", icon: Server, badge: "Inventory" },
-    { label: "Data Pelanggan & PPPoE", path: "/customers", icon: Users, badge: "Billing/ONU" },
-    { label: "Monitoring Gangguan & Redaman", path: "/issues", icon: AlertCircle, badge: "Alerts" },
-    { label: "Pengaturan Domain & Workspace", path: "/settings", icon: Settings, badge: "Config" },
-  ];
-
-  const filteredPages = pages.filter((p) =>
-    p.label.toLowerCase().includes(query.toLowerCase()) ||
-    p.badge.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredPages = React.useMemo(() => {
+    if (!query.trim()) return pages.slice(0, 6);
+    const q = query.toLowerCase();
+    return pages.filter(
+      (p) =>
+        p.label.toLowerCase().includes(q) ||
+        p.badge.toLowerCase().includes(q)
+    );
+  }, [query, pages]);
 
   return (
-    <CommandPaletteRoot open={open} onOpenChange={onOpenChange}>
+    <div className={`flex flex-col flex-1 overflow-hidden ${className || ""}`}>
       <CommandPaletteInput
         value={query}
-        onValueChange={setQuery}
+        onValueChange={onQueryChange}
         placeholder="Cari halaman, aksi teknis, atau utilitas..."
       />
 
@@ -90,10 +146,10 @@ export function TenantCommandPalette({
               const Icon = page.icon;
               return (
                 <CommandPaletteItem
-                  key={page.path}
+                  key={page.id}
                   icon={Icon}
                   badgeText={page.badge}
-                  onSelect={() => handleSelect(() => navigate({ to: page.path }))}
+                  onSelect={() => onSelectAction(() => navigate({ to: page.path as never }))}
                 >
                   {page.label}
                 </CommandPaletteItem>
@@ -107,7 +163,11 @@ export function TenantCommandPalette({
           <CommandPaletteItem
             icon={Plus}
             badgeText="Action"
-            onSelect={() => handleSelect(() => navigate({ to: "/customers" }))}
+            onSelect={() =>
+              onSelectAction(() =>
+                navigate({ to: `/project/${resolvedProjectId}/subscribers/list` as never })
+              )
+            }
           >
             Registrasi Pelanggan Baru
           </CommandPaletteItem>
@@ -115,10 +175,12 @@ export function TenantCommandPalette({
           <CommandPaletteItem
             icon={Sparkles}
             badgeText="Ctrl+J"
-            onSelect={() => handleSelect(() => {
-              if (onOpenAi) onOpenAi();
-              else window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
-            })}
+            onSelect={() =>
+              onSelectAction(() => {
+                if (onOpenAi) onOpenAi();
+                else window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+              })
+            }
           >
             Buka AI Network Copilot
           </CommandPaletteItem>
@@ -126,17 +188,19 @@ export function TenantCommandPalette({
           <CommandPaletteItem
             icon={HelpCircle}
             badgeText="Help"
-            onSelect={() => handleSelect(() => {
-              if (onOpenHelp) onOpenHelp();
-            })}
+            onSelect={() =>
+              onSelectAction(() => {
+                if (onOpenHelp) onOpenHelp();
+              })
+            }
           >
-            Buka Pusat Panduan & SOP FTTH
+            Buka Pusat Panduan &amp; SOP FTTH
           </CommandPaletteItem>
 
           <CommandPaletteItem
             icon={isDark ? Sun : Moon}
             badgeText="Theme"
-            onSelect={() => handleSelect(() => setTheme(isDark ? "light" : "dark"))}
+            onSelect={() => onSelectAction(() => setTheme(isDark ? "light" : "dark"))}
           >
             Ganti Mode Tampilan ({isDark ? "Light Mode" : "Dark Mode"})
           </CommandPaletteItem>
@@ -144,7 +208,11 @@ export function TenantCommandPalette({
           <CommandPaletteItem
             icon={LogOut}
             badgeText="Logout"
-            onSelect={() => handleSelect(() => logout({ redirectUri: `${window.location.origin}/login` }))}
+            onSelect={() =>
+              onSelectAction(() =>
+                logout({ redirectUri: `${window.location.origin}/login` })
+              )
+            }
           >
             Keluar dari Sesi Portal
           </CommandPaletteItem>
@@ -168,6 +236,55 @@ export function TenantCommandPalette({
         </div>
         <span>K2NET Enterprise Tenant</span>
       </div>
+    </div>
+  );
+}
+
+interface TenantCommandPaletteProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpenAi?: () => void;
+  onOpenHelp?: () => void;
+  projectId?: string;
+}
+
+export function TenantCommandPalette({
+  open,
+  onOpenChange,
+  onOpenAi,
+  onOpenHelp,
+  projectId,
+}: TenantCommandPaletteProps) {
+  const [query, setQuery] = React.useState("");
+
+  // Global Keyboard listener for Cmd+K / Ctrl+K
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        onOpenChange(!open);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onOpenChange]);
+
+  const handleSelectAction = (action: () => void) => {
+    action();
+    onOpenChange(false);
+    setQuery("");
+  };
+
+  return (
+    <CommandPaletteRoot open={open} onOpenChange={onOpenChange}>
+      <TenantCommandPaletteContent
+        query={query}
+        onQueryChange={setQuery}
+        onSelectAction={handleSelectAction}
+        onOpenAi={onOpenAi}
+        onOpenHelp={onOpenHelp}
+        projectId={projectId}
+      />
     </CommandPaletteRoot>
   );
 }

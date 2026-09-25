@@ -13,9 +13,14 @@ import {
   type MobileTabHeaderItem,
   type MobileTabId,
 } from "@k2net/ui";
-import { TenantMobileMenuTab } from "./mobile-sheet/TenantMobileMenuTab";
+import { TenantCommandPaletteContent } from "../TenantCommandPalette";
+import { TenantMobileHelpTab } from "./mobile-sheet/TenantMobileHelpTab";
+import { TenantMobileAiTab } from "./mobile-sheet/TenantMobileAiTab";
 import { TenantMobileTasksTab } from "./mobile-sheet/TenantMobileTasksTab";
 import { TenantMobileGisTab } from "./mobile-sheet/TenantMobileGisTab";
+import { TenantMobileMenuTab } from "./mobile-sheet/TenantMobileMenuTab";
+
+export type TenantMobileTab = "search" | "help" | "ai" | "tasks" | "gis" | "menu";
 
 const TENANT_TABS: MobileTabHeaderItem[] = [
   { id: "search", title: "Cari perintah & aset (⌘K)", icon: Search },
@@ -31,45 +36,31 @@ export interface TenantMobileNavigationSheetProps {
   onOpenChange: (open: boolean) => void;
   activeTab?: MobileTabId;
   onTabChange?: (tab: MobileTabId) => void;
-  onOpenCommandPalette: () => void;
-  onOpenAi: () => void;
-  onOpenHelp: () => void;
   projectId?: string;
+  trigger?: React.ReactNode;
 }
 
 export function TenantMobileNavigationSheet({
   open,
   onOpenChange,
-  activeTab = "menu",
+  activeTab: controlledTab,
   onTabChange,
-  onOpenCommandPalette,
-  onOpenAi,
-  onOpenHelp,
   projectId,
+  trigger,
 }: TenantMobileNavigationSheetProps) {
   const routerState = useRouterState();
   const navigate = useNavigate();
   const pathname = routerState.location.pathname;
 
-  const handleTabChange = (tabId: MobileTabId) => {
-    if (tabId === "search") {
-      onOpenChange(false);
-      onOpenCommandPalette();
-      return;
-    }
-    if (tabId === "ai") {
-      onOpenChange(false);
-      onOpenAi();
-      return;
-    }
-    if (tabId === "help") {
-      onOpenChange(false);
-      onOpenHelp();
-      return;
-    }
-    if (onTabChange) {
-      onTabChange(tabId);
-    }
+  const [internalTab, setInternalTab] = React.useState<TenantMobileTab>("menu");
+  const activeTab = (controlledTab as TenantMobileTab) ?? internalTab;
+
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  const handleTabSelect = (tabId: MobileTabId) => {
+    const castedTab = tabId as TenantMobileTab;
+    if (onTabChange) onTabChange(castedTab);
+    setInternalTab(castedTab);
   };
 
   const handleNavigate = (url: string) => {
@@ -77,14 +68,51 @@ export function TenantMobileNavigationSheet({
     navigate({ to: url as never });
   };
 
+  const handleSearchSelectAction = (action: () => void) => {
+    onOpenChange(false);
+    setSearchQuery("");
+    action();
+  };
+
   return (
     <MobileNavigationSheet
       open={open}
       onOpenChange={onOpenChange}
       activeTab={activeTab}
-      onTabChange={handleTabChange}
+      onTabChange={handleTabSelect}
       tabs={TENANT_TABS}
+      trigger={trigger}
     >
+      {/* TAB 1: EMBEDDED SEARCH & COMMAND PALETTE */}
+      {activeTab === "search" && (
+        <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in-0 duration-200">
+          <TenantCommandPaletteContent
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            onSelectAction={handleSearchSelectAction}
+            onOpenAi={() => handleTabSelect("ai")}
+            onOpenHelp={() => handleTabSelect("help")}
+            projectId={projectId}
+            className="h-full"
+          />
+        </div>
+      )}
+
+      {/* TAB 2: HELP & SUPPORT GUIDE */}
+      {activeTab === "help" && (
+        <TenantMobileHelpTab
+          onNavigate={handleNavigate}
+          onOpenAi={() => handleTabSelect("ai")}
+          projectId={projectId}
+        />
+      )}
+
+      {/* TAB 3: ASK AI ASSISTANT */}
+      {activeTab === "ai" && (
+        <TenantMobileAiTab onClose={() => onOpenChange(false)} />
+      )}
+
+      {/* TAB 4: TASKS & NOTIFICATIONS */}
       {activeTab === "tasks" && (
         <TenantMobileTasksTab
           projectId={projectId}
@@ -93,6 +121,7 @@ export function TenantMobileNavigationSheet({
         />
       )}
 
+      {/* TAB 5: GIS SPATIAL DIAGNOSTICS & TOOLS */}
       {activeTab === "gis" && (
         <TenantMobileGisTab
           projectId={projectId}
@@ -101,6 +130,7 @@ export function TenantMobileNavigationSheet({
         />
       )}
 
+      {/* TAB 6: NAVIGATION MENU (Level 1 Primary <-> Level 2 Secondary) */}
       {activeTab === "menu" && (
         <TenantMobileMenuTab
           pathname={pathname}

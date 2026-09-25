@@ -11,18 +11,14 @@ import { MobileFloatingDock, type FloatingDockItem, type MobileTabId } from "@k2
 import { TenantMobileNavigationSheet } from "./TenantMobileNavigationSheet";
 
 interface TenantMobileFloatingDockProps {
-  onOpenCommandPalette: () => void;
-  onOpenAi: () => void;
-  onOpenHelp: () => void;
-  onOpenNotif?: () => void;
   projectId?: string;
+  onOpenCommandPalette?: () => void;
+  onOpenAi?: () => void;
+  onOpenHelp?: () => void;
+  onOpenNotif?: () => void;
 }
 
 export function TenantMobileFloatingDock({
-  onOpenCommandPalette,
-  onOpenAi,
-  onOpenHelp,
-  onOpenNotif,
   projectId,
 }: TenantMobileFloatingDockProps) {
   const [navSheetOpen, setNavSheetOpen] = React.useState(false);
@@ -38,32 +34,26 @@ export function TenantMobileFloatingDock({
       id: "search",
       label: "Search & Commands (⌘K)",
       icon: Search,
-      onClick: onOpenCommandPalette,
+      onClick: () => openTab("search"),
     },
     {
       id: "help",
       label: "Help & SOP Guide",
       icon: HelpCircle,
-      onClick: onOpenHelp,
+      onClick: () => openTab("help"),
     },
     {
       id: "ai",
       label: "Ask AI Copilot (Ctrl+J)",
       icon: Sparkles,
-      onClick: onOpenAi,
+      onClick: () => openTab("ai"),
     },
     {
       id: "tasks",
       label: "Notifikasi & Tiket Gangguan",
       icon: ClipboardList,
       badgeCount: 3,
-      onClick: () => {
-        if (onOpenNotif) {
-          onOpenNotif();
-        } else {
-          openTab("tasks");
-        }
-      },
+      onClick: () => openTab("tasks"),
     },
     {
       id: "gis",
@@ -89,9 +79,6 @@ export function TenantMobileFloatingDock({
         onOpenChange={setNavSheetOpen}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        onOpenCommandPalette={onOpenCommandPalette}
-        onOpenAi={onOpenAi}
-        onOpenHelp={onOpenHelp}
         projectId={projectId}
       />
     </>

@@ -1,5 +1,12 @@
 import * as React from "react";
-import { ChevronLeft, ChevronRight, ArrowLeft, ShieldCheck, FolderKanban } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+  ShieldCheck,
+  FolderKanban,
+  LayoutDashboard,
+} from "lucide-react";
 import { cn } from "@k2net/ui";
 import {
   ORG_NAV_ITEMS,
@@ -52,79 +59,84 @@ export function TenantMobileMenuTab({
 
   // Render Secondary (Sub-Menu) View
   if (activeSecondaryKey && currentSecondaryConfig) {
-    const HeaderIcon = currentSecondaryConfig.icon;
-
     return (
-      <div className="flex flex-col h-full overflow-hidden animate-in slide-in-from-right-4 duration-200">
+      <div className="flex flex-col flex-1 overflow-hidden animate-in fade-in-0 duration-200 slide-in-from-right-3">
         {/* Back Header */}
-        <div className="flex items-center gap-2 p-3 border-b border-border/60 bg-muted/30 shrink-0">
+        <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/60 bg-muted/20 shrink-0">
           <button
             type="button"
             onClick={() => setActiveSecondaryKey(null)}
-            className="flex size-8 items-center justify-center rounded-md hover:bg-muted text-foreground transition-colors cursor-pointer"
-            aria-label="Kembali"
+            className="flex items-center gap-1.5 text-xs font-bold text-foreground hover:text-primary transition-colors cursor-pointer group py-0.5"
           >
-            <ChevronLeft className="size-4" />
+            <ChevronLeft className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <span className="truncate">{currentSecondaryConfig.headerTitle}</span>
           </button>
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="flex size-6 items-center justify-center rounded bg-primary/10 text-primary shrink-0">
-              <HeaderIcon className="size-3.5" />
-            </div>
-            <div className="flex flex-col truncate">
-              <span className="text-xs font-bold leading-none truncate text-foreground">
-                {currentSecondaryConfig.headerTitle}
-              </span>
-              {currentSecondaryConfig.headerSubtitle && (
-                <span className="text-[10px] text-muted-foreground truncate mt-0.5">
-                  {currentSecondaryConfig.headerSubtitle}
-                </span>
-              )}
-            </div>
-          </div>
+          <span className="text-[10px] font-mono text-muted-foreground uppercase">Sub-menu</span>
         </div>
 
-        {/* Sub-menu Items */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar">
+        {/* Sub-menu Sections & Items */}
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 custom-scrollbar">
           {currentSecondaryConfig.sections.map((section, idx) => (
             <div key={idx} className="space-y-1">
               {section.title && (
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
+                <p className="px-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground/80 font-semibold">
                   {section.title}
                 </p>
               )}
-              {section.items.map((subItem) => {
-                const SubIcon = subItem.icon;
-                const active = pathname === subItem.href;
+              <div className="space-y-0.5">
+                {section.items.map((subItem) => {
+                  const SubIcon = subItem.icon || LayoutDashboard;
+                  const active = pathname === subItem.href;
 
-                return (
-                  <button
-                    key={subItem.id}
-                    type="button"
-                    onClick={() => {
-                      onNavigate(subItem.href);
-                      onClose();
-                    }}
-                    className={cn(
-                      "flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer",
-                      active
-                        ? "bg-primary/10 text-primary font-semibold"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <SubIcon className={cn("size-3.5 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
-                      <span className="truncate">{subItem.title}</span>
-                    </div>
-                    {subItem.badge && (
-                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                        {subItem.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={subItem.id}
+                      type="button"
+                      onClick={() => {
+                        onNavigate(subItem.href);
+                        onClose();
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-md font-medium transition-colors text-left cursor-pointer",
+                        active
+                          ? "bg-primary/10 text-primary font-semibold border border-primary/20 shadow-xs"
+                          : "text-foreground/80 hover:bg-muted/60 hover:text-foreground"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <SubIcon
+                          className={cn(
+                            "size-3.5 shrink-0",
+                            active ? "text-primary" : "text-muted-foreground"
+                          )}
+                        />
+                        <span className="truncate">{subItem.title}</span>
+                      </div>
+                      {subItem.badge && (
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                          {subItem.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ))}
+        </div>
+
+        {/* Footer Back Bar */}
+        <div className="p-3 border-t border-border/60 bg-muted/20 flex items-center justify-between shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveSecondaryKey(null)}
+            className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
+          >
+            <ChevronLeft className="size-3" /> Kembali ke Menu Utama
+          </button>
+          <span className="text-[10px] text-muted-foreground font-mono">
+            {currentSecondaryConfig.headerTitle}
+          </span>
         </div>
       </div>
     );
@@ -132,21 +144,18 @@ export function TenantMobileMenuTab({
 
   // Render Primary Nav Level
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden animate-in fade-in-0 duration-200 slide-in-from-left-3">
       {/* Scope Header Bar */}
-      <div className="flex items-center justify-between p-3.5 border-b border-border/60 bg-muted/20 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 border border-primary/30 text-primary">
-            {isProjectScope ? <FolderKanban className="size-4" /> : <ShieldCheck className="size-4" />}
+      <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/60 bg-muted/20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="size-5 rounded bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0">
+            {isProjectScope ? <FolderKanban className="size-3 text-primary" /> : <ShieldCheck className="size-3 text-primary" />}
           </div>
-          <div>
-            <p className="text-xs font-bold leading-tight text-foreground">
-              {isProjectScope ? "Project Workspace Scope" : "Organization Workspace Scope"}
-            </p>
-            <p className="text-[10px] text-muted-foreground">
-              {user?.tenantSlug ? `${user.tenantSlug.toUpperCase()} Portal` : "Tenant Portal"}
-            </p>
-          </div>
+          <span className="text-xs font-bold text-foreground truncate">
+            {isProjectScope
+              ? `Project Workspace (${resolvedProjectId.toUpperCase()})`
+              : `${user?.tenantSlug ? user.tenantSlug.toUpperCase() : "Tenant"} Organization`}
+          </span>
         </div>
 
         {isProjectScope && (
@@ -156,7 +165,7 @@ export function TenantMobileMenuTab({
               onNavigate("/projects");
               onClose();
             }}
-            className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:underline cursor-pointer"
+            className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:underline cursor-pointer shrink-0"
           >
             <ArrowLeft className="size-3" />
             <span>Semua Proyek</span>
@@ -165,7 +174,11 @@ export function TenantMobileMenuTab({
       </div>
 
       {/* Nav List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 custom-scrollbar">
+        <p className="px-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+          {isProjectScope ? "Project Navigation" : "Workspace Directives"}
+        </p>
+
         {navItems.map((item: NavItem) => {
           const Icon = item.icon;
           const active = isItemActive(item.href);
@@ -184,18 +197,23 @@ export function TenantMobileMenuTab({
                 }
               }}
               className={cn(
-                "flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-xs transition-colors cursor-pointer",
+                "w-full flex items-center justify-between rounded-md px-2.5 py-2 text-xs font-medium transition-colors text-left cursor-pointer group",
                 active
-                  ? "bg-primary/10 text-primary font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
+                  ? "bg-primary/10 text-primary border border-primary/20 font-semibold"
+                  : "text-foreground/85 hover:bg-muted/50 hover:text-foreground"
               )}
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <Icon className={cn("size-4 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                <Icon
+                  className={cn(
+                    "size-4 shrink-0",
+                    active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                  )}
+                />
                 <span className="truncate">{item.title}</span>
               </div>
               {hasSecondary && (
-                <ChevronRight className="size-3.5 text-muted-foreground shrink-0" />
+                <ChevronRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-transform group-hover:translate-x-0.5 shrink-0" />
               )}
             </button>
           );
