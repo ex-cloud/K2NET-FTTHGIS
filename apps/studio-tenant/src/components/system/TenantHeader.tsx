@@ -22,7 +22,7 @@ export function TenantHeader({
     <header className="flex h-12 shrink-0 w-full items-center justify-between border-b border-border/40 bg-background px-3 sm:px-4 z-40 py-2 select-none">
       {/* LEFT SECTION: Logo + Org Brand + Tier Badge */}
       <div className="flex items-center gap-2 min-w-0">
-        <TenantOrgBrand href="/projects" showSeparator={false} />
+        <TenantOrgBrand href="/projects" showSeparator={true} />
         <TenantTierBadge tier="pro" />
       </div>
 
