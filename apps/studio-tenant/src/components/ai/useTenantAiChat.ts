@@ -1,12 +1,10 @@
 import * as React from "react";
 import { Activity, Layers, Zap } from "lucide-react";
-import { useAuth } from "@k2net/auth/client";
 import type { Message, ChatSession, QuickIdea } from "./types";
 
 const STORAGE_KEY = "k2net_tenant_ai_sessions";
 
 export function useTenantAiChat() {
-  const { user } = useAuth();
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState("");
   const [isTyping, setIsTyping] = React.useState(false);

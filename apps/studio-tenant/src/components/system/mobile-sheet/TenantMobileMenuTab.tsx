@@ -16,7 +16,6 @@ import {
   type NavItem,
   type SecondarySidebarConfig,
 } from "../../../config/tenant-sidebar-navigation";
-import { useAuth } from "@k2net/auth/client";
 import { useTenantInfo } from "../../../hooks/useTenantInfo";
 
 interface TenantMobileMenuTabProps {
@@ -32,7 +31,6 @@ export function TenantMobileMenuTab({
   onNavigate,
   onClose,
 }: TenantMobileMenuTabProps) {
-  const { user } = useAuth();
   const { organizationName } = useTenantInfo();
   const resolvedProjectId = projectId || "proj-bdg-01";
   const isProjectScope = Boolean(pathname.startsWith(`/project/`));
