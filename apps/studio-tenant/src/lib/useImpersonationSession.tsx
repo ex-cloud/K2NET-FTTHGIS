@@ -2,9 +2,9 @@ import * as React from "react";
 import { toast } from "sonner";
 import {
   setApiAuthToken,
-  getApiAuthToken,
   setImpersonationSessionId,
   getImpersonationSessionId,
+  refreshImpersonationToken,
 } from "./api-client";
 
 interface ImpersonationMetadata {
@@ -202,17 +202,17 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       clearTimeout(refreshTimeoutRef.current);
     }
 
-    const delayMs = Math.max((expiresInSeconds - 30) * 1000, 5000);
+    // Refresh JWT access token every 200 seconds (Keycloak access tokens expire in 300s)
+    const tokenRefreshIntervalSeconds = Math.min(expiresInSeconds - 30, 200);
+    const delayMs = Math.max(tokenRefreshIntervalSeconds * 1000, 5000);
 
     refreshTimeoutRef.current = setTimeout(async () => {
       try {
-        const token = getApiAuthToken();
         const res = await fetch("/api/v1/system/impersonate/refresh-token", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-Impersonation-Session-Id": activeSessionId,
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
@@ -234,11 +234,9 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
 
   const pollStatus = React.useCallback(async (activeSessionId: string): Promise<boolean> => {
     try {
-      const token = getApiAuthToken();
       const res = await fetch("/api/v1/system/impersonate/status", {
         headers: {
           "X-Impersonation-Session-Id": activeSessionId,
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 
@@ -380,6 +378,13 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
 
           scheduleRefresh(initialRemaining, meta.sessionId);
 
+          // Proactively refresh access token in background on page reload
+          refreshImpersonationToken().then((freshToken) => {
+            if (freshToken) {
+              setRefreshPermissionsTrigger((prev) => prev + 1);
+            }
+          });
+
           // Verify in background
           pollStatus(meta.sessionId);
           statusIntervalRef.current = setInterval(() => {
@@ -404,13 +409,11 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
     setIsExiting(true);
 
     try {
-      const token = getApiAuthToken();
       const res = await fetch("/api/v1/system/impersonate/exit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Impersonation-Session-Id": sessionId,
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 

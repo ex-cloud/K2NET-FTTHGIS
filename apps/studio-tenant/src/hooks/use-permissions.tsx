@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@k2net/auth/client";
 import { useImpersonationSession } from "../lib/useImpersonationSession";
-import { getApiAuthToken } from "../lib/api-client";
+import { getApiAuthToken, refreshImpersonationToken } from "../lib/api-client";
 
 interface UserProfileResponse {
   id: string;
@@ -66,7 +66,17 @@ export function usePermissions() {
         headers["X-Impersonation-Session-Id"] = sessionId;
       }
 
-      const res = await fetch("/api/v1/users/me", { headers });
+      let res = await fetch("/api/v1/users/me", { headers });
+
+      // Auto-heal 401/403 during active impersonation
+      if ((res.status === 401 || res.status === 403) && isImpersonating && sessionId) {
+        const refreshedToken = await refreshImpersonationToken();
+        if (refreshedToken) {
+          headers["Authorization"] = `Bearer ${refreshedToken}`;
+          res = await fetch("/api/v1/users/me", { headers });
+        }
+      }
+
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           return null;

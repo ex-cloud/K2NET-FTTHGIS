@@ -59,6 +59,52 @@ export function getImpersonationSessionId(): string | null {
   return activeImpersonationSessionId;
 }
 
+// Single-flight promise lock for impersonation token refreshing
+let refreshingPromise: Promise<string | null> | null = null;
+
+/**
+ * Proactively refresh the Super Admin access token using the backend relay.
+ * Guarantees single-flight deduplication across concurrent API requests.
+ */
+export async function refreshImpersonationToken(): Promise<string | null> {
+  const sessionId = getImpersonationSessionId();
+  if (!sessionId) return null;
+
+  if (refreshingPromise) {
+    return refreshingPromise;
+  }
+
+  refreshingPromise = (async () => {
+    try {
+      // NOTE: Do NOT send the Authorization header here, because if the token is already expired,
+      // Spring Security will intercept and return 401 before the request reaches the permitAll controller.
+      const res = await fetch("/api/v1/system/impersonate/refresh-token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Impersonation-Session-Id": sessionId,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.accessToken) {
+          setApiAuthToken(data.accessToken);
+          return data.accessToken as string;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.warn("[apiClient] Failed to refresh impersonation token:", err);
+      return null;
+    } finally {
+      refreshingPromise = null;
+    }
+  })();
+
+  return refreshingPromise;
+}
+
 export interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
 }
@@ -93,10 +139,22 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
     reqHeaders["X-Impersonation-Session-Id"] = impersonationSessionId;
   }
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     headers: reqHeaders,
     ...customConfig,
   });
+
+  // Auto-heal 401 during active impersonation
+  if (response.status === 401 && impersonationSessionId) {
+    const newToken = await refreshImpersonationToken();
+    if (newToken) {
+      reqHeaders["Authorization"] = `Bearer ${newToken}`;
+      response = await fetch(url, {
+        headers: reqHeaders,
+        ...customConfig,
+      });
+    }
+  }
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "Unknown error");

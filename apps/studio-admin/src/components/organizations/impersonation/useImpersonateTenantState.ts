@@ -100,6 +100,7 @@ export function useImpersonateTenantState(
             reason: finalReason,
             ticketReference: finalTicket || undefined,
             autoSwitch: shouldAutoSwitch,
+            refreshToken: session?.refreshToken || undefined,
           }),
         });
 
@@ -136,6 +137,7 @@ export function useImpersonateTenantState(
       ticketReference,
       hasDifferentActiveSession,
       session?.accessToken,
+      session?.refreshToken,
       handleStepUpAuth,
       handleSuccess,
     ]

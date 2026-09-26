@@ -19,6 +19,7 @@ export interface AdminUser {
 export interface AdminSession {
   user: AdminUser;
   accessToken: string | null;
+  refreshToken?: string | null;
 }
 
 export interface UseSessionReturn {
@@ -32,7 +33,7 @@ export interface UseSessionReturn {
 import { useMemo, useCallback } from "react";
 
 export function useSession(): UseSessionReturn {
-  const { user, authenticated, initialized, login, logout, token } = useAuth();
+  const { user, authenticated, initialized, login, logout, token, keycloak } = useAuth();
 
   const adminUser: AdminUser | undefined = useMemo(() => {
     if (!user) return undefined;
@@ -51,13 +52,27 @@ export function useSession(): UseSessionReturn {
     };
   }, [user]);
 
+  const refreshTokenString: string | null = useMemo(() => {
+    if (keycloak?.refreshToken) return keycloak.refreshToken;
+    if (typeof window !== "undefined") {
+      const authObj = (window as unknown as { __K2NET_AUTH__?: { refreshToken?: string } }).__K2NET_AUTH__;
+      return (
+        authObj?.refreshToken ||
+        localStorage.getItem("k2net_kc_refresh_token") ||
+        null
+      );
+    }
+    return null;
+  }, [keycloak?.refreshToken]);
+
   const sessionData = useMemo(() => {
     if (!authenticated || !adminUser) return null;
     return {
       user: adminUser,
       accessToken: token ?? null,
+      refreshToken: refreshTokenString,
     };
-  }, [authenticated, adminUser, token]);
+  }, [authenticated, adminUser, token, refreshTokenString]);
 
   const signIn = useCallback(async (_provider?: string, options?: KeycloakLoginOptions) => {
     await login(options);
