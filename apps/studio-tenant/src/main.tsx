@@ -7,6 +7,7 @@ import { getTenantKeycloakConfig, resolveTenantRealm } from "./lib/keycloak-conf
 import { ThemeProvider } from "@k2net/ui";
 import { setApiAuthToken } from "./lib/api-client";
 import { initWebVitals } from "./lib/web-vitals";
+import { ImpersonationProvider } from "./lib/useImpersonationSession";
 import { App } from "./App";
 import "./index.css";
 
@@ -56,8 +57,10 @@ async function bootstrap() {
       <ThemeProvider defaultTheme="system" storageKey="k2net-theme" enableSystem>
         <KeycloakProvider config={keycloakConfig}>
           <QueryClientProvider client={queryClient}>
-            <App />
-            <Toaster position="top-right" richColors />
+            <ImpersonationProvider>
+              <App />
+              <Toaster position="top-right" richColors />
+            </ImpersonationProvider>
           </QueryClientProvider>
         </KeycloakProvider>
       </ThemeProvider>

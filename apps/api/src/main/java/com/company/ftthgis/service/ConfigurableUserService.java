@@ -489,6 +489,21 @@ public class ConfigurableUserService {
             });
         }
 
+        // Jika request berlangsung dalam sesi impersonasi yang valid (AuditContext.isImpersonating == true),
+        // sertakan seluruh GrantedAuthority operasional tenant yang telah di-enrich oleh ImpersonationContextFilter
+        if (com.company.ftthgis.config.tenant.AuditContext.isImpersonating()) {
+            org.springframework.security.core.Authentication auth = 
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getAuthorities() != null) {
+                auth.getAuthorities().forEach(a -> {
+                    String authStr = a.getAuthority();
+                    if (!authStr.startsWith("ROLE_") && !authStr.startsWith("system.")) {
+                        permissionsSet.add(authStr);
+                    }
+                });
+            }
+        }
+
         return UserDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())

@@ -28,6 +28,20 @@ public class ImpersonationContextFilter extends OncePerRequestFilter {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
+    private static final java.util.List<String> TENANT_OPERATIONAL_PERMISSIONS = java.util.List.of(
+            "projects.view", "projects.create", "projects.edit", "projects.delete", "projects.export",
+            "network.view", "network.manage", "network.manage.all-projects", "network.nodes", "network.audit",
+            "team.view", "team.invite", "team.manage",
+            "inventory.view", "inventory.manage", "inventory.report",
+            "billing.view", "billing.manage",
+            "roles.view", "roles.update",
+            "users.view", "users.manage", "users.invite",
+            "organizations.view", "organizations.update",
+            "gis.view", "gis.manage",
+            "ticket.view", "ticket.create", "ticket.update",
+            "customer.view"
+    );
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
@@ -95,15 +109,9 @@ public class ImpersonationContextFilter extends OncePerRequestFilter {
             // Authority Enrichment: Memberikan permission operasional tenant ke sesi impersonator yang sah
             if (originalAuth instanceof org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken jwtAuth) {
                 java.util.Set<org.springframework.security.core.GrantedAuthority> enrichedAuthorities = new java.util.HashSet<>(jwtAuth.getAuthorities());
-                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("network.view"));
-                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("network.manage"));
-                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("network.audit"));
-                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ticket.view"));
-                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ticket.create"));
-                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ticket.update"));
-                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("customer.view"));
-                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("inventory.view"));
-                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("inventory.manage"));
+                for (String perm : TENANT_OPERATIONAL_PERMISSIONS) {
+                    enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority(perm));
+                }
 
                 org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken enrichedAuth = 
                         new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(

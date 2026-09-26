@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import * as React from "react";
 import { toast } from "sonner";
 import {
   setApiAuthToken,
@@ -19,9 +19,22 @@ interface ImpersonationStatusResponse {
   remainingSeconds: number;
 }
 
+export interface ImpersonationContextValue {
+  isImpersonating: boolean;
+  sessionId: string | null;
+  tenantName: string;
+  tenantSlug: string;
+  remainingSeconds: number;
+  isExiting: boolean;
+  exitSession: () => Promise<void>;
+  isSessionEnded: boolean;
+  endedTenantName: string;
+  refreshPermissionsTrigger: number;
+}
+
 const META_STORAGE_KEY = "k2net_impersonation_meta";
 
-// Module-level guard: prevents concurrent exchange from multiple component instances (e.g. during HMR)
+// Module-level lock to strictly prevent duplicate exchange across rapid re-mounts
 let activeExchangingCode: string | null = null;
 
 function computeRemainingSeconds(expiresAtStr?: string): number {
@@ -30,23 +43,24 @@ function computeRemainingSeconds(expiresAtStr?: string): number {
   return Math.max(0, diff);
 }
 
-// eslint-disable-next-line max-lines-per-function
-export function useImpersonationSession() {
-  const [isImpersonating, setIsImpersonating] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [tenantName, setTenantName] = useState("");
-  const [tenantSlug, setTenantSlug] = useState("");
-  const [remainingSeconds, setRemainingSeconds] = useState(1800);
-  const [isExiting, setIsExiting] = useState(false);
-  const [isSessionEnded, setIsSessionEnded] = useState(false);
-  const [endedTenantName, setEndedTenantName] = useState("");
+const ImpersonationContext = React.createContext<ImpersonationContextValue | null>(null);
 
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  // Per-component-instance guard: prevents double-exchange even if module-level guard is bypassed
-  const exchangeAttemptedRef = useRef(false);
+export function ImpersonationProvider({ children }: { children: React.ReactNode }) {
+  const [isImpersonating, setIsImpersonating] = React.useState(false);
+  const [sessionId, setSessionId] = React.useState<string | null>(null);
+  const [tenantName, setTenantName] = React.useState("");
+  const [tenantSlug, setTenantSlug] = React.useState("");
+  const [remainingSeconds, setRemainingSeconds] = React.useState(1800);
+  const [isExiting, setIsExiting] = React.useState(false);
+  const [isSessionEnded, setIsSessionEnded] = React.useState(false);
+  const [endedTenantName, setEndedTenantName] = React.useState("");
+  const [refreshPermissionsTrigger, setRefreshPermissionsTrigger] = React.useState(0);
 
-  const clearSession = useCallback((showTerminationModal = false, fallbackName?: string) => {
+  const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const statusIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const exchangeAttemptedRef = React.useRef(false);
+
+  const clearSession = React.useCallback((showTerminationModal = false, fallbackName?: string) => {
     setIsImpersonating(false);
     setSessionId(null);
     setTenantName((prevName) => {
@@ -59,13 +73,10 @@ export function useImpersonationSession() {
     setTenantSlug("");
     setImpersonationSessionId(null);
     setApiAuthToken(null);
-    // Note: activeExchangingCode is intentionally NOT reset here — it stays locked
-    // to prevent spurious retry attempts on the consumed exchange code.
+    setRefreshPermissionsTrigger((prev) => prev + 1);
+
     if (typeof window !== "undefined") {
       if (showTerminationModal) {
-        // Session ended by server (revoked/expired): set a marker so ProtectedRoute
-        // keeps rendering children while the "Sesi Berakhir" modal is visible.
-        // The modal's own buttons handle final navigation (close tab / go to admin).
         sessionStorage.setItem("k2net_session_ended", "true");
       }
       sessionStorage.removeItem(META_STORAGE_KEY);
@@ -77,6 +88,7 @@ export function useImpersonationSession() {
       sessionStorage.removeItem("k2net_impersonation_session_id");
       localStorage.removeItem("k2net_impersonation_session_id");
     }
+
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
       refreshTimeoutRef.current = null;
@@ -87,12 +99,11 @@ export function useImpersonationSession() {
     }
   }, []);
 
-  const scheduleRefresh = useCallback((expiresInSeconds: number, activeSessionId: string) => {
+  const scheduleRefresh = React.useCallback((expiresInSeconds: number, activeSessionId: string) => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
 
-    // Deterministik timer: expiresIn - 30 detik buffer (Claude AI precision guidance)
     const delayMs = Math.max((expiresInSeconds - 30) * 1000, 5000);
 
     refreshTimeoutRef.current = setTimeout(async () => {
@@ -112,13 +123,12 @@ export function useImpersonationSession() {
           if (data.accessToken) {
             setApiAuthToken(data.accessToken);
             scheduleRefresh(data.expiresInSeconds || 1800, activeSessionId);
+            setRefreshPermissionsTrigger((prev) => prev + 1);
           }
         } else {
-          // Token refresh gagal atau dibatalkan
           clearSession();
         }
       } catch {
-        // Retry dalam 10 detik jika network glitch
         refreshTimeoutRef.current = setTimeout(() => {
           scheduleRefresh(30, activeSessionId);
         }, 10000);
@@ -126,7 +136,7 @@ export function useImpersonationSession() {
     }, delayMs);
   }, [clearSession]);
 
-  const pollStatus = useCallback(async (activeSessionId: string): Promise<boolean> => {
+  const pollStatus = React.useCallback(async (activeSessionId: string): Promise<boolean> => {
     try {
       const token = getApiAuthToken();
       const res = await fetch("/api/v1/system/impersonate/status", {
@@ -137,7 +147,6 @@ export function useImpersonationSession() {
       });
 
       if (!res.ok) {
-        // Defense-in-depth: jika server mengembalikan 401/403, sesi otentikasi sudah tidak sah
         if (res.status === 401 || res.status === 403) {
           clearSession(true);
           return false;
@@ -159,8 +168,7 @@ export function useImpersonationSession() {
     }
   }, [clearSession]);
 
-  // Initial exchange or restore
-  useEffect(() => {
+  React.useEffect(() => {
     if (typeof window === "undefined") return;
 
     const abortController = new AbortController();
@@ -168,22 +176,14 @@ export function useImpersonationSession() {
     const impersonateCode = url.searchParams.get("impersonate_code");
 
     if (impersonateCode) {
-      // Guard Layer 1 (module-level): prevents duplicate from separate component instances
-      if (activeExchangingCode === impersonateCode) {
-        return;
-      }
-      // Guard Layer 2 (ref): prevents duplicate if effect re-runs within same component lifecycle
-      if (exchangeAttemptedRef.current) {
+      if (activeExchangingCode === impersonateCode || exchangeAttemptedRef.current) {
         return;
       }
 
       activeExchangingCode = impersonateCode;
       exchangeAttemptedRef.current = true;
-
-      // Set flag penanda proses pertukaran sedang berlangsung agar ProtectedRoute tidak me-redirect
       sessionStorage.setItem("k2net_impersonating_in_progress", "true");
 
-      // 1. Tukar exchange code
       (async () => {
         try {
           const res = await fetch("/api/v1/system/impersonate/exchange", {
@@ -199,10 +199,6 @@ export function useImpersonationSession() {
             toast.error("Gagal Memulai Sesi Impersonasi", {
               description: err.message || "Kode penukaran tidak valid atau sudah kedaluwarsa.",
             });
-            // IMPORTANT: Do NOT reset activeExchangingCode or exchangeAttemptedRef here.
-            // The code was definitively rejected by the server — resetting guards would allow
-            // a retry that hits the same 400 and triggers a SECOND error toast.
-            // The user needs a fresh impersonate_code from the admin portal.
             return;
           }
 
@@ -216,11 +212,9 @@ export function useImpersonationSession() {
             expiresAt,
           } = data;
 
-          // Set token & session id (tersimpan di memory dan sessionStorage)
           setApiAuthToken(token);
           setImpersonationSessionId(newSessionId);
 
-          // Simpan metadata hanya di sessionStorage (tab-scoped) & bersihkan localStorage
           const meta: ImpersonationMetadata = {
             sessionId: newSessionId,
             targetTenantName: name,
@@ -236,24 +230,21 @@ export function useImpersonationSession() {
           setTenantName(name);
           setTenantSlug(slug);
           setRemainingSeconds(expiresInSeconds);
+          setRefreshPermissionsTrigger((prev) => prev + 1);
 
-          // Bersihkan URL setelah metadata aman di storage
           url.searchParams.delete("impersonate_code");
           window.history.replaceState({}, "", url.pathname + url.search);
 
           toast.success(`Mode Bantuan: Terhubung ke ${name}`);
 
-          // Jadwalkan refresh deterministik
           scheduleRefresh(expiresInSeconds, newSessionId);
 
-          // Pasang polling status setiap 15 detik untuk sinkronisasi responsif antar tab
           statusIntervalRef.current = setInterval(() => {
             pollStatus(newSessionId);
           }, 15000);
         } catch (e: unknown) {
           sessionStorage.removeItem("k2net_impersonating_in_progress");
           if (e instanceof Error && (e.name === "AbortError" || e.message.includes("abort"))) {
-            // Intentional abort on component unmount — ignore silently
             return;
           }
           const msg = e instanceof Error ? e.message : "";
@@ -268,7 +259,6 @@ export function useImpersonationSession() {
         }
       })();
     } else {
-      // 2. Cek sesi impersonasi tersimpan di sessionStorage (dengan migrasi legacy localStorage jika ada)
       const savedSessionId = getImpersonationSessionId();
       let savedMetaStr = sessionStorage.getItem(META_STORAGE_KEY);
       if (!savedMetaStr && typeof window !== "undefined") {
@@ -289,14 +279,13 @@ export function useImpersonationSession() {
             return;
           }
 
-          // Catat data identitas sesi, tetapi JANGAN aktifkan banner optimistik sebelum diverifikasi server
           setSessionId(meta.sessionId);
           setTenantName(meta.targetTenantName);
           setTenantSlug(meta.targetTenantSlug);
 
-          // Verifikasi ke server seketika: Hanya aktifkan banner jika server mengonfirmasi status ACTIVE
           pollStatus(meta.sessionId).then((isActive) => {
             if (isActive) {
+              setRefreshPermissionsTrigger((prev) => prev + 1);
               scheduleRefresh(initialRemaining, meta.sessionId);
               statusIntervalRef.current = setInterval(() => {
                 pollStatus(meta.sessionId);
@@ -318,7 +307,7 @@ export function useImpersonationSession() {
     };
   }, [clearSession, pollStatus, scheduleRefresh]);
 
-  const exitSession = async () => {
+  const exitSession = React.useCallback(async () => {
     if (!sessionId) return;
     setIsExiting(true);
 
@@ -342,18 +331,16 @@ export function useImpersonationSession() {
       clearSession(false);
       setIsExiting(false);
 
-      // Coba tutup tab jika dibuka dari window.open
       if (typeof window !== "undefined") {
         window.close();
-        // Fallback jika browser block window.close(): redirect ke login atau root
         setTimeout(() => {
           window.location.href = "/";
         }, 300);
       }
     }
-  };
+  }, [sessionId, clearSession]);
 
-  return {
+  const contextValue = React.useMemo<ImpersonationContextValue>(() => ({
     isImpersonating,
     sessionId,
     tenantName,
@@ -363,5 +350,42 @@ export function useImpersonationSession() {
     exitSession,
     isSessionEnded,
     endedTenantName,
-  };
+    refreshPermissionsTrigger,
+  }), [
+    isImpersonating,
+    sessionId,
+    tenantName,
+    tenantSlug,
+    remainingSeconds,
+    isExiting,
+    exitSession,
+    isSessionEnded,
+    endedTenantName,
+    refreshPermissionsTrigger,
+  ]);
+
+  return (
+    <ImpersonationContext.Provider value={contextValue}>
+      {children}
+    </ImpersonationContext.Provider>
+  );
+}
+
+export function useImpersonationSession(): ImpersonationContextValue {
+  const context = React.useContext(ImpersonationContext);
+  if (!context) {
+    return {
+      isImpersonating: false,
+      sessionId: null,
+      tenantName: "",
+      tenantSlug: "",
+      remainingSeconds: 0,
+      isExiting: false,
+      exitSession: async () => {},
+      isSessionEnded: false,
+      endedTenantName: "",
+      refreshPermissionsTrigger: 0,
+    };
+  }
+  return context;
 }

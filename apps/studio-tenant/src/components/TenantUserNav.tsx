@@ -190,9 +190,15 @@ export function TenantUserNav() {
 
   if (!mounted) return <div className="h-8 w-8 rounded-full bg-muted/50 animate-pulse border border-border" />;
 
-  const displayName = user?.name || user?.username || "Tenant Admin";
-  const subText = user?.email || (organizationName ? `${organizationName} Workspace` : "Organization Workspace");
-  const initial = (user?.username?.[0] || user?.name?.[0] || "U").toUpperCase();
+  const displayName = isImpersonating
+    ? "Super Admin (Mode Bantuan)"
+    : (user?.name || user?.username || "Tenant Admin");
+  const subText = isImpersonating
+    ? `Mengimpersonasi: ${organizationName || "Tenant"} Workspace`
+    : (user?.email || (organizationName ? `${organizationName} Workspace` : "Organization Workspace"));
+  const initial = isImpersonating
+    ? "S"
+    : (user?.username?.[0] || user?.name?.[0] || "U").toUpperCase();
 
   return (
     <DropdownMenu>

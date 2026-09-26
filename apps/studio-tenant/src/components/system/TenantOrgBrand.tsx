@@ -1,8 +1,9 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { ActionTooltip, cn } from "@k2net/ui";
-import { Boxes } from "lucide-react";
+import { Boxes, ShieldAlert } from "lucide-react";
 import { useTenantInfo } from "../../hooks/useTenantInfo";
+import { useImpersonationSession } from "../../lib/useImpersonationSession";
 
 export interface TenantLogoProps {
   logoUrl?: string;
@@ -130,6 +131,8 @@ export function TenantOrgBrand({
   className,
   maxTruncateWidthClass,
 }: TenantOrgBrandProps) {
+  const { isImpersonating } = useImpersonationSession();
+
   return (
     <div className={cn("flex items-center gap-2 min-w-0 shrink-0", className)}>
       {showLogo && <TenantLogo logoUrl={logoUrl} name={name} href={href} />}
@@ -148,6 +151,19 @@ export function TenantOrgBrand({
         href={href}
         maxTruncateWidthClass={maxTruncateWidthClass}
       />
+
+      {isImpersonating && (
+        <ActionTooltip
+          label="Sesi Bantuan Darurat Aktif: Super Admin sedang mengimpersonasi workspace ini untuk troubleshooting"
+          side="bottom"
+        >
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 animate-pulse select-none shrink-0 shadow-xs cursor-help">
+            <ShieldAlert className="size-2.5 shrink-0" />
+            <span className="hidden xs:inline">MODE BANTUAN</span>
+            <span className="xs:hidden">ASSIST</span>
+          </span>
+        </ActionTooltip>
+      )}
     </div>
   );
 }

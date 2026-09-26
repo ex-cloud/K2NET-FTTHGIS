@@ -1,81 +1,114 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@k2net/auth/client";
+import { useImpersonationSession } from "../lib/useImpersonationSession";
+import { getApiAuthToken } from "../lib/api-client";
 
 /**
  * Hook to access tenant-scoped PBAC permission checking utilities in studio-tenant.
  *
- * - `canAccess(code)`: Returns true if the current tenant user has the given permission code (or any if array passed).
- *   - Organization Owners & Tenant Admins (roles: `tenant_admin`, `owner`, `admin`) bypass all tenant permission checks.
- *   - Other roles (operator, technician, finance, viewer) are checked against dynamic permissions.
- * - `isOwner`: Quick check if the current user is an organization owner or tenant admin.
- * - `permissions`: The active list of permission codes assigned to the user.
- * - `isLoading`: True while auth initialization or profile is loading.
+ * - Server-Authoritative: Fetches dynamic permissions directly from `/api/v1/users/me`
+ *   with `X-Impersonation-Session-Id` during support assistance sessions.
+ * - `canAccess(code)`: Returns true if the active user (or impersonator) has the given permission code.
+ * - `isOwner`: True for direct tenant Organization Owners & Tenant Admins.
+ * - `permissions`: The active list of permission codes verified by the server.
  */
 export function usePermissions() {
-  const { user, authenticated, initialized, token } = useAuth();
-  const isLoading = !initialized;
+  const { user, authenticated, initialized, token: kcToken } = useAuth();
+  const { isImpersonating, sessionId, refreshPermissionsTrigger } = useImpersonationSession();
 
   const roles: string[] = (user?.roles ?? []).map((r) =>
     r.toLowerCase().replace(/^role_/, "")
   );
 
-  const isOwner =
-    roles.includes("owner") ||
-    roles.includes("tenant_admin") ||
-    roles.includes("admin") ||
-    roles.includes("super_admin");
+  // Direct tenant owner/admin bypass (only applies to actual tenant credentials, NOT client-dictated impersonation)
+  const isDirectTenantOwner =
+    !isImpersonating &&
+    (roles.includes("owner") ||
+      roles.includes("tenant_admin") ||
+      roles.includes("admin"));
 
   const [fetchedPermissions, setFetchedPermissions] = useState<string[]>([]);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const lastFetchedKeyRef = useRef<string>("");
+
+  const fetchUserProfile = useCallback(async () => {
+    const activeToken = getApiAuthToken() || kcToken;
+    if (!activeToken && !authenticated && !isImpersonating) return;
+
+    setIsProfileLoading(true);
+    try {
+      const headers: Record<string, string> = {};
+      if (activeToken) {
+        headers["Authorization"] = `Bearer ${activeToken}`;
+      }
+      if (sessionId) {
+        headers["X-Impersonation-Session-Id"] = sessionId;
+      }
+
+      const res = await fetch("/api/v1/users/me", { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.permissions)) {
+          setFetchedPermissions(data.permissions);
+        }
+      } else if (res.status === 401 || res.status === 403) {
+        // Server revoked or rejected session
+        setFetchedPermissions([]);
+      }
+    } catch (err) {
+      console.warn("[usePermissions] Failed to fetch /api/v1/users/me:", err);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, [kcToken, authenticated, isImpersonating, sessionId]);
 
   useEffect(() => {
-    if (!authenticated || !user?.id || isOwner) return;
+    // If not authenticated and not impersonating, reset
+    if (!authenticated && !isImpersonating) {
+      setFetchedPermissions([]);
+      lastFetchedKeyRef.current = "";
+      return;
+    }
 
-    let isMounted = true;
-    const fetchUserProfile = async () => {
-      try {
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        const res = await fetch("/api/v1/users/me", { headers });
-        if (res.ok && isMounted) {
-          const data = await res.json();
-          if (Array.isArray(data.permissions)) {
-            setFetchedPermissions(data.permissions);
-          }
-        }
-      } catch (err) {
-        console.warn("[usePermissions] Failed to fetch /api/v1/users/me:", err);
-      }
-    };
+    const currentKey = `${authenticated ? user?.id : ""}_${sessionId || ""}_${refreshPermissionsTrigger}`;
+    if (lastFetchedKeyRef.current === currentKey) return;
+    lastFetchedKeyRef.current = currentKey;
 
     fetchUserProfile();
-    return () => {
-      isMounted = false;
-    };
-  }, [authenticated, user?.id, token, isOwner]);
+  }, [authenticated, user?.id, isImpersonating, sessionId, refreshPermissionsTrigger, fetchUserProfile]);
 
-  const activePermissions: string[] = isOwner
+  const activePermissions: string[] = isDirectTenantOwner
     ? [
         "projects.view",
         "projects.create",
         "projects.edit",
         "projects.delete",
+        "projects.export",
         "network.view",
         "network.manage",
         "network.edit",
+        "network.nodes",
+        "network.audit",
         "inventory.view",
         "inventory.manage",
+        "inventory.report",
         "subscribers.view",
         "subscribers.manage",
         "issues.view",
         "issues.manage",
         "team.view",
         "team.manage",
+        "team.invite",
         "billing.view",
         "billing.manage",
         "settings.view",
         "settings.manage",
+        "roles.view",
+        "roles.update",
+        "users.view",
+        "users.manage",
+        "organizations.view",
+        "organizations.update",
         "gis.view",
         "gis.manage",
       ]
@@ -83,11 +116,12 @@ export function usePermissions() {
 
   /**
    * Check if current user can access a given permission code or array of codes.
+   * Evaluated strictly against the server-verified activePermissions list.
    */
   function canAccess(permissionCode?: string | string[]): boolean {
     if (!permissionCode) return true;
-    if (!authenticated) return false;
-    if (isOwner) return true;
+    if (!authenticated && !isImpersonating) return false;
+    if (isDirectTenantOwner) return true;
 
     if (Array.isArray(permissionCode)) {
       if (permissionCode.length === 0) return true;
@@ -101,19 +135,22 @@ export function usePermissions() {
    * Check if the current user has any of the specified roles.
    */
   function hasRole(...roleNames: string[]): boolean {
-    if (isOwner) return true;
+    if (isDirectTenantOwner) return true;
     return roleNames.some((r) => roles.includes(r.toLowerCase().replace(/^role_/, "")));
   }
+
+  const isLoading = (!initialized && !isImpersonating) || (isImpersonating && isProfileLoading && fetchedPermissions.length === 0);
 
   return {
     canAccess,
     hasRole,
-    isOwner,
+    isOwner: isDirectTenantOwner,
     permissions: activePermissions,
     roles,
     isLoading,
     user,
-    authenticated,
+    authenticated: authenticated || isImpersonating,
+    refetchPermissions: fetchUserProfile,
   };
 }
 
