@@ -141,10 +141,7 @@ export function TenantOrgBrand({
 
       {showLogo && showSeparator && (
         <span
-          className={cn(
-            "text-muted-foreground/30 font-mono text-xs sm:text-sm select-none mx-0 sm:mx-0.5",
-            hideNameOnMobile && "hidden sm:inline-block"
-          )}
+          className="hidden sm:inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
           aria-hidden="true"
         >
           /

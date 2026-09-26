@@ -151,7 +151,7 @@ function TenantProjectLayoutContent() {
           : "border-border/40 bg-background"
       )}>
         {/* LEFT SECTION: Logo + Org Brand + Tier Badge + Slash Separator + Project Switcher Dropdown */}
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <TenantOrgBrand
             href="/projects"
             showSeparator={true}
@@ -161,7 +161,7 @@ function TenantProjectLayoutContent() {
           <TenantTierBadge className="hidden sm:inline-flex" />
 
           <span
-            className="text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 mx-0 sm:mx-0.5"
+            className="hidden sm:inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
             aria-hidden="true"
           >
             /
