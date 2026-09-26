@@ -118,6 +118,7 @@ export interface TenantOrgBrandProps {
   href?: string;
   showLogo?: boolean;
   showSeparator?: boolean;
+  hideNameOnMobile?: boolean;
   className?: string;
   maxTruncateWidthClass?: string;
 }
@@ -128,6 +129,7 @@ export function TenantOrgBrand({
   href = "/projects",
   showLogo = true,
   showSeparator = true,
+  hideNameOnMobile = false,
   className,
   maxTruncateWidthClass,
 }: TenantOrgBrandProps) {
@@ -139,7 +141,10 @@ export function TenantOrgBrand({
 
       {showLogo && showSeparator && (
         <span
-          className="text-muted-foreground/30 font-mono text-xs sm:text-sm select-none mx-0.5 sm:mx-1"
+          className={cn(
+            "text-muted-foreground/30 font-mono text-xs sm:text-sm select-none mx-0.5 sm:mx-1",
+            hideNameOnMobile && "hidden sm:inline-block"
+          )}
           aria-hidden="true"
         >
           /
@@ -149,6 +154,7 @@ export function TenantOrgBrand({
       <TenantOrgName
         name={name}
         href={href}
+        className={cn(hideNameOnMobile && "hidden sm:inline-block")}
         maxTruncateWidthClass={maxTruncateWidthClass}
       />
 

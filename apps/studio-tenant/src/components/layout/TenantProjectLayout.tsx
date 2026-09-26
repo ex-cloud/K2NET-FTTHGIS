@@ -155,9 +155,10 @@ function TenantProjectLayoutContent() {
           <TenantOrgBrand
             href="/projects"
             showSeparator={true}
+            hideNameOnMobile={true}
             maxTruncateWidthClass="max-w-[90px] xs:max-w-[130px] sm:max-w-[170px] md:max-w-[200px]"
           />
-          <TenantTierBadge />
+          <TenantTierBadge className="hidden sm:inline-flex" />
 
           <span
             className="text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 mx-0.5 sm:mx-1"
