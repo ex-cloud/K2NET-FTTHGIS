@@ -99,15 +99,6 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
   });
 
   if (!response.ok) {
-    if (response.status === 401 && impersonationSessionId) {
-      setImpersonationSessionId(null);
-      setApiAuthToken(null);
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem("k2net_impersonation_meta");
-        localStorage.removeItem("k2net_impersonation_meta");
-        sessionStorage.removeItem("k2net_impersonating_in_progress");
-      }
-    }
     const errorBody = await response.text().catch(() => "Unknown error");
     throw new Error(errorBody || `HTTP ${response.status} ${response.statusText}`);
   }

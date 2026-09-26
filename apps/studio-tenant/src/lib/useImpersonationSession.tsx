@@ -43,14 +43,78 @@ function computeRemainingSeconds(expiresAtStr?: string): number {
   return Math.max(0, diff);
 }
 
+function readInitialSession(): {
+  isImpersonating: boolean;
+  sessionId: string | null;
+  tenantName: string;
+  tenantSlug: string;
+  remainingSeconds: number;
+} {
+  if (typeof window === "undefined") {
+    return {
+      isImpersonating: false,
+      sessionId: null,
+      tenantName: "",
+      tenantSlug: "",
+      remainingSeconds: 0,
+    };
+  }
+
+  // Check URL first for fresh exchange code
+  const url = new URL(window.location.href);
+  const code = url.searchParams.get("impersonate_code");
+  if (code) {
+    return {
+      isImpersonating: true,
+      sessionId: null,
+      tenantName: "",
+      tenantSlug: "",
+      remainingSeconds: 1800,
+    };
+  }
+
+  const savedSessionId = getImpersonationSessionId();
+  const savedMetaStr =
+    sessionStorage.getItem(META_STORAGE_KEY) ||
+    localStorage.getItem(META_STORAGE_KEY);
+
+  if (savedSessionId && savedMetaStr) {
+    try {
+      const meta: ImpersonationMetadata = JSON.parse(savedMetaStr);
+      const remaining = computeRemainingSeconds(meta.expiresAt);
+      if (remaining > 0) {
+        return {
+          isImpersonating: true,
+          sessionId: meta.sessionId,
+          tenantName: meta.targetTenantName || "",
+          tenantSlug: meta.targetTenantSlug || "",
+          remainingSeconds: remaining,
+        };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return {
+    isImpersonating: false,
+    sessionId: null,
+    tenantName: "",
+    tenantSlug: "",
+    remainingSeconds: 0,
+  };
+}
+
 const ImpersonationContext = React.createContext<ImpersonationContextValue | null>(null);
 
 export function ImpersonationProvider({ children }: { children: React.ReactNode }) {
-  const [isImpersonating, setIsImpersonating] = React.useState(false);
-  const [sessionId, setSessionId] = React.useState<string | null>(null);
-  const [tenantName, setTenantName] = React.useState("");
-  const [tenantSlug, setTenantSlug] = React.useState("");
-  const [remainingSeconds, setRemainingSeconds] = React.useState(1800);
+  const initial = React.useMemo(() => readInitialSession(), []);
+
+  const [isImpersonating, setIsImpersonating] = React.useState(initial.isImpersonating);
+  const [sessionId, setSessionId] = React.useState<string | null>(initial.sessionId);
+  const [tenantName, setTenantName] = React.useState(initial.tenantName);
+  const [tenantSlug, setTenantSlug] = React.useState(initial.tenantSlug);
+  const [remainingSeconds, setRemainingSeconds] = React.useState(initial.remainingSeconds);
   const [isExiting, setIsExiting] = React.useState(false);
   const [isSessionEnded, setIsSessionEnded] = React.useState(false);
   const [endedTenantName, setEndedTenantName] = React.useState("");
@@ -58,6 +122,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
 
   const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const statusIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const exchangeAttemptedRef = React.useRef(false);
 
   const clearSession = React.useCallback((showTerminationModal = false, fallbackName?: string) => {
@@ -97,7 +162,40 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       clearInterval(statusIntervalRef.current);
       statusIntervalRef.current = null;
     }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
   }, []);
+
+  // Synchronous countdown ticker
+  React.useEffect(() => {
+    if (isImpersonating && remainingSeconds > 0) {
+      if (!countdownIntervalRef.current) {
+        countdownIntervalRef.current = setInterval(() => {
+          setRemainingSeconds((prev) => {
+            if (prev <= 1) {
+              clearSession(true);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
+    } else {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+    };
+  }, [isImpersonating, remainingSeconds, clearSession]);
 
   const scheduleRefresh = React.useCallback((expiresInSeconds: number, activeSessionId: string) => {
     if (refreshTimeoutRef.current) {
@@ -125,8 +223,6 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
             scheduleRefresh(data.expiresInSeconds || 1800, activeSessionId);
             setRefreshPermissionsTrigger((prev) => prev + 1);
           }
-        } else {
-          clearSession();
         }
       } catch {
         refreshTimeoutRef.current = setTimeout(() => {
@@ -134,7 +230,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
         }, 10000);
       }
     }, delayMs);
-  }, [clearSession]);
+  }, []);
 
   const pollStatus = React.useCallback(async (activeSessionId: string): Promise<boolean> => {
     try {
@@ -164,6 +260,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
         return false;
       }
     } catch {
+      // Transient error, do NOT kill active session
       return false;
     }
   }, [clearSession]);
@@ -222,7 +319,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
             expiresAt,
           };
           sessionStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
-          localStorage.removeItem(META_STORAGE_KEY);
+          localStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
           sessionStorage.removeItem("k2net_impersonating_in_progress");
 
           setIsImpersonating(true);
@@ -260,14 +357,9 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       })();
     } else {
       const savedSessionId = getImpersonationSessionId();
-      let savedMetaStr = sessionStorage.getItem(META_STORAGE_KEY);
-      if (!savedMetaStr && typeof window !== "undefined") {
-        savedMetaStr = localStorage.getItem(META_STORAGE_KEY);
-        if (savedMetaStr) {
-          sessionStorage.setItem(META_STORAGE_KEY, savedMetaStr);
-          localStorage.removeItem(META_STORAGE_KEY);
-        }
-      }
+      const savedMetaStr =
+        sessionStorage.getItem(META_STORAGE_KEY) ||
+        localStorage.getItem(META_STORAGE_KEY);
 
       if (savedSessionId && savedMetaStr) {
         try {
@@ -279,24 +371,23 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
             return;
           }
 
+          setIsImpersonating(true);
           setSessionId(meta.sessionId);
           setTenantName(meta.targetTenantName);
           setTenantSlug(meta.targetTenantSlug);
+          setRemainingSeconds(initialRemaining);
+          setRefreshPermissionsTrigger((prev) => prev + 1);
 
-          pollStatus(meta.sessionId).then((isActive) => {
-            if (isActive) {
-              setRefreshPermissionsTrigger((prev) => prev + 1);
-              scheduleRefresh(initialRemaining, meta.sessionId);
-              statusIntervalRef.current = setInterval(() => {
-                pollStatus(meta.sessionId);
-              }, 15000);
-            }
-          });
+          scheduleRefresh(initialRemaining, meta.sessionId);
+
+          // Verify in background
+          pollStatus(meta.sessionId);
+          statusIntervalRef.current = setInterval(() => {
+            pollStatus(meta.sessionId);
+          }, 15000);
         } catch {
           clearSession();
         }
-      } else {
-        clearSession();
       }
     }
 
@@ -304,6 +395,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       abortController.abort();
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
       if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
   }, [clearSession, pollStatus, scheduleRefresh]);
 

@@ -2,6 +2,7 @@ package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.user.dto.UserDto;
 import com.company.ftthgis.config.logging.AuditRequired;
+import com.company.ftthgis.config.tenant.AuditContext;
 import lombok.extern.slf4j.Slf4j;
 import com.company.ftthgis.api.user.dto.UserStatsDto;
 import com.company.ftthgis.domain.user.entity.User;
@@ -72,6 +73,8 @@ public class ConfigurableUserService {
         return slug;
     }
 
+    private final jakarta.persistence.EntityManager entityManager;
+
     public ConfigurableUserService(
             RoleRepository roleRepository,
             KeycloakAdminService keycloakAdminService,
@@ -82,7 +85,8 @@ public class ConfigurableUserService {
             UserAuditLogRepository userAuditLogRepository,
             com.fasterxml.jackson.databind.ObjectMapper objectMapper,
             com.company.ftthgis.config.tenant.KeycloakService keycloakService,
-            PasswordValidationService passwordValidationService) {
+            PasswordValidationService passwordValidationService,
+            jakarta.persistence.EntityManager entityManager) {
         this.roleRepository = roleRepository;
         this.keycloakAdminService = keycloakAdminService;
         this.userRepository = userRepository;
@@ -93,10 +97,40 @@ public class ConfigurableUserService {
         this.objectMapper = objectMapper;
         this.keycloakService = keycloakService;
         this.passwordValidationService = passwordValidationService;
+        this.entityManager = entityManager;
     }
 
     public UserDto getCurrentUser(String keycloakSubject) {
-        return userRepository.findById(UUID.fromString(keycloakSubject))
+        UUID userId = UUID.fromString(keycloakSubject);
+
+        if (com.company.ftthgis.config.tenant.AuditContext.isImpersonating()) {
+            org.hibernate.Session session = entityManager.unwrap(org.hibernate.Session.class);
+            boolean wasFilterEnabled = session.getEnabledFilter("organizationFilter") != null;
+            if (wasFilterEnabled) {
+                session.disableFilter("organizationFilter");
+            }
+            try {
+                User user = userRepository.findById(userId).orElse(null);
+                if (user != null) {
+                    UserDto dto = mapToDto(user);
+                    AuditContext.ImpersonationInfo info = AuditContext.getImpersonation();
+                    if (info != null && info.getTargetTenantId() != null) {
+                        dto.setOrganizationId(info.getTargetTenantId());
+                        dto.setOrganizationSlug(info.getTargetTenantSlug());
+                        organizationRepository.findById(info.getTargetTenantId())
+                                .ifPresent(org -> dto.setOrganizationName(org.getName()));
+                    }
+                    return dto;
+                }
+            } finally {
+                if (wasFilterEnabled && com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId() != null) {
+                    session.enableFilter("organizationFilter")
+                            .setParameter("organizationId", com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId().toString());
+                }
+            }
+        }
+
+        return userRepository.findById(userId)
                 .map(this::mapToDto)
                 .orElseThrow(() -> new RuntimeException("User not found in local database: " + keycloakSubject));
     }
