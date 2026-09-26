@@ -80,7 +80,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 text-foreground transition-all duration-150 cursor-pointer max-w-[210px] xs:max-w-[270px] sm:max-w-[320px] md:max-w-[380px] focus:outline-none focus-visible:ring-1 focus-visible:ring-primary select-none group shrink-0 p-0 bg-transparent border-0 hover:opacity-85"
+          className="inline-flex items-center gap-2 text-foreground transition-all duration-150 cursor-pointer max-w-[210px] xs:max-w-[270px] sm:max-w-[320px] md:max-w-[380px] focus:outline-none focus-visible:ring-1 focus-visible:ring-primary select-none group shrink-0 p-0 bg-transparent border-0 hover:opacity-85"
         >
           <Box className="size-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors" />
           <span className="text-xs sm:text-sm font-semibold tracking-tight text-foreground truncate">
@@ -90,7 +90,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
           {activeProject?.status && (
             <span
               className={cn(
-                "hidden sm:inline-flex text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded border shrink-0 transition-colors",
+                "hidden sm:inline-flex text-[8px] font-mono font-semibold px-1.5 py-0.2 rounded border shrink-0 transition-colors",
                 getStatusBadge(activeProject.status)
               )}
             >
@@ -132,14 +132,12 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
               <DropdownMenuItem
                 key={project.id}
                 onClick={() => handleSelectProject(project)}
-                className={`flex items-start gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${
-                  isSelected ? "bg-accent text-accent-foreground font-medium" : ""
-                }`}
+                className={`flex items-start gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${isSelected ? "bg-accent text-accent-foreground font-medium" : ""
+                  }`}
               >
                 <div
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded ${
-                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded ${isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}
                 >
                   <Box className="h-3.5 w-3.5" />
                 </div>

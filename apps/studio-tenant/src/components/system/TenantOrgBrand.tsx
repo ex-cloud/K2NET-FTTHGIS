@@ -87,7 +87,7 @@ export function TenantOrgName({
   const content = (
     <span
       className={cn(
-        "text-xs sm:text-sm font-semibold tracking-tight text-foreground hover:opacity-85 transition-opacity truncate cursor-pointer select-none",
+        "text-sm font-semibold tracking-tight text-foreground hover:opacity-85 transition-opacity truncate cursor-pointer select-none",
         maxTruncateWidthClass,
         className
       )}
@@ -136,13 +136,13 @@ export function TenantOrgBrand({
   const { isImpersonating } = useImpersonationSession();
 
   return (
-    <div className={cn("flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0", className)}>
+    <div className={cn("flex items-center gap-1.5 sm:gap-2 min-w-0 shrink-0", className)}>
       {showLogo && <TenantLogo logoUrl={logoUrl} name={name} href={href} />}
 
       {showLogo && showSeparator && (
         <span
           className={cn(
-            "text-muted-foreground/30 font-mono text-xs sm:text-sm select-none mx-0.5 sm:mx-1",
+            "text-muted-foreground/30 font-mono text-xs sm:text-sm select-none mx-0 sm:mx-0.5",
             hideNameOnMobile && "hidden sm:inline-block"
           )}
           aria-hidden="true"

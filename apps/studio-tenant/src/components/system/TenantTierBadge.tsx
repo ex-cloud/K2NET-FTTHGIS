@@ -79,7 +79,7 @@ export function TenantTierBadge({
   const badgeElement = (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 h-4 px-1.5 text-[9px] font-medium uppercase tracking-wide rounded-full border transition-all duration-200 cursor-pointer select-none",
+        "inline-flex items-center gap-0.5 h-3.5 px-1.5 text-[8px] font-semibold uppercase tracking-wide rounded-full border transition-all duration-200 cursor-pointer select-none",
         config.badgeClass,
         className
       )}
