@@ -5,7 +5,7 @@ import { TenantAccessDenied } from "./TenantAccessDenied";
 export function ProjectSettingsPageWrapper({ children }: { children: ReactNode }) {
   return (
     <PermissionGuard
-      permission={["projects.edit", "projects.manage", "settings.manage"]}
+      permission={["projects.edit", "projects.create", "projects.view"]}
       fallback={
         <TenantAccessDenied
           title="Akses Pengaturan Proyek Dibatasi"

@@ -5,12 +5,12 @@ import { TenantAccessDenied } from "./TenantAccessDenied";
 export function IssuesPageWrapper({ children }: { children: ReactNode }) {
   return (
     <PermissionGuard
-      permission={["issues.view", "issues.manage", "network.view"]}
+      permission={["ticket.view", "ticket.create", "ticket.update", "ticket.assign"]}
       fallback={
         <TenantAccessDenied
           title="Akses Tiket Gangguan Dibatasi"
           description="Anda memerlukan hak akses troubleshooting untuk melihat tiket gangguan jaringan dan dispatcher lapangan."
-          requiredPermission="issues.view"
+          requiredPermission="ticket.view"
         />
       }
     >

@@ -5,7 +5,7 @@ import { TenantAccessDenied } from "./TenantAccessDenied";
 export function UsagePageWrapper({ children }: { children: ReactNode }) {
   return (
     <PermissionGuard
-      permission={["billing.view", "usage.view", "settings.view"]}
+      permission={["billing.view", "billing.manage", "organizations.view", "dashboard.view"]}
       fallback={
         <TenantAccessDenied
           title="Akses Metrik Pemakaian Dibatasi"

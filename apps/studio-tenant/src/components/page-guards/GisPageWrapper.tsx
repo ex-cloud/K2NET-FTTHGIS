@@ -5,7 +5,7 @@ import { TenantAccessDenied } from "./TenantAccessDenied";
 export function GisPageWrapper({ children }: { children: ReactNode }) {
   return (
     <PermissionGuard
-      permission={["network.view", "gis.view", "projects.view"]}
+      permission={["network.view", "map.view", "projects.view"]}
       fallback={
         <TenantAccessDenied
           title="Akses GIS Studio Dibatasi"

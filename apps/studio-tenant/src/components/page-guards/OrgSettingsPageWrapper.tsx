@@ -5,12 +5,12 @@ import { TenantAccessDenied } from "./TenantAccessDenied";
 export function OrgSettingsPageWrapper({ children }: { children: ReactNode }) {
   return (
     <PermissionGuard
-      permission={["settings.view", "settings.manage"]}
+      permission={["organizations.view", "organizations.update"]}
       fallback={
         <TenantAccessDenied
           title="Akses Pengaturan Organisasi Dibatasi"
           description="Anda memerlukan izin administratif untuk mengubah profil organisasi, domain kustom, autentikasi SSO, dan audit trail."
-          requiredPermission="settings.manage"
+          requiredPermission="organizations.update"
         />
       }
     >
