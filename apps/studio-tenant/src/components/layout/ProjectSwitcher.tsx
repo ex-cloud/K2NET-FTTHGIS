@@ -80,10 +80,10 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 h-7 sm:h-8 px-1.5 sm:px-2 rounded-md hover:bg-muted/60 text-foreground transition-all duration-150 cursor-pointer max-w-[150px] xs:max-w-[200px] sm:max-w-[260px] md:max-w-[320px] focus:outline-none focus-visible:ring-1 focus-visible:ring-primary select-none group shrink-0"
+          className="inline-flex items-center gap-1.5 text-foreground transition-all duration-150 cursor-pointer max-w-[150px] xs:max-w-[200px] sm:max-w-[260px] md:max-w-[320px] focus:outline-none focus-visible:ring-1 focus-visible:ring-primary select-none group shrink-0 p-0 bg-transparent border-0 hover:opacity-85"
         >
           <Box className="size-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors" />
-          <span className="text-xs sm:text-sm font-semibold tracking-tight text-foreground truncate group-hover:opacity-90">
+          <span className="text-xs sm:text-sm font-semibold tracking-tight text-foreground truncate">
             {isLoading ? "Memuat..." : activeProject?.name || "Pilih Proyek FTTH"}
           </span>
 
@@ -97,7 +97,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
               {activeProject.status}
             </span>
           )}
-          <ChevronsUpDown className="size-3 text-muted-foreground/70 group-hover:text-foreground shrink-0 transition-colors ml-0.5" />
+          <ChevronsUpDown className="size-3 text-muted-foreground/60 group-hover:text-foreground shrink-0 transition-colors ml-0.5" />
         </button>
       </DropdownMenuTrigger>
 

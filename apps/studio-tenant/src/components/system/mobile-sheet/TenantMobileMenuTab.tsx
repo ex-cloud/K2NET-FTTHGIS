@@ -4,7 +4,7 @@ import {
   ChevronRight,
   ArrowLeft,
   ShieldCheck,
-  Box,
+  Boxes,
   LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@k2net/ui";
@@ -149,7 +149,7 @@ export function TenantMobileMenuTab({
       <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/60 bg-muted/20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="size-5 rounded bg-muted/50 border border-border/80 flex items-center justify-center text-foreground/80 shrink-0">
-            {isProjectScope ? <Box className="size-3" /> : <ShieldCheck className="size-3 text-primary" />}
+            {isProjectScope ? <Boxes className="size-3" /> : <ShieldCheck className="size-3 text-primary" />}
           </div>
           <span className="text-xs font-bold text-foreground truncate">
             {isProjectScope

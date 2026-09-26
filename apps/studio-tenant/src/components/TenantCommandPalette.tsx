@@ -13,7 +13,7 @@ import {
   LogOut,
   Plus,
   HelpCircle,
-  Box,
+  Boxes,
   CreditCard,
   UserCheck,
 } from "lucide-react";
@@ -93,7 +93,7 @@ export function TenantCommandPaletteContent({
         id: "nav-org-projects",
         label: "Daftar Semua Proyek Workspace",
         path: "/projects",
-        icon: Box,
+        icon: Boxes,
         badge: "Projects",
       },
       {

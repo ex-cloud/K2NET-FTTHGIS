@@ -1,5 +1,5 @@
 import {
-  Box,
+  Boxes,
   Users,
   Webhook,
   Activity,
@@ -69,7 +69,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     id: "projects",
     title: "Projects",
     href: "/projects",
-    icon: Box,
+    icon: Boxes,
   },
   {
     id: "team",
