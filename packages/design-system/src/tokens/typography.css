@@ -1,9 +1,9 @@
 :root {
   /* Statis — tidak perlu scaling di ukuran sekecil ini */
   --font-size-xs: 0.75rem;      /* 12px */
+  --font-size-sm: 0.8125rem;    /* 13px */
 
   /* Fluid — clamp(min, slope, max), viewport 320px→1280px */
-  --font-size-sm:   clamp(0.8125rem, 0.7917rem + 0.104vw, 0.875rem);   /* 13px → 14px */
   --font-size-base: clamp(0.875rem,  0.8333rem + 0.208vw, 1rem);        /* 14px → 16px */
   --font-size-lg:   clamp(1rem,      0.9583rem + 0.208vw, 1.125rem);    /* 16px → 18px */
   --font-size-xl:   clamp(1.125rem,  1.0833rem + 0.208vw, 1.25rem);     /* 18px → 20px */

@@ -4,7 +4,7 @@ import {
   ChevronRight,
   ArrowLeft,
   ShieldCheck,
-  FolderKanban,
+  Box,
   LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@k2net/ui";
@@ -148,8 +148,8 @@ export function TenantMobileMenuTab({
       {/* Scope Header Bar */}
       <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/60 bg-muted/20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="size-5 rounded bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0">
-            {isProjectScope ? <FolderKanban className="size-3 text-primary" /> : <ShieldCheck className="size-3 text-primary" />}
+          <div className="size-5 rounded bg-muted/50 border border-border/80 flex items-center justify-center text-foreground/80 shrink-0">
+            {isProjectScope ? <Box className="size-3" /> : <ShieldCheck className="size-3 text-primary" />}
           </div>
           <span className="text-xs font-bold text-foreground truncate">
             {isProjectScope

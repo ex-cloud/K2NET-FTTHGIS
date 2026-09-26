@@ -1,13 +1,12 @@
 import * as React from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
-  FolderKanban,
+  Box,
   Check,
   ChevronsUpDown,
   Plus,
   ArrowLeft,
   Search,
-  Layers,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -83,7 +82,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
           type="button"
           className="inline-flex items-center gap-1.5 h-7 sm:h-8 px-1.5 sm:px-2 rounded-md hover:bg-muted/60 text-foreground transition-all duration-150 cursor-pointer max-w-[150px] xs:max-w-[200px] sm:max-w-[260px] md:max-w-[320px] focus:outline-none focus-visible:ring-1 focus-visible:ring-primary select-none group shrink-0"
         >
-          <FolderKanban className="size-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors" />
+          <Box className="size-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors" />
           <span className="text-xs sm:text-sm font-semibold tracking-tight text-foreground truncate group-hover:opacity-90">
             {isLoading ? "Memuat..." : activeProject?.name || "Pilih Proyek FTTH"}
           </span>
@@ -142,7 +141,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
                     isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  <Layers className="h-3.5 w-3.5" />
+                  <Box className="h-3.5 w-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">

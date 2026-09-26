@@ -1,5 +1,5 @@
 import {
-  FolderKanban,
+  Box,
   Users,
   Webhook,
   Activity,
@@ -69,7 +69,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     id: "projects",
     title: "Projects",
     href: "/projects",
-    icon: FolderKanban,
+    icon: Box,
   },
   {
     id: "team",

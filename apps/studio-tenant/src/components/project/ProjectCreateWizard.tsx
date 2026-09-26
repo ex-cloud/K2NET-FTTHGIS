@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@k2net/ui";
-import { FolderKanban, MapPin, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { Box, MapPin, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useProjects } from "../../hooks/useProjects";
 
@@ -107,8 +107,8 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <FolderKanban className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 border border-border/80 text-foreground/80">
+              <Box className="h-4 w-4" />
             </div>
             <div>
               <DialogTitle className="text-base font-bold">

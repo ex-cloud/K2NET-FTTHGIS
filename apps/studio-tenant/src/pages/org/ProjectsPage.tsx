@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, Search, FolderKanban, RefreshCcw, LayoutGrid, List } from "lucide-react";
+import { Plus, Search, Box, RefreshCcw, LayoutGrid, List } from "lucide-react";
 import {
   PageLayout,
   Button,
@@ -156,8 +156,8 @@ export function ProjectsPage() {
               />
             ) : (
               <div className="p-8 rounded-xl border border-dashed border-border bg-card/40 text-center space-y-3">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <FolderKanban className="h-6 w-6" />
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted/50 border border-border/80 text-foreground/80">
+                  <Box className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-sm font-bold text-foreground">Tidak Ada Proyek Ditemukan</h3>

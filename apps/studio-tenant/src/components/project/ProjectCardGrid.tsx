@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  FolderKanban,
+  Box,
   Users,
   Layers,
   Network,
@@ -56,14 +56,26 @@ export function ProjectCardGrid({
           >
             {/* Left: Icon + Info */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 group-hover:scale-105 transition-transform">
-                <FolderKanban className="h-4.5 w-4.5" />
-              </div>
+              <Link
+                to="/project/$projectId/overview"
+                params={{ projectId: project.id }}
+                className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-lg shrink-0"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50 border border-border/80 text-foreground/80 hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+                  <Box className="h-4.5 w-4.5" />
+                </div>
+              </Link>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                    {project.name}
-                  </h3>
+                  <Link
+                    to="/project/$projectId/overview"
+                    params={{ projectId: project.id }}
+                    className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded truncate"
+                  >
+                    <h3 className="text-sm font-bold text-foreground truncate hover:text-primary transition-colors cursor-pointer">
+                      {project.name}
+                    </h3>
+                  </Link>
                   <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/60">
                     {project.code}
                   </span>
@@ -175,13 +187,25 @@ export function ProjectCardGrid({
           <div className="space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 group-hover:scale-105 transition-transform">
-                  <FolderKanban className="h-4.5 w-4.5" />
-                </div>
+                <Link
+                  to="/project/$projectId/overview"
+                  params={{ projectId: project.id }}
+                  className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-lg shrink-0"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50 border border-border/80 text-foreground/80 hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+                    <Box className="h-4.5 w-4.5" />
+                  </div>
+                </Link>
                 <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                    {project.name}
-                  </h3>
+                  <Link
+                    to="/project/$projectId/overview"
+                    params={{ projectId: project.id }}
+                    className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded truncate block"
+                  >
+                    <h3 className="text-sm font-bold text-foreground truncate hover:text-primary transition-colors cursor-pointer">
+                      {project.name}
+                    </h3>
+                  </Link>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/60">
                       {project.code}
