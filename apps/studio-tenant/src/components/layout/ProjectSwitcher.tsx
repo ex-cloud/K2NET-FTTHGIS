@@ -15,8 +15,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  Button,
   Input,
+  cn,
 } from "@k2net/ui";
 import { useProjects, type Project } from "../../hooks/useProjects";
 import { useMapStore } from "../../store/map-store";
@@ -79,35 +79,27 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 px-2.5 gap-2 bg-background/80 hover:bg-accent/60 border-border/60 hover:border-border transition-all max-w-[260px] justify-between shadow-xs"
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 h-7 sm:h-8 px-1.5 sm:px-2 rounded-md hover:bg-muted/60 text-foreground transition-all duration-150 cursor-pointer max-w-[150px] xs:max-w-[200px] sm:max-w-[260px] md:max-w-[320px] focus:outline-none focus-visible:ring-1 focus-visible:ring-primary select-none group shrink-0"
         >
-          <div className="flex items-center gap-2 truncate">
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10 text-primary">
-              <FolderKanban className="h-3.5 w-3.5" />
-            </div>
-            <div className="flex flex-col text-left truncate">
-              <span className="text-xs font-semibold leading-none truncate text-foreground">
-                {isLoading ? "Memuat..." : activeProject?.name || "Pilih Proyek FTTH"}
-              </span>
-            </div>
-          </div>
+          <FolderKanban className="size-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors" />
+          <span className="text-xs sm:text-sm font-semibold tracking-tight text-foreground truncate group-hover:opacity-90">
+            {isLoading ? "Memuat..." : activeProject?.name || "Pilih Proyek FTTH"}
+          </span>
 
-          <div className="flex items-center gap-1.5 shrink-0 ml-1">
-            {activeProject?.status && (
-              <span
-                className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded border ${getStatusBadge(
-                  activeProject.status
-                )}`}
-              >
-                {activeProject.status}
-              </span>
-            )}
-            <ChevronsUpDown className="h-3 w-3 text-muted-foreground" />
-          </div>
-        </Button>
+          {activeProject?.status && (
+            <span
+              className={cn(
+                "hidden sm:inline-flex text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded border shrink-0 transition-colors",
+                getStatusBadge(activeProject.status)
+              )}
+            >
+              {activeProject.status}
+            </span>
+          )}
+          <ChevronsUpDown className="size-3 text-muted-foreground/70 group-hover:text-foreground shrink-0 transition-colors ml-0.5" />
+        </button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent className="w-80 p-1.5" align="start" sideOffset={6}>

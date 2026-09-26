@@ -21,6 +21,7 @@ import { TenantHelpDialog } from "../TenantHelpDialog";
 import { TenantNotificationsSheet } from "../TenantNotificationsSheet";
 import { TenantUserNav } from "../TenantUserNav";
 import { TenantOrgBrand } from "../system/TenantOrgBrand";
+import { TenantTierBadge } from "../system/TenantTierBadge";
 import { TenantProjectSidebar } from "./TenantProjectSidebar";
 import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
 import { ProjectSwitcher } from "./ProjectSwitcher";
@@ -149,13 +150,21 @@ function TenantProjectLayoutContent() {
           ? "border-amber-500/30 bg-amber-500/[0.02]"
           : "border-border/40 bg-background"
       )}>
-        {/* LEFT SECTION: Logo + Org Brand (Link ke /projects) + Project Switcher Dropdown */}
-        <div className="flex items-center gap-2 min-w-0">
+        {/* LEFT SECTION: Logo + Org Brand + Tier Badge + Slash Separator + Project Switcher Dropdown */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <TenantOrgBrand
             href="/projects"
             showSeparator={true}
-            maxTruncateWidthClass="max-w-[100px] xs:max-w-[140px] sm:max-w-[180px] md:max-w-[220px]"
+            maxTruncateWidthClass="max-w-[90px] xs:max-w-[130px] sm:max-w-[170px] md:max-w-[200px]"
           />
+          <TenantTierBadge />
+
+          <span
+            className="text-muted-foreground/40 font-mono text-xs sm:text-sm select-none shrink-0"
+            aria-hidden="true"
+          >
+            /
+          </span>
 
           {/* Project Switcher Dropdown with + New Project Trigger */}
           <ProjectSwitcher
