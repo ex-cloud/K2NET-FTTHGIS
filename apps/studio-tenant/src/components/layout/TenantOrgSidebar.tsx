@@ -6,10 +6,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
   PrimarySidebarShell,
+  useSidebarMode,
   cn,
 } from "@k2net/ui";
-import { useSidebarMode } from "../sidebar-mode-context";
-import { TenantSidebarControl } from "../TenantSidebarControl";
 import { ORG_NAV_ITEMS, type NavItem } from "../../config/tenant-sidebar-navigation";
 
 export function TenantOrgSidebar() {
@@ -21,6 +20,15 @@ export function TenantOrgSidebar() {
   const isExpanded =
     sidebarMode === "expanded" || (sidebarMode === "hover" && isHovering);
   const isFloating = sidebarMode === "hover";
+
+  const mainNavItems = React.useMemo(
+    () => ORG_NAV_ITEMS.filter((item) => item.id !== "settings"),
+    []
+  );
+  const bottomNavItems = React.useMemo(
+    () => ORG_NAV_ITEMS.filter((item) => item.id === "settings"),
+    []
+  );
 
   const checkIsActive = (href: string) => {
     if (href === "/projects" || href === "/") {
@@ -88,15 +96,15 @@ export function TenantOrgSidebar() {
           {/* Top Primary Org Navigation Items */}
           <nav className="flex flex-col gap-1 px-2">
             <div className="flex flex-col gap-1">
-              {ORG_NAV_ITEMS.map(renderNavButton)}
+              {mainNavItems.map(renderNavButton)}
             </div>
           </nav>
         </TooltipProvider>
       }
-      bottomSection={
-        <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
-          <TenantSidebarControl isExpanded={isExpanded} />
-        </div>
+      bottomNav={
+        <TooltipProvider delayDuration={0}>
+          {bottomNavItems.map(renderNavButton)}
+        </TooltipProvider>
       }
     />
   );

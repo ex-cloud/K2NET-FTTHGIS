@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "../../utils";
+import { SidebarModeControl } from "./sidebar-mode-control";
 
 export interface PrimarySidebarShellProps extends React.HTMLAttributes<HTMLElement> {
   isExpanded?: boolean;
@@ -7,6 +8,8 @@ export interface PrimarySidebarShellProps extends React.HTMLAttributes<HTMLEleme
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   topSection?: React.ReactNode;
+  bottomNav?: React.ReactNode;
+  footerControl?: React.ReactNode;
   bottomSection?: React.ReactNode;
 }
 
@@ -18,6 +21,8 @@ export const PrimarySidebarShell = React.forwardRef<HTMLElement, PrimarySidebarS
       onMouseEnter,
       onMouseLeave,
       topSection,
+      bottomNav,
+      footerControl,
       bottomSection,
       className,
       children,
@@ -61,7 +66,22 @@ export const PrimarySidebarShell = React.forwardRef<HTMLElement, PrimarySidebarS
             {topSection}
             {children}
             <div className="flex-1" />
-            {bottomSection}
+
+            {/* Standardized Bottom Nav (e.g. Settings, Trash) with groove border */}
+            {bottomNav && (
+              <nav className="flex flex-col gap-1 px-2 border-groove-t pt-2.5 mb-2">
+                {bottomNav}
+              </nav>
+            )}
+
+            {/* Standardized Footer Control (SidebarModeControl) with exact symmetric alignment */}
+            {bottomSection ?? (
+              <div className="flex flex-col gap-2 px-2">
+                <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
+                  {footerControl ?? <SidebarModeControl isExpanded={isExpanded} />}
+                </div>
+              </div>
+            )}
           </div>
         </aside>
       </>

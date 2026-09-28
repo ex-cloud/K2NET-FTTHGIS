@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  cn,
+  SidebarModeProvider,
 } from "@k2net/ui";
 import { useImpersonationSession } from "../../lib/useImpersonationSession";
 import { TenantCommandPalette } from "../TenantCommandPalette";
@@ -29,7 +29,6 @@ import { ProjectSwitcher } from "./ProjectSwitcher";
 import { ProjectCreateWizard } from "../project/ProjectCreateWizard";
 import { TenantMobileFloatingDock } from "../system/TenantMobileFloatingDock";
 import { useMapStore } from "../../store/map-store";
-import { SidebarModeProvider } from "../sidebar-mode-context";
 
 function TenantProjectLayoutContent() {
   const params = useParams({ strict: false }) as { projectId?: string };
@@ -274,7 +273,7 @@ function TenantProjectLayoutContent() {
 
 export function TenantProjectLayout() {
   return (
-    <SidebarModeProvider>
+    <SidebarModeProvider storageKey="tenant-sidebar-mode">
       <TenantProjectLayoutContent />
     </SidebarModeProvider>
   );

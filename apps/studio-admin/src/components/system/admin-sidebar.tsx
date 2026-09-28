@@ -21,10 +21,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
   PrimarySidebarShell,
+  useSidebarMode,
 } from "@k2net/ui";
 import { Link, usePathname } from "@/lib/navigation-compat";
-import { useSidebarMode } from "@/components/sidebar-mode-context";
-import { SidebarControl } from "@/components/sidebar-control";
 import { cn } from "@/lib/utils";
 import { useTaskStore } from "@/store/task-store";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -187,19 +186,9 @@ export function AdminSidebar() {
           </nav>
         </TooltipProvider>
       }
-      bottomSection={
+      bottomNav={
         <TooltipProvider delayDuration={0}>
-          {/* Bottom Utility Items (Recycle Bin & Settings right above SidebarControl) */}
-          <nav className="flex flex-col gap-1 px-2 border-groove-t pt-2.5 mb-2">
-            {visibleBottomNavItems.map(renderNavButton)}
-          </nav>
-
-          {/* Bottom Sidebar Expand/Collapse Control */}
-          <div className="flex flex-col gap-2 px-2">
-            <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
-              <SidebarControl isExpanded={isExpanded} />
-            </div>
-          </div>
+          {visibleBottomNavItems.map(renderNavButton)}
         </TooltipProvider>
       }
     />

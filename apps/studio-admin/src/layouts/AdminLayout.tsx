@@ -2,7 +2,7 @@ import * as React from "react";
 import { Outlet } from "@tanstack/react-router";
 import { SystemHeader } from "@/components/system/system-header";
 import { AdminSidebar } from "@/components/system/admin-sidebar";
-import { SidebarModeProvider } from "@/components/sidebar-mode-context";
+import { SidebarModeProvider } from "@k2net/ui";
 import { SystemSecondarySidebar } from "@/components/system/system-secondary-sidebar";
 import { CommandPaletteProvider } from "@/components/command-palette/command-palette-provider";
 import { LogsFilterProvider } from "@/components/logs/logs-filter-context";
@@ -72,7 +72,7 @@ function SystemLayoutContent() {
 
 export function AdminLayout() {
   return (
-    <SidebarModeProvider>
+    <SidebarModeProvider storageKey="sidebar-mode">
       <CommandPaletteProvider>
         <LogsFilterProvider>
           <SystemLayoutContent />

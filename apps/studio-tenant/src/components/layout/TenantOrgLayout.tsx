@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  cn,
+  SidebarModeProvider,
 } from "@k2net/ui";
 import { useImpersonationSession } from "../../lib/useImpersonationSession";
 import { TenantCommandPalette } from "../TenantCommandPalette";
@@ -27,7 +27,6 @@ import { TenantTierBadge } from "../system/TenantTierBadge";
 import { TenantOrgSidebar } from "./TenantOrgSidebar";
 import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
 import { TenantMobileFloatingDock } from "../system/TenantMobileFloatingDock";
-import { SidebarModeProvider } from "../sidebar-mode-context";
 
 function TenantOrgLayoutContent() {
   const { user } = useAuth();
@@ -228,7 +227,7 @@ function TenantOrgLayoutContent() {
 
 export function TenantOrgLayout() {
   return (
-    <SidebarModeProvider>
+    <SidebarModeProvider storageKey="tenant-sidebar-mode">
       <TenantOrgLayoutContent />
     </SidebarModeProvider>
   );
