@@ -92,8 +92,9 @@ public class OrganizationAuthController {
         com.company.ftthgis.domain.tenant.entity.SubscriptionPlan plan = org.getSubscriptionPlan();
         String planName = plan != null ? plan.getName().toUpperCase() : "FREE";
         String planDisplayName = switch (planName) {
-            case "FREE" -> "Starter Trial";
-            case "PRO" -> "Professional";
+            case "FREE" -> "Starter 14-Day Trial";
+            case "STARTER" -> "Starter ISP";
+            case "PRO" -> "Professional ISP";
             case "ENTERPRISE" -> "Enterprise Core";
             default -> planName;
         };

@@ -43,25 +43,30 @@ export function TenantQuotaModal({
 
   const handlePlanChange = (tier: PlanTier) => {
     setPlanTier(tier);
-    if (tier === "Starter") {
+    if (tier === "Free") {
+      setMaxOlts(1);
+      setMaxOdps(50);
+      setMaxStorageGb(2);
+      setApiRateLimitMax(500);
+    } else if (tier === "Starter") {
       setMaxOlts(2);
-      setMaxOdps(500);
-      setMaxStorageGb(10);
+      setMaxOdps(300);
+      setMaxStorageGb(15);
       setApiRateLimitMax(2000);
     } else if (tier === "Professional") {
-      setMaxOlts(5);
+      setMaxOlts(6);
       setMaxOdps(2500);
-      setMaxStorageGb(25);
-      setApiRateLimitMax(5000);
-    } else if (tier === "Enterprise") {
-      setMaxOlts(20);
-      setMaxOdps(10000);
       setMaxStorageGb(100);
-      setApiRateLimitMax(20000);
+      setApiRateLimitMax(8000);
+    } else if (tier === "Enterprise") {
+      setMaxOlts(25);
+      setMaxOdps(12000);
+      setMaxStorageGb(500);
+      setApiRateLimitMax(30000);
     } else if (tier === "Custom") {
       setMaxOlts(50);
       setMaxOdps(25000);
-      setMaxStorageGb(500);
+      setMaxStorageGb(1000);
       setApiRateLimitMax(50000);
     }
   };
@@ -122,10 +127,11 @@ export function TenantQuotaModal({
                 <SelectValue placeholder="Select tier" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-xs">
-                <SelectItem value="Starter">Starter Tier (Small ISP / Trial)</SelectItem>
-                <SelectItem value="Professional">Professional Tier (Regional ISP)</SelectItem>
-                <SelectItem value="Enterprise">Enterprise Tier (National ISP)</SelectItem>
-                <SelectItem value="Custom">Custom Tier (Dedicated SLA)</SelectItem>
+                <SelectItem value="Free">Free Trial Tier (14 Days / 1 OLT / 50 ODP)</SelectItem>
+                <SelectItem value="Starter">Starter Tier (Rp 990k / 2 OLT / 300 ODP)</SelectItem>
+                <SelectItem value="Professional">Professional Tier (Rp 3.9M / 6 OLT / 2.5k ODP)</SelectItem>
+                <SelectItem value="Enterprise">Enterprise Tier (Rp 12.5M / 25 OLT / 12k ODP)</SelectItem>
+                <SelectItem value="Custom">Custom Tier (Dedicated Capacity)</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -261,6 +261,53 @@ export interface SubscriptionPlanInfo {
   features: SubscriptionPlanFeature[];
 }
 
+interface BuildPlanFeaturesParams {
+  maxOlts: number;
+  maxOdps: number;
+  maxOdcs: number;
+  maxCustomers: number;
+  maxStorageGb: number;
+  apiRpm: number;
+  hasSso: boolean;
+  hasApiAccess: boolean;
+}
+
+function buildPlanFeatures(params: BuildPlanFeaturesParams): SubscriptionPlanFeature[] {
+  const { maxOlts, maxOdps, maxOdcs, maxCustomers, maxStorageGb, apiRpm, hasSso, hasApiAccess } = params;
+  return [
+    {
+      title: `Maks. ${maxOlts} OLT & ${maxOdps.toLocaleString("id-ID")} ODP`,
+      detail: "Alokasi kapasitas pemetaan topologi kabel fiber optik",
+    },
+    {
+      title: `Maks. ${maxOdcs.toLocaleString("id-ID")} ODC & ${maxCustomers.toLocaleString("id-ID")} Pelanggan`,
+      detail: "Kapasitas distribusi FAT / closure dan data pelanggan",
+    },
+    {
+      title: `${maxStorageGb} GB MinIO S3 Storage`,
+      detail: "Penyimpanan berkas foto redaman, surat jalan, dan dokumen",
+    },
+    {
+      title: hasApiAccess ? `API Access (${apiRpm.toLocaleString("id-ID")} RPM)` : "Standard API Rate Limit",
+      detail: hasApiAccess
+        ? "Integrasi REST API, webhook, dan telemetry"
+        : "Akses integrasi sistem billing dan CRM",
+    },
+    {
+      title: hasSso ? "Keycloak SSO / LDAP Federation" : "Standard Email & Password Auth",
+      detail: hasSso
+        ? "Integrasi IAM keamanan terpusat & multi-faktor autentikasi"
+        : "Manajemen kredensial tim operasional",
+    },
+    {
+      title: maxOlts >= 20 ? "Platinum 99.9% 24/7 SLA Matrix" : maxOlts >= 5 ? "Gold 99.5% SLA Support" : "Standard Community Support",
+      detail: maxOlts >= 20
+        ? "Dedicated Technical Account Manager & prioritas eskalasi"
+        : "Dukungan bantuan tiket teknis dan forum komunitas",
+    },
+  ];
+}
+
 export async function getAvailableSubscriptionPlans(): Promise<SubscriptionPlanInfo[]> {
   await verifySuperAdmin();
   const headers = await getAuthHeaders();
@@ -280,47 +327,26 @@ export async function getAvailableSubscriptionPlans(): Promise<SubscriptionPlanI
               ? "Free Trial"
               : `Rp ${numPrice.toLocaleString("id-ID")}`;
 
+          const planCode = String(p.name || "").toUpperCase();
           const maxOlts = Number(p.maxProjects || 0);
           const maxOdps = Number(p.maxOdps || 0);
           const maxOdcs = Number(p.maxOdcs || 0);
           const maxCustomers = Number(p.maxCustomers || 0);
-          const maxStorageGb = maxOlts >= 20 ? 100 : maxOlts >= 5 ? 50 : 10;
-          const apiRpm = p.hasApiAccess ? (maxOlts >= 20 ? 20000 : 5000) : 2000;
+          const maxStorageGb = planCode === "ENTERPRISE" ? 500 : planCode === "PRO" ? 100 : planCode === "STARTER" ? 15 : 2;
+          const apiRpm = planCode === "ENTERPRISE" ? 30000 : planCode === "PRO" ? 8000 : planCode === "STARTER" ? 2000 : 500;
           const hasSso = Boolean(p.hasSso);
           const hasApiAccess = Boolean(p.hasApiAccess);
 
-          const features: SubscriptionPlanFeature[] = [
-            {
-              title: `Maks. ${maxOlts} OLT & ${maxOdps.toLocaleString("id-ID")} ODP`,
-              detail: "Alokasi kapasitas pemetaan topologi kabel fiber optik",
-            },
-            {
-              title: `Maks. ${maxOdcs.toLocaleString("id-ID")} ODC & ${maxCustomers.toLocaleString("id-ID")} Pelanggan`,
-              detail: "Kapasitas distribusi FAT / closure dan data pelanggan",
-            },
-            {
-              title: `${maxStorageGb} GB MinIO S3 Storage`,
-              detail: "Penyimpanan berkas foto redaman, surat jalan, dan dokumen",
-            },
-            {
-              title: hasApiAccess ? `API Access (${apiRpm.toLocaleString("id-ID")} RPM)` : "Standard API Rate Limit",
-              detail: hasApiAccess
-                ? "Integrasi REST API, webhook, dan SNMP OLT Poller telemetry"
-                : "Akses integrasi sistem billing dan CRM",
-            },
-            {
-              title: hasSso ? "Keycloak SSO / LDAP Federation" : "Standard Email & Password Auth",
-              detail: hasSso
-                ? "Integrasi IAM keamanan terpusat & multi-faktor autentikasi"
-                : "Manajemen kredensial tim operasional",
-            },
-            {
-              title: maxOlts >= 20 ? "Platinum 99.9% 24/7 SLA Matrix" : maxOlts >= 5 ? "Gold 99.5% SLA Support" : "Standard Community Support",
-              detail: maxOlts >= 20
-                ? "Dedicated Technical Account Manager & prioritas eskalasi"
-                : "Dukungan bantuan tiket teknis dan forum komunitas",
-            },
-          ];
+          const features = buildPlanFeatures({
+            maxOlts,
+            maxOdps,
+            maxOdcs,
+            maxCustomers,
+            maxStorageGb,
+            apiRpm,
+            hasSso,
+            hasApiAccess,
+          });
 
           return {
             id: String(p.id || ""),
@@ -330,7 +356,7 @@ export async function getAvailableSubscriptionPlans(): Promise<SubscriptionPlanI
             numericPrice: numPrice,
             period: "/ month",
             description: String(p.description || `Paket layanan infrastruktur GIS FTTH terkelola tier ${p.name || ""}.`),
-            popular: false,
+            popular: planCode === "STARTER" || planCode === "PRO",
             maxOlts,
             maxOdps,
             maxOdcs,

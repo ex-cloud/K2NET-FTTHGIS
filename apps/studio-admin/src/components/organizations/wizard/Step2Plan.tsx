@@ -14,8 +14,8 @@ export function Step2Plan({ formData, setFormData }: Step2PlanProps) {
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {(["FREE", "PRO", "ENTERPRISE"] as PlanType[]).map((tierKey) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {(["FREE", "STARTER", "PRO", "ENTERPRISE"] as PlanType[]).map((tierKey) => {
           const item = PLAN_SPECS[tierKey];
           const isSelected = formData.plan === tierKey;
 

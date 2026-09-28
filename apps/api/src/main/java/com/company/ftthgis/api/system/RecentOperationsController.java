@@ -815,8 +815,9 @@ public class RecentOperationsController {
 
                 BigDecimal priceVal = (BigDecimal) r.get("price");
                 if (priceVal == null) {
-                    priceVal = "ENTERPRISE".equalsIgnoreCase(planName) ? BigDecimal.valueOf(14500000) :
-                               "PRO".equalsIgnoreCase(planName) ? BigDecimal.valueOf(4900000) : BigDecimal.ZERO;
+                    priceVal = "ENTERPRISE".equalsIgnoreCase(planName) ? BigDecimal.valueOf(12500000) :
+                               "PRO".equalsIgnoreCase(planName) ? BigDecimal.valueOf(3900000) :
+                               "STARTER".equalsIgnoreCase(planName) ? BigDecimal.valueOf(990000) : BigDecimal.ZERO;
                 }
 
                 String planCycle = (String) r.get("plan_cycle");

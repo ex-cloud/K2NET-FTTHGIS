@@ -28,13 +28,17 @@ export function OverviewSubscriptionCard({
       <div className="space-y-2 pt-1">
         <div className="flex items-baseline gap-1">
           <span className="text-2xl font-bold text-foreground">
-            {summary?.planPrice
-              ? `Rp ${Number(summary.planPrice).toLocaleString("id-ID")}`
+            {summary?.planPrice !== undefined
+              ? summary.planPrice === 0
+                ? "Rp 0 (Trial)"
+                : `Rp ${Number(summary.planPrice).toLocaleString("id-ID")}`
               : org.planTier === "Enterprise"
               ? "Rp 12.500.000"
               : org.planTier === "Professional"
-              ? "Rp 4.500.000"
-              : "Rp 1.500.000"}
+              ? "Rp 3.900.000"
+              : org.planTier === "Starter"
+              ? "Rp 990.000"
+              : "Rp 0 (Trial)"}
           </span>
           <span className="text-xs text-muted-foreground">/ bulan</span>
         </div>

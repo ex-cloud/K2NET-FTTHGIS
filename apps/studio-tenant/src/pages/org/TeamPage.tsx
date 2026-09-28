@@ -342,7 +342,7 @@ export function TeamPage() {
         onOpenChange={setUpgradeModalOpen}
         featureName="Kapasitas Anggota Tim"
         featureDescription={`Organisasi Anda telah mencapai batas kuota ${members.length}/${maxMembers} anggota tim untuk paket ${tier.toUpperCase()}. Tingkatkan ke paket yang lebih tinggi untuk menambah anggota tim baru.`}
-        requiredTier={tier === "free" ? "pro" : "enterprise"}
+        requiredTier={tier === "free" ? "starter" : tier === "starter" ? "pro" : "enterprise"}
         currentTier={tier}
         onUpgradeClick={() => navigate({ to: "/billing" })}
       />

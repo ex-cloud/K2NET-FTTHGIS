@@ -213,7 +213,7 @@ export function ProjectsPage() {
         onOpenChange={setUpgradeModalOpen}
         featureName="Kapasitas Proyek"
         featureDescription={`Organisasi Anda telah mencapai batas maksimum ${usedProjects} dari ${maxProjects} proyek aktif untuk paket ${tier.toUpperCase()}. Tingkatkan ke paket yang lebih tinggi untuk membuat proyek FTTH baru.`}
-        requiredTier={tier === "free" ? "pro" : "enterprise"}
+        requiredTier={tier === "free" ? "starter" : tier === "starter" ? "pro" : "enterprise"}
         currentTier={tier}
         onUpgradeClick={() => navigate({ to: "/billing" })}
       />

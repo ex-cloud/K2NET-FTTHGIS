@@ -12,22 +12,25 @@ export type OrganizationStatus =
 
 export type SlaTier = "Platinum (99.9%)" | "Gold (99.5%)" | "Standard (99.0%)";
 
-export type PlanTier = "Starter" | "Professional" | "Enterprise" | "Custom";
+export type PlanTier = "Free" | "Starter" | "Professional" | "Enterprise" | "Custom";
 
 export function normalizePlanTier(name?: string | null): PlanTier {
-  if (!name) return "Starter";
+  if (!name) return "Free";
   const upper = name.toUpperCase();
-  if (upper === "FREE" || upper === "STARTER" || upper.includes("FREE") || upper.includes("STARTER") || upper.includes("TRIAL")) return "Starter";
+  if (upper === "FREE" || upper.includes("FREE") || upper.includes("TRIAL")) return "Free";
+  if (upper === "STARTER" || upper.includes("STARTER")) return "Starter";
   if (upper === "PRO" || upper === "PROFESSIONAL" || upper.includes("PRO")) return "Professional";
   if (upper === "ENTERPRISE") return "Enterprise";
   if (upper === "CUSTOM") return "Custom";
-  return "Starter";
+  return "Free";
 }
 
 export function toBackendPlanName(tier: PlanTier | string): string {
   switch (tier) {
-    case "Starter":
+    case "Free":
       return "FREE";
+    case "Starter":
+      return "STARTER";
     case "Professional":
       return "PRO";
     case "Enterprise":
@@ -165,9 +168,9 @@ function resolveFeatureFlags(
 ): OrganizationFeatureFlags {
   return {
     gisCore: persisted?.gisCore ?? true,
-    oltPoller: persisted?.oltPoller ?? (tier !== "Starter"),
+    oltPoller: persisted?.oltPoller ?? (tier === "Professional" || tier === "Enterprise" || tier === "Custom"),
     whatsappEngine: persisted?.whatsappEngine ?? true,
-    aiCopilot: persisted?.aiCopilot ?? (tier === "Enterprise"),
+    aiCopilot: persisted?.aiCopilot ?? (tier === "Enterprise" || tier === "Custom"),
     sandboxMode: persisted?.sandboxMode ?? false,
   };
 }
@@ -176,13 +179,14 @@ function resolveMaxQuotas(
   tier: PlanTier,
   plan?: RawOrganizationInput["subscriptionPlan"]
 ) {
-  const isEnterprise = tier === "Enterprise";
+  const isEnterprise = tier === "Enterprise" || tier === "Custom";
+  const isPro = tier === "Professional";
   const isStarter = tier === "Starter";
 
-  const defaultOlts = isEnterprise ? 20 : isStarter ? 2 : 5;
-  const defaultOdps = isEnterprise ? 10000 : isStarter ? 500 : 2500;
-  const maxStorageGb = isEnterprise ? 100 : isStarter ? 10 : 25;
-  const apiRateLimitMax = isEnterprise ? 20000 : isStarter ? 2000 : 5000;
+  const defaultOlts = isEnterprise ? 25 : isPro ? 6 : isStarter ? 2 : 1;
+  const defaultOdps = isEnterprise ? 12000 : isPro ? 2500 : isStarter ? 300 : 50;
+  const maxStorageGb = isEnterprise ? 500 : isPro ? 100 : isStarter ? 15 : 2;
+  const apiRateLimitMax = isEnterprise ? 30000 : isPro ? 8000 : isStarter ? 2000 : 500;
 
   return {
     maxOlts: plan?.maxProjects || defaultOlts,

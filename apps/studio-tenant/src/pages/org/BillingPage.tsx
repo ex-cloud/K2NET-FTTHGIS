@@ -92,51 +92,69 @@ export function BillingPage() {
       key: "FREE",
       name: "STARTER TRIAL",
       price: "Rp 0",
-      period: "/bulan",
-      description: "Starter 7-day evaluation trial with basic hardware quotas and standard community support.",
+      period: "/14 hari",
+      description: "Starter 14-day evaluation trial with basic hardware quotas and standard community support.",
       features: [
-        "Maksimal 2 OLT & Proyek FTTH Aktif",
-        "Maksimal 500 ODP & 100 ODC",
-        "Hingga 1.000 Pelanggan Terdaftar",
-        "10 GB Kapasitas MinIO S3 Storage",
-        "Akses API Standar (2.000 RPM)",
-        "Dukungan Tiket & Komunitas Standar",
+        "Maksimal 1 OLT & Proyek FTTH Aktif",
+        "Maksimal 50 ODP & 10 ODC",
+        "Hingga 100 Pelanggan Terdaftar",
+        "2 GB Kapasitas MinIO S3 Storage",
+        "Akses API Standar (500 RPM)",
+        "Dukungan Komunitas",
       ],
       current: tier === "free",
-      badge: tier === "free" ? "PAKET AKTIF" : undefined,
+      badge: tier === "free" ? "PAKET TRIAL" : undefined,
+    },
+    {
+      key: "STARTER",
+      name: "STARTER ISP",
+      price: "Rp 990.000",
+      period: "/bulan",
+      description: "Starter ISP tier for local ISPs and RT-RW Net with 2 OLTs and up to 500 customers.",
+      features: [
+        "Maksimal 2 OLT & Proyek FTTH Aktif",
+        "Maksimal 300 ODP & 50 ODC",
+        "Hingga 500 Pelanggan Terdaftar",
+        "15 GB Kapasitas MinIO S3 Storage",
+        "Akses Webhook & API (2.000 RPM)",
+        "Standard SLA & Support",
+      ],
+      current: tier === "starter",
+      badge: tier === "starter" ? "PAKET AKTIF" : "TERJANGKAU",
     },
     {
       key: "PRO",
       name: "PROFESSIONAL",
-      price: "Rp 4.900.000",
+      price: "Rp 3.900.000",
       period: "/bulan",
-      description: "Professional ISP tier with dedicated poller, LDAP SSO, and Gold 99.5% SLA.",
+      description: "Professional ISP tier with dedicated poller, optical heatmap, LDAP SSO, and Gold 99.5% SLA.",
       features: [
-        "Maksimal 5 OLT & Proyek FTTH Aktif",
+        "Maksimal 6 OLT & Proyek FTTH Aktif",
         "Maksimal 2.500 ODP & 500 ODC",
         "Hingga 5.000 Pelanggan Terdaftar",
-        "50 GB Kapasitas MinIO S3 Storage",
-        "Live SNMP OLT Poller Telemetry (5.000 RPM)",
+        "100 GB Kapasitas MinIO S3 Storage",
+        "Live SNMP OLT Poller Telemetry (8.000 RPM)",
+        "Visualisasi Heatmap Redaman Optik",
         "Keycloak SSO / LDAP Federation",
         "Gold 99.5% SLA Support",
       ],
       current: tier === "pro",
-      badge: tier === "pro" ? "PAKET AKTIF" : undefined,
+      badge: tier === "pro" ? "PAKET AKTIF" : "PALING POPULER",
     },
     {
       key: "ENTERPRISE",
       name: "ENTERPRISE",
-      price: "Rp 14.500.000",
+      price: "Rp 12.500.000",
       period: "/bulan",
       description: "Enterprise Core tier with AI Fiber Copilot, custom POP gateway, and Platinum 99.9% SLA.",
       features: [
-        "Maksimal 20 OLT & Proyek FTTH Aktif",
-        "Maksimal 10.000 ODP & 2.000 ODC",
-        "Hingga 20.000 Pelanggan Terdaftar",
-        "100 GB Kapasitas MinIO S3 Storage",
-        "AI Fiber Diagnostics Copilot & GIS Core",
-        "Integrasi REST API, Webhooks & SNMP (20.000 RPM)",
-        "Keycloak SSO / LDAP + Custom Domain White-Label",
+        "Maksimal 25 OLT & Proyek FTTH Aktif",
+        "Maksimal 12.000 ODP & 2.000 ODC",
+        "Hingga 25.000 Pelanggan Terdaftar",
+        "500 GB Kapasitas MinIO S3 Storage",
+        "AI Fiber Diagnostics Copilot & Core Engine",
+        "Integrasi REST API, Webhooks & SNMP (30.000 RPM)",
+        "Keycloak SSO / SAML + Custom Domain",
         "Platinum 99.9% 24/7 SLA Matrix & Dedicated TAM",
       ],
       current: tier === "enterprise",
@@ -154,10 +172,12 @@ export function BillingPage() {
 
   const currentDisplayTitle =
     tier === "enterprise"
-      ? "Paket Enterprise Telco"
-      : tier === "free"
-      ? "Paket Starter Free"
-      : "Paket Professional ISP";
+      ? "Paket Enterprise Core"
+      : tier === "pro"
+      ? "Paket Professional ISP"
+      : tier === "starter"
+      ? "Paket Starter ISP"
+      : "Paket Starter 14-Day Trial";
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -177,6 +197,8 @@ export function BillingPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
                 {tier === "enterprise" ? (
                   <Sparkles className="h-5 w-5" />
+                ) : tier === "starter" ? (
+                  <Zap className="h-5 w-5" />
                 ) : tier === "free" ? (
                   <Shield className="h-5 w-5" />
                 ) : (
@@ -206,12 +228,12 @@ export function BillingPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleSelectPlan("PRO")}
-              disabled={subscribeMutation.isPending || tier === "pro"}
+              onClick={() => handleSelectPlan("STARTER")}
+              disabled={subscribeMutation.isPending || tier === "starter" || tier === "pro" || tier === "enterprise"}
               className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs border-border/80"
             >
               <CreditCard className="h-3.5 w-3.5" />
-              {tier === "free" ? "Upgrade ke Pro via Xendit" : "Kelola Pembayaran"}
+              {tier === "free" ? "Upgrade Paket via Xendit" : "Kelola Pembayaran"}
             </Button>
           </div>
         </Card>
@@ -222,7 +244,7 @@ export function BillingPage() {
             Pilihan Paket Langganan
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {plans.map((p) => (
               <Card
                 key={p.key}

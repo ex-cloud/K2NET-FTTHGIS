@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import org.springframework.security.access.AccessDeniedException;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -55,6 +57,20 @@ public class TenantApiWebhookService {
     @Transactional(readOnly = true)
     public ApiKeyOverviewResponse getApiKeyOverview(String idOrSlug) {
         Organization org = resolveOrganization(idOrSlug);
+
+        // Security / Subscription PBAC Check: If subscription plan does NOT include Developer API access (e.g. FREE tier)
+        if (org.getSubscriptionPlan() != null && !org.getSubscriptionPlan().isHasApiAccess()) {
+            return ApiKeyOverviewResponse.builder()
+                    .apiKeyPrefix("k2_live_")
+                    .apiKeyLast4("••••")
+                    .maskedApiKey("API Key tidak tersedia untuk paket " + (org.getSubscriptionPlan().getName() != null ? org.getSubscriptionPlan().getName() : "FREE") + ". Silakan upgrade ke Starter atau lebih tinggi.")
+                    .rateLimitPerMinute(0)
+                    .hasActiveKey(false)
+                    .createdAt(null)
+                    .updatedAt(null)
+                    .build();
+        }
+
         TenantWebhookConfig config = getOrCreateConfig(org);
 
         String maskedKey = config.getApiKeyPrefix() + "••••••••" + config.getApiKeyLast4();
@@ -78,6 +94,14 @@ public class TenantApiWebhookService {
     @AuditRequired(action = "TENANT_API_KEY_REGENERATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
     public RegenerateApiKeyResponse regenerateApiKey(String idOrSlug) {
         Organization org = resolveOrganization(idOrSlug);
+
+        // Security / Subscription PBAC Check: Block API Key generation for tiers without API access (e.g. FREE tier)
+        if (org.getSubscriptionPlan() != null && !org.getSubscriptionPlan().isHasApiAccess()) {
+            throw new AccessDeniedException(
+                "Paket langganan (" + (org.getSubscriptionPlan().getName() != null ? org.getSubscriptionPlan().getName() : "FREE") + ") tidak memiliki akses Developer API / API Key. Silakan upgrade ke paket Starter atau lebih tinggi."
+            );
+        }
+
         TenantWebhookConfig config = getOrCreateConfig(org);
 
         // Generate secure 32-hex random token
@@ -92,6 +116,7 @@ public class TenantApiWebhookService {
         config.setApiKeyHash(hash);
         config.setApiKeyPrefix(prefix);
         config.setApiKeyLast4(last4);
+        config.setActive(true);
         config.setUpdatedAt(LocalDateTime.now());
         configRepository.save(config);
 
@@ -337,13 +362,29 @@ public class TenantApiWebhookService {
             String fullKey = prefix + initialHex;
             String hash = encryptionUtil.sha256Hex(fullKey);
 
+            int defaultRateLimit = 5000;
+            boolean hasApiAccess = true;
+            if (org.getSubscriptionPlan() != null) {
+                String planName = org.getSubscriptionPlan().getName();
+                if ("ENTERPRISE".equalsIgnoreCase(planName)) {
+                    defaultRateLimit = 30000;
+                } else if ("PRO".equalsIgnoreCase(planName) || "PROFESSIONAL".equalsIgnoreCase(planName)) {
+                    defaultRateLimit = 8000;
+                } else if ("STARTER".equalsIgnoreCase(planName)) {
+                    defaultRateLimit = 2000;
+                } else {
+                    defaultRateLimit = 500;
+                }
+                hasApiAccess = org.getSubscriptionPlan().isHasApiAccess();
+            }
+
             TenantWebhookConfig newConfig = TenantWebhookConfig.builder()
                     .organization(org)
                     .apiKeyHash(hash)
                     .apiKeyPrefix(prefix)
                     .apiKeyLast4(last4)
-                    .rateLimitPerMinute(5000)
-                    .isActive(true)
+                    .rateLimitPerMinute(defaultRateLimit)
+                    .isActive(hasApiAccess)
                     .subscribedEvents("{\"fiberCut\": true, \"oltDown\": true, \"odpFull\": true, \"quotaAlert\": false}")
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())

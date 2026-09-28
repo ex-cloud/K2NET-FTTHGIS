@@ -40,6 +40,10 @@ export interface SubscriptionSummary {
   dunningLevel: number;
   isOverQuota: boolean;
   isSoftLocked: boolean;
+
+  // Feature Entitlements
+  hasApiAccess?: boolean;
+  hasSso?: boolean;
 }
 
 export type NormalizedTier = "free" | "starter" | "pro" | "enterprise";
@@ -47,12 +51,14 @@ export type NormalizedTier = "free" | "starter" | "pro" | "enterprise";
 function parseTier(planName?: string, planTier?: string): NormalizedTier {
   const raw = (planName || planTier || "PRO").toLowerCase();
   if (raw.includes("enterprise") || raw.includes("telco")) return "enterprise";
-  if (raw.includes("free") || raw.includes("starter") || raw.includes("basic") || raw.includes("trial")) return "free";
+  if (raw.includes("pro") || raw.includes("professional")) return "pro";
+  if (raw.includes("starter") || raw.includes("lite")) return "starter";
+  if (raw.includes("free") || raw.includes("trial") || raw.includes("basic")) return "free";
   return "pro";
 }
 
 function getProjectLimits(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier) {
-  const defaultMax = tier === "free" ? 2 : tier === "enterprise" ? 20 : 5;
+  const defaultMax = tier === "free" ? 1 : tier === "starter" ? 2 : tier === "enterprise" ? 25 : 6;
   const maxProjects = summary?.effectiveMaxOlts ?? defaultMax;
   const usedProjects = summary?.usedOlts ?? 0;
   const projectPercentage = maxProjects > 0 ? Math.min(100, Math.round((usedProjects / maxProjects) * 100)) : 0;
@@ -62,7 +68,7 @@ function getProjectLimits(summary: SubscriptionSummary | null | undefined, tier:
 }
 
 function getOdpLimits(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier) {
-  const defaultMax = tier === "free" ? 500 : tier === "enterprise" ? 10000 : 2500;
+  const defaultMax = tier === "free" ? 50 : tier === "starter" ? 300 : tier === "enterprise" ? 12000 : 2500;
   const maxOdps = summary?.effectiveMaxOdps ?? defaultMax;
   const usedOdps = summary?.usedOdps ?? 0;
   const odpPercentage = maxOdps > 0 ? Math.min(100, Math.round((usedOdps / maxOdps) * 100)) : 0;
@@ -71,12 +77,20 @@ function getOdpLimits(summary: SubscriptionSummary | null | undefined, tier: Nor
 }
 
 function getStorageLimits(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier) {
-  const defaultMax = tier === "free" ? 10 : tier === "enterprise" ? 100 : 50;
+  const defaultMax = tier === "free" ? 2 : tier === "starter" ? 15 : tier === "enterprise" ? 500 : 100;
   const maxStorageGb = summary?.maxStorageGb ?? defaultMax;
   const usedStorageGb = summary?.usedStorageGb ?? 0;
   const storagePercentage = maxStorageGb > 0 ? Math.min(100, Math.round((usedStorageGb / maxStorageGb) * 100)) : 0;
 
   return { maxStorageGb, usedStorageGb, storagePercentage };
+}
+
+function getPlanDisplayName(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier): string {
+  if (summary?.planName) return summary.planName;
+  if (tier === "enterprise") return "ENTERPRISE";
+  if (tier === "starter") return "STARTER";
+  if (tier === "free") return "FREE";
+  return "PRO";
 }
 
 export function useTenantSubscription() {
@@ -123,11 +137,12 @@ export function useTenantSubscription() {
 
   const isProOrEnterprise = tier === "pro" || tier === "enterprise";
   const isEnterprise = tier === "enterprise";
+  const planName = React.useMemo(() => getPlanDisplayName(summary, tier), [summary, tier]);
 
   return {
     summary,
     tier,
-    planName: summary?.planName || (isEnterprise ? "ENTERPRISE" : tier === "free" ? "FREE" : "PRO"),
+    planName,
     planCycle: summary?.planCycle || "MONTHLY",
     status: summary?.status || "ACTIVE",
     isOverQuota: Boolean(summary?.isOverQuota),
@@ -157,9 +172,10 @@ export function useTenantSubscription() {
     canAccessHeatmap: isProOrEnterprise,
     canAccessCadBuilder: isProOrEnterprise,
     canAccessOltPoller: isProOrEnterprise,
-    canAccessAiAssistant: isProOrEnterprise,
+    canAccessAiAssistant: isEnterprise,
     canAccessCustomDomain: isEnterprise,
-    canAccessSso: isEnterprise,
+    canAccessSso: summary?.hasSso ?? isProOrEnterprise,
+    canAccessApi: summary?.hasApiAccess ?? (tier !== "free"),
 
     isLoading,
     isError,

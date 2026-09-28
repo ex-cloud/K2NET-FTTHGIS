@@ -137,13 +137,14 @@ public class OrganizationAnalyticsService {
      */
     public Map<String, Boolean> resolveFeatureFlags(Organization org) {
         Map<String, Boolean> flags = new HashMap<>();
-        String planName = org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "Professional";
-        boolean isEnterprise = "Enterprise".equalsIgnoreCase(planName);
-        boolean isStarter = "Starter".equalsIgnoreCase(planName);
+        String planName = org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "PRO";
+        boolean isEnterprise = "ENTERPRISE".equalsIgnoreCase(planName);
+        boolean isProOrHigher = "PRO".equalsIgnoreCase(planName) || isEnterprise;
 
         // Plan defaults
         flags.put("gisCore", true);
-        flags.put("oltPoller", !isStarter);
+        flags.put("oltPoller", isProOrHigher);
+        flags.put("opticalHeatmap", isProOrHigher);
         flags.put("whatsappEngine", true);
         flags.put("aiCopilot", isEnterprise);
         flags.put("sandboxMode", false);

@@ -144,12 +144,12 @@ public class Organization {
     }
 
     public int getEffectiveMaxOlts(Integer baseOlts) {
-        int base = baseOlts != null ? baseOlts : (subscriptionPlan != null && subscriptionPlan.getMaxProjects() != null ? subscriptionPlan.getMaxProjects() : 5);
+        int base = baseOlts != null ? baseOlts : (subscriptionPlan != null && subscriptionPlan.getMaxProjects() != null ? subscriptionPlan.getMaxProjects() : 6);
         return base + (isBoosterActive() && boosterOlts != null ? boosterOlts : 0);
     }
 
     public int getEffectiveMaxOdps(Integer baseOdps) {
-        int base = baseOdps != null ? baseOdps : (subscriptionPlan != null && subscriptionPlan.getMaxOdps() != null ? subscriptionPlan.getMaxOdps() : 1000);
+        int base = baseOdps != null ? baseOdps : (subscriptionPlan != null && subscriptionPlan.getMaxOdps() != null ? subscriptionPlan.getMaxOdps() : 2500);
         return base + (isBoosterActive() && boosterOdps != null ? boosterOdps : 0);
     }
 

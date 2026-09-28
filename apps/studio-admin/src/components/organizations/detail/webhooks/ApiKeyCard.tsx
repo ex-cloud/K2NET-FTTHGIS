@@ -39,8 +39,16 @@ export function ApiKeyCard({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-xs font-bold text-foreground">Kong Consumer API Key</h3>
-              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono">
-                {apiKeyOverview?.hasActiveKey !== false ? "ACTIVE" : "INACTIVE"}
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-[9px] font-mono",
+                  apiKeyOverview?.hasActiveKey === false
+                    ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                    : "border-primary/30 bg-primary/10 text-primary"
+                )}
+              >
+                {apiKeyOverview?.hasActiveKey === false ? "DISABLED (FREE TIER)" : "ACTIVE"}
               </Badge>
               <Badge variant="outline" className="border-border text-muted-foreground text-[9px] font-mono gap-1">
                 <ShieldCheck className="h-2.5 w-2.5 text-primary" />
@@ -58,16 +66,32 @@ export function ApiKeyCard({
 
         <div className="flex items-center gap-2">
           {canManage ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRegenerateKey}
-              disabled={isRegenerating}
-              className="h-7 px-2.5 text-xs border-border gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
-            >
-              <RefreshCw className={cn("h-3 w-3", isRegenerating && "animate-spin")} />
-              <span>{isRegenerating ? "Menerbitkan..." : "Regenerate Key"}</span>
-            </Button>
+            apiKeyOverview?.hasActiveKey === false ? (
+              <ActionTooltip label="Akses Developer API tidak aktif pada paket FREE. Upgrade ke Starter atau lebih tinggi untuk menerbitkan API Key.">
+                <span className="inline-block">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="h-7 px-2.5 text-xs border-border gap-1.5 text-muted-foreground opacity-50 cursor-not-allowed"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    <span>Regenerate Key</span>
+                  </Button>
+                </span>
+              </ActionTooltip>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRegenerateKey}
+                disabled={isRegenerating}
+                className="h-7 px-2.5 text-xs border-border gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <RefreshCw className={cn("h-3 w-3", isRegenerating && "animate-spin")} />
+                <span>{isRegenerating ? "Menerbitkan..." : "Regenerate Key"}</span>
+              </Button>
+            )
           ) : (
             <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
               <span className="inline-block">

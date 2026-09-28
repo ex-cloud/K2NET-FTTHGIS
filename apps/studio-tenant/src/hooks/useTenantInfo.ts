@@ -53,7 +53,8 @@ export function useTenantInfo() {
     const rawTier = (resolvedTenant?.planTier || initialData?.planTier || "PRO").toLowerCase();
     if (rawTier.includes("enterprise") || rawTier.includes("sla")) return "enterprise";
     if (rawTier.includes("pro") || rawTier.includes("business")) return "pro";
-    if (rawTier.includes("free") || rawTier.includes("starter") || rawTier.includes("basic")) return "free";
+    if (rawTier.includes("starter")) return "starter";
+    if (rawTier.includes("free") || rawTier.includes("trial") || rawTier.includes("basic")) return "free";
     return "pro";
   }, [resolvedTenant?.planTier, initialData?.planTier]);
 

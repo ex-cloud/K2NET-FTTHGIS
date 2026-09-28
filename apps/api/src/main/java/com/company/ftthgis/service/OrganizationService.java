@@ -152,18 +152,28 @@ public class OrganizationService {
         return Optional.empty(); // Treat as not found for security
     }
 
+    public static String normalizePlanName(String rawPlan) {
+        if (rawPlan == null || rawPlan.trim().isEmpty()) {
+            return "FREE";
+        }
+        String p = rawPlan.trim();
+        if ("Trial".equalsIgnoreCase(p) || "FREE".equalsIgnoreCase(p) || "Free Trial".equalsIgnoreCase(p)) {
+            return "FREE";
+        } else if ("Starter".equalsIgnoreCase(p) || "STARTER".equalsIgnoreCase(p) || "Starter ISP".equalsIgnoreCase(p) || "Lite".equalsIgnoreCase(p)) {
+            return "STARTER";
+        } else if ("Professional".equalsIgnoreCase(p) || "PRO".equalsIgnoreCase(p) || "Professional ISP".equalsIgnoreCase(p)) {
+            return "PRO";
+        } else if ("Enterprise".equalsIgnoreCase(p) || "ENTERPRISE".equalsIgnoreCase(p) || "Enterprise Core".equalsIgnoreCase(p) || "Custom".equalsIgnoreCase(p)) {
+            return "ENTERPRISE";
+        }
+        return p.toUpperCase();
+    }
+
     @Transactional
     public java.util.Map<String, Object> createOrganization(OrganizationCreateRequest request) {
         // Lookup Subscription Plan
         String rawPlan = request.getPlan() != null ? request.getPlan().trim() : "FREE";
-        String normalizedPlan = "FREE";
-        if ("Starter".equalsIgnoreCase(rawPlan) || "FREE".equalsIgnoreCase(rawPlan) || "Trial".equalsIgnoreCase(rawPlan)) {
-            normalizedPlan = "FREE";
-        } else if ("Professional".equalsIgnoreCase(rawPlan) || "PRO".equalsIgnoreCase(rawPlan)) {
-            normalizedPlan = "PRO";
-        } else if ("Enterprise".equalsIgnoreCase(rawPlan) || "ENTERPRISE".equalsIgnoreCase(rawPlan) || "Custom".equalsIgnoreCase(rawPlan)) {
-            normalizedPlan = "ENTERPRISE";
-        }
+        String normalizedPlan = normalizePlanName(rawPlan);
 
         final String targetPlanName = normalizedPlan;
         SubscriptionPlan plan = subscriptionPlanRepository
@@ -205,12 +215,12 @@ public class OrganizationService {
                 .address(request.getAddress())
                 .website(request.getWebsite())
                 .subscriptionPlan(plan)
-                .status(Organization.OrganizationStatus.ACTIVE);
+                .status("FREE".equalsIgnoreCase(targetPlanName) ? Organization.OrganizationStatus.TRIAL : Organization.OrganizationStatus.ACTIVE);
 
-        // Handle Trial Expiry for FREE plan (7 Days Trial)
+        // Handle Trial Expiry for FREE plan (14 Days Trial)
         if ("FREE".equalsIgnoreCase(targetPlanName)) {
-            log.info("🎁 FREE Plan detected for {}. Setting 7-day trial expiry.", finalSlug);
-            orgBuilder.trialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
+            log.info("🎁 FREE Plan detected for {}. Setting 14-day trial expiry.", finalSlug);
+            orgBuilder.trialExpiresAt(java.time.LocalDateTime.now().plusDays(14));
         }
 
         Organization org = orgBuilder.build();
@@ -233,8 +243,10 @@ public class OrganizationService {
             // Step 1: Ensure Realm & Default Client
             String planCode = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().getName() != null
                     ? saved.getSubscriptionPlan().getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
+                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
+                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
             boolean hasSso = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().isHasSso();
 
             keycloakService.ensureRealmExists(effectiveRealmKey, hasSso, saved.getName(), planCode, planDisplayName, saved.getLogoUrl());
@@ -431,21 +443,14 @@ public class OrganizationService {
         }
         if (updatedOrg.getSubscriptionPlan() != null && updatedOrg.getSubscriptionPlan().getName() != null) {
             String rawPlan = updatedOrg.getSubscriptionPlan().getName().trim();
-            String normalizedPlan = "PRO";
-            if ("Starter".equalsIgnoreCase(rawPlan) || "FREE".equalsIgnoreCase(rawPlan) || "Trial".equalsIgnoreCase(rawPlan)) {
-                normalizedPlan = "FREE";
-            } else if ("Professional".equalsIgnoreCase(rawPlan) || "PRO".equalsIgnoreCase(rawPlan)) {
-                normalizedPlan = "PRO";
-            } else if ("Enterprise".equalsIgnoreCase(rawPlan) || "ENTERPRISE".equalsIgnoreCase(rawPlan) || "Custom".equalsIgnoreCase(rawPlan)) {
-                normalizedPlan = "ENTERPRISE";
-            }
+            String normalizedPlan = normalizePlanName(rawPlan);
 
             Optional<SubscriptionPlan> planOpt = subscriptionPlanRepository.findByName(normalizedPlan);
             if (planOpt.isPresent()) {
                 org.setSubscriptionPlan(planOpt.get());
                 if ("FREE".equalsIgnoreCase(normalizedPlan)) {
                     if (org.getTrialExpiresAt() == null) {
-                        org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
+                        org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(14));
                     }
                 } else {
                     org.setTrialExpiresAt(null);
@@ -464,8 +469,10 @@ public class OrganizationService {
             String planCode = savedOrg.getSubscriptionPlan() != null && savedOrg.getSubscriptionPlan().getName() != null
                     ? savedOrg.getSubscriptionPlan().getName()
                     : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
+                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
+                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
 
             keycloakService.ensureRealmExists(realmKey, hasSso, savedOrg.getName(), planCode, planDisplayName, savedOrg.getLogoUrl());
         } catch (Exception ex) {
@@ -996,8 +1003,10 @@ public class OrganizationService {
             String realmToEnsure = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
             String planCode = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().getName() != null
                     ? org.getSubscriptionPlan().getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
+                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
+                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
             boolean hasSso = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().isHasSso();
 
             keycloakService.ensureRealmExists(realmToEnsure, hasSso, org.getName(), planCode, planDisplayName, org.getLogoUrl());
@@ -1066,14 +1075,7 @@ public class OrganizationService {
         }
 
         String rawPlan = planName != null ? planName.trim() : "PRO";
-        String normalizedPlan = "PRO";
-        if ("Starter".equalsIgnoreCase(rawPlan) || "FREE".equalsIgnoreCase(rawPlan) || "Trial".equalsIgnoreCase(rawPlan)) {
-            normalizedPlan = "FREE";
-        } else if ("Professional".equalsIgnoreCase(rawPlan) || "PRO".equalsIgnoreCase(rawPlan)) {
-            normalizedPlan = "PRO";
-        } else if ("Enterprise".equalsIgnoreCase(rawPlan) || "ENTERPRISE".equalsIgnoreCase(rawPlan) || "Custom".equalsIgnoreCase(rawPlan)) {
-            normalizedPlan = "ENTERPRISE";
-        }
+        String normalizedPlan = normalizePlanName(rawPlan);
 
         Optional<SubscriptionPlan> planOpt = subscriptionPlanRepository.findByName(normalizedPlan);
         if (planOpt.isEmpty()) {
@@ -1087,7 +1089,7 @@ public class OrganizationService {
         org.setSubscriptionPlan(plan);
         if ("FREE".equalsIgnoreCase(normalizedPlan)) {
             if (org.getTrialExpiresAt() == null) {
-                org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
+                org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(14));
             }
         } else {
             org.setStatus(Organization.OrganizationStatus.ACTIVE);
@@ -1102,8 +1104,9 @@ public class OrganizationService {
     @Transactional
     public Organization registerSelfService(OrganizationCreateRequest request) {
         String rawPlan = request.getPlan() != null ? request.getPlan().trim() : "FREE";
+        String normalizedPlan = normalizePlanName(rawPlan);
         SubscriptionPlan plan = subscriptionPlanRepository
-                .findByName(rawPlan)
+                .findByName(normalizedPlan)
                 .orElseGet(() -> subscriptionPlanRepository.findByName("FREE").orElse(null));
 
         String targetPlanName = plan != null ? plan.getName() : "FREE";
@@ -1195,9 +1198,9 @@ public class OrganizationService {
         // Update status to ACTIVE
         org.setStatus(Organization.OrganizationStatus.ACTIVE);
         
-        // Handle Trial Expiry for FREE plan (7 Days Trial)
+        // Handle Trial Expiry for FREE plan (14 Days Trial)
         if (org.getSubscriptionPlan() != null && "FREE".equalsIgnoreCase(org.getSubscriptionPlan().getName())) {
-            org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
+            org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(14));
         }
 
         if (org.getRealmKey() == null) {
@@ -1212,8 +1215,10 @@ public class OrganizationService {
             log.info("🔑 Provisioning Keycloak for approved organization: {} (Realm: {})", saved.getSlug(), effectiveRealmKey);
             String planCode = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().getName() != null
                     ? saved.getSubscriptionPlan().getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
+                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
+                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
             boolean hasSso = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().isHasSso();
 
             keycloakService.ensureRealmExists(effectiveRealmKey, hasSso, saved.getName(), planCode, planDisplayName, saved.getLogoUrl());

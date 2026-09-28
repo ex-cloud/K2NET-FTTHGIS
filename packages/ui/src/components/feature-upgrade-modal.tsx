@@ -17,7 +17,7 @@ export interface FeatureUpgradeModalProps {
   onOpenChange: (open: boolean) => void;
   featureName: string;
   featureDescription?: string;
-  requiredTier?: "pro" | "enterprise";
+  requiredTier?: "starter" | "pro" | "enterprise";
   currentTier?: string;
   onUpgradeClick?: () => void;
 }
@@ -32,21 +32,40 @@ export function FeatureUpgradeModal({
   onUpgradeClick,
 }: FeatureUpgradeModalProps) {
   const isEnterpriseRequired = requiredTier === "enterprise";
+  const isStarterRequired = requiredTier === "starter";
 
-  const tierTitle = isEnterpriseRequired ? "Enterprise Telco" : "Professional ISP";
-  const tierPrice = isEnterpriseRequired ? "Rp 14.500.000 / bulan" : "Rp 4.900.000 / bulan";
+  const tierTitle = isEnterpriseRequired
+    ? "Enterprise Core"
+    : isStarterRequired
+    ? "Starter ISP"
+    : "Professional ISP";
+
+  const tierPrice = isEnterpriseRequired
+    ? "Rp 12.500.000 / bulan"
+    : isStarterRequired
+    ? "Rp 990.000 / bulan"
+    : "Rp 3.900.000 / bulan";
 
   const highlights = isEnterpriseRequired
     ? [
-        "Maks. 20 Proyek FTTH, 20 OLT & 10.000 ODP",
+        "Maks. 25 OLT & 12.000 ODP, 25.000 Pelanggan",
         "AI Fiber Diagnostics Copilot & Core Engine",
-        "Multi-Cluster High Availability & Custom Domain",
+        "500 GB MinIO S3 Storage & 30.000 RPM API",
+        "Keycloak SSO + SAML, Custom Domain White-Label",
         "Platinum 99.9% 24/7 SLA Matrix & Dedicated TAM",
       ]
+    : isStarterRequired
+    ? [
+        "Maks. 2 OLT & 300 ODP, 500 Pelanggan",
+        "15 GB MinIO S3 Storage & 2.000 RPM API",
+        "Akses Webhook & REST API Integrasi",
+        "Standard SLA & Community Support",
+      ]
     : [
-        "Maks. 5 Proyek FTTH, 5 OLT & 2.500 ODP",
+        "Maks. 6 OLT & 2.500 ODP, 5.000 Pelanggan",
         "Visualisasi Heatmap Redaman Optik Interaktif",
         "Live SNMP OLT Telemetry & Poller Status Integration",
+        "100 GB MinIO S3 Storage & 8.000 RPM API",
         "Keycloak SSO / LDAP Federation & Gold 99.5% SLA",
       ];
 

@@ -23,14 +23,14 @@ interface TierConfig {
 const TIER_CONFIGS: Record<string, TierConfig> = {
   starter: {
     label: "Starter",
-    badgeClass: "bg-muted/80 text-muted-foreground border-border/60 hover:bg-muted hover:border-border/80",
-    tooltipLabel: "Paket Starter (Gratis) • Klik untuk upgrade",
+    badgeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/20 hover:border-blue-500/40",
+    tooltipLabel: "Paket Starter Aktif (Rp 990k/bln) • Klik untuk kelola kuota",
     icon: Shield,
   },
   free: {
-    label: "Free",
+    label: "Free Trial",
     badgeClass: "bg-muted/80 text-muted-foreground border-border/60 hover:bg-muted hover:border-border/80",
-    tooltipLabel: "Paket Free • Klik untuk upgrade ke Pro",
+    tooltipLabel: "Trial 14 Hari • Klik untuk upgrade paket",
     icon: Shield,
   },
   basic: {

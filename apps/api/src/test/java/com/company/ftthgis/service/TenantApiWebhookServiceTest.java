@@ -169,6 +169,54 @@ class TenantApiWebhookServiceTest {
     }
 
     @Test
+    @DisplayName("Should return disabled API key overview when organization has FREE tier (no API access)")
+    void testGetApiKeyOverview_FreeTier_Blocked() {
+        com.company.ftthgis.domain.tenant.entity.SubscriptionPlan freePlan = com.company.ftthgis.domain.tenant.entity.SubscriptionPlan.builder()
+                .name("FREE")
+                .hasApiAccess(false)
+                .build();
+        Organization freeOrg = Organization.builder()
+                .id(UUID.randomUUID())
+                .name("Trial Free Org")
+                .slug("trial-free")
+                .subscriptionPlan(freePlan)
+                .build();
+
+        when(organizationRepository.findBySlug("trial-free")).thenReturn(Optional.of(freeOrg));
+
+        ApiKeyOverviewResponse response = service.getApiKeyOverview("trial-free");
+
+        assertNotNull(response);
+        assertFalse(response.isHasActiveKey());
+        assertEquals(0, response.getRateLimitPerMinute());
+        assertTrue(response.getMaskedApiKey().contains("tidak tersedia"));
+    }
+
+    @Test
+    @DisplayName("Should throw AccessDeniedException when regenerating API key on FREE tier")
+    void testRegenerateApiKey_FreeTier_AccessDenied() {
+        com.company.ftthgis.domain.tenant.entity.SubscriptionPlan freePlan = com.company.ftthgis.domain.tenant.entity.SubscriptionPlan.builder()
+                .name("FREE")
+                .hasApiAccess(false)
+                .build();
+        Organization freeOrg = Organization.builder()
+                .id(UUID.randomUUID())
+                .name("Trial Free Org")
+                .slug("trial-free")
+                .subscriptionPlan(freePlan)
+                .build();
+
+        when(organizationRepository.findBySlug("trial-free")).thenReturn(Optional.of(freeOrg));
+
+        org.springframework.security.access.AccessDeniedException ex = assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> service.regenerateApiKey("trial-free")
+        );
+
+        assertTrue(ex.getMessage().contains("tidak memiliki akses Developer API"));
+    }
+
+    @Test
     @DisplayName("Should retrieve recent delivery logs")
     void testGetWebhookLogs() {
         when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));

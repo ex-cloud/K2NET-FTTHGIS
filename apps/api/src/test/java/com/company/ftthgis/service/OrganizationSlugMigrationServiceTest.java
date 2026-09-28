@@ -88,7 +88,8 @@ class OrganizationSlugMigrationServiceTest {
 
         assertThatThrownBy(() -> migrationService.migrateSlug(freeOrg.getId(), "custom-subdomain", "admin"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Starter (Free) tier is locked");
+                .hasMessageContaining("Free Trial tier is locked")
+                .hasMessageContaining("Starter, Pro, or Enterprise");
     }
 
     @Test

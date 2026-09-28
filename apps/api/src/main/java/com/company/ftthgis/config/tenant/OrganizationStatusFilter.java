@@ -49,38 +49,64 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
                             .or(() -> organizationRepository.findBySlug("system"))
                             .ifPresent(org -> OrganizationContext.setOrganizationId(org.getId()));
                 } else {
-                    Optional<Organization> orgOpt = organizationRepository.findBySlug(slug);
+                    Optional<Organization> orgOpt = organizationRepository.findBySlug(slug)
+                            .or(() -> organizationRepository.findByRealmKey(slug));
                     
                     if (orgOpt.isPresent()) {
                         Organization org = orgOpt.get();
                         OrganizationContext.setOrganizationId(org.getId());
                         
-                        if (org.getStatus() == Organization.OrganizationStatus.SUSPENDED || 
-                            org.getStatus() == Organization.OrganizationStatus.TRIAL_EXPIRED) {
-                            
-                            // Define SAFE paths (Supabase style: still can see profile/billing)
+                        boolean isTrialExpired = org.isTrialExpired() || org.getStatus() == Organization.OrganizationStatus.TRIAL_EXPIRED;
+                        boolean isSuspended = org.getStatus() == Organization.OrganizationStatus.SUSPENDED;
+                        boolean isOverQuota = org.getStatus() == Organization.OrganizationStatus.OVER_QUOTA || Boolean.TRUE.equals(org.getOverQuotaMode());
+                        
+                        if (isTrialExpired || isSuspended || isOverQuota) {
                             String path = request.getRequestURI();
                             String method = request.getMethod();
+                            String orgSlug = org.getSlug();
                             
-                            boolean isSafePath = path.equals("/api/v1/organizations") ||  // Org list (for /org page)
-                                                 path.equals("/api/v1/organizations/" + slug) || // Org detail ONLY (not sub-paths!)
-                                                 path.contains("/api/v1/users/me") ||     // Profile (for login flow)
+                            // Define SAFE paths (Always accessible for subscription overview, billing, auth, profile)
+                            boolean isSafePath = path.equals("/api/v1/organizations") || 
+                                                 path.equals("/api/v1/organizations/" + orgSlug) ||
+                                                 path.equals("/api/v1/organizations/" + orgSlug + "/subscription") ||
+                                                 path.contains("/api/v1/users/me") ||
                                                  path.contains("/api/v1/billing") ||
                                                  path.contains("/api/v1/auth/logout");
 
-                            // Allow ALL read-only access (GET) to any endpoint so the UI can display data.
-                            // This fulfills the "Read-Only" requirement for suspended tenants.
-                            if ("GET".equalsIgnoreCase(method)) {
+                            boolean isSoftLocked = org.isSoftLocked() || isSuspended;
+
+                            // If not soft-locked, allow read-only (GET) operations across entities (Grace Period)
+                            if (!isSoftLocked && "GET".equalsIgnoreCase(method)) {
                                 isSafePath = true;
                             }
 
-                            // Block all WRITE operations and sensitive data access
-                            if (!isSafePath || (!"GET".equalsIgnoreCase(method) && !path.contains("/billing") && !path.contains("/auth/logout"))) {
-                                log.warn("🛡️ ENFORCEMENT: Access blocked for suspended organization: {} - Path: {}", slug, path);
+                            // Profile, billing, and logout operations are always permitted
+                            if (path.contains("/billing") || path.contains("/auth/logout") || path.contains("/users/me")) {
+                                isSafePath = true;
+                            }
+
+                            if (!isSafePath) {
+                                String errorCode;
+                                String errorMessage;
+
+                                if (isSuspended || (isTrialExpired && isSoftLocked)) {
+                                    errorCode = isSuspended ? "ORGANIZATION_SUSPENDED" : "ORGANIZATION_TRIAL_EXPIRED";
+                                    errorMessage = isSuspended
+                                            ? "Organisasi Anda sedang ditangguhkan. Silakan lakukan pembayaran tagihan atau hubungi administrator."
+                                            : "Masa uji coba (14 hari) dan grace period organisasi Anda telah berakhir. Akses telah dikunci. Silakan upgrade paket langganan Anda.";
+                                } else if (isTrialExpired) {
+                                    errorCode = "ORGANIZATION_TRIAL_EXPIRED";
+                                    errorMessage = "Masa uji coba (14 hari) organisasi Anda telah berakhir (Read-Only Grace Period). Operasi penulisan dinonaktifkan. Silakan upgrade paket langganan.";
+                                } else {
+                                    errorCode = "ORGANIZATION_OVER_QUOTA";
+                                    errorMessage = "Penggunaan resource organisasi Anda melebihi kuota paket (Read-Only Grace Period). Operasi penulisan dinonaktifkan. Silakan upgrade atau kurangi resource.";
+                                }
+
+                                log.warn("🛡️ ENFORCEMENT: Access blocked for org '{}' [{}] - Path: {} {}", orgSlug, errorCode, method, path);
                                 
                                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                                response.setContentType("application/json");
-                                response.getWriter().write("{\"error\": \"ORGANIZATION_SUSPENDED\", \"message\": \"Your trial has expired. Please upgrade your plan to continue.\"}");
+                                response.setContentType("application/json;charset=UTF-8");
+                                response.getWriter().write(String.format("{\"error\": \"%s\", \"message\": \"%s\"}", errorCode, errorMessage));
                                 return;
                             }
                         }

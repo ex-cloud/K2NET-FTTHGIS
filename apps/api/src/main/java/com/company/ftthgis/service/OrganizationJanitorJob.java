@@ -53,8 +53,8 @@ public class OrganizationJanitorJob {
                     log.info("⏰ JANITOR: Booster expired for '{}'. Re-evaluating base capacity...", org.getSlug());
                     
                     SubscriptionPlan plan = org.getSubscriptionPlan();
-                    int baseOlts = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 5;
-                    int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 1000;
+                    int baseOlts = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 6;
+                    int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 2500;
                     
                     int maxOlts = getConfigInt(org, "max_olts", baseOlts);
                     int maxOdps = getConfigInt(org, "max_odps", baseOdps);

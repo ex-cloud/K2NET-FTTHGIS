@@ -62,6 +62,7 @@ export function FeaturesTable({
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground text-xs">
                 <SelectItem value="ALL">All Plans</SelectItem>
+                <SelectItem value="Free">Free Trial</SelectItem>
                 <SelectItem value="Starter">Starter</SelectItem>
                 <SelectItem value="Professional">Professional</SelectItem>
                 <SelectItem value="Enterprise">Enterprise</SelectItem>

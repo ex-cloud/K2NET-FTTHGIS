@@ -881,10 +881,15 @@ public class KeycloakService {
             realm.setFailureFactor(5);
             realm.setMaxFailureWaitSeconds(900);    // 15 min lockout max
             realm.setPasswordPolicy("length(10) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and passwordHistory(3) and notUsername and notEmail");
-        } else {
+        } else if ("STARTER".equalsIgnoreCase(plan)) {
             realm.setFailureFactor(5);
             realm.setMaxFailureWaitSeconds(900);    // 15 min lockout max
-            realm.setPasswordPolicy("length(8) and notUsername and notEmail");
+            realm.setPasswordPolicy("length(8) and upperCase(1) and lowerCase(1) and digits(1) and notUsername and notEmail");
+        } else {
+            // FREE Tier & default fallback: Require min 8 chars + upper + lower + digits to prevent credential stuffing on trial realms
+            realm.setFailureFactor(5);
+            realm.setMaxFailureWaitSeconds(900);    // 15 min lockout max
+            realm.setPasswordPolicy("length(8) and upperCase(1) and lowerCase(1) and digits(1) and notUsername and notEmail");
         }
 
         // OTP (TOTP) Standard Configuration
@@ -910,6 +915,8 @@ public class KeycloakService {
             attr.put("maxConcurrentSessions", "10");
         } else if ("PRO".equalsIgnoreCase(plan) || "PROFESSIONAL".equalsIgnoreCase(plan)) {
             attr.put("maxConcurrentSessions", "3");
+        } else if ("STARTER".equalsIgnoreCase(plan)) {
+            attr.put("maxConcurrentSessions", "2");
         } else {
             attr.put("maxConcurrentSessions", "1");
         }

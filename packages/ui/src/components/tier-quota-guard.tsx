@@ -11,7 +11,7 @@ export interface TierQuotaGuardProps {
   isAllowed: boolean;
   featureName: string;
   featureDescription?: string;
-  requiredTier?: "pro" | "enterprise";
+  requiredTier?: "starter" | "pro" | "enterprise";
   currentTier?: string;
   fallbackVariant?: "card" | "banner" | "hidden";
   className?: string;

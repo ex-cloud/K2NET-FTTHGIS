@@ -40,8 +40,8 @@ public class OrganizationSubscriptionService {
         SubscriptionPlan plan = org.getSubscriptionPlan();
 
         // 1. Quota & Hardware Specs
-        int baseOlts = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 5;
-        int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 1000;
+        int baseOlts = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 6;
+        int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 2500;
         
         int usedOlts = 0;
         try {
@@ -54,9 +54,15 @@ public class OrganizationSubscriptionService {
         int maxOlts = getConfigInt(org, "max_olts", baseOlts);
         int maxOdps = getConfigInt(org, "max_odps", baseOdps);
         int usedOdps = getConfigInt(org, "used_odps", Math.min(usedOlts * 30, maxOdps));
-        int maxStorageGb = getConfigInt(org, "max_storage_gb", "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 : 25);
+        int maxStorageGb = getConfigInt(org, "max_storage_gb",
+                "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
+                "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
+                "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2);
         double usedStorageGb = getConfigDouble(org, "used_storage_gb", 1.8);
-        int apiRateLimitMax = getConfigInt(org, "api_rate_limit_max", "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 20000 : 5000);
+        int apiRateLimitMax = getConfigInt(org, "api_rate_limit_max",
+                "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 30000 :
+                "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 8000 :
+                "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 2000 : 500);
         int apiRateLimitUsed = getConfigInt(org, "api_rate_limit_used", 342);
 
         // 2. Booster Status
@@ -85,6 +91,8 @@ public class OrganizationSubscriptionService {
 
         String planName = plan != null ? plan.getName() : "PRO";
         String planTier = mapPlanNameToTier(planName);
+        boolean hasApiAccess = plan != null && plan.isHasApiAccess();
+        boolean hasSso = plan != null && plan.isHasSso();
 
         return SubscriptionSummaryResponse.builder()
                 .orgId(org.getId().toString())
@@ -93,7 +101,7 @@ public class OrganizationSubscriptionService {
                 .status(org.getStatus().name())
                 .planTier(planTier)
                 .planName(planName)
-                .planPrice(plan != null && plan.getPrice() != null ? plan.getPrice() : BigDecimal.valueOf(4900000))
+                .planPrice(plan != null && plan.getPrice() != null ? plan.getPrice() : BigDecimal.valueOf(3900000))
                 .planCycle(org.getPlanCycle() != null ? org.getPlanCycle() : "MONTHLY")
                 .maxOlts(maxOlts)
                 .usedOlts(usedOlts)
@@ -117,6 +125,8 @@ public class OrganizationSubscriptionService {
                 .dunningLevel(org.getDunningLevel() != null ? org.getDunningLevel() : 0)
                 .isOverQuota(isOverQuota)
                 .isSoftLocked(isSoftLocked)
+                .hasApiAccess(hasApiAccess)
+                .hasSso(hasSso)
                 .build();
     }
 
@@ -147,10 +157,14 @@ public class OrganizationSubscriptionService {
         org.setOverQuotaMode(false);
 
         // Update quota configs matching the new plan tier
-        int newMaxOlts = targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 20;
-        int newMaxOdps = targetPlan.getMaxOdps() != null ? targetPlan.getMaxOdps() : 10000;
-        int newStorageGb = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 100 : 50;
-        int newRateLimit = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 20000 : 10000;
+        int newMaxOlts = targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 25;
+        int newMaxOdps = targetPlan.getMaxOdps() != null ? targetPlan.getMaxOdps() : 12000;
+        int newStorageGb = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 500 :
+                "PRO".equalsIgnoreCase(targetPlan.getName()) ? 100 :
+                "STARTER".equalsIgnoreCase(targetPlan.getName()) ? 15 : 2;
+        int newRateLimit = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 30000 :
+                "PRO".equalsIgnoreCase(targetPlan.getName()) ? 8000 :
+                "STARTER".equalsIgnoreCase(targetPlan.getName()) ? 2000 : 500;
 
         saveOrUpdateConfig(org, "max_olts", String.valueOf(newMaxOlts));
         saveOrUpdateConfig(org, "max_odps", String.valueOf(newMaxOdps));
@@ -163,8 +177,10 @@ public class OrganizationSubscriptionService {
         try {
             String realmKey = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
             String planCode = targetPlan.getName() != null ? targetPlan.getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
+                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
+                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
             keycloakService.ensureRealmExists(realmKey, targetPlan.isHasSso(), org.getName(), planCode, planDisplayName, org.getLogoUrl());
         } catch (Exception ex) {
             log.warn("⚠️ Failed to sync Keycloak realm on upgrade for {}: {}", slug, ex.getMessage());
@@ -194,8 +210,8 @@ public class OrganizationSubscriptionService {
                         .orElseThrow(() -> new RuntimeException("Target plan not found: " + targetPlanName)));
 
         int usedOlts = (int) projectRepository.countByOrganizationId(org.getId());
-        int targetMaxOlts = targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 2;
-        int targetMaxOdps = targetPlan.getMaxOdps() != null ? targetPlan.getMaxOdps() : 500;
+        int targetMaxOlts = targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 1;
+        int targetMaxOdps = targetPlan.getMaxOdps() != null ? targetPlan.getMaxOdps() : 50;
         int usedOdps = getConfigInt(org, "used_odps", usedOlts * 30);
 
         boolean willBeOverQuota = usedOlts > targetMaxOlts || usedOdps > targetMaxOdps;
@@ -215,10 +231,17 @@ public class OrganizationSubscriptionService {
             org.setGracePeriodUntil(null);
         }
 
+        int targetStorageGb = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 500 :
+                "PRO".equalsIgnoreCase(targetPlan.getName()) ? 100 :
+                "STARTER".equalsIgnoreCase(targetPlan.getName()) ? 15 : 2;
+        int targetRateLimit = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 30000 :
+                "PRO".equalsIgnoreCase(targetPlan.getName()) ? 8000 :
+                "STARTER".equalsIgnoreCase(targetPlan.getName()) ? 2000 : 500;
+
         saveOrUpdateConfig(org, "max_olts", String.valueOf(targetMaxOlts));
         saveOrUpdateConfig(org, "max_odps", String.valueOf(targetMaxOdps));
-        saveOrUpdateConfig(org, "max_storage_gb", "FREE".equalsIgnoreCase(targetPlan.getName()) ? "10" : "25");
-        saveOrUpdateConfig(org, "api_rate_limit_max", "FREE".equalsIgnoreCase(targetPlan.getName()) ? "2000" : "5000");
+        saveOrUpdateConfig(org, "max_storage_gb", String.valueOf(targetStorageGb));
+        saveOrUpdateConfig(org, "api_rate_limit_max", String.valueOf(targetRateLimit));
 
         organizationRepository.save(org);
 
@@ -226,8 +249,10 @@ public class OrganizationSubscriptionService {
         try {
             String realmKey = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
             String planCode = targetPlan.getName() != null ? targetPlan.getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
+                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
+                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
             keycloakService.ensureRealmExists(realmKey, targetPlan.isHasSso(), org.getName(), planCode, planDisplayName, org.getLogoUrl());
         } catch (Exception ex) {
             log.warn("⚠️ Failed to sync Keycloak realm on downgrade for {}: {}", slug, ex.getMessage());
@@ -266,8 +291,8 @@ public class OrganizationSubscriptionService {
         SubscriptionPlan targetPlan = subscriptionPlanRepository.findByName(cleanTarget)
                 .orElse(currentPlan);
 
-        BigDecimal currentPrice = currentPlan != null && currentPlan.getPrice() != null ? currentPlan.getPrice() : BigDecimal.valueOf(1500000);
-        BigDecimal targetPrice = targetPlan != null && targetPlan.getPrice() != null ? targetPlan.getPrice() : BigDecimal.valueOf(12500000);
+        BigDecimal currentPrice = currentPlan != null && currentPlan.getPrice() != null ? currentPlan.getPrice() : BigDecimal.valueOf(990000);
+        BigDecimal targetPrice = targetPlan != null && targetPlan.getPrice() != null ? targetPlan.getPrice() : BigDecimal.valueOf(3900000);
 
         // Simulasi hari tersisa dalam siklus 30 hari (asumsi hari ke-15)
         int totalCycleDays = 30;
@@ -311,7 +336,7 @@ public class OrganizationSubscriptionService {
 
         // Jika sebelumnya over-quota dan booster mencukupi, buka kembali status ACTIVE
         int usedOlts = (int) projectRepository.countByOrganizationId(org.getId());
-        int maxOlts = getConfigInt(org, "max_olts", 5);
+        int maxOlts = getConfigInt(org, "max_olts", 6);
         int effectiveMaxOlts = maxOlts + request.getBoosterOlts();
         
         if (org.getStatus() == Organization.OrganizationStatus.OVER_QUOTA && usedOlts <= effectiveMaxOlts) {
@@ -433,7 +458,8 @@ public class OrganizationSubscriptionService {
     private String mapPlanNameToTier(String planName) {
         if (planName == null) return "Professional";
         String upper = planName.toUpperCase();
-        if (upper.contains("FREE") || upper.contains("STARTER") || upper.contains("TRIAL")) return "Starter";
+        if (upper.contains("FREE") || upper.contains("TRIAL")) return "Free Trial";
+        if (upper.contains("STARTER") || upper.contains("LITE")) return "Starter";
         if (upper.contains("PRO")) return "Professional";
         if (upper.contains("ENTERPRISE")) return "Enterprise";
         return "Custom";
@@ -442,7 +468,8 @@ public class OrganizationSubscriptionService {
     private String mapTierToPlanName(String tier) {
         if (tier == null) return "PRO";
         String upper = tier.toUpperCase();
-        if (upper.contains("STARTER") || upper.contains("FREE")) return "FREE";
+        if (upper.contains("FREE") || upper.contains("TRIAL")) return "FREE";
+        if (upper.contains("STARTER") || upper.contains("LITE")) return "STARTER";
         if (upper.contains("PRO")) return "PRO";
         if (upper.contains("ENTERPRISE") || upper.contains("CUSTOM")) return "ENTERPRISE";
         return "PRO";

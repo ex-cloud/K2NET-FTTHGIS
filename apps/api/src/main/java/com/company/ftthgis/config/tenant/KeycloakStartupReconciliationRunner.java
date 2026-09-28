@@ -43,8 +43,10 @@ public class KeycloakStartupReconciliationRunner implements ApplicationRunner {
                 String planCode = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().getName() != null
                         ? org.getSubscriptionPlan().getName()
                         : "FREE";
-                String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
-                        : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+                String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
+                        : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
+                        : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
+                        : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
 
                 log.info("🔍 Reconciling organization '{}' (Realm: {}, Slug: {}, Plan: {}, hasSso: {})",
                         org.getName(), realmName, org.getSlug(),

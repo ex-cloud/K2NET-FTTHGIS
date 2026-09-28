@@ -41,7 +41,7 @@ export function BillingChangePlanSheet({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-[95vw] sm:max-w-[950px] xl:max-w-[1100px] overflow-y-auto bg-card/95 backdrop-blur-2xl border-l border-border p-6 md:p-8 space-y-6"
+        className="w-[96vw] sm:max-w-[1050px] xl:max-w-[1320px] overflow-y-auto bg-card/95 backdrop-blur-2xl border-l border-border p-6 md:p-8 space-y-6"
       >
         <SheetHeader className="space-y-1 text-left">
           <SheetTitle className="text-lg font-bold text-foreground">
@@ -54,8 +54,8 @@ export function BillingChangePlanSheet({
 
         {plansLoading ? (
           /* Sleek Skeleton Cards while loading */
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-            {[1, 2, 3].map((idx) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 pt-2">
+            {[1, 2, 3, 4].map((idx) => (
               <div key={idx} className="rounded-xl border border-border bg-card/40 p-5 space-y-4 animate-pulse h-[340px] flex flex-col justify-between">
                 <div className="space-y-3">
                   <div className="h-4 w-24 bg-muted rounded" />
@@ -99,7 +99,7 @@ export function BillingChangePlanSheet({
           </div>
         ) : (
           /* Dynamic Plans Grid */
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 pt-2">
             {availablePlans.map((plan) => {
               const currentPlanObj = availablePlans.find(
                 (p) =>

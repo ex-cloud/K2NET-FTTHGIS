@@ -77,8 +77,22 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
     [projects]
   );
 
-  const subscriberQuota = tier === "free" ? 1000 : tier === "enterprise" ? 20000 : 5000;
-  const cableQuotaKm = tier === "free" ? 50 : tier === "enterprise" ? 1000 : 250;
+  const subscriberQuota =
+    tier === "enterprise"
+      ? 25000
+      : tier === "pro"
+      ? 5000
+      : tier === "starter"
+      ? 500
+      : 100;
+  const cableQuotaKm =
+    tier === "enterprise"
+      ? 1500
+      : tier === "pro"
+      ? 300
+      : tier === "starter"
+      ? 50
+      : 10;
 
   const subscriberPercent = Math.min(100, Math.round((totalSubscribers / subscriberQuota) * 100));
   const projectPercent = Math.min(100, Math.round((projects.length / Math.max(1, maxProjects)) * 100));
@@ -115,13 +129,17 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
 
   const planDisplayTitle =
     tier === "enterprise"
-      ? "Enterprise Telco Plan"
-      : tier === "free"
-      ? "Starter Free Plan"
-      : "Professional Plan";
+      ? "Enterprise Core Plan"
+      : tier === "pro"
+      ? "Professional ISP Plan"
+      : tier === "starter"
+      ? "Starter ISP Plan"
+      : "Starter 14-Day Trial Plan";
 
   const upgradeCtaText =
     tier === "free"
+      ? "Upgrade Paket"
+      : tier === "starter"
       ? "Upgrade ke Pro"
       : tier === "pro"
       ? "Upgrade Enterprise"

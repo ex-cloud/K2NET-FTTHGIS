@@ -22,23 +22,31 @@ interface FeaturesTableRowProps {
 }
 
 function renderPlanTierBadge(planTier: string) {
-  if (planTier === "Enterprise") {
+  const upper = planTier.toUpperCase();
+  if (upper === "ENTERPRISE" || upper.includes("ENTERPRISE")) {
     return (
       <Badge variant="outline" className="border-purple-500/40 bg-purple-500/10 text-purple-400 font-mono text-[10px] font-medium tracking-wider">
         ENTERPRISE
       </Badge>
     );
   }
-  if (planTier === "Professional") {
+  if (upper === "PROFESSIONAL" || upper === "PRO" || upper.includes("PRO")) {
     return (
       <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px] font-medium tracking-wider">
-        PROFESSIONAL
+        PRO
+      </Badge>
+    );
+  }
+  if (upper === "STARTER" || upper.includes("STARTER")) {
+    return (
+      <Badge variant="outline" className="border-blue-500/40 bg-blue-500/10 text-blue-500 dark:text-blue-400 font-mono text-[10px] font-medium tracking-wider">
+        STARTER
       </Badge>
     );
   }
   return (
     <Badge variant="outline" className="border-border bg-muted/40 text-muted-foreground font-mono text-[10px] font-medium tracking-wider">
-      STARTER
+      FREE TRIAL
     </Badge>
   );
 }

@@ -1,4 +1,4 @@
-export type PlanType = "FREE" | "PRO" | "ENTERPRISE";
+export type PlanType = "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
 
 export interface PlanSpec {
   name: string;
@@ -14,33 +14,43 @@ export interface PlanSpec {
 export const PLAN_SPECS: Record<PlanType, PlanSpec> = {
   FREE: {
     name: "Starter Trial",
-    badge: "7 Days Trial",
-    price: "Free",
-    olts: 2,
-    odps: 500,
-    storageGb: 10,
+    badge: "14 Days Trial",
+    price: "Rp 0 (14 Hari)",
+    olts: 1,
+    odps: 50,
+    storageGb: 2,
     sla: "99.0% SLA",
-    features: ["2 OLT Nodes", "500 ODPs", "10 GB MinIO", "Community Support"],
+    features: ["1 OLT Device", "50 ODP Nodes", "2 GB MinIO S3", "100 Pelanggan", "500 RPM API Rate Limit"],
+  },
+  STARTER: {
+    name: "Starter ISP",
+    badge: "Komersil Mini",
+    price: "Rp 990.000/bln",
+    olts: 2,
+    odps: 300,
+    storageGb: 15,
+    sla: "99.0% SLA",
+    features: ["2 OLT Devices", "300 ODP Nodes", "15 GB MinIO S3", "500 Pelanggan", "2.000 RPM API Rate Limit"],
   },
   PRO: {
     name: "Professional",
-    badge: "Popular",
-    price: "Rp 4.900.000/mo",
-    olts: 5,
+    badge: "Popular / Best Value",
+    price: "Rp 3.900.000/bln",
+    olts: 6,
     odps: 2500,
-    storageGb: 25,
+    storageGb: 100,
     sla: "99.5% SLA",
-    features: ["5 OLT Nodes", "2,500 ODPs", "25 GB MinIO", "Dedicated Poller Engine", "Priority Support"],
+    features: ["6 OLT Devices", "2,500 ODP Nodes", "100 GB MinIO S3", "5,000 Pelanggan", "8.000 RPM API Limit", "Live SNMP Poller & Heatmap", "Keycloak SSO"],
   },
   ENTERPRISE: {
     name: "Enterprise Core",
     badge: "Maximum SLA",
-    price: "Rp 14.500.000/mo",
-    olts: 20,
-    odps: 10000,
-    storageGb: 100,
+    price: "Rp 12.500.000/bln",
+    olts: 25,
+    odps: 12000,
+    storageGb: 500,
     sla: "99.9% SLA",
-    features: ["20 OLT Nodes", "10,000 ODPs", "100 GB MinIO", "AI Fiber Copilot", "Custom POP Gateway", "24/7 Phone Support"],
+    features: ["25 OLT Devices", "12,000 ODP Nodes", "500 GB MinIO S3", "25,000 Pelanggan", "30.000 RPM API Limit", "AI Fiber Copilot", "Keycloak SSO + SAML", "Custom Domain"],
   },
 };
 

@@ -81,7 +81,7 @@ export function OltListPage() {
         ]}
         title="Daftar Perangkat OLT (Optical Line Terminal)"
         actions={
-          <Button size="sm" className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs">
+          <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
             <Plus className="h-4 w-4" />
             + Tambah OLT Baru
           </Button>

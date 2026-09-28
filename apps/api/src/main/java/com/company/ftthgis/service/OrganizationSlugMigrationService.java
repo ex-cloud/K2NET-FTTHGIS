@@ -68,7 +68,7 @@ public class OrganizationSlugMigrationService {
         SubscriptionPlan plan = org.getSubscriptionPlan();
         String planName = plan != null ? plan.getName() : "FREE";
         if ("FREE".equalsIgnoreCase(planName)) {
-            throw new IllegalStateException("The Starter (Free) tier is locked to auto-generated random subdomains. Please upgrade to Pro or Enterprise to customize your subdomain.");
+            throw new IllegalStateException("The Free Trial tier is locked to auto-generated random subdomains. Please upgrade to Starter, Pro, or Enterprise to customize your subdomain.");
         }
 
         // 3. Check Collision in Database (Current Slugs & Historical Aliases)

@@ -103,6 +103,9 @@ export function OrgToolbarFilters({
           <DropdownMenuItem onClick={() => setPlanFilter("ALL")} className="cursor-pointer">
             All Plans
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setPlanFilter("Free")} className="cursor-pointer">
+            Free Trial
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setPlanFilter("Starter")} className="cursor-pointer">
             Starter Tier
           </DropdownMenuItem>

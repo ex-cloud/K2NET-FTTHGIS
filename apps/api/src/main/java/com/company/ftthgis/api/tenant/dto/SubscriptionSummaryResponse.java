@@ -49,4 +49,8 @@ public class SubscriptionSummaryResponse {
     private int dunningLevel;
     private boolean isOverQuota;
     private boolean isSoftLocked;
+
+    // Feature Entitlements
+    private boolean hasApiAccess;
+    private boolean hasSso;
 }
