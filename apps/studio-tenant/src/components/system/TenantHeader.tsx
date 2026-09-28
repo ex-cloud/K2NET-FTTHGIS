@@ -1,6 +1,6 @@
 import * as React from "react";
 import { HelpCircle, MessageSquare, Search, Sparkles } from "lucide-react";
-import { Button, Separator, ActionTooltip, cn } from "@k2net/ui";
+import { Button, Separator, ActionTooltip, AppHeaderShell } from "@k2net/ui";
 import { useImpersonationSession } from "../../lib/useImpersonationSession";
 import { TenantUserNav } from "../TenantUserNav";
 import { TenantLogo, TenantOrgName } from "./TenantOrgBrand";
@@ -22,28 +22,24 @@ export function TenantHeader({
   const { isImpersonating } = useImpersonationSession();
 
   return (
-    <header className={cn(
-      "flex h-12 shrink-0 w-full items-center justify-between border-b px-3 sm:px-4 z-40 py-2 select-none transition-colors",
-      isImpersonating
-        ? "border-amber-500/30 bg-amber-500/[0.02]"
-        : "border-border/80 bg-background"
-    )}>
-      {/* LEFT SECTION: Flat Unified Breadcrumb */}
-      <div className="flex items-center gap-2 min-w-0">
-        <TenantLogo href="/projects" />
-        <span
-          className="hidden sm:inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
-          aria-hidden="true"
-        >
-          /
-        </span>
-        <TenantOrgName href="/projects" />
-        <TenantTierBadge />
-      </div>
-
-      {/* RIGHT SECTION: Desktop Tools + User Nav */}
-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-        {/* Desktop Search / Command Palette Trigger (⌘K) */}
+    <AppHeaderShell
+      isImpersonating={isImpersonating}
+      leftSection={
+        <>
+          <TenantLogo href="/projects" />
+          <span
+            className="hidden sm:inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
+            aria-hidden="true"
+          >
+            /
+          </span>
+          <TenantOrgName href="/projects" />
+          <TenantTierBadge />
+        </>
+      }
+      rightSection={
+        <>
+          {/* Desktop Search / Command Palette Trigger (⌘K) */}
         <ActionTooltip label="Search or jump to..." shortcut="⌘K" side="bottom">
           <button
             type="button"
@@ -102,7 +98,8 @@ export function TenantHeader({
 
         {/* User Profile Avatar Nav */}
         <TenantUserNav />
-      </div>
-    </header>
-  );
+      </>
+    }
+  />
+);
 }

@@ -4,3 +4,5 @@ export * from "./page-header-tabs";
 export * from "./page-content-shell";
 export * from "./secondary-sidebar-shell";
 export * from "./metric-card";
+export * from "./app-header-shell";
+export * from "./primary-sidebar-shell";

@@ -24,7 +24,7 @@ export const SecondarySidebarShell = React.forwardRef<HTMLElement, SecondarySide
         ref={ref}
         className={cn(
           "transition-all duration-300 ease-in-out shrink-0 bg-sidebar h-full hidden md:flex flex-col overflow-hidden",
-          isCollapsed ? "w-0 border-r-0" : cn(width, "border-r border-border/40"),
+          isCollapsed ? "w-0 border-r-0" : cn(width, "border-r border-border/80"),
           className
         )}
         {...props}

@@ -5,6 +5,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  PrimarySidebarShell,
   cn,
 } from "@k2net/ui";
 import { ArrowLeft } from "lucide-react";
@@ -91,74 +92,49 @@ export function TenantProjectSidebar({
   };
 
   return (
-    <>
-      {isFloating && (
-        <div className="hidden md:block w-[50px] shrink-0 h-full" />
-      )}
-
-      <aside
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        style={
-          isFloating
-            ? {
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                zIndex: 50,
-                boxShadow: "none",
-              }
-            : undefined
-        }
-        className={`hidden md:flex border-r border-border/80 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
-          isFloating ? "" : "z-50"
-        } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
-      >
-        <div className="flex flex-col h-full py-4">
-          <TooltipProvider delayDuration={0}>
-            {/* Top Back to Org Level Button */}
-            <div className="px-2 mb-2 pb-2 border-b border-border/80">
-              <Link to="/projects">
-                <div
+    <PrimarySidebarShell
+      isExpanded={isExpanded}
+      isFloating={isFloating}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      topSection={
+        <TooltipProvider delayDuration={0}>
+          {/* Top Back to Org Level Button */}
+          <div className="px-2 mb-2 pb-2 border-b border-border/80">
+            <Link to="/projects">
+              <div
+                className={cn(
+                  "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium select-none"
+                )}
+              >
+                <div className="relative flex items-center justify-center shrink-0">
+                  <ArrowLeft className="h-4 w-4" />
+                </div>
+                <span
                   className={cn(
-                    "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium select-none"
+                    "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
+                    isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
                   )}
                 >
-                  <div className="relative flex items-center justify-center shrink-0">
-                    <ArrowLeft className="h-4 w-4" />
-                  </div>
-                  <span
-                    className={cn(
-                      "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
-                      isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
-                    )}
-                  >
-                    Semua Proyek
-                  </span>
-                </div>
-              </Link>
-            </div>
-
-            {/* Primary Project Navigation Items */}
-            <nav className="flex flex-col gap-1 px-2">
-              <div className="flex flex-col gap-1">
-                {navItems.map(renderNavButton)}
+                  Semua Proyek
+                </span>
               </div>
-            </nav>
-
-            {/* Dynamic Spacer pushing footer to the bottom */}
-            <div className="flex-1" />
-          </TooltipProvider>
-
-          {/* Bottom Sidebar Collapse Control Only */}
-          <div className="flex flex-col gap-2 px-2">
-            <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
-              <TenantSidebarControl isExpanded={isExpanded} />
-            </div>
+            </Link>
           </div>
+
+          {/* Primary Project Navigation Items */}
+          <nav className="flex flex-col gap-1 px-2">
+            <div className="flex flex-col gap-1">
+              {navItems.map(renderNavButton)}
+            </div>
+          </nav>
+        </TooltipProvider>
+      }
+      bottomSection={
+        <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
+          <TenantSidebarControl isExpanded={isExpanded} />
         </div>
-      </aside>
-    </>
+      }
+    />
   );
 }

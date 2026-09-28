@@ -5,6 +5,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  PrimarySidebarShell,
   cn,
 } from "@k2net/ui";
 import { useSidebarMode } from "../sidebar-mode-context";
@@ -77,51 +78,26 @@ export function TenantOrgSidebar() {
   };
 
   return (
-    <>
-      {isFloating && (
-        <div className="hidden md:block w-[50px] shrink-0 h-full" />
-      )}
-
-      <aside
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        style={
-          isFloating
-            ? {
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                zIndex: 50,
-                boxShadow: "none",
-              }
-            : undefined
-        }
-        className={`hidden md:flex border-r border-border/80 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
-          isFloating ? "" : "z-50"
-        } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
-      >
-        <div className="flex flex-col h-full py-4">
-          <TooltipProvider delayDuration={0}>
-            {/* Top Primary Org Navigation Items */}
-            <nav className="flex flex-col gap-1 px-2">
-              <div className="flex flex-col gap-1">
-                {ORG_NAV_ITEMS.map(renderNavButton)}
-              </div>
-            </nav>
-
-            {/* Dynamic Spacer pushing footer to the bottom */}
-            <div className="flex-1" />
-          </TooltipProvider>
-
-          {/* Bottom Sidebar Collapse Control Only */}
-          <div className="flex flex-col gap-2 px-2">
-            <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
-              <TenantSidebarControl isExpanded={isExpanded} />
+    <PrimarySidebarShell
+      isExpanded={isExpanded}
+      isFloating={isFloating}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      topSection={
+        <TooltipProvider delayDuration={0}>
+          {/* Top Primary Org Navigation Items */}
+          <nav className="flex flex-col gap-1 px-2">
+            <div className="flex flex-col gap-1">
+              {ORG_NAV_ITEMS.map(renderNavButton)}
             </div>
-          </div>
+          </nav>
+        </TooltipProvider>
+      }
+      bottomSection={
+        <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
+          <TenantSidebarControl isExpanded={isExpanded} />
         </div>
-      </aside>
-    </>
+      }
+    />
   );
 }

@@ -20,6 +20,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  PrimarySidebarShell,
 } from "@k2net/ui";
 import { Link, usePathname } from "@/lib/navigation-compat";
 import { useSidebarMode } from "@/components/sidebar-mode-context";
@@ -163,50 +164,35 @@ export function AdminSidebar() {
   };
 
   return (
-    <>
-      {isFloating && (
-        <div className="hidden md:block w-[50px] shrink-0 h-full" />
-      )}
+    <PrimarySidebarShell
+      isExpanded={isExpanded}
+      isFloating={isFloating}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      topSection={
+        <TooltipProvider delayDuration={0}>
+          {/* Top Primary Navigation Items — grouped semantically */}
+          <nav className="flex flex-col gap-1 px-2">
+            {/* Group 1: Core Workspace Navigation */}
+            <div className="flex flex-col gap-1">
+              {visibleCoreItems.map(renderNavButton)}
+            </div>
 
-      <aside
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        style={isFloating ? {
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 50,
-          boxShadow: "none",
-        } : undefined}
-        className={`hidden md:flex border-r border-border/80 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${isFloating ? "" : "z-50"
-          } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
-      >
-        <div className="flex flex-col h-full py-4">
-          <TooltipProvider delayDuration={0}>
-            {/* Top Primary Navigation Items — grouped semantically */}
-            <nav className="flex flex-col gap-1 px-2">
-              {/* Group 1: Core Workspace Navigation */}
-              <div className="flex flex-col gap-1">
-                {visibleCoreItems.map(renderNavButton)}
+            {/* Group 2: Platform & Telemetry Operations */}
+            {visiblePlatformItems.length > 0 && (
+              <div className="pt-2 mt-1.5 border-groove-t flex flex-col gap-1">
+                {visiblePlatformItems.map(renderNavButton)}
               </div>
-
-              {/* Group 2: Platform & Telemetry Operations */}
-              {visiblePlatformItems.length > 0 && (
-                <div className="pt-2 mt-1.5 border-groove-t flex flex-col gap-1">
-                  {visiblePlatformItems.map(renderNavButton)}
-                </div>
-              )}
-            </nav>
-
-            {/* Dynamic Spacer pushing bottom items to the bottom */}
-            <div className="flex-1" />
-
-            {/* Bottom Utility Items (Recycle Bin & Settings right above SidebarControl) */}
-            <nav className="flex flex-col gap-1 px-2 border-groove-t pt-2.5 mb-2">
-              {visibleBottomNavItems.map(renderNavButton)}
-            </nav>
-          </TooltipProvider>
+            )}
+          </nav>
+        </TooltipProvider>
+      }
+      bottomSection={
+        <TooltipProvider delayDuration={0}>
+          {/* Bottom Utility Items (Recycle Bin & Settings right above SidebarControl) */}
+          <nav className="flex flex-col gap-1 px-2 border-groove-t pt-2.5 mb-2">
+            {visibleBottomNavItems.map(renderNavButton)}
+          </nav>
 
           {/* Bottom Sidebar Expand/Collapse Control */}
           <div className="flex flex-col gap-2 px-2">
@@ -214,8 +200,8 @@ export function AdminSidebar() {
               <SidebarControl isExpanded={isExpanded} />
             </div>
           </div>
-        </div>
-      </aside>
-    </>
+        </TooltipProvider>
+      }
+    />
   );
 }
