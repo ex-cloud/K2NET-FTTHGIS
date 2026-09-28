@@ -28,7 +28,7 @@ export function PageHeaderTabs<T extends string = string>({
   return (
     <div
       className={cn(
-        "px-6 border-b border-border/40 flex items-center justify-between gap-6 bg-background/50 backdrop-blur-xs select-none overflow-x-auto custom-scrollbar-thin shrink-0",
+        "px-6 border-b border-border/80 flex items-center justify-between gap-6 bg-background/50 backdrop-blur-xs select-none overflow-x-auto custom-scrollbar-thin shrink-0",
         className
       )}
       {...props}

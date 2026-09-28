@@ -97,7 +97,7 @@ export function TenantOrgSidebar() {
               }
             : undefined
         }
-        className={`hidden md:flex border-r border-border/40 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`hidden md:flex border-r border-border/80 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
           isFloating ? "" : "z-50"
         } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
       >

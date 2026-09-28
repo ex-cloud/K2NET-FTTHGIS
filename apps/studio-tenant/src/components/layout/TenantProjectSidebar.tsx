@@ -111,14 +111,14 @@ export function TenantProjectSidebar({
               }
             : undefined
         }
-        className={`hidden md:flex border-r border-border/40 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`hidden md:flex border-r border-border/80 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
           isFloating ? "" : "z-50"
         } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
       >
         <div className="flex flex-col h-full py-4">
           <TooltipProvider delayDuration={0}>
             {/* Top Back to Org Level Button */}
-            <div className="px-2 mb-2 pb-2 border-b border-border/40">
+            <div className="px-2 mb-2 pb-2 border-b border-border/80">
               <Link to="/projects">
                 <div
                   className={cn(

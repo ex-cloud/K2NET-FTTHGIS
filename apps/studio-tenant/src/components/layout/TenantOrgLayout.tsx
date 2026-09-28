@@ -123,7 +123,7 @@ function TenantOrgLayoutContent() {
         "flex h-12 shrink-0 w-full items-center justify-between border-b px-3 sm:px-4 z-40 py-2 select-none transition-colors",
         isImpersonating
           ? "border-amber-500/30 bg-amber-500/[0.02]"
-          : "border-border/40 bg-background"
+          : "border-border/80 bg-background"
       )}>
         {/* LEFT SECTION: Flat Unified Breadcrumb (Logo + Slash + Org Name + Tier Badge) */}
         <div className="flex items-center gap-2 min-w-0">

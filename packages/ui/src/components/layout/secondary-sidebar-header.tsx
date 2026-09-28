@@ -30,7 +30,7 @@ export const SecondarySidebarHeader = React.forwardRef<HTMLDivElement, Secondary
       <div
         ref={ref}
         className={cn(
-          "h-12 py-2 px-4 border-b border-border/40 shrink-0 flex items-center justify-between min-w-[240px] select-none bg-sidebar",
+          "h-12 py-2 px-4 border-b border-border/80 shrink-0 flex items-center justify-between min-w-[240px] select-none bg-sidebar",
           className
         )}
         {...props}

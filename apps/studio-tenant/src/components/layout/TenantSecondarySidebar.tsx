@@ -49,7 +49,7 @@ export function TenantSecondarySidebar({ projectId }: TenantSecondarySidebarProp
     <div className="relative h-full flex shrink-0 select-none">
       <aside
         className={`${
-          isCollapsed ? "w-0 border-r-0" : "w-[240px] border-r border-border/40"
+          isCollapsed ? "w-0 border-r-0" : "w-[240px] border-r border-border/80"
         } transition-all duration-300 ease-in-out shrink-0 bg-sidebar h-full hidden md:flex flex-col overflow-hidden`}
       >
         <SecondarySidebarHeader
@@ -78,7 +78,7 @@ export function TenantSecondarySidebar({ projectId }: TenantSecondarySidebarProp
                       to={item.href}
                       className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
                         isActive
-                          ? "bg-sidebar-accent text-foreground font-semibold border border-border/40"
+                          ? "bg-sidebar-accent text-foreground font-semibold border border-border/80"
                           : "text-foreground/85 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium"
                       }`}
                     >

@@ -272,7 +272,7 @@ export function SystemSecondarySidebar() {
   return (
     <div className="relative h-full flex shrink-0">
       <aside
-        className={`${effectiveCollapsed ? "w-0 border-r-0" : "w-[240px] border-r border-border/40"} transition-all duration-300 ease-in-out shrink-0 bg-sidebar h-full hidden md:flex flex-col overflow-hidden`}
+        className={`${effectiveCollapsed ? "w-0 border-r-0" : "w-[240px] border-r border-border/80"} transition-all duration-300 ease-in-out shrink-0 bg-sidebar h-full hidden md:flex flex-col overflow-hidden`}
       >
         {isLogsPage ? (
           <LogsFilterSidebar onCollapse={handleCollapse} />
