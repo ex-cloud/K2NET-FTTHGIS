@@ -88,8 +88,7 @@ export function TenantOrgName({
     <span
       className={cn(
         "text-sm font-semibold tracking-tight text-foreground hover:opacity-85 transition-opacity truncate cursor-pointer select-none",
-        maxTruncateWidthClass,
-        className
+        maxTruncateWidthClass
       )}
     >
       {resolvedName}
@@ -101,12 +100,15 @@ export function TenantOrgName({
       {href ? (
         <Link
           to={href}
-          className="inline-flex focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
+          className={cn(
+            "inline-flex focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded",
+            className
+          )}
         >
           {content}
         </Link>
       ) : (
-        content
+        <div className={cn("inline-flex items-center", className)}>{content}</div>
       )}
     </ActionTooltip>
   );
@@ -136,7 +138,7 @@ export function TenantOrgBrand({
   const { isImpersonating } = useImpersonationSession();
 
   return (
-    <div className={cn("flex items-center gap-1.5 sm:gap-2 min-w-0 shrink-0", className)}>
+    <div className={cn("flex items-center gap-2 min-w-0 shrink-0", className)}>
       {showLogo && <TenantLogo logoUrl={logoUrl} name={name} href={href} />}
 
       {showLogo && showSeparator && (
@@ -151,7 +153,7 @@ export function TenantOrgBrand({
       <TenantOrgName
         name={name}
         href={href}
-        className={cn(hideNameOnMobile && "hidden sm:inline-block")}
+        className={cn(hideNameOnMobile && "hidden sm:inline-flex")}
         maxTruncateWidthClass={maxTruncateWidthClass}
       />
 
