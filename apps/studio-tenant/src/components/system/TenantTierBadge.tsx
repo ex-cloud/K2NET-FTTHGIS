@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ActionTooltip, cn } from "@k2net/ui";
 import { Sparkles, Zap, Shield } from "lucide-react";
 import { useTenantInfo } from "../../hooks/useTenantInfo";
+import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 
 export type TenantTier = "starter" | "pro" | "enterprise" | "free" | "basic" | "business";
 
@@ -69,8 +70,9 @@ export function TenantTierBadge({
   showLink = true,
   className,
 }: TenantTierBadgeProps) {
-  const { planTier } = useTenantInfo();
-  const effectiveTier = tier ?? planTier;
+  const { planTier: infoTier } = useTenantInfo();
+  const { tier: subTier } = useTenantSubscription();
+  const effectiveTier = tier ?? subTier ?? infoTier;
 
   const normalizedTier = (effectiveTier || "pro").toLowerCase();
   const config = TIER_CONFIGS[normalizedTier] || TIER_CONFIGS.pro;

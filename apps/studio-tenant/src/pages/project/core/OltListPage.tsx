@@ -4,6 +4,8 @@ import {
   Plus,
   Search,
   MoreVertical,
+  Server,
+  Loader2,
 } from "lucide-react";
 import {
   PageHeader,
@@ -22,40 +24,52 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@k2net/ui";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "../../../lib/api-client";
+
+interface OltItem {
+  id: string;
+  code: string;
+  name: string;
+  brand?: string;
+  model?: string;
+  ipAddress?: string;
+  ponPortsTotal?: number;
+  ponPortsUsed?: number;
+  status?: string;
+  healthStatus?: string;
+  projectId?: string;
+  lat?: number;
+  lng?: number;
+}
 
 export function OltListPage() {
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
   const [searchQuery, setSearchQuery] = React.useState("");
 
-  const olts = [
-    {
-      id: "olt-01",
-      code: "OLT-ZTE-DGO-01",
-      name: "ZTE C320 Dago POP",
-      brand: "ZTE C320 (GPON)",
-      ipAddress: "10.200.10.2",
-      ponPortsTotal: 16,
-      ponPortsUsed: 14,
-      totalOnuOnline: 684,
-      snmpStatus: "CONNECTED",
-      health: "UP",
-      pingLatency: "1.4 ms",
+  const { data: oltData, isLoading } = useQuery<{ content: OltItem[] } | OltItem[]>({
+    queryKey: ["project-olts", projectId, searchQuery],
+    queryFn: async () => {
+      try {
+        const queryParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
+        return await apiClient<{ content: OltItem[] } | OltItem[]>(
+          `/api/v1/network/olts?size=50${queryParam}`
+        );
+      } catch (err) {
+        console.warn("Failed to fetch OLTs:", err);
+        return [];
+      }
     },
-    {
-      id: "olt-02",
-      code: "OLT-HW-ARC-01",
-      name: "Huawei MA5608T Arcamanik",
-      brand: "Huawei MA5608T (EPON/GPON)",
-      ipAddress: "10.200.10.3",
-      ponPortsTotal: 16,
-      ponPortsUsed: 12,
-      totalOnuOnline: 512,
-      snmpStatus: "CONNECTED",
-      health: "UP",
-      pingLatency: "2.1 ms",
-    },
-  ];
+    staleTime: 30 * 1000,
+  });
+
+  const olts: OltItem[] = React.useMemo(() => {
+    if (!oltData) return [];
+    if (Array.isArray(oltData)) return oltData;
+    if (Array.isArray(oltData.content)) return oltData.content;
+    return [];
+  }, [oltData]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -67,9 +81,9 @@ export function OltListPage() {
         ]}
         title="Daftar Perangkat OLT (Optical Line Terminal)"
         actions={
-          <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
+          <Button size="sm" className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs">
             <Plus className="h-4 w-4" />
-            + Tambah OLT
+            + Tambah OLT Baru
           </Button>
         }
       />
@@ -88,60 +102,78 @@ export function OltListPage() {
         </div>
 
         <Card className="border-border/60 overflow-hidden shadow-xs">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">KODE & NAMA OLT</TableHead>
-                <TableHead className="font-bold">MERK & TIPE</TableHead>
-                <TableHead className="font-bold">IP MANAGEMENT</TableHead>
-                <TableHead className="font-bold">PORT PON DIGUNAKAN</TableHead>
-                <TableHead className="font-bold">TOTAL ONU ONLINE</TableHead>
-                <TableHead className="font-bold">LATENCY PING</TableHead>
-                <TableHead className="font-bold">STATUS</TableHead>
-                <TableHead className="w-12 text-right" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {olts.map((olt) => (
-                <TableRow key={olt.id} className="text-xs">
-                  <TableCell>
-                    <div className="space-y-0.5">
-                      <span className="font-bold font-mono text-primary block">{olt.code}</span>
-                      <span className="text-muted-foreground text-[11px]">{olt.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">{olt.brand}</TableCell>
-                  <TableCell className="font-mono text-muted-foreground">{olt.ipAddress}</TableCell>
-                  <TableCell className="font-mono font-semibold">
-                    {olt.ponPortsUsed} / {olt.ponPortsTotal} Port
-                  </TableCell>
-                  <TableCell className="font-mono font-bold text-primary">
-                    {olt.totalOnuOnline} ONT
-                  </TableCell>
-                  <TableCell className="font-mono text-muted-foreground">{olt.pingLatency}</TableCell>
-                  <TableCell>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                      {olt.health}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuItem>Pindai Port PON</DropdownMenuItem>
-                        <DropdownMenuItem>Live Telemetry SNMP</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Parameter</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex h-40 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : olts.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40 text-[11px]">
+                  <TableHead className="font-bold">KODE & NAMA OLT</TableHead>
+                  <TableHead className="font-bold">MERK & TIPE</TableHead>
+                  <TableHead className="font-bold">IP MANAGEMENT</TableHead>
+                  <TableHead className="font-bold">PORT PON TERPAKAI</TableHead>
+                  <TableHead className="font-bold">STATUS TELEMETRI</TableHead>
+                  <TableHead className="w-12 text-right" />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {olts.map((olt) => (
+                  <TableRow key={olt.id} className="text-xs">
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <span className="font-bold font-mono text-primary block">{olt.code}</span>
+                        <span className="text-muted-foreground text-[11px]">{olt.name || "-"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      {olt.brand ? `${olt.brand} ${olt.model || ""}` : "GPON OLT"}
+                    </TableCell>
+                    <TableCell className="font-mono text-muted-foreground">{olt.ipAddress || "-"}</TableCell>
+                    <TableCell className="font-mono font-semibold">
+                      {olt.ponPortsUsed || 0} / {olt.ponPortsTotal || 16} Port
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                          olt.status === "ACTIVE" || olt.status === "ONLINE" || olt.status === "UP"
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                        }`}
+                      >
+                        {olt.status || "ACTIVE"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="text-xs">
+                          <DropdownMenuItem>Pindai Port PON</DropdownMenuItem>
+                          <DropdownMenuItem>Live Telemetry SNMP</DropdownMenuItem>
+                          <DropdownMenuItem>Edit Parameter</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-8 text-center space-y-2">
+              <Server className="h-8 w-8 text-muted-foreground mx-auto" />
+              <p className="text-xs font-semibold text-foreground">Belum Ada Perangkat OLT</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                {searchQuery
+                  ? "Tidak ada perangkat OLT yang cocok dengan pencarian Anda."
+                  : "Mulai dengan mendaftarkan perangkat OLT core Anda untuk memonitor port PON dan ONU."}
+              </p>
+            </div>
+          )}
         </Card>
       </PageContentShell>
     </div>

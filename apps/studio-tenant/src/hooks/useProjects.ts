@@ -55,35 +55,8 @@ export function useProjects() {
         }
         return [];
       } catch (err) {
-        console.warn("Failed to fetch projects from backend, using fallback:", err);
-        return [
-          {
-            id: "proj-bdg-01",
-            name: "FTTH Bandung Timur Cluster",
-            code: "BDG-TMR",
-            description: "Area deployment fiber optik Bandung Timur & Arcamanik",
-            status: "PRODUCTION",
-            totalSubscribers: 1420,
-            onlineSubscribers: 1398,
-            odcCount: 12,
-            odpCount: 86,
-            cableLengthKm: 48.6,
-            oltCount: 4,
-          },
-          {
-            id: "proj-bdg-02",
-            name: "FTTH Bandung Selatan Urban",
-            code: "BDG-SLT",
-            description: "Ekspansi jaringan fiber Buahbatu - Dayeuhkolot",
-            status: "PLANNING",
-            totalSubscribers: 0,
-            onlineSubscribers: 0,
-            odcCount: 4,
-            odpCount: 28,
-            cableLengthKm: 18.2,
-            oltCount: 1,
-          },
-        ];
+        console.warn("Failed to fetch projects from backend:", err);
+        return [];
       }
     },
     staleTime: 60 * 1000,

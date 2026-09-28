@@ -2,6 +2,7 @@ import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { Button, Card, cn } from "@k2net/ui";
 import { type Project } from "../../hooks/useProjects";
+import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 
 interface ProjectUsageWidgetProps {
   projects: Project[];
@@ -47,27 +48,51 @@ function CircularMeter({ percent }: { percent: number }) {
 }
 
 export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
-  const totalSubscribers = projects.reduce((acc, p) => acc + (p.totalSubscribers || 0), 0);
-  const totalCableKm = projects.reduce((acc, p) => acc + (p.cableLengthKm || 0), 0);
-  const totalOdc = projects.reduce((acc, p) => acc + (p.odcCount || 0), 0);
-  const totalOdp = projects.reduce((acc, p) => acc + (p.odpCount || 0), 0);
+  const {
+    tier,
+    planName,
+    maxProjects,
+    maxOdps,
+    usedStorageGb,
+    maxStorageGb,
+    storagePercentage,
+    isBoosterActive,
+    boosterDaysRemaining,
+  } = useTenantSubscription();
 
-  const subscriberQuota = 10000;
-  const projectQuota = 10;
-  const cableQuotaKm = 100;
+  const totalSubscribers = React.useMemo(
+    () => projects.reduce((acc, p) => acc + (p.totalSubscribers || 0), 0),
+    [projects]
+  );
+  const totalCableKm = React.useMemo(
+    () => projects.reduce((acc, p) => acc + (p.cableLengthKm || 0), 0),
+    [projects]
+  );
+  const totalOdc = React.useMemo(
+    () => projects.reduce((acc, p) => acc + (p.odcCount || 0), 0),
+    [projects]
+  );
+  const totalOdp = React.useMemo(
+    () => projects.reduce((acc, p) => acc + (p.odpCount || 0), 0),
+    [projects]
+  );
+
+  const subscriberQuota = tier === "free" ? 1000 : tier === "enterprise" ? 20000 : 5000;
+  const cableQuotaKm = tier === "free" ? 50 : tier === "enterprise" ? 1000 : 250;
+
   const subscriberPercent = Math.min(100, Math.round((totalSubscribers / subscriberQuota) * 100));
-  const projectPercent = Math.min(100, Math.round((projects.length / projectQuota) * 100));
-  const cablePercent = Math.min(100, Math.round((totalCableKm / cableQuotaKm) * 100));
-  const odcOdpPercent = Math.min(100, Math.round(((totalOdc + totalOdp) / 550) * 100));
+  const projectPercent = Math.min(100, Math.round((projects.length / Math.max(1, maxProjects)) * 100));
+  const cablePercent = Math.min(100, Math.round((totalCableKm / Math.max(1, cableQuotaKm)) * 100));
+  const odpPercent = Math.min(100, Math.round((totalOdp / Math.max(1, maxOdps)) * 100));
 
   const usageItems = [
     {
       label: "Proyek FTTH Aktif",
-      value: `${projects.length} / ${projectQuota}`,
+      value: `${projects.length} / ${maxProjects}`,
       percent: projectPercent,
     },
     {
-      label: "Total Pelanggan",
+      label: "Total Pelanggan Terpasang",
       value: `${totalSubscribers.toLocaleString()} / ${subscriberQuota.toLocaleString()}`,
       percent: subscriberPercent,
     },
@@ -79,19 +104,28 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
     {
       label: "Perangkat ODC & ODP",
       value: `${totalOdc} ODC / ${totalOdp} ODP`,
-      percent: odcOdpPercent,
+      percent: odpPercent,
     },
     {
-      label: "Database size",
-      value: "26 / 500 MB",
-      percent: 5.2,
-    },
-    {
-      label: "File storage",
-      value: "0.00 / 1 GB",
-      percent: 0,
+      label: "Kapasitas Storage S3",
+      value: `${usedStorageGb.toFixed(1)} / ${maxStorageGb} GB`,
+      percent: storagePercentage,
     },
   ];
+
+  const planDisplayTitle =
+    tier === "enterprise"
+      ? "Enterprise Telco Plan"
+      : tier === "free"
+      ? "Starter Free Plan"
+      : "Professional Plan";
+
+  const upgradeCtaText =
+    tier === "free"
+      ? "Upgrade ke Pro"
+      : tier === "pro"
+      ? "Upgrade Enterprise"
+      : "Kelola Kuota";
 
   return (
     <Card
@@ -102,8 +136,17 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
         {/* Header with border-groove-b */}
         <div className="flex items-start justify-between gap-3 pb-3.5 border-groove-b">
           <div>
-            <h3 className="text-sm font-bold text-foreground">Pro plan usage</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Current billing cycle</p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-foreground">{planDisplayTitle}</h3>
+              {isBoosterActive && (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  Booster ({boosterDaysRemaining}h)
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Pemakaian kuota siklus berjalan ({planName})
+            </p>
           </div>
           <Button
             asChild
@@ -111,9 +154,7 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
             size="sm"
             className="h-7 px-3 text-xs font-medium rounded-lg border-border/80 hover:bg-muted/50"
           >
-            <Link to="/billing">
-              Upgrade to Pro
-            </Link>
+            <Link to="/billing">{upgradeCtaText}</Link>
           </Button>
         </div>
 

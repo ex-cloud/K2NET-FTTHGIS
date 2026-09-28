@@ -27,16 +27,18 @@ public class ProjectService {
         Organization org = organizationRepository.findBySlug(orgSlug)
                 .orElseThrow(() -> new RuntimeException("Organization not found"));
 
-        // Feature Gating: Check Project Limits
-        SubscriptionPlan plan = org.getSubscriptionPlan();
-        if (plan != null) {
-            long currentProjectCount = projectRepository.countByOrganizationId(org.getId());
-            if (plan.getMaxProjects() != null && currentProjectCount >= plan.getMaxProjects()) {
-                log.warn("🚫 Feature Gating: Organization {} reached project limit ({}/{})", 
-                    org.getName(), currentProjectCount, plan.getMaxProjects());
-                throw new RuntimeException("Quota exceeded: Your current plan only allows " + 
-                    plan.getMaxProjects() + " projects. Please upgrade your plan.");
-            }
+        // Feature Gating: Check Project Limits & SoftLock
+        if (org.isSoftLocked()) {
+            throw new RuntimeException("Account is currently locked or suspended. Please verify your subscription status on the billing page.");
+        }
+
+        int effectiveMax = org.getEffectiveMaxOlts(null);
+        long currentProjectCount = projectRepository.countByOrganizationId(org.getId());
+        if (currentProjectCount >= effectiveMax) {
+            log.warn("🚫 Feature Gating: Organization {} reached project limit ({}/{})", 
+                org.getName(), currentProjectCount, effectiveMax);
+            throw new RuntimeException("Quota exceeded: Your current plan and active boosters allow up to " + 
+                effectiveMax + " projects. Please upgrade your plan.");
         }
 
         project.setOrganization(org);

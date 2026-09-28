@@ -5,6 +5,8 @@ import {
   Search,
   MoreVertical,
   Signal,
+  Loader2,
+  Users,
 } from "lucide-react";
 import {
   PageHeader,
@@ -23,7 +25,22 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@k2net/ui";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "../../../lib/api-client";
 import { AssetDialog } from "../../../components/inventory/AssetDialogs";
+
+interface CustomerItem {
+  id: string;
+  code: string;
+  name: string;
+  address?: string;
+  status?: string;
+  healthStatus?: string;
+  odpCode?: string;
+  projectId?: string;
+  lat?: number;
+  lng?: number;
+}
 
 export function CustomerDatabasePage() {
   const params = useParams({ strict: false }) as { projectId?: string };
@@ -31,56 +48,28 @@ export function CustomerDatabasePage() {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
 
-  const customers = [
-    {
-      id: "cust-01",
-      customerCode: "CUST-08421",
-      name: "Bambang Sudarmono",
-      package: "50 Mbps Ultra Home",
-      odpCode: "ODP-DGO-01",
-      portIndex: 4,
-      ontSn: "ZTEGC84A12B9",
-      signalDbm: -18.2,
-      status: "ONLINE",
-      address: "Jl. Dago Asri No. 14",
+  const { data: customerData, isLoading } = useQuery<{ content: CustomerItem[] } | CustomerItem[]>({
+    queryKey: ["project-customers", projectId, searchQuery],
+    queryFn: async () => {
+      try {
+        const queryParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
+        return await apiClient<{ content: CustomerItem[] } | CustomerItem[]>(
+          `/api/v1/network/customers?size=50${queryParam}`
+        );
+      } catch (err) {
+        console.warn("Failed to fetch customers:", err);
+        return [];
+      }
     },
-    {
-      id: "cust-02",
-      customerCode: "CUST-08422",
-      name: "Ibu Ratna Juwita",
-      package: "100 Mbps Gamer Pro",
-      odpCode: "ODP-DGO-01",
-      portIndex: 5,
-      ontSn: "HWTC99A041C2",
-      signalDbm: -19.4,
-      status: "ONLINE",
-      address: "Jl. Dago Asri No. 16",
-    },
-    {
-      id: "cust-03",
-      customerCode: "CUST-08423",
-      name: "Cafe Kopi Kembara",
-      package: "200 Mbps B2B Dedicated",
-      odpCode: "ODP-DGO-02",
-      portIndex: 1,
-      ontSn: "ZTEGC11F8890",
-      signalDbm: -17.1,
-      status: "ONLINE",
-      address: "Jl. Ir. H. Juanda No. 182",
-    },
-    {
-      id: "cust-04",
-      customerCode: "CUST-08424",
-      name: "Ahmad Maulana",
-      package: "30 Mbps Family",
-      odpCode: "ODP-DGO-03",
-      portIndex: 2,
-      ontSn: "FHTT0412889A",
-      signalDbm: -26.8,
-      status: "HIGH_ATTENUATION",
-      address: "Komplek Dago Permai Blok C-8",
-    },
-  ];
+    staleTime: 30 * 1000,
+  });
+
+  const customers: CustomerItem[] = React.useMemo(() => {
+    if (!customerData) return [];
+    if (Array.isArray(customerData)) return customerData;
+    if (Array.isArray(customerData.content)) return customerData.content;
+    return [];
+  }, [customerData]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -117,82 +106,82 @@ export function CustomerDatabasePage() {
         </div>
 
         <Card className="border-border/60 overflow-hidden shadow-xs">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">ID & NAMA PELANGGAN</TableHead>
-                <TableHead className="font-bold">PAKET INTERNET</TableHead>
-                <TableHead className="font-bold">ODP & PORT</TableHead>
-                <TableHead className="font-bold">ONT SERIAL NUMBER</TableHead>
-                <TableHead className="font-bold">RX SIGNAL (DBM)</TableHead>
-                <TableHead className="font-bold">STATUS</TableHead>
-                <TableHead className="w-12 text-right" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {customers.map((c) => (
-                <TableRow key={c.id} className="text-xs">
-                  <TableCell>
-                    <div className="space-y-0.5">
-                      <span className="font-bold text-foreground block">{c.name}</span>
-                      <span className="text-[11px] font-mono text-muted-foreground">
-                        {c.customerCode} • {c.address}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">
-                    {c.package}
-                  </TableCell>
-                  <TableCell className="font-mono text-primary font-semibold">
-                    {c.odpCode} (Port #{c.portIndex})
-                  </TableCell>
-                  <TableCell className="font-mono text-muted-foreground">
-                    {c.ontSn}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 font-mono font-bold">
-                      <Signal className="h-3.5 w-3.5 text-primary" />
-                      <span
-                        className={
-                          c.signalDbm < -25
-                            ? "text-rose-600 dark:text-rose-400 font-bold"
-                            : "text-primary"
-                        }
-                      >
-                        {c.signalDbm} dBm
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                        c.status === "ONLINE"
-                          ? "bg-primary/10 text-primary border-primary/20"
-                          : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                      }`}
-                    >
-                      {c.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuItem>Pindai Sinyal ONT</DropdownMenuItem>
-                        <DropdownMenuItem>Lihat Sambungan di Peta</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Profil</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Putus Sambungan</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex h-40 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : customers.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40 text-[11px]">
+                  <TableHead className="font-bold">ID & NAMA PELANGGAN</TableHead>
+                  <TableHead className="font-bold">ODP TERHUBUNG</TableHead>
+                  <TableHead className="font-bold">ALAMAT / LOKASI</TableHead>
+                  <TableHead className="font-bold">STATUS OPERASIONAL</TableHead>
+                  <TableHead className="w-12 text-right" />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {customers.map((c) => (
+                  <TableRow key={c.id} className="text-xs">
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-foreground block">{c.name || "Pelanggan"}</span>
+                        <span className="text-[11px] font-mono text-muted-foreground">
+                          {c.code || c.id}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-primary font-semibold">
+                      {c.odpCode || "Belum Terhubung"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground max-w-xs truncate">
+                      {c.address || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                          c.status === "ONLINE" || c.status === "ACTIVE"
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          <Signal className="h-3 w-3" />
+                          {c.status || "ACTIVE"}
+                        </span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="text-xs">
+                          <DropdownMenuItem>Pindai Sinyal ONT</DropdownMenuItem>
+                          <DropdownMenuItem>Lihat Sambungan di Peta</DropdownMenuItem>
+                          <DropdownMenuItem>Edit Profil</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">Putus Sambungan</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-8 text-center space-y-2">
+              <Users className="h-8 w-8 text-muted-foreground mx-auto" />
+              <p className="text-xs font-semibold text-foreground">Belum Ada Data Pelanggan</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                {searchQuery
+                  ? "Tidak ada pelanggan yang cocok dengan pencarian Anda."
+                  : "Mulai dengan meregistrasikan pelanggan baru pada port ODP proyek ini."}
+              </p>
+            </div>
+          )}
         </Card>
       </PageContentShell>
 

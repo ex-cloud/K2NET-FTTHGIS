@@ -7,16 +7,23 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
+  FeatureUpgradeModal,
   cn,
 } from "@k2net/ui";
+import { useNavigate } from "@tanstack/react-router";
 import { useProjects } from "../../hooks/useProjects";
+import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 import { ProjectUsageWidget } from "../../components/project/ProjectUsageWidget";
 import { ProjectCardGrid } from "../../components/project/ProjectCardGrid";
 import { ProjectCreateWizard } from "../../components/project/ProjectCreateWizard";
 
 export function ProjectsPage() {
+  const navigate = useNavigate();
   const { projects, isLoading, refetch, deleteProject } = useProjects();
+  const { canCreateProject, usedProjects, maxProjects, tier } = useTenantSubscription();
+
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("ALL");
   const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
@@ -37,6 +44,14 @@ export function ProjectsPage() {
       return matchQuery && matchStatus;
     });
   }, [projects, searchQuery, statusFilter]);
+
+  const handleOpenCreateProject = () => {
+    if (!canCreateProject) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+    setCreateModalOpen(true);
+  };
 
   return (
     <PageLayout variant="dashboard">
@@ -131,7 +146,7 @@ export function ProjectsPage() {
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={() => setCreateModalOpen(true)}
+                  onClick={handleOpenCreateProject}
                   className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -169,7 +184,7 @@ export function ProjectsPage() {
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => setCreateModalOpen(true)}
+                  onClick={handleOpenCreateProject}
                   className="text-xs font-medium gap-1.5"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -190,6 +205,17 @@ export function ProjectsPage() {
       <ProjectCreateWizard
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
+      />
+
+      {/* Upgrade Quota Limit Modal */}
+      <FeatureUpgradeModal
+        open={upgradeModalOpen}
+        onOpenChange={setUpgradeModalOpen}
+        featureName="Kapasitas Proyek"
+        featureDescription={`Organisasi Anda telah mencapai batas maksimum ${usedProjects} dari ${maxProjects} proyek aktif untuk paket ${tier.toUpperCase()}. Tingkatkan ke paket yang lebih tinggi untuk membuat proyek FTTH baru.`}
+        requiredTier={tier === "free" ? "pro" : "enterprise"}
+        currentTier={tier}
+        onUpgradeClick={() => navigate({ to: "/billing" })}
       />
     </PageLayout>
   );

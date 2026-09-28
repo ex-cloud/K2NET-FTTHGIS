@@ -48,6 +48,8 @@ export * from "./components/rich-text-editor";
 export * from "./components/form-fieldset";
 export * from "./components/empty-state";
 export * from "./components/status-dot";
+export * from "./components/tier-quota-guard";
+export * from "./components/feature-upgrade-modal";
 
 // Technical Isometric Wireframe Figures & Pure SVG Animated Mascot (Linear Style)
 export * from "./components/linear-isometric";

@@ -4,6 +4,8 @@ import {
   Plus,
   Search,
   MoreVertical,
+  Layers,
+  Loader2,
 } from "lucide-react";
 import {
   PageHeader,
@@ -22,7 +24,24 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@k2net/ui";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "../../../lib/api-client";
 import { AssetDialog } from "../../../components/inventory/AssetDialogs";
+
+interface OdpItem {
+  id: string;
+  code: string;
+  name: string;
+  odcCode?: string;
+  totalPorts?: number;
+  usedPorts?: number;
+  splitterRatio?: string;
+  status?: string;
+  healthStatus?: string;
+  lat?: number;
+  lng?: number;
+  projectId?: string;
+}
 
 export function OdpListPage() {
   const params = useParams({ strict: false }) as { projectId?: string };
@@ -30,41 +49,28 @@ export function OdpListPage() {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
 
-  const odpList = [
-    {
-      id: "odp-01",
-      code: "ODP-DGO-01",
-      name: "ODP FAT Tiang PLN 12",
-      odcName: "ODC-DGO-01",
-      totalPort: 16,
-      usedPort: 14,
-      splitterRatio: "1:16",
-      status: "ACTIVE",
-      avgSignalDbm: -18.4,
+  const { data: odpData, isLoading } = useQuery<{ content: OdpItem[] } | OdpItem[]>({
+    queryKey: ["project-odps", projectId, searchQuery],
+    queryFn: async () => {
+      try {
+        const queryParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
+        return await apiClient<{ content: OdpItem[] } | OdpItem[]>(
+          `/api/v1/network/odps?size=50${queryParam}`
+        );
+      } catch (err) {
+        console.warn("Failed to fetch ODPs:", err);
+        return [];
+      }
     },
-    {
-      id: "odp-02",
-      code: "ODP-DGO-02",
-      name: "ODP FAT Tiang PLN 18",
-      odcName: "ODC-DGO-01",
-      totalPort: 16,
-      usedPort: 16,
-      splitterRatio: "1:16",
-      status: "FULL",
-      avgSignalDbm: -19.1,
-    },
-    {
-      id: "odp-03",
-      code: "ODP-DGO-03",
-      name: "ODP FAT Cluster Blok B",
-      odcName: "ODC-DGO-02",
-      totalPort: 8,
-      usedPort: 4,
-      splitterRatio: "1:8",
-      status: "ACTIVE",
-      avgSignalDbm: -17.2,
-    },
-  ];
+    staleTime: 30 * 1000,
+  });
+
+  const odpList: OdpItem[] = React.useMemo(() => {
+    if (!odpData) return [];
+    if (Array.isArray(odpData)) return odpData;
+    if (Array.isArray(odpData.content)) return odpData.content;
+    return [];
+  }, [odpData]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -101,76 +107,94 @@ export function OdpListPage() {
         </div>
 
         <Card className="border-border/60 overflow-hidden shadow-xs">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">KODE & NAMA ODP</TableHead>
-                <TableHead className="font-bold">INDUK ODC</TableHead>
-                <TableHead className="font-bold">PORT DROP TERPASANG</TableHead>
-                <TableHead className="font-bold">SPLITTER RATIO</TableHead>
-                <TableHead className="font-bold">RATA-RATA RX DBM</TableHead>
-                <TableHead className="font-bold">STATUS</TableHead>
-                <TableHead className="w-12 text-right" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {odpList.map((odp) => (
-                <TableRow key={odp.id} className="text-xs">
-                  <TableCell>
-                    <div className="space-y-0.5">
-                      <span className="font-bold font-mono text-primary block">{odp.code}</span>
-                      <span className="text-muted-foreground text-[11px]">{odp.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono font-medium text-foreground">
-                    {odp.odcName}
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <span className="font-mono font-bold text-foreground">
-                        {odp.usedPort} / {odp.totalPort} Port
-                      </span>
-                      <span className="text-[10px] text-muted-foreground block">
-                        ({Math.round((odp.usedPort / odp.totalPort) * 100)}% Terpakai)
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-muted-foreground">
-                    {odp.splitterRatio}
-                  </TableCell>
-                  <TableCell className="font-mono font-bold text-primary">
-                    {odp.avgSignalDbm} dBm
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                        odp.status === "ACTIVE"
-                          ? "bg-primary/10 text-primary border-primary/20"
-                          : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                      }`}
-                    >
-                      {odp.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuItem>Lihat Sambungan Pelanggan</DropdownMenuItem>
-                        <DropdownMenuItem>Buka di Peta Spasial</DropdownMenuItem>
-                        <DropdownMenuItem>Edit ODP</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Hapus ODP</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex h-40 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : odpList.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40 text-[11px]">
+                  <TableHead className="font-bold">KODE & NAMA ODP</TableHead>
+                  <TableHead className="font-bold">INDUK ODC</TableHead>
+                  <TableHead className="font-bold">PORT DROP TERPASANG</TableHead>
+                  <TableHead className="font-bold">SPLITTER RATIO</TableHead>
+                  <TableHead className="font-bold">STATUS</TableHead>
+                  <TableHead className="w-12 text-right" />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {odpList.map((odp) => {
+                  const total = odp.totalPorts || 16;
+                  const used = odp.usedPorts || 0;
+                  const percent = Math.round((used / total) * 100);
+
+                  return (
+                    <TableRow key={odp.id} className="text-xs">
+                      <TableCell>
+                        <div className="space-y-0.5">
+                          <span className="font-bold font-mono text-primary block">{odp.code}</span>
+                          <span className="text-muted-foreground text-[11px]">{odp.name || "-"}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono font-medium text-foreground">
+                        {odp.odcCode || "ODC-MAIN"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <span className="font-mono font-bold text-foreground">
+                            {used} / {total} Port
+                          </span>
+                          <span className="text-[10px] text-muted-foreground block">
+                            ({percent}% Terpakai)
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-muted-foreground">
+                        {odp.splitterRatio || "1:16"}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                            odp.status === "ACTIVE"
+                              ? "bg-primary/10 text-primary border-primary/20"
+                              : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                          }`}
+                        >
+                          {odp.status || "ACTIVE"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="text-xs">
+                            <DropdownMenuItem>Lihat Sambungan Pelanggan</DropdownMenuItem>
+                            <DropdownMenuItem>Buka di Peta Spasial</DropdownMenuItem>
+                            <DropdownMenuItem>Edit ODP</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">Hapus ODP</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-8 text-center space-y-2">
+              <Layers className="h-8 w-8 text-muted-foreground mx-auto" />
+              <p className="text-xs font-semibold text-foreground">Belum Ada Box ODP</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                {searchQuery
+                  ? "Tidak ada kotak ODP yang sesuai dengan kata kunci pencarian."
+                  : "Tambahkan kotak distribusi ODP pertama Anda untuk mendistribusikan port fiber."}
+              </p>
+            </div>
+          )}
         </Card>
       </PageContentShell>
 
