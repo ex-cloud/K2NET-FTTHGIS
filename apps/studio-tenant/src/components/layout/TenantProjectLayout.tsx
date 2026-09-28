@@ -151,7 +151,7 @@ function TenantProjectLayoutContent() {
           : "border-border/40 bg-background"
       )}>
         {/* LEFT SECTION: Flat Unified Breadcrumb */}
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           {/* 1. Root Workspace Logo (Always visible on mobile & desktop) */}
           <TenantLogo href="/projects" />
 
