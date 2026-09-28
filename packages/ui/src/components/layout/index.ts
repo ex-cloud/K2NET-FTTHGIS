@@ -6,3 +6,5 @@ export * from "./secondary-sidebar-shell";
 export * from "./metric-card";
 export * from "./app-header-shell";
 export * from "./primary-sidebar-shell";
+export * from "./sidebar-mode-control";
+export * from "./sidebar-mode-context";
