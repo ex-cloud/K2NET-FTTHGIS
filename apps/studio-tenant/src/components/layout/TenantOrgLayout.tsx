@@ -21,7 +21,7 @@ import { TenantAiAssistant } from "../TenantAiAssistant";
 import { TenantHelpDialog } from "../TenantHelpDialog";
 import { TenantNotificationsSheet } from "../TenantNotificationsSheet";
 import { TenantUserNav } from "../TenantUserNav";
-import { TenantOrgBrand } from "../system/TenantOrgBrand";
+import { TenantLogo, TenantOrgName } from "../system/TenantOrgBrand";
 import { TenantTierBadge } from "../system/TenantTierBadge";
 import { TenantOrgSidebar } from "./TenantOrgSidebar";
 import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
@@ -125,9 +125,16 @@ function TenantOrgLayoutContent() {
           ? "border-amber-500/30 bg-amber-500/[0.02]"
           : "border-border/40 bg-background"
       )}>
-        {/* LEFT SECTION: Logo + Org Brand + Tier Badge */}
+        {/* LEFT SECTION: Flat Unified Breadcrumb (Logo + Slash + Org Name + Tier Badge) */}
         <div className="flex items-center gap-2 min-w-0">
-          <TenantOrgBrand href="/projects" showSeparator={true} />
+          <TenantLogo href="/projects" />
+          <span
+            className="hidden sm:inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
+            aria-hidden="true"
+          >
+            /
+          </span>
+          <TenantOrgName href="/projects" />
           <TenantTierBadge />
         </div>
 

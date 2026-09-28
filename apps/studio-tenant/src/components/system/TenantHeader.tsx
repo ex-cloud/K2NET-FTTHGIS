@@ -3,7 +3,7 @@ import { HelpCircle, MessageSquare, Search, Sparkles } from "lucide-react";
 import { Button, Separator, ActionTooltip, cn } from "@k2net/ui";
 import { useImpersonationSession } from "../../lib/useImpersonationSession";
 import { TenantUserNav } from "../TenantUserNav";
-import { TenantOrgBrand } from "./TenantOrgBrand";
+import { TenantLogo, TenantOrgName } from "./TenantOrgBrand";
 import { TenantTierBadge } from "./TenantTierBadge";
 
 interface TenantHeaderProps {
@@ -28,9 +28,16 @@ export function TenantHeader({
         ? "border-amber-500/30 bg-amber-500/[0.02]"
         : "border-border/40 bg-background"
     )}>
-      {/* LEFT SECTION: Logo + Org Brand + Tier Badge */}
+      {/* LEFT SECTION: Flat Unified Breadcrumb */}
       <div className="flex items-center gap-2 min-w-0">
-        <TenantOrgBrand href="/projects" showSeparator={true} />
+        <TenantLogo href="/projects" />
+        <span
+          className="hidden sm:inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
+          aria-hidden="true"
+        >
+          /
+        </span>
+        <TenantOrgName href="/projects" />
         <TenantTierBadge />
       </div>
 

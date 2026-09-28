@@ -20,7 +20,7 @@ import { TenantAiAssistant } from "../TenantAiAssistant";
 import { TenantHelpDialog } from "../TenantHelpDialog";
 import { TenantNotificationsSheet } from "../TenantNotificationsSheet";
 import { TenantUserNav } from "../TenantUserNav";
-import { TenantOrgBrand } from "../system/TenantOrgBrand";
+import { TenantLogo, TenantOrgName } from "../system/TenantOrgBrand";
 import { TenantTierBadge } from "../system/TenantTierBadge";
 import { TenantProjectSidebar } from "./TenantProjectSidebar";
 import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
@@ -150,24 +150,33 @@ function TenantProjectLayoutContent() {
           ? "border-amber-500/30 bg-amber-500/[0.02]"
           : "border-border/40 bg-background"
       )}>
-        {/* LEFT SECTION: Logo + Org Brand + Tier Badge + Slash Separator + Project Switcher Dropdown */}
+        {/* LEFT SECTION: Flat Unified Breadcrumb */}
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-          <TenantOrgBrand
-            href="/projects"
-            showSeparator={true}
-            hideNameOnMobile={true}
-            maxTruncateWidthClass="max-w-[90px] xs:max-w-[130px] sm:max-w-[170px] md:max-w-[200px]"
-          />
-          <TenantTierBadge className="hidden sm:inline-flex" />
+          {/* 1. Root Workspace Logo (Always visible on mobile & desktop) */}
+          <TenantLogo href="/projects" />
 
-          <span
-            className="hidden sm:inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
-            aria-hidden="true"
-          >
-            /
-          </span>
+          {/* 2. Desktop-Only Org Scope (Disembunyikan total di mobile sebagai 1 kesatuan) */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <span
+              className="inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
+              aria-hidden="true"
+            >
+              /
+            </span>
+            <TenantOrgName
+              href="/projects"
+              maxTruncateWidthClass="max-w-[140px] md:max-w-[200px]"
+            />
+            <TenantTierBadge />
+            <span
+              className="inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
+              aria-hidden="true"
+            >
+              /
+            </span>
+          </div>
 
-          {/* Project Switcher Dropdown with + New Project Trigger */}
+          {/* 3. Project Switcher (Dropdown proyek) */}
           <ProjectSwitcher
             activeProjectId={projectId}
             onNewProject={() => setCreateProjectOpen(true)}
