@@ -4,7 +4,7 @@ import { Input, Textarea, Button } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import type { WizardFormData } from "./types";
 
-interface Step1IdentityProps {
+interface Step2IdentityProps {
   formData: WizardFormData;
   setFormData: React.Dispatch<React.SetStateAction<WizardFormData>>;
   slugError: string | null;
@@ -12,13 +12,13 @@ interface Step1IdentityProps {
   onRegenerateRandomSlug: () => void;
 }
 
-export function Step1Identity({
+export function Step2Identity({
   formData,
   setFormData,
   slugError,
   setSlugError,
   onRegenerateRandomSlug,
-}: Step1IdentityProps) {
+}: Step2IdentityProps) {
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
     if (formData.slugMode === "random") {
@@ -151,19 +151,33 @@ export function Step1Identity({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-foreground flex items-center gap-2">
-          <Network className="size-3.5 text-muted-foreground" />
-          <span>Custom White-Label FQDN Domain (Opsional)</span>
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-2">
+            <Network className="size-3.5 text-muted-foreground" />
+            <span>Custom White-Label FQDN Domain</span>
+          </label>
+          {formData.plan !== "ENTERPRISE" && (
+            <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground font-mono">
+              Eksklusif Enterprise
+            </span>
+          )}
+        </div>
         <Input
           value={formData.customDomain}
+          disabled={formData.plan !== "ENTERPRISE"}
           onChange={(e) => setFormData((prev) => ({ ...prev, customDomain: e.target.value }))}
-          placeholder="e.g. gis.nusantara.net"
-          className="bg-card border-border text-foreground font-mono text-xs h-9"
+          placeholder={formData.plan === "ENTERPRISE" ? "e.g. gis.nusantara.net" : "Hanya tersedia pada paket Enterprise"}
+          className="bg-card border-border text-foreground font-mono text-xs h-9 disabled:opacity-60"
         />
         <p className="text-[10px] text-muted-foreground">
-          Mendukung otomatisasi SSL Let&apos;s Encrypt melalui CNAME{" "}
-          <code className="text-primary font-mono">cname.kdua.net</code>.
+          {formData.plan === "ENTERPRISE" ? (
+            <>
+              Mendukung otomatisasi SSL Let&apos;s Encrypt melalui CNAME{" "}
+              <code className="text-primary font-mono">cname.kdua.net</code>.
+            </>
+          ) : (
+            "Dapatkan custom domain mandiri dengan upgrade ke tier Enterprise."
+          )}
         </p>
       </div>
 

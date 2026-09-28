@@ -42,9 +42,9 @@ export function WizardFooter({
   }
 
   const isNextDisabled =
-    !formData.name ||
-    !formData.slug ||
     isSubmitting ||
+    (step === 1 && !formData.plan) ||
+    (step === 2 && (!formData.name || !formData.slug)) ||
     (step === 3 && formData.ldapEnabled && !ldapTestPassed);
 
   return (

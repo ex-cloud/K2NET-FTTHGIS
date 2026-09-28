@@ -4,13 +4,46 @@ import { Badge } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { PLAN_SPECS, type PlanType, type WizardFormData } from "./types";
 
-interface Step2PlanProps {
+interface Step1PlanProps {
   formData: WizardFormData;
   setFormData: React.Dispatch<React.SetStateAction<WizardFormData>>;
 }
 
-export function Step2Plan({ formData, setFormData }: Step2PlanProps) {
+export function Step1Plan({ formData, setFormData }: Step1PlanProps) {
   const selectedPlan = PLAN_SPECS[formData.plan];
+
+  const handleSelectPlan = (tierKey: PlanType) => {
+    setFormData((prev) => {
+      if (tierKey === "FREE") {
+        const randomSlug =
+          prev.slugMode === "random" && prev.slug && prev.slug.length === 20
+            ? prev.slug
+            : Array.from({ length: 20 }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join("");
+        return {
+          ...prev,
+          plan: tierKey,
+          slugMode: "random",
+          slug: randomSlug,
+          customDomain: "",
+          ldapEnabled: false,
+        };
+      }
+      
+      const customSlug = prev.name
+        ? prev.name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")
+        : prev.slugMode === "custom"
+        ? prev.slug
+        : "";
+
+      return {
+        ...prev,
+        plan: tierKey,
+        slugMode: "custom",
+        slug: customSlug || prev.slug,
+        customDomain: tierKey === "ENTERPRISE" ? prev.customDomain : "",
+      };
+    });
+  };
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -22,7 +55,7 @@ export function Step2Plan({ formData, setFormData }: Step2PlanProps) {
           return (
             <div
               key={tierKey}
-              onClick={() => setFormData((prev) => ({ ...prev, plan: tierKey }))}
+              onClick={() => handleSelectPlan(tierKey)}
               className={cn(
                 "p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between relative space-y-3",
                 isSelected

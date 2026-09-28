@@ -50,6 +50,13 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
 
   const nextStep = async () => {
     if (step === 1) {
+      if (!formData.plan) {
+        toast.error("Silakan pilih paket lisensi terlebih dahulu.");
+        return;
+      }
+      setSlugError(null);
+    }
+    if (step === 2) {
       if (!formData.name || !formData.slug) return;
       const isAvailable = await checkSlugAvailable(formData.slug);
       if (!isAvailable) {

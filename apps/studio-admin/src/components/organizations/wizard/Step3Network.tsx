@@ -64,36 +64,55 @@ export function Step3Network({
       </div>
 
       {/* LDAP / SSO Toggle */}
-      <div
-        onClick={() => setFormData((prev) => ({ ...prev, ldapEnabled: !prev.ldapEnabled }))}
-        className={cn(
-          "p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between",
-          formData.ldapEnabled ? "bg-primary/10 border-primary" : "bg-card/60 border-border"
-        )}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "size-8 rounded-lg flex items-center justify-center",
-              formData.ldapEnabled ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-            )}
-          >
-            <Layers className="size-4" />
+      {formData.plan === "FREE" || formData.plan === "STARTER" ? (
+        <div className="p-3.5 rounded-xl border border-border bg-card/40 opacity-70 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-lg flex items-center justify-center bg-muted text-muted-foreground">
+              <Layers className="size-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground">Enterprise LDAP / Active Directory Sync</p>
+              <p className="text-[10px] text-muted-foreground">
+                Integrasi SSO & LDAP tersedia pada tier <strong className="text-foreground">PRO</strong> dan <strong className="text-foreground">ENTERPRISE</strong>.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-bold text-foreground">Enterprise LDAP / Active Directory Sync</p>
-            <p className="text-[10px] text-muted-foreground">Federasikan otentikasi staf ISP dengan direktori perusahaan.</p>
-          </div>
+          <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground">
+            PRO / ENTERPRISE
+          </Badge>
         </div>
+      ) : (
         <div
+          onClick={() => setFormData((prev) => ({ ...prev, ldapEnabled: !prev.ldapEnabled }))}
           className={cn(
-            "size-4 rounded-full border flex items-center justify-center",
-            formData.ldapEnabled ? "border-primary bg-primary text-primary-foreground" : "border-border"
+            "p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between",
+            formData.ldapEnabled ? "bg-primary/10 border-primary" : "bg-card/60 border-border"
           )}
         >
-          {formData.ldapEnabled && <Check className="size-2.5" />}
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "size-8 rounded-lg flex items-center justify-center",
+                formData.ldapEnabled ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+              )}
+            >
+              <Layers className="size-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground">Enterprise LDAP / Active Directory Sync</p>
+              <p className="text-[10px] text-muted-foreground">Federasikan otentikasi staf ISP dengan direktori perusahaan.</p>
+            </div>
+          </div>
+          <div
+            className={cn(
+              "size-4 rounded-full border flex items-center justify-center",
+              formData.ldapEnabled ? "border-primary bg-primary text-primary-foreground" : "border-border"
+            )}
+          >
+            {formData.ldapEnabled && <Check className="size-2.5" />}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* LDAP Form Fields */}
       {formData.ldapEnabled && (

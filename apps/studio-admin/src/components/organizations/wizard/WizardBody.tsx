@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Step1Identity } from "./Step1Identity";
-import { Step2Plan } from "./Step2Plan";
+import { Step1Plan } from "./Step1Plan";
+import { Step2Identity } from "./Step2Identity";
 import { Step3Network } from "./Step3Network";
 import { Step4Admin } from "./Step4Admin";
 import { Step5Success } from "./Step5Success";
@@ -53,8 +53,10 @@ export function WizardBody({
 }: WizardBodyProps) {
   return (
     <div className="p-6 space-y-4 max-h-[68vh] overflow-y-auto custom-scrollbar">
-      {step === 1 && (
-        <Step1Identity
+      {step === 1 && <Step1Plan formData={formData} setFormData={setFormData} />}
+
+      {step === 2 && (
+        <Step2Identity
           formData={formData}
           setFormData={setFormData}
           slugError={slugError}
@@ -62,8 +64,6 @@ export function WizardBody({
           onRegenerateRandomSlug={onRegenerateRandomSlug}
         />
       )}
-
-      {step === 2 && <Step2Plan formData={formData} setFormData={setFormData} />}
 
       {step === 3 && (
         <Step3Network

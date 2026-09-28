@@ -8,12 +8,12 @@ interface WizardHeaderProps {
 
 const STEP_TITLES: Record<number, { title: string; desc: string }> = {
   1: {
-    title: "Langkah 1: Identitas & Subdomain Portal",
-    desc: "Daftarkan identitas ISP mitra dan alamat subdomain akses GIS portal.",
+    title: "Langkah 1: Paket Lisensi & Hardware Quota",
+    desc: "Pilih tier langganan untuk menentukan batas kapasitas hardware (OLT & ODP) serta fitur platform.",
   },
   2: {
-    title: "Langkah 2: Paket Lisensi & Hardware Quota",
-    desc: "Tentukan alokasi batas kapasitas hardware (OLT & ODP) serta MinIO storage.",
+    title: "Langkah 2: Identitas & Subdomain Portal",
+    desc: "Daftarkan identitas ISP mitra dan alamat subdomain akses GIS portal.",
   },
   3: {
     title: "Langkah 3: Integrasi Jaringan & VPN Mesh",
