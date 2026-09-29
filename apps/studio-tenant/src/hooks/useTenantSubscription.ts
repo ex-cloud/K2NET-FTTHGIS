@@ -96,6 +96,60 @@ function getPlanDisplayName(summary: SubscriptionSummary | null | undefined, tie
   return "PRO";
 }
 
+function computeGraceDays(gracePeriodUntil?: string | null): number {
+  if (!gracePeriodUntil) return 0;
+  try {
+    const diffMs = new Date(gracePeriodUntil).getTime() - Date.now();
+    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  } catch {
+    return 0;
+  }
+}
+
+function resolveRawPlanString(summary?: SubscriptionSummary | null, resolvedTier?: string, infoTier?: string): string {
+  return summary?.planName || summary?.planTier || resolvedTier || infoTier || "free";
+}
+
+function resolvePlanName(summary?: SubscriptionSummary | null, resolvedTier?: string, tier?: NormalizedTier): string {
+  if (summary?.planName) return summary.planName;
+  if (resolvedTier) return resolvedTier.toUpperCase();
+  return getPlanDisplayName(summary, tier || "free");
+}
+
+function resolveFeatureGates(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier) {
+  const isProOrEnterprise = tier === "pro" || tier === "enterprise";
+  const isEnterprise = tier === "enterprise";
+  return {
+    isProOrEnterprise,
+    isEnterprise,
+    canAccessHeatmap: isProOrEnterprise,
+    canAccessCadBuilder: isProOrEnterprise,
+    canAccessOltPoller: isProOrEnterprise,
+    canAccessAiAssistant: isEnterprise,
+    canAccessCustomDomain: isEnterprise,
+    canAccessSso: summary?.hasSso ?? isProOrEnterprise,
+    canAccessApi: summary?.hasApiAccess ?? (tier !== "free"),
+  };
+}
+
+function resolveLifecycleStats(summary: SubscriptionSummary | null | undefined, status: string, isTrialExpired: boolean) {
+  const gracePeriodUntil = summary?.gracePeriodUntil || null;
+  const graceDaysRemaining = computeGraceDays(gracePeriodUntil);
+  const isGracePeriodActive = isTrialExpired && graceDaysRemaining > 0;
+  const trialDaysRemaining = summary?.trialDaysRemaining ?? (status === "TRIAL" ? 14 : 0);
+  const isBoosterActive = Boolean(summary?.isBoosterActive);
+  const boosterDaysRemaining = summary?.boosterDaysRemaining ?? 0;
+
+  return {
+    gracePeriodUntil,
+    graceDaysRemaining,
+    isGracePeriodActive,
+    trialDaysRemaining,
+    isBoosterActive,
+    boosterDaysRemaining,
+  };
+}
+
 export function useTenantSubscription() {
   const { planTier: infoTier, resolvedTenant } = useTenantInfo();
   const orgSlug = resolvedTenant?.slug || getCurrentOrgSlug() || "system";
@@ -122,29 +176,15 @@ export function useTenantSubscription() {
     staleTime: 60 * 1000,
   });
 
-  const rawPlanString =
-    summary?.planName ||
-    summary?.planTier ||
-    resolvedTenant?.planTier ||
-    infoTier ||
-    "free";
-
+  const rawPlanString = resolveRawPlanString(summary, resolvedTenant?.planTier, infoTier);
   const tier = React.useMemo(() => parseTier(rawPlanString), [rawPlanString]);
   const status = summary?.status || resolvedTenant?.status || (tier === "free" ? "TRIAL" : "ACTIVE");
   const isTrialExpired = Boolean(summary?.isTrialExpired || status === "TRIAL_EXPIRED");
 
-  const gracePeriodUntil = summary?.gracePeriodUntil || null;
-  const graceDaysRemaining = React.useMemo(() => {
-    if (!gracePeriodUntil) return 0;
-    try {
-      const diffMs = new Date(gracePeriodUntil).getTime() - Date.now();
-      return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-    } catch {
-      return 0;
-    }
-  }, [gracePeriodUntil]);
-
-  const isGracePeriodActive = isTrialExpired && graceDaysRemaining > 0;
+  const lifecycle = React.useMemo(
+    () => resolveLifecycleStats(summary, status, isTrialExpired),
+    [summary, status, isTrialExpired]
+  );
 
   const { maxProjects, usedProjects, projectPercentage, canCreateProject } = React.useMemo(
     () => getProjectLimits(summary, tier, isTrialExpired, status),
@@ -161,13 +201,11 @@ export function useTenantSubscription() {
     [summary, tier]
   );
 
-  const isProOrEnterprise = tier === "pro" || tier === "enterprise";
-  const isEnterprise = tier === "enterprise";
-  const planName = React.useMemo(() => {
-    if (summary?.planName) return summary.planName;
-    if (resolvedTenant?.planTier) return resolvedTenant.planTier.toUpperCase();
-    return getPlanDisplayName(summary, tier);
-  }, [summary, resolvedTenant?.planTier, tier]);
+  const features = React.useMemo(() => resolveFeatureGates(summary, tier), [summary, tier]);
+  const planName = React.useMemo(
+    () => resolvePlanName(summary, resolvedTenant?.planTier, tier),
+    [summary, resolvedTenant?.planTier, tier]
+  );
 
   return {
     summary,
@@ -178,12 +216,12 @@ export function useTenantSubscription() {
     isOverQuota: Boolean(summary?.isOverQuota),
     isSoftLocked: Boolean(summary?.isSoftLocked),
     isTrialExpired,
-    isGracePeriodActive,
-    gracePeriodUntil,
-    graceDaysRemaining,
-    trialDaysRemaining: summary?.trialDaysRemaining ?? (status === "TRIAL" ? 14 : 0),
-    isBoosterActive: Boolean(summary?.isBoosterActive),
-    boosterDaysRemaining: summary?.boosterDaysRemaining ?? 0,
+    isGracePeriodActive: lifecycle.isGracePeriodActive,
+    gracePeriodUntil: lifecycle.gracePeriodUntil,
+    graceDaysRemaining: lifecycle.graceDaysRemaining,
+    trialDaysRemaining: lifecycle.trialDaysRemaining,
+    isBoosterActive: lifecycle.isBoosterActive,
+    boosterDaysRemaining: lifecycle.boosterDaysRemaining,
 
     // Project limits
     usedProjects,
@@ -202,13 +240,13 @@ export function useTenantSubscription() {
     storagePercentage,
 
     // Feature gates
-    canAccessHeatmap: isProOrEnterprise,
-    canAccessCadBuilder: isProOrEnterprise,
-    canAccessOltPoller: isProOrEnterprise,
-    canAccessAiAssistant: isEnterprise,
-    canAccessCustomDomain: isEnterprise,
-    canAccessSso: summary?.hasSso ?? isProOrEnterprise,
-    canAccessApi: summary?.hasApiAccess ?? (tier !== "free"),
+    canAccessHeatmap: features.canAccessHeatmap,
+    canAccessCadBuilder: features.canAccessCadBuilder,
+    canAccessOltPoller: features.canAccessOltPoller,
+    canAccessAiAssistant: features.canAccessAiAssistant,
+    canAccessCustomDomain: features.canAccessCustomDomain,
+    canAccessSso: features.canAccessSso,
+    canAccessApi: features.canAccessApi,
 
     isLoading,
     isError,

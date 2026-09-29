@@ -165,7 +165,15 @@ public class Organization {
     public boolean isSoftLocked() {
         if (dunningLevel != null && dunningLevel >= 3) return true;
         if (status == OrganizationStatus.SUSPENDED) return true;
-        if (isTrialExpired()) return true;
+        if (isTrialExpired()) {
+            if (gracePeriodUntil != null) {
+                return gracePeriodUntil.isBefore(java.time.LocalDateTime.now());
+            }
+            if (trialExpiresAt != null) {
+                return trialExpiresAt.plusDays(16).isBefore(java.time.LocalDateTime.now());
+            }
+            return true;
+        }
         return false;
     }
 

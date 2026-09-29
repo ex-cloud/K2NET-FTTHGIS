@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { toBackendPlanName, type EnrichedOrganization } from "../../types";
-import { useTenantSubscription } from "@/hooks/useTenantSubscription";
+import { useTenantSubscription, type TenantSubscriptionSummary } from "@/hooks/useTenantSubscription";
 import type { ProrationEstimate } from "@/lib/actions/gateways";
 import type { SubscriptionPlanInfo, TenantInvoice } from "./billing-types";
 
@@ -51,6 +51,65 @@ function generateMockInvoices(currentTier: string, planPrice?: number): TenantIn
   ];
 }
 
+function resolvePlanTierInfo(summary: TenantSubscriptionSummary | null | undefined, org: EnrichedOrganization) {
+  const rawPlanName = summary?.planName || toBackendPlanName(org.planTier) || "";
+  const currentTier =
+    summary?.planTier ||
+    org.planTier ||
+    (rawPlanName ? (rawPlanName.toUpperCase() === "FREE" ? "Free Trial" : rawPlanName) : "Starter");
+  const isFreeOrTrial =
+    currentTier.toLowerCase().includes("free") || currentTier.toLowerCase().includes("trial");
+  const currentPlanCode = rawPlanName || (isFreeOrTrial ? "FREE" : currentTier);
+  return { currentTier, currentPlanCode };
+}
+
+function findMatchingPlan(
+  availablePlans: SubscriptionPlanInfo[],
+  currentTier: string,
+  currentPlanCode: string
+): SubscriptionPlanInfo | undefined {
+  const normCurrentTier = currentTier.toLowerCase().trim();
+  const normCurrentCode = currentPlanCode.toLowerCase().trim();
+  return availablePlans.find((p) => {
+    const normCode = p.code.toLowerCase().trim();
+    const normName = p.name.toLowerCase().trim();
+    if (normCurrentCode && (normCode === normCurrentCode || normName === normCurrentCode)) return true;
+    if (normCode === normCurrentTier || normName === normCurrentTier) return true;
+    if (
+      (normCode === "free" || normName === "free") &&
+      (normCurrentTier.includes("free") || normCurrentTier.includes("trial"))
+    ) {
+      return true;
+    }
+    return false;
+  });
+}
+
+function calculateUsageMetrics(summary: TenantSubscriptionSummary | null | undefined, org: EnrichedOrganization) {
+  const usedOlts = summary?.usedOlts ?? org.usedOlts;
+  const usedOdps = summary?.usedOdps ?? org.usedOdps;
+  const effectiveMaxOlts = summary?.effectiveMaxOlts ?? org.maxOlts;
+  const effectiveMaxOdps = summary?.effectiveMaxOdps ?? org.maxOdps;
+  const maxStorageGb = summary?.maxStorageGb ?? org.maxStorageGb;
+  const usedStorageGb = summary?.usedStorageGb ?? org.usedStorageGb;
+
+  const oltPct = effectiveMaxOlts > 0 ? Math.round((usedOlts / effectiveMaxOlts) * 100) : 0;
+  const odpPct = effectiveMaxOdps > 0 ? Math.round((usedOdps / effectiveMaxOdps) * 100) : 0;
+  const storagePct = maxStorageGb > 0 ? Math.round((usedStorageGb / maxStorageGb) * 100) : 0;
+
+  return {
+    usedOlts,
+    usedOdps,
+    effectiveMaxOlts,
+    effectiveMaxOdps,
+    maxStorageGb,
+    usedStorageGb,
+    oltPct,
+    odpPct,
+    storagePct,
+  };
+}
+
 export function useOrgBillingState(org: EnrichedOrganization) {
   const {
     summary,
@@ -81,20 +140,12 @@ export function useOrgBillingState(org: EnrichedOrganization) {
   const [dunningNotes, setDunningNotes] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
 
-  const rawPlanName = summary?.planName || toBackendPlanName(org.planTier) || "";
-  const currentTier = summary?.planTier || org.planTier || (rawPlanName ? (rawPlanName.toUpperCase() === "FREE" ? "Free Trial" : rawPlanName) : "Starter");
-  const currentPlanCode = rawPlanName || (currentTier.toLowerCase().includes("free") || currentTier.toLowerCase().includes("trial") ? "FREE" : currentTier);
+  const { currentTier, currentPlanCode } = useMemo(
+    () => resolvePlanTierInfo(summary, org),
+    [summary, org]
+  );
 
-  const usedOlts = summary?.usedOlts ?? org.usedOlts;
-  const usedOdps = summary?.usedOdps ?? org.usedOdps;
-  const effectiveMaxOlts = summary?.effectiveMaxOlts ?? org.maxOlts;
-  const effectiveMaxOdps = summary?.effectiveMaxOdps ?? org.maxOdps;
-  const maxStorageGb = summary?.maxStorageGb ?? org.maxStorageGb;
-  const usedStorageGb = summary?.usedStorageGb ?? org.usedStorageGb;
-
-  const oltPct = effectiveMaxOlts > 0 ? Math.round((usedOlts / effectiveMaxOlts) * 100) : 0;
-  const odpPct = effectiveMaxOdps > 0 ? Math.round((usedOdps / effectiveMaxOdps) * 100) : 0;
-  const storagePct = maxStorageGb > 0 ? Math.round((usedStorageGb / maxStorageGb) * 100) : 0;
+  const usage = useMemo(() => calculateUsageMetrics(summary, org), [summary, org]);
 
   const invoices = useMemo(() => {
     return generateMockInvoices(currentTier, summary?.planPrice);
@@ -103,27 +154,8 @@ export function useOrgBillingState(org: EnrichedOrganization) {
   const handleSelectPlanFromSheet = async (plan: SubscriptionPlanInfo) => {
     setSelectedPlanTarget(plan);
 
-    const currentPlanObj = availablePlans.find((p) => {
-      const normPlanCode = p.code.toLowerCase().trim();
-      const normPlanName = p.name.toLowerCase().trim();
-      const normCurrentTier = currentTier.toLowerCase().trim();
-      const normCurrentCode = currentPlanCode.toLowerCase().trim();
-
-      if (normCurrentCode && (normPlanCode === normCurrentCode || normPlanName === normCurrentCode)) {
-        return true;
-      }
-      if (normPlanCode === normCurrentTier || normPlanName === normCurrentTier) {
-        return true;
-      }
-      if (
-        (normPlanCode === "free" || normPlanName === "free") &&
-        (normCurrentTier.includes("free") || normCurrentTier.includes("trial"))
-      ) {
-        return true;
-      }
-      return false;
-    });
-    const currentPrice = currentPlanObj ? currentPlanObj.numericPrice : (summary?.planPrice || 0);
+    const currentPlanObj = findMatchingPlan(availablePlans, currentTier, currentPlanCode);
+    const currentPrice = currentPlanObj ? currentPlanObj.numericPrice : summary?.planPrice || 0;
     const isDowngrade = plan.numericPrice < currentPrice;
 
     setIsDowngradeMode(isDowngrade);
@@ -216,15 +248,15 @@ export function useOrgBillingState(org: EnrichedOrganization) {
     subLoading,
     currentTier,
     currentPlanCode,
-    usedOlts,
-    usedOdps,
-    effectiveMaxOlts,
-    effectiveMaxOdps,
-    maxStorageGb,
-    usedStorageGb,
-    oltPct,
-    odpPct,
-    storagePct,
+    usedOlts: usage.usedOlts,
+    usedOdps: usage.usedOdps,
+    effectiveMaxOlts: usage.effectiveMaxOlts,
+    effectiveMaxOdps: usage.effectiveMaxOdps,
+    maxStorageGb: usage.maxStorageGb,
+    usedStorageGb: usage.usedStorageGb,
+    oltPct: usage.oltPct,
+    odpPct: usage.odpPct,
+    storagePct: usage.storagePct,
     invoices,
     isChangePlanSheetOpen,
     setIsChangePlanSheetOpen,
