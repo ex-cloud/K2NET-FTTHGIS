@@ -93,12 +93,13 @@ export function BillingChangePlanSheet({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
+        showCloseButton={false}
         className="w-[96vw] sm:max-w-[900px] xl:max-w-[900px] flex flex-col p-0 bg-card/95 backdrop-blur-2xl border-l border-border h-full overflow-hidden"
       >
         {/* Top Header - Fixed Sleek Supabase Style with Groove Seam */}
         <div className="flex items-center justify-between px-6 py-3.5 border-groove-b shrink-0 bg-card/80 backdrop-blur-md">
           <SheetHeader className="p-0 space-y-0 text-left">
-            <SheetTitle className="text-sm md:text-base font-semibold text-foreground tracking-tight">
+            <SheetTitle className="text-sm font-semibold text-foreground tracking-tight">
               Change subscription plan for {orgName}
             </SheetTitle>
           </SheetHeader>
@@ -123,7 +124,7 @@ export function BillingChangePlanSheet({
           ) : (
             <div className="space-y-4">
               {/* Top 3 Cards Grid (Free, Starter, Pro) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                 {topPlans.map((plan) => {
                   const isCurrent = isPlanCurrent(plan);
                   const isDowngrade = !isCurrent && plan.numericPrice < currentPrice;

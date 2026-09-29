@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Button, Card } from "@k2net/ui";
-import { Check } from "lucide-react";
+import { Check, Star } from "lucide-react";
 import type { SubscriptionPlanInfo } from "./billing-types";
 
 interface BillingTopPlanCardProps {
@@ -24,11 +24,21 @@ export function BillingTopPlanCard({
     <Card
       glowingEffect
       className={`relative p-5 flex flex-col justify-between transition-all duration-300 ${
-        isStarter ? "border-border/90 bg-card/75 shadow-2xs" : "border-border bg-card/60"
+        isPopular
+          ? "border-primary/55 dark:border-primary/55 ring-1 ring-primary/25 bg-card/85 shadow-[0_0_20px_rgba(16,185,129,0.08)]"
+          : "border-border bg-card/60"
       }`}
     >
+      {/* Floating Most Popular Badge on Top Border */}
+      {isPopular && !isCurrent && (
+        <div className="absolute -top-2.5 right-4 z-20 inline-flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs tracking-wider uppercase font-mono select-none">
+          <Star className="h-2.5 w-2.5 fill-current text-current" />
+          <span>MOST POPULAR</span>
+        </div>
+      )}
+
       <div className="space-y-3.5">
-        {/* Header Row: Plan Name + Badge (Supabase Style) */}
+        {/* Header Row: Plan Name + Status */}
         <div className="flex items-center justify-between gap-2 min-h-[20px]">
           <span className="text-xs font-bold font-mono tracking-wider text-primary uppercase">
             {plan.name}
@@ -37,12 +47,6 @@ export function BillingTopPlanCard({
           {isCurrent && (
             <span className="text-[11px] text-muted-foreground font-medium">
               Current plan
-            </span>
-          )}
-
-          {isPopular && !isCurrent && (
-            <span className="text-[10.5px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-              Most Popular
             </span>
           )}
         </div>
@@ -60,7 +64,7 @@ export function BillingTopPlanCard({
           onClick={() => !isCurrent && onSelectPlan(plan)}
           className={`w-full text-xs font-semibold h-8 rounded-md transition-all ${
             isCurrent
-              ? "bg-muted/50 text-muted-foreground border border-border/80 cursor-not-allowed opacity-80 shadow-none"
+              ? "bg-muted/40 text-muted-foreground border border-border/90 dark:border-border font-medium cursor-not-allowed shadow-2xs"
               : isDowngrade
                 ? "bg-muted hover:bg-muted/80 text-foreground border border-border cursor-pointer"
                 : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs cursor-pointer"

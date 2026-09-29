@@ -147,7 +147,7 @@ export function BillingEnterprisePlanCard({
               onClick={() => !isCurrent && onSelectPlan(plan)}
               className={`w-full text-xs font-semibold h-8 rounded-md gap-1.5 ${
                 isCurrent
-                  ? "bg-muted/50 text-muted-foreground border border-border/80 cursor-not-allowed opacity-80 shadow-none"
+                  ? "bg-muted/40 text-muted-foreground border border-border/90 dark:border-border font-medium cursor-not-allowed shadow-2xs"
                   : isDowngrade
                     ? "bg-muted hover:bg-muted/80 text-foreground border border-border cursor-pointer"
                     : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs cursor-pointer"
