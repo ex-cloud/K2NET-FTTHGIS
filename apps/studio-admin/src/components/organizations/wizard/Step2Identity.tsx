@@ -116,8 +116,8 @@ export function Step2Identity({
               variant="ghost"
               size="sm"
               onClick={onRegenerateRandomSlug}
-              className="h-6 w-6 p-0 ml-1 text-muted-foreground hover:text-primary"
-              title="Acak ulang 20 huruf"
+              className="h-6 w-6 p-0 ml-1 text-muted-foreground hover:text-primary transition-colors"
+              title="Acak ulang kombinasi 20 huruf sandbox"
             >
               <RefreshCw className="size-3" />
             </Button>
@@ -128,7 +128,7 @@ export function Step2Identity({
           <span>
             {formData.plan === "FREE" ? (
               <span className="text-amber-500 font-medium flex items-center gap-1">
-                <Lock className="size-2.5" /> Free Tier terkunci ke Random 20-Huruf
+                <Lock className="size-2.5 shrink-0" /> Free Tier terkunci ke 20-Huruf Acak Sandbox (klik 🔄 untuk acak ulang)
               </span>
             ) : formData.slugMode === "random" ? (
               "20 Karakter Alfabet Murni Kriptografis (Zero Friction)"

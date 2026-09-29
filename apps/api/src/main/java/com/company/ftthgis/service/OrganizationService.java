@@ -182,7 +182,18 @@ public class OrganizationService {
 
         String finalSlug;
         String slugType;
-        if ("FREE".equalsIgnoreCase(targetPlanName) || request.getSlug() == null || request.getSlug().trim().isBlank()) {
+        if ("FREE".equalsIgnoreCase(targetPlanName)) {
+            String candidateSlug = request.getSlug() != null ? request.getSlug().trim().toLowerCase() : "";
+            if (candidateSlug.matches("^[a-z]{20}$") && !randomSlugGenerator.isReserved(candidateSlug)
+                    && !organizationRepository.existsBySlug(candidateSlug)
+                    && (organizationSlugAliasRepository == null || !organizationSlugAliasRepository.existsByOldSlug(candidateSlug))) {
+                finalSlug = candidateSlug;
+            } else {
+                finalSlug = randomSlugGenerator.generateUniqueSlug(organizationRepository, organizationSlugAliasRepository);
+            }
+            slugType = "RANDOM";
+            log.info("🎲 Assigned 20-char random slug '{}' for organization '{}'", finalSlug, request.getName());
+        } else if (request.getSlug() == null || request.getSlug().trim().isBlank()) {
             finalSlug = randomSlugGenerator.generateUniqueSlug(organizationRepository, organizationSlugAliasRepository);
             slugType = "RANDOM";
             log.info("🎲 Auto-assigned 20-char random slug '{}' for organization '{}'", finalSlug, request.getName());
@@ -330,10 +341,17 @@ public class OrganizationService {
             log.error("❌ CRITICAL: Keycloak provisioning failed for {}. ROLLING BACK database changes.",
                     saved.getSlug());
             log.error("Error Detail: {}", e.getMessage());
+            try {
+                String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
+                keycloakService.deleteRealm(effectiveRealmKey);
+                log.info("🧹 Cleaned up orphan Keycloak realm '{}' after provisioning failure.", effectiveRealmKey);
+            } catch (Exception cleanupEx) {
+                log.warn("Failed to delete orphan realm '{}' during rollback: {}", saved.getSlug(), cleanupEx.getMessage());
+            }
             // Throwing RuntimeException here triggers @Transactional rollback for the
             // entire DB operation
             throw new RuntimeException(
-                    "Organization creation failed due to security provisioning error: " + e.getMessage());
+                    "Organization creation failed due to security provisioning error: " + e.getMessage(), e);
         }
 
         return java.util.Map.of(
