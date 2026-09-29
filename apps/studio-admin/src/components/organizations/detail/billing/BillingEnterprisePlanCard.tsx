@@ -50,7 +50,9 @@ export function BillingEnterprisePlanCard({
         </div>
 
         {isCurrent && (
-          <span className="text-[11px] text-muted-foreground font-medium">Current plan</span>
+          <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 border border-border px-2 py-0.5 rounded-full font-mono">
+            Current plan
+          </span>
         )}
       </div>
 
@@ -147,7 +149,7 @@ export function BillingEnterprisePlanCard({
               onClick={() => !isCurrent && onSelectPlan(plan)}
               className={`w-full text-xs font-semibold h-8 rounded-md gap-1.5 ${
                 isCurrent
-                  ? "bg-muted/40 text-muted-foreground border border-border/90 dark:border-border font-medium cursor-not-allowed shadow-2xs"
+                  ? "disabled:opacity-100 bg-muted/30 text-muted-foreground/80 border border-border font-medium cursor-not-allowed shadow-2xs"
                   : isDowngrade
                     ? "bg-muted hover:bg-muted/80 text-foreground border border-border cursor-pointer"
                     : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs cursor-pointer"
