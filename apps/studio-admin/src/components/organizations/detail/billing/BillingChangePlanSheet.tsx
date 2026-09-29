@@ -116,7 +116,7 @@ export function BillingChangePlanSheet({
         </div>
 
         {/* Middle Body - Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto p-5 md:p-3 space-y-5">
           {plansLoading ? (
             <BillingPlanLoadingSkeleton />
           ) : plansError || availablePlans.length === 0 ? (
