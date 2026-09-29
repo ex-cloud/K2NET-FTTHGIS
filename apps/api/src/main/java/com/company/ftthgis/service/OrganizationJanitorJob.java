@@ -26,6 +26,7 @@ public class OrganizationJanitorJob {
     private final OrganizationRepository organizationRepository;
     private final OrganizationConfigRepository organizationConfigRepository;
     private final ProjectRepository projectRepository;
+    private final OrganizationService organizationService;
 
     @Scheduled(cron = "0 */5 * * * *") // Every 5 minutes
     @Transactional
@@ -36,19 +37,46 @@ public class OrganizationJanitorJob {
 
         for (Organization org : allOrgs) {
             try {
-                // 1. Check Expired Starter Trials
-                if (org.getStatus() == Organization.OrganizationStatus.TRIAL || org.getStatus() == Organization.OrganizationStatus.ACTIVE) {
+                // 1. Phase 1 -> Phase 2: Check Expired Starter Trials (14 Days)
+                if (org.getStatus() == Organization.OrganizationStatus.TRIAL ||
+                   (org.getStatus() == Organization.OrganizationStatus.ACTIVE && org.getTrialExpiresAt() != null &&
+                    "FREE".equalsIgnoreCase(org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : ""))) {
                     if (org.getTrialExpiresAt() != null && org.getTrialExpiresAt().isBefore(now)) {
-                        log.warn("⏳ JANITOR: Trial expired for '{}'. Moving to TRIAL_EXPIRED mode.", org.getSlug());
+                        log.warn("⏳ JANITOR: Trial expired for '{}'. Moving to TRIAL_EXPIRED mode (Grace Period: 16 days).", org.getSlug());
                         org.setStatus(Organization.OrganizationStatus.TRIAL_EXPIRED);
                         if (org.getGracePeriodUntil() == null) {
-                            org.setGracePeriodUntil(now.plusDays(7)); // 7-day grace period
+                            // 16 days grace period gives total 30 days window from trial start
+                            org.setGracePeriodUntil(now.plusDays(16));
                         }
                         organizationRepository.save(org);
                     }
                 }
 
-                // 2. Check Expired Emergency Boosters (Kondisi 6 - Bursting Timeout)
+                // 2. Phase 2 -> Phase 3: Check Hard Purge Cut-Off for Inactive/Abandoned Free Trial Tenants (> Day 30)
+                if (org.getStatus() == Organization.OrganizationStatus.TRIAL_EXPIRED) {
+                    if (org.getGracePeriodUntil() != null && org.getGracePeriodUntil().isBefore(now)) {
+                        // Safety Guards: Never purge system/root organization or paid active tenants
+                        boolean isProtectedRoot = "default".equalsIgnoreCase(org.getSlug()) ||
+                                "00000000-0000-0000-0000-000000000001".equals(org.getId().toString());
+                        boolean isPaidPlan = org.getSubscriptionPlan() != null &&
+                                !"FREE".equalsIgnoreCase(org.getSubscriptionPlan().getName()) &&
+                                !"TRIAL".equalsIgnoreCase(org.getSubscriptionPlan().getName());
+
+                        if (!isProtectedRoot && !isPaidPlan) {
+                            log.warn("🚨 JANITOR: 30-day Free Trial Cut-Off date reached for tenant '{}' (Grace expired at {}). Initiating nuclear auto-purge...",
+                                    org.getSlug(), org.getGracePeriodUntil());
+                            try {
+                                organizationService.purgeOrganizationInternally(org, "Automated 30-Day Free Trial Inactivity Cut-off Purge");
+                                log.info("💥 JANITOR: Automated nuclear purge successfully executed for '{}'", org.getSlug());
+                            } catch (Exception purgeEx) {
+                                log.error("❌ JANITOR: Failed to auto-purge tenant '{}': {}", org.getSlug(), purgeEx.getMessage(), purgeEx);
+                            }
+                            continue; // Entity is nuked, skip further evaluation for this org
+                        }
+                    }
+                }
+
+                // 3. Check Expired Emergency Boosters (Kondisi 6 - Bursting Timeout)
                 if (org.getBoosterExpiresAt() != null && org.getBoosterExpiresAt().isBefore(now)) {
                     log.info("⏰ JANITOR: Booster expired for '{}'. Re-evaluating base capacity...", org.getSlug());
                     
@@ -77,7 +105,7 @@ public class OrganizationJanitorJob {
                     organizationRepository.save(org);
                 }
 
-                // 3. Check Overdue Grace Period Expiration (Kondisi 5 - Dunning Soft-Lock)
+                // 4. Check Overdue Grace Period Expiration (Kondisi 5 - Dunning Soft-Lock)
                 if (org.getGracePeriodUntil() != null && org.getGracePeriodUntil().isBefore(now)) {
                     if (org.getDunningLevel() != null && org.getDunningLevel() >= 3) {
                         if (org.getStatus() != Organization.OrganizationStatus.SUSPENDED) {

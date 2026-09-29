@@ -38,8 +38,14 @@ export function OrgStatusBadge({ status, trialDaysLeft }: OrgStatusBadgeProps) {
           <span>Overdue</span>
         </Badge>
       );
-    case "SUSPENDED":
     case "TRIAL_EXPIRED":
+      return (
+        <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-500 font-mono text-[10px] gap-1 px-2 py-0.5">
+          <PauseCircle className="h-2.5 w-2.5" />
+          <span>Trial Expired</span>
+        </Badge>
+      );
+    case "SUSPENDED":
       return (
         <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive font-mono text-[10px] gap-1 px-2 py-0.5">
           <PauseCircle className="h-2.5 w-2.5" />

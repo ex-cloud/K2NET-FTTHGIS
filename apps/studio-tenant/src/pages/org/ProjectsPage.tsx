@@ -20,7 +20,7 @@ import { ProjectCreateWizard } from "../../components/project/ProjectCreateWizar
 export function ProjectsPage() {
   const navigate = useNavigate();
   const { projects, isLoading, refetch, deleteProject } = useProjects();
-  const { canCreateProject, usedProjects, maxProjects, tier } = useTenantSubscription();
+  const { canCreateProject, usedProjects, maxProjects, tier, isTrialExpired, status } = useTenantSubscription();
 
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = React.useState(false);
@@ -46,7 +46,7 @@ export function ProjectsPage() {
   }, [projects, searchQuery, statusFilter]);
 
   const handleOpenCreateProject = () => {
-    if (!canCreateProject) {
+    if (isTrialExpired || status === "TRIAL_EXPIRED" || !canCreateProject) {
       setUpgradeModalOpen(true);
       return;
     }
@@ -207,12 +207,16 @@ export function ProjectsPage() {
         onOpenChange={setCreateModalOpen}
       />
 
-      {/* Upgrade Quota Limit Modal */}
+      {/* Upgrade Quota Limit & Trial Paused Modal */}
       <FeatureUpgradeModal
         open={upgradeModalOpen}
         onOpenChange={setUpgradeModalOpen}
-        featureName="Kapasitas Proyek"
-        featureDescription={`Organisasi Anda telah mencapai batas maksimum ${usedProjects} dari ${maxProjects} proyek aktif untuk paket ${tier.toUpperCase()}. Tingkatkan ke paket yang lebih tinggi untuk membuat proyek FTTH baru.`}
+        featureName={isTrialExpired || status === "TRIAL_EXPIRED" ? "Masa Trial Telah Selesai" : "Kapasitas Proyek"}
+        featureDescription={
+          isTrialExpired || status === "TRIAL_EXPIRED"
+            ? "Masa evaluasi 14 hari telah berakhir dan proyek saat ini di-pause dalam mode Read-Only. Tingkatkan paket langganan Anda untuk membuat dan mengelola proyek jaringan secara penuh."
+            : `Organisasi Anda telah mencapai batas maksimum ${usedProjects} dari ${maxProjects} proyek aktif untuk paket ${tier.toUpperCase()}. Tingkatkan ke paket yang lebih tinggi untuk membuat proyek FTTH baru.`
+        }
         requiredTier={tier === "free" ? "starter" : tier === "starter" ? "pro" : "enterprise"}
         currentTier={tier}
         onUpgradeClick={() => navigate({ to: "/billing" })}

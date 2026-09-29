@@ -59,12 +59,13 @@ function parseTier(rawInput?: string): NormalizedTier {
   return "free";
 }
 
-function getProjectLimits(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier) {
+function getProjectLimits(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier, isTrialExpired: boolean, status: string) {
   const defaultMax = tier === "free" ? 1 : tier === "starter" ? 2 : tier === "enterprise" ? 25 : 6;
   const maxProjects = summary?.effectiveMaxOlts ?? defaultMax;
   const usedProjects = summary?.usedOlts ?? 0;
   const projectPercentage = maxProjects > 0 ? Math.min(100, Math.round((usedProjects / maxProjects) * 100)) : 0;
-  const canCreateProject = usedProjects < maxProjects && !summary?.isSoftLocked;
+  const isBlocked = isTrialExpired || status === "TRIAL_EXPIRED" || status === "SUSPENDED" || Boolean(summary?.isSoftLocked);
+  const canCreateProject = usedProjects < maxProjects && !isBlocked;
 
   return { maxProjects, usedProjects, projectPercentage, canCreateProject };
 }
@@ -129,10 +130,25 @@ export function useTenantSubscription() {
     "free";
 
   const tier = React.useMemo(() => parseTier(rawPlanString), [rawPlanString]);
+  const status = summary?.status || resolvedTenant?.status || (tier === "free" ? "TRIAL" : "ACTIVE");
+  const isTrialExpired = Boolean(summary?.isTrialExpired || status === "TRIAL_EXPIRED");
+
+  const gracePeriodUntil = summary?.gracePeriodUntil || null;
+  const graceDaysRemaining = React.useMemo(() => {
+    if (!gracePeriodUntil) return 0;
+    try {
+      const diffMs = new Date(gracePeriodUntil).getTime() - Date.now();
+      return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    } catch {
+      return 0;
+    }
+  }, [gracePeriodUntil]);
+
+  const isGracePeriodActive = isTrialExpired && graceDaysRemaining > 0;
 
   const { maxProjects, usedProjects, projectPercentage, canCreateProject } = React.useMemo(
-    () => getProjectLimits(summary, tier),
-    [summary, tier]
+    () => getProjectLimits(summary, tier, isTrialExpired, status),
+    [summary, tier, isTrialExpired, status]
   );
 
   const { maxOdps, usedOdps, odpPercentage } = React.useMemo(
@@ -153,8 +169,6 @@ export function useTenantSubscription() {
     return getPlanDisplayName(summary, tier);
   }, [summary, resolvedTenant?.planTier, tier]);
 
-  const status = summary?.status || resolvedTenant?.status || (tier === "free" ? "TRIAL" : "ACTIVE");
-
   return {
     summary,
     tier,
@@ -163,7 +177,10 @@ export function useTenantSubscription() {
     status,
     isOverQuota: Boolean(summary?.isOverQuota),
     isSoftLocked: Boolean(summary?.isSoftLocked),
-    isTrialExpired: Boolean(summary?.isTrialExpired),
+    isTrialExpired,
+    isGracePeriodActive,
+    gracePeriodUntil,
+    graceDaysRemaining,
     trialDaysRemaining: summary?.trialDaysRemaining ?? (status === "TRIAL" ? 14 : 0),
     isBoosterActive: Boolean(summary?.isBoosterActive),
     boosterDaysRemaining: summary?.boosterDaysRemaining ?? 0,

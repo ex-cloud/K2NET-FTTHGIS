@@ -154,14 +154,18 @@ public class Organization {
     }
 
     public boolean isTrialExpired() {
-        return trialExpiresAt != null && trialExpiresAt.isBefore(java.time.LocalDateTime.now());
+        return status == OrganizationStatus.TRIAL_EXPIRED
+                || (trialExpiresAt != null && trialExpiresAt.isBefore(java.time.LocalDateTime.now()));
+    }
+
+    public boolean isTrialPaused() {
+        return isTrialExpired();
     }
 
     public boolean isSoftLocked() {
         if (dunningLevel != null && dunningLevel >= 3) return true;
-        if (isTrialExpired()) {
-            return gracePeriodUntil == null || gracePeriodUntil.isBefore(java.time.LocalDateTime.now());
-        }
+        if (status == OrganizationStatus.SUSPENDED) return true;
+        if (isTrialExpired()) return true;
         return false;
     }
 

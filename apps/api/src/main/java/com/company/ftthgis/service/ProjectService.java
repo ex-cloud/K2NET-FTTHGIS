@@ -27,9 +27,12 @@ public class ProjectService {
         Organization org = organizationRepository.findBySlug(orgSlug)
                 .orElseThrow(() -> new RuntimeException("Organization not found"));
 
-        // Feature Gating: Check Project Limits & SoftLock
-        if (org.isSoftLocked()) {
-            throw new RuntimeException("Account is currently locked or suspended. Please verify your subscription status on the billing page.");
+        // Feature Gating: Check Trial Expiration & SoftLock
+        if (org.getStatus() == Organization.OrganizationStatus.TRIAL_EXPIRED || org.isTrialExpired()) {
+            throw new IllegalStateException("Proyek sedang di-pause karena masa trial 14 hari telah berakhir. Silakan upgrade paket untuk melanjutkan.");
+        }
+        if (org.isSoftLocked() || org.getStatus() == Organization.OrganizationStatus.SUSPENDED) {
+            throw new IllegalStateException("Account is currently locked or suspended. Please verify your subscription status on the billing page.");
         }
 
         int effectiveMax = org.getEffectiveMaxOlts(null);
@@ -60,6 +63,16 @@ public class ProjectService {
         Project existing = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
+        Organization org = existing.getOrganization();
+        if (org != null) {
+            if (org.getStatus() == Organization.OrganizationStatus.TRIAL_EXPIRED || org.isTrialExpired()) {
+                throw new IllegalStateException("Proyek sedang di-pause karena masa trial 14 hari telah berakhir. Silakan upgrade paket untuk melanjutkan.");
+            }
+            if (org.isSoftLocked() || org.getStatus() == Organization.OrganizationStatus.SUSPENDED) {
+                throw new IllegalStateException("Account is currently locked or suspended. Please verify your subscription status on the billing page.");
+            }
+        }
+
         if (incoming.getName() != null) {
             existing.setName(incoming.getName());
         }
@@ -83,6 +96,17 @@ public class ProjectService {
     public void deleteProject(UUID projectId) {
         Project existing = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        Organization org = existing.getOrganization();
+        if (org != null) {
+            if (org.getStatus() == Organization.OrganizationStatus.TRIAL_EXPIRED || org.isTrialExpired()) {
+                throw new IllegalStateException("Proyek sedang di-pause karena masa trial 14 hari telah berakhir. Silakan upgrade paket untuk melanjutkan.");
+            }
+            if (org.isSoftLocked() || org.getStatus() == Organization.OrganizationStatus.SUSPENDED) {
+                throw new IllegalStateException("Account is currently locked or suspended. Please verify your subscription status on the billing page.");
+            }
+        }
+
         projectRepository.delete(existing);
     }
 

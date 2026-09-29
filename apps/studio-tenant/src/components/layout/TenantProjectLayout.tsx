@@ -28,6 +28,7 @@ import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
 import { ProjectSwitcher } from "./ProjectSwitcher";
 import { ProjectCreateWizard } from "../project/ProjectCreateWizard";
 import { TenantMobileFloatingDock } from "../system/TenantMobileFloatingDock";
+import { TrialPausedBanner } from "../system/TrialPausedBanner";
 import { useMapStore } from "../../store/map-store";
 
 function TenantProjectLayoutContent() {
@@ -241,6 +242,9 @@ function TenantProjectLayoutContent() {
           </>
         }
       />
+
+      {/* ── 2.5 Trial Lifecycle & Grace Period Paused Alert Banner ───────── */}
+      <TrialPausedBanner />
 
       {/* ── 3. Main Workspace Area (Primary Sidebar + Secondary Sidebar + Content) ─ */}
       <div className="flex flex-1 overflow-hidden relative">
