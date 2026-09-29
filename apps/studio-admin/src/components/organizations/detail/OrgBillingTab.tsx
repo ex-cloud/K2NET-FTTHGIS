@@ -74,6 +74,7 @@ export function OrgBillingTab({
         onOpenChange={state.setIsChangePlanSheetOpen}
         orgName={org.name}
         currentTier={state.currentTier}
+        currentPlanCode={state.currentPlanCode}
         availablePlans={state.availablePlans}
         plansLoading={state.plansLoading}
         plansError={state.plansError}

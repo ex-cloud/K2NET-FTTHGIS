@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import type { EnrichedOrganization } from "../../types";
+import { toBackendPlanName, type EnrichedOrganization } from "../../types";
 import { useTenantSubscription } from "@/hooks/useTenantSubscription";
 import type { ProrationEstimate } from "@/lib/actions/gateways";
 import type { SubscriptionPlanInfo, TenantInvoice } from "./billing-types";
@@ -81,7 +81,10 @@ export function useOrgBillingState(org: EnrichedOrganization) {
   const [dunningNotes, setDunningNotes] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
 
-  const currentTier = summary?.planTier || org.planTier || "Starter";
+  const rawPlanName = summary?.planName || toBackendPlanName(org.planTier) || "";
+  const currentTier = summary?.planTier || org.planTier || (rawPlanName ? (rawPlanName.toUpperCase() === "FREE" ? "Free Trial" : rawPlanName) : "Starter");
+  const currentPlanCode = rawPlanName || (currentTier.toLowerCase().includes("free") || currentTier.toLowerCase().includes("trial") ? "FREE" : currentTier);
+
   const usedOlts = summary?.usedOlts ?? org.usedOlts;
   const usedOdps = summary?.usedOdps ?? org.usedOdps;
   const effectiveMaxOlts = summary?.effectiveMaxOlts ?? org.maxOlts;
@@ -100,11 +103,26 @@ export function useOrgBillingState(org: EnrichedOrganization) {
   const handleSelectPlanFromSheet = async (plan: SubscriptionPlanInfo) => {
     setSelectedPlanTarget(plan);
 
-    const currentPlanObj = availablePlans.find(
-      (p) =>
-        p.name.toLowerCase() === currentTier.toLowerCase() ||
-        p.code.toLowerCase() === currentTier.toLowerCase()
-    );
+    const currentPlanObj = availablePlans.find((p) => {
+      const normPlanCode = p.code.toLowerCase().trim();
+      const normPlanName = p.name.toLowerCase().trim();
+      const normCurrentTier = currentTier.toLowerCase().trim();
+      const normCurrentCode = currentPlanCode.toLowerCase().trim();
+
+      if (normCurrentCode && (normPlanCode === normCurrentCode || normPlanName === normCurrentCode)) {
+        return true;
+      }
+      if (normPlanCode === normCurrentTier || normPlanName === normCurrentTier) {
+        return true;
+      }
+      if (
+        (normPlanCode === "free" || normPlanName === "free") &&
+        (normCurrentTier.includes("free") || normCurrentTier.includes("trial"))
+      ) {
+        return true;
+      }
+      return false;
+    });
     const currentPrice = currentPlanObj ? currentPlanObj.numericPrice : (summary?.planPrice || 0);
     const isDowngrade = plan.numericPrice < currentPrice;
 
@@ -197,6 +215,7 @@ export function useOrgBillingState(org: EnrichedOrganization) {
     plansError,
     subLoading,
     currentTier,
+    currentPlanCode,
     usedOlts,
     usedOdps,
     effectiveMaxOlts,

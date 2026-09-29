@@ -2,6 +2,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../lib/api-client";
 import { getCurrentOrgSlug } from "../lib/domain";
+import { useTenantInfo } from "./useTenantInfo";
 
 export interface SubscriptionSummary {
   orgId: string;
@@ -48,13 +49,14 @@ export interface SubscriptionSummary {
 
 export type NormalizedTier = "free" | "starter" | "pro" | "enterprise";
 
-function parseTier(planName?: string, planTier?: string): NormalizedTier {
-  const raw = (planName || planTier || "PRO").toLowerCase();
+function parseTier(rawInput?: string): NormalizedTier {
+  if (!rawInput) return "free";
+  const raw = rawInput.toLowerCase();
   if (raw.includes("enterprise") || raw.includes("telco")) return "enterprise";
   if (raw.includes("pro") || raw.includes("professional")) return "pro";
   if (raw.includes("starter") || raw.includes("lite")) return "starter";
   if (raw.includes("free") || raw.includes("trial") || raw.includes("basic")) return "free";
-  return "pro";
+  return "free";
 }
 
 function getProjectLimits(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier) {
@@ -94,7 +96,8 @@ function getPlanDisplayName(summary: SubscriptionSummary | null | undefined, tie
 }
 
 export function useTenantSubscription() {
-  const orgSlug = getCurrentOrgSlug() || "system";
+  const { planTier: infoTier, resolvedTenant } = useTenantInfo();
+  const orgSlug = resolvedTenant?.slug || getCurrentOrgSlug() || "system";
 
   const {
     data: summary,
@@ -118,7 +121,14 @@ export function useTenantSubscription() {
     staleTime: 60 * 1000,
   });
 
-  const tier = React.useMemo(() => parseTier(summary?.planName, summary?.planTier), [summary?.planName, summary?.planTier]);
+  const rawPlanString =
+    summary?.planName ||
+    summary?.planTier ||
+    resolvedTenant?.planTier ||
+    infoTier ||
+    "free";
+
+  const tier = React.useMemo(() => parseTier(rawPlanString), [rawPlanString]);
 
   const { maxProjects, usedProjects, projectPercentage, canCreateProject } = React.useMemo(
     () => getProjectLimits(summary, tier),
@@ -137,18 +147,24 @@ export function useTenantSubscription() {
 
   const isProOrEnterprise = tier === "pro" || tier === "enterprise";
   const isEnterprise = tier === "enterprise";
-  const planName = React.useMemo(() => getPlanDisplayName(summary, tier), [summary, tier]);
+  const planName = React.useMemo(() => {
+    if (summary?.planName) return summary.planName;
+    if (resolvedTenant?.planTier) return resolvedTenant.planTier.toUpperCase();
+    return getPlanDisplayName(summary, tier);
+  }, [summary, resolvedTenant?.planTier, tier]);
+
+  const status = summary?.status || resolvedTenant?.status || (tier === "free" ? "TRIAL" : "ACTIVE");
 
   return {
     summary,
     tier,
     planName,
     planCycle: summary?.planCycle || "MONTHLY",
-    status: summary?.status || "ACTIVE",
+    status,
     isOverQuota: Boolean(summary?.isOverQuota),
     isSoftLocked: Boolean(summary?.isSoftLocked),
     isTrialExpired: Boolean(summary?.isTrialExpired),
-    trialDaysRemaining: summary?.trialDaysRemaining ?? 0,
+    trialDaysRemaining: summary?.trialDaysRemaining ?? (status === "TRIAL" ? 14 : 0),
     isBoosterActive: Boolean(summary?.isBoosterActive),
     boosterDaysRemaining: summary?.boosterDaysRemaining ?? 0,
 

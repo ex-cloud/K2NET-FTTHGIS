@@ -356,7 +356,7 @@ export async function getAvailableSubscriptionPlans(): Promise<SubscriptionPlanI
             numericPrice: numPrice,
             period: "/ month",
             description: String(p.description || `Paket layanan infrastruktur GIS FTTH terkelola tier ${p.name || ""}.`),
-            popular: planCode === "STARTER" || planCode === "PRO",
+            popular: planCode === "PRO",
             maxOlts,
             maxOdps,
             maxOdcs,
@@ -370,12 +370,6 @@ export async function getAvailableSubscriptionPlans(): Promise<SubscriptionPlanI
 
         // Sort ascending by price
         mapped.sort((a, b) => a.numericPrice - b.numericPrice);
-
-        // Mark popular tier dynamically (the middle tier if 3 or more plans)
-        if (mapped.length >= 3) {
-          const midIdx = Math.floor(mapped.length / 2);
-          mapped[midIdx].popular = true;
-        }
 
         return mapped;
       }
