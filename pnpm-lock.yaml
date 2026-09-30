@@ -237,6 +237,9 @@ importers:
       '@k2net/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@k2net/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@k2net/map':
         specifier: workspace:*
         version: link:../../packages/map
@@ -379,6 +382,9 @@ importers:
       '@k2net/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@k2net/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@k2net/map':
         specifier: workspace:*
         version: link:../../packages/map
