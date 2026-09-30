@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
 import { Users, UserCheck, Clock } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface UserStatsProps {
   stats: {
@@ -12,21 +13,23 @@ interface UserStatsProps {
 }
 
 export function UserStats({ stats }: UserStatsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
       {/* Total Users */}
       <Card glowingEffect>
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-            <span>Total Users</span>
-            <Users className="w-3.5 h-3.5 text-violet-400 group-hover:text-violet-300 transition-colors" />
+            <span>{t("users.total_users")}</span>
+            <Users className="w-3.5 h-3.5 text-primary group-hover:text-primary/80 transition-colors" />
           </CardDescription>
-          <CardTitle className="mt-1 text-2xl font-bold text-violet-400">
+          <CardTitle className="mt-1 text-2xl font-bold text-foreground">
             {stats?.totalUsers.toLocaleString() || "0"}
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-4">
-          <div className="text-[10px] text-muted-foreground">Registered platform identity accounts</div>
+          <div className="text-[10px] text-muted-foreground">{t("users.total_users_desc")}</div>
         </CardContent>
       </Card>
 
@@ -34,7 +37,7 @@ export function UserStats({ stats }: UserStatsProps) {
       <Card glowingEffect>
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-            <span>Active Now</span>
+            <span>{t("users.active_now")}</span>
             <UserCheck className="w-3.5 h-3.5 text-primary group-hover:text-primary/80 transition-colors" />
           </CardDescription>
           <CardTitle className="mt-1 text-2xl font-bold text-primary">
@@ -42,7 +45,7 @@ export function UserStats({ stats }: UserStatsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-4">
-          <div className="text-[10px] text-muted-foreground">Verified &amp; active session accounts</div>
+          <div className="text-[10px] text-muted-foreground">{t("users.active_now_desc")}</div>
         </CardContent>
       </Card>
 
@@ -50,15 +53,15 @@ export function UserStats({ stats }: UserStatsProps) {
       <Card glowingEffect>
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-            <span>Open Requests</span>
-            <Clock className="w-3.5 h-3.5 text-sky-400 group-hover:text-sky-300 transition-colors" />
+            <span>{t("users.open_requests")}</span>
+            <Clock className="w-3.5 h-3.5 text-primary group-hover:text-primary/80 transition-colors" />
           </CardDescription>
-          <CardTitle className="mt-1 text-2xl font-bold text-sky-400">
+          <CardTitle className="mt-1 text-2xl font-bold text-foreground">
             {stats?.pendingRequests.toString() || "0"}
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-4">
-          <div className="text-[10px] text-muted-foreground">Pending identity access invitations</div>
+          <div className="text-[10px] text-muted-foreground">{t("users.open_requests_desc")}</div>
         </CardContent>
       </Card>
     </div>

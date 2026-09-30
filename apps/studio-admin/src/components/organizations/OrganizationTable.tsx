@@ -8,6 +8,7 @@ import {
   TableCell,
   Checkbox,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { EnrichedOrganization, OrganizationStatus } from "./types";
 import { OrganizationTableRow } from "./table/OrganizationTableRow";
 
@@ -46,6 +47,7 @@ export function OrganizationTable({
   onUpdateStatus,
   onDelete,
 }: OrganizationTableProps) {
+  const { t } = useTranslation();
   const allSelected = organizations.length > 0 && selectedIds.length === organizations.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < organizations.length;
 
@@ -62,25 +64,25 @@ export function OrganizationTable({
               />
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[220px]">
-              Organization
+              {t("organizations.org_name")}
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-[120px]">
-              Status
+              {t("organizations.status")}
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[140px]">
-              Impersonation
+              {t("organizations.impersonate_tenant")}
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[180px]">
-              Hardware Quota
+              {t("billing.hardware_capacity")}
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[180px]">
-              Domain & SSL
+              {t("organizations.tab_network")}
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[140px]">
-              Add-on Flags
+              {t("nav.settings")}
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[160px] pr-6">
-              Technical PIC
+              {t("organizations.pic_name")}
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -89,7 +91,7 @@ export function OrganizationTable({
           {organizations.length === 0 ? (
             <TableRow>
               <TableCell colSpan={8} className="h-48 text-center text-muted-foreground text-xs">
-                No organizations found matching the selected filters.
+                {t("common.no_data")}
               </TableCell>
             </TableRow>
           ) : (

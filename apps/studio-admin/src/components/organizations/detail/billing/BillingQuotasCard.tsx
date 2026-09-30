@@ -1,7 +1,6 @@
-
-
-
+import * as React from "react";
 import { Network, HardDrive, Cpu } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface BillingQuotasCardProps {
   usedOlts: number;
@@ -26,12 +25,14 @@ export function BillingQuotasCard({
   maxStorageGb,
   storagePct,
 }: BillingQuotasCardProps) {
+  const { t, formatNumber } = useTranslation();
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-4 border-t border-border/60">
       <div className="lg:col-span-4 space-y-1">
-        <h4 className="text-sm font-bold text-foreground">Cost Control & Quotas</h4>
+        <h4 className="text-sm font-bold text-foreground">{t("billing.cost_control_quotas")}</h4>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Alokasi kapasitas hardware secara riil terhadap kuota paket. Penambahan node melampaui kuota membutuhkan upgrade paket atau emergency booster.
+          {t("billing.cost_control_desc")}
         </p>
       </div>
 
@@ -42,10 +43,10 @@ export function BillingQuotasCard({
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-foreground flex items-center gap-1.5">
                 <Network className="h-3.5 w-3.5 text-primary" />
-                <span>Kapasitas Perangkat OLT</span>
+                <span>{t("billing.olt_capacity")}</span>
               </span>
               <span className="font-mono text-muted-foreground">
-                {usedOlts} / {effectiveMaxOlts} OLT ({oltPct}%)
+                {formatNumber(usedOlts)} / {formatNumber(effectiveMaxOlts)} OLT ({oltPct}%)
               </span>
             </div>
             <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden flex">
@@ -58,10 +59,10 @@ export function BillingQuotasCard({
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-foreground flex items-center gap-1.5">
                 <HardDrive className="h-3.5 w-3.5 text-primary" />
-                <span>Kapasitas Titik ODP / FAT</span>
+                <span>{t("billing.odp_capacity")}</span>
               </span>
               <span className="font-mono text-muted-foreground">
-                {usedOdps.toLocaleString("id-ID")} / {effectiveMaxOdps.toLocaleString("id-ID")} ODP ({odpPct}%)
+                {formatNumber(usedOdps)} / {formatNumber(effectiveMaxOdps)} ODP ({odpPct}%)
               </span>
             </div>
             <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden flex">
@@ -74,10 +75,10 @@ export function BillingQuotasCard({
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-foreground flex items-center gap-1.5">
                 <Cpu className="h-3.5 w-3.5 text-primary" />
-                <span>Penyimpanan Berkas MinIO S3</span>
+                <span>{t("billing.minio_storage")}</span>
               </span>
               <span className="font-mono text-muted-foreground">
-                {usedStorageGb} GB / {maxStorageGb} GB ({storagePct}%)
+                {formatNumber(usedStorageGb)} GB / {formatNumber(maxStorageGb)} GB ({storagePct}%)
               </span>
             </div>
             <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden flex">

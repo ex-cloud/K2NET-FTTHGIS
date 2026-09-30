@@ -11,11 +11,13 @@ import {
   Label,
   Input,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { useSearchParams, usePathname, useRouter } from "@/lib/navigation-compat";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 export function UserFilters() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -50,17 +52,17 @@ export function UserFilters() {
   };
 
   const roles = [
-    { id: "all", label: "All Roles" },
-    { id: "super_admin", label: "Super Admin" },
-    { id: "admin", label: "Tenant Admin" },
-    { id: "technician", label: "Technician" },
-    { id: "viewer", label: "Viewer" },
+    { id: "all", label: t("users.all_roles") },
+    { id: "super_admin", label: t("users.role_super_admin") },
+    { id: "admin", label: t("users.role_tenant_admin") },
+    { id: "technician", label: t("users.role_technician") },
+    { id: "viewer", label: t("users.role_viewer") },
   ];
 
   const statuses = [
-    { id: "all", label: "All Statuses" },
-    { id: "ACTIVE", label: "Active" },
-    { id: "SUSPENDED", label: "Suspended" },
+    { id: "all", label: t("users.all_statuses") },
+    { id: "ACTIVE", label: t("users.status_active") },
+    { id: "SUSPENDED", label: t("users.status_suspended") },
   ];
 
   return (
@@ -69,14 +71,14 @@ export function UserFilters() {
         <div className="p-6 space-y-8">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-              Advanced Filters
+              {t("users.advanced_filters")}
             </h2>
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
               onClick={clearAll}
-              title="Reset filters"
+              title={t("users.reset_filters")}
             >
               <RefreshCw className="w-4 h-4" />
             </Button>
@@ -85,13 +87,13 @@ export function UserFilters() {
           {/* Organization Filter */}
           <div className="space-y-3">
             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-              <Building2 className="w-3 h-3 text-primary" /> Organization Name / Slug
+              <Building2 className="w-3 h-3 text-primary" /> {t("users.org_name_slug")}
             </Label>
             <div className="flex gap-2">
               <Input
                 value={orgInput}
                 onChange={(e) => setOrgInput(e.target.value)}
-                placeholder="e.g. telkom, indosat..."
+                placeholder={t("users.org_placeholder")}
                 className="bg-muted/40 border-border/80 text-xs h-8 rounded-md"
                 onKeyDown={(e) => e.key === "Enter" && handleOrgSearch()}
               />
@@ -101,12 +103,12 @@ export function UserFilters() {
                 variant="default"
                 className="h-8 px-3 text-xs shrink-0 font-medium"
               >
-                Apply
+                {t("users.apply")}
               </Button>
             </div>
             {currentOrg && (
               <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/20 rounded-md text-xs text-primary font-medium">
-                <span>Active: <strong>{currentOrg}</strong></span>
+                <span>{t("users.active_filter")}: <strong>{currentOrg}</strong></span>
                 <X className="w-3.5 h-3.5 cursor-pointer hover:text-foreground transition-colors" onClick={() => updateParam("org", "all")} />
               </div>
             )}
@@ -115,7 +117,7 @@ export function UserFilters() {
           {/* Global Role */}
           <div className="space-y-3">
             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-              <Shield className="w-3 h-3 text-primary" /> Global Role
+              <Shield className="w-3 h-3 text-primary" /> {t("users.global_role")}
             </Label>
             <div className="grid grid-cols-1 gap-1.5">
               {roles.map((r) => (
@@ -139,11 +141,11 @@ export function UserFilters() {
           {/* Account Status */}
           <div className="space-y-3">
             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-              <UserCheck className="w-3 h-3 text-primary" /> Account Status
+              <UserCheck className="w-3 h-3 text-primary" /> {t("users.account_status")}
             </Label>
             <Select value={currentStatus} onValueChange={(val) => updateParam("status", val)}>
               <SelectTrigger className="w-full bg-muted/40 border-border/40 text-xs h-9">
-                <SelectValue placeholder="Select Status" />
+                <SelectValue placeholder={t("users.select_status")} />
               </SelectTrigger>
               <SelectContent>
                 {statuses.map((s) => (

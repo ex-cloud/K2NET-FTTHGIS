@@ -7,6 +7,7 @@ import {
   ActionTooltip,
   AppHeaderShell,
 } from "@k2net/ui";
+import { LanguageSwitcher } from "@k2net/i18n";
 import { UserNav } from "../user-nav";
 import { useCommandPalette } from "../command-palette/command-palette-provider";
 import { getLogoUrl } from "@/lib/domain";
@@ -105,6 +106,11 @@ export function SystemHeader() {
                 <MessageSquare className="h-3.5 w-3.5" />
               </Button>
             </ActionTooltip>
+          </div>
+
+          {/* Language Switcher */}
+          <div className="hidden sm:flex items-center">
+            <LanguageSwitcher variant="compact" />
           </div>
 
           <Separator orientation="vertical" className="hidden md:block mx-0.5 h-4 bg-border/60" />

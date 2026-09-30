@@ -58,7 +58,8 @@ import {
   CollapsibleTrigger,
   SecondarySidebarHeader,
 } from "@k2net/ui";
-import { SYSTEM_SIDEBAR_NAVIGATION } from "@/config/system-sidebar-navigation";
+import { useTranslation } from "@k2net/i18n";
+import { SYSTEM_SIDEBAR_NAVIGATION, type MenuItem } from "@/config/system-sidebar-navigation";
 import { LogsFilterSidebar } from "@/components/logs/logs-filter-sidebar";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { useTaskStore } from "@/store/task-store";
@@ -178,12 +179,7 @@ function getOrgBadgeCount(url: string, orgCounts: OrgCounts): number | null {
 }
 
 interface SidebarNavItemProps {
-  item: {
-    title: string;
-    url: string;
-    icon: string;
-    requiredPermission?: string | string[];
-  };
+  item: MenuItem;
   pathname: string | null;
   searchParams: { get: (key: string) => string | null; has: (key: string) => boolean };
   unreadB2BCount: number;
@@ -197,10 +193,12 @@ function SidebarNavItem({
   unreadB2BCount,
   orgCounts,
 }: SidebarNavItemProps) {
+  const { t } = useTranslation();
   const isActive = isSidebarItemActive(item.url, pathname, searchParams);
   const Icon = ICON_MAP[item.icon] || FileText;
   const isB2BLink = item.url.includes("scope=TENANT_TO_PLATFORM");
   const orgBadgeCount = getOrgBadgeCount(item.url, orgCounts);
+  const itemTitle = item.translationKey ? t(item.translationKey) : item.title;
 
   const orgBadgeStyle = item.url.includes("status=ACTIVE")
     ? "bg-primary/10 text-primary border border-primary/20"
@@ -218,7 +216,7 @@ function SidebarNavItem({
       }`}
     >
       <Icon className={`w-3.5 h-3.5 ${isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"}`} />
-      <span className="truncate flex-1">{item.title}</span>
+      <span className="truncate flex-1">{itemTitle}</span>
 
       {isB2BLink && unreadB2BCount > 0 && (
         <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse shrink-0">
@@ -236,6 +234,7 @@ function SidebarNavItem({
 }
 
 export function SystemSecondarySidebar() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -269,6 +268,10 @@ export function SystemSecondarySidebar() {
     ? () => ctxSetCollapsed((prev) => !prev)
     : () => setIsCollapsed(!isCollapsed);
 
+  const sidebarHeaderTitle = currentConfig?.translationKey
+    ? t(currentConfig.translationKey)
+    : currentConfig?.title || "";
+
   return (
     <div className="relative h-full flex shrink-0">
       <aside
@@ -279,7 +282,7 @@ export function SystemSecondarySidebar() {
         ) : (
           <>
             <SecondarySidebarHeader
-              title={currentConfig?.title || ""}
+              title={sidebarHeaderTitle}
               onCollapse={() => setIsCollapsed(!isCollapsed)}
             />
 
@@ -290,10 +293,14 @@ export function SystemSecondarySidebar() {
                 );
                 if (visibleItems.length === 0) return null;
 
+                const sectionTitle = section.translationKey
+                  ? t(section.translationKey)
+                  : section.title;
+
                 return (
                   <Collapsible key={sIdx} defaultOpen className="w-full">
                     <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-                      <span>{section.title}</span>
+                      <span>{sectionTitle}</span>
                       <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-0.5 mt-2">

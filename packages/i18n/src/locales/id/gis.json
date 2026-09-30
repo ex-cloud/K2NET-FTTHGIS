@@ -1,0 +1,20 @@
+{
+  "map_title": "Peta Topologi Spasial Jaringan FTTH",
+  "map_subtitle": "Pemetaan rute kabel fiber optik, perangkat OLT, ODC, ODP (FAT), dan titik sambungan pelanggan.",
+  "layers": "Lapisan Peta (Layers)",
+  "layer_cables": "Kabel Fiber Optik (Feeder & Distribution)",
+  "layer_olts": "Perangkat Core OLT",
+  "layer_odcs": "Optical Distribution Cabinet (ODC)",
+  "layer_odps": "Optical Distribution Point (ODP / FAT)",
+  "layer_closures": "Joint Closure (JC)",
+  "layer_customers": "Titik Pelanggan (ONU/ONT)",
+  "add_device": "Tambah Perangkat Baru",
+  "draw_cable": "Gambar Jalur Kabel",
+  "measure_distance": "Ukur Jarak Spasial",
+  "signal_attenuation": "Redaman Sinyal Optik (dBm)",
+  "core_management": "Manajemen Core & Splice Tray",
+  "port_capacity": "Kapasitas Port Terpakai",
+  "device_details": "Rincian Teknis Perangkat",
+  "export_kml": "Ekspor KML / GeoJSON",
+  "import_kml": "Impor Berkas KML / GeoJSON"
+}

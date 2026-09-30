@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter, Image } from "@/lib/navigation-compat";
 import { HelpCircle, MessageSquare } from "lucide-react";
 import { Button, Separator } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { BreadcrumbNav } from "./breadcrumb-nav";
 import { UserNav } from "./user-nav";
 import { GodModeIndicator } from "./system/god-mode-indicator";
@@ -11,6 +12,7 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 export function GlobalHeader() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { settings = [] } = useSystemSettings();
   const systemLogo = settings.find((s) => s.key === "logo_url")?.value || "";
 
@@ -55,9 +57,8 @@ export function GlobalHeader() {
           size="sm"
           className="hidden text-muted-foreground hover:text-foreground md:flex text-[11px] font-medium h-8 px-2"
         >
-          Feedback
+          {t("nav.feedback")}
         </Button>
-
 
         <div className="flex items-center gap-0">
           <Button

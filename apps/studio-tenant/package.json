@@ -19,6 +19,7 @@
     "@k2net/api-client": "workspace:*",
     "@k2net/auth": "workspace:*",
     "@k2net/design-system": "workspace:*",
+    "@k2net/i18n": "workspace:*",
     "@k2net/map": "workspace:*",
     "@k2net/types": "workspace:*",
     "@k2net/ui": "workspace:*",

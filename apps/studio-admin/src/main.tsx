@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { KeycloakProvider } from "@k2net/auth/client";
 import { ThemeProvider } from "@k2net/ui";
+import { I18nProvider } from "@k2net/i18n";
 import { NetworkStatusIndicator } from "./components/NetworkStatusIndicator";
 import { ErrorBoundary } from "./components/error-boundary";
 import { Toaster } from "sonner";
@@ -65,11 +66,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <KeycloakProvider config={keycloakConfig}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme="system" storageKey="k2net-admin-theme">
-          <ErrorBoundary>
-            <RouterProvider router={router} />
-          </ErrorBoundary>
-          <NetworkStatusIndicator />
-          <Toaster position="top-right" richColors />
+          <I18nProvider>
+            <ErrorBoundary>
+              <RouterProvider router={router} />
+            </ErrorBoundary>
+            <NetworkStatusIndicator />
+            <Toaster position="top-right" richColors />
+          </I18nProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </KeycloakProvider>

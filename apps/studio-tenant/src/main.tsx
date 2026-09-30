@@ -5,6 +5,7 @@ import { KeycloakProvider } from "@k2net/auth/client";
 import { Toaster } from "sonner";
 import { getTenantKeycloakConfig, resolveTenantRealm } from "./lib/keycloak-config";
 import { ThemeProvider } from "@k2net/ui";
+import { I18nProvider } from "@k2net/i18n";
 import { setApiAuthToken } from "./lib/api-client";
 import { initWebVitals } from "./lib/web-vitals";
 import { ImpersonationProvider } from "./lib/useImpersonationSession";
@@ -55,14 +56,16 @@ async function bootstrap() {
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
       <ThemeProvider defaultTheme="system" storageKey="k2net-theme" enableSystem>
-        <KeycloakProvider config={keycloakConfig}>
-          <QueryClientProvider client={queryClient}>
-            <ImpersonationProvider>
-              <App />
-              <Toaster position="top-right" richColors />
-            </ImpersonationProvider>
-          </QueryClientProvider>
-        </KeycloakProvider>
+        <I18nProvider>
+          <KeycloakProvider config={keycloakConfig}>
+            <QueryClientProvider client={queryClient}>
+              <ImpersonationProvider>
+                <App />
+                <Toaster position="top-right" richColors />
+              </ImpersonationProvider>
+            </QueryClientProvider>
+          </KeycloakProvider>
+        </I18nProvider>
       </ThemeProvider>
     </React.StrictMode>
   );

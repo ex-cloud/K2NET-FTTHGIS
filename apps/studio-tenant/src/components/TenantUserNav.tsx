@@ -16,6 +16,7 @@ import {
 } from "@k2net/ui";
 import { Dot, ShieldAlert, Building, Users, CreditCard, LogOut } from "lucide-react";
 import { useAuth } from "@k2net/auth/client";
+import { useTranslation } from "@k2net/i18n";
 import { useTenantInfo } from "../hooks/useTenantInfo";
 import { useImpersonationSession } from "../lib/useImpersonationSession";
 
@@ -81,11 +82,13 @@ function UserNavBrandSection({
   brandTheme: "green" | "blue";
   onBrandChange: (brand: "green" | "blue") => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <>
       <DropdownMenuSeparator className="bg-border" />
       <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
-        Brand Style
+        {t("nav.brand_style")}
       </DropdownMenuLabel>
       <DropdownMenuItem
         className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium"
@@ -124,29 +127,37 @@ function UserNavThemeSection({
   onSetTheme: (theme: "system" | "dark" | "light") => void;
   onToggleMono: () => void;
 }) {
+  const { t } = useTranslation();
+
+  const themeLabels: Record<string, string> = {
+    system: t("common.system_mode"),
+    dark: t("common.dark_mode"),
+    light: t("common.light_mode"),
+  };
+
   return (
     <>
       <DropdownMenuSeparator className="bg-border" />
       <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
-        Theme
+        {t("nav.theme")}
       </DropdownMenuLabel>
-      {(["system", "dark", "light"] as const).map((t) => (
+      {(["system", "dark", "light"] as const).map((key) => (
         <DropdownMenuItem
-          key={t}
+          key={key}
           className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium capitalize"
-          onClick={() => onSetTheme(t)}
+          onClick={() => onSetTheme(key)}
         >
           <div className="flex items-center gap-2">
             <div className="flex h-3.5 w-3.5 items-center justify-center">
-              {theme === t && <Dot className="size-8 text-primary" />}
+              {theme === key && <Dot className="size-8 text-primary" />}
             </div>
-            <span>{t}</span>
+            <span>{themeLabels[key] || key}</span>
           </div>
         </DropdownMenuItem>
       ))}
       <DropdownMenuSeparator className="bg-border" />
       <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
-        Mode
+        {t("nav.mode")}
       </DropdownMenuLabel>
       <DropdownMenuItem
         className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium"
@@ -164,6 +175,7 @@ function UserNavThemeSection({
 }
 
 export function TenantUserNav() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { setTheme, resolvedTheme } = useTheme();
   const { organizationName } = useTenantInfo();
@@ -191,10 +203,10 @@ export function TenantUserNav() {
   if (!mounted) return <div className="h-8 w-8 rounded-full bg-muted/50 animate-pulse border border-border" />;
 
   const displayName = isImpersonating
-    ? "Super Admin (Mode Bantuan)"
+    ? `Super Admin (${t("security.impersonation_active_title")})`
     : (user?.name || user?.username || "Tenant Admin");
   const subText = isImpersonating
-    ? `Mengimpersonasi: ${organizationName || "Tenant"} Workspace`
+    ? `${organizationName || "Tenant"} Workspace`
     : (user?.email || (organizationName ? `${organizationName} Workspace` : "Organization Workspace"));
   const initial = isImpersonating
     ? "S"
@@ -246,21 +258,21 @@ export function TenantUserNav() {
             onClick={() => navigate({ to: "/settings" })}
           >
             <Building className="size-3.5 text-muted-foreground" />
-            <span>Pengaturan Organisasi</span>
+            <span>{t("nav.tenant_settings")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
             onClick={() => navigate({ to: "/team" })}
           >
             <Users className="size-3.5 text-muted-foreground" />
-            <span>Anggota & Tim</span>
+            <span>{t("nav.tenant_team")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
             onClick={() => navigate({ to: "/billing" })}
           >
             <CreditCard className="size-3.5 text-muted-foreground" />
-            <span>Langganan & Billing</span>
+            <span>{t("nav.tenant_billing")}</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
 
@@ -274,7 +286,7 @@ export function TenantUserNav() {
                 disabled={isExiting}
               >
                 <ShieldAlert className="size-3.5 text-amber-500" />
-                <span>{isExiting ? "Menutup Sesi..." : "Akhiri Sesi Bantuan Admin"}</span>
+                <span>{isExiting ? t("common.processing") : t("security.end_session_btn")}</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </>
@@ -294,7 +306,7 @@ export function TenantUserNav() {
           onClick={handleLogout}
         >
           <LogOut className="size-3.5" />
-          <span>Keluar (Log out)</span>
+          <span>{t("nav.sign_out")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

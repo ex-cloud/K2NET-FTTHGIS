@@ -11,6 +11,7 @@ import {
   HardDrive,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import type { SubscriptionPlanInfo } from "./billing-types";
 
 interface BillingEnterprisePlanCardProps {
@@ -26,6 +27,7 @@ export function BillingEnterprisePlanCard({
   isDowngrade,
   onSelectPlan,
 }: BillingEnterprisePlanCardProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = React.useState(false);
 
   return (
@@ -49,7 +51,7 @@ export function BillingEnterprisePlanCard({
 
         {isCurrent && (
           <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 border border-border px-2 py-0.5 rounded-full font-mono">
-            Current plan
+            {t("billing.current_plan")}
           </span>
         )}
       </div>
@@ -60,8 +62,7 @@ export function BillingEnterprisePlanCard({
           <div>
             <h4 className="text-base font-bold text-foreground tracking-tight">ENTERPRISE</h4>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              {plan.description ||
-                "Enterprise Core tier with AI Fiber Copilot, custom POP gateway, custom domain, and Platinum 99.9% SLA."}
+              {plan.description || t("billing.enterprise_desc")}
             </p>
           </div>
 
@@ -99,7 +100,7 @@ export function BillingEnterprisePlanCard({
               onClick={() => setExpanded(!expanded)}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer"
             >
-              <span>Lihat Detail Spesifikasi Lengkap & Add-on</span>
+              <span>{t("billing.enterprise_specs_toggle")}</span>
               {expanded ? (
                 <ChevronUp className="h-3.5 w-3.5 transition-transform" />
               ) : (
@@ -136,7 +137,7 @@ export function BillingEnterprisePlanCard({
             </span>
             <div className="flex items-baseline sm:justify-end gap-1">
               <span className="text-base font-bold font-mono text-foreground">{plan.price}</span>
-              <span className="text-xs text-muted-foreground font-normal">/ bln</span>
+              <span className="text-xs text-muted-foreground font-normal">{t("billing.per_month")}</span>
             </div>
           </div>
 
@@ -153,7 +154,7 @@ export function BillingEnterprisePlanCard({
                     : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs cursor-pointer"
               }`}
             >
-              <span>{isCurrent ? "Current plan" : `Upgrade to ${plan.name}`}</span>
+              <span>{isCurrent ? t("billing.current_plan") : t("billing.upgrade_to", { planName: plan.name })}</span>
               {!isCurrent && <ArrowRight className="h-3.5 w-3.5" />}
             </Button>
 
@@ -164,7 +165,7 @@ export function BillingEnterprisePlanCard({
               className="w-full h-7.5 text-[11px] border-border bg-card/80 hover:bg-muted text-foreground font-medium gap-1.5 cursor-pointer rounded-md"
             >
               <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>Konsultasi Sales</span>
+              <span>{t("billing.contact_sales")}</span>
             </Button>
           </div>
         </div>

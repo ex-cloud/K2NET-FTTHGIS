@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ActionTooltip } from "@k2net/ui";
 import { Network, Globe, Phone, Mail } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import type { EnrichedOrganization } from "../types";
 
@@ -9,6 +10,7 @@ interface OrgCardHardwareSectionProps {
 }
 
 export function OrgCardHardwareSection({ organization: org }: OrgCardHardwareSectionProps) {
+  const { t } = useTranslation();
   const oltPct = org.maxOlts > 0 ? Math.round((org.usedOlts / org.maxOlts) * 100) : 0;
 
   return (
@@ -48,13 +50,13 @@ export function OrgCardHardwareSection({ organization: org }: OrgCardHardwareSec
             />
           </div>
         ) : (
-          <span className="font-mono text-[10px] text-muted-foreground/60">— Default Domain</span>
+          <span className="font-mono text-[10px] text-muted-foreground/60">— {t("organizations.default_domain")}</span>
         )}
 
         {/* Direct Contact Buttons */}
         <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           {org.picPhone && (
-            <ActionTooltip label={`Chat PIC (${org.picPhone})`}>
+            <ActionTooltip label={`${t("organizations.chat_pic")} (${org.picPhone})`}>
               <a
                 href={`https://wa.me/${org.picPhone.replace(/[^0-9]/g, "")}`}
                 target="_blank"
@@ -66,7 +68,7 @@ export function OrgCardHardwareSection({ organization: org }: OrgCardHardwareSec
             </ActionTooltip>
           )}
           {org.picEmail && (
-            <ActionTooltip label={`Email PIC (${org.picEmail})`}>
+            <ActionTooltip label={`${t("organizations.email_pic")} (${org.picEmail})`}>
               <a
                 href={`mailto:${org.picEmail}`}
                 className="p-1 rounded hover:bg-blue-500/10 hover:text-blue-500 transition-colors text-muted-foreground"

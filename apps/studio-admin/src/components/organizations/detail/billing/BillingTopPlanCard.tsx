@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Button, Card } from "@k2net/ui";
 import { Check, Star } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import type { SubscriptionPlanInfo } from "./billing-types";
 
 interface BillingTopPlanCardProps {
@@ -16,6 +17,7 @@ export function BillingTopPlanCard({
   isDowngrade,
   onSelectPlan,
 }: BillingTopPlanCardProps) {
+  const { t } = useTranslation();
   const isFree = plan.code.toUpperCase() === "FREE" || plan.name.toUpperCase() === "FREE";
   const isStarter = plan.code.toUpperCase() === "STARTER" || plan.name.toUpperCase() === "STARTER";
   const isPopular = isStarter;
@@ -26,7 +28,7 @@ export function BillingTopPlanCard({
       {isPopular && !isCurrent && (
         <div className="absolute -top-2.5 right-4 z-30 inline-flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs tracking-wider uppercase font-mono select-none pointer-events-none">
           <Star className="h-2.5 w-2.5 fill-current text-current" />
-          <span>MOST POPULAR</span>
+          <span>{t("billing.most_popular")}</span>
         </div>
       )}
 
@@ -47,7 +49,7 @@ export function BillingTopPlanCard({
 
             {isCurrent && (
               <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 border border-border px-2 py-0.5 rounded-full font-mono">
-                Current plan
+                {t("billing.current_plan")}
               </span>
             )}
           </div>
@@ -72,10 +74,10 @@ export function BillingTopPlanCard({
             }`}
           >
             {isCurrent
-              ? "Current plan"
+              ? t("billing.current_plan")
               : isDowngrade
-                ? `Downgrade to ${plan.name}`
-                : `Upgrade to ${plan.name}`}
+                ? t("billing.downgrade_to", { planName: plan.name })
+                : t("billing.upgrade_to", { planName: plan.name })}
           </Button>
 
           {/* Features Section */}
@@ -101,7 +103,7 @@ export function BillingTopPlanCard({
         {/* Free Plan Footnote (Supabase Reference) */}
         {isFree && (
           <div className="mt-4 pt-3 border-groove-t text-[10.5px] text-muted-foreground/80 leading-relaxed">
-            Free projects are paused after 2 week of inactivity. Limit of 1 active projects.
+            {t("billing.free_footnote")}
           </div>
         )}
       </Card>

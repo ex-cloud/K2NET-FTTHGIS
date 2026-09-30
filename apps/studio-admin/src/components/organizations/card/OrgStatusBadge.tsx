@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Badge } from "@k2net/ui";
 import { Clock, RefreshCw, AlertTriangle, PauseCircle } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import type { OrganizationStatus } from "../types";
 
 interface OrgStatusBadgeProps {
@@ -9,12 +10,14 @@ interface OrgStatusBadgeProps {
 }
 
 export function OrgStatusBadge({ status, trialDaysLeft }: OrgStatusBadgeProps) {
+  const { t } = useTranslation();
+
   switch (status) {
     case "ACTIVE":
       return (
         <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1 px-2 py-0.5">
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-          <span>Active</span>
+          <span>{t("common.active")}</span>
         </Badge>
       );
     case "TRIAL":
@@ -28,7 +31,7 @@ export function OrgStatusBadge({ status, trialDaysLeft }: OrgStatusBadgeProps) {
       return (
         <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-500 font-mono text-[10px] gap-1 px-2 py-0.5">
           <RefreshCw className="h-2.5 w-2.5 animate-spin" />
-          <span>Provisioning</span>
+          <span>{t("organizations.provisioning_only")}</span>
         </Badge>
       );
     case "OVERDUE":
@@ -42,14 +45,14 @@ export function OrgStatusBadge({ status, trialDaysLeft }: OrgStatusBadgeProps) {
       return (
         <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-500 font-mono text-[10px] gap-1 px-2 py-0.5">
           <PauseCircle className="h-2.5 w-2.5" />
-          <span>Trial Expired</span>
+          <span>{t("common.expired")}</span>
         </Badge>
       );
     case "SUSPENDED":
       return (
         <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive font-mono text-[10px] gap-1 px-2 py-0.5">
           <PauseCircle className="h-2.5 w-2.5" />
-          <span>Suspended</span>
+          <span>{t("common.suspended")}</span>
         </Badge>
       );
     default:

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import {
   ORG_NAV_ITEMS,
   ORG_SECONDARY_CONFIGS,
@@ -31,6 +32,7 @@ export function TenantMobileMenuTab({
   onNavigate,
   onClose,
 }: TenantMobileMenuTabProps) {
+  const { t } = useTranslation();
   const { organizationName } = useTenantInfo();
   const resolvedProjectId = projectId || "proj-bdg-01";
   const isProjectScope = Boolean(pathname.startsWith(`/project/`));
@@ -59,6 +61,10 @@ export function TenantMobileMenuTab({
 
   // Render Secondary (Sub-Menu) View
   if (activeSecondaryKey && currentSecondaryConfig) {
+    const secondaryHeader = currentSecondaryConfig.translationKey
+      ? t(currentSecondaryConfig.translationKey)
+      : currentSecondaryConfig.headerTitle;
+
     return (
       <div className="flex flex-col flex-1 overflow-hidden animate-in fade-in-0 duration-200 slide-in-from-right-3">
         {/* Back Header */}
@@ -69,60 +75,64 @@ export function TenantMobileMenuTab({
             className="flex items-center gap-1.5 text-xs font-bold text-foreground hover:text-primary transition-colors cursor-pointer group py-0.5"
           >
             <ChevronLeft className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            <span className="truncate">{currentSecondaryConfig.headerTitle}</span>
+            <span className="truncate">{secondaryHeader}</span>
           </button>
           <span className="text-[10px] font-mono text-muted-foreground uppercase">Sub-menu</span>
         </div>
 
         {/* Sub-menu Sections & Items */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 custom-scrollbar">
-          {currentSecondaryConfig.sections.map((section, idx) => (
-            <div key={idx} className="space-y-1">
-              {section.title && (
-                <p className="px-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground/80 font-semibold">
-                  {section.title}
-                </p>
-              )}
-              <div className="space-y-0.5">
-                {section.items.map((subItem) => {
-                  const SubIcon = subItem.icon || LayoutDashboard;
-                  const active = pathname === subItem.href;
+          {currentSecondaryConfig.sections.map((section, idx) => {
+            const sectionTitle = section.translationKey ? t(section.translationKey) : section.title;
+            return (
+              <div key={idx} className="space-y-1">
+                {sectionTitle && (
+                  <p className="px-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground/80 font-semibold">
+                    {sectionTitle}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {section.items.map((subItem) => {
+                    const SubIcon = subItem.icon || LayoutDashboard;
+                    const active = pathname === subItem.href;
+                    const subItemTitle = subItem.translationKey ? t(subItem.translationKey) : subItem.title;
 
-                  return (
-                    <button
-                      key={subItem.id}
-                      type="button"
-                      onClick={() => {
-                        onNavigate(subItem.href);
-                        onClose();
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-md font-medium transition-colors text-left cursor-pointer",
-                        active
-                          ? "bg-primary/10 text-primary font-semibold border border-primary/20 shadow-xs"
-                          : "text-foreground/80 hover:bg-muted/60 hover:text-foreground"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <SubIcon
-                          className={cn(
-                            "size-3.5 shrink-0",
-                            active ? "text-primary" : "text-muted-foreground"
-                          )}
-                        />
-                        <span className="truncate">{subItem.title}</span>
-                      </div>
-                      {subItem.badge && (
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                          {subItem.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={subItem.id}
+                        type="button"
+                        onClick={() => {
+                          onNavigate(subItem.href);
+                          onClose();
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-md font-medium transition-colors text-left cursor-pointer",
+                          active
+                            ? "bg-primary/10 text-primary font-semibold border border-primary/20 shadow-xs"
+                            : "text-foreground/80 hover:bg-muted/60 hover:text-foreground"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <SubIcon
+                            className={cn(
+                              "size-3.5 shrink-0",
+                              active ? "text-primary" : "text-muted-foreground"
+                            )}
+                          />
+                          <span className="truncate">{subItemTitle}</span>
+                        </div>
+                        {subItem.badge && (
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            {subItem.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Footer Back Bar */}
@@ -132,10 +142,10 @@ export function TenantMobileMenuTab({
             onClick={() => setActiveSecondaryKey(null)}
             className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
           >
-            <ChevronLeft className="size-3" /> Kembali ke Menu Utama
+            <ChevronLeft className="size-3" /> {t("nav.back_to_main_menu")}
           </button>
           <span className="text-[10px] text-muted-foreground font-mono">
-            {currentSecondaryConfig.headerTitle}
+            {secondaryHeader}
           </span>
         </div>
       </div>
@@ -168,7 +178,7 @@ export function TenantMobileMenuTab({
             className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:underline cursor-pointer shrink-0"
           >
             <ArrowLeft className="size-3" />
-            <span>Semua Proyek</span>
+            <span>{t("nav.all_projects")}</span>
           </button>
         )}
       </div>
@@ -183,6 +193,7 @@ export function TenantMobileMenuTab({
           const Icon = item.icon;
           const active = isItemActive(item.href);
           const hasSecondary = Boolean(item.hasSecondarySidebar && secondaryConfigs[item.id]);
+          const itemTitle = item.translationKey ? t(item.translationKey) : item.title;
 
           return (
             <button
@@ -210,7 +221,7 @@ export function TenantMobileMenuTab({
                     active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                   )}
                 />
-                <span className="truncate">{item.title}</span>
+                <span className="truncate">{itemTitle}</span>
               </div>
               {hasSecondary && (
                 <ChevronRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-transform group-hover:translate-x-0.5 shrink-0" />

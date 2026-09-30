@@ -18,6 +18,7 @@ import {
   SelectItem,
 } from "@k2net/ui";
 import { Network, Server, HardDrive, Cpu } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import type { EnrichedOrganization, PlanTier } from "./types";
 
@@ -34,6 +35,7 @@ export function TenantQuotaModal({
   onClose,
   onSaveQuotas,
 }: TenantQuotaModalProps) {
+  const { t } = useTranslation();
   const [planTier, setPlanTier] = useState<PlanTier>(organization?.planTier || "Professional");
   const [maxOlts, setMaxOlts] = useState(organization?.maxOlts || 5);
   const [maxOdps, setMaxOdps] = useState(organization?.maxOdps || 1000);
@@ -93,10 +95,10 @@ export function TenantQuotaModal({
         maxStorageGb: Number(maxStorageGb),
         apiRateLimitMax: Number(apiRateLimitMax),
       });
-      toast.success("Hardware capacity and quotas updated");
+      toast.success(t("common.success"));
       onClose();
     } catch {
-      toast.error("Failed to update quotas");
+      toast.error(t("common.error"));
     } finally {
       setSaving(false);
     }
@@ -108,26 +110,26 @@ export function TenantQuotaModal({
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary font-mono text-xs uppercase tracking-wider font-bold">
             <Network className="h-4 w-4" />
-            <span>FTTH Hardware Capacity & Limits</span>
+            <span>{t("organizations.edit_quotas_title")}</span>
           </div>
           <DialogTitle className="text-lg font-bold text-foreground">
             {organization.name}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Configure device caps, spatial node quotas, and edge rate-limiting for this tenant.
+            {t("organizations.edit_quotas_desc", { orgName: organization.name })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {/* Plan Tier Selector */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Subscription Tier</Label>
+            <Label className="text-xs font-semibold text-foreground">{t("organizations.plan_tier")}</Label>
             <Select value={planTier} onValueChange={(v) => handlePlanChange(v as PlanTier)}>
               <SelectTrigger className="h-9 text-xs bg-card border-border text-foreground">
-                <SelectValue placeholder="Select tier" />
+                <SelectValue placeholder={t("common.select_option")} />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-xs">
-                <SelectItem value="Free">Free Trial Tier (14 Days / 1 OLT / 50 ODP)</SelectItem>
+                <SelectItem value="Free">Free Trial (14 Days / 1 OLT / 50 ODP)</SelectItem>
                 <SelectItem value="Starter">Starter Tier (Rp 990k / 2 OLT / 300 ODP)</SelectItem>
                 <SelectItem value="Professional">Professional Tier (Rp 3.9M / 6 OLT / 2.5k ODP)</SelectItem>
                 <SelectItem value="Enterprise">Enterprise Tier (Rp 12.5M / 25 OLT / 12k ODP)</SelectItem>
@@ -141,7 +143,7 @@ export function TenantQuotaModal({
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Server className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Max OLT Devices</span>
+                <span>{t("organizations.hardware_slots")} (OLT)</span>
               </Label>
               <Input
                 type="number"
@@ -155,7 +157,7 @@ export function TenantQuotaModal({
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Network className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Max ODP Nodes</span>
+                <span>{t("organizations.odp_quota")} (ODP)</span>
               </Label>
               <Input
                 type="number"
@@ -171,7 +173,7 @@ export function TenantQuotaModal({
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <HardDrive className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>MinIO S3 Storage (GB)</span>
+                <span>{t("organizations.minio_storage")} (GB)</span>
               </Label>
               <Input
                 type="number"
@@ -199,14 +201,14 @@ export function TenantQuotaModal({
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" size="sm" onClick={onClose} className="border-border/80">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? "Saving..." : "Save Quotas"}
+            {saving ? t("common.processing") : t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

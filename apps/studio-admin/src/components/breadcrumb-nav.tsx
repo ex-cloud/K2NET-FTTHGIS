@@ -7,10 +7,13 @@ import {
   BreadcrumbList,
   Button,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { usePathname } from "@/lib/navigation-compat";
 import { Plug2 } from "lucide-react";
+
 export function BreadcrumbNav() {
   const pathname = usePathname();
+  const { t } = useTranslation();
   
   // 1. Detect subdomain context
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
@@ -61,7 +64,7 @@ export function BreadcrumbNav() {
           <BreadcrumbItem>
             <div className="flex items-center gap-1 text-sm font-medium text-foreground">
               <span className="text-muted-foreground/50">/</span>
-              Organizations
+              {t("nav.organizations")}
             </div>
           </BreadcrumbItem>
         </BreadcrumbList>
@@ -94,7 +97,7 @@ export function BreadcrumbNav() {
          <div className="flex items-center">
            <Button variant="outline" size="sm" className="h-6 text-[10px] font-medium gap-1.5 rounded-full px-3 border-border text-foreground hover:bg-accent">
              <Plug2 className="w-2 h-2" />
-             Connect
+             {t("nav.connect")}
            </Button>
          </div>
       )}

@@ -1,5 +1,6 @@
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { CreditCard, Zap, AlertTriangle, ShieldAlert } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { usePermissions } from "@/hooks/use-permissions";
 import type { TenantSubscriptionSummary } from "@/hooks/useTenantSubscription";
 
@@ -14,6 +15,7 @@ export function BillingHeaderBar({
   summary,
   onOpenDunningModal,
 }: BillingHeaderBarProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManageBilling = canAccess(["system.organizations.manage", "system.billing.manage"]);
 
@@ -22,7 +24,7 @@ export function BillingHeaderBar({
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <CreditCard className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground">Tata Kelola Paket Langganan &amp; Billing</h3>
+          <h3 className="text-sm font-bold text-foreground">{t("billing.title")}</h3>
           <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px] font-medium">
             {currentTier.toUpperCase()} PLAN
           </Badge>
@@ -49,7 +51,7 @@ export function BillingHeaderBar({
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          Kelola tier paket langganan, kalkulasi prorata upgrade, dan kontrol status dunning organisasi.
+          {t("billing.subtitle")}
         </p>
       </div>
 
@@ -57,7 +59,7 @@ export function BillingHeaderBar({
         <ActionTooltip
           label={
             canManageBilling
-              ? "Kelola Status Dunning & Tagihan"
+              ? t("billing.dunning_control")
               : "Akses Read-Only: Memerlukan izin system.organizations.manage"
           }
         >
@@ -69,7 +71,7 @@ export function BillingHeaderBar({
             className="h-8 px-3 text-xs font-medium border-border text-foreground hover:bg-muted/50 gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
-            <span>Kontrol Dunning</span>
+            <span>{t("billing.dunning_control")}</span>
           </Button>
         </ActionTooltip>
       </div>

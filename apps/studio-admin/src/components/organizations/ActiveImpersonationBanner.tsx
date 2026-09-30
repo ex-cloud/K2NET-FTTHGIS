@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ShieldAlert, ExternalLink, XCircle } from "lucide-react";
 import { Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 interface ActiveImpersonationBannerProps {
   activeSession: {
@@ -20,6 +21,8 @@ export function ActiveImpersonationBanner({
   onReopenPortal,
   onStopSession,
 }: ActiveImpersonationBannerProps) {
+  const { t } = useTranslation();
+
   if (!activeSession?.hasActiveSession || (activeSession?.remainingSeconds ?? 0) <= 0) {
     return null;
   }
@@ -32,13 +35,12 @@ export function ActiveImpersonationBanner({
         </div>
         <div className="space-y-0.5 text-xs">
           <div className="font-bold flex items-center gap-1.5 text-foreground">
-            <span>Sesi Impersonasi Sedang Aktif:</span>
+            <span>{t("security.impersonation_active_title")}:</span>
             <span className="font-mono text-primary underline">{activeSession.targetOrgName}</span>
             <span className="text-[10px] font-mono text-muted-foreground">({activeSession.targetOrgSlug})</span>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Sesi operasional bantuan sedang berjalan. Anda dapat membuka portal kembali atau mengakhirinya kapan saja via
-            klik kanan atau tombol di samping.
+            {t("security.impersonation_active_desc")}
           </p>
         </div>
       </div>
@@ -50,7 +52,7 @@ export function ActiveImpersonationBanner({
           onClick={() => onReopenPortal(activeSession.targetOrgSlug!)}
           className="h-8 text-xs font-semibold gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
         >
-          <span>Buka Portal Tenant</span>
+          <span>{t("organizations.open_portal")}</span>
           <ExternalLink className="h-3.5 w-3.5" />
         </Button>
         <Button
@@ -61,7 +63,7 @@ export function ActiveImpersonationBanner({
           className="h-8 text-xs font-medium gap-1.5"
         >
           <XCircle className="h-3.5 w-3.5" />
-          <span>{terminating ? "Mengakhiri..." : "Akhiri Sesi"}</span>
+          <span>{terminating ? t("common.processing") : t("security.end_session_btn")}</span>
         </Button>
       </div>
     </div>

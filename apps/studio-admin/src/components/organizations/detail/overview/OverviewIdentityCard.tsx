@@ -1,5 +1,6 @@
 import { Badge, Card } from "@k2net/ui";
 import { Zap, AlertTriangle, ExternalLink } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { getTenantUrl } from "@/lib/domain";
 import type { EnrichedOrganization } from "../../types";
 import type { TenantSubscriptionSummary } from "@/hooks/useTenantSubscription";
@@ -23,6 +24,7 @@ export function OverviewIdentityCard({
   effectiveMaxOdps,
   activeStatus,
 }: OverviewIdentityCardProps) {
+  const { t } = useTranslation();
   const isBoosterActive = summary?.isBoosterActive ?? false;
 
   return (
@@ -32,13 +34,17 @@ export function OverviewIdentityCard({
         <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between text-xs text-foreground">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-amber-500 shrink-0" />
-            <span className="font-bold">Emergency Quota Booster Aktif:</span>
+            <span className="font-bold">{t("organizations.emergency_booster_active")}</span>
             <span className="text-foreground/80">
-              +{summary?.boosterOdps} ODP &amp; +{summary?.boosterOlts} OLT (Sisa {summary?.boosterDaysRemaining} hari).
+              {t("organizations.emergency_booster_desc", {
+                odps: summary?.boosterOdps ?? 0,
+                olts: summary?.boosterOlts ?? 0,
+                days: summary?.boosterDaysRemaining ?? 0,
+              })}
             </span>
           </div>
           <Badge variant="outline" className="border-amber-500/40 text-amber-500 font-mono text-[10px]">
-            BURSTING ACTIVE
+            {t("organizations.bursting_active")}
           </Badge>
         </div>
       )}
@@ -64,7 +70,7 @@ export function OverviewIdentityCard({
                   rel="noreferrer"
                   className="hover:text-primary flex items-center gap-1 text-[11px] text-muted-foreground hover:underline font-mono transition-colors"
                 >
-                  <span>subdomain portal</span>
+                  <span>{t("organizations.subdomain_portal")}</span>
                   <ExternalLink className="h-2.5 w-2.5" />
                 </a>
               </div>
@@ -78,7 +84,7 @@ export function OverviewIdentityCard({
             {summary?.isOverQuota && (
               <Badge variant="destructive" className="font-mono text-[10px] gap-1 px-2 py-0.5">
                 <AlertTriangle className="h-3 w-3" />
-                <span>OVER_QUOTA</span>
+                <span>{t("organizations.over_quota")}</span>
               </Badge>
             )}
             <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1 px-2 py-0.5">
@@ -94,27 +100,27 @@ export function OverviewIdentityCard({
         {/* Key Properties Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-border/50 text-xs">
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">Lead PIC</span>
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.lead_pic")}</span>
             <span className="font-semibold text-foreground truncate block">{org.picName}</span>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">SLA Support</span>
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.sla_support")}</span>
             <span className="font-semibold text-primary block">{org.slaTier}</span>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">Hardware Slots</span>
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.hardware_slots")}</span>
             <span className="font-mono text-foreground block">{usedOlts}/{effectiveMaxOlts} OLTs</span>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">ODP Quota</span>
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.odp_quota")}</span>
             <span className="font-mono text-foreground block">{usedOdps}/{effectiveMaxOdps}</span>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">MinIO Storage</span>
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.minio_storage")}</span>
             <span className="font-mono text-foreground block">{org.usedStorageGb}/{org.maxStorageGb} GB</span>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">API Latency</span>
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.api_latency")}</span>
             <span className="font-mono text-primary block">{org.apiLatencyMs} ms</span>
           </div>
         </div>

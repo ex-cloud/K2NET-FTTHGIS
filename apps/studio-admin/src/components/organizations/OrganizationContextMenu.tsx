@@ -19,6 +19,7 @@ import {
   Lock,
   XCircle,
 } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
 import type { EnrichedOrganization, OrganizationStatus } from "./types";
@@ -56,13 +57,15 @@ export function OrganizationContextMenu({
   onDelete,
   children,
 }: OrganizationContextMenuProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canImpersonate = canAccess("system.support.impersonate");
   const canUpdateOrg = canAccess(["system.organizations.update", "system.organizations.manage"]);
   const canDeleteOrg = canAccess("system.organizations.delete");
+
   const handleOpenWhatsApp = () => {
     if (!organization.picPhone) {
-      toast.error("No WhatsApp number configured for this PIC");
+      toast.error(t("common.error"));
       return;
     }
     const cleanPhone = organization.picPhone.replace(/[^0-9]/g, "");
@@ -71,7 +74,7 @@ export function OrganizationContextMenu({
 
   const handleOpenEmail = () => {
     if (!organization.picEmail) {
-      toast.error("No email address configured for this PIC");
+      toast.error(t("common.error"));
       return;
     }
     window.location.href = `mailto:${organization.picEmail}?subject=[K2NET Enterprise] Support Inquiry for ${organization.name}`;
@@ -87,7 +90,7 @@ export function OrganizationContextMenu({
           className="cursor-pointer font-semibold text-foreground focus:bg-accent gap-2"
         >
           <Network className="w-3.5 h-3.5 text-primary" />
-          <span>Open Organization Detail</span>
+          <span>{t("common.view_details")}</span>
           <ContextMenuShortcut>↵</ContextMenuShortcut>
         </ContextMenuItem>
 
@@ -100,7 +103,7 @@ export function OrganizationContextMenu({
               className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              <span>Buka Kembali Portal Tenant</span>
+              <span>{t("organizations.open_portal")}</span>
             </ContextMenuItem>
             <ContextMenuItem
               onClick={() => onStopImpersonation?.(organization)}
@@ -108,7 +111,7 @@ export function OrganizationContextMenu({
               className="cursor-pointer font-semibold text-destructive focus:bg-destructive/10 focus:text-destructive gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" />
-              <span>Akhiri Sesi Impersonasi</span>
+              <span>{t("security.end_session_btn")}</span>
               <ContextMenuShortcut>Ctrl ⇧ ⌫</ContextMenuShortcut>
             </ContextMenuItem>
           </>
@@ -119,7 +122,7 @@ export function OrganizationContextMenu({
             className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            <span>Login as Tenant Admin</span>
+            <span>{t("organizations.impersonate_tenant")}</span>
             <ContextMenuShortcut>Ctrl ↵</ContextMenuShortcut>
           </ContextMenuItem>
         )}
@@ -132,7 +135,7 @@ export function OrganizationContextMenu({
           className="cursor-pointer gap-2 focus:bg-muted"
         >
           <MessageCircle className="w-3.5 h-3.5 text-primary" />
-          <span>Chat PIC via WhatsApp</span>
+          <span>{t("organizations.chat_pic")}</span>
           <ContextMenuShortcut>W</ContextMenuShortcut>
         </ContextMenuItem>
 
@@ -141,7 +144,7 @@ export function OrganizationContextMenu({
           className="cursor-pointer gap-2 focus:bg-muted"
         >
           <Mail className="w-3.5 h-3.5 text-blue-500" />
-          <span>Send Email to PIC</span>
+          <span>{t("organizations.email_pic")}</span>
           <ContextMenuShortcut>E</ContextMenuShortcut>
         </ContextMenuItem>
 
@@ -161,7 +164,7 @@ export function OrganizationContextMenu({
           className="cursor-pointer gap-2 focus:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sliders className="w-3.5 h-3.5 text-muted-foreground" />
-          <span>Feature Flags & Add-ons</span>
+          <span>{t("organizations.feature_flags_title")}</span>
           <ContextMenuShortcut>F</ContextMenuShortcut>
         </ContextMenuItem>
 
@@ -172,7 +175,7 @@ export function OrganizationContextMenu({
           className="cursor-pointer gap-2 focus:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Globe className="w-3.5 h-3.5 text-muted-foreground" />
-          <span>Custom Domain & SSL</span>
+          <span>{t("organizations.custom_domain_title")}</span>
           <ContextMenuShortcut>D</ContextMenuShortcut>
         </ContextMenuItem>
 
@@ -183,7 +186,7 @@ export function OrganizationContextMenu({
           className="cursor-pointer gap-2 focus:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Network className="w-3.5 h-3.5 text-muted-foreground" />
-          <span>FTTH Spatial Quotas</span>
+          <span>{t("organizations.edit_quotas_title")}</span>
           <ContextMenuShortcut>Q</ContextMenuShortcut>
         </ContextMenuItem>
 
@@ -194,7 +197,7 @@ export function OrganizationContextMenu({
           className="cursor-pointer gap-2 focus:bg-muted text-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Clock className="w-3.5 h-3.5" />
-          <span>Extend Trial (+14 Days)</span>
+          <span>{t("billing.extend_trial_btn")}</span>
           <ContextMenuShortcut>T</ContextMenuShortcut>
         </ContextMenuItem>
 
@@ -212,7 +215,7 @@ export function OrganizationContextMenu({
             className="opacity-50 cursor-not-allowed gap-2 text-muted-foreground select-none"
           >
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Delete (System Protected)</span>
+            <span>{t("common.delete")} (System Protected)</span>
           </ContextMenuItem>
         ) : !canDeleteOrg ? (
           <ContextMenuItem
@@ -220,7 +223,7 @@ export function OrganizationContextMenu({
             className="opacity-50 cursor-not-allowed gap-2 text-muted-foreground select-none"
           >
             <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Delete (No Permission)</span>
+            <span>{t("common.delete")} (No Permission)</span>
           </ContextMenuItem>
         ) : (
           <ContextMenuItem
@@ -228,7 +231,7 @@ export function OrganizationContextMenu({
             className="cursor-pointer gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete Organization</span>
+            <span>{t("organizations.delete_org_title")}</span>
             <ContextMenuShortcut>Del</ContextMenuShortcut>
           </ContextMenuItem>
         )}

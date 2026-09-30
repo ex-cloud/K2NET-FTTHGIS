@@ -1,0 +1,20 @@
+{
+  "map_title": "FTTH Network Spatial Topology Map",
+  "map_subtitle": "Mapping of optical fiber cable routes, OLT core devices, ODC, ODP (FAT), and customer connection termination points.",
+  "layers": "Map Layers",
+  "layer_cables": "Fiber Optic Cables (Feeder & Distribution)",
+  "layer_olts": "Core OLT Devices",
+  "layer_odcs": "Optical Distribution Cabinet (ODC)",
+  "layer_odps": "Optical Distribution Point (ODP / FAT)",
+  "layer_closures": "Joint Closure (JC)",
+  "layer_customers": "Customer Points (ONU/ONT)",
+  "add_device": "Add New Device",
+  "draw_cable": "Draw Cable Route",
+  "measure_distance": "Measure Spatial Distance",
+  "signal_attenuation": "Optical Signal Attenuation (dBm)",
+  "core_management": "Core Management & Splice Tray",
+  "port_capacity": "Used Port Capacity",
+  "device_details": "Device Technical Details",
+  "export_kml": "Export KML / GeoJSON",
+  "import_kml": "Import KML / GeoJSON File"
+}

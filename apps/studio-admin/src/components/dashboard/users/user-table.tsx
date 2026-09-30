@@ -32,6 +32,7 @@ import {
 import type { PaginatedResponse, User } from "@/types/user";
 import { Link } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
+import { useTranslation, type TranslationKey } from "@k2net/i18n";
 import { UpdateUserDialog } from "./update-user-dialog";
 import { UserSearch } from "./user-search";
 import { ResetPasswordDialog } from "./reset-password-dialog";
@@ -49,13 +50,14 @@ function getUserContextMenuGroups(
   user: User,
   canManageUsers: boolean,
   onEdit: (user: User) => void,
-  onResetPassword: (user: User) => void
+  onResetPassword: (user: User) => void,
+  t: (key: TranslationKey) => string
 ): ContextMenuGroupConfig[] {
   return [
     {
       items: [
         {
-          label: "Tanya AI tentang Pengguna",
+          label: t("users.ctx_ask_ai"),
           icon: Sparkles,
           shortcut: "Ctrl+J",
           onClick: () => {
@@ -70,14 +72,14 @@ function getUserContextMenuGroups(
           },
         },
         {
-          label: "Ubah Profil & Role",
+          label: t("users.ctx_edit_profile"),
           icon: Edit,
           shortcut: "Alt+E",
           onClick: () => onEdit(user),
           disabled: !canManageUsers,
         },
         {
-          label: "Reset Password",
+          label: t("users.ctx_reset_password"),
           icon: Key,
           shortcut: "Alt+R",
           onClick: () => onResetPassword(user),
@@ -88,25 +90,25 @@ function getUserContextMenuGroups(
     {
       items: [
         {
-          label: "Salin Email",
+          label: t("users.ctx_copy_email"),
           icon: Copy,
           shortcut: "Ctrl+C",
           onClick: () => {
             navigator.clipboard.writeText(user.email || "");
-            toast.success(`Email ${user.email} disalin ke clipboard!`);
+            toast.success(`Email ${user.email} copied to clipboard!`);
           },
         },
         {
-          label: "Salin User ID",
+          label: t("users.ctx_copy_user_id"),
           icon: FileCode,
           shortcut: "Alt+C",
           onClick: () => {
             navigator.clipboard.writeText(user.id || "");
-            toast.success("User ID disalin ke clipboard!");
+            toast.success("User ID copied to clipboard!");
           },
         },
         {
-          label: "Lihat Log Audit Sesi",
+          label: t("users.ctx_view_audit"),
           icon: History,
           shortcut: "Alt+L",
           onClick: () => {
@@ -119,7 +121,7 @@ function getUserContextMenuGroups(
     {
       items: [
         {
-          label: "Putus Sesi Keycloak",
+          label: t("users.ctx_revoke_session"),
           icon: ShieldAlert,
           variant: "destructive",
           shortcut: "Alt+X",
@@ -146,8 +148,10 @@ function UserTableRowItem({
   onEdit: (user: User) => void;
   onResetPassword: (user: User) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
-    <UniversalContextMenu groups={getUserContextMenuGroups(user, canManageUsers, onEdit, onResetPassword)}>
+    <UniversalContextMenu groups={getUserContextMenuGroups(user, canManageUsers, onEdit, onResetPassword, t)}>
       <TableRow className="border-border hover:bg-accent/40 transition-colors group h-12 cursor-pointer">
         <TableCell className="px-4 py-2">
           <div className="flex items-center gap-3">
@@ -195,8 +199,10 @@ function UserTableRowItem({
         )}
         <TableCell className="px-4 py-2">
           <div className="flex items-center gap-2">
-            <span className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-primary" : "bg-red-500"}`} />
-            <span className="text-[12px] text-muted-foreground capitalize">{user.status.toLowerCase()}</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-primary" : "bg-destructive"}`} />
+            <span className="text-[12px] text-muted-foreground capitalize">
+              {user.status === "ACTIVE" ? t("users.status_active") : t("users.status_suspended")}
+            </span>
           </div>
         </TableCell>
         <TableCell className="px-4 py-2">
@@ -207,32 +213,32 @@ function UserTableRowItem({
         <TableCell className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {canManageUsers && (
-              <ActionTooltip label="Ubah Profil & Role" shortcut="Alt+E">
+              <ActionTooltip label={t("users.ctx_edit_profile")} shortcut="Alt+E">
                 <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" onClick={() => onEdit(user)}>
                   <Edit className="size-3.5" />
                 </Button>
               </ActionTooltip>
             )}
             {canManageUsers && (
-              <ActionTooltip label="Reset Password" shortcut="Alt+R">
+              <ActionTooltip label={t("users.ctx_reset_password")} shortcut="Alt+R">
                 <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" onClick={() => onResetPassword(user)}>
                   <Key className="size-3.5" />
                 </Button>
               </ActionTooltip>
             )}
             {canManageUsers && (
-              <ActionTooltip label="Putus Sesi Keycloak">
+              <ActionTooltip label={t("users.ctx_revoke_session")}>
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:text-amber-400"
+                  className="text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive"
                   onClick={() => toast.success(`Keycloak active session revoked for ${user.email}`)}
                 >
                   <ShieldAlert className="size-3.5" />
                 </Button>
               </ActionTooltip>
             )}
-            <ActionTooltip label="Lihat Riwayat Audit" shortcut="Alt+L">
+            <ActionTooltip label={t("users.ctx_view_audit")} shortcut="Alt+L">
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -263,13 +269,17 @@ function UserTablePagination({
   totalElements: number;
   pageSize: number;
 }) {
+  const { t } = useTranslation();
   const startParam = currentPage * pageSize + 1;
   const endParam = Math.min((currentPage + 1) * pageSize, totalElements);
 
   return (
     <div className="px-4 py-2 border-t border-border flex items-center justify-between bg-card">
       <span className="text-[12px] text-muted-foreground">
-        Showing {totalElements === 0 ? 0 : startParam} to {endParam} of {totalElements} results
+        {t("users.showing_results")
+          .replace("{{start}}", (totalElements === 0 ? 0 : startParam).toString())
+          .replace("{{end}}", endParam.toString())
+          .replace("{{total}}", totalElements.toString())}
       </span>
       <div className="flex items-center gap-1.5">
         <Button variant="outline" size="icon-sm" className="border-border/60 bg-transparent" disabled={currentPage === 0} asChild>
@@ -291,6 +301,7 @@ function UserTablePagination({
 }
 
 export function UserTable({ data, currentPage, isGlobalView = false, token }: UserTableProps) {
+  const { t } = useTranslation();
   const users = data?.content || [];
   const totalPages = data?.totalPages || 0;
   const totalElements = data?.totalElements || 0;
@@ -320,17 +331,17 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
       <div className="flex flex-col h-full space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="w-full max-w-xs">
-            <UserSearch placeholder="Filter users..." />
+            <UserSearch placeholder={t("users.filter_placeholder")} />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button variant="outline" size="sm" className="hidden sm:flex border-border/80">
-              Docs
+              {t("users.docs_button")}
             </Button>
             {canInviteUsers && (
-              <ActionTooltip label="Undang / Tambah Pengguna Baru" shortcut="C">
+              <ActionTooltip label={t("users.invite_tooltip")} shortcut="C">
                 <Button onClick={() => setIsInviteWizardOpen(true)} variant="default" size="sm" className="w-full sm:w-auto gap-1.5">
                   <UserPlus className="size-3.5" />
-                  Add User
+                  {t("users.add_user_button")}
                 </Button>
               </ActionTooltip>
             )}
@@ -342,21 +353,21 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
             <Table>
               <TableHeader className="bg-muted/60 backdrop-blur-md sticky top-0 border-b border-border z-10">
                 <TableRow className="hover:bg-transparent border-border">
-                  <TableHead className="w-[300px] h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">User</TableHead>
-                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Role</TableHead>
+                  <TableHead className="w-[300px] h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_user")}</TableHead>
+                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_role")}</TableHead>
                   {isGlobalView && (
-                    <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Organization</TableHead>
+                    <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_organization")}</TableHead>
                   )}
-                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Created At</TableHead>
-                  <TableHead className="h-9 px-4 text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
+                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_status")}</TableHead>
+                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_created_at")}</TableHead>
+                  <TableHead className="h-9 px-4 text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={isGlobalView ? 6 : 5} className="h-24 text-center text-muted-foreground">
-                      No users found.
+                      {t("users.no_users_found")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -397,3 +408,4 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
     </>
   );
 }
+

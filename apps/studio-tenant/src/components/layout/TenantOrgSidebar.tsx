@@ -9,9 +9,11 @@ import {
   useSidebarMode,
   cn,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { ORG_NAV_ITEMS, type NavItem } from "../../config/tenant-sidebar-navigation";
 
 export function TenantOrgSidebar() {
+  const { t } = useTranslation();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const { sidebarMode } = useSidebarMode();
@@ -40,6 +42,7 @@ export function TenantOrgSidebar() {
   const renderNavButton = (item: NavItem) => {
     const Icon = item.icon;
     const isActive = checkIsActive(item.href);
+    const itemTitle = item.translationKey ? t(item.translationKey) : item.title;
 
     const button = (
       <div
@@ -60,7 +63,7 @@ export function TenantOrgSidebar() {
             isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
           )}
         >
-          {item.title}
+          {itemTitle}
         </span>
       </div>
     );
@@ -76,7 +79,7 @@ export function TenantOrgSidebar() {
         <Tooltip key={item.id}>
           <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
           <TooltipContent side="right" className="text-xs">
-            {item.title}
+            {itemTitle}
           </TooltipContent>
         </Tooltip>
       );

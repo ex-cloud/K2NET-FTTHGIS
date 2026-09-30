@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 
 interface OrgToolbarFiltersProps {
@@ -26,6 +27,7 @@ export function OrgToolbarFilters({
   planFilter,
   setPlanFilter,
 }: OrgToolbarFiltersProps) {
+  const { t } = useTranslation();
   const hasActiveFilter = statusFilter !== "ALL" || planFilter !== "ALL" || searchQuery.trim() !== "";
 
   return (
@@ -35,7 +37,7 @@ export function OrgToolbarFilters({
         <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Filter by organization name or slug..."
+          placeholder={t("organizations.filter_placeholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-8 pr-8 py-1.5 text-xs rounded-md border border-border/80 bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary transition-all h-8"
@@ -58,26 +60,26 @@ export function OrgToolbarFilters({
           >
             <Filter className="size-3 text-muted-foreground" />
             <span>
-              Status: <strong className="font-medium">{statusFilter === "ALL" ? "All" : statusFilter}</strong>
+              {t("organizations.status")}: <strong className="font-medium">{statusFilter === "ALL" ? t("common.all") : statusFilter}</strong>
             </span>
             <ChevronDown className="size-3 text-muted-foreground opacity-60" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-44 text-xs bg-popover/95 backdrop-blur-xl border-border/80 rounded-md">
           <DropdownMenuItem onClick={() => setStatusFilter("ALL")} className="cursor-pointer">
-            All Statuses
+            {t("organizations.all_statuses")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setStatusFilter("ACTIVE")} className="cursor-pointer">
-            🟢 Active Only
+            🟢 {t("organizations.active_only")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setStatusFilter("TRIAL")} className="cursor-pointer">
-            🔵 Trial Only
+            🔵 {t("organizations.trial_only")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setStatusFilter("PROVISIONING")} className="cursor-pointer">
-            🟡 Provisioning
+            🟡 {t("organizations.provisioning_only")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setStatusFilter("SUSPENDED")} className="cursor-pointer text-destructive">
-            🔴 Suspended
+            🔴 {t("organizations.suspended_only")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -94,26 +96,26 @@ export function OrgToolbarFilters({
             )}
           >
             <span>
-              Plan: <strong className="font-medium">{planFilter === "ALL" ? "All" : planFilter}</strong>
+              {t("organizations.plan_tier")}: <strong className="font-medium">{planFilter === "ALL" ? t("common.all") : planFilter}</strong>
             </span>
             <ChevronDown className="size-3 text-muted-foreground opacity-60" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-40 text-xs bg-popover/95 backdrop-blur-xl border-border/80 rounded-md">
           <DropdownMenuItem onClick={() => setPlanFilter("ALL")} className="cursor-pointer">
-            All Plans
+            {t("organizations.all_plans")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setPlanFilter("Free")} className="cursor-pointer">
-            Free Trial
+            {t("billing.free_trial")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setPlanFilter("Starter")} className="cursor-pointer">
-            Starter Tier
+            {t("billing.starter")} Tier
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setPlanFilter("Professional")} className="cursor-pointer">
-            Professional Tier
+            {t("billing.pro")} Tier
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setPlanFilter("Enterprise")} className="cursor-pointer">
-            Enterprise Tier
+            {t("billing.enterprise")} Tier
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -127,9 +129,9 @@ export function OrgToolbarFilters({
             setStatusFilter("ALL");
             setPlanFilter("ALL");
           }}
-          className="text-muted-foreground hover:text-foreground px-2"
+          className="text-muted-foreground hover:text-foreground px-2 cursor-pointer"
         >
-          Reset
+          {t("common.reset")}
         </Button>
       )}
     </div>

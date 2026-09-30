@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@k2net/ui";
 import { Dot, ShieldCheck } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { useTheme } from "@/lib/navigation-compat";
 import { signOut, useSession } from "@/lib/auth-compat";
 import { getSystemUrl, parseDomain } from "@/lib/domain";
@@ -81,11 +82,13 @@ function UserNavBrandSection({
   brandTheme: "green" | "blue";
   onBrandChange: (brand: "green" | "blue") => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <>
       <DropdownMenuSeparator className="bg-border" />
       <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
-        Brand Style
+        {t("nav.brand_style")}
       </DropdownMenuLabel>
       <DropdownMenuItem
         className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium"
@@ -95,7 +98,7 @@ function UserNavBrandSection({
           <div className="flex h-3.5 w-3.5 items-center justify-center">
             {brandTheme === "green" && <Dot className="size-8 text-primary" />}
           </div>
-          <span>Version 1 (Green)</span>
+          <span>{t("common.brand_green")}</span>
         </div>
       </DropdownMenuItem>
       <DropdownMenuItem
@@ -106,7 +109,7 @@ function UserNavBrandSection({
           <div className="flex h-3.5 w-3.5 items-center justify-center">
             {brandTheme === "blue" && <Dot className="size-8 text-primary" />}
           </div>
-          <span>Version 2 (Blue)</span>
+          <span>{t("common.brand_blue")}</span>
         </div>
       </DropdownMenuItem>
     </>
@@ -124,29 +127,37 @@ function UserNavThemeSection({
   onSetTheme: (theme: "system" | "dark" | "light") => void;
   onToggleMono: () => void;
 }) {
+  const { t } = useTranslation();
+
+  const themeLabels: Record<string, string> = {
+    system: t("common.system_mode"),
+    dark: t("common.dark_mode"),
+    light: t("common.light_mode"),
+  };
+
   return (
     <>
       <DropdownMenuSeparator className="bg-border" />
       <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
-        Theme
+        {t("nav.theme")}
       </DropdownMenuLabel>
-      {(["system", "dark", "light"] as const).map((t) => (
+      {(["system", "dark", "light"] as const).map((key) => (
         <DropdownMenuItem
-          key={t}
+          key={key}
           className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium capitalize"
-          onClick={() => onSetTheme(t)}
+          onClick={() => onSetTheme(key)}
         >
           <div className="flex items-center gap-2">
             <div className="flex h-3.5 w-3.5 items-center justify-center">
-              {theme === t && <Dot className="size-8 text-primary" />}
+              {theme === key && <Dot className="size-8 text-primary" />}
             </div>
-            <span>{t}</span>
+            <span>{themeLabels[key] || key}</span>
           </div>
         </DropdownMenuItem>
       ))}
       <DropdownMenuSeparator className="bg-border" />
       <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
-        Mode
+        {t("nav.mode")}
       </DropdownMenuLabel>
       <DropdownMenuItem
         className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium"
@@ -156,7 +167,7 @@ function UserNavThemeSection({
           <div className="flex h-3.5 w-3.5 items-center justify-center">
             {isMono && <Dot className="size-8 text-primary" />}
           </div>
-          <span>Mono</span>
+          <span>{t("common.mode_mono")}</span>
         </div>
       </DropdownMenuItem>
     </>
@@ -209,19 +220,21 @@ function UserNavHeader({ user }: { user?: NavUser }) {
 }
 
 function UserNavLinks() {
+  const { t } = useTranslation();
+
   return (
     <DropdownMenuGroup>
       <DropdownMenuItem
         className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer"
         onClick={() => window.location.assign("/account/preferences")}
       >
-        Account preferences
+        {t("nav.account_preferences")}
       </DropdownMenuItem>
       <DropdownMenuItem className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer">
-        Feature previews
+        {t("nav.feature_previews")}
       </DropdownMenuItem>
       <DropdownMenuItem className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer">
-        Changelog
+        {t("nav.changelog")}
       </DropdownMenuItem>
     </DropdownMenuGroup>
   );
@@ -235,6 +248,7 @@ function shouldShowSystemBackLink(user?: NavUser, isSystemSubdomain?: boolean): 
 }
 
 export function UserNav() {
+  const { t } = useTranslation();
   const { data: session } = useSession();
   const { setTheme, theme } = useTheme();
 
@@ -289,7 +303,7 @@ export function UserNav() {
                 onClick={() => window.location.assign(getSystemUrl())}
               >
                 <ShieldCheck className="size-3.5" />
-                Back to System Admin
+                {t("nav.back_to_system_admin")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </>
@@ -308,7 +322,7 @@ export function UserNav() {
           className="text-xs focus:bg-accent cursor-pointer text-destructive focus:text-destructive font-semibold"
           onClick={handleLogout}
         >
-          Log out
+          {t("nav.sign_out")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

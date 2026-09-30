@@ -8,6 +8,7 @@ import {
 } from "@k2net/ui";
 import { ExternalLink, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import type { SubscriptionPlanInfo } from "./billing-types";
 import { BillingPlanLoadingSkeleton } from "./BillingPlanLoadingSkeleton";
 import { BillingPlanErrorState } from "./BillingPlanErrorState";
@@ -39,6 +40,8 @@ export function BillingChangePlanSheet({
   onRetryPlans,
   onSelectPlan,
 }: BillingChangePlanSheetProps) {
+  const { t } = useTranslation();
+
   const isPlanCurrent = (plan: SubscriptionPlanInfo) => {
     const normPlanCode = plan.code.toLowerCase().trim();
     const normPlanName = plan.name.toLowerCase().trim();
@@ -100,18 +103,18 @@ export function BillingChangePlanSheet({
         <div className="flex items-center justify-between px-6 py-3.5 border-groove-b shrink-0 bg-card/80 backdrop-blur-md">
           <SheetHeader className="p-0 space-y-0 text-left">
             <SheetTitle className="text-sm font-semibold text-foreground tracking-tight">
-              Change subscription plan for {orgName}
+              {t("billing.change_plan_title", { orgName })}
             </SheetTitle>
           </SheetHeader>
 
           <Button
             size="sm"
             variant="outline"
-            onClick={() => toast.info("Membuka halaman dokumentasi dan perbandingan harga paket K2NET.")}
+            onClick={() => toast.info(t("billing.pricing_docs"))}
             className="h-7.5 px-3 text-xs border-border/80 bg-card/60 hover:bg-muted text-foreground font-medium gap-1.5 cursor-pointer rounded-md shadow-2xs transition-colors"
           >
             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>Pricing</span>
+            <span>{t("billing.pricing_docs")}</span>
           </Button>
         </div>
 

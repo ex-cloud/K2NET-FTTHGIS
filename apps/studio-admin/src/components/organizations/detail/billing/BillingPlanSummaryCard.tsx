@@ -1,8 +1,7 @@
-
-
-
+import * as React from "react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { CreditCard } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { usePermissions } from "@/hooks/use-permissions";
 import type { SubscriptionSummary } from "./billing-types";
 
@@ -27,6 +26,7 @@ export function BillingPlanSummaryCard({
   isLoading = false,
   onOpenChangePlan,
 }: BillingPlanSummaryCardProps) {
+  const { t, formatCurrency, formatNumber, formatDate } = useTranslation();
   const { canAccess } = usePermissions();
   const canManageBilling = canAccess(["system.organizations.manage", "system.billing.manage"]);
   const priceNum = Number(summary?.planPrice || 0);
@@ -34,27 +34,23 @@ export function BillingPlanSummaryCard({
     isLoading
       ? "—"
       : priceNum > 0
-      ? `Rp ${priceNum.toLocaleString("id-ID")}`
+      ? formatCurrency(priceNum)
       : summary?.planPrice !== undefined
-      ? "Free Trial"
+      ? t("billing.free_trial")
       : "—";
 
   // Dynamic next invoice date: 1st of next month
   const nextInvoiceDate = new Date();
   nextInvoiceDate.setMonth(nextInvoiceDate.getMonth() + 1);
   nextInvoiceDate.setDate(1);
-  const nextInvoiceStr = nextInvoiceDate.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const nextInvoiceStr = formatDate(nextInvoiceDate);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-2">
       <div className="lg:col-span-4 space-y-1">
-        <h4 className="text-sm font-bold text-foreground">Subscription Plan</h4>
+        <h4 className="text-sm font-bold text-foreground">{t("billing.title")}</h4>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Setiap organisasi memiliki paket langganan, siklus penagihan, metode pembayaran, dan kuota aset tersendiri.
+          {t("billing.subtitle")}
         </p>
       </div>
 
@@ -80,7 +76,7 @@ export function BillingPlanSummaryCard({
                 ) : (
                   <>
                     <span className="text-lg font-bold font-mono text-foreground">{formattedPrice}</span>
-                    {priceNum > 0 && <span className="text-xs text-muted-foreground font-mono">/ bulan</span>}
+                    {priceNum > 0 && <span className="text-xs text-muted-foreground font-mono">{t("billing.per_month")}</span>}
                   </>
                 )}
               </div>
@@ -90,7 +86,7 @@ export function BillingPlanSummaryCard({
             <ActionTooltip
               label={
                 canManageBilling
-                  ? "Change subscription plan"
+                  ? t("billing.change_plan")
                   : "Akses Read-Only: Memerlukan izin system.organizations.manage"
               }
             >
@@ -101,7 +97,7 @@ export function BillingPlanSummaryCard({
                 className="h-8 px-3.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
               >
                 <CreditCard className="h-3.5 w-3.5" />
-                <span>Change subscription plan</span>
+                <span>{t("billing.change_plan")}</span>
               </Button>
             </ActionTooltip>
           </div>
@@ -109,15 +105,15 @@ export function BillingPlanSummaryCard({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-muted-foreground font-mono pt-1">
             <div>
               <span className="text-[10px] uppercase font-bold text-foreground/75 dark:text-muted-foreground block">
-                Maksimal Hardware
+                {t("billing.max_hardware")}
               </span>
               <span className="font-semibold text-foreground">
-                {isLoading ? "—" : `${effectiveMaxOlts} OLT · ${effectiveMaxOdps.toLocaleString("id-ID")} ODP`}
+                {isLoading ? "—" : `${effectiveMaxOlts} OLT · ${formatNumber(effectiveMaxOdps)} ODP`}
               </span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-foreground/75 dark:text-muted-foreground block">
-                Penyimpanan MinIO
+                {t("billing.minio_storage")}
               </span>
               <span className="font-semibold text-foreground">
                 {isLoading ? "—" : `${maxStorageGb} GB Dedicated S3`}
@@ -125,10 +121,10 @@ export function BillingPlanSummaryCard({
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-foreground/75 dark:text-muted-foreground block">
-                Siklus Tagihan
+                {t("billing.billing_cycle")}
               </span>
               <span className="font-semibold text-foreground">
-                {isLoading ? "—" : `Bulanan (${nextInvoiceStr})`}
+                {isLoading ? "—" : `${t("billing.monthly")} (${nextInvoiceStr})`}
               </span>
             </div>
           </div>

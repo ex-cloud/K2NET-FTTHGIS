@@ -23,6 +23,7 @@ import {
   PrimarySidebarShell,
   useSidebarMode,
 } from "@k2net/ui";
+import { useTranslation, type TranslationKey } from "@k2net/i18n";
 import { Link, usePathname } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
 import { useTaskStore } from "@/store/task-store";
@@ -30,25 +31,26 @@ import { usePermissions } from "@/hooks/use-permissions";
 
 export type NavItem = {
   title: string;
+  translationKey?: TranslationKey;
   icon: React.ElementType;
   href: string;
   requiredPermission?: string | string[];
 };
 
 export const ADMIN_CORE_NAV_ITEMS: NavItem[] = [
-  { title: "Overview", icon: LayoutDashboard, href: "/overview" },
-  { title: "Organizations", icon: Building2, href: "/organizations", requiredPermission: ["system.organizations.view", "orgs.view"] },
-  { title: "Global Users", icon: Users, href: "/users", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
-  { title: "Projects & Issues", icon: ClipboardList, href: "/tasks", requiredPermission: ["system.task.manage", "system.observability.view"] },
+  { title: "Overview", translationKey: "nav.overview", icon: LayoutDashboard, href: "/overview" },
+  { title: "Organizations", translationKey: "nav.organizations", icon: Building2, href: "/organizations", requiredPermission: ["system.organizations.view", "orgs.view"] },
+  { title: "Global Users", translationKey: "nav.global_users", icon: Users, href: "/users", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
+  { title: "Projects & Issues", translationKey: "nav.projects_issues", icon: ClipboardList, href: "/tasks", requiredPermission: ["system.task.manage", "system.observability.view"] },
 ];
 
 export const ADMIN_PLATFORM_NAV_ITEMS: NavItem[] = [
-  { title: "Observability", icon: ScanLine, href: "/observability", requiredPermission: "system.observability.view" },
-  { title: "Global Logs", icon: Terminal, href: "/logs", requiredPermission: "system.audit.view" },
-  { title: "Security", icon: Lock, href: "/security/roles", requiredPermission: "system.security.manage" },
-  { title: "Gateways", icon: Cpu, href: "/gateways/overview", requiredPermission: ["system.observability.view", "system.gateway.manage"] },
-  { title: "AI Assistant", icon: Sparkles, href: "/ai", requiredPermission: ["system.ai.manage", "system.settings.manage"] },
-  { title: "3D Assets", icon: Box, href: "/assets-3d", requiredPermission: "system.settings.manage" },
+  { title: "Observability", translationKey: "nav.observability", icon: ScanLine, href: "/observability", requiredPermission: "system.observability.view" },
+  { title: "Global Logs", translationKey: "nav.global_logs", icon: Terminal, href: "/logs", requiredPermission: "system.audit.view" },
+  { title: "Security", translationKey: "nav.security", icon: Lock, href: "/security/roles", requiredPermission: "system.security.manage" },
+  { title: "Gateways", translationKey: "nav.gateways", icon: Cpu, href: "/gateways/overview", requiredPermission: ["system.observability.view", "system.gateway.manage"] },
+  { title: "AI Assistant", translationKey: "nav.ai_assistant", icon: Sparkles, href: "/ai", requiredPermission: ["system.ai.manage", "system.settings.manage"] },
+  { title: "3D Assets", translationKey: "nav.three_d_assets", icon: Box, href: "/assets-3d", requiredPermission: "system.settings.manage" },
 ];
 
 export const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -57,8 +59,8 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
 ];
 
 export const ADMIN_BOTTOM_NAV_ITEMS: NavItem[] = [
-  { title: "Recycle Bin", icon: Trash2, href: "/system/trash", requiredPermission: "system.trash.manage" },
-  { title: "Settings", icon: Settings, href: "/settings", requiredPermission: "system.settings.manage" },
+  { title: "Recycle Bin", translationKey: "nav.recycle_bin", icon: Trash2, href: "/system/trash", requiredPermission: "system.trash.manage" },
+  { title: "Settings", translationKey: "nav.settings", icon: Settings, href: "/settings", requiredPermission: "system.settings.manage" },
 ];
 
 export const checkIsActive = (href: string, pathname: string) => {
@@ -73,6 +75,7 @@ export const checkIsActive = (href: string, pathname: string) => {
 };
 
 export function AdminSidebar() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const { sidebarMode } = useSidebarMode();
   const [isHovering, setIsHovering] = React.useState(false);
@@ -103,6 +106,8 @@ export function AdminSidebar() {
   const renderNavButton = (item: NavItem) => {
     const Icon = item.icon;
     const isActive = checkIsActive(item.href, pathname);
+    const label = item.translationKey ? t(item.translationKey) : item.title;
+
     const button = (
       <div
         className={cn(
@@ -128,7 +133,7 @@ export function AdminSidebar() {
             isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
           )}
         >
-          {item.title}
+          {label}
         </span>
         {item.href === "/tasks" && unreadB2BCount > 0 && isExpanded && (
           <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse">
@@ -149,7 +154,7 @@ export function AdminSidebar() {
         <Tooltip key={item.title}>
           <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
           <TooltipContent side="right" className="text-xs">
-            {item.title}
+            {label}
           </TooltipContent>
         </Tooltip>
       );

@@ -1,0 +1,18 @@
+{
+  "title": "System Observability & Telemetry",
+  "subtitle": "Real-time performance metrics, gateway throughput, microservice latencies, and node health monitoring.",
+  "managed_assets": "Managed Assets",
+  "active_tenants": "Active Tenants",
+  "global_users": "Global Users",
+  "spatial_throughput": "Spatial Throughput",
+  "operational_tickets": "Operational Field Tickets",
+  "throughput_chart_title": "Combined System Throughput & Gateway Load",
+  "throughput_chart_desc": "Aggregated API request volume, spatial geocoding, and microservice traffic across the last 24 hours.",
+  "traffic_share": "Gateway Traffic Share",
+  "activity_hub": "Unified Operations & Activity Hub",
+  "node_health": "Service Node Health",
+  "database_latency": "PostgreSQL Database Latency",
+  "redis_cache": "Redis Cache Efficiency",
+  "gateway_uptime": "Gateway Availability Rate",
+  "inspect_telemetry_tooltip": "Click bar to inspect telemetry"
+}

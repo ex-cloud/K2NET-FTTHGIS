@@ -1,6 +1,7 @@
 import React from "react";
 import { Server, Users, LayoutGrid, List, Save, Loader2, Shield } from "lucide-react";
 import { ActionTooltip, Button, Badge } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import { GovernanceHealthBanner } from "@/components/governance-health-banner";
 
@@ -27,6 +28,8 @@ export function RolesMatrixHeader({
   canUpdateRoles,
   handleSaveAll,
 }: RolesMatrixHeaderProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-4">
       <GovernanceHealthBanner />
@@ -40,10 +43,10 @@ export function RolesMatrixHeader({
             <span className="text-xs text-muted-foreground">• Centralized Permission Mapping</span>
           </div>
           <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" /> Matrix Hak Akses Platform
+            <Shield className="w-5 h-5 text-primary" /> {t("security.roles_matrix")}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Konfigurasi pemetaan permission granular secara terpusat untuk peran System Plane dan template Tenant.
+            {t("security.roles_matrix_subtitle")}
           </p>
         </div>
 
@@ -61,7 +64,7 @@ export function RolesMatrixHeader({
                 )}
               >
                 <Server className="size-3.5" />
-                <span>System Plane</span>
+                <span>{t("security.system_plane")}</span>
               </button>
               <button
                 type="button"
@@ -74,13 +77,13 @@ export function RolesMatrixHeader({
                 )}
               >
                 <Users className="size-3.5" />
-                <span>Tenant Templates</span>
+                <span>{t("security.tenant_templates")}</span>
               </button>
             </div>
           )}
 
           <div className="flex bg-muted/40 p-0.5 rounded-md border border-border/80 gap-1">
-            <ActionTooltip label="Tampilan Tabel Matrix" shortcut="Alt+T">
+            <ActionTooltip label={t("security.matrix_table_view")} shortcut="Alt+T">
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
@@ -94,7 +97,7 @@ export function RolesMatrixHeader({
                 <LayoutGrid className="size-3.5" />
               </button>
             </ActionTooltip>
-            <ActionTooltip label="Tampilan Grid Card" shortcut="Alt+G">
+            <ActionTooltip label={t("security.matrix_grid_view")} shortcut="Alt+G">
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
@@ -111,7 +114,7 @@ export function RolesMatrixHeader({
           </div>
 
           <ActionTooltip
-            label={hasAnyModifiedRoles ? "Simpan Seluruh Perubahan Matrix" : "Tidak Ada Perubahan"}
+            label={hasAnyModifiedRoles ? t("security.save_matrix_changes") : t("security.no_matrix_changes")}
             shortcut="Ctrl+S"
           >
             <Button
@@ -127,7 +130,7 @@ export function RolesMatrixHeader({
               )}
             >
               {batchSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-              <span>Simpan Perubahan</span>
+              <span>{t("security.save_changes")}</span>
             </Button>
           </ActionTooltip>
         </div>

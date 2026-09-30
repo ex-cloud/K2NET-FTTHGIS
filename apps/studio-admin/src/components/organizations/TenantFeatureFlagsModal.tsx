@@ -12,6 +12,7 @@ import {
   Switch,
 } from "@k2net/ui";
 import { Sliders, Map, Radio, MessageSquare, Sparkles, FlaskConical } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import type { EnrichedOrganization, OrganizationFeatureFlags } from "./types";
 
@@ -28,6 +29,7 @@ export function TenantFeatureFlagsModal({
   onClose,
   onSaveFlags,
 }: TenantFeatureFlagsModalProps) {
+  const { t } = useTranslation();
   const [flags, setFlags] = useState<OrganizationFeatureFlags>(
     organization?.featureFlags || {
       gisCore: true,
@@ -55,10 +57,10 @@ export function TenantFeatureFlagsModal({
     setSaving(true);
     try {
       await onSaveFlags(organization.id, flags);
-      toast.success("Feature flags and module entitlements updated");
+      toast.success(t("common.success"));
       onClose();
     } catch {
-      toast.error("Failed to update feature flags");
+      toast.error(t("common.error"));
     } finally {
       setSaving(false);
     }
@@ -70,13 +72,13 @@ export function TenantFeatureFlagsModal({
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary font-mono text-xs uppercase tracking-wider font-bold">
             <Sliders className="h-4 w-4" />
-            <span>Module Entitlements & Feature Flags</span>
+            <span>{t("organizations.feature_flags_title")}</span>
           </div>
           <DialogTitle className="text-lg font-bold text-foreground">
             {organization.name}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Enable or disable specific B2B microservices and capabilities for this tenant.
+            {t("organizations.feature_flags_desc", { orgName: organization.name })}
           </DialogDescription>
         </DialogHeader>
 
@@ -189,14 +191,14 @@ export function TenantFeatureFlagsModal({
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" size="sm" onClick={onClose} className="border-border/80">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? "Saving..." : "Save Entitlements"}
+            {saving ? t("common.processing") : t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { EnrichedOrganization } from "./types";
@@ -38,6 +39,7 @@ export function TenantDomainModal({
   onClose,
   onSaveDomain,
 }: TenantDomainModalProps) {
+  const { t } = useTranslation();
   const [domainInput, setDomainInput] = useState(organization?.customDomain || "");
   const [verifying, setVerifying] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -81,7 +83,7 @@ export function TenantDomainModal({
         });
       }
     } catch {
-      toast.error("DNS verification request failed");
+      toast.error(t("common.error"));
     } finally {
       setVerifying(false);
     }
@@ -91,10 +93,10 @@ export function TenantDomainModal({
     setSaving(true);
     try {
       await onSaveDomain(organization.id, domainInput.trim());
-      toast.success("Custom domain configuration saved");
+      toast.success(t("common.success"));
       onClose();
     } catch {
-      toast.error("Failed to save custom domain");
+      toast.error(t("common.error"));
     } finally {
       setSaving(false);
     }
@@ -106,13 +108,13 @@ export function TenantDomainModal({
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary font-mono text-xs uppercase tracking-wider font-bold">
             <Globe className="h-4 w-4" />
-            <span>Custom Domain & SSL Routing</span>
+            <span>{t("organizations.custom_domain_title")}</span>
           </div>
           <DialogTitle className="text-lg font-bold text-foreground">
             {organization.name}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Configure white-label custom domain with automated Let&apos;s Encrypt SSL certificate.
+            {t("organizations.custom_domain_desc", { orgName: organization.name })}
           </DialogDescription>
         </DialogHeader>
 
@@ -185,14 +187,14 @@ export function TenantDomainModal({
 
         <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-border/50">
           <Button variant="outline" size="sm" onClick={onClose} className="border-border/80">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? "Saving..." : "Save Configuration"}
+            {saving ? t("common.processing") : t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

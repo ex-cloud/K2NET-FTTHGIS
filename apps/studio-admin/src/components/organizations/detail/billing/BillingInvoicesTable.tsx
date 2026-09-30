@@ -1,6 +1,4 @@
-
-
-
+import * as React from "react";
 import {
   Badge,
   Button,
@@ -25,6 +23,7 @@ import {
   Mail,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import type { TenantInvoice } from "./billing-types";
 
 interface BillingInvoicesTableProps {
@@ -36,6 +35,8 @@ export function BillingInvoicesTable({
   invoices,
   picEmail,
 }: BillingInvoicesTableProps) {
+  const { t } = useTranslation();
+
   const handleDownloadPdf = (inv: TenantInvoice) => {
     toast.success(`Mengunduh berkas invoice ${inv.invoiceNumber}...`, {
       description: "PDF diterbitkan oleh payment-gateway:5002.",
@@ -54,9 +55,9 @@ export function BillingInvoicesTable({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-4 border-t border-border/60">
       <div className="lg:col-span-4 space-y-1">
-        <h4 className="text-sm font-bold text-foreground">Past Invoices</h4>
+        <h4 className="text-sm font-bold text-foreground">{t("billing.past_invoices")}</h4>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Riwayat penerbitan tagihan bulanan dan kuitansi pembayaran yang diproses melalui gateway Xendit.
+          {t("billing.invoices_desc")}
         </p>
       </div>
 
@@ -64,7 +65,7 @@ export function BillingInvoicesTable({
         <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">
           <div className="py-2.5 px-4 border-b border-border/80 bg-muted/20 flex items-center justify-between">
             <span className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
-              Invoice History ({invoices.length})
+              {t("billing.past_invoices")} ({invoices.length})
             </span>
             <span className="text-[11px] font-mono text-muted-foreground">IDR (Rupiah)</span>
           </div>
@@ -74,19 +75,19 @@ export function BillingInvoicesTable({
               <TableHeader className="bg-muted/40 border-b border-border/80">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider pl-4">
-                    Nomor Invoice
+                    {t("billing.invoice_number")}
                   </TableHead>
                   <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Tanggal
+                    {t("billing.invoice_date")}
                   </TableHead>
                   <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Nominal
+                    {t("billing.invoice_amount")}
                   </TableHead>
                   <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Status
+                    {t("billing.invoice_status")}
                   </TableHead>
                   <TableHead className="text-right pr-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Aksi
+                    {t("billing.invoice_action")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -139,7 +140,7 @@ export function BillingInvoicesTable({
                         className="cursor-pointer font-semibold text-primary focus:bg-primary/10 focus:text-primary gap-2"
                       >
                         <Download className="w-3.5 h-3.5 text-primary" />
-                        <span>Download PDF Invoice</span>
+                        <span>{t("billing.download_pdf")}</span>
                       </ContextMenuItem>
 
                       <ContextMenuItem
@@ -153,7 +154,7 @@ export function BillingInvoicesTable({
                       <ContextMenuSeparator className="bg-border/40 my-1" />
 
                       <ContextMenuItem
-                        onClick={() => handleCopy(inv.invoiceNumber, "Nomor Invoice")}
+                        onClick={() => handleCopy(inv.invoiceNumber, t("billing.invoice_number"))}
                         className="cursor-pointer gap-2 focus:bg-muted"
                       >
                         <Copy className="w-3.5 h-3.5 text-muted-foreground" />

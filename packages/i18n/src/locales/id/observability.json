@@ -1,0 +1,18 @@
+{
+  "title": "Observabilitas & Telemetri Sistem",
+  "subtitle": "Metrik performa waktu-nyata, gateway throughput, latensi microservice, dan pemantauan kesehatan node.",
+  "managed_assets": "Perangkat Dikelola",
+  "active_tenants": "Tenant Aktif",
+  "global_users": "Pengguna Global",
+  "spatial_throughput": "Throughput Spasial",
+  "operational_tickets": "Tiket Operasional Lapangan",
+  "throughput_chart_title": "Throughput Gabungan Sistem & Beban Gateway",
+  "throughput_chart_desc": "Agregasi beban permintaan API, geocoding spasial, dan microservice traffic dalam 24 jam terakhir.",
+  "traffic_share": "Distribusi Trafik Layanan",
+  "activity_hub": "Pusat Operasional & Aktivitas Terpadu",
+  "node_health": "Status Kesehatan Node Layanan",
+  "database_latency": "Latensi Database PostgreSQL",
+  "redis_cache": "Efisiensi Cache Redis",
+  "gateway_uptime": "Tingkat Ketersediaan Gateway",
+  "inspect_telemetry_tooltip": "Klik batang bar untuk inspeksi telemetri"
+}

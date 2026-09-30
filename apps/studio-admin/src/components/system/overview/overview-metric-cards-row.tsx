@@ -1,4 +1,5 @@
 import { Building2, Users, MapPin, Globe, ClipboardList } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { OverviewMetricCard } from "./overview-metric-card";
 import { OverviewMetricCardsSkeleton } from "./skeletons";
 
@@ -115,6 +116,8 @@ export function OverviewMetricCardsRow({
   urgentTasks = 0,
   resolvedTasksToday = 0,
 }: OverviewMetricCardsRowProps) {
+  const { t } = useTranslation();
+
   // If initial cold start, show full skeleton grid
   if (loadingOrgs && loadingUsers && totalOrgs === 0 && totalUsers === 0) {
     return <OverviewMetricCardsSkeleton />;
@@ -132,7 +135,7 @@ export function OverviewMetricCardsRow({
       {/* Card 1: MANAGED ASSETS (Hero Card on Mobile: col-span-2) */}
       <div className="col-span-2 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
-          eyebrow="MANAGED ASSETS"
+          eyebrow={t("observability.managed_assets")}
           eyebrowBadge={
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-medium bg-muted/60 text-muted-foreground border border-border/60">
               <span className="size-1 rounded-full bg-primary animate-pulse" />
@@ -154,7 +157,7 @@ export function OverviewMetricCardsRow({
       {/* Card 2: ACTIVE TENANTS */}
       <div className="col-span-1 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
-          eyebrow="ACTIVE TENANTS"
+          eyebrow={t("observability.active_tenants")}
           value={<ActiveTenantsValue loading={loadingOrgs} totalOrgs={totalOrgs} activeOrgs={activeOrgs} />}
           helper={`Trialing: ${trialOrgs}`}
           secondaryStats={<span className="text-primary font-semibold">100% Cov</span>}
@@ -169,7 +172,7 @@ export function OverviewMetricCardsRow({
       {/* Card 3: GLOBAL USERS */}
       <div className="col-span-1 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
-          eyebrow="GLOBAL USERS"
+          eyebrow={t("observability.global_users")}
           value={<GlobalUsersValue loading={loadingUsers} totalUsers={totalUsers} activeUsers={activeUsers} />}
           helper={`Pending: ${pendingRequests}`}
           secondaryStats={<span className="font-mono text-muted-foreground">Admin/Ops</span>}
@@ -184,7 +187,7 @@ export function OverviewMetricCardsRow({
       {/* Card 4: SPATIAL THROUGHPUT */}
       <div className="col-span-1 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
-          eyebrow="SPATIAL THROUGHPUT"
+          eyebrow={t("observability.spatial_throughput")}
           value={
             loadingOrgs && spatialThroughput === 0 ? (
               <div className="h-7 w-16 rounded bg-muted/60 animate-pulse my-0.5" />
@@ -208,7 +211,7 @@ export function OverviewMetricCardsRow({
       {/* Card 5: OPERATIONAL TICKETS */}
       <div className="col-span-1 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
-          eyebrow="OPERATIONAL TICKETS"
+          eyebrow={t("observability.operational_tickets")}
           value={
             <OperationalTicketsValue
               loading={loadingTasks}

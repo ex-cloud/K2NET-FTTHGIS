@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@k2net/ui";
 import { Loader2, Flame, Archive } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import type { EnrichedOrganization } from "./types";
 import { useDeleteOrganizationState } from "./delete-modal/useDeleteOrganizationState";
@@ -36,6 +37,7 @@ export function DeleteOrganizationModal({
   deleteOrg,
   accessToken,
 }: DeleteOrganizationModalProps) {
+  const { t } = useTranslation();
   const state = useDeleteOrganizationState(orgToDelete, accessToken, deleteOrg, onClose, onDeleteSuccess);
 
   return (
@@ -55,10 +57,9 @@ export function DeleteOrganizationModal({
                 {state.deleteMode === "soft" ? <Archive className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
               </div>
               <div>
-                <span className="block text-sm font-semibold">Penghapusan Tenant & Manajemen Siklus Hidup</span>
+                <span className="block text-sm font-semibold">{t("organizations.delete_org_title")}</span>
                 <span className="block text-xs font-normal text-muted-foreground">
-                  Organisasi: <strong className="text-foreground">{orgToDelete?.name}</strong> (
-                  <span className="font-mono">{orgToDelete?.slug}</span>)
+                  {orgToDelete?.name} (<span className="font-mono">{orgToDelete?.slug}</span>)
                 </span>
               </div>
             </DialogTitle>
@@ -83,17 +84,17 @@ export function DeleteOrganizationModal({
           />
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Alasan Penghapusan Tenant</Label>
+            <Label className="text-xs font-semibold text-foreground">{t("common.details")}</Label>
             <Select onValueChange={state.setDeleteReason} value={state.deleteReason}>
               <SelectTrigger className="bg-card border-border text-foreground h-9 text-xs">
-                <SelectValue placeholder="Pilih alasan penghapusan" />
+                <SelectValue placeholder={t("common.select_option")} />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground text-xs">
-                <SelectItem value="client-churn">Kontrak ISP / Klien telah berakhir</SelectItem>
-                <SelectItem value="temporary-trial-ended">Masa uji coba (Trial) telah habis</SelectItem>
-                <SelectItem value="consolidation">Konsolidasi ke tenant / cabang lain</SelectItem>
-                <SelectItem value="administrative-purge">Pembersihan administratif / testing</SelectItem>
-                <SelectItem value="other">Alasan lainnya</SelectItem>
+                <SelectItem value="client-churn">Contract ended / Client churn</SelectItem>
+                <SelectItem value="temporary-trial-ended">Free trial period expired</SelectItem>
+                <SelectItem value="consolidation">Consolidation to another tenant</SelectItem>
+                <SelectItem value="administrative-purge">Administrative cleanup / Testing</SelectItem>
+                <SelectItem value="other">Other reason</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -112,7 +113,7 @@ export function DeleteOrganizationModal({
 
         <div className="p-4 border-t border-border/60 bg-muted/20 flex justify-end gap-2 shrink-0">
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             variant={state.deleteMode === "nuclear" ? "destructive" : "default"}
@@ -129,12 +130,12 @@ export function DeleteOrganizationModal({
             ) : state.deleteMode === "soft" ? (
               <>
                 <Archive className="size-3.5" />
-                Pindahkan ke Recycle Bin
+                {t("common.delete")} (Soft Delete)
               </>
             ) : (
               <>
                 <Flame className="size-3.5" />
-                Musnahkan Permanen
+                {t("organizations.nuclear_wipe")}
               </>
             )}
           </Button>

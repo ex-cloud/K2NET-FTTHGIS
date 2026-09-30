@@ -12,6 +12,7 @@ import {
   History,
   ShieldAlert,
 } from "lucide-react";
+import { useTranslation, type TranslationKey } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import type { DetailTab } from "./types";
 
@@ -20,28 +21,38 @@ interface OrgDetailTabsNavProps {
   setActiveTab: (tab: DetailTab) => void;
 }
 
-const TABS = [
-  { id: "overview" as DetailTab, label: "Overview", icon: Activity },
-  { id: "hardware" as DetailTab, label: "Hardware & OLTs", icon: Network },
-  { id: "network" as DetailTab, label: "Network & VPN", icon: Globe },
-  { id: "team" as DetailTab, label: "Team & Access", icon: Users },
-  { id: "documents" as DetailTab, label: "Documents & Legal", icon: FileText },
-  { id: "api" as DetailTab, label: "API & Webhooks", icon: Webhook },
-  { id: "backups" as DetailTab, label: "Data & Backups", icon: Database },
-  { id: "billing" as DetailTab, label: "Billing", icon: CreditCard },
-  { id: "audit" as DetailTab, label: "Audit & Logs", icon: History },
-  { id: "danger" as DetailTab, label: "Danger Zone", icon: ShieldAlert },
+interface TabDef {
+  id: DetailTab;
+  labelKey: TranslationKey;
+  icon: React.ElementType;
+}
+
+const TABS: TabDef[] = [
+  { id: "overview", labelKey: "organizations.tab_overview", icon: Activity },
+  { id: "hardware", labelKey: "organizations.tab_hardware", icon: Network },
+  { id: "network", labelKey: "organizations.tab_network", icon: Globe },
+  { id: "team", labelKey: "organizations.tab_team", icon: Users },
+  { id: "documents", labelKey: "organizations.tab_documents", icon: FileText },
+  { id: "api", labelKey: "organizations.tab_api", icon: Webhook },
+  { id: "backups", labelKey: "organizations.tab_data", icon: Database },
+  { id: "billing", labelKey: "organizations.tab_billing", icon: CreditCard },
+  { id: "audit", labelKey: "organizations.tab_audit", icon: History },
+  { id: "danger", labelKey: "organizations.tab_danger", icon: ShieldAlert },
 ];
 
 export function OrgDetailTabsNav({ activeTab, setActiveTab }: OrgDetailTabsNavProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="px-6 border-b border-border/40 shrink-0 bg-background/50 flex items-center gap-1 overflow-x-auto custom-scrollbar">
       {TABS.map((tab, idx) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
         const shortcutKey = idx === 9 ? "0" : `${idx + 1}`;
+        const label = t(tab.labelKey);
+
         return (
-          <ActionTooltip key={tab.id} label={`${tab.label} (Tekan ${shortcutKey})`}>
+          <ActionTooltip key={tab.id} label={`${label} (${shortcutKey})`}>
             <button
               onClick={() => setActiveTab(tab.id)}
               className={cn(
@@ -54,7 +65,7 @@ export function OrgDetailTabsNav({ activeTab, setActiveTab }: OrgDetailTabsNavPr
               )}
             >
               <Icon className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
+              <span>{label}</span>
             </button>
           </ActionTooltip>
         );

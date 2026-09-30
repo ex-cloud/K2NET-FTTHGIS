@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Button, ActionTooltip } from "@k2net/ui";
 import { Calendar, Clock, ShieldAlert } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { usePermissions } from "@/hooks/use-permissions";
 import type { TenantSubscriptionSummary } from "@/hooks/useTenantSubscription";
 import { BillingExtendTrialModal } from "./BillingExtendTrialModal";
@@ -18,6 +19,7 @@ export function BillingTrialAlert({
   summary,
   onExtendTrial,
 }: BillingTrialAlertProps) {
+  const { t, formatDate } = useTranslation();
   const { canAccess } = usePermissions();
   const canManageOrg = canAccess(["system.organizations.manage", "system.organizations.update"]);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -28,16 +30,11 @@ export function BillingTrialAlert({
   const cutOffFormatted = React.useMemo(() => {
     if (!summary?.gracePeriodUntil) return null;
     try {
-      const date = new Date(summary.gracePeriodUntil);
-      return new Intl.DateTimeFormat("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }).format(date);
+      return formatDate(summary.gracePeriodUntil);
     } catch {
       return null;
     }
-  }, [summary?.gracePeriodUntil]);
+  }, [summary?.gracePeriodUntil, formatDate]);
 
   const graceDaysRemaining = React.useMemo(() => {
     if (!summary?.gracePeriodUntil) return 0;
@@ -71,18 +68,20 @@ export function BillingTrialAlert({
           <div className="space-y-0.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-foreground">
-                {isExpired ? "Status Evaluasi: Trial Kedaluwarsa (Proyek Di-Pause)" : "Status Evaluasi: Starter Free Trial (14 Hari)"}
+                {isExpired ? t("billing.trial_status_expired") : t("billing.trial_status_active")}
               </span>
               {isExpired && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-500 border border-amber-500/30 font-mono">
-                  Cut-off: {graceDaysRemaining > 0 ? `${graceDaysRemaining} hari lagi` : "Hari ini"} ({cutOffFormatted || "30 Hari Inactivity"})
+                  {graceDaysRemaining > 0
+                    ? t("billing.cut_off_days_left", { days: graceDaysRemaining, date: cutOffFormatted || "30 Days" })
+                    : t("billing.cut_off_today", { date: cutOffFormatted || "Today" })}
                 </span>
               )}
             </div>
             <p className="text-muted-foreground text-[11px] leading-relaxed">
               {isExpired
-                ? `Masa trial 14 hari telah habis. Proyek berada dalam mode Read-Only. Organisasi akan dihapus otomatis (Nuclear Purge) pada tanggal cut-off jika tidak di-upgrade atau diperpanjang.`
-                : `Sisa ${summary?.trialDaysRemaining ?? 14} hari masa evaluasi aktif.`}
+                ? t("billing.trial_expired_desc")
+                : t("billing.trial_days_remaining", { days: summary?.trialDaysRemaining ?? 14 })}
             </p>
           </div>
         </div>
@@ -102,7 +101,7 @@ export function BillingTrialAlert({
               className="h-7 text-xs border-amber-500/40 bg-card hover:bg-amber-500/20 text-foreground font-medium cursor-pointer disabled:opacity-50 gap-1.5"
             >
               <Calendar className="h-3.5 w-3.5 text-amber-500" />
-              <span>Perpanjang Masa Trial</span>
+              <span>{t("billing.extend_trial_btn")}</span>
             </Button>
           </ActionTooltip>
         </div>

@@ -16,6 +16,7 @@ import {
   DialogFooter,
   SidebarModeProvider,
 } from "@k2net/ui";
+import { LanguageSwitcher } from "@k2net/i18n";
 import { useImpersonationSession } from "../../lib/useImpersonationSession";
 import { TenantCommandPalette } from "../TenantCommandPalette";
 import { TenantAiAssistant } from "../TenantAiAssistant";
@@ -190,6 +191,11 @@ function TenantOrgLayoutContent() {
                   <MessageSquare className="h-3.5 w-3.5" />
                 </Button>
               </ActionTooltip>
+            </div>
+
+            {/* Language Switcher */}
+            <div className="hidden sm:flex items-center">
+              <LanguageSwitcher variant="compact" />
             </div>
 
             <Separator orientation="vertical" className="hidden md:block mx-0.5 h-4 bg-border/60" />

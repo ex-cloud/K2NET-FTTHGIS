@@ -9,6 +9,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Button, ActionTooltip } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -33,6 +34,7 @@ export function OrgToolbarActions({
   onNewOrganization,
   onImportBackup,
 }: OrgToolbarActionsProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canCreateOrg = canAccess(["system.organizations.create", "system.tenants.create"]);
 
@@ -40,7 +42,7 @@ export function OrgToolbarActions({
     <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
       {/* Toggle KPI Strip */}
       <ActionTooltip
-        label={compactView ? "Show Metric Strip" : "Compact View (Hide KPI Strip)"}
+        label={compactView ? t("organizations.show_metric_strip") : t("organizations.hide_metric_strip")}
         shortcut="Alt+V"
       >
         <Button
@@ -58,7 +60,7 @@ export function OrgToolbarActions({
 
       {/* View Switcher: Grid, List, Table */}
       <div className="flex items-center rounded-md border border-border/80 bg-card p-0.5">
-        <ActionTooltip label="Grid View" shortcut="1">
+        <ActionTooltip label={t("organizations.grid_view")} shortcut="1">
           <button
             onClick={() => setViewMode("grid")}
             className={cn(
@@ -70,7 +72,7 @@ export function OrgToolbarActions({
           </button>
         </ActionTooltip>
 
-        <ActionTooltip label="List View" shortcut="2">
+        <ActionTooltip label={t("organizations.list_view")} shortcut="2">
           <button
             onClick={() => setViewMode("list")}
             className={cn(
@@ -82,7 +84,7 @@ export function OrgToolbarActions({
           </button>
         </ActionTooltip>
 
-        <ActionTooltip label="Table View" shortcut="3">
+        <ActionTooltip label={t("organizations.table_view")} shortcut="3">
           <button
             onClick={() => setViewMode("table")}
             className={cn(
@@ -96,7 +98,7 @@ export function OrgToolbarActions({
       </div>
 
       {/* Refresh Button */}
-      <ActionTooltip label="Refresh Data" shortcut="R">
+      <ActionTooltip label={t("organizations.refresh_data")} shortcut="R">
         <Button
           variant="outline"
           size="sm"
@@ -113,8 +115,8 @@ export function OrgToolbarActions({
         <ActionTooltip
           label={
             canCreateOrg
-              ? "Impor Cadangan Tenant (.JSON)"
-              : "Akses Read-Only: Memerlukan izin system.organizations.create"
+              ? t("organizations.import_backup")
+              : t("common.error")
           }
         >
           <Button
@@ -125,7 +127,7 @@ export function OrgToolbarActions({
             className="border-border/80 bg-card hover:bg-accent text-foreground shadow-xs disabled:opacity-50"
           >
             <Upload className="size-3.5 text-primary" />
-            <span>Import Backup</span>
+            <span>{t("organizations.import_backup")}</span>
           </Button>
         </ActionTooltip>
       )}
@@ -134,8 +136,8 @@ export function OrgToolbarActions({
       <ActionTooltip
         label={
           canCreateOrg
-            ? "Create New Organization"
-            : "Akses Read-Only: Memerlukan izin system.organizations.create"
+            ? t("organizations.create_org_btn")
+            : t("common.error")
         }
         shortcut={canCreateOrg ? "N" : undefined}
       >
@@ -146,7 +148,7 @@ export function OrgToolbarActions({
           className="shadow-xs disabled:opacity-50"
         >
           <Plus className="size-3.5" />
-          <span>New Organization</span>
+          <span>{t("organizations.create_org_btn")}</span>
         </Button>
       </ActionTooltip>
     </div>
