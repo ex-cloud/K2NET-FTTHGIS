@@ -58,12 +58,12 @@ public class OrganizationSubscriptionService {
                 "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
                 "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
                 "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2);
-        double usedStorageGb = getConfigDouble(org, "used_storage_gb", 1.8);
+        double usedStorageGb = getConfigDouble(org, "used_storage_gb", 0.0);
         int apiRateLimitMax = getConfigInt(org, "api_rate_limit_max",
                 "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 30000 :
                 "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 8000 :
                 "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 2000 : 500);
-        int apiRateLimitUsed = getConfigInt(org, "api_rate_limit_used", 342);
+        int apiRateLimitUsed = getConfigInt(org, "api_rate_limit_used", 0);
 
         // 2. Booster Status
         boolean isBoosterActive = org.isBoosterActive();

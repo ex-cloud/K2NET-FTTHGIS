@@ -32,6 +32,7 @@ export function OrgBillingTab({
 
       {/* Trial Alert Banner */}
       <BillingTrialAlert
+        orgName={org.name}
         status={org.status}
         summary={state.summary}
         onExtendTrial={state.handleExtendTrial}

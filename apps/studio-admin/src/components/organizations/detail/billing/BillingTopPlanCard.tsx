@@ -34,8 +34,8 @@ export function BillingTopPlanCard({
         glowingEffect
         className={`h-full p-5 flex flex-col justify-between transition-all duration-300 ${
           isPopular
-            ? "border-border ring-1 ring-border/80 bg-card/85 shadow-sm"
-            : "border-border/60 bg-card/60"
+            ? "border-foreground/25 ring-1 ring-foreground/15 bg-card/90 shadow-sm"
+            : "border-border bg-card/60"
         }`}
       >
         <div className="space-y-3.5">

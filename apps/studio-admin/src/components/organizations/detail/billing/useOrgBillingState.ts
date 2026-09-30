@@ -215,9 +215,12 @@ export function useOrgBillingState(org: EnrichedOrganization) {
     }
   };
 
-  const handleExtendTrial = async (days: number) => {
+  const handleExtendTrial = async (days: number, reason?: string) => {
     try {
-      await extendTrial({ additionalDays: days, reason: `Super admin extension +${days} days` });
+      await extendTrial({
+        additionalDays: days,
+        reason: reason || `Super admin extension +${days} days`,
+      });
       refetch();
     } catch {
       // Handled in hook

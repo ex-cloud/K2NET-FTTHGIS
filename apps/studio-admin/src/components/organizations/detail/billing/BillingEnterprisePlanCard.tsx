@@ -31,9 +31,7 @@ export function BillingEnterprisePlanCard({
   return (
     <Card
       glowingEffect
-      className={`relative rounded-xl p-4 md:p-5 transition-all duration-300 ${
-        isCurrent ? "border-border bg-card/75" : "border-border/80 bg-card/75 backdrop-blur-sm"
-      }`}
+      className="relative rounded-xl p-4 md:p-5 transition-all duration-300 border-border bg-card/60 backdrop-blur-sm"
     >
       {/* Enterprise Header Badge & Subtitle */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
