@@ -111,7 +111,7 @@ export function BillingExtendTrialModal({
               <span className="text-[11px] font-semibold">+{effectiveDays} Hari Penambahan</span>
             </div>
 
-            <div className="flex items-center justify-between pt-1 border-groove-t text-foreground font-semibold">
+            <div className="flex items-center justify-between pt-2 border-groove-t text-foreground font-semibold">
               <span>Kedaluwarsa Baru</span>
               <span className="text-primary font-mono bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-md">
                 {formatDate(newExpiryDate)}
@@ -135,11 +135,10 @@ export function BillingExtendTrialModal({
                       setIsCustom(false);
                       setSelectedDays(days);
                     }}
-                    className={`py-2 px-3 rounded-lg border text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                      isSelected
+                    className={`py-2 px-3 rounded-lg border text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${isSelected
                         ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/30"
                         : "border-border bg-card hover:bg-muted/60 text-foreground"
-                    }`}
+                      }`}
                   >
                     <span>+{days} Hari</span>
                     <span className="text-[9.5px] font-normal text-muted-foreground">
