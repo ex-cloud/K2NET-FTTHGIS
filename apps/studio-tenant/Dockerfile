@@ -11,6 +11,7 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/auth/package.json           ./packages/auth/
 COPY packages/api-client/package.json     ./packages/api-client/
 COPY packages/design-system/package.json  ./packages/design-system/
+COPY packages/i18n/package.json           ./packages/i18n/
 COPY packages/map/package.json            ./packages/map/
 COPY packages/types/package.json          ./packages/types/
 COPY packages/ui/package.json             ./packages/ui/
