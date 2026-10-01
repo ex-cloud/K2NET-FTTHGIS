@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -141,8 +142,20 @@ func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
 	actor := c.Query("actorId")
 	action := c.Query("action")
 	resource := c.Query("resourceType")
+	logGroup := c.Query("logGroup")
+	severity := c.Query("severity")
+	projectID := c.Query("projectId")
+	scope := c.Query("scope")
+	category := c.Query("category")
+	search := c.Query("search")
 	startStr := c.Query("startDate")
 	endStr := c.Query("endDate")
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "50"))
+	if pageSize <= 0 {
+		pageSize = 50
+	}
 
 	var start, end *time.Time
 	if startStr != "" {
@@ -160,13 +173,35 @@ func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
 		}
 	}
 
-	events, err := h.repo.QueryEvents(ctx, tenant, actor, action, resource, start, end)
+	resp, err := h.repo.QueryEventsWithFilter(ctx, audit.QueryAuditEventsFilter{
+		TenantSlug:   tenant,
+		ActorID:      actor,
+		Action:       action,
+		ResourceType: resource,
+		LogGroup:     logGroup,
+		Severity:     severity,
+		ProjectID:    projectID,
+		Scope:        scope,
+		Category:     category,
+		Search:       search,
+		StartDate:    start,
+		EndDate:      end,
+		Page:         page,
+		PageSize:     pageSize,
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": events})
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"data":       resp.Data,
+		"totalCount": resp.TotalCount,
+		"page":       resp.Page,
+		"pageSize":   resp.PageSize,
+		"totalPages": resp.TotalPages,
+	})
 }
 
 // GET /audit/events/:id
@@ -193,6 +228,21 @@ func (h *HTTPHandler) GetTenantAuditReport(c *gin.Context) {
 	slug := c.Param("slug")
 
 	report, err := h.repo.GetTenantReport(ctx, slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": report})
+}
+
+// GET /audit/report/tenant/:slug/project/:projectId
+func (h *HTTPHandler) GetProjectAuditReport(c *gin.Context) {
+	ctx := c.Request.Context()
+	slug := c.Param("slug")
+	projectID := c.Param("projectId")
+
+	report, err := h.repo.GetProjectReport(ctx, slug, projectID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
 		return

@@ -121,6 +121,7 @@ func main() {
 		api.GET("/audit/events", handler.GetAuditEvents)
 		api.GET("/audit/events/:id", handler.GetAuditEvent)
 		api.GET("/audit/report/tenant/:slug", handler.GetTenantAuditReport)
+		api.GET("/audit/report/tenant/:slug/project/:projectId", handler.GetProjectAuditReport)
 		api.GET("/audit/report/user/:userId", handler.GetUserAuditReport)
 		api.POST("/audit/export", handler.ExportAuditEvents)
 	}

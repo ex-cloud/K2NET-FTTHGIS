@@ -33,6 +33,13 @@ func (r *Repository) RunMigrations(ctx context.Context) error {
 			metadata JSONB,
 			occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
+		CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_events(tenant_slug, occurred_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_events(actor_id, occurred_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_audit_events_occurred_at ON audit_events(occurred_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_project ON audit_events(tenant_slug, (metadata->>'projectId'), occurred_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_audit_events_group_occurred ON audit_events(((metadata->>'logGroup')), occurred_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_resource ON audit_events(tenant_slug, resource_type, occurred_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_action ON audit_events(tenant_slug, action, occurred_at DESC);
 		CREATE OR REPLACE RULE no_update_audit AS ON UPDATE TO audit_events DO INSTEAD NOTHING;
 		CREATE OR REPLACE RULE no_delete_audit AS ON DELETE TO audit_events DO INSTEAD NOTHING;
 	`)
@@ -89,48 +96,133 @@ func (r *Repository) GetEvent(ctx context.Context, id string) (*AuditEvent, erro
 }
 
 func (r *Repository) QueryEvents(ctx context.Context, tenant, actor, action, resource string, start, end *time.Time) ([]*AuditEvent, error) {
-	query := `
-		SELECT id, tenant_slug, actor_id, actor_role, actor_ip, action, resource_type, resource_id, 
-		       old_value, new_value, metadata, occurred_at
-		FROM audit_events WHERE 1=1
-	`
+	resp, err := r.QueryEventsWithFilter(ctx, QueryAuditEventsFilter{
+		TenantSlug:   tenant,
+		ActorID:      actor,
+		Action:       action,
+		ResourceType: resource,
+		StartDate:    start,
+		EndDate:      end,
+		Page:         1,
+		PageSize:     500,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Data, nil
+}
+
+func (r *Repository) QueryEventsWithFilter(ctx context.Context, filter QueryAuditEventsFilter) (*PaginatedAuditEventsResponse, error) {
+	whereClause := "WHERE 1=1"
 	args := []any{}
 	argCount := 1
 
-	if tenant != "" {
-		query += fmt.Sprintf(" AND tenant_slug = $%d", argCount)
-		args = append(args, tenant)
+	if filter.TenantSlug != "" && filter.TenantSlug != "all" {
+		whereClause += fmt.Sprintf(" AND tenant_slug = $%d", argCount)
+		args = append(args, filter.TenantSlug)
 		argCount++
 	}
-	if actor != "" {
-		query += fmt.Sprintf(" AND actor_id = $%d", argCount)
-		args = append(args, actor)
+	if filter.ActorID != "" {
+		whereClause += fmt.Sprintf(" AND (actor_id = $%d OR actor_id ILIKE $%d)", argCount, argCount+1)
+		args = append(args, filter.ActorID, "%"+filter.ActorID+"%")
+		argCount += 2
+	}
+	if filter.Action != "" {
+		whereClause += fmt.Sprintf(" AND action = $%d", argCount)
+		args = append(args, filter.Action)
 		argCount++
 	}
-	if action != "" {
-		query += fmt.Sprintf(" AND action = $%d", argCount)
-		args = append(args, action)
+	if filter.ResourceType != "" {
+		whereClause += fmt.Sprintf(" AND resource_type = $%d", argCount)
+		args = append(args, filter.ResourceType)
 		argCount++
 	}
-	if resource != "" {
-		query += fmt.Sprintf(" AND resource_type = $%d", argCount)
-		args = append(args, resource)
+	if filter.LogGroup != "" {
+		whereClause += fmt.Sprintf(" AND (metadata->>'logGroup') = $%d", argCount)
+		args = append(args, filter.LogGroup)
 		argCount++
 	}
-	if start != nil {
-		query += fmt.Sprintf(" AND occurred_at >= $%d", argCount)
-		args = append(args, *start)
+	if filter.Severity != "" {
+		whereClause += fmt.Sprintf(" AND (metadata->>'severity') = $%d", argCount)
+		args = append(args, filter.Severity)
 		argCount++
 	}
-	if end != nil {
-		query += fmt.Sprintf(" AND occurred_at <= $%d", argCount)
-		args = append(args, *end)
+	if filter.ProjectID != "" {
+		if filter.ProjectID == "null" || filter.ProjectID == "none" {
+			whereClause += " AND (metadata->>'projectId') IS NULL"
+		} else {
+			whereClause += fmt.Sprintf(" AND (metadata->>'projectId') = $%d", argCount)
+			args = append(args, filter.ProjectID)
+			argCount++
+		}
+	}
+	if filter.Scope != "" {
+		whereClause += fmt.Sprintf(" AND (metadata->>'scope') = $%d", argCount)
+		args = append(args, filter.Scope)
+		argCount++
+	}
+	if filter.Category != "" {
+		whereClause += fmt.Sprintf(" AND (metadata->>'category') = $%d", argCount)
+		args = append(args, filter.Category)
+		argCount++
+	}
+	if filter.Search != "" {
+		searchPattern := "%" + filter.Search + "%"
+		whereClause += fmt.Sprintf(" AND (action ILIKE $%d OR resource_type ILIKE $%d OR resource_id ILIKE $%d OR actor_id ILIKE $%d OR metadata::text ILIKE $%d)", 
+			argCount, argCount, argCount, argCount, argCount)
+		args = append(args, searchPattern)
+		argCount++
+	}
+	if filter.StartDate != nil {
+		whereClause += fmt.Sprintf(" AND occurred_at >= $%d", argCount)
+		args = append(args, *filter.StartDate)
+		argCount++
+	}
+	if filter.EndDate != nil {
+		whereClause += fmt.Sprintf(" AND occurred_at <= $%d", argCount)
+		args = append(args, *filter.EndDate)
 		argCount++
 	}
 
-	query += " ORDER BY occurred_at DESC LIMIT 500"
+	// 1. Total Count Query
+	countQuery := "SELECT COUNT(*) FROM audit_events " + whereClause
+	var totalCount int64
+	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&totalCount)
+	if err != nil {
+		return nil, err
+	}
 
-	rows, err := r.db.Query(ctx, query, args...)
+	// 2. Pagination calculation
+	page := filter.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := filter.PageSize
+	if pageSize < 1 {
+		pageSize = 50
+	}
+	if pageSize > 500 {
+		pageSize = 500
+	}
+	offset := (page - 1) * pageSize
+	totalPages := int((totalCount + int64(pageSize) - 1) / int64(pageSize))
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	// 3. Data Query
+	dataQuery := fmt.Sprintf(`
+		SELECT id, tenant_slug, actor_id, actor_role, actor_ip, action, resource_type, resource_id, 
+		       old_value, new_value, metadata, occurred_at
+		FROM audit_events
+		%s
+		ORDER BY occurred_at DESC
+		LIMIT $%d OFFSET $%d
+	`, whereClause, argCount, argCount+1)
+
+	dataArgs := append(args, pageSize, offset)
+
+	rows, err := r.db.Query(ctx, dataQuery, dataArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +243,14 @@ func (r *Repository) QueryEvents(ctx context.Context, tenant, actor, action, res
 		_ = json.Unmarshal(metaB, &ev.Metadata)
 		list = append(list, &ev)
 	}
-	return list, nil
+
+	return &PaginatedAuditEventsResponse{
+		Data:       list,
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
+	}, nil
 }
 
 func (r *Repository) GetTenantReport(ctx context.Context, tenantSlug string) (map[string]any, error) {
@@ -178,6 +277,37 @@ func (r *Repository) GetTenantReport(ctx context.Context, tenantSlug string) (ma
 		},
 	}, nil
 }
+
+func (r *Repository) GetProjectReport(ctx context.Context, tenantSlug, projectID string) (map[string]any, error) {
+	row := r.db.QueryRow(ctx, `
+		SELECT COUNT(*), 
+		       COALESCE(SUM(CASE WHEN action LIKE '%CREATED' OR action LIKE '%ADD%' THEN 1 ELSE 0 END), 0) as creates,
+		       COALESCE(SUM(CASE WHEN action LIKE '%UPDATED' OR action LIKE '%EDIT%' OR action LIKE '%MODIFY%' THEN 1 ELSE 0 END), 0) as updates,
+		       COALESCE(SUM(CASE WHEN action LIKE '%DELETED' OR action LIKE '%REMOVE%' THEN 1 ELSE 0 END), 0) as deletes,
+		       MAX(occurred_at) as last_activity
+		FROM audit_events 
+		WHERE tenant_slug = $1 AND (metadata->>'projectId') = $2
+	`, tenantSlug, projectID)
+
+	var total, creates, updates, deletes int
+	var lastActivity *time.Time
+	if err := row.Scan(&total, &creates, &updates, &deletes, &lastActivity); err != nil {
+		return nil, err
+	}
+
+	return map[string]any{
+		"tenantSlug":       tenantSlug,
+		"projectId":        projectID,
+		"totalEventsCount": total,
+		"lastActivityAt":   lastActivity,
+		"actionsSummary": map[string]int{
+			"CREATE": creates,
+			"UPDATE": updates,
+			"DELETE": deletes,
+		},
+	}, nil
+}
+
 
 func (r *Repository) GetUserReport(ctx context.Context, actorID string) (map[string]any, error) {
 	row := r.db.QueryRow(ctx, `

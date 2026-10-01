@@ -17,6 +17,11 @@ CREATE TABLE IF NOT EXISTS audit_events (
 
 CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_events(tenant_slug, occurred_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_events(actor_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_events_occurred_at ON audit_events(occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_project ON audit_events(tenant_slug, (metadata->>'projectId'), occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_events_group_occurred ON audit_events(((metadata->>'logGroup')), occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_resource ON audit_events(tenant_slug, resource_type, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_action ON audit_events(tenant_slug, action, occurred_at DESC);
 
 -- Immutability Rules: Prevent UPDATES and DELETES on audit logs
 CREATE OR REPLACE RULE no_update_audit AS ON UPDATE TO audit_events DO INSTEAD NOTHING;

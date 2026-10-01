@@ -84,10 +84,36 @@ public class AuditAspect {
             String resourceId = resolveSpel(ann.resourceIdExpression(), ctx, String.class);
             if (resourceId == null) resourceId = "";
 
+            // Resolve projectId
+            String projectId = resolveSpel(ann.projectIdExpression(), ctx, String.class);
+            if (projectId == null || projectId.isBlank()) {
+                Object rawProj = resolveSpel(ann.projectIdExpression(), ctx, Object.class);
+                if (rawProj != null) {
+                    projectId = rawProj.toString();
+                }
+            }
+
+            // Determine Scope
+            String scope = ann.scope();
+            if ("AUTO".equalsIgnoreCase(scope)) {
+                if (projectId != null && !projectId.isBlank()) {
+                    scope = "PROJECT";
+                } else if ("system".equalsIgnoreCase(tenantSlug)) {
+                    scope = "SYSTEM";
+                } else {
+                    scope = "ORGANIZATION";
+                }
+            }
+
             // Build metadata map
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("logGroup", ann.logGroup());
+            metadata.put("scope", scope);
+            metadata.put("category", ann.category());
             metadata.put("serviceSource", "ftth-backend");
+            if (projectId != null && !projectId.isBlank()) {
+                metadata.put("projectId", projectId);
+            }
             if ("SCHEDULER".equalsIgnoreCase(ann.resourceType())) {
                 metadata.put("logType", "scheduler");
             }

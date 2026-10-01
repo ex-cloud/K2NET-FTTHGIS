@@ -29,3 +29,28 @@ type CreateAuditEventRequest struct {
 	NewValue     map[string]any `json:"newValue"`
 	Metadata     map[string]any `json:"metadata"`
 }
+
+type QueryAuditEventsFilter struct {
+	TenantSlug   string     `json:"tenantSlug"`
+	ActorID      string     `json:"actorId"`
+	Action       string     `json:"action"`
+	ResourceType string     `json:"resourceType"`
+	LogGroup     string     `json:"logGroup"`
+	Severity     string     `json:"severity"`
+	ProjectID    string     `json:"projectId"`
+	Scope        string     `json:"scope"`
+	Category     string     `json:"category"`
+	Search       string     `json:"search"`
+	StartDate    *time.Time `json:"startDate"`
+	EndDate      *time.Time `json:"endDate"`
+	Page         int        `json:"page"`
+	PageSize     int        `json:"pageSize"`
+}
+
+type PaginatedAuditEventsResponse struct {
+	Data       []*AuditEvent `json:"data"`
+	TotalCount int64         `json:"totalCount"`
+	Page       int           `json:"page"`
+	PageSize   int           `json:"pageSize"`
+	TotalPages int           `json:"totalPages"`
+}

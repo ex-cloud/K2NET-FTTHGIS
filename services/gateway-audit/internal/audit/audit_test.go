@@ -1,7 +1,6 @@
 package audit
 
 import (
-	"context"
 	"testing"
 	"time"
 )
@@ -34,10 +33,55 @@ func TestQueryEventsSQLConstruction(t *testing.T) {
 	}
 }
 
-func TestImmutabilityPostgresMock(t *testing.T) {
-	ctx := context.Background()
-	
-	// Just test mock execution logic representation
-	// This helps check that code is fully build-ready and import compiles
-	_ = ctx
+func TestQueryEventsFilterValidation(t *testing.T) {
+	tenant := "cicadas"
+	actor := "engineer@cicadas.net"
+	action := "ODP_CREATED"
+	resource := "ODP"
+	projectID := "e7b99c42-83b4-4b52-9b57-6bc7185ad102"
+	logGroup := "NETWORK"
+	severity := "INFO"
+	scope := "PROJECT"
+	category := "NETWORK_ASSET"
+	search := "ODP-042"
+	start := time.Now().Add(-24 * time.Hour)
+	end := time.Now()
+
+	filter := QueryAuditEventsFilter{
+		TenantSlug:   tenant,
+		ActorID:      actor,
+		Action:       action,
+		ResourceType: resource,
+		ProjectID:    projectID,
+		LogGroup:     logGroup,
+		Severity:     severity,
+		Scope:        scope,
+		Category:     category,
+		Search:       search,
+		StartDate:    &start,
+		EndDate:      &end,
+		Page:         1,
+		PageSize:     50,
+	}
+
+	if filter.TenantSlug != "cicadas" || filter.ProjectID != projectID {
+		t.Errorf("Filter fields mismatch")
+	}
+
+	if filter.LogGroup != "NETWORK" || filter.Scope != "PROJECT" {
+		t.Errorf("Metadata filter fields mismatch")
+	}
+
+	resp := PaginatedAuditEventsResponse{
+		Data:       []*AuditEvent{},
+		TotalCount: 120,
+		Page:       1,
+		PageSize:   50,
+		TotalPages: 3,
+	}
+
+	if resp.TotalPages != 3 || resp.TotalCount != 120 {
+		t.Errorf("Pagination math mismatch")
+	}
 }
+

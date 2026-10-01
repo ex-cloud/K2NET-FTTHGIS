@@ -57,4 +57,23 @@ public @interface AuditRequired {
      * Example: "#id.toString()" or "#request.id".
      */
     String resourceIdExpression() default "";
+
+    /**
+     * Optional: SpEL expression to extract the projectId from a method argument.
+     * Example: "#projectId" or "#request.projectId".
+     * If present, the aspect automatically injects "projectId" and scope="PROJECT" into event metadata.
+     */
+    String projectIdExpression() default "";
+
+    /**
+     * Scope classification: "AUTO", "ORGANIZATION", "PROJECT", "SYSTEM".
+     * Defaults to "AUTO" (resolved to "PROJECT" if projectIdExpression is present, else "ORGANIZATION").
+     */
+    String scope() default "AUTO";
+
+    /**
+     * Category classification: "GENERAL", "NETWORK_ASSET", "CUSTOMER", "FIBER", "TASK", "TEAM", "BILLING", "SECURITY".
+     * Defaults to "GENERAL".
+     */
+    String category() default "GENERAL";
 }
