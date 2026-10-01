@@ -259,8 +259,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 256M
+          cpus: '1.0'
+          memory: 768M
 
   # Centralized Log Store (Grafana Loki)
   loki:
