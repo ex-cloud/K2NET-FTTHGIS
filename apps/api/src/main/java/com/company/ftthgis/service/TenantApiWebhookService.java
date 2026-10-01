@@ -92,7 +92,7 @@ public class TenantApiWebhookService {
      * Hashes key for DB storage, syncs with Kong key-auth, and streams audit event.
      */
     @Transactional
-    @AuditRequired(action = "TENANT_API_KEY_REGENERATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
+    @AuditRequired(action = "TENANT_API_KEY_REGENERATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug", scope = "ORGANIZATION", category = "DEVELOPER_API")
     public RegenerateApiKeyResponse regenerateApiKey(String idOrSlug) {
         Organization org = resolveOrganization(idOrSlug);
 
@@ -168,7 +168,7 @@ public class TenantApiWebhookService {
      * Updates webhook URL and event subscriptions. Validates URL against SSRF policy.
      */
     @Transactional
-    @AuditRequired(action = "TENANT_WEBHOOK_CONFIG_UPDATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
+    @AuditRequired(action = "TENANT_WEBHOOK_CONFIG_UPDATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug", scope = "ORGANIZATION", category = "DEVELOPER_API")
     public WebhookConfigResponse updateWebhookConfig(String idOrSlug, WebhookConfigRequest request) {
         Organization org = resolveOrganization(idOrSlug);
         TenantWebhookConfig config = getOrCreateConfig(org);
@@ -205,7 +205,7 @@ public class TenantApiWebhookService {
      * Encrypts secret with AES-256-GCM for DB storage, returns plaintext secret once.
      */
     @Transactional
-    @AuditRequired(action = "TENANT_WEBHOOK_SECRET_ROLLED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
+    @AuditRequired(action = "TENANT_WEBHOOK_SECRET_ROLLED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug", scope = "ORGANIZATION", category = "DEVELOPER_API")
     public RollSecretResponse rollWebhookSecret(String idOrSlug) {
         Organization org = resolveOrganization(idOrSlug);
         TenantWebhookConfig config = getOrCreateConfig(org);

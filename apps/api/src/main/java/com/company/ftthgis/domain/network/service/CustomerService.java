@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.network.service;
 
+import com.company.ftthgis.config.logging.AuditRequired;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
@@ -87,6 +88,14 @@ public class CustomerService {
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found: " + code));
     }
 
+    @AuditRequired(
+        action = "CUSTOMER_REGISTERED",
+        resourceType = "CUSTOMER",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "CUSTOMER",
+        resourceIdExpression = "#dto.code"
+    )
     public CustomerDto createCustomer(CustomerDto dto) {
         if (customerRepository.existsByCode(dto.getCode())) {
             throw new IllegalArgumentException("Customer Code already exists");
@@ -138,6 +147,14 @@ public class CustomerService {
         return toDto(savedCustomer);
     }
 
+    @AuditRequired(
+        action = "CUSTOMER_UPDATED",
+        resourceType = "CUSTOMER",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "CUSTOMER",
+        resourceIdExpression = "#id.toString()"
+    )
     public CustomerDto updateCustomer(UUID id, CustomerDto dto) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found with ID: " + id));
@@ -161,6 +178,15 @@ public class CustomerService {
         return toDto(customer);
     }
 
+    @AuditRequired(
+        action = "CUSTOMER_DELETED",
+        resourceType = "CUSTOMER",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "CUSTOMER",
+        severity = "WARN",
+        resourceIdExpression = "#id.toString()"
+    )
     public String deleteCustomer(UUID id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));

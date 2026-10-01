@@ -37,13 +37,13 @@ public class TenantApiAdvancedService {
     }
 
     @Transactional
-    @AuditRequired(action = "TENANT_SCOPED_TOKEN_CREATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
+    @AuditRequired(action = "TENANT_SCOPED_TOKEN_CREATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug", scope = "ORGANIZATION", category = "DEVELOPER_API")
     public ScopedTokenCreateResponse createScopedToken(String idOrSlug, ScopedTokenCreateRequest request) {
         return tokenService.createScopedToken(idOrSlug, request);
     }
 
     @Transactional
-    @AuditRequired(action = "TENANT_SCOPED_TOKEN_REVOKED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
+    @AuditRequired(action = "TENANT_SCOPED_TOKEN_REVOKED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug", scope = "ORGANIZATION", category = "DEVELOPER_API")
     public void revokeToken(String idOrSlug, UUID tokenId) {
         tokenService.revokeToken(idOrSlug, tokenId);
     }
@@ -58,19 +58,19 @@ public class TenantApiAdvancedService {
     }
 
     @Transactional
-    @AuditRequired(action = "TENANT_WEBHOOK_ENDPOINT_CREATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
+    @AuditRequired(action = "TENANT_WEBHOOK_ENDPOINT_CREATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug", scope = "ORGANIZATION", category = "DEVELOPER_API")
     public WebhookEndpointResponse createEndpoint(String idOrSlug, WebhookEndpointRequest request) {
         return webhookConfigService.createEndpoint(idOrSlug, request);
     }
 
     @Transactional
-    @AuditRequired(action = "TENANT_WEBHOOK_ENDPOINT_UPDATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
+    @AuditRequired(action = "TENANT_WEBHOOK_ENDPOINT_UPDATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug", scope = "ORGANIZATION", category = "DEVELOPER_API")
     public WebhookEndpointResponse updateEndpoint(String idOrSlug, UUID endpointId, WebhookEndpointRequest request) {
         return webhookConfigService.updateEndpoint(idOrSlug, endpointId, request);
     }
 
     @Transactional
-    @AuditRequired(action = "TENANT_WEBHOOK_ENDPOINT_DELETED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
+    @AuditRequired(action = "TENANT_WEBHOOK_ENDPOINT_DELETED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug", scope = "ORGANIZATION", category = "DEVELOPER_API")
     public void deleteEndpoint(String idOrSlug, UUID endpointId) {
         webhookConfigService.deleteEndpoint(idOrSlug, endpointId);
     }

@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.network.service;
 
+import com.company.ftthgis.config.logging.AuditRequired;
 import com.company.ftthgis.domain.network.dto.FiberCableDto;
 import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.repository.FiberCableRepository;
@@ -33,6 +34,15 @@ public class FiberCableService {
                 .orElseThrow(() -> new EntityNotFoundException("Cable not found: " + code));
     }
 
+    @AuditRequired(
+        action = "CABLE_CREATED",
+        resourceType = "CABLE",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "FIBER",
+        projectIdExpression = "#dto.projectId?.toString()",
+        resourceIdExpression = "#dto.code"
+    )
     public FiberCableDto createCable(FiberCableDto dto) {
         if (fiberCableRepository.existsByCode(dto.getCode())) {
             throw new IllegalArgumentException("Cable Code already exists: " + dto.getCode());
@@ -44,6 +54,15 @@ public class FiberCableService {
         return networkMapper.toFiberCableDto(cable);
     }
 
+    @AuditRequired(
+        action = "CABLE_UPDATED",
+        resourceType = "CABLE",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "FIBER",
+        projectIdExpression = "#dto.projectId?.toString()",
+        resourceIdExpression = "#id.toString()"
+    )
     public FiberCableDto updateCable(UUID id, FiberCableDto dto) {
         FiberCable cable = fiberCableRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cable not found with ID: " + id));
@@ -53,6 +72,15 @@ public class FiberCableService {
         return networkMapper.toFiberCableDto(cable);
     }
 
+    @AuditRequired(
+        action = "CABLE_DELETED",
+        resourceType = "CABLE",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "FIBER",
+        severity = "WARN",
+        resourceIdExpression = "#id.toString()"
+    )
     public String deleteCable(UUID id) {
         FiberCable cable = fiberCableRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cable not found"));

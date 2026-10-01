@@ -136,7 +136,7 @@ public class ConfigurableUserService {
     }
 
     @Transactional
-    @AuditRequired(action = "USER_INVITED", resourceType = "USER", tenantSlugExpression = "#orgIdOrSlug")
+    @AuditRequired(action = "USER_INVITED", resourceType = "USER", tenantSlugExpression = "#orgIdOrSlug", scope = "ORGANIZATION", category = "IAM")
     public UserDto inviteUser(String orgIdOrSlug, UserInviteRequest request) {
         // 1. Get Organization
         Organization organization;
@@ -237,7 +237,7 @@ public class ConfigurableUserService {
     }
 
     @Transactional
-    @AuditRequired(action = "USER_UPDATED", resourceType = "USER", resourceIdExpression = "#id.toString()")
+    @AuditRequired(action = "USER_UPDATED", resourceType = "USER", resourceIdExpression = "#id.toString()", scope = "ORGANIZATION", category = "IAM")
     public UserDto updateUser(UUID id, String roleName, String status, String reason, String modifiedBySubject) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -296,7 +296,7 @@ public class ConfigurableUserService {
     }
 
     @Transactional
-    @AuditRequired(action = "USER_PASSWORD_RESET", resourceType = "USER", resourceIdExpression = "#userId.toString()")
+    @AuditRequired(action = "USER_PASSWORD_RESET", resourceType = "USER", resourceIdExpression = "#userId.toString()", scope = "ORGANIZATION", category = "IAM")
     public void resetPassword(UUID userId, String newPassword, boolean temporary, String modifiedBySubject) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));

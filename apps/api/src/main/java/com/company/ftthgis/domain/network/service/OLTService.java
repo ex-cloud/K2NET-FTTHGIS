@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.network.service;
 
+import com.company.ftthgis.config.logging.AuditRequired;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
@@ -75,6 +76,14 @@ public class OLTService {
     }
 
     @Transactional
+    @AuditRequired(
+        action = "OLT_CREATED",
+        resourceType = "OLT",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        resourceIdExpression = "#dto.code"
+    )
     public OLTDto createOlt(OLTDto dto) {
         if (oltRepository.existsByCode(dto.getCode())) {
             throw new RuntimeException("OLT with code " + dto.getCode() + " already exists");
@@ -104,6 +113,14 @@ public class OLTService {
     }
 
     @Transactional
+    @AuditRequired(
+        action = "OLT_UPDATED",
+        resourceType = "OLT",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        resourceIdExpression = "#id.toString()"
+    )
     public OLTDto updateOlt(UUID id, OLTDto dto) {
         OLT olt = oltRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("OLT not found with id: " + id));
@@ -128,6 +145,15 @@ public class OLTService {
     }
 
     @Transactional
+    @AuditRequired(
+        action = "OLT_DELETED",
+        resourceType = "OLT",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        severity = "WARN",
+        resourceIdExpression = "#id.toString()"
+    )
     public String deleteOlt(UUID id) {
         OLT olt = oltRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("OLT not found with ID: " + id));

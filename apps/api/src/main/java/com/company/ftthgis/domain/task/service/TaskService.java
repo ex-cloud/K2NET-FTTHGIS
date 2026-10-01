@@ -127,6 +127,7 @@ public class TaskService {
             action = "TASK_CREATED",
             resourceType = "TASK",
             logGroup = "OPERATIONS",
+            category = "TASK",
             resourceIdExpression = "#result.id.toString()"
     )
     public Task create(CreateTaskRequest request, String reporterId, UUID organizationId, boolean isSuperAdmin) {
@@ -187,6 +188,7 @@ public class TaskService {
             action = "TASK_STATUS_CHANGED",
             resourceType = "TASK",
             logGroup = "OPERATIONS",
+            category = "TASK",
             resourceIdExpression = "#id.toString()"
     )
     public Task update(UUID id, UpdateTaskRequest request) {
@@ -219,6 +221,7 @@ public class TaskService {
             action = "TASK_ASSIGNED",
             resourceType = "TASK",
             logGroup = "OPERATIONS",
+            category = "TASK",
             resourceIdExpression = "#id.toString()"
     )
     public Task assignTask(UUID id, String assigneeId) {
@@ -234,6 +237,7 @@ public class TaskService {
             action = "TASK_RESOLVED",
             resourceType = "TASK",
             logGroup = "OPERATIONS",
+            category = "TASK",
             resourceIdExpression = "#id.toString()"
     )
     public Task resolveTask(UUID id) {
@@ -251,6 +255,7 @@ public class TaskService {
             resourceType = "TASK",
             logGroup = "OPERATIONS",
             severity = "WARN",
+            category = "TASK",
             resourceIdExpression = "#id.toString()"
     )
     public void delete(UUID id) {
@@ -264,6 +269,7 @@ public class TaskService {
             action = "TASK_COMMENT_ADDED",
             resourceType = "TASK_COMMENT",
             logGroup = "OPERATIONS",
+            category = "TASK",
             resourceIdExpression = "#taskId.toString()"
     )
     public TaskComment addComment(UUID taskId, CreateCommentRequest request, String authorId) {

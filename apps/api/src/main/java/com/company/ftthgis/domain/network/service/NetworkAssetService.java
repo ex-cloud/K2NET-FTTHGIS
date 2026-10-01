@@ -16,6 +16,7 @@ import com.company.ftthgis.domain.network.repository.ODCRepository;
 import com.company.ftthgis.domain.network.repository.ODPRepository;
 import com.company.ftthgis.domain.network.repository.OLTRepository;
 import com.company.ftthgis.domain.tenant.repository.ProjectMemberRepository;
+import com.company.ftthgis.config.logging.AuditRequired;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -126,6 +127,14 @@ public class NetworkAssetService {
      * Batch update assets (Status, Health Status, or Parent Reassignment)
      */
     @Transactional
+    @AuditRequired(
+        action = "ASSET_BATCH_UPDATED",
+        resourceType = "NETWORK_ASSET",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        resourceIdExpression = "#request.type"
+    )
     public Map<String, Object> batchUpdate(BatchUpdateRequest request) {
         log.info("📦 Batch update triggered for {} {} assets. Status: {}", 
             request.getIds() != null ? request.getIds().size() : 0, request.getType(), request.getStatus());
@@ -237,6 +246,15 @@ public class NetworkAssetService {
      * Batch delete assets across types.
      */
     @Transactional
+    @AuditRequired(
+        action = "ASSET_BATCH_DELETED",
+        resourceType = "NETWORK_ASSET",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        severity = "WARN",
+        resourceIdExpression = "#type"
+    )
     public Map<String, Object> batchDelete(String type, String reason, List<UUID> ids) {
         log.info("🗑️ Batch delete triggered for {} {} assets. Reason: {}", ids != null ? ids.size() : 0, type, reason);
         

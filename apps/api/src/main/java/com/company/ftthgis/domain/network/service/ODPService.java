@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.network.service;
 
+import com.company.ftthgis.config.logging.AuditRequired;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
@@ -89,6 +90,14 @@ public class ODPService {
                 .orElseThrow(() -> new EntityNotFoundException("ODP not found: " + code));
     }
 
+    @AuditRequired(
+        action = "ODP_CREATED",
+        resourceType = "ODP",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        resourceIdExpression = "#dto.code"
+    )
     public ODPDto createOdp(ODPDto dto) {
         if (odpRepository.existsByCode(dto.getCode())) {
             throw new IllegalArgumentException("ODP Code already exists");
@@ -139,6 +148,14 @@ public class ODPService {
         return toDto(odp);
     }
 
+    @AuditRequired(
+        action = "ODP_UPDATED",
+        resourceType = "ODP",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        resourceIdExpression = "#id.toString()"
+    )
     public ODPDto updateOdp(UUID id, ODPDto dto) {
         ODP odp = odpRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODP not found with ID: " + id));
@@ -156,6 +173,15 @@ public class ODPService {
         return toDto(odp);
     }
 
+    @AuditRequired(
+        action = "ODP_DELETED",
+        resourceType = "ODP",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        severity = "WARN",
+        resourceIdExpression = "#id.toString()"
+    )
     public String deleteOdp(UUID id) {
         ODP odp = odpRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODP not found"));

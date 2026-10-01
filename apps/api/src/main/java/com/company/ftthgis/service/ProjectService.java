@@ -1,5 +1,6 @@
 package com.company.ftthgis.service;
 
+import com.company.ftthgis.config.logging.AuditRequired;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.Project;
 import com.company.ftthgis.domain.tenant.entity.SubscriptionPlan;
@@ -23,6 +24,15 @@ public class ProjectService {
     private final OrganizationRepository organizationRepository;
 
     @Transactional
+    @AuditRequired(
+        action = "PROJECT_CREATED",
+        resourceType = "PROJECT",
+        logGroup = "OPERATIONS",
+        scope = "ORGANIZATION",
+        category = "PROJECT",
+        tenantSlugExpression = "#orgSlug",
+        resourceIdExpression = "#project.name"
+    )
     public Project createProject(String orgSlug, Project project) {
         Organization org = organizationRepository.findBySlug(orgSlug)
                 .orElseThrow(() -> new RuntimeException("Organization not found"));
@@ -59,6 +69,15 @@ public class ProjectService {
     }
 
     @Transactional
+    @AuditRequired(
+        action = "PROJECT_UPDATED",
+        resourceType = "PROJECT",
+        logGroup = "OPERATIONS",
+        scope = "ORGANIZATION",
+        category = "PROJECT",
+        projectIdExpression = "#projectId.toString()",
+        resourceIdExpression = "#projectId.toString()"
+    )
     public Project updateProject(UUID projectId, Project incoming) {
         Project existing = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
@@ -93,6 +112,16 @@ public class ProjectService {
     }
 
     @Transactional
+    @AuditRequired(
+        action = "PROJECT_DELETED",
+        resourceType = "PROJECT",
+        logGroup = "OPERATIONS",
+        scope = "ORGANIZATION",
+        category = "PROJECT",
+        severity = "WARN",
+        projectIdExpression = "#projectId.toString()",
+        resourceIdExpression = "#projectId.toString()"
+    )
     public void deleteProject(UUID projectId) {
         Project existing = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
@@ -111,6 +140,15 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
+    @AuditRequired(
+        action = "PROJECT_EXPORTED",
+        resourceType = "PROJECT",
+        logGroup = "OPERATIONS",
+        scope = "ORGANIZATION",
+        category = "PROJECT",
+        projectIdExpression = "#projectId.toString()",
+        resourceIdExpression = "#projectId.toString()"
+    )
     public Map<String, Object> exportProject(UUID projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));

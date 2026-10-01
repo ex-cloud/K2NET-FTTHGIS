@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.network.service;
 
+import com.company.ftthgis.config.logging.AuditRequired;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
@@ -90,6 +91,14 @@ public class ODCService {
                 .orElseThrow(() -> new EntityNotFoundException("ODC not found: " + code));
     }
 
+    @AuditRequired(
+        action = "ODC_CREATED",
+        resourceType = "ODC",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        resourceIdExpression = "#dto.code"
+    )
     public ODCDto createOdc(ODCDto dto) {
         if (odcRepository.existsByCode(dto.getCode())) {
             throw new IllegalArgumentException("ODC Code already exists");
@@ -140,6 +149,14 @@ public class ODCService {
         return toDto(odc);
     }
 
+    @AuditRequired(
+        action = "ODC_UPDATED",
+        resourceType = "ODC",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        resourceIdExpression = "#id.toString()"
+    )
     public ODCDto updateOdc(UUID id, ODCDto dto) {
         ODC odc = odcRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODC not found with ID: " + id));
@@ -164,6 +181,15 @@ public class ODCService {
         return toDto(odc);
     }
 
+    @AuditRequired(
+        action = "ODC_DELETED",
+        resourceType = "ODC",
+        logGroup = "NETWORK",
+        scope = "PROJECT",
+        category = "NETWORK_ASSET",
+        severity = "WARN",
+        resourceIdExpression = "#id.toString()"
+    )
     public String deleteOdc(UUID id) {
         ODC odc = odcRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODC not found"));

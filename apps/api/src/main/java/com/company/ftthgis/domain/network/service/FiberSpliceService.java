@@ -7,6 +7,7 @@ import com.company.ftthgis.domain.network.entity.SplitterPort;
 import com.company.ftthgis.domain.network.repository.FiberCoreRepository;
 import com.company.ftthgis.domain.network.repository.FiberSpliceRepository;
 import com.company.ftthgis.domain.network.repository.SplitterPortRepository;
+import com.company.ftthgis.config.logging.AuditRequired;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,13 @@ public class FiberSpliceService {
      * Create a new splice connection.
      * This links two fiber cores through two ports, representing a physical splice point.
      */
+    @AuditRequired(
+            action = "FIBER_SPLICE_CREATED",
+            resourceType = "NETWORK_SPLICE",
+            scope = "PROJECT",
+            category = "NETWORK",
+            resourceIdExpression = "#result.id.toString()"
+    )
     public FiberSpliceDto createSplice(FiberSpliceDto dto) {
         FiberCore fromCore = coreRepository.findById(dto.getFromCoreId())
                 .orElseThrow(() -> new EntityNotFoundException("Source core not found: " + dto.getFromCoreId()));
@@ -96,6 +104,13 @@ public class FiberSpliceService {
     /**
      * Delete a splice and free up the associated cores and ports.
      */
+    @AuditRequired(
+            action = "FIBER_SPLICE_DELETED",
+            resourceType = "NETWORK_SPLICE",
+            scope = "PROJECT",
+            category = "NETWORK",
+            resourceIdExpression = "#spliceId.toString()"
+    )
     public void deleteSplice(UUID spliceId) {
         FiberSplice splice = spliceRepository.findById(spliceId)
                 .orElseThrow(() -> new EntityNotFoundException("Splice not found: " + spliceId));
