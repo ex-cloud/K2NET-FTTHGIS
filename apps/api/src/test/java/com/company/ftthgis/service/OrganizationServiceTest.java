@@ -97,7 +97,15 @@ class OrganizationServiceTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
-    @InjectMocks
+    @Mock
+    private com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
+
+    private com.company.ftthgis.service.organization.OrganizationDirectoryService directoryService;
+    private com.company.ftthgis.service.organization.OrganizationProvisioningService provisioningService;
+    private com.company.ftthgis.service.organization.OrganizationLifecycleService lifecycleService;
+    private com.company.ftthgis.service.organization.OrganizationDataExportService dataExportService;
+    private com.company.ftthgis.service.organization.OrganizationQuotaService quotaService;
+
     private OrganizationService organizationService;
 
     private Organization testOrg;
@@ -113,6 +121,33 @@ class OrganizationServiceTest {
                 .status(Organization.OrganizationStatus.ACTIVE)
                 .logoUrl("https://storage.k2net.id/logos/sukarajin.png")
                 .build();
+
+        directoryService = new com.company.ftthgis.service.organization.OrganizationDirectoryService(
+                organizationRepository, userRepository, organizationSlugAliasRepository,
+                randomSlugGenerator, tenantSecurity, fileStorageService,
+                subscriptionPlanRepository, keycloakService, jdbcTemplate
+        );
+        provisioningService = new com.company.ftthgis.service.organization.OrganizationProvisioningService(
+                organizationRepository, subscriptionPlanRepository, organizationSlugAliasRepository,
+                randomSlugGenerator, organizationConfigRepository, encryptionUtils,
+                keycloakService, roleRepository, entityManager, fileStorageService, auditLoggingService
+        );
+        lifecycleService = new com.company.ftthgis.service.organization.OrganizationLifecycleService(
+                organizationRepository, projectRepository, networkNodeRepository,
+                fiberCableRepository, userRepository, keycloakService,
+                fileStorageService, tenantSecurity, auditLoggingService, entityManager, jdbcTemplate
+        );
+        dataExportService = new com.company.ftthgis.service.organization.OrganizationDataExportService(
+                organizationRepository, projectRepository, networkNodeRepository,
+                fiberCableRepository, subscriptionPlanRepository, organizationConfigRepository,
+                keycloakService, fileStorageService, auditLoggingService, jdbcTemplate, lifecycleService
+        );
+        quotaService = new com.company.ftthgis.service.organization.OrganizationQuotaService(
+                organizationRepository, subscriptionPlanRepository
+        );
+        organizationService = new OrganizationService(
+                directoryService, provisioningService, lifecycleService, dataExportService, quotaService
+        );
     }
 
     @Test
