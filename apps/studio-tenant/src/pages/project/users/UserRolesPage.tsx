@@ -6,8 +6,10 @@ import {
   PageContentShell,
   Card,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 export function UserRolesPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
 
@@ -15,11 +17,11 @@ export function UserRolesPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: "Subscribers", href: `/project/${projectId}/users/subscribers` },
-          { label: "Peran Akses Proyek" },
+          { label: t("security.roles_matrix") },
         ]}
-        title="Peran & Izin Akses Proyek (Spatial ABAC)"
+        title={t("security.roles_matrix")}
       />
 
       <PageContentShell className="space-y-4 custom-scrollbar max-w-4xl">

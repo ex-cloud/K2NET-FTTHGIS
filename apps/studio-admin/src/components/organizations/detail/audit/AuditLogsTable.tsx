@@ -12,6 +12,7 @@ import {
 import { ShieldAlert, Search, RefreshCw, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TenantAuditEvent, AuditSeverity } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface AuditLogsTableProps {
   filteredEvents: TenantAuditEvent[];
@@ -41,6 +42,7 @@ export function AuditLogsTable({
   onRefresh,
   onInspect,
 }: AuditLogsTableProps) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs space-y-0">
       {/* Table Toolbar */}
@@ -98,7 +100,7 @@ export function AuditLogsTable({
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari aksi / user..."
+              placeholder={t("organizations.audit_search_placeholder")}
               className="h-7 text-xs pl-7 w-36 sm:w-44 bg-card border-border"
             />
           </div>
@@ -111,7 +113,7 @@ export function AuditLogsTable({
             className="h-7 px-2 text-xs border-border gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <RefreshCw className={cn("h-3 w-3", isRefetching && "animate-spin")} />
-            <span className="hidden sm:inline">Refresh</span>
+            <span className="hidden sm:inline">{t("common.refresh")}</span>
           </Button>
         </div>
       </div>
@@ -120,20 +122,20 @@ export function AuditLogsTable({
       <Table>
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">
-            <TableHead className="text-xs font-semibold text-foreground">Waktu</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Aktor / User</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">IP Client</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Aksi Event</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Entitas Target</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Severity</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground text-right">Detail Diff</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.audit_col_time")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.audit_col_actor")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.audit_col_ip")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.audit_col_action")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.audit_col_target")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.audit_col_severity")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground text-right">{t("organizations.audit_col_diff")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredEvents.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-8 text-xs text-muted-foreground">
-                Tidak ada event audit yang sesuai dengan filter.
+                {t("organizations.audit_empty_filtered")}
               </TableCell>
             </TableRow>
           ) : (

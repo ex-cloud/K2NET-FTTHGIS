@@ -3,6 +3,7 @@ import { FileCode, X, Copy, Building2 } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { type AuditStreamEntry, LOG_GROUPS } from "@/hooks/use-audit-log-stream";
 import { getSourceIcon, getLevel } from "./logs-utils";
+import { useTranslation } from "@k2net/i18n";
 
 interface LogsDetailDrawerProps {
   selectedLog: AuditStreamEntry;
@@ -11,17 +12,18 @@ interface LogsDetailDrawerProps {
 }
 
 function HttpRequestSection({ log }: { log: AuditStreamEntry }) {
+  const { t } = useTranslation();
   if (!log.method && !log.status && !log.pathname && !log.ip) return null;
 
   return (
     <div className="space-y-2">
       <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-        HTTP Request
+        {t("observability.http_request")}
       </label>
       <div className="bg-muted/30 p-2 rounded border border-border/50 space-y-1.5">
         {log.method && (
           <div className="flex items-center gap-2">
-            <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">Method</span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">{t("observability.method")}</span>
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${
               log.method === "POST" ? "text-sky-400 bg-sky-500/10 border-sky-500/20"
               : log.method === "DELETE" ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
@@ -32,7 +34,7 @@ function HttpRequestSection({ log }: { log: AuditStreamEntry }) {
         )}
         {log.status && (
           <div className="flex items-center gap-2">
-            <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">Status</span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">{t("observability.http_status")}</span>
             <span className={`font-mono text-[11px] font-semibold ${
               Number(log.status) >= 500 ? "text-rose-400"
               : Number(log.status) >= 400 ? "text-amber-400"
@@ -42,13 +44,13 @@ function HttpRequestSection({ log }: { log: AuditStreamEntry }) {
         )}
         {log.pathname && (
           <div className="flex items-start gap-2">
-            <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0 mt-0.5">Path</span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0 mt-0.5">{t("observability.pathname")}</span>
             <span className="font-mono text-[10px] text-foreground break-all">{log.pathname}</span>
           </div>
         )}
         {log.ip && (
           <div className="flex items-center gap-2">
-            <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">IP</span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">{t("observability.client_ip")}</span>
             <span className="font-mono text-[10px] text-foreground">{log.ip}</span>
           </div>
         )}
@@ -58,6 +60,7 @@ function HttpRequestSection({ log }: { log: AuditStreamEntry }) {
 }
 
 export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetailDrawerProps) {
+  const { t } = useTranslation();
   const level = getLevel(selectedLog);
 
   return (
@@ -65,7 +68,7 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
       <div className="p-3 border-b border-border flex items-center justify-between bg-muted/40 shrink-0">
         <div className="flex items-center gap-2">
           <FileCode className="w-4 h-4 text-primary" />
-          <span className="font-bold text-foreground font-sans text-sm">Log Details</span>
+          <span className="font-bold text-foreground font-sans text-sm">{t("observability.log_details")}</span>
         </div>
         <Button
           variant="ghost"
@@ -79,14 +82,14 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         <div className="space-y-1">
-          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Event ID</label>
+          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.event_id")}</label>
           <p className="text-foreground bg-muted/40 p-2 rounded border border-border/50 text-[10px] break-all font-mono">
             {selectedLog.id}
           </p>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Level</label>
+          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.level")}</label>
           <div className="flex items-center gap-2">
             <span
               className={`w-2 h-2 rounded-full ${
@@ -98,18 +101,18 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Action / Type</label>
+          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.action_type")}</label>
           <p className="text-primary font-bold text-xs font-mono">{selectedLog.action}</p>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Actor</label>
+          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.col_actor")}</label>
           <p className="text-foreground text-xs font-mono">{selectedLog.actor}</p>
         </div>
 
         {selectedLog.tenantSlug && (
           <div className="space-y-1">
-            <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Tenant</label>
+            <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.tenant")}</label>
             <p className="text-foreground font-mono text-xs inline-flex items-center gap-1.5">
               <Building2 className="w-3 h-3 text-primary" />
               {selectedLog.tenantSlug}
@@ -119,7 +122,7 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
 
         {selectedLog.serviceSource && (
           <div className="space-y-1">
-            <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Service Source</label>
+            <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.service_source")}</label>
             <p className="text-foreground font-mono text-xs inline-flex items-center gap-1.5">
               {getSourceIcon(selectedLog.serviceSource)}
               {selectedLog.serviceSource}
@@ -129,7 +132,7 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
 
         {selectedLog.logGroup && (
           <div className="space-y-1">
-            <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Log Group</label>
+            <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.log_group")}</label>
             <p className={`font-mono text-xs font-semibold ${LOG_GROUPS[selectedLog.logGroup]?.color ?? "text-muted-foreground"}`}>
               {LOG_GROUPS[selectedLog.logGroup]?.label ?? selectedLog.logGroup}
             </p>
@@ -137,12 +140,12 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
         )}
 
         <div className="space-y-1">
-          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Timestamp</label>
+          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.timestamp")}</label>
           <p className="text-foreground font-mono text-xs">{selectedLog.timestamp}</p>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Event Message</label>
+          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.event_message")}</label>
           <p className="text-foreground bg-muted/30 p-2 rounded border border-border/50 text-[10px] break-all font-mono">
             {selectedLog.message}
           </p>
@@ -151,7 +154,7 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
         <HttpRequestSection log={selectedLog} />
 
         <div className="space-y-1">
-          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Raw JSON Payload</label>
+          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.raw_json_payload")}</label>
           <pre className="bg-background p-3 rounded border border-border text-[10px] text-foreground/80 overflow-x-auto whitespace-pre-wrap font-mono">
             {JSON.stringify(selectedLog, null, 2)}
           </pre>
@@ -165,7 +168,7 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
           onClick={(e) => onCopyLog(selectedLog, e)}
           className="w-full text-xs font-mono gap-1.5 h-8"
         >
-          <Copy className="w-3.5 h-3.5" /> Copy Raw Event JSON
+          <Copy className="w-3.5 h-3.5" /> {t("observability.copy_raw_event_json")}
         </Button>
       </div>
     </div>

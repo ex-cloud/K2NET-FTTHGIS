@@ -1,10 +1,8 @@
 import * as React from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Tooltip,
-  TooltipContent,
+  ActionTooltip,
   TooltipProvider,
-  TooltipTrigger,
   PrimarySidebarShell,
   useSidebarMode,
   cn,
@@ -43,6 +41,7 @@ export function TenantOrgSidebar() {
     const Icon = item.icon;
     const isActive = checkIsActive(item.href);
     const itemTitle = item.translationKey ? t(item.translationKey) : item.title;
+    const tooltipLabel = t("nav.go_to_item", { name: itemTitle });
 
     const button = (
       <div
@@ -74,18 +73,17 @@ export function TenantOrgSidebar() {
       </Link>
     );
 
-    if (!isExpanded) {
-      return (
-        <Tooltip key={item.id}>
-          <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
-          <TooltipContent side="right" className="text-xs">
-            {itemTitle}
-          </TooltipContent>
-        </Tooltip>
-      );
-    }
-
-    return <React.Fragment key={item.id}>{wrapped}</React.Fragment>;
+    return (
+      <ActionTooltip
+        key={item.id}
+        label={tooltipLabel}
+        shortcut={item.shortcut}
+        side="right"
+        sideOffset={12}
+      >
+        {wrapped}
+      </ActionTooltip>
+    );
   };
 
   return (

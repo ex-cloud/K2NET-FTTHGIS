@@ -1,3 +1,4 @@
+import React from "react";
 import { Lock, RefreshCw } from "lucide-react";
 import {
   Button,
@@ -12,6 +13,7 @@ import {
   Separator,
   ActionTooltip,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 export function AuthRealmSettingsCard({
   regAllowed,
@@ -34,6 +36,8 @@ export function AuthRealmSettingsCard({
   isUpdatingRealmConfig: boolean;
   isConfigChanged: boolean;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
       <CardHeader className="border-b border-border/40">
@@ -86,14 +90,14 @@ export function AuthRealmSettingsCard({
         </div>
       </CardContent>
       <CardFooter className="border-t border-border pt-4 flex justify-end">
-        <ActionTooltip label={isConfigChanged ? "Simpan Perubahan Keamanan Realm" : "Tidak Ada Perubahan"} shortcut="Ctrl+S">
+        <ActionTooltip label={isConfigChanged ? t("security.save_changes") : t("security.no_matrix_changes")} shortcut="Ctrl+S">
           <Button
             onClick={handleSaveRealmConfig}
             disabled={isUpdatingRealmConfig || !isConfigChanged}
             variant="default"
             size="sm"
           >
-            {isUpdatingRealmConfig ? <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1" /> : null} Save Security Policies
+            {isUpdatingRealmConfig ? <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1" /> : null} {t("common.save")}
           </Button>
         </ActionTooltip>
       </CardFooter>

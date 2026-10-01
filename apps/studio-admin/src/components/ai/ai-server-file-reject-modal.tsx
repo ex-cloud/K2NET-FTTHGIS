@@ -15,6 +15,7 @@ import {
   DialogDescription, 
   DialogFooter 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 interface AiServerFileRejectModalProps {
   open: boolean;
@@ -35,6 +36,8 @@ export function AiServerFileRejectModal({
   isRejecting,
   onConfirmReject,
 }: AiServerFileRejectModalProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-card border-border shadow-lg p-0 overflow-hidden rounded-xl">
@@ -45,10 +48,10 @@ export function AiServerFileRejectModal({
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-foreground">
-                Tolak Berkas Server?
+                {t("ai.reject_modal_title")}
               </DialogTitle>
               <DialogDescription className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
-                Berkas tidak akan diindeks ke pgvector dan akan dipindahkan ke status Ditolak.
+                {t("ai.reject_modal_desc")}
               </DialogDescription>
             </div>
           </div>
@@ -61,9 +64,9 @@ export function AiServerFileRejectModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">Alasan Penolakan (Opsional)</label>
+            <label className="text-xs font-semibold text-foreground">{t("ai.reject_reason_label")}</label>
             <Input
-              placeholder="Contoh: Berkas draf internal / belum siap publik"
+              placeholder={t("ai.reject_reason_placeholder")}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               className="text-xs h-9 bg-background"
@@ -79,7 +82,7 @@ export function AiServerFileRejectModal({
             disabled={isRejecting}
             className="text-xs h-8 cursor-pointer"
           >
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
@@ -89,7 +92,7 @@ export function AiServerFileRejectModal({
             className="text-xs h-8 gap-1.5 font-medium cursor-pointer"
           >
             {isRejecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-            {isRejecting ? "Menolak..." : "Ya, Tolak Berkas"}
+            {isRejecting ? t("ai.rejecting_btn") : t("ai.confirm_reject_btn")}
           </Button>
         </DialogFooter>
       </DialogContent>

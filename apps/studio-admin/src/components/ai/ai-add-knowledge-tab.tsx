@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { UploadCloud, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import type { KnowledgeScope } from "./types";
 import { AiKnowledgeGuideSidebar } from "./knowledge/AiKnowledgeGuideSidebar";
@@ -70,6 +71,7 @@ export function AiAddKnowledgeTab({
   onCancel,
   onGoToTemplates,
 }: AiAddKnowledgeTabProps) {
+  const { t } = useTranslation();
   const [entryMode, setEntryMode] = useState<"UPLOAD" | "MANUAL">("UPLOAD");
 
   return (
@@ -87,10 +89,10 @@ export function AiAddKnowledgeTab({
             </div>
             <div>
               <h2 className="text-sm font-bold text-foreground">
-                Tambah Basis Pengetahuan SOP & Panduan Jaringan
+                {t("ai.add_knowledge_title")}
               </h2>
               <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
-                Pilih metode input: Unggah berkas dokumen (PDF, MD, TXT) atau tulis catatan SOP langsung melalui editor Markdown.
+                {t("ai.add_knowledge_desc")}
               </p>
             </div>
           </div>
@@ -107,7 +109,7 @@ export function AiAddKnowledgeTab({
               )}
             >
               <UploadCloud className="w-3.5 h-3.5" />
-              <span>Unggah Berkas</span>
+              <span>{t("ai.tab_upload")}</span>
             </button>
             <button
               type="button"
@@ -120,7 +122,7 @@ export function AiAddKnowledgeTab({
               )}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Tulis Manual</span>
+              <span>{t("ai.tab_manual")}</span>
             </button>
           </div>
         </div>
@@ -134,12 +136,12 @@ export function AiAddKnowledgeTab({
                 {entryMode === "UPLOAD" ? (
                   <>
                     <UploadCloud className="w-4 h-4 text-primary" />
-                    <span>Unggah Dokumen Baru (PDF / Markdown / TXT)</span>
+                    <span>{t("ai.add_document_title")} (PDF / Markdown / TXT)</span>
                   </>
                 ) : (
                   <>
                     <FileText className="w-4 h-4 text-primary" />
-                    <span>Editor Catatan SOP & Prosedur Lapangan</span>
+                    <span>{t("ai.tab_manual")}</span>
                   </>
                 )}
               </CardTitle>

@@ -1,6 +1,7 @@
 import { FileText, FileCode, Sparkles, RotateCcw } from "lucide-react";
 import { RichTextEditor } from "@k2net/ui";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import { TEMPLATE_TECH_SPEC, TEMPLATE_INITIATIVE } from "./new-project-constants";
 
 interface NewProjectEditorSectionProps {
@@ -14,6 +15,7 @@ export function NewProjectEditorSection({
   setDescription,
   onUploadImage,
 }: NewProjectEditorSectionProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -50,7 +52,7 @@ export function NewProjectEditorSection({
             <button
               type="button"
               onClick={() => setDescription("")}
-              title="Reset dokumen"
+              title={t("tasks.reset_doc")}
               className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />

@@ -23,6 +23,7 @@ import {
   TableBody,
   TableCell,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../lib/api-client";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
@@ -49,6 +50,7 @@ interface SubscribeResponse {
 }
 
 export function BillingPage() {
+  const { t, formatCurrency, formatDate } = useTranslation();
   const queryClient = useQueryClient();
   const { summary, tier, planCycle, refetch: refetchSubscription } = useTenantSubscription();
 
@@ -74,7 +76,7 @@ export function BillingPage() {
       });
     },
     onSuccess: (data) => {
-      toast.success("Faktur pembayaran berhasil diterbitkan.");
+      toast.success(t("billing.invoice_issued_success"));
       if (data?.invoice_url) {
         window.open(data.invoice_url, "_blank");
       }
@@ -82,7 +84,7 @@ export function BillingPage() {
       refetchSubscription();
     },
     onError: (err) => {
-      const msg = err instanceof Error ? err.message : "Gagal memproses langganan";
+      const msg = err instanceof Error ? err.message : t("billing.subscribe_failed");
       toast.error(msg);
     },
   });
@@ -91,8 +93,8 @@ export function BillingPage() {
     {
       key: "FREE",
       name: "STARTER TRIAL",
-      price: "Rp 0",
-      period: "/14 hari",
+      price: formatCurrency(0),
+      period: t("billing.per_month"),
       description: "Starter 14-day evaluation trial with basic hardware quotas and standard community support.",
       features: [
         "Maksimal 1 OLT & Proyek FTTH Aktif",
@@ -103,13 +105,13 @@ export function BillingPage() {
         "Dukungan Komunitas",
       ],
       current: tier === "free",
-      badge: tier === "free" ? "PAKET TRIAL" : undefined,
+      badge: tier === "free" ? t("billing.free_trial") : undefined,
     },
     {
       key: "STARTER",
       name: "STARTER ISP",
-      price: "Rp 990.000",
-      period: "/bulan",
+      price: formatCurrency(990000),
+      period: t("billing.per_month"),
       description: "Starter ISP tier for local ISPs and RT-RW Net with 2 OLTs and up to 500 customers.",
       features: [
         "Maksimal 2 OLT & Proyek FTTH Aktif",
@@ -120,13 +122,13 @@ export function BillingPage() {
         "Standard SLA & Support",
       ],
       current: tier === "starter",
-      badge: tier === "starter" ? "PAKET AKTIF" : "TERJANGKAU",
+      badge: tier === "starter" ? t("billing.active_tier_badge") : undefined,
     },
     {
       key: "PRO",
       name: "PROFESSIONAL",
-      price: "Rp 3.900.000",
-      period: "/bulan",
+      price: formatCurrency(3900000),
+      period: t("billing.per_month"),
       description: "Professional ISP tier with dedicated poller, optical heatmap, LDAP SSO, and Gold 99.5% SLA.",
       features: [
         "Maksimal 6 OLT & Proyek FTTH Aktif",
@@ -139,13 +141,13 @@ export function BillingPage() {
         "Gold 99.5% SLA Support",
       ],
       current: tier === "pro",
-      badge: tier === "pro" ? "PAKET AKTIF" : "PALING POPULER",
+      badge: tier === "pro" ? t("billing.active_tier_badge") : t("billing.most_popular"),
     },
     {
       key: "ENTERPRISE",
       name: "ENTERPRISE",
-      price: "Rp 12.500.000",
-      period: "/bulan",
+      price: formatCurrency(12500000),
+      period: t("billing.per_month"),
       description: "Enterprise Core tier with AI Fiber Copilot, custom POP gateway, and Platinum 99.9% SLA.",
       features: [
         "Maksimal 25 OLT & Proyek FTTH Aktif",
@@ -158,7 +160,7 @@ export function BillingPage() {
         "Platinum 99.9% 24/7 SLA Matrix & Dedicated TAM",
       ],
       current: tier === "enterprise",
-      badge: tier === "enterprise" ? "PAKET AKTIF" : undefined,
+      badge: tier === "enterprise" ? t("billing.active_tier_badge") : undefined,
     },
   ];
 
@@ -167,25 +169,25 @@ export function BillingPage() {
   };
 
   const handleDownloadInvoice = (invoiceId: string) => {
-    toast.success(`Mengunduh kuitansi ${invoiceId}...`);
+    toast.success(`${t("common.download")} ${invoiceId}...`);
   };
 
   const currentDisplayTitle =
     tier === "enterprise"
-      ? "Paket Enterprise Core"
+      ? t("billing.plan_enterprise_title")
       : tier === "pro"
-      ? "Paket Professional ISP"
+      ? t("billing.plan_pro_title")
       : tier === "starter"
-      ? "Paket Starter ISP"
-      : "Paket Starter 14-Day Trial";
+      ? t("billing.plan_starter_title")
+      : t("billing.plan_trial_title");
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
-        title="Langganan & Faktur Penagihan"
+        title={t("billing.tenant_billing_title")}
         breadcrumbs={[
-          { label: "Organisasi", href: "/projects" },
-          { label: "Billing & Pembayaran" },
+          { label: t("organizations.tab_overview"), href: "/projects" },
+          { label: t("billing.title") },
         ]}
       />
 
@@ -211,16 +213,16 @@ export function BillingPage() {
                     {currentDisplayTitle}
                   </h3>
                   <Badge variant="default" className="text-[10px] font-mono">
-                    {summary?.status || "AKTIF"}
+                    {summary?.status || t("common.active")}
                   </Badge>
                   {summary?.isBoosterActive && (
                     <Badge variant="outline" className="text-[10px] font-mono text-amber-500 border-amber-500/30 bg-amber-500/10">
-                      BOOSTER ({summary.boosterDaysRemaining} Hari)
+                      {t("billing.booster_badge", { days: summary.boosterDaysRemaining || 0 })}
                     </Badge>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Siklus penagihan: <strong>{planCycle}</strong> • Pembayaran aman otomatis via Payment Gateway
+                  {t("billing.billing_cycle")}: <strong>{planCycle}</strong>
                 </p>
               </div>
             </div>
@@ -233,7 +235,7 @@ export function BillingPage() {
               className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs border-border/80"
             >
               <CreditCard className="h-3.5 w-3.5" />
-              {tier === "free" ? "Upgrade Paket via Xendit" : "Kelola Pembayaran"}
+              {tier === "free" ? t("billing.upgrade_plan") : t("billing.manage_quota")}
             </Button>
           </div>
         </Card>
@@ -241,7 +243,7 @@ export function BillingPage() {
         {/* Pricing Tier Plans */}
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Pilihan Paket Langganan
+            {t("billing.title")}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -294,13 +296,13 @@ export function BillingPage() {
                     {subscribeMutation.isPending ? (
                       <>
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Memproses...
+                        {t("common.processing")}
                       </>
                     ) : p.current ? (
-                      "Paket Saat Ini"
+                      t("billing.current_tier_btn")
                     ) : (
                       <>
-                        Pilih Paket Ini
+                        {t("billing.select_tier_btn")}
                         <ExternalLink className="h-3 w-3" />
                       </>
                     )}
@@ -314,7 +316,7 @@ export function BillingPage() {
         {/* Invoices History Table */}
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Riwayat Pembayaran & Faktur
+            {t("billing.past_invoices")}
           </h3>
 
           <Card className="border-border/60 overflow-hidden shadow-xs">
@@ -326,13 +328,13 @@ export function BillingPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 text-[11px]">
-                    <TableHead className="font-bold">NOMOR TRANSAKSI</TableHead>
-                    <TableHead className="font-bold">TANGGAL</TableHead>
-                    <TableHead className="font-bold">PAKET</TableHead>
-                    <TableHead className="font-bold">PEMBAYAR</TableHead>
-                    <TableHead className="font-bold">TOTAL</TableHead>
-                    <TableHead className="font-bold">STATUS</TableHead>
-                    <TableHead className="w-16 text-right">FAKTUR</TableHead>
+                    <TableHead className="font-bold">{t("billing.invoice_number")}</TableHead>
+                    <TableHead className="font-bold">{t("billing.invoice_date")}</TableHead>
+                    <TableHead className="font-bold">{t("organizations.plan_tier")}</TableHead>
+                    <TableHead className="font-bold">{t("billing.payer_email")}</TableHead>
+                    <TableHead className="font-bold">{t("billing.invoice_amount")}</TableHead>
+                    <TableHead className="font-bold">{t("billing.invoice_status")}</TableHead>
+                    <TableHead className="w-16 text-right">{t("billing.invoice_action")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -342,12 +344,12 @@ export function BillingPage() {
                         {tx.externalId || tx.id}
                       </TableCell>
                       <TableCell className="font-mono text-muted-foreground">
-                        {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString("id-ID") : "-"}
+                        {tx.createdAt ? formatDate(tx.createdAt) : "-"}
                       </TableCell>
                       <TableCell className="font-medium">{tx.planName || "PROFESSIONAL"}</TableCell>
                       <TableCell className="text-muted-foreground">{tx.payerEmail || "-"}</TableCell>
                       <TableCell className="font-mono font-bold text-foreground">
-                        Rp {tx.amount ? Number(tx.amount).toLocaleString("id-ID") : "0"}
+                        {formatCurrency(tx.amount || 0)}
                       </TableCell>
                       <TableCell>
                         <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
@@ -366,7 +368,7 @@ export function BillingPage() {
                           size="icon"
                           onClick={() => handleDownloadInvoice(tx.externalId || tx.id)}
                           className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                          title="Download Bukti Pembayaran"
+                          title={t("billing.download_pdf")}
                         >
                           <Download className="h-3.5 w-3.5" />
                         </Button>
@@ -378,9 +380,9 @@ export function BillingPage() {
             ) : (
               <div className="p-8 text-center space-y-2">
                 <Receipt className="h-8 w-8 text-muted-foreground mx-auto" />
-                <p className="text-xs font-semibold text-foreground">Belum Ada Riwayat Transaksi</p>
+                <p className="text-xs font-semibold text-foreground">{t("billing.no_transactions")}</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  Semua transaksi pembayaran paket langganan dan faktur resmi Anda akan tercatat secara otomatis di sini.
+                  {t("billing.invoices_desc")}
                 </p>
               </div>
             )}

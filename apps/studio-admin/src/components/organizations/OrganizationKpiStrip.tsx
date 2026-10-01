@@ -2,6 +2,7 @@
 
 import { Building2, UploadCloud, Network, AlertTriangle } from "lucide-react";
 import { Card } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { EnrichedOrganization } from "./types";
 
 interface OrganizationKpiStripProps {
@@ -13,6 +14,7 @@ export function OrganizationKpiStrip({
   organizations,
   compactView = false,
 }: OrganizationKpiStripProps) {
+  const { t } = useTranslation();
   if (compactView) return null;
 
   const total = organizations.length;
@@ -37,7 +39,7 @@ export function OrganizationKpiStrip({
       <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
         <div className="flex items-center justify-between">
           <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
-            Active Tenants
+            {t("organizations.kpi_active_tenants")}
           </span>
           <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Building2 className="h-3.5 w-3.5" />
@@ -49,16 +51,16 @@ export function OrganizationKpiStrip({
               {activeCount}
             </p>
             <span className="text-xs font-mono text-muted-foreground">
-              {activePct}% Ratio
+              {t("organizations.kpi_active_ratio", { pct: activePct })}
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {activeCount} of {total} organizations live
+            {t("organizations.kpi_live_desc", { active: activeCount, total })}
           </p>
         </div>
         <div>
           <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
-            <span>Utilization</span>
+            <span>{t("organizations.kpi_utilization")}</span>
             <span>{activePct}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -74,7 +76,7 @@ export function OrganizationKpiStrip({
       <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
         <div className="flex items-center justify-between">
           <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
-            Provisioning & Trial
+            {t("organizations.kpi_prov_trial")}
           </span>
           <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
             <UploadCloud className="h-3.5 w-3.5" />
@@ -86,16 +88,16 @@ export function OrganizationKpiStrip({
               {provisioningCount + trialCount}
             </p>
             <span className="text-xs font-mono text-blue-500">
-              {provisioningCount > 0 ? "In Setup" : "On Trial"}
+              {provisioningCount > 0 ? t("organizations.kpi_in_setup") : t("organizations.kpi_on_trial")}
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {provisioningCount} provisioning, {trialCount} in trial
+            {t("organizations.kpi_prov_trial_desc", { prov: provisioningCount, trial: trialCount })}
           </p>
         </div>
         <div>
           <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
-            <span>Utilization</span>
+            <span>{t("organizations.kpi_utilization")}</span>
             <span>{Math.min(100, (provisioningCount + trialCount) * 25)}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -111,7 +113,7 @@ export function OrganizationKpiStrip({
       <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
         <div className="flex items-center justify-between">
           <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
-            FTTH Hardware
+            {t("organizations.kpi_ftth_hardware")}
           </span>
           <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Network className="h-3.5 w-3.5" />
@@ -127,12 +129,12 @@ export function OrganizationKpiStrip({
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {oltPct}% allocated network capacity
+            {t("organizations.kpi_hardware_desc", { pct: oltPct })}
           </p>
         </div>
         <div>
           <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
-            <span>Utilization</span>
+            <span>{t("organizations.kpi_utilization")}</span>
             <span>{oltPct}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -148,7 +150,7 @@ export function OrganizationKpiStrip({
       <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
         <div className="flex items-center justify-between">
           <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
-            Overdue / Inactive
+            {t("organizations.kpi_overdue_inactive")}
           </span>
           <div className="h-6 w-6 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive">
             <AlertTriangle className="h-3.5 w-3.5" />
@@ -160,16 +162,18 @@ export function OrganizationKpiStrip({
               {atRiskCount}
             </p>
             <span className="text-xs font-mono text-destructive">
-              {atRiskPct > 0 ? `${atRiskPct}% Rate` : "Healthy"}
+              {atRiskPct > 0 ? `${atRiskPct}%` : t("organizations.kpi_healthy")}
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {atRiskCount === 0 ? "All tenant accounts operational" : "Action required on overdue accounts"}
+            {atRiskCount === 0
+              ? t("organizations.kpi_all_healthy_desc")
+              : t("organizations.kpi_at_risk_desc", { count: atRiskCount })}
           </p>
         </div>
         <div>
           <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
-            <span>Utilization</span>
+            <span>{t("organizations.kpi_utilization")}</span>
             <span>{Math.min(100, atRiskCount * 33)}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">

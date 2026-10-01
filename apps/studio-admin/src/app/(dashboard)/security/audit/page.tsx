@@ -31,12 +31,12 @@ function AuditHeader({
           <History className="w-6 h-6 text-primary" /> Audit Logs & CORS Policy
         </h1>
         <p className="text-xs text-muted-foreground">
-          Konfigurasi masa retensi log audit, pengarsipan MinIO S3, serta CORS Origins yang diizinkan pada Kong API Gateway.
+          Configure audit log retention period, MinIO S3 archival, and allowed CORS Origins on Kong API Gateway.
         </p>
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <ActionTooltip label="Muat Ulang Pengaturan" shortcut="R">
+        <ActionTooltip label="Reload Settings" shortcut="R">
           <Button
             variant="outline"
             size="sm"
@@ -47,7 +47,7 @@ function AuditHeader({
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
           </Button>
         </ActionTooltip>
-        <ActionTooltip label="Simpan Kebijakan Audit & CORS" shortcut="Ctrl+S">
+        <ActionTooltip label="Save Audit & CORS Policy" shortcut="Ctrl+S">
           <Button
             size="sm"
             onClick={handleSave}
@@ -80,10 +80,10 @@ function MinioDrainTestCard({
             <Play className="w-4 h-4 text-primary" /> Test MinIO S3 Drain Connection
           </h3>
           <p className="text-xs text-muted-foreground">
-            Uji konektivitas socket ke host MinIO S3 untuk memverifikasi endpoint drain log tersedia.
+            Test socket connectivity to MinIO S3 host to verify log drain endpoint availability.
           </p>
         </div>
-        <ActionTooltip label="Uji Koneksi Drain MinIO S3" shortcut="Alt+T">
+        <ActionTooltip label="Test MinIO S3 Drain Connection" shortcut="Alt+T">
           <Button
             type="button"
             variant="outline"
@@ -145,10 +145,10 @@ export default function SecurityAuditLogsPage() {
 
     try {
       await updateSettings(keysToSave);
-      toast.success("Kebijakan Audit Log & CORS berhasil diperbarui!");
+      toast.success("Audit Log & CORS policy updated successfully!");
     } catch (e: unknown) {
       const err = e as Error;
-      toast.error(err.message || "Gagal memperbarui kebijakan audit log");
+      toast.error(err.message || "Failed to update audit log policy");
     }
   };
 
@@ -156,18 +156,18 @@ export default function SecurityAuditLogsPage() {
     const host = getValue("smtp_host", "smtp-relay.brevo.com");
     const port = parseInt(getValue("smtp_port", "587"), 10);
     if (!host || !port) {
-      toast.error("SMTP Host dan Port wajib diisi untuk pengujian.");
+      toast.error("SMTP Host and Port are required for testing.");
       return;
     }
     setSmtpDrainResult(null);
     try {
       const res = await testEmail({ host, port });
-      setSmtpDrainResult({ success: true, message: res.message || "Koneksi drain SMTP berhasil!" });
-      toast.success("Pengujian drain SMTP berhasil!");
+      setSmtpDrainResult({ success: true, message: res.message || "SMTP drain connection successful!" });
+      toast.success("SMTP drain test successful!");
     } catch (e: unknown) {
       const err = e as Error;
-      setSmtpDrainResult({ success: false, message: err.message || "Gagal koneksi drain SMTP." });
-      toast.error("Pengujian drain SMTP gagal");
+      setSmtpDrainResult({ success: false, message: err.message || "Failed to connect to SMTP drain." });
+      toast.error("SMTP drain test failed");
     }
   };
 
@@ -184,11 +184,11 @@ export default function SecurityAuditLogsPage() {
         <div className="space-y-8 pb-16">
           <SettingsSection
             title="Audit Log Retention Policy"
-            description="Masa simpan catatan aktivitas sistem sebelum diarsipkan atau dibersihkan otomatis dari basis data."
+            description="Retention period for system activity logs before being archived or automatically pruned from the database."
           >
             <SettingsFormRow
-              label="Masa Retensi Audit Log (Hari)"
-              description="Jumlah hari catatan log audit disimpan aktif di PostgreSQL sebelum diarsipkan ke MinIO S3."
+              label="Audit Log Retention Period (Days)"
+              description="Number of days audit logs are kept active in PostgreSQL before being archived to MinIO S3."
               divider={false}
             >
               <div className="flex items-center gap-2">
@@ -201,18 +201,18 @@ export default function SecurityAuditLogsPage() {
                   onChange={(e) => handleInputChange("audit_log_retention_days", e.target.value)}
                   className="bg-background/80 border-border text-foreground text-xs w-28 text-right focus:border-primary"
                 />
-                <span className="text-xs text-muted-foreground font-medium">Hari</span>
+                <span className="text-xs text-muted-foreground font-medium">Days</span>
               </div>
             </SettingsFormRow>
           </SettingsSection>
 
           <SettingsSection
             title="MinIO S3 Log Drain & Archival"
-            description="Eksportasi dan pengarsipan otomatis catatan audit log ke penyimpanan objek MinIO S3 on-premise."
+            description="Automatic export and archiving of audit logs to on-premise MinIO S3 object storage."
           >
             <SettingsFormRow
-              label="Target Bucket MinIO S3"
-              description="Nama bucket MinIO S3 tempat penyimpanan arsip berkala file kompresi log."
+              label="Target MinIO S3 Bucket"
+              description="MinIO S3 bucket name for periodic storage of compressed log archives."
             >
               <div className="flex items-center gap-2">
                 <Database className="w-4 h-4 text-primary shrink-0" />
@@ -227,8 +227,8 @@ export default function SecurityAuditLogsPage() {
             </SettingsFormRow>
 
             <SettingsFormRow
-              label="Jadwal Cron Pengarsipan Log"
-              description="Ekspresi cron untuk rotasi dan pengarsipan log otomatis oleh worker backend Spring Boot."
+              label="Log Archival Cron Schedule"
+              description="Cron expression for automated log rotation and archival by Spring Boot backend workers."
               divider={false}
             >
               <Input
@@ -243,11 +243,11 @@ export default function SecurityAuditLogsPage() {
 
           <SettingsSection
             title="Kong API Gateway — CORS Policy"
-            description="Domain publik yang diizinkan melakukan panggilan API lintas domain melalui Kong API Gateway."
+            description="Public domains allowed to make cross-origin API calls through Kong API Gateway."
           >
             <SettingsFormRow
               label="Allowed Origins List (Comma Separated)"
-              description="Daftar origin HTTP/HTTPS yang diperbolehkan mengakses endpoint REST API backend."
+              description="List of HTTP/HTTPS origins allowed to access backend REST API endpoints."
             >
               <Input
                 type="text"
@@ -260,7 +260,7 @@ export default function SecurityAuditLogsPage() {
 
             <SettingsFormRow
               label="Global Rate Limit per Minute (Kong)"
-              description="Batas maksimum permintaan HTTP per menit per klien IP yang diizinkan melewati Kong API Gateway."
+              description="Maximum HTTP requests per minute per client IP allowed through Kong API Gateway."
               divider={false}
             >
               <div className="flex items-center gap-2">

@@ -2,6 +2,7 @@ import { Button } from "@k2net/ui";
 import { toast } from "sonner";
 import { SettingsSection } from "./settings-section";
 import { SettingsFormRow } from "./settings-form-row";
+import { useTranslation } from "@k2net/i18n";
 
 interface BrandingInterfaceSectionProps {
   fontSize: string;
@@ -24,30 +25,32 @@ export function BrandingInterfaceSection({
   themePreset,
   onThemePresetChange,
 }: BrandingInterfaceSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <SettingsSection
-      title="Interface and Theme (Linear Style)"
-      description="Kustomisasi tampilan antarmuka, opsi kursor, ukuran font, dan skema warna preferensi pengguna."
+      title={t("settings.branding.interface_title")}
+      description={t("settings.branding.interface_desc")}
     >
       {/* App Sidebar Customization */}
       <SettingsFormRow
-        label="App Sidebar"
-        description="Atur visibilitas item sidebar, urutan menu, dan gaya lencana status."
+        label={t("settings.branding.sidebar_label")}
+        description={t("settings.branding.sidebar_desc")}
       >
         <Button
           variant="outline"
           size="sm"
           className="border-border hover:bg-muted text-foreground text-xs h-8 px-3"
-          onClick={() => toast.info("Modifikasi tata letak sidebar aktif.")}
+          onClick={() => toast.info(t("settings.branding.sidebar_customized_toast"))}
         >
-          Customize
+          {t("settings.branding.customize_btn")}
         </Button>
       </SettingsFormRow>
 
       {/* Font Size Selector */}
       <SettingsFormRow
-        label="Font Size"
-        description="Sesuaikan ukuran teks standar di seluruh antarmuka aplikasi."
+        label={t("settings.branding.font_size_label")}
+        description={t("settings.branding.font_size_desc")}
       >
         <select
           value={fontSize}
@@ -62,8 +65,8 @@ export function BrandingInterfaceSection({
 
       {/* Use Pointer Cursors Toggle */}
       <SettingsFormRow
-        label="Use Pointer Cursors"
-        description="Ubah penunjuk kursor menjadi pointer saat melayang di atas elemen interaktif."
+        label={t("settings.branding.pointer_cursors_label")}
+        description={t("settings.branding.pointer_cursors_desc")}
       >
         <div className="flex items-center gap-2">
           <input
@@ -74,15 +77,15 @@ export function BrandingInterfaceSection({
             className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
           />
           <label htmlFor="pointer-cursors-toggle" className="text-xs text-muted-foreground cursor-pointer">
-            {usePointerCursors ? "Enabled" : "Disabled"}
+            {usePointerCursors ? t("common.enabled") : t("common.disabled")}
           </label>
         </div>
       </SettingsFormRow>
 
       {/* Underline Links Toggle */}
       <SettingsFormRow
-        label="Underline Links"
-        description="Selalu tampilkan garis bawah pada tautan teks di dalam konten."
+        label={t("settings.branding.underline_links_label")}
+        description={t("settings.branding.underline_links_desc")}
       >
         <div className="flex items-center gap-2">
           <input
@@ -100,8 +103,8 @@ export function BrandingInterfaceSection({
 
       {/* Interface Theme Presets Selector */}
       <SettingsFormRow
-        label="Interface Theme"
-        description="Pilih atau kustomisasi skema warna antarmuka portal Anda."
+        label={t("settings.branding.interface_theme_label")}
+        description={t("settings.branding.interface_theme_desc")}
         divider={false}
       >
         <select

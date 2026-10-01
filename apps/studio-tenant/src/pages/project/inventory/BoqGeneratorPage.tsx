@@ -19,8 +19,10 @@ import {
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { networkApi, type BoqSummary } from "../../../lib/api/network";
+import { useTranslation } from "@k2net/i18n";
 
 export function BoqGeneratorPage() {
+  const { t, formatCurrency, formatNumber } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
 
@@ -49,8 +51,8 @@ export function BoqGeneratorPage() {
             {
               id: "item-1",
               materialCode: "MAT-CBL-48C",
-              materialName: "Kabel Fiber Optik Aerial 48 Core G.652D",
-              category: "Kabel Optik",
+              materialName: "Fiber Optic Aerial Cable 48 Core G.652D",
+              category: "Optical Cable",
               unit: "Meter",
               unitPrice: 12500,
               quantity: 4860,
@@ -60,7 +62,7 @@ export function BoqGeneratorPage() {
             {
               id: "item-2",
               materialCode: "MAT-ODC-144",
-              materialName: "Kabinet ODC 144 Core Outdoor Pole-Mount",
+              materialName: "ODC Cabinet 144 Core Outdoor Pole-Mount",
               category: "Enclosure",
               unit: "Unit",
               unitPrice: 2850000,
@@ -71,7 +73,7 @@ export function BoqGeneratorPage() {
             {
               id: "item-3",
               materialCode: "MAT-ODP-16",
-              materialName: "Kotak ODP FAT 16 Port Lengkap Adapter SC/UPC",
+              materialName: "ODP FAT Box 16 Port SC/UPC",
               category: "Enclosure",
               unit: "Unit",
               unitPrice: 245000,
@@ -93,8 +95,8 @@ export function BoqGeneratorPage() {
             {
               id: "item-5",
               materialCode: "MAT-ACC-CLAMP",
-              materialName: "Suspension Clamp & Tensioner Bracket Tiang",
-              category: "Aksesoris",
+              materialName: "Suspension Clamp & Tensioner Bracket",
+              category: "Accessories",
               unit: "Set",
               unitPrice: 45000,
               quantity: 415,
@@ -109,22 +111,22 @@ export function BoqGeneratorPage() {
   }, [projectId]);
 
   const handleExportPDF = () => {
-    toast.success("Dokumen BOQ PDF berhasil di-generate dan diunduh!");
+    toast.success(t("common.export"));
   };
 
   const handleExportExcel = () => {
-    toast.success("Spreadsheet BOQ Excel (.xlsx) berhasil di-generate!");
+    toast.success(t("common.export"));
   };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: "Inventory", href: `/project/${projectId}/inventory/odc` },
-          { label: "Kalkulator BOQ" },
+          { label: t("inventory.boq_title") },
         ]}
-        title="Kalkulator Bill of Quantities (BOQ) Otomatis"
+        title={t("inventory.boq_title")}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -134,7 +136,7 @@ export function BoqGeneratorPage() {
               className="h-8 px-2.5 text-xs font-medium gap-1.5"
             >
               <Download className="h-3.5 w-3.5" />
-              Export Excel (.xlsx)
+              {t("inventory.export_excel")}
             </Button>
             <Button
               size="sm"
@@ -142,7 +144,7 @@ export function BoqGeneratorPage() {
               className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs"
             >
               <Printer className="h-3.5 w-3.5" />
-              Cetak Dokumen BOQ (PDF)
+              {t("inventory.export_pdf")}
             </Button>
           </div>
         }
@@ -158,16 +160,16 @@ export function BoqGeneratorPage() {
               </div>
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Total Estimasi Biaya Material (Capex)
+                  {t("inventory.total_estimated_cost")}
                 </span>
                 <h3 className="text-2xl font-bold font-mono text-primary">
-                  Rp {boqData?.totalEstimatedCost.toLocaleString("id-ID")}
+                  {formatCurrency(boqData?.totalEstimatedCost || 0)}
                 </h3>
               </div>
             </div>
 
             <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
-              <span>{boqData?.metadata.totalCableLengthKm} Km Kabel</span>
+              <span>{boqData?.metadata.totalCableLengthKm} Km {t("gis.layer_cables")}</span>
               <span>•</span>
               <span>{boqData?.metadata.totalOdc} ODC</span>
               <span>•</span>
@@ -181,13 +183,13 @@ export function BoqGeneratorPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">KODE MATERIAL</TableHead>
-                <TableHead className="font-bold">NAMA MATERIAL & SPESIFIKASI</TableHead>
-                <TableHead className="font-bold">KATEGORI</TableHead>
-                <TableHead className="font-bold">SATUAN</TableHead>
-                <TableHead className="font-bold">HARGA SATUAN (RP)</TableHead>
-                <TableHead className="font-bold">JUMLAH (QTY)</TableHead>
-                <TableHead className="font-bold text-right">TOTAL HARGA (RP)</TableHead>
+                <TableHead className="font-bold">{t("inventory.item_code").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.item_description").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("common.description").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.unit").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.unit_price").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.quantity").toUpperCase()}</TableHead>
+                <TableHead className="font-bold text-right">{t("inventory.total_price").toUpperCase()}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -204,13 +206,13 @@ export function BoqGeneratorPage() {
                   </TableCell>
                   <TableCell className="font-mono">{item.unit}</TableCell>
                   <TableCell className="font-mono">
-                    Rp {item.unitPrice.toLocaleString("id-ID")}
+                    {formatCurrency(item.unitPrice)}
                   </TableCell>
                   <TableCell className="font-mono font-bold text-foreground">
-                    {item.quantity.toLocaleString("id-ID")}
+                    {formatNumber(item.quantity)}
                   </TableCell>
                   <TableCell className="font-mono font-bold text-primary text-right">
-                    Rp {item.totalPrice.toLocaleString("id-ID")}
+                    {formatCurrency(item.totalPrice)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -221,3 +223,4 @@ export function BoqGeneratorPage() {
     </div>
   );
 }
+

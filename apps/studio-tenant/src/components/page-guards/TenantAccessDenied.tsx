@@ -2,6 +2,7 @@ import * as React from "react";
 import { Shield, ArrowLeft } from "lucide-react";
 import { Button, Card } from "@k2net/ui";
 import { Link } from "@tanstack/react-router";
+import { useTranslation } from "@k2net/i18n";
 
 export interface TenantAccessDeniedProps {
   title?: string;
@@ -10,13 +11,19 @@ export interface TenantAccessDeniedProps {
 }
 
 export function TenantAccessDenied({
-  title = "Akses Dibatasi",
-  description = "Akun Anda tidak memiliki izin PBAC yang cukup untuk membuka modul ini. Hubungi Owner atau Administrator Organisasi Anda.",
+  title,
+  description,
   requiredPermission,
 }: TenantAccessDeniedProps) {
+  const { t } = useTranslation();
   const permLabel = Array.isArray(requiredPermission)
     ? requiredPermission.join(", ")
     : requiredPermission;
+
+  const resolvedTitle = title ?? t("security.access_denied");
+  const resolvedDescription =
+    description ??
+    t("security.access_denied_org");
 
   return (
     <div className="flex-1 w-full h-full min-h-[400px] flex items-center justify-center p-6">
@@ -26,9 +33,9 @@ export function TenantAccessDenied({
         </div>
 
         <div className="space-y-1.5">
-          <h2 className="text-base font-bold text-foreground">{title}</h2>
+          <h2 className="text-base font-bold text-foreground">{resolvedTitle}</h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            {description}
+            {resolvedDescription}
           </p>
         </div>
 
@@ -42,7 +49,7 @@ export function TenantAccessDenied({
           <Button variant="outline" size="sm" asChild className="text-xs gap-1.5">
             <Link to="/projects">
               <ArrowLeft className="h-3.5 w-3.5" />
-              Kembali ke Daftar Proyek
+              {t("common.back_to_projects")}
             </Link>
           </Button>
         </div>

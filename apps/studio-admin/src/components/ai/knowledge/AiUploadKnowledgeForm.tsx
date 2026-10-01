@@ -1,6 +1,7 @@
 import React from "react";
 import { UploadCloud, CheckCircle2, FileCode, Loader2, Sparkles, Check } from "lucide-react";
 import { Button, Input, Label } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { CATEGORIES, KNOWLEDGE_SCOPES, type KnowledgeScope } from "../types";
 
 interface AiUploadKnowledgeFormProps {
@@ -36,17 +37,19 @@ export function AiUploadKnowledgeForm({
   onCancel,
   onGoToTemplates,
 }: AiUploadKnowledgeFormProps) {
+  const { t } = useTranslation();
+
   return (
     <form onSubmit={onUploadSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="uploadDocTitle" className="text-xs font-medium text-foreground">
-            Judul Dokumen (Opsional)
+            {t("ai.doc_title")}
           </Label>
           <Input
             id="uploadDocTitle"
             type="text"
-            placeholder="Default mengikuti nama berkas"
+            placeholder={t("ai.search_doc_placeholder")}
             value={uploadTitle}
             onChange={(e) => setUploadTitle(e.target.value)}
             className="text-xs h-9 bg-background border-border text-foreground"
@@ -55,7 +58,7 @@ export function AiUploadKnowledgeForm({
 
         <div className="space-y-1.5">
           <Label htmlFor="uploadDocCategory" className="text-xs font-medium text-foreground">
-            Kategori Pengetahuan
+            {t("ai.doc_category")}
           </Label>
           <select
             id="uploadDocCategory"
@@ -75,9 +78,9 @@ export function AiUploadKnowledgeForm({
       {/* Scope Visibilitas Selector */}
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
-          <span>Scope Visibilitas & Hak Akses</span>
+          <span>{t("ai.doc_scope")}</span>
           <span className="text-[11px] font-normal text-foreground/75 dark:text-muted-foreground">
-            Isolasi Multi-Tenant
+            {t("ai.scope_multitenant_group")}
           </span>
         </Label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -116,11 +119,11 @@ export function AiUploadKnowledgeForm({
       {/* Approval / Draft Mode Toggle */}
       <div className="p-3 rounded-lg bg-muted/20 border border-border flex items-center justify-between text-xs">
         <div className="space-y-0.5">
-          <p className="font-semibold text-foreground">Mode Approval Dokumen</p>
+          <p className="font-semibold text-foreground">{t("ai.filter_status")}</p>
           <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">
             {uploadAutoApprove
-              ? "Langsung dipublikasikan & diindeks ke pgvector (Super Admin)."
-              : "Simpan sebagai draf pending untuk di-review terlebih dahulu."}
+              ? t("ai.save_and_publish")
+              : t("ai.save_as_draft")}
           </p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
@@ -136,7 +139,7 @@ export function AiUploadKnowledgeForm({
 
       {/* File Upload Box */}
       <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-foreground">Pilih Berkas Dokumen</Label>
+        <Label className="text-xs font-medium text-foreground">{t("ai.doc_source")}</Label>
         <div className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 text-center bg-muted/10 cursor-pointer relative group">
           <input
             type="file"
@@ -160,16 +163,16 @@ export function AiUploadKnowledgeForm({
                   {selectedFile.name}
                 </p>
                 <p className="text-[11px] text-foreground/75 dark:text-muted-foreground mt-0.5 font-mono">
-                  {(selectedFile.size / 1024).toFixed(1)} KB • Klik untuk mengganti berkas
+                  {(selectedFile.size / 1024).toFixed(1)} KB
                 </p>
               </div>
             ) : (
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Klik untuk memilih berkas atau geser berkas ke sini
+                  {t("common.drag_drop_file")}
                 </p>
                 <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-1">
-                  Format didukung: PDF, Markdown (.md), atau Plain Text (.txt) hingga 20 MB
+                  PDF, Markdown (.md), TXT (Max 20 MB)
                 </p>
               </div>
             )}
@@ -186,7 +189,7 @@ export function AiUploadKnowledgeForm({
           className="text-xs gap-1.5 text-foreground/75 dark:text-muted-foreground hover:text-foreground"
         >
           <FileCode className="w-3.5 h-3.5" />
-          Lihat Contoh & Template SOP
+          {t("ai.templates_title")}
         </Button>
 
         <div className="flex items-center gap-2">
@@ -198,7 +201,7 @@ export function AiUploadKnowledgeForm({
             disabled={uploading}
             className="text-xs"
           >
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             type="submit"
@@ -209,12 +212,12 @@ export function AiUploadKnowledgeForm({
             {uploading ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Mengunggah & Vektorisasi...
+                {t("common.processing")}
               </>
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5" />
-                {uploadAutoApprove ? "Unggah & Publikasikan" : "Simpan Dokumen (Draft)"}
+                {uploadAutoApprove ? t("ai.save_and_publish") : t("ai.save_as_draft")}
               </>
             )}
           </Button>

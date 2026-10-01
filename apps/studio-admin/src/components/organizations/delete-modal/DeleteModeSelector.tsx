@@ -2,6 +2,7 @@ import * as React from "react";
 import { Archive, Flame } from "lucide-react";
 import { Label } from "@k2net/ui";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 
 interface DeleteModeSelectorProps {
   deleteMode: "soft" | "nuclear";
@@ -9,9 +10,10 @@ interface DeleteModeSelectorProps {
 }
 
 export function DeleteModeSelector({ deleteMode, setDeleteMode }: DeleteModeSelectorProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-semibold text-foreground">Pilih Metode Penghapusan</Label>
+      <Label className="text-xs font-semibold text-foreground">{t("organizations.delete_mode_select_label")}</Label>
       <div className="grid grid-cols-1 gap-2.5">
         <div
           onClick={() => setDeleteMode("soft")}
@@ -38,15 +40,14 @@ export function DeleteModeSelector({ deleteMode, setDeleteMode }: DeleteModeSele
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <Archive className="w-3.5 h-3.5 text-amber-500" />
-                Pindahkan ke Recycle Bin (Grace Period 30 Hari)
+                {t("organizations.delete_mode_soft_title")}
               </span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                Direkomendasikan (Aman)
+                {t("organizations.delete_mode_soft_recommended")}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Keycloak Realm dinonaktifkan seketika (semua user langsung logout). Data tersimpan aman di{" "}
-              <strong>Recycle Bin</strong> selama 30 hari dan dapat dipulihkan sewaktu-waktu dengan 1-klik.
+              {t("organizations.delete_mode_soft_desc")}
             </p>
           </div>
         </div>
@@ -76,15 +77,14 @@ export function DeleteModeSelector({ deleteMode, setDeleteMode }: DeleteModeSele
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-destructive flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5 text-destructive" />
-                Hapus Fisik Permanen Langsung (Nuclear Wipe)
+                {t("organizations.delete_mode_nuclear_title")}
               </span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
-                Danger Zone
+                {t("organizations.delete_mode_nuclear_danger")}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Keycloak Realm, seluruh titik PostGIS, dan berkas di storage akan{" "}
-              <strong>dimusnahkan fisik seketika</strong> tanpa masa tenggang.
+              {t("organizations.delete_mode_nuclear_desc")}
             </p>
           </div>
         </div>

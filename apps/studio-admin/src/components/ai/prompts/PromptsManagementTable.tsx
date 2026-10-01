@@ -1,6 +1,7 @@
 import React from "react";
 import { Search, Plus, Loader2 } from "lucide-react";
 import { Button, Input } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { SuggestedPromptItem } from "@/lib/actions/gateways";
 import { PROMPT_CATEGORIES } from "./types";
 import { PromptRowItem } from "./PromptRowItem";
@@ -36,6 +37,8 @@ export function PromptsManagementTable({
   onToggleActive,
   onDeletePromptId,
 }: PromptsManagementTableProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="rounded-xl border border-border/80 bg-card text-card-foreground shadow-xs overflow-hidden">
       {/* Table Toolbar */}
@@ -45,7 +48,7 @@ export function PromptsManagementTable({
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Cari judul atau prompt..."
+              placeholder={t("ai.search_doc_placeholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="text-xs h-8 pl-8 font-mono bg-background border-border"
@@ -69,10 +72,10 @@ export function PromptsManagementTable({
             onChange={(e) => setStatusFilter(e.target.value)}
             className="text-xs h-8 px-2.5 rounded-md bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
           >
-            <option value="ALL">Semua Status</option>
-            <option value="active">Hanya Aktif</option>
-            <option value="pinned">Hanya Pinned</option>
-            <option value="inactive">Hanya Nonaktif</option>
+            <option value="ALL">{t("common.all")}</option>
+            <option value="active">{t("common.active")}</option>
+            <option value="pinned">Pinned</option>
+            <option value="inactive">{t("common.inactive")}</option>
           </select>
         </div>
 
@@ -82,7 +85,7 @@ export function PromptsManagementTable({
           className="text-xs gap-1.5 font-medium px-4 h-8 bg-primary text-primary-foreground cursor-pointer shrink-0 shadow-xs"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Tambah Prompt Baru</span>
+          <span>{t("ai.create_prompt")}</span>
         </Button>
       </div>
 
@@ -91,18 +94,18 @@ export function PromptsManagementTable({
         {loading ? (
           <div className="text-center py-16 text-xs text-muted-foreground">
             <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-primary" />
-            Memuat master kartu rekomendasi prompt...
+            {t("common.loading")}
           </div>
         ) : prompts.length === 0 ? (
           <div className="text-center py-16 text-xs text-muted-foreground space-y-2">
-            <p>Tidak ada prompt yang sesuai dengan filter pencarian.</p>
+            <p>{t("common.no_results")}</p>
             <Button
               variant="outline"
               size="sm"
               onClick={onOpenCreateModal}
               className="text-xs"
             >
-              Buat Prompt Pertama
+              {t("ai.create_prompt")}
             </Button>
           </div>
         ) : (
@@ -110,13 +113,13 @@ export function PromptsManagementTable({
             <thead>
               <tr className="border-b border-border/70 bg-muted/20 text-foreground/75 dark:text-muted-foreground font-semibold">
                 <th className="py-3 px-4 w-12 text-center">Ikon</th>
-                <th className="py-3 px-4">Judul & Deskripsi</th>
-                <th className="py-3 px-4">Kategori</th>
-                <th className="py-3 px-4">Target Role</th>
+                <th className="py-3 px-4">{t("ai.doc_title")}</th>
+                <th className="py-3 px-4">{t("ai.prompt_category")}</th>
+                <th className="py-3 px-4">{t("ai.doc_scope")}</th>
                 <th className="py-3 px-4 text-center">Pin</th>
-                <th className="py-3 px-4 text-center">Dipakai</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 text-right">Aksi</th>
+                <th className="py-3 px-4 text-center">{t("ai.prompt_clicks")}</th>
+                <th className="py-3 px-4 text-center">{t("common.status")}</th>
+                <th className="py-3 px-4 text-right">{t("common.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60 font-sans">

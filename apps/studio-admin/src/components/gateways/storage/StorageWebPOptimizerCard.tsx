@@ -1,6 +1,7 @@
 import React from "react";
 import { Loader2, RefreshCw, FileCheck2, HardDrive, Cpu, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Progress, ActionTooltip } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { StorageStats } from "@/lib/actions/gateways";
 
 interface StorageWebPOptimizerCardProps {
@@ -30,6 +31,8 @@ export function StorageWebPOptimizerCard({
   error,
   onRefresh,
 }: StorageWebPOptimizerCardProps) {
+  const { t } = useTranslation();
+
   return (
     <Card glowingEffect className="bg-card border-border shadow-xl">
       <CardHeader className="pb-3">
@@ -37,7 +40,7 @@ export function StorageWebPOptimizerCard({
           <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             WebP Image Optimizer
           </CardTitle>
-          <ActionTooltip label="Muat Ulang Statistik WebP" shortcut="R">
+          <ActionTooltip label={t("gateways.storage.refresh_stats_tooltip")} shortcut="R">
             <button
               type="button"
               onClick={onRefresh}
@@ -50,26 +53,26 @@ export function StorageWebPOptimizerCard({
           </ActionTooltip>
         </div>
         <CardDescription className="text-[10px] text-muted-foreground">
-          Layanan pemrosesan gambar mendeteksi tipe mime gambar secara otomatis, melakukan kompresi ke format WebP.
+          {t("gateways.storage.webp_desc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         {error ? (
           <div className="flex items-start gap-2 text-[10px] text-amber-500/80 bg-amber-500/5 border border-amber-500/10 rounded-lg p-3">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-            <span>Gagal memuat statistik: {error}</span>
+            <span>{t("gateways.storage.stats_failed", { error })}</span>
           </div>
         ) : loading ? (
           <div className="flex flex-col items-center py-6 gap-2">
             <Loader2 className="w-5 h-5 text-primary animate-spin" />
-            <p className="text-[10px] text-muted-foreground/60">Memuat statistik...</p>
+            <p className="text-[10px] text-muted-foreground/60">{t("gateways.storage.loading_stats")}</p>
           </div>
         ) : stats ? (
           <>
             {/* Space saved visual progress */}
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Ruang Penyimpanan Dihemat</span>
+                <span className="text-muted-foreground">{t("gateways.storage.space_saved")}</span>
                 <span className="font-semibold text-primary">
                   {stats.space_saved_percent.toFixed(1)}% Saved
                 </span>
@@ -82,14 +85,14 @@ export function StorageWebPOptimizerCard({
 
             <div className="grid grid-cols-2 gap-4 text-xs pt-2">
               <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Total File Diproses</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">{t("gateways.storage.total_processed")}</p>
                 <p className="text-sm font-semibold font-mono text-foreground mt-0.5 flex items-center gap-1">
                   <FileCheck2 className="w-3.5 h-3.5 text-primary" />
                   {formatCount(stats.total_files)}
                 </p>
               </div>
               <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Tingkat Kegagalan</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">{t("gateways.storage.failure_rate")}</p>
                 <p
                   className={`text-sm font-semibold font-mono mt-0.5 ${
                     stats.failure_rate_percent > 1 ? "text-rose-400" : "text-primary"
@@ -104,13 +107,13 @@ export function StorageWebPOptimizerCard({
             <div className="bg-muted/50 border border-border rounded-lg p-3.5 space-y-3">
               <div className="flex justify-between text-xs border-b border-border pb-2">
                 <span className="text-muted-foreground flex items-center gap-1.5">
-                  <HardDrive className="w-3.5 h-3.5" /> Ukuran Asli:
+                  <HardDrive className="w-3.5 h-3.5" /> {t("gateways.storage.original_size")}
                 </span>
                 <span className="font-mono text-muted-foreground">{formatBytes(stats.total_original_size)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5 text-primary" /> Hasil WebP:
+                  <Cpu className="w-3.5 h-3.5 text-primary" /> {t("gateways.storage.webp_size")}
                 </span>
                 <span className="font-mono text-primary font-bold">{formatBytes(stats.total_compressed_size)}</span>
               </div>

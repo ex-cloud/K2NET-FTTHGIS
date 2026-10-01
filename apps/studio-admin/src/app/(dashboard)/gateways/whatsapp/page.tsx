@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getGatewayConfigByKey, updateGatewayConfigByKey, getNotificationLogs, type NotificationLog } from "@/lib/actions/gateways";
 import { MessageCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 import { WhatsappConfigForm } from "@/components/gateways/whatsapp/WhatsappConfigForm";
 import { WhatsappLogsCard } from "@/components/gateways/whatsapp/WhatsappLogsCard";
@@ -16,6 +17,7 @@ const whatsappSchema = z.object({
 });
 
 export default function WhatsappGatewayPage() {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ export default function WhatsappGatewayPage() {
   const [waLogs, setWaLogs] = useState<NotificationLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getGatewayConfigByKey("whatsapp");
@@ -43,28 +45,28 @@ export default function WhatsappGatewayPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Gagal memuat konfigurasi: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(`${t("gateways.config_load_failed")}: ` + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  const fetchWaLogs = async () => {
+  const fetchWaLogs = useCallback(async () => {
     try {
       setLogsLoading(true);
       const all = await getNotificationLogs();
       setWaLogs(all.filter((l) => l.channel === "whatsapp"));
     } catch (err) {
-      console.error("Gagal memuat WhatsApp logs:", err);
+      console.error("Failed to load WhatsApp logs:", err);
     } finally {
       setLogsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchConfig();
     fetchWaLogs();
-  }, []);
+  }, [fetchConfig, fetchWaLogs]);
 
   const handleInputChange = (key: string, value: string) => {
     setConfig((prev) => ({
@@ -96,7 +98,7 @@ export default function WhatsappGatewayPage() {
     });
 
     if (Object.keys(updates).length === 0) {
-      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      toast.info(t("gateways.no_changes_detected"));
       return;
     }
 
@@ -105,9 +107,9 @@ export default function WhatsappGatewayPage() {
       partialSchema.parse(validationData);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+        toast.error(`${t("gateways.validation_failed")}: ${err.issues[0].message}`);
       } else {
-        toast.error("Terjadi kesalahan validasi.");
+        toast.error(t("gateways.validation_error"));
       }
       return;
     }
@@ -115,11 +117,11 @@ export default function WhatsappGatewayPage() {
     setSaving(true);
     try {
       const res = await updateGatewayConfigByKey("whatsapp", updates);
-      toast.success(res.message || "Konfigurasi WhatsApp berhasil disimpan!");
+      toast.success(res.message || t("gateways.whatsapp.save_success"));
       setTimeout(fetchConfig, 3000);
     } catch (err) {
       console.error(err);
-      toast.error("Gagal menyimpan konfigurasi: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(`${t("gateways.config_save_failed")}: ` + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -135,10 +137,10 @@ export default function WhatsappGatewayPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                WhatsApp Gateway
+                {t("gateways.whatsapp.title")}
               </h1>
               <p className="text-xs text-muted-foreground">
-                Konfigurasi Cloud API WhatsApp Business untuk pengiriman notifikasi interaktif, tagihan otomatis, dan chat template.
+                {t("gateways.whatsapp.subtitle")}
               </p>
             </div>
           </div>
@@ -146,7 +148,7 @@ export default function WhatsappGatewayPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <p className="text-xs text-muted-foreground">Memuat konfigurasi WhatsApp gateway...</p>
+              <p className="text-xs text-muted-foreground">{t("gateways.whatsapp.loading")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

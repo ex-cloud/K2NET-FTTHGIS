@@ -1,6 +1,7 @@
 import React from "react";
 import { Server, Save, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, ActionTooltip } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { PermissionGuard } from "@/hooks/use-permissions";
 
 interface PollerConfigFormProps {
@@ -18,20 +19,22 @@ export function PollerConfigForm({
   onSave,
   onReset,
 }: PollerConfigFormProps) {
+  const { t } = useTranslation();
+
   return (
     <form onSubmit={onSave} className="lg:col-span-2 space-y-6">
       <Card glowingEffect className="bg-card/60 border-border shadow-xl">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Server className="w-4 h-4 text-primary" /> Service & Network Settings
+            <Server className="w-4 h-4 text-primary" /> {t("gateways.poller.service_network_title")}
           </CardTitle>
           <CardDescription className="text-[10px] text-muted-foreground">
-            Port listener poller service, broker antrean Redis, dan koneksi PostgreSQL database.
+            {t("gateways.poller.service_network_desc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="PORT" className="text-xs text-muted-foreground">Poller HTTP Port</Label>
+            <Label htmlFor="PORT" className="text-xs text-muted-foreground">{t("gateways.poller.port_label")}</Label>
             <Input
               id="PORT"
               type="number"
@@ -43,7 +46,7 @@ export function PollerConfigForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="REDIS_ADDR" className="text-xs text-muted-foreground">Redis Address</Label>
+            <Label htmlFor="REDIS_ADDR" className="text-xs text-muted-foreground">{t("gateways.poller.redis_addr_label")}</Label>
             <Input
               id="REDIS_ADDR"
               type="text"
@@ -55,7 +58,7 @@ export function PollerConfigForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="DATABASE_URL" className="text-xs text-muted-foreground">Database Connection URL</Label>
+            <Label htmlFor="DATABASE_URL" className="text-xs text-muted-foreground">{t("gateways.poller.db_url_label")}</Label>
             <Input
               id="DATABASE_URL"
               type="text"
@@ -69,27 +72,27 @@ export function PollerConfigForm({
       </Card>
 
       <div className="flex items-center justify-end gap-2.5">
-        <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+        <ActionTooltip label={t("common.reset_form")} shortcut="Alt+R">
           <Button
             type="button"
             onClick={onReset}
             variant="outline"
             size="default"
-            className="border-border/80 text-muted-foreground hover:text-foreground"
+            className="border-border/80 text-muted-foreground hover:text-foreground cursor-pointer"
           >
-            Reset Form
+            {t("gateways.reset_form")}
           </Button>
         </ActionTooltip>
         <PermissionGuard permission="system.gateway.manage">
-          <ActionTooltip label="Simpan Konfigurasi Poller Gateway" shortcut="Ctrl+S">
+          <ActionTooltip label={t("gateways.save_config")} shortcut="Ctrl+S">
             <Button
               type="submit"
               disabled={saving}
               size="default"
-              className="gap-1.5"
+              className="gap-1.5 cursor-pointer"
             >
               {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-              Save Configuration
+              {t("gateways.save_config")}
             </Button>
           </ActionTooltip>
         </PermissionGuard>

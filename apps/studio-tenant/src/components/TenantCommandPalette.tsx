@@ -25,6 +25,7 @@ import {
   useTheme,
 } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
+import { useTranslation } from "@k2net/i18n";
 
 export interface TenantCommandPaletteContentProps {
   query: string;
@@ -48,6 +49,7 @@ export function TenantCommandPaletteContent({
   const navigate = useNavigate();
   const { setTheme, resolvedTheme } = useTheme();
   const { logout } = useAuth();
+  const { t } = useTranslation();
   const isDark = resolvedTheme === "dark";
 
   const resolvedProjectId = projectId || "proj-bdg-01";
@@ -56,69 +58,69 @@ export function TenantCommandPaletteContent({
     return [
       {
         id: "nav-dash",
-        label: "Dashboard Operasional",
+        label: t("nav.operational_dashboard"),
         path: `/project/${resolvedProjectId}/dashboard`,
         icon: LayoutDashboard,
         badge: "Home",
       },
       {
         id: "nav-gis",
-        label: "Peta Spasial GIS (Web-QGIS)",
+        label: t("nav.gis_spatial_map"),
         path: `/project/${resolvedProjectId}/gis/topology`,
         icon: MapIcon,
         badge: "GIS",
       },
       {
         id: "nav-inv",
-        label: "Inventaris Jaringan (OLT & ODP)",
+        label: t("nav.network_inventory"),
         path: `/project/${resolvedProjectId}/core/olt`,
         icon: Server,
         badge: "Inventory",
       },
       {
         id: "nav-cust",
-        label: "Data Pelanggan & PPPoE",
+        label: t("nav.subscribers_pppoe"),
         path: `/project/${resolvedProjectId}/subscribers/list`,
         icon: Users,
         badge: "ONU/PPPoE",
       },
       {
         id: "nav-issues",
-        label: "Monitoring Gangguan & Redaman",
+        label: t("nav.issues_monitoring"),
         path: `/project/${resolvedProjectId}/issues/tickets`,
         icon: AlertCircle,
         badge: "Alerts",
       },
       {
         id: "nav-org-projects",
-        label: "Daftar Semua Proyek Workspace",
+        label: t("nav.all_projects_workspace"),
         path: "/projects",
         icon: Boxes,
         badge: "Projects",
       },
       {
         id: "nav-org-billing",
-        label: "Tagihan & Paket Langganan",
+        label: t("nav.billing_subscription"),
         path: "/billing",
         icon: CreditCard,
         badge: "Billing",
       },
       {
         id: "nav-org-members",
-        label: "Manajemen Anggota & Akses",
+        label: t("nav.members_access"),
         path: "/members",
         icon: UserCheck,
         badge: "IAM",
       },
       {
         id: "nav-settings",
-        label: "Pengaturan Domain & Workspace",
+        label: t("nav.settings_domain"),
         path: "/settings",
         icon: Settings,
         badge: "Config",
       },
     ];
-  }, [resolvedProjectId]);
+  }, [resolvedProjectId, t]);
 
   const filteredPages = React.useMemo(() => {
     if (!query.trim()) return pages.slice(0, 6);
@@ -135,13 +137,13 @@ export function TenantCommandPaletteContent({
       <CommandPaletteInput
         value={query}
         onValueChange={onQueryChange}
-        placeholder="Cari halaman, aksi teknis, atau utilitas..."
+        placeholder={t("common.search_commands_tenant")}
       />
 
       <div className="flex-1 overflow-y-auto p-1 divide-y divide-border/40">
         {/* Navigation Group */}
         {filteredPages.length > 0 && (
-          <CommandPaletteGroup heading="Halaman & Modul">
+          <CommandPaletteGroup heading={t("common.heading_pages_modules")}>
             {filteredPages.map((page) => {
               const Icon = page.icon;
               return (
@@ -159,7 +161,7 @@ export function TenantCommandPaletteContent({
         )}
 
         {/* Quick Actions Group */}
-        <CommandPaletteGroup heading="Aksi Cepat & Utilitas">
+        <CommandPaletteGroup heading={t("common.heading_quick_actions")}>
           <CommandPaletteItem
             icon={Plus}
             badgeText="Action"
@@ -169,7 +171,7 @@ export function TenantCommandPaletteContent({
               )
             }
           >
-            Registrasi Pelanggan Baru
+            {t("nav.register_new_subscriber")}
           </CommandPaletteItem>
 
           <CommandPaletteItem
@@ -182,7 +184,7 @@ export function TenantCommandPaletteContent({
               })
             }
           >
-            Buka AI Network Copilot
+            {t("nav.open_ai_copilot")}
           </CommandPaletteItem>
 
           <CommandPaletteItem
@@ -194,7 +196,7 @@ export function TenantCommandPaletteContent({
               })
             }
           >
-            Buka Pusat Panduan &amp; SOP FTTH
+            {t("nav.open_guide_sop")}
           </CommandPaletteItem>
 
           <CommandPaletteItem
@@ -202,7 +204,7 @@ export function TenantCommandPaletteContent({
             badgeText="Theme"
             onSelect={() => onSelectAction(() => setTheme(isDark ? "light" : "dark"))}
           >
-            Ganti Mode Tampilan ({isDark ? "Light Mode" : "Dark Mode"})
+            {t("common.toggle_theme", { mode: isDark ? t("common.light_mode") : t("common.dark_mode") })}
           </CommandPaletteItem>
 
           <CommandPaletteItem
@@ -214,13 +216,13 @@ export function TenantCommandPaletteContent({
               )
             }
           >
-            Keluar dari Sesi Portal
+            {t("nav.logout_session")}
           </CommandPaletteItem>
         </CommandPaletteGroup>
 
         {filteredPages.length === 0 && query.trim() !== "" && (
           <div className="py-12 text-center text-xs text-muted-foreground">
-            Tidak ada hasil untuk &quot;<span className="font-semibold text-foreground">{query}</span>&quot;
+            {t("common.no_results_for", { query })}
           </div>
         )}
       </div>
@@ -228,10 +230,10 @@ export function TenantCommandPaletteContent({
       <div className="flex items-center justify-between border-t border-border/80 px-4 py-2 bg-muted/20 text-[10px] text-muted-foreground shrink-0">
         <div className="flex items-center gap-3">
           <span>
-            <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">↑↓</kbd> Select
+            <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">↑↓</kbd> {t("common.select_key")}
           </span>
           <span>
-            <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">↵</kbd> Open
+            <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">↵</kbd> {t("common.open_key")}
           </span>
         </div>
         <span>K2NET Enterprise Tenant</span>

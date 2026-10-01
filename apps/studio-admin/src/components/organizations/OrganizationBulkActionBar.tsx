@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button, ActionTooltip } from "@k2net/ui";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 
 interface OrganizationBulkActionBarProps {
   selectedCount: number;
@@ -28,6 +29,7 @@ export function OrganizationBulkActionBar({
   onBulkExport,
   onBulkBackupJson,
 }: OrganizationBulkActionBarProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canUpdateOrg = canAccess(["system.organizations.update", "system.organizations.manage"]);
   const canBroadcast = canAccess(["system.organizations.manage", "system.organizations.update"]);
@@ -45,7 +47,9 @@ export function OrganizationBulkActionBar({
             {selectedCount}
           </div>
           <span className="font-medium text-foreground">
-            {selectedCount} organization{selectedCount > 1 ? "s" : ""} selected
+            {selectedCount > 1
+              ? t("organizations.bulk_selected_count_plural", { count: selectedCount })
+              : t("organizations.bulk_selected_count", { count: selectedCount })}
           </span>
         </div>
 
@@ -54,8 +58,8 @@ export function OrganizationBulkActionBar({
           <ActionTooltip
             label={
               canUpdateOrg
-                ? "Resume all selected organizations"
-                : "Akses Read-Only: Memerlukan izin system.organizations.update"
+                ? t("organizations.bulk_resume_tooltip")
+                : t("organizations.readonly_no_update_perm")
             }
           >
             <Button
@@ -66,15 +70,15 @@ export function OrganizationBulkActionBar({
               className="h-7 text-xs border-border bg-card/80 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-1.5 disabled:opacity-50"
             >
               <PlayCircle className="h-3 w-3" />
-              <span>Resume</span>
+              <span>{t("common.resume")}</span>
             </Button>
           </ActionTooltip>
 
           <ActionTooltip
             label={
               canUpdateOrg
-                ? "Suspend all selected organizations"
-                : "Akses Read-Only: Memerlukan izin system.organizations.update"
+                ? t("organizations.bulk_suspend_tooltip")
+                : t("organizations.readonly_no_update_perm")
             }
           >
             <Button
@@ -85,15 +89,15 @@ export function OrganizationBulkActionBar({
               className="h-7 text-xs border-border bg-card/80 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 gap-1.5 disabled:opacity-50"
             >
               <PauseCircle className="h-3 w-3" />
-              <span>Suspend</span>
+              <span>{t("common.suspend")}</span>
             </Button>
           </ActionTooltip>
 
           <ActionTooltip
             label={
               canBroadcast
-                ? "Send announcement notification to selected tenants"
-                : "Akses Read-Only: Memerlukan izin system.organizations.manage"
+                ? t("organizations.bulk_broadcast_tooltip")
+                : t("organizations.readonly_no_manage_perm")
             }
           >
             <Button
@@ -104,15 +108,15 @@ export function OrganizationBulkActionBar({
               className="h-7 text-xs border-border bg-card/80 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-1.5 disabled:opacity-50"
             >
               <MessageSquare className="h-3 w-3" />
-              <span>Broadcast</span>
+              <span>{t("common.broadcast")}</span>
             </Button>
           </ActionTooltip>
 
           <ActionTooltip
             label={
               canExport
-                ? "Export selected organizations to CSV"
-                : "Akses Read-Only: Memerlukan izin system.organizations.view"
+                ? t("organizations.bulk_export_tooltip")
+                : t("organizations.readonly_no_view_perm")
             }
           >
             <Button
@@ -131,8 +135,8 @@ export function OrganizationBulkActionBar({
             <ActionTooltip
               label={
                 canBackup
-                  ? "Unduh paket arsip cadangan (.JSON) organisasi terpilih"
-                  : "Akses Read-Only: Memerlukan izin system.backup.manage"
+                  ? t("organizations.bulk_backup_json_tooltip")
+                  : t("organizations.readonly_no_backup_perm")
               }
             >
               <Button
@@ -151,7 +155,7 @@ export function OrganizationBulkActionBar({
 
         {/* Clear Selection Button */}
         <div className="pl-2 border-l border-border/60">
-          <ActionTooltip label="Clear Selection" shortcut="Esc">
+          <ActionTooltip label={t("common.clear_selection")} shortcut="Esc">
             <button
               onClick={onClearSelection}
               className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"

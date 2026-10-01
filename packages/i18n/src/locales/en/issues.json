@@ -1,0 +1,21 @@
+{
+  "tickets_title": "Trouble Ticket Management",
+  "tickets_subtitle": "Fiber optic outage reporting, cluster alarms, technician dispatch, and SLA tracking.",
+  "create_ticket": "Create Trouble Ticket",
+  "ticket_number": "Ticket Number",
+  "issue_type": "Issue Category",
+  "priority": "Priority",
+  "assigned_technician": "Assigned Technician",
+  "sla_remaining": "SLA Time Remaining",
+  "resolution_notes": "Resolution Notes",
+  "status_open": "Open",
+  "status_in_progress": "In Progress",
+  "status_resolved": "Resolved",
+  "status_closed": "Closed",
+  "dispatcher_title": "Field Dispatcher & Technician Map",
+  "dispatcher_subtitle": "Real-time dispatch route allocation and field technician GPS tracking.",
+  "unassigned_tickets": "Unassigned Tickets",
+  "active_technicians": "Active Field Technicians",
+  "assign_route": "Assign Repair Route",
+  "eta_arrival": "Estimated Arrival (ETA)"
+}

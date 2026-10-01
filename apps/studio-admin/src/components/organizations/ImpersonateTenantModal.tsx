@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import {
   Dialog,
@@ -11,6 +9,7 @@ import {
   Button,
 } from "@k2net/ui";
 import { ShieldAlert, ExternalLink, Loader2, ArrowRightLeft } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import type { EnrichedOrganization } from "./types";
 import { useImpersonateTenantState } from "./impersonation/useImpersonateTenantState";
 import { ImpersonateFormBody } from "./impersonation/ImpersonateFormBody";
@@ -26,6 +25,7 @@ export function ImpersonateTenantModal({
   isOpen,
   onClose,
 }: ImpersonateTenantModalProps) {
+  const { t } = useTranslation();
   const state = useImpersonateTenantState(organization, isOpen, onClose);
 
   if (!organization) return null;
@@ -41,10 +41,10 @@ export function ImpersonateTenantModal({
             </span>
           </div>
           <DialogTitle className="text-lg font-bold">
-            Mulai Sesi Impersonasi Tenant
+            {t("organizations.impersonate_title")}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground text-xs">
-            Akses portal tenant atas nama dukungan operasional dengan pengawasan ketat dual-identity audit.
+            {t("organizations.impersonate_desc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -69,7 +69,7 @@ export function ImpersonateTenantModal({
             onClick={onClose}
             disabled={state.submitting}
           >
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
@@ -80,7 +80,7 @@ export function ImpersonateTenantModal({
             {state.submitting ? (
               <>
                 <Loader2 className="size-3.5 animate-spin" />
-                <span>Memproses Sesi...</span>
+                <span>{t("common.loading")}</span>
               </>
             ) : state.hasDifferentActiveSession ? (
               <>
@@ -90,7 +90,7 @@ export function ImpersonateTenantModal({
             ) : (
               <>
                 <ExternalLink className="size-3.5" />
-                <span>Mulai Impersonasi</span>
+                <span>{t("organizations.impersonate_tenant")}</span>
               </>
             )}
           </Button>

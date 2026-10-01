@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
 } from "@k2net/ui";
 import { type Project } from "../../hooks/useProjects";
+import { useTranslation } from "@k2net/i18n";
 
 interface ProjectCardGridProps {
   projects: Project[];
@@ -31,6 +32,7 @@ export function ProjectCardGrid({
   viewMode = "grid",
   onDeleteProject,
 }: ProjectCardGridProps) {
+  const { t } = useTranslation();
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "PRODUCTION":
@@ -155,7 +157,7 @@ export function ProjectCardGrid({
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/project/$projectId/settings/general" params={{ projectId: project.id }}>
-                      Pengaturan Proyek
+                      {t("projects.project_settings")}
                     </Link>
                   </DropdownMenuItem>
                   {onDeleteProject && (
@@ -163,7 +165,7 @@ export function ProjectCardGrid({
                       onClick={() => onDeleteProject(project.id)}
                       className="text-destructive focus:bg-destructive/10"
                     >
-                      Hapus Proyek
+                      {t("projects.delete_project")}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -241,7 +243,7 @@ export function ProjectCardGrid({
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/project/$projectId/settings/general" params={{ projectId: project.id }}>
-                      Pengaturan Proyek
+                      {t("projects.project_settings")}
                     </Link>
                   </DropdownMenuItem>
                   {onDeleteProject && (
@@ -249,7 +251,7 @@ export function ProjectCardGrid({
                       onClick={() => onDeleteProject(project.id)}
                       className="text-destructive focus:bg-destructive/10"
                     >
-                      Hapus Proyek
+                      {t("projects.delete_project")}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

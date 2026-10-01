@@ -23,8 +23,10 @@ import {
   DropdownMenuItem,
 } from "@k2net/ui";
 import { AssetDialog } from "../../../components/inventory/AssetDialogs";
+import { useTranslation } from "@k2net/i18n";
 
 export function OdcListPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -73,11 +75,11 @@ export function OdcListPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
-          { label: "Inventory", href: `/project/${projectId}/inventory/odc` },
-          { label: "ODC Cabinets" },
+          { label: t("nav.projects"), href: "/projects" },
+          { label: t("nav.inventory"), href: `/project/${projectId}/inventory/odc` },
+          { label: t("inventory.odc_title") },
         ]}
-        title="Daftar Kabinet ODC (Optical Distribution Cabinet)"
+        title={t("inventory.odc_subtitle")}
         actions={
           <Button
             size="sm"
@@ -85,7 +87,7 @@ export function OdcListPage() {
             className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
           >
             <Plus className="h-4 w-4" />
-            + Tambah ODC Baru
+            {t("inventory.add_odc")}
           </Button>
         }
       />
@@ -95,7 +97,7 @@ export function OdcListPage() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Cari kode ODC, nama, atau OLT..."
+              placeholder={t("common.search")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs bg-muted/20"
@@ -107,11 +109,11 @@ export function OdcListPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">KODE & NAMA ODC</TableHead>
+                <TableHead className="font-bold">{t("inventory.odc_code").toUpperCase()} & NAMA</TableHead>
                 <TableHead className="font-bold">TERHUBUNG KE OLT</TableHead>
-                <TableHead className="font-bold">KAPASITAS CORE</TableHead>
+                <TableHead className="font-bold">{t("inventory.odc_capacity").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">TOTAL ODP TERHUBUNG</TableHead>
-                <TableHead className="font-bold">STATUS</TableHead>
+                <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
                 <TableHead className="w-12 text-right" />
               </TableRow>
             </TableHeader>
@@ -155,8 +157,8 @@ export function OdcListPage() {
                       <DropdownMenuContent align="end" className="text-xs">
                         <DropdownMenuItem>Lihat di Peta Spasial</DropdownMenuItem>
                         <DropdownMenuItem>Kelola Port Splitter</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Informasi</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Hapus ODC</DropdownMenuItem>
+                        <DropdownMenuItem>{t("common.edit")}</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">{t("common.delete")}</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

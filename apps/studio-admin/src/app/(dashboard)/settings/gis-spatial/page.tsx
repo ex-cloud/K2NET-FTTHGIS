@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import { Badge, Button, Input, PageLayout, ActionTooltip } from "@k2net/ui";
 import { MapPin, Save, RefreshCw, Map as MapIcon } from "lucide-react";
@@ -8,9 +6,11 @@ import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-
 import { SettingsSection } from "../components/settings-section";
 import { SettingsFormRow } from "../components/settings-form-row";
 import { MapCoordinatePicker } from "@/components/dashboard/map-coordinate-picker";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 
 export default function SettingsGisPage() {
+  const { t } = useTranslation();
   const { settings, loading, updateSettings, isUpdating, refresh } = useSystemSettings();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [mapPickerOpen, setMapPickerOpen] = useState(false);
@@ -37,10 +37,10 @@ export default function SettingsGisPage() {
 
     try {
       await updateSettings(keysToSave);
-      toast.success("Konfigurasi GIS & Spatial Map berhasil diperbarui!");
+      toast.success(t("settings.gis.updated_success"));
     } catch (e: unknown) {
       const err = e as Error;
-      toast.error(err.message || "Gagal memperbarui konfigurasi GIS");
+      toast.error(err.message || t("settings.gis.update_failed"));
     }
   };
 
@@ -53,20 +53,20 @@ export default function SettingsGisPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
-                Platform Config
+                {t("settings.general.platform_config_badge")}
               </Badge>
-              <span className="text-xs text-muted-foreground">• PostGIS & Vector Tile Engine</span>
+              <span className="text-xs text-muted-foreground">• {t("settings.gis.badge_subtitle")}</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <MapPin className="w-6 h-6 text-primary" /> GIS & Spatial Map
+              <MapPin className="w-6 h-6 text-primary" /> {t("settings.gis.title")}
             </h1>
             <p className="text-xs text-muted-foreground">
-              Pengaturan proyeksi koordinat EPSG, lokasi pusat peta default, dan template server Martin vector tile.
+              {t("settings.gis_spatial_subtitle")}
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <ActionTooltip label="Muat Ulang Pengaturan GIS" shortcut="R">
+            <ActionTooltip label={t("common.reload")} shortcut="R">
               <Button
                 variant="outline"
                 size="sm"
@@ -74,10 +74,10 @@ export default function SettingsGisPage() {
                 disabled={loading}
                 className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> {t("common.reload")}
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Simpan Konfigurasi GIS" shortcut="Ctrl+S">
+            <ActionTooltip label={t("common.save_changes")} shortcut="Ctrl+S">
               <Button
                 size="sm"
                 onClick={handleSave}
@@ -85,7 +85,7 @@ export default function SettingsGisPage() {
                 className="text-xs h-7 px-2.5 font-medium gap-1.5 shadow-xs rounded-md cursor-pointer"
               >
                 {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                Save Changes
+                {t("common.save_changes")}
               </Button>
             </ActionTooltip>
           </div>
@@ -96,12 +96,12 @@ export default function SettingsGisPage() {
           
           {/* Section 1: Projection & Coordinates */}
           <SettingsSection
-            title="Spatial Projection & Map Center"
-            description="Sistem referensi spasial (SRID/EPSG) dan titik koordinat tengah peta bawaan platform."
+            title={t("settings.gis.projection_title")}
+            description={t("settings.gis.projection_desc")}
           >
             <SettingsFormRow
-              label="Spatial Coordinate Reference System"
-              description="Standar proyeksi geospasial yang digunakan oleh PostGIS dan komponen Mapbox/MapLibre."
+              label={t("settings.gis.crs_label")}
+              description={t("settings.gis.crs_desc")}
             >
               <select
                 value={getValue("default_epsg_code", "EPSG:4326")}
@@ -114,8 +114,8 @@ export default function SettingsGisPage() {
             </SettingsFormRow>
 
             <SettingsFormRow
-              label="Titik Koordinat Pusat (Lat / Lng)"
-              description="Koordinat geografis default saat peta pertama kali dimuat oleh pengguna."
+              label={t("settings.gis.center_coords_label")}
+              description={t("settings.gis.center_coords_desc")}
             >
               <div className="flex items-center gap-2">
                 <Input
@@ -137,11 +137,11 @@ export default function SettingsGisPage() {
             </SettingsFormRow>
 
             <SettingsFormRow
-              label="Interactive Map Coordinate Picker"
-              description="Gunakan peta interaktif visual untuk menentukan lokasi pusat dan mendapatkan alamat otomatis."
+              label={t("settings.gis.picker_label")}
+              description={t("settings.gis.picker_desc")}
               divider={false}
             >
-              <ActionTooltip label="Buka Peta Pemilih Koordinat" shortcut="M">
+              <ActionTooltip label={t("settings.gis.picker_label")} shortcut="M">
                 <Button
                   type="button"
                   variant="outline"
@@ -149,7 +149,7 @@ export default function SettingsGisPage() {
                   onClick={() => setMapPickerOpen(true)}
                   className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
                 >
-                  <MapIcon className="w-3.5 h-3.5 text-primary" /> Pick Center Location
+                  <MapIcon className="w-3.5 h-3.5 text-primary" /> {t("settings.gis.pick_location_btn")}
                 </Button>
               </ActionTooltip>
             </SettingsFormRow>
@@ -157,12 +157,12 @@ export default function SettingsGisPage() {
 
           {/* Section 2: Zoom & Tiles */}
           <SettingsSection
-            title="Tile Engine & Zoom Level"
-            description="Konfigurasi tingkat perbesaran peta dan URL server Martin vector tile (PostGIS pbf)."
+            title={t("settings.gis.tile_engine_title")}
+            description={t("settings.gis.tile_engine_desc")}
           >
             <SettingsFormRow
-              label="Default Zoom Level (0 - 22)"
-              description="Tingkat perbesaran awal saat peta diinisialisasi di dashboard."
+              label={t("settings.gis.zoom_level_label")}
+              description={t("settings.gis.zoom_level_desc")}
             >
               <Input
                 type="number"
@@ -175,8 +175,8 @@ export default function SettingsGisPage() {
             </SettingsFormRow>
 
             <SettingsFormRow
-              label="Martin Vector Tile Server Endpoint"
-              description="URL endpoint template server Martin (Rust PostGIS MVT) untuk merender aset jaringan fiber optik."
+              label={t("settings.gis.tile_server_label")}
+              description={t("settings.gis.tile_server_desc")}
               divider={false}
             >
               <Input
@@ -201,7 +201,7 @@ export default function SettingsGisPage() {
             handleInputChange("default_map_lat", lat);
             handleInputChange("default_map_lng", lng);
             if (address) handleInputChange("default_map_address", address);
-            toast.success("Koordinat peta berhasil diperbarui dari Map Picker!");
+            toast.success(t("settings.gis.picker_updated_toast"));
           }}
         />
 

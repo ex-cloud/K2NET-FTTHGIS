@@ -1,5 +1,6 @@
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type NewPermissionForm, SCOPE_OPTIONS, MODULE_SUGGESTIONS } from "./permissions-types";
 
 interface CreatePermissionDialogProps {
@@ -17,6 +18,7 @@ export function CreatePermissionDialog({
   onSubmit,
   isSubmitting,
 }: CreatePermissionDialogProps) {
+  const { t } = useTranslation();
   const handleField = (field: keyof NewPermissionForm, value: string) =>
     setForm({ ...form, [field]: value });
 
@@ -29,7 +31,7 @@ export function CreatePermissionDialog({
             <Plus className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-foreground">Tambah Permission Baru</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("security.create_permission")}</h2>
             <p className="text-xs text-muted-foreground">Isi detail permission yang ingin ditambahkan</p>
           </div>
         </div>
@@ -38,7 +40,7 @@ export function CreatePermissionDialog({
           {/* Module */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Module <span className="text-rose-400">*</span>
+              {t("security.permission_module")} <span className="text-rose-400">*</span>
             </label>
             <div className="relative">
               <input
@@ -61,7 +63,7 @@ export function CreatePermissionDialog({
           {/* Name */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Name <span className="text-rose-400">*</span>
+              {t("common.name")} <span className="text-rose-400">*</span>
             </label>
             <input
               id="input-perm-name"
@@ -76,7 +78,7 @@ export function CreatePermissionDialog({
           {/* Code */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Code <span className="text-rose-400">*</span>
+              {t("security.permission_code")} <span className="text-rose-400">*</span>
             </label>
             <input
               id="input-perm-code"
@@ -133,7 +135,7 @@ export function CreatePermissionDialog({
             disabled={isSubmitting}
             className="flex-1 border-border/80 text-muted-foreground hover:text-foreground"
           >
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             id="btn-submit-create-perm"
@@ -142,7 +144,7 @@ export function CreatePermissionDialog({
             disabled={isSubmitting}
             className="flex-1"
           >
-            {isSubmitting ? <Loader2 className="size-3.5 animate-spin" /> : "Tambah Permission"}
+            {isSubmitting ? <Loader2 className="size-3.5 animate-spin" /> : t("security.create_permission")}
           </Button>
         </div>
       </div>

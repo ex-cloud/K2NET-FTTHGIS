@@ -13,6 +13,7 @@ import { useTenantImportState } from "./import/useTenantImportState";
 import { ImportHudTerminal } from "./import/ImportHudTerminal";
 import { ImportFileDropzone } from "./import/ImportFileDropzone";
 import { ImportFilePreviewContainer } from "./import/ImportFilePreviewContainer";
+import { useTranslation } from "@k2net/i18n";
 
 interface TenantImportModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface TenantImportModalProps {
 }
 
 export function TenantImportModal({ isOpen, onClose, onSuccess }: TenantImportModalProps) {
+  const { t } = useTranslation();
   const state = useTenantImportState(onSuccess);
 
   return (
@@ -44,10 +46,10 @@ export function TenantImportModal({ isOpen, onClose, onSuccess }: TenantImportMo
                 </div>
                 <div>
                   <DialogTitle className="text-base font-bold text-foreground">
-                    Impor Cadangan Tenant (.JSON)
+                    {t("organizations.import_modal_title")}
                   </DialogTitle>
                   <DialogDescription className="text-xs text-muted-foreground pt-0.5">
-                    Unggah berkas arsip JSON untuk memulihkan atau membuat tenant baru beserta proyek GIS-nya.
+                    {t("organizations.import_modal_desc")}
                   </DialogDescription>
                 </div>
               </div>
@@ -83,7 +85,7 @@ export function TenantImportModal({ isOpen, onClose, onSuccess }: TenantImportMo
 
             <DialogFooter className="p-4 border-t border-border/60 bg-muted/20 flex justify-end gap-2 shrink-0">
               <Button variant="ghost" size="sm" onClick={onClose} className="text-xs">
-                Batal
+                {t("common.cancel")}
               </Button>
               <Button
                 size="sm"
@@ -92,7 +94,7 @@ export function TenantImportModal({ isOpen, onClose, onSuccess }: TenantImportMo
                 className="text-xs font-medium gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Mulai Impor & Provisioning
+                {t("organizations.start_import_btn")}
               </Button>
             </DialogFooter>
           </>

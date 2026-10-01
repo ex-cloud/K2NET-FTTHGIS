@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { BackupConfigPhase } from "./BackupConfigPhase";
 import { BackupRunningPhase } from "./BackupRunningPhase";
 import { BackupCompletedPhase } from "./BackupCompletedPhase";
+import { useTranslation } from "@k2net/i18n";
 
 export interface BackupStageInfo {
   id: number;
@@ -26,28 +27,28 @@ export interface BackupStageInfo {
 export const BACKUP_PIPELINE_STAGES: BackupStageInfo[] = [
   {
     id: 1,
-    label: "Validasi Akses & Sesi Tenant",
-    detail: "Memvalidasi token otorisasi dan identitas organisasi...",
+    label: "Tenant Session & Access Validation",
+    detail: "Validating authorization token and organization identity...",
   },
   {
     id: 2,
-    label: "Ekstraksi Entitas Topologi PostGIS",
-    detail: "Mengambil data spasial, titik simpul ODC/ODP, dan jalur fiber optik...",
+    label: "PostGIS Topology Entities Extraction",
+    detail: "Fetching spatial data, ODC/ODP node points, and fiber optic routes...",
   },
   {
     id: 3,
-    label: "Pengemasan Metadata & Skema Proyek",
-    detail: "Mengompilasi profil tenant, Keycloak realm, dan struktur proyek...",
+    label: "Metadata & Project Schema Packaging",
+    detail: "Compiling tenant profile, Keycloak realm, and project structure...",
   },
   {
     id: 4,
-    label: "Enkripsi Checksum & Pembuatan Arsip JSON",
-    detail: "Menghitung SHA-256 dan memvalidasi keutuhan payload snapshot...",
+    label: "Checksum Encryption & JSON Archive Creation",
+    detail: "Computing SHA-256 and validating snapshot payload integrity...",
   },
   {
     id: 5,
-    label: "Finalisasi & Penyimpanan Snapshot",
-    detail: "Mendaftarkan katalog riwayat backup dan menyiapkan berkas arsip...",
+    label: "Finalization & Snapshot Storage",
+    detail: "Registering backup catalog history and preparing archive file...",
   },
 ];
 
@@ -86,6 +87,7 @@ export function BackupProgressModal({
   fileSizeBytes = 0,
   sha256Fingerprint = "",
 }: BackupProgressModalProps) {
+  const { t } = useTranslation();
   const isConfig = status === "IDLE" || status === "CONFIG";
   const isRunning = status === "RUNNING";
   const isCompleted = status === "COMPLETED";
@@ -125,10 +127,10 @@ export function BackupProgressModal({
                 <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                   <span>
                     {isConfig
-                      ? "Pencadangan Penuh Data Tenant"
+                      ? t("organizations.backup_modal_full_title")
                       : isCompleted
-                      ? "Snapshot Berhasil Dibuat"
-                      : "Pipeline Pencadangan Data Tenant"}
+                      ? t("organizations.backup_modal_success_title")
+                      : t("organizations.backup_modal_pipeline_title")}
                   </span>
                   <Badge
                     variant="outline"
@@ -144,8 +146,7 @@ export function BackupProgressModal({
                   </Badge>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Snapshot database PostGIS, topologi spasial, dan metadata untuk{" "}
-                  <strong className="text-foreground">{orgName}</strong> ({orgSlug})
+                  {t("organizations.backup_modal_subtitle", { orgName, orgSlug })}
                 </DialogDescription>
               </div>
             </div>

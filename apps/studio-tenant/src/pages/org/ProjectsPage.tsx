@@ -8,9 +8,11 @@ import {
   TabsList,
   TabsTrigger,
   FeatureUpgradeModal,
+  ActionTooltip,
   cn,
 } from "@k2net/ui";
 import { useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "@k2net/i18n";
 import { useProjects } from "../../hooks/useProjects";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 import { ProjectUsageWidget } from "../../components/project/ProjectUsageWidget";
@@ -18,6 +20,7 @@ import { ProjectCardGrid } from "../../components/project/ProjectCardGrid";
 import { ProjectCreateWizard } from "../../components/project/ProjectCreateWizard";
 
 export function ProjectsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { projects, isLoading, refetch, deleteProject } = useProjects();
   const { canCreateProject, usedProjects, maxProjects, tier, isTrialExpired, status } = useTenantSubscription();
@@ -69,7 +72,7 @@ export function ProjectsPage() {
                   <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     type="text"
-                    placeholder="Cari proyek / kode..."
+                    placeholder={t("gis.search_projects")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="h-8 pl-8 text-xs bg-muted/20 border-border/60"
@@ -84,7 +87,7 @@ export function ProjectsPage() {
                 >
                   <TabsList className="h-8 p-0.5 bg-muted/60 border border-border/40 shrink-0">
                     <TabsTrigger value="ALL" className="text-xs px-2.5">
-                      Semua ({projects.length})
+                      {t("common.all")} ({projects.length})
                     </TabsTrigger>
                     <TabsTrigger value="PRODUCTION" className="text-xs px-2.5">
                       Production
@@ -102,56 +105,64 @@ export function ProjectsPage() {
               {/* Right: Refresh + View Mode Toggle (Grid, List) + New Project Button */}
               <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
                 {/* Refresh Icon Button */}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => refetch()}
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground border-border/60"
-                  title="Refresh data proyek"
-                >
-                  <RefreshCcw className="h-3.5 w-3.5" />
-                </Button>
+                <ActionTooltip label={t("gis.refresh_projects")} shortcut="R" side="bottom">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => refetch()}
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground border-border/60 cursor-pointer"
+                    aria-label={t("gis.refresh_projects")}
+                  >
+                    <RefreshCcw className="h-3.5 w-3.5" />
+                  </Button>
+                </ActionTooltip>
 
                 {/* Toggle View Mode (Grid vs List) */}
                 <div className="flex items-center p-0.5 rounded-lg border border-border/60 bg-muted/40">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("grid")}
-                    className={cn(
-                      "p-1 rounded-md transition-colors",
-                      viewMode === "grid"
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                    title="Tampilan Grid"
-                  >
-                    <LayoutGrid className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("list")}
-                    className={cn(
-                      "p-1 rounded-md transition-colors",
-                      viewMode === "list"
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                    title="Tampilan List"
-                  >
-                    <List className="h-3.5 w-3.5" />
-                  </button>
+                  <ActionTooltip label={t("gis.grid_view")} side="bottom">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("grid")}
+                      className={cn(
+                        "p-1 rounded-md transition-colors cursor-pointer",
+                        viewMode === "grid"
+                          ? "bg-background text-foreground shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                      aria-label={t("gis.grid_view")}
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                    </button>
+                  </ActionTooltip>
+                  <ActionTooltip label={t("gis.list_view")} side="bottom">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("list")}
+                      className={cn(
+                        "p-1 rounded-md transition-colors cursor-pointer",
+                        viewMode === "list"
+                          ? "bg-background text-foreground shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                      aria-label={t("gis.list_view")}
+                    >
+                      <List className="h-3.5 w-3.5" />
+                    </button>
+                  </ActionTooltip>
                 </div>
 
-                {/* Plus (New Project) Button */}
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleOpenCreateProject}
-                  className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Buat Proyek</span>
-                </Button>
+                {/* Plus (New Project) Button with ActionTooltip */}
+                <ActionTooltip label={t("gis.create_project")} shortcut="N" side="bottom">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleOpenCreateProject}
+                    className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{t("gis.create_project")}</span>
+                  </Button>
+                </ActionTooltip>
               </div>
             </div>
 
@@ -160,7 +171,7 @@ export function ProjectsPage() {
               <div className="flex h-48 w-full items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
                   <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  <span className="text-xs font-mono text-muted-foreground">Memuat data proyek...</span>
+                  <span className="text-xs font-mono text-muted-foreground">{t("gis.loading_projects")}</span>
                 </div>
               </div>
             ) : filteredProjects.length > 0 ? (
@@ -175,20 +186,20 @@ export function ProjectsPage() {
                   <Box className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-foreground">Tidak Ada Proyek Ditemukan</h3>
+                  <h3 className="text-sm font-bold text-foreground">{t("gis.no_projects_found")}</h3>
                   <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                     {searchQuery
-                      ? "Tidak ada proyek yang sesuai dengan kriteria pencarian Anda."
-                      : "Mulai dengan membuat proyek FTTH pertama untuk organisasi Anda."}
+                      ? t("gis.no_projects_search_desc")
+                      : t("gis.no_projects_empty_desc")}
                   </p>
                 </div>
                 <Button
                   size="sm"
                   onClick={handleOpenCreateProject}
-                  className="text-xs font-medium gap-1.5"
+                  className="text-xs font-medium gap-1.5 cursor-pointer"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Buat Proyek Baru
+                  {t("gis.create_new_project")}
                 </Button>
               </div>
             )}
@@ -211,7 +222,7 @@ export function ProjectsPage() {
       <FeatureUpgradeModal
         open={upgradeModalOpen}
         onOpenChange={setUpgradeModalOpen}
-        featureName={isTrialExpired || status === "TRIAL_EXPIRED" ? "Masa Trial Telah Selesai" : "Kapasitas Proyek"}
+        featureName={isTrialExpired || status === "TRIAL_EXPIRED" ? t("projects.trial_expired") : t("projects.project_capacity")}
         featureDescription={
           isTrialExpired || status === "TRIAL_EXPIRED"
             ? "Masa evaluasi 14 hari telah berakhir dan proyek saat ini di-pause dalam mode Read-Only. Tingkatkan paket langganan Anda untuk membuat dan mengelola proyek jaringan secara penuh."

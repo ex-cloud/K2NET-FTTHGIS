@@ -17,8 +17,10 @@ import {
   TableBody,
   TableCell,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 export function ProjectMembersPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
 
@@ -47,15 +49,15 @@ export function ProjectMembersPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
-          { label: "Settings", href: `/project/${projectId}/settings/general` },
-          { label: "Anggota Proyek" },
+          { label: t("nav.projects"), href: "/projects" },
+          { label: t("nav.settings"), href: `/project/${projectId}/settings/general` },
+          { label: t("projects.members_title") },
         ]}
-        title="Anggota & Penetapan Hak Akses Proyek"
+        title={t("projects.members_title")}
         actions={
           <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
             <UserPlus className="h-4 w-4" />
-            + Tambah Anggota Proyek
+            {t("projects.add_member_btn")}
           </Button>
         }
       />
@@ -66,7 +68,7 @@ export function ProjectMembersPage() {
             <TableHeader>
               <TableRow className="bg-muted/40 text-[11px]">
                 <TableHead className="font-bold">NAMA STAF</TableHead>
-                <TableHead className="font-bold">PERAN ORGANISASI</TableHead>
+                <TableHead className="font-bold">{t("projects.member_role").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">HAK AKSES PROYEK</TableHead>
                 <TableHead className="w-12 text-right" />
               </TableRow>

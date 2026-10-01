@@ -1,3 +1,4 @@
+import React from "react";
 import {
   RotateCcw,
   AlertTriangle,
@@ -14,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { TrashItem } from "@/hooks/useTrashCan";
 
 interface TrashDialogsProps {
@@ -43,6 +45,7 @@ export function TrashDialogs({
   isProcessing,
   totalStats,
 }: TrashDialogsProps) {
+  const { t } = useTranslation();
   const restorePath = typeof activeItemToRestore?.details?.path === "string" ? activeItemToRestore.details.path : null;
   const deletePath = typeof activeItemToDelete?.details?.path === "string" ? activeItemToDelete.details.path : null;
 
@@ -57,10 +60,10 @@ export function TrashDialogs({
           <DialogHeader>
             <div className="flex items-center gap-2 text-primary">
               <RotateCcw className="h-5 w-5 text-primary" />
-              <DialogTitle className="text-foreground">Pulihkan Data dari Recycle Bin?</DialogTitle>
+              <DialogTitle className="text-foreground">{t("common.trash_restore_title")}</DialogTitle>
             </div>
             <DialogDescription className="text-xs pt-1.5 text-muted-foreground">
-              Entitas <strong className="text-foreground">&ldquo;{activeItemToRestore?.name}&rdquo;</strong> akan dikembalikan ke status aktif dan siap digunakan kembali.
+              {t("common.trash_restore_desc", { name: activeItemToRestore?.name || "" })}
             </DialogDescription>
           </DialogHeader>
 
@@ -68,42 +71,42 @@ export function TrashDialogs({
             <div className="p-3 rounded-xl bg-card border border-border text-xs space-y-2">
               <div className="font-semibold text-foreground flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                Rincian Dampak Pemulihan:
+                {t("common.trash_restore_impact_title")}
               </div>
               <ul className="space-y-1.5 text-muted-foreground text-[11px]">
                 {activeItemToRestore?.type === "ORGANIZATION" ? (
                   <>
                     <li className="flex items-start gap-1.5">
                       <span className="text-primary font-bold">•</span>
-                      <span><strong>Keycloak IAM Realm</strong> diaktifkan kembali (<span className="font-mono text-foreground">enabled: true</span>), seluruh pengguna tenant dapat langsung login kembali.</span>
+                      <span>{t("common.trash_restore_org_iam")}</span>
                     </li>
                     <li className="flex items-start gap-1.5">
                       <span className="text-primary font-bold">•</span>
-                      <span>Status organisasi dikembalikan ke status <strong className="text-primary font-bold">ACTIVE</strong>.</span>
+                      <span>{t("common.trash_restore_org_status")}</span>
                     </li>
                   </>
                 ) : activeItemToRestore?.type === "DOCUMENT" ? (
                   <>
                     <li className="flex items-start gap-1.5">
                       <span className="text-primary font-bold">•</span>
-                      <span>Dokumen akan dikembalikan ke tab <strong>Documents &amp; Legal</strong> tenant <strong className="text-foreground">{activeItemToRestore.originName}</strong>.</span>
+                      <span>{t("common.trash_restore_doc_tab", { originName: activeItemToRestore.originName || "" })}</span>
                     </li>
                     {restorePath && (
                       <li className="flex items-start gap-1.5">
                         <span className="text-primary font-bold">•</span>
-                        <span>Lokasi berkas: <span className="font-mono text-foreground break-all">{restorePath}</span></span>
+                        <span>{t("common.trash_restore_file_path", { path: restorePath })}</span>
                       </li>
                     )}
                   </>
                 ) : (
                   <li className="flex items-start gap-1.5">
                     <span className="text-primary font-bold">•</span>
-                    <span>Item akan kembali muncul di dashboard operasional harian dan peta aktif.</span>
+                    <span>{t("common.trash_restore_generic")}</span>
                   </li>
                 )}
                 <li className="flex items-start gap-1.5">
                   <span className="text-primary font-bold">•</span>
-                  <span>Tenggat hitung mundur retensi 30 hari dibatalkan.</span>
+                  <span>{t("common.trash_restore_retention")}</span>
                 </li>
               </ul>
             </div>
@@ -116,24 +119,24 @@ export function TrashDialogs({
               onClick={onCloseRestore}
               disabled={isProcessing}
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               variant="default"
               size="sm"
               onClick={onConfirmRestore}
               disabled={isProcessing}
-              className="gap-1.5"
+              className="gap-1.5 cursor-pointer"
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Memulihkan...
+                  {t("common.loading")}
                 </>
               ) : (
                 <>
                   <RotateCcw className="h-3.5 w-3.5" />
-                  Ya, Pulihkan Sekarang
+                  {t("common.trash_confirm_restore")}
                 </>
               )}
             </Button>
@@ -150,21 +153,17 @@ export function TrashDialogs({
           <DialogHeader>
             <div className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              <DialogTitle>Hapus Permanen Data?</DialogTitle>
+              <DialogTitle>{t("common.trash_delete_title")}</DialogTitle>
             </div>
             <DialogDescription className="text-xs pt-2">
-              Tindakan ini bersifat <strong>permanen dan tidak dapat dibatalkan</strong>. Data{" "}
-              <span className="font-semibold text-foreground">
-                &ldquo;{activeItemToDelete?.name}&rdquo;
-              </span>{" "}
               {activeItemToDelete?.type === "DOCUMENT"
-                ? "akan dihapus secara fisik dan permanen dari sistem."
-                : "akan dihapus secara fisik dari database PostgreSQL."}
+                ? t("common.trash_delete_desc_doc", { name: activeItemToDelete?.name || "" })
+                : t("common.trash_delete_desc_db", { name: activeItemToDelete?.name || "" })}
             </DialogDescription>
           </DialogHeader>
           {deletePath && (
             <div className="p-2.5 rounded-lg bg-muted/40 border border-border text-[11px] font-mono text-muted-foreground break-all">
-              <span className="text-foreground font-semibold">Target Path: </span>
+              <span className="text-foreground font-semibold">{t("common.trash_target_path")} </span>
               {deletePath}
             </div>
           )}
@@ -175,15 +174,16 @@ export function TrashDialogs({
               onClick={onCloseDelete}
               disabled={isProcessing}
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
               size="sm"
               onClick={onConfirmDelete}
               disabled={isProcessing}
+              className="cursor-pointer"
             >
-              {isProcessing ? "Menghapus..." : "Ya, Hapus Permanen"}
+              {isProcessing ? t("common.loading") : t("common.trash_confirm_delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -195,10 +195,10 @@ export function TrashDialogs({
           <DialogHeader>
             <div className="flex items-center gap-2 text-destructive">
               <ShieldAlert className="h-5 w-5" />
-              <DialogTitle>Kosongkan Seluruh Recycle Bin?</DialogTitle>
+              <DialogTitle>{t("common.trash_empty_title")}</DialogTitle>
             </div>
             <DialogDescription className="text-xs pt-2">
-              Anda akan menghapus fisik <strong>seluruh {totalStats} item</strong> yang ada di Recycle Bin. Pastikan tidak ada data penting yang masih perlu dipulihkan.
+              {t("common.trash_empty_desc", { count: totalStats })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -208,15 +208,16 @@ export function TrashDialogs({
               onClick={onCloseEmptyConfirm}
               disabled={isProcessing}
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
               size="sm"
               onClick={onConfirmEmptyTrash}
               disabled={isProcessing}
+              className="cursor-pointer"
             >
-              {isProcessing ? "Mengosongkan..." : "Ya, Kosongkan Semua"}
+              {isProcessing ? t("common.loading") : t("common.trash_confirm_empty")}
             </Button>
           </DialogFooter>
         </DialogContent>

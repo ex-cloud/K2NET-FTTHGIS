@@ -23,6 +23,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { TaskContextMenu } from "./TaskContextMenu";
 import { type DisplayPropertiesState } from "./LinearDisplayOptionsPopover";
 import { getTaskTableColumns } from "./task-table-columns";
@@ -95,6 +96,7 @@ export function TaskTable({
   focusedIndex = -1,
   displayProperties,
 }: TaskTableProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -132,8 +134,9 @@ export function TaskTable({
         onUpdateTask,
         assigneesList,
         onNavigate: (path) => router.push(path),
+        t,
       }),
-    [assigneesList, onUpdateTask, selectedTaskIds, onToggleSelectTask, onSelectAllTasks, tasks, router]
+    [assigneesList, onUpdateTask, selectedTaskIds, onToggleSelectTask, onSelectAllTasks, tasks, router, t]
   );
 
   const columnVisibility = React.useMemo<VisibilityState>(() => {
@@ -201,14 +204,14 @@ export function TaskTable({
                       className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
                     >
                       <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>Sort Ascending</span>
+                      <span>{t("tasks.sort_asc")}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => header.column.toggleSorting(true)}
                       className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
                     >
                       <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>Sort Descending</span>
+                      <span>{t("tasks.sort_desc")}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -229,7 +232,7 @@ export function TaskTable({
         ) : tasks.length === 0 ? (
           <div className="px-4 py-16 text-center flex flex-col items-center gap-3 text-muted-foreground">
             <ClipboardList className="h-10 w-10 opacity-30" />
-            <p className="text-sm">No tasks found for this view.</p>
+            <p className="text-sm">{t("tasks.no_tasks_found")}</p>
           </div>
         ) : (
           table.getRowModel().rows.map((row, index) => (
@@ -279,13 +282,13 @@ export function TaskTable({
       {loadingMore && (
         <div className="flex items-center justify-center py-4 gap-2 text-xs text-muted-foreground border-t border-border/30">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-          <span>Loading more tasks...</span>
+          <span>{t("tasks.loading_more")}</span>
         </div>
       )}
 
       {!hasMore && tasks.length > 0 && !loading && (
         <div className="flex items-center justify-center py-3 text-[11px] text-muted-foreground/60 border-t border-border/30">
-          <span>All {tasks.length} tasks loaded</span>
+          <span>{t("tasks.all_tasks_loaded", { count: tasks.length })}</span>
         </div>
       )}
     </div>

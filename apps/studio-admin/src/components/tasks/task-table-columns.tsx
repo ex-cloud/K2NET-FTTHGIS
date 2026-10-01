@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   Calendar,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type Task } from "@/hooks/useTasksQuery";
 import { cn } from "@/lib/utils";
 import { ScopeBadge } from "./ScopeBadge";
@@ -110,36 +111,39 @@ export const AssigneeCell: React.FC<AssigneeCellProps> = ({
   task,
   assigneesList,
   onUpdateTask,
-}) => (
-  <div onClick={(e) => e.stopPropagation()}>
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border border-border/80 bg-card hover:bg-muted text-foreground transition-all font-mono">
-          <User className="h-3.5 w-3.5 text-muted-foreground" />
-          <span>{task.assigneeId ? `…${task.assigneeId.slice(-8)}` : "Assignee"}</span>
-          <ChevronDown className="h-3 w-3 opacity-60" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[160px] max-h-[220px] overflow-y-auto">
-        <DropdownMenuItem
-          onClick={() => onUpdateTask(task.id, { assigneeId: undefined })}
-          className="text-xs text-muted-foreground italic cursor-pointer"
-        >
-          Unassigned
-        </DropdownMenuItem>
-        {assigneesList.map((id) => (
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border border-border/80 bg-card hover:bg-muted text-foreground transition-all font-mono">
+            <User className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>{task.assigneeId ? `…${task.assigneeId.slice(-8)}` : t("tasks.assignee")}</span>
+            <ChevronDown className="h-3 w-3 opacity-60" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[160px] max-h-[220px] overflow-y-auto">
           <DropdownMenuItem
-            key={id}
-            onClick={() => onUpdateTask(task.id, { assigneeId: id })}
-            className="text-xs font-mono cursor-pointer"
+            onClick={() => onUpdateTask(task.id, { assigneeId: undefined })}
+            className="text-xs text-muted-foreground italic cursor-pointer"
           >
-            {`…${id.slice(-8)}`}
+            {t("tasks.unassigned")}
           </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  </div>
-);
+          {assigneesList.map((id) => (
+            <DropdownMenuItem
+              key={id}
+              onClick={() => onUpdateTask(task.id, { assigneeId: id })}
+              className="text-xs font-mono cursor-pointer"
+            >
+              {`…${id.slice(-8)}`}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+};
 
 interface DueDateCellProps {
   task: Task;
@@ -147,13 +151,14 @@ interface DueDateCellProps {
 }
 
 export const DueDateCell: React.FC<DueDateCellProps> = ({ task, onUpdateTask }) => {
+  const { t } = useTranslation();
   const formattedDate = task.dueDate
-    ? new Date(task.dueDate).toLocaleDateString("en-US", {
+    ? new Date(task.dueDate).toLocaleDateString("id-ID", {
         month: "short",
         day: "numeric",
         year: "2-digit",
       })
-    : "Set Date";
+    : t("tasks.set_date");
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -197,6 +202,7 @@ interface GetTaskTableColumnsParams {
   onUpdateTask: (id: string, fields: Partial<Task>) => void;
   assigneesList: string[];
   onNavigate: (path: string) => void;
+  t?: (key: string, params?: Record<string, string | number>) => string;
 }
 
 export function getTaskTableColumns({
@@ -207,6 +213,7 @@ export function getTaskTableColumns({
   onUpdateTask,
   assigneesList,
   onNavigate,
+  t = (key: string) => key,
 }: GetTaskTableColumnsParams) {
   return [
     columnHelper.display({
@@ -247,7 +254,7 @@ export function getTaskTableColumns({
       },
     }),
     columnHelper.accessor("title", {
-      header: "Title",
+      header: t("tasks.col_title"),
       cell: (info) => {
         const task = info.row.original;
         const isProjectRef = task.obsidianRef?.startsWith("PRJ-") || Boolean(task.parentTaskId);
@@ -271,7 +278,7 @@ export function getTaskTableColumns({
                     ? "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30 cursor-pointer"
                     : "text-muted-foreground bg-muted/50 border border-border/40"
                 )}
-                title={isProjectRef ? "Buka detail project terkait" : undefined}
+                title={isProjectRef ? t("tasks.open_project_detail") : undefined}
               >
                 {task.obsidianRef}
               </span>
@@ -281,11 +288,11 @@ export function getTaskTableColumns({
       },
     }),
     columnHelper.accessor("scope", {
-      header: "Scope",
+      header: t("tasks.col_scope"),
       cell: (info) => <ScopeBadge scope={info.getValue()} />,
     }),
     columnHelper.accessor("type", {
-      header: "Type",
+      header: t("tasks.col_type"),
       cell: (info) => {
         const rawType = info.getValue();
         const label = rawType === "TICKET" ? "ISSUE" : rawType;
@@ -297,15 +304,15 @@ export function getTaskTableColumns({
       },
     }),
     columnHelper.accessor("priority", {
-      header: "Priority",
+      header: t("tasks.priority"),
       cell: (info) => <PriorityCell task={info.row.original} onUpdateTask={onUpdateTask} />,
     }),
     columnHelper.accessor("status", {
-      header: "Status",
+      header: t("tasks.status"),
       cell: (info) => <StatusCell task={info.row.original} onUpdateTask={onUpdateTask} />,
     }),
     columnHelper.accessor("assigneeId", {
-      header: "Assignee",
+      header: t("tasks.assignee"),
       cell: (info) => (
         <AssigneeCell
           task={info.row.original}
@@ -315,11 +322,11 @@ export function getTaskTableColumns({
       ),
     }),
     columnHelper.accessor("dueDate", {
-      header: "Due Date",
+      header: t("tasks.due_date"),
       cell: (info) => <DueDateCell task={info.row.original} onUpdateTask={onUpdateTask} />,
     }),
     columnHelper.accessor("createdAt", {
-      header: "Created",
+      header: t("tasks.col_created"),
       cell: (info) => {
         const val = info.getValue();
         if (!val) return <span className="text-muted-foreground/50 text-xs">-</span>;

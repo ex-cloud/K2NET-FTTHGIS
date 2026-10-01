@@ -23,6 +23,7 @@ import {
   UniversalContextMenu,
   type ContextMenuGroupConfig,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { PermissionGuard, usePermissions } from "@/hooks/use-permissions";
 import type { ActiveSession } from "@/hooks/useSecuritySettings";
 
@@ -41,13 +42,15 @@ function SessionsPagination({
   totalItems: number;
   onPageChange: (page: number) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center justify-between mt-4 px-2">
       <span className="text-xs text-muted-foreground">
         Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, totalItems)} of {totalItems} sessions
       </span>
       <div className="flex items-center gap-2">
-        <ActionTooltip label="Halaman Sebelumnya" shortcut="Alt+Left">
+        <ActionTooltip label={t("common.prev")} shortcut="Alt+Left">
           <Button
             variant="outline"
             size="sm"
@@ -59,9 +62,9 @@ function SessionsPagination({
           </Button>
         </ActionTooltip>
         <span className="text-xs text-muted-foreground px-2 font-medium">
-          Page {currentPage} of {totalPages}
+          {currentPage} / {totalPages}
         </span>
-        <ActionTooltip label="Halaman Berikutnya" shortcut="Alt+Right">
+        <ActionTooltip label={t("common.next")} shortcut="Alt+Right">
           <Button
             variant="outline"
             size="sm"
@@ -143,6 +146,7 @@ export function AuthActiveSessionsCard({
   revokeSession: (sessionId: string) => Promise<void>;
   isRevokingSession: boolean;
 }) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManageSecurity = canAccess("system.security.manage");
 
@@ -161,9 +165,9 @@ export function AuthActiveSessionsCard({
   const handleRevokeSession = async (sessionId: string) => {
     try {
       await revokeSession(sessionId);
-      toast.success("User session terminated successfully.");
+      toast.success(t("common.success"));
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Failed to revoke session");
+      toast.error(error instanceof Error ? error.message : t("common.error"));
     }
   };
 
@@ -223,7 +227,7 @@ export function AuthActiveSessionsCard({
           {
             items: [
               {
-                label: "Putus Sesi Pengguna",
+                label: t("security.terminate_session"),
                 icon: Trash2,
                 shortcut: "Del",
                 onClick: () => handleRevokeSession(sessionItem.id),
@@ -260,13 +264,13 @@ export function AuthActiveSessionsCard({
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-border bg-card/40 text-muted-foreground font-medium">
-                    <th className="p-4">User</th>
+                    <th className="p-4">{t("security.session_user")}</th>
                     <th className="p-4">Tenant / Organization</th>
-                    <th className="p-4">IP Address</th>
-                    <th className="p-4">Login Time</th>
-                    <th className="p-4">Last Access</th>
-                    <th className="p-4">Client Access</th>
-                    <th className="p-4 text-right">Actions</th>
+                    <th className="p-4">{t("security.session_ip")}</th>
+                    <th className="p-4">{t("security.session_start")}</th>
+                    <th className="p-4">{t("security.session_last_access")}</th>
+                    <th className="p-4">{t("security.session_client")}</th>
+                    <th className="p-4 text-right">{t("common.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>

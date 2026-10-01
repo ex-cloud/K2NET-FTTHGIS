@@ -57,6 +57,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
   SecondarySidebarHeader,
+  ActionTooltip,
 } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { SYSTEM_SIDEBAR_NAVIGATION, type MenuItem } from "@/config/system-sidebar-navigation";
@@ -207,29 +208,36 @@ function SidebarNavItem({
     : "bg-muted text-muted-foreground border border-border";
 
   return (
-    <Link
-      href={item.url}
-      className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
-        isActive
-          ? "bg-sidebar-accent text-foreground font-semibold border border-border/80"
-          : "text-foreground/85 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium"
-      }`}
+    <ActionTooltip
+      label={t("nav.go_to_item", { name: itemTitle })}
+      shortcut={item.shortcut}
+      side="right"
+      sideOffset={8}
     >
-      <Icon className={`w-3.5 h-3.5 ${isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"}`} />
-      <span className="truncate flex-1">{itemTitle}</span>
+      <Link
+        href={item.url}
+        className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
+          isActive
+            ? "bg-sidebar-accent text-foreground font-semibold border border-border/80"
+            : "text-foreground/85 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium"
+        }`}
+      >
+        <Icon className={`w-3.5 h-3.5 ${isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"}`} />
+        <span className="truncate flex-1">{itemTitle}</span>
 
-      {isB2BLink && unreadB2BCount > 0 && (
-        <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse shrink-0">
-          {unreadB2BCount}
-        </span>
-      )}
+        {isB2BLink && unreadB2BCount > 0 && (
+          <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse shrink-0">
+            {unreadB2BCount}
+          </span>
+        )}
 
-      {orgBadgeCount !== null && (
-        <span className={`ml-auto text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${orgBadgeStyle}`}>
-          {orgBadgeCount}
-        </span>
-      )}
-    </Link>
+        {orgBadgeCount !== null && (
+          <span className={`ml-auto text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${orgBadgeStyle}`}>
+            {orgBadgeCount}
+          </span>
+        )}
+      </Link>
+    </ActionTooltip>
   );
 }
 

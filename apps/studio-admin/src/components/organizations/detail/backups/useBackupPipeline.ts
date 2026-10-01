@@ -74,7 +74,7 @@ export function useBackupPipeline(
 
       if (!res.ok) {
         const errText = await res.text().catch(() => "");
-        throw new Error(errText || "Gagal mengekspor snapshot database PostGIS");
+        throw new Error(errText || "Failed to export PostGIS database snapshot");
       }
 
       const data = await res.json();
@@ -113,15 +113,15 @@ export function useBackupPipeline(
       setTerminalLogs((prev) => [
         ...prev,
         `> [OK] backup finalized: ${fileName} (${(blob.size / 1024).toFixed(1)} KB)`,
-        `> [FINISH] snapshot saved in database history. Click 'Unduh Berkas' to download on-demand.`,
+        `> [FINISH] snapshot saved in database history. Click 'Download File' to download on-demand.`,
       ]);
 
       if (onSuccess) {
         await onSuccess();
       }
-      toast.success(`Snapshot ${org.name} berhasil dibuat dan dicatat di riwayat.`);
+      toast.success(`Snapshot for ${org.name} successfully created and recorded.`);
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "Gagal membuat snapshot database.";
+      const errMsg = err instanceof Error ? err.message : "Failed to create database snapshot.";
       setBackupStatus("FAILED");
       setBackupError(errMsg);
       setTerminalLogs((prev) => [
@@ -138,7 +138,7 @@ export function useBackupPipeline(
   const handleDownloadFile = useCallback(() => {
     if (lastBackupBlob && downloadFileName) {
       triggerDownloadFile(lastBackupBlob, downloadFileName);
-      toast.success(`Mengunduh berkas ${downloadFileName}`);
+      toast.success(`Downloading file ${downloadFileName}`);
     }
   }, [lastBackupBlob, downloadFileName]);
 

@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import { 
   Database, 
@@ -11,6 +9,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Button, Badge } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type ServerSyncStatus } from "@/lib/actions/gateways";
 import { formatBytes } from "./types";
 
@@ -33,15 +32,17 @@ export function AiKnowledgeSummaryBar({
   onSyncServerDocs,
   onOpenUnindexedModal,
 }: AiKnowledgeSummaryBarProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-3">
-      {/* ── Supabase-style Inline KPI Stats Summary Bar ────────────────────── */}
+      {/* ── Inline KPI Stats Summary Bar ────────────────────── */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-foreground/75 dark:text-muted-foreground font-medium px-1">
         <div className="flex items-center gap-1.5">
           <Database className="w-3.5 h-3.5 text-primary" />
           <span className="font-bold text-foreground font-mono">{totalCount}</span>
-          <span>Dokumen Terdaftar</span>
-          <span title="Total berkas SOP dan dokumen panduan yang terindeks di database PostgreSQL." className="cursor-help text-foreground/50 hover:text-foreground">
+          <span>{t("ai.doc_list")}</span>
+          <span title={t("ai.doc_list_tooltip_detail")} className="cursor-help text-foreground/50 hover:text-foreground">
             <HelpCircle className="h-3 w-3" />
           </span>
         </div>
@@ -49,8 +50,8 @@ export function AiKnowledgeSummaryBar({
         <div className="flex items-center gap-1.5">
           <BrainCircuit className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
           <span className="font-bold text-foreground font-mono">{totalChunks}</span>
-          <span>Vector Chunks</span>
-          <span title="Jumlah pecahan token berdimensi 1536 yang siap dicari secara semantik." className="cursor-help text-foreground/50 hover:text-foreground">
+          <span>{t("ai.vector_chunks")}</span>
+          <span title={t("ai.vector_chunks_tooltip_detail")} className="cursor-help text-foreground/50 hover:text-foreground">
             <HelpCircle className="h-3 w-3" />
           </span>
         </div>
@@ -58,8 +59,8 @@ export function AiKnowledgeSummaryBar({
         <div className="flex items-center gap-1.5">
           <HardDrive className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
           <span className="font-bold text-foreground font-mono">{formatBytes(totalBytes)}</span>
-          <span>Ukuran Disk</span>
-          <span title="Total ukuran file fisik dokumen SOP." className="cursor-help text-foreground/50 hover:text-foreground">
+          <span>{t("ai.file_size")}</span>
+          <span title={t("ai.file_size_tooltip_detail")} className="cursor-help text-foreground/50 hover:text-foreground">
             <HelpCircle className="h-3 w-3" />
           </span>
         </div>
@@ -80,14 +81,14 @@ export function AiKnowledgeSummaryBar({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-foreground">
-                  Ditemukan {syncStatus.unindexed_count} berkas SOP baru di direktori server (/opt/project5/docs)
+                  {t("ai.unindexed_server_banner_title", { count: syncStatus.unindexed_count })}
                 </span>
                 <Badge variant="outline" className="text-[10px] bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 font-mono py-0">
-                  {syncStatus.unindexed_count} Belum Terindeks
+                  {t("ai.unindexed_badge", { count: syncStatus.unindexed_count })}
                 </Badge>
               </div>
               <p className="text-[11px] text-foreground/75 dark:text-muted-foreground mt-0.5">
-                Ada berkas Markdown lokal di server yang belum masuk ke database pgvector. Sinkronkan agar memori AI terbarui.
+                {t("ai.unindexed_server_banner_desc")}
               </p>
             </div>
           </div>
@@ -99,7 +100,7 @@ export function AiKnowledgeSummaryBar({
               onClick={onOpenUnindexedModal}
               className="text-xs h-8 border-border text-foreground hover:bg-muted/50 cursor-pointer"
             >
-              Lihat Berkas ({syncStatus.unindexed_count})
+              {t("ai.view_files_count_btn", { count: syncStatus.unindexed_count })}
             </Button>
             <Button
               size="sm"
@@ -112,7 +113,7 @@ export function AiKnowledgeSummaryBar({
               ) : (
                 <FolderSync className="w-3.5 h-3.5" />
               )}
-              {isSyncing ? "Menyinkronkan..." : "Sinkronkan Sekarang"}
+              {isSyncing ? t("ai.syncing_server") : t("ai.sync_server_dir")}
             </Button>
           </div>
         </div>

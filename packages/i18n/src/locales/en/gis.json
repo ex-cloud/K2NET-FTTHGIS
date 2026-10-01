@@ -16,5 +16,22 @@
   "port_capacity": "Used Port Capacity",
   "device_details": "Device Technical Details",
   "export_kml": "Export KML / GeoJSON",
-  "import_kml": "Import KML / GeoJSON File"
+  "import_kml": "Import KML / GeoJSON File",
+  "search_projects": "Search projects / code...",
+  "search_assets": "Search spatial assets / devices...",
+  "create_project": "Create Project",
+  "create_new_project": "Create New Project",
+  "all_projects_count": "All ({{count}})",
+  "refresh_projects": "Refresh project data",
+  "grid_view": "Grid View",
+  "list_view": "List View",
+  "loading_projects": "Loading project data...",
+  "no_projects_found": "No Projects Found",
+  "no_projects_search_desc": "No projects match your search criteria.",
+  "no_projects_empty_desc": "Get started by creating your first FTTH project for your organization.",
+  "active_ftth_projects": "Active FTTH Projects",
+  "total_customers": "Total Connected Subscribers",
+  "fiber_cable_span": "Fiber Cable Span",
+  "odc_odp_devices": "ODC & ODP Devices",
+  "s3_storage": "S3 Storage Capacity"
 }

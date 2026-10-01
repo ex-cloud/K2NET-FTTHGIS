@@ -16,8 +16,10 @@ import {
   Button,
 } from "@k2net/ui";
 import { useProjects } from "../../hooks/useProjects";
+import { useTranslation } from "@k2net/i18n";
 
 export function ProjectOverviewPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const { projects } = useProjects();
   const projectId = params?.projectId || "proj-bdg-01";
@@ -46,16 +48,16 @@ export function ProjectOverviewPage() {
       <PageHeader
         title={project.name}
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: project.name },
-          { label: "Overview" },
+          { label: t("projects.overview_title") },
         ]}
         actions={
           <div className="flex items-center gap-2">
             <Button asChild size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
               <Link to="/project/$projectId/infrastructure/topology" params={{ projectId }}>
                 <Map className="h-3.5 w-3.5" />
-                Buka Map Studio
+                {t("projects.quick_view_map")}
               </Link>
             </Button>
           </div>
@@ -71,10 +73,10 @@ export function ProjectOverviewPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
                 <Users className="h-3.5 w-3.5 text-primary" />
-                Total Pelanggan Aktif
+                {t("projects.stats_total_subscribers")}
               </span>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20">
-                98.4% Online
+                {t("common.active")}
               </span>
             </div>
             <div className="flex items-baseline justify-between">
@@ -82,7 +84,7 @@ export function ProjectOverviewPage() {
                 {project.totalSubscribers || 1420}
               </span>
               <span className="text-[11px] text-muted-foreground font-mono">
-                {project.onlineSubscribers || 1398} Online
+                {project.onlineSubscribers || 1398} {t("projects.stats_online_subscribers")}
               </span>
             </div>
           </Card>
@@ -92,15 +94,15 @@ export function ProjectOverviewPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
                 <Layers className="h-3.5 w-3.5 text-amber-500" />
-                Enclosure Distribusi
+                {t("inventory.odc_title")}
               </span>
-              <span className="text-[10px] font-mono text-muted-foreground">Kapasitas 82%</span>
+              <span className="text-[10px] font-mono text-muted-foreground">{t("common.capacity")}</span>
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold font-mono text-foreground">
                 {project.odcCount || 12} <span className="text-xs font-normal text-muted-foreground">ODC</span> / {project.odpCount || 86} <span className="text-xs font-normal text-muted-foreground">ODP</span>
               </span>
-              <span className="text-[11px] text-primary font-mono">688 Port</span>
+              <span className="text-[11px] text-primary font-mono">Ports</span>
             </div>
           </Card>
 
@@ -109,7 +111,7 @@ export function ProjectOverviewPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
                 <Network className="h-3.5 w-3.5 text-sky-500" />
-                Bentang Kabel Optik
+                {t("inventory.cable_title")}
               </span>
               <span className="text-[10px] font-mono text-sky-600 dark:text-sky-400">GIS Verified</span>
             </div>
@@ -117,7 +119,7 @@ export function ProjectOverviewPage() {
               <span className="text-2xl font-bold font-mono text-foreground">
                 {project.cableLengthKm || 48.6} <span className="text-xs font-normal text-muted-foreground">Km</span>
               </span>
-              <span className="text-[11px] text-muted-foreground font-mono">Feeder & Drop</span>
+              <span className="text-[11px] text-muted-foreground font-mono">{t("projects.stats_cable_length")}</span>
             </div>
           </Card>
 
@@ -126,7 +128,7 @@ export function ProjectOverviewPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
                 <Server className="h-3.5 w-3.5 text-primary" />
-                Kesehatan OLT
+                {t("inventory.olt_title")}
               </span>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20">
                 ALL UP
@@ -136,7 +138,7 @@ export function ProjectOverviewPage() {
               <span className="text-2xl font-bold font-mono text-foreground">
                 {project.oltCount || 4} <span className="text-xs font-normal text-muted-foreground">Unit</span>
               </span>
-              <span className="text-[11px] text-muted-foreground font-mono">SNMP Telemetry</span>
+              <span className="text-[11px] text-muted-foreground font-mono">{t("projects.stats_olt_count")}</span>
             </div>
           </Card>
         </div>
@@ -144,7 +146,7 @@ export function ProjectOverviewPage() {
         {/* Quick Access Modules Navigation */}
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Akses Cepat Modul Operasional Proyek
+            {t("projects.overview_title")}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
@@ -159,10 +161,10 @@ export function ProjectOverviewPage() {
                     <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                    Map Studio & Vector Tiles
+                    {t("projects.quick_view_map")}
                   </h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Visualisasi spasial MapLibre, tracking kabel putus, dan inspector aset interaktif.
+                    {t("gis.map_subtitle")}
                   </p>
                 </div>
               </Card>
@@ -179,10 +181,10 @@ export function ProjectOverviewPage() {
                     <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-amber-500 transition-colors" />
                   </div>
                   <h4 className="text-sm font-bold text-foreground group-hover:text-amber-500 transition-colors">
-                    Katalog Inventaris & BOQ
+                    {t("inventory.boq_title")}
                   </h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Data lengkap kabinet ODC, splitter, box ODP, kabel optik, serta kalkulator BOQ.
+                    {t("inventory.boq_subtitle")}
                   </p>
                 </div>
               </Card>
@@ -199,10 +201,10 @@ export function ProjectOverviewPage() {
                     <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-rose-500 transition-colors" />
                   </div>
                   <h4 className="text-sm font-bold text-foreground group-hover:text-rose-500 transition-colors">
-                    Trouble Tickets & Dispatcher
+                    {t("issues.tickets_title")}
                   </h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Pantau tiket redaman tinggi, kabel putus, dan penugasan teknisi JIT lapangan.
+                    {t("issues.tickets_subtitle")}
                   </p>
                 </div>
               </Card>
@@ -213,3 +215,4 @@ export function ProjectOverviewPage() {
     </div>
   );
 }
+

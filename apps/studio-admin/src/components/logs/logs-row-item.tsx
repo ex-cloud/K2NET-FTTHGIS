@@ -10,6 +10,7 @@ import {
   UniversalContextMenu,
   type ContextMenuGroupConfig,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type AuditStreamEntry, LOG_GROUPS } from "@/hooks/use-audit-log-stream";
 import {
   getSourceIcon,
@@ -46,13 +47,14 @@ function getMethodColor(method?: string) {
 function buildContextMenuGroups(
   log: AuditStreamEntry,
   isSelected: boolean,
-  onSelect: () => void
+  onSelect: () => void,
+  t: ReturnType<typeof useTranslation>["t"]
 ): ContextMenuGroupConfig[] {
   return [
     {
       items: [
         {
-          label: "Tanya AI Analisis Log Ini",
+          label: t("observability.ask_ai_analyze_log"),
           icon: Sparkles,
           shortcut: "Ctrl+J",
           onClick: () => {
@@ -67,7 +69,7 @@ function buildContextMenuGroups(
           },
         },
         {
-          label: isSelected ? "Tutup Detail Panel" : "Buka Detail Panel",
+          label: isSelected ? t("observability.close_detail_panel") : t("observability.open_detail_panel"),
           icon: FileCode,
           shortcut: "Enter",
           onClick: onSelect,
@@ -77,32 +79,32 @@ function buildContextMenuGroups(
     {
       items: [
         {
-          label: "Salin Log JSON",
+          label: t("observability.copy_log_json"),
           icon: Copy,
           shortcut: "Ctrl+C",
           onClick: () => {
             navigator.clipboard.writeText(JSON.stringify(log, null, 2));
-            toast.success("Log event JSON disalin ke clipboard!");
+            toast.success(t("observability.log_copied"));
           },
         },
         {
-          label: "Salin Event ID / Trace ID",
+          label: t("observability.copy_trace_id"),
           icon: Copy,
           shortcut: "Alt+C",
           onClick: () => {
             const id = log.traceId || log.requestId || log.id || "";
             navigator.clipboard.writeText(id);
-            toast.success(`ID ${id} disalin ke clipboard!`);
+            toast.success(t("common.copied_id", { id }));
           },
         },
         {
-          label: "Salin Pathname URL",
+          label: t("observability.copy_pathname"),
           icon: Globe,
           shortcut: "Alt+P",
           onClick: () => {
             if (log.pathname) {
               navigator.clipboard.writeText(log.pathname);
-              toast.success(`Path ${log.pathname} disalin!`);
+              toast.success(t("observability.path_copied", { path: log.pathname }));
             }
           },
           disabled: !log.pathname,
@@ -223,12 +225,13 @@ export function LogsRowItem({
   onSelect,
   onCopyLog,
 }: LogsRowItemProps) {
+  const { t } = useTranslation();
   const level = getLevel(log);
   const isError = level === "error";
   const isWarn = level === "warning";
 
   return (
-    <UniversalContextMenu groups={buildContextMenuGroups(log, isSelected, onSelect)}>
+    <UniversalContextMenu groups={buildContextMenuGroups(log, isSelected, onSelect, t)}>
       <div
         onClick={onSelect}
         className={`flex items-center px-4 py-1.5 font-mono text-[11px] transition-colors cursor-pointer group ${

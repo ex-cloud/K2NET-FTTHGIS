@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { type TenantDocument, type DocumentStatus, formatFileSize } from "./types";
 import type { EnrichedOrganization } from "../../types";
 import { DocumentContextMenu } from "./DocumentContextMenu";
+import { useTranslation } from "@k2net/i18n";
 
 interface DocumentsTableRowItemProps {
   doc: TenantDocument;
@@ -38,6 +39,7 @@ export function DocumentsTableRowItem({
   onDelete,
   onUpdateStatus,
 }: DocumentsTableRowItemProps) {
+  const { t } = useTranslation();
   return (
     <DocumentContextMenu
       document={doc}
@@ -114,7 +116,7 @@ export function DocumentsTableRowItem({
           <div className="flex items-center justify-end gap-1">
             {/* Quick Verify Action */}
             {doc.status !== "VERIFIED" && (
-              <ActionTooltip label="Setujui Dokumen (Verify)">
+              <ActionTooltip label={t("organizations.doc_action_verify")}>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -128,7 +130,7 @@ export function DocumentsTableRowItem({
 
             {/* Quick Revision Action */}
             {doc.status !== "REVISION_REQUIRED" && doc.status !== "ACTIVE" && (
-              <ActionTooltip label="Minta Revisi">
+              <ActionTooltip label={t("organizations.doc_action_request_revision")}>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -140,7 +142,7 @@ export function DocumentsTableRowItem({
               </ActionTooltip>
             )}
 
-            <ActionTooltip label="Preview Dokumen">
+            <ActionTooltip label={t("organizations.doc_action_preview")}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -150,7 +152,7 @@ export function DocumentsTableRowItem({
                 <Eye className="h-3.5 w-3.5" />
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Download Berkas">
+            <ActionTooltip label={t("organizations.doc_action_download")}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -160,7 +162,7 @@ export function DocumentsTableRowItem({
                 <Download className="h-3.5 w-3.5" />
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Hapus Dokumen">
+            <ActionTooltip label={t("organizations.doc_action_delete")}>
               <Button
                 variant="ghost"
                 size="icon"

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useTeamUsers } from "@/hooks/useTeamUsers";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 
 interface TaskBulkActionBarProps {
   selectedCount: number;
@@ -45,6 +46,7 @@ export function TaskBulkActionBar({
   onBatchUpdateScope,
   onBatchDelete,
 }: TaskBulkActionBarProps) {
+  const { t } = useTranslation();
   const { users: teamUsers } = useTeamUsers();
   const { canAccess } = usePermissions();
   const canManage = canAccess("system.task.manage");
@@ -60,20 +62,20 @@ export function TaskBulkActionBar({
             {selectedCount}
           </span>
           <span className="font-semibold text-foreground whitespace-nowrap">
-            {selectedCount === 1 ? "1 task selected" : `${selectedCount} tasks selected`}
+            {t("tasks.selected_count", { count: selectedCount })}
           </span>
           <button
             type="button"
             onClick={onClearSelection}
             className="p-1 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="Deselect all (Esc)"
+            title={t("tasks.deselect_all")}
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {/* 1. Batch Status Dropdown */}
-        <ActionTooltip label={canManage ? "Ubah status task terpilih" : "Akses Read-Only: Memerlukan izin system.task.manage"}>
+        <ActionTooltip label={canManage ? t("tasks.change_status_tooltip") : t("tasks.read_only_manage_permission")}>
           <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild disabled={!canManage}>
@@ -89,23 +91,23 @@ export function TaskBulkActionBar({
               <DropdownMenuContent align="center" side="top" className="w-44 z-[1000]">
                 <DropdownMenuItem onClick={() => onBatchUpdateStatus("BACKLOG")} className="cursor-pointer">
                   <Minus className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                  <span>Backlog</span>
+                  <span>{t("tasks.status_backlog")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onBatchUpdateStatus("TODO")} className="cursor-pointer">
                   <CircleDot className="mr-2 h-3.5 w-3.5 text-blue-400" />
-                  <span>To Do</span>
+                  <span>{t("tasks.status_todo")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onBatchUpdateStatus("IN_PROGRESS")} className="cursor-pointer">
                   <Clock className="mr-2 h-3.5 w-3.5 text-amber-500" />
-                  <span>In Progress</span>
+                  <span>{t("tasks.status_in_progress")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onBatchUpdateStatus("RESOLVED")} className="cursor-pointer text-primary font-semibold">
                   <CheckCircle2 className="mr-2 h-3.5 w-3.5 text-primary" />
-                  <span>Resolved</span>
+                  <span>{t("tasks.status_resolved")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onBatchUpdateStatus("CLOSED")} className="cursor-pointer text-muted-foreground">
                   <CheckCircle2 className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                  <span>Closed</span>
+                  <span>{t("tasks.status_closed")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -113,7 +115,7 @@ export function TaskBulkActionBar({
         </ActionTooltip>
 
         {/* 2. Batch Priority Dropdown */}
-        <ActionTooltip label={canManage ? "Ubah prioritas task terpilih" : "Akses Read-Only: Memerlukan izin system.task.manage"}>
+        <ActionTooltip label={canManage ? t("tasks.change_priority_tooltip") : t("tasks.read_only_manage_permission")}>
           <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild disabled={!canManage}>
@@ -123,25 +125,25 @@ export function TaskBulkActionBar({
                   className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Flame className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Priority</span>
+                  <span>{t("tasks.priority")}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" side="top" className="w-40 z-[1000]">
                 <DropdownMenuItem onClick={() => onBatchUpdatePriority("URGENT")} className="text-destructive font-semibold cursor-pointer">
                   <AlertCircle className="mr-2 h-3.5 w-3.5 text-destructive" />
-                  <span>Urgent</span>
+                  <span>{t("tasks.priority_urgent")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onBatchUpdatePriority("HIGH")} className="text-amber-500 font-semibold cursor-pointer">
                   <ArrowUp className="mr-2 h-3.5 w-3.5 text-amber-500" />
-                  <span>High</span>
+                  <span>{t("tasks.priority_high")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onBatchUpdatePriority("NORMAL")} className="cursor-pointer">
                   <Minus className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                  <span>Normal</span>
+                  <span>{t("tasks.priority_normal")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onBatchUpdatePriority("LOW")} className="cursor-pointer">
                   <ArrowDown className="mr-2 h-3.5 w-3.5 text-blue-500" />
-                  <span>Low</span>
+                  <span>{t("tasks.priority_low")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -149,7 +151,7 @@ export function TaskBulkActionBar({
         </ActionTooltip>
 
         {/* 3. Batch Assignee Dropdown */}
-        <ActionTooltip label={canManage ? "Tugaskan task terpilih" : "Akses Read-Only: Memerlukan izin system.task.manage"}>
+        <ActionTooltip label={canManage ? t("tasks.assign_tooltip") : t("tasks.read_only_manage_permission")}>
           <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild disabled={!canManage}>
@@ -159,12 +161,12 @@ export function TaskBulkActionBar({
                   className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <User className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Assignee</span>
+                  <span>{t("tasks.assignee")}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" side="top" className="w-56 max-h-60 overflow-y-auto z-[1000]">
                 <DropdownMenuItem onClick={() => onBatchUpdateAssignee(null)} className="text-muted-foreground cursor-pointer">
-                  <span>Unassign</span>
+                  <span>{t("tasks.unassign")}</span>
                 </DropdownMenuItem>
                 {teamUsers.map((u) => (
                   <DropdownMenuItem
@@ -187,7 +189,7 @@ export function TaskBulkActionBar({
         </ActionTooltip>
 
         {/* 4. Batch Scope Dropdown */}
-        <ActionTooltip label={canManage ? "Ubah cakupan/scope task terpilih" : "Akses Read-Only: Memerlukan izin system.task.manage"}>
+        <ActionTooltip label={canManage ? t("tasks.change_scope_tooltip") : t("tasks.read_only_manage_permission")}>
           <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild disabled={!canManage}>
@@ -197,17 +199,17 @@ export function TaskBulkActionBar({
                   className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Shield className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Scope</span>
+                  <span>{t("tasks.col_scope")}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" side="top" className="w-48 z-[1000]">
                 <DropdownMenuItem onClick={() => onBatchUpdateScope("PLATFORM_INTERNAL")} className="cursor-pointer">
                   <Shield className="mr-2 h-3.5 w-3.5 text-blue-400" />
-                  <span>Platform Internal</span>
+                  <span>{t("tasks.platform_internal")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onBatchUpdateScope("TENANT_TO_PLATFORM")} className="cursor-pointer">
                   <Building2 className="mr-2 h-3.5 w-3.5 text-primary" />
-                  <span>B2B Mitra Ticket</span>
+                  <span>{t("tasks.b2b_mitra_tickets")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -215,7 +217,7 @@ export function TaskBulkActionBar({
         </ActionTooltip>
 
         {/* 5. Batch Delete Button */}
-        <ActionTooltip label={canManage ? `Hapus ${selectedCount} task terpilih` : "Akses Read-Only: Memerlukan izin system.task.manage"}>
+        <ActionTooltip label={canManage ? t("tasks.delete_selected_tooltip", { count: selectedCount }) : t("tasks.read_only_manage_permission")}>
           <button
             type="button"
             onClick={onBatchDelete}
@@ -223,7 +225,7 @@ export function TaskBulkActionBar({
             className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 font-medium transition-colors cursor-pointer ml-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete ({selectedCount})</span>
+            <span>{t("common.delete")} ({selectedCount})</span>
           </button>
         </ActionTooltip>
       </div>

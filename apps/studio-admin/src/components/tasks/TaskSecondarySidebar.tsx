@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { type Task } from "@/hooks/useTasksQuery";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
 
+import { useTranslation } from "@k2net/i18n";
+
 interface TaskSecondarySidebarProps {
   tasks: Task[];
   obsidianStatus?: "connected" | "disconnected" | "syncing";
@@ -108,43 +110,46 @@ const SidebarProjectsSection: React.FC<SidebarProjectsSectionProps> = ({
   projectStats,
   onSelectProject,
   onNavigate,
-}) => (
-  <SidebarSection title="Workspace Projects" icon={FolderKanban} defaultOpen={true}>
-    <div className="space-y-1 pt-1">
-      {projectStats.length === 0 ? (
-        <div className="px-2.5 py-3 text-center border border-dashed border-border/60 rounded-lg">
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Belum ada project aktif. Buat issue bertipe Project untuk memulainya.
-          </p>
-        </div>
-      ) : (
-        projectStats.map((proj) => (
-          <button
-            key={proj.name}
-            onClick={() => {
-              if (onSelectProject) onSelectProject(proj.name);
-              onNavigate(`/tasks?scope=PLATFORM_INTERNAL&project=${encodeURIComponent(proj.name)}`);
-            }}
-            className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
-          >
-            <div className="flex items-center gap-2 min-w-0 pr-2">
-              <FolderOpen className="h-3.5 w-3.5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
-              <div className="min-w-0">
-                <p className="font-medium text-foreground truncate">{proj.name}</p>
-                <p className="text-[10px] text-muted-foreground">
-                  {proj.active} active · {proj.progress}% done
-                </p>
+}) => {
+  const { t } = useTranslation();
+  return (
+    <SidebarSection title={t("tasks.workspace_projects")} icon={FolderKanban} defaultOpen={true}>
+      <div className="space-y-1 pt-1">
+        {projectStats.length === 0 ? (
+          <div className="px-2.5 py-3 text-center border border-dashed border-border/60 rounded-lg">
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {t("tasks.no_active_projects")}
+            </p>
+          </div>
+        ) : (
+          projectStats.map((proj) => (
+            <button
+              key={proj.name}
+              onClick={() => {
+                if (onSelectProject) onSelectProject(proj.name);
+                onNavigate(`/tasks?scope=PLATFORM_INTERNAL&project=${encodeURIComponent(proj.name)}`);
+              }}
+              className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <FolderOpen className="h-3.5 w-3.5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground truncate">{proj.name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {proj.active} active · {proj.progress}% done
+                  </p>
+                </div>
               </div>
-            </div>
-            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground group-hover:text-foreground shrink-0">
-              {proj.active}
-            </span>
-          </button>
-        ))
-      )}
-    </div>
-  </SidebarSection>
-);
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground group-hover:text-foreground shrink-0">
+                {proj.active}
+              </span>
+            </button>
+          ))
+        )}
+      </div>
+    </SidebarSection>
+  );
+};
 
 interface SidebarTeamsSectionProps {
   currentScope: string | null;
@@ -158,49 +163,52 @@ const SidebarTeamsSection: React.FC<SidebarTeamsSectionProps> = ({
   tasks,
   b2bCount,
   onNavigate,
-}) => (
-  <SidebarSection title="Teams & Scope" icon={Shield} defaultOpen={true}>
-    <div className="space-y-1 pt-1">
-      <button
-        onClick={() => onNavigate("/tasks?scope=PLATFORM_INTERNAL")}
-        className={cn(
-          "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
-          currentScope === "PLATFORM_INTERNAL"
-            ? "bg-primary/10 text-primary font-semibold"
-            : "hover:bg-muted/50 text-foreground"
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <Shield className="h-3.5 w-3.5 text-primary" />
-          <span>Platform Internal</span>
-        </div>
-        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-          {tasks.filter((t) => t.scope === "PLATFORM_INTERNAL").length}
-        </span>
-      </button>
-
-      <button
-        onClick={() => onNavigate("/tasks?scope=TENANT_TO_PLATFORM")}
-        className={cn(
-          "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
-          currentScope === "TENANT_TO_PLATFORM"
-            ? "bg-orange-500/10 text-orange-500 font-semibold"
-            : "hover:bg-muted/50 text-foreground"
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <Building2 className="h-3.5 w-3.5 text-orange-500" />
-          <span>B2B Mitra Tickets</span>
-        </div>
-        {b2bCount > 0 && (
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-orange-500 text-primary-foreground font-bold animate-pulse">
-            {b2bCount}
+}) => {
+  const { t } = useTranslation();
+  return (
+    <SidebarSection title={t("tasks.teams_scope")} icon={Shield} defaultOpen={true}>
+      <div className="space-y-1 pt-1">
+        <button
+          onClick={() => onNavigate("/tasks?scope=PLATFORM_INTERNAL")}
+          className={cn(
+            "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
+            currentScope === "PLATFORM_INTERNAL"
+              ? "bg-primary/10 text-primary font-semibold"
+              : "hover:bg-muted/50 text-foreground"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <Shield className="h-3.5 w-3.5 text-primary" />
+            <span>{t("tasks.platform_internal")}</span>
+          </div>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            {tasks.filter((t) => t.scope === "PLATFORM_INTERNAL").length}
           </span>
-        )}
-      </button>
-    </div>
-  </SidebarSection>
-);
+        </button>
+
+        <button
+          onClick={() => onNavigate("/tasks?scope=TENANT_TO_PLATFORM")}
+          className={cn(
+            "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
+            currentScope === "TENANT_TO_PLATFORM"
+              ? "bg-orange-500/10 text-orange-500 font-semibold"
+              : "hover:bg-muted/50 text-foreground"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <Building2 className="h-3.5 w-3.5 text-orange-500" />
+            <span>{t("tasks.b2b_mitra_tickets")}</span>
+          </div>
+          {b2bCount > 0 && (
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-orange-500 text-primary-foreground font-bold animate-pulse">
+              {b2bCount}
+            </span>
+          )}
+        </button>
+      </div>
+    </SidebarSection>
+  );
+};
 
 interface ObsidianSyncCardProps {
   obsidianStatus: string;
@@ -211,13 +219,14 @@ const ObsidianSyncCard: React.FC<ObsidianSyncCardProps> = ({
   obsidianStatus,
   lastSyncTime,
 }) => {
+  const { t } = useTranslation();
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleSyncObsidian = () => {
     setIsSyncing(true);
     setTimeout(() => {
       setIsSyncing(false);
-      toast.success("Obsidian Vault sinkronisasi selesai");
+      toast.success(t("tasks.obsidian_sync_success"));
     }, 1500);
   };
 
@@ -226,7 +235,7 @@ const ObsidianSyncCard: React.FC<ObsidianSyncCardProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-purple-400" />
-          <span className="text-xs font-bold text-foreground">Obsidian Vault</span>
+          <span className="text-xs font-bold text-foreground">{t("tasks.obsidian_vault")}</span>
         </div>
         <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full capitalize">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -235,23 +244,23 @@ const ObsidianSyncCard: React.FC<ObsidianSyncCardProps> = ({
       </div>
 
       <p className="text-[11px] text-muted-foreground leading-relaxed">
-        Projek internal disinkronkan secara otomatis ke <code className="text-primary font-mono text-[10px]">K2NET_Engineering_Vault</code>.
+        {t("tasks.obsidian_sync_desc")}
       </p>
       {lastSyncTime && (
-        <p className="text-[10px] text-muted-foreground/60">Last sync: {lastSyncTime}</p>
+        <p className="text-[10px] text-muted-foreground/60">{t("tasks.last_sync")} {lastSyncTime}</p>
       )}
 
       <button
         onClick={handleSyncObsidian}
         disabled={isSyncing}
-        className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg border border-border/80 bg-card hover:bg-muted/50 text-xs font-medium text-foreground transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg border border-border/80 bg-card hover:bg-muted/50 text-xs font-medium text-foreground transition-colors disabled:opacity-50 cursor-pointer"
       >
         {isSyncing ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
         ) : (
           <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
         )}
-        <span>{isSyncing ? "Menyinkronkan..." : "Sync Vault Now"}</span>
+        <span>{isSyncing ? t("tasks.syncing") : t("tasks.sync_vault_now")}</span>
       </button>
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { Card } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { getKnowledgeGraphData, type KnowledgeGraphData } from "@/lib/actions/gateways";
 import { toast } from "sonner";
 import {
@@ -24,6 +25,7 @@ export function AiKnowledgeGraphTab({
   onTestSimulator,
   onOpenExplorer: _onOpenExplorer,
 }: AiKnowledgeGraphTabProps) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -78,11 +80,11 @@ export function AiKnowledgeGraphTab({
       nodesRef.current = simNodes;
       linksRef.current = data.links as SimLink[];
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal memuat graph data");
+      toast.error(err instanceof Error ? err.message : t("ai.failed_load_graph_data"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadGraph();
@@ -187,7 +189,7 @@ export function AiKnowledgeGraphTab({
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d1117]/80 z-20 gap-2">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
               <p className="text-xs text-muted-foreground font-mono">
-                Menghitung matriks kemiripan semantik pgvector...
+                Computing pgvector semantic similarity matrix...
               </p>
             </div>
           )}

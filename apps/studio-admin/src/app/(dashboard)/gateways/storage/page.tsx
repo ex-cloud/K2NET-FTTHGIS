@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getGatewayConfigByKey, updateGatewayConfigByKey, getStorageStats, type StorageStats } from "@/lib/actions/gateways";
 import { Database, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 import { StorageConfigForm } from "@/components/gateways/storage/StorageConfigForm";
 import { StorageWebPOptimizerCard } from "@/components/gateways/storage/StorageWebPOptimizerCard";
@@ -17,6 +18,7 @@ const storageSchema = z.object({
 });
 
 export default function StorageGatewayPage() {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -25,7 +27,7 @@ export default function StorageGatewayPage() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getGatewayConfigByKey("storage");
@@ -45,13 +47,13 @@ export default function StorageGatewayPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Gagal memuat konfigurasi: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(`${t("gateways.config_load_failed")}: ` + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setStatsLoading(true);
       setStatsError(null);
@@ -63,12 +65,12 @@ export default function StorageGatewayPage() {
     } finally {
       setStatsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchConfig();
     fetchStats();
-  }, []);
+  }, [fetchConfig, fetchStats]);
 
   const handleInputChange = (key: string, value: string) => {
     setConfig((prev) => ({
@@ -101,7 +103,7 @@ export default function StorageGatewayPage() {
     });
 
     if (Object.keys(updates).length === 0) {
-      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      toast.info(t("gateways.no_changes_detected"));
       return;
     }
 
@@ -110,9 +112,9 @@ export default function StorageGatewayPage() {
       partialSchema.parse(validationData);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+        toast.error(`${t("gateways.validation_failed")}: ${err.issues[0].message}`);
       } else {
-        toast.error("Terjadi kesalahan validasi.");
+        toast.error(t("gateways.validation_error"));
       }
       return;
     }
@@ -120,11 +122,11 @@ export default function StorageGatewayPage() {
     setSaving(true);
     try {
       const res = await updateGatewayConfigByKey("storage", updates);
-      toast.success(res.message || "Konfigurasi storage berhasil disimpan!");
+      toast.success(res.message || t("gateways.storage.save_success"));
       setTimeout(fetchConfig, 3000);
     } catch (err) {
       console.error(err);
-      toast.error("Gagal menyimpan konfigurasi: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(`${t("gateways.config_save_failed")}: ` + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -140,10 +142,10 @@ export default function StorageGatewayPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                Storage Gateway
+                {t("gateways.storage.title")}
               </h1>
               <p className="text-xs text-muted-foreground">
-                Urus bucket penyimpanan (S3/Cloudflare R2), kunci enkripsi, dan kompresi WebP otomatis untuk menghemat ruang penyimpanan.
+                {t("gateways.storage.subtitle")}
               </p>
             </div>
           </div>
@@ -151,7 +153,7 @@ export default function StorageGatewayPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <p className="text-xs text-muted-foreground">Memuat konfigurasi storage gateway...</p>
+              <p className="text-xs text-muted-foreground">{t("gateways.storage.loading")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

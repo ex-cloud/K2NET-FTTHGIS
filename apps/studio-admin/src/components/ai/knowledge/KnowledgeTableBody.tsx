@@ -1,6 +1,7 @@
 import React from "react";
 import { flexRender, type Table } from "@tanstack/react-table";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import type { AiDocumentItem } from "../types";
 import { AiDocumentContextMenu } from "../ai-document-context-menu";
 import { KnowledgeTableEmptyState } from "./KnowledgeTableEmptyState";
@@ -42,6 +43,8 @@ export function KnowledgeTableBody({
   onGoToUpload,
   onSyncServerDocs,
 }: KnowledgeTableBodyProps) {
+  const { t } = useTranslation();
+
   if (docsLoading && documents.length === 0) {
     return (
       <div className="divide-y divide-border/40">
@@ -132,12 +135,12 @@ export function KnowledgeTableBody({
         {loadingMore && (
           <div className="flex items-center gap-2 text-xs text-foreground/75 dark:text-muted-foreground py-2 font-mono">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-            <span>Memuat dokumen berikutnya...</span>
+            <span>{t("ai.loading_next_docs")}</span>
           </div>
         )}
         {!hasMore && documents.length > 0 && !docsLoading && (
           <div className="text-[10px] text-foreground/75 dark:text-muted-foreground font-mono py-1">
-            — Menampilkan seluruh {documents.length} dokumen terindeks —
+            {t("ai.showing_all_indexed_docs", { count: documents.length })}
           </div>
         )}
       </div>

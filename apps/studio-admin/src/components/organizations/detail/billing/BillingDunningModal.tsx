@@ -13,6 +13,7 @@ import {
   Label,
 } from "@k2net/ui";
 import { ShieldAlert, Check, Loader2 } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface BillingDunningModalProps {
   isOpen: boolean;
@@ -25,13 +26,6 @@ interface BillingDunningModalProps {
   onExecuteDunning: () => void;
 }
 
-const DUNNING_LEVELS = [
-  { level: 0, title: "Level 0: Normal / Lunas", desc: "Status ACTIVE penuh tanpa pembatasan." },
-  { level: 1, title: "Level 1: Peringatan H+1", desc: "Notifikasi WA & email peringatan jatuh tempo dikirim ke PIC." },
-  { level: 2, title: "Level 2: Peringatan Keras H+3", desc: "Fitur add-on non-esensial (AI Copilot, SMS blast) dinonaktifkan." },
-  { level: 3, title: "Level 3: Soft-Lock H+7", desc: "Mode Read-Only GIS. Pembuatan node dikunci, hanya Billing yang aktif." },
-];
-
 export function BillingDunningModal({
   isOpen,
   onOpenChange,
@@ -42,24 +36,33 @@ export function BillingDunningModal({
   isExecuting,
   onExecuteDunning,
 }: BillingDunningModalProps) {
+  const { t } = useTranslation();
+
+  const dunningLevels = [
+    { level: 0, title: t("organizations.dunning_level_0_title"), desc: t("organizations.dunning_level_0_desc") },
+    { level: 1, title: t("organizations.dunning_level_1_title"), desc: t("organizations.dunning_level_1_desc") },
+    { level: 2, title: t("organizations.dunning_level_2_title"), desc: t("organizations.dunning_level_2_desc") },
+    { level: 3, title: t("organizations.dunning_level_3_title"), desc: t("organizations.dunning_level_3_desc") },
+  ];
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="bg-popover/95 backdrop-blur-xl border-border sm:max-w-[480px] p-0 overflow-hidden shadow-lg text-foreground rounded-2xl">
         <DialogHeader className="p-5 pb-2 text-foreground">
           <DialogTitle className="text-base font-bold flex items-center gap-2 text-amber-500">
             <ShieldAlert className="w-5 h-5 text-amber-500" />
-            <span>Kontrol Eskalasi Dunning & Gagal Bayar</span>
+            <span>{t("organizations.dunning_title")}</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Atur status dunning untuk tagihan yang telah melewati batas jatuh tempo.
+            {t("organizations.dunning_desc")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="p-5 space-y-4 text-xs">
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Tingkat Eskalasi Dunning</Label>
+            <Label className="text-xs font-semibold text-foreground">{t("organizations.dunning_level_label")}</Label>
             <div className="space-y-2">
-              {DUNNING_LEVELS.map((item) => (
+              {dunningLevels.map((item) => (
                 <div
                   key={item.level}
                   onClick={() => setSelectedDunningLevel(item.level)}
@@ -80,9 +83,9 @@ export function BillingDunningModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Catatan Petugas Kolektibilitas</Label>
+            <Label className="text-xs font-semibold text-foreground">{t("organizations.dunning_notes_label")}</Label>
             <Input
-              placeholder="Contoh: Janji bayar via transfer tanggal 05 September"
+              placeholder={t("organizations.dunning_notes_placeholder")}
               value={dunningNotes}
               onChange={(e) => setDunningNotes(e.target.value)}
               className="h-8 text-xs bg-card border-border text-foreground"
@@ -92,7 +95,7 @@ export function BillingDunningModal({
 
         <DialogFooter className="p-4 border-t border-border bg-muted/20 flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="text-xs cursor-pointer">
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
@@ -100,7 +103,7 @@ export function BillingDunningModal({
             disabled={isExecuting}
             className="text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 cursor-pointer"
           >
-            {isExecuting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Simpan Status Dunning"}
+            {isExecuting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t("organizations.dunning_save_btn")}
           </Button>
         </DialogFooter>
       </DialogContent>

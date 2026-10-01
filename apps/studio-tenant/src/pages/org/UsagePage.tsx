@@ -15,8 +15,10 @@ import {
 } from "@k2net/ui";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 
 export function UsagePage() {
+  const { t, formatNumber } = useTranslation();
   const {
     summary,
     planName,
@@ -40,59 +42,59 @@ export function UsagePage() {
 
   const usageMetrics = [
     {
-      title: "Proyek FTTH Aktif",
-      consumed: `${usedProjects} Proyek`,
-      limit: `${maxProjects} Maksimal`,
+      title: t("nav.projects"),
+      consumed: `${formatNumber(usedProjects)} ${t("nav.projects")}`,
+      limit: `${formatNumber(maxProjects)} ${t("common.all")}`,
       percent: projectPercentage,
-      unit: "proyek aktif",
+      unit: t("nav.projects"),
       icon: MapPin,
       status: projectPercentage > 90 ? "KRITIS" : "NORMAL",
     },
     {
-      title: "Kapasitas Perangkat ODP",
-      consumed: `${usedOdps.toLocaleString()} ODP`,
-      limit: `${maxOdps.toLocaleString()} Maksimal`,
+      title: t("inventory.odp_title"),
+      consumed: `${formatNumber(usedOdps)} ODP`,
+      limit: `${formatNumber(maxOdps)} Max`,
       percent: odpPercentage,
-      unit: "perangkat terpasang",
+      unit: "ODP",
       icon: Cpu,
       status: odpPercentage > 90 ? "KRITIS" : "NORMAL",
     },
     {
-      title: "Penyimpanan Asset S3/MinIO",
+      title: t("gateways.gateway_storage_title"),
       consumed: `${usedStorageGb.toFixed(1)} GB`,
       limit: `${maxStorageGb} GB`,
       percent: storagePercentage,
-      unit: "GB Terpakai",
+      unit: "GB",
       icon: HardDrive,
       status: storagePercentage > 90 ? "KRITIS" : "NORMAL",
     },
     {
-      title: "API Gateway Rate Limit",
-      consumed: `${apiRateUsed.toLocaleString()} Req`,
-      limit: `${apiRateMax.toLocaleString()} /jam`,
+      title: t("gateways.overview_title"),
+      consumed: `${formatNumber(apiRateUsed)} Req`,
+      limit: `${formatNumber(apiRateMax)} /hr`,
       percent: apiRatePercent,
-      unit: "requests per jam",
+      unit: "req/hr",
       icon: Zap,
       status: apiRatePercent > 90 ? "KRITIS" : "NORMAL",
     },
   ];
 
   const handleExport = () => {
-    toast.success("Laporan penggunaan sumber daya sedang diekspor...");
+    toast.success(t("common.export"));
   };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
-        title="Konsumsi Sumber Daya Organisasi"
+        title={t("nav.usage_quota")}
         breadcrumbs={[
-          { label: "Organisasi", href: "/projects" },
-          { label: "Penggunaan & Kuota" },
+          { label: t("nav.organizations"), href: "/projects" },
+          { label: t("nav.usage_quota") },
         ]}
         actions={
           <Button variant="outline" size="sm" onClick={handleExport} className="h-8 px-2.5 text-xs gap-1.5 border-border/80">
             <Download className="h-3.5 w-3.5" />
-            Export Laporan Pemakaian
+            {t("common.export")}
           </Button>
         }
       />
@@ -126,11 +128,11 @@ export function UsagePage() {
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="font-bold text-foreground">{m.consumed}</span>
-                    <span className="text-muted-foreground">Batas: {m.limit}</span>
+                    <span className="text-muted-foreground">{m.limit}</span>
                   </div>
                   <Progress value={m.percent} className="h-2" />
                   <span className="text-[10px] text-muted-foreground block text-right font-mono">
-                    {m.percent}% kuota terpakai
+                    {m.percent}%
                   </span>
                 </div>
               </Card>
@@ -143,15 +145,15 @@ export function UsagePage() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Ringkasan Siklus Berjalan ({planName})
+                {planName}
               </h3>
               <p className="text-[11px] text-muted-foreground">
-                Masa aktif: {trialDaysRemaining > 0 ? `${trialDaysRemaining} hari tersisa` : "Aktif permanen"} • Status: {summary?.status || "ACTIVE"}
+                {trialDaysRemaining > 0 ? `${trialDaysRemaining} ${t("billing.days_remaining")}` : t("billing.active")} • Status: {summary?.status || "ACTIVE"}
               </p>
             </div>
             {isBoosterActive && (
               <span className="text-xs font-mono font-bold text-amber-500">
-                Booster Aktif ({boosterDaysRemaining} Hari)
+                Booster ({boosterDaysRemaining})
               </span>
             )}
           </div>
@@ -159,7 +161,7 @@ export function UsagePage() {
           <div className="rounded-lg bg-muted/30 p-3 border border-border/40 text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
             <TrendingUp className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <span>
-              Kapasitas infrastruktur terpantau stabil. Pemakaian database & kuota perangkat tercatat secara real-time dari backend core.
+              {t("observability.throughput_chart_desc")}
             </span>
           </div>
         </Card>
@@ -167,3 +169,4 @@ export function UsagePage() {
     </div>
   );
 }
+

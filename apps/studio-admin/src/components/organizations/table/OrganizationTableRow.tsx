@@ -2,6 +2,7 @@ import * as React from "react";
 import { useRouter } from "@/lib/navigation-compat";
 import { TableRow, TableCell, Checkbox, Badge, ActionTooltip } from "@k2net/ui";
 import { ExternalLink, Globe } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import { getTenantUrl } from "@/lib/domain";
 import type { EnrichedOrganization, OrganizationStatus } from "../types";
@@ -52,6 +53,7 @@ export function OrganizationTableRow({
   onDelete,
 }: OrganizationTableRowProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const oltPct = org.maxOlts > 0 ? Math.round((org.usedOlts / org.maxOlts) * 100) : 0;
 
   return (
@@ -139,7 +141,7 @@ export function OrganizationTableRow({
               </button>
             </ActionTooltip>
           ) : (
-            <span className="text-[11px] font-mono text-muted-foreground/50">— Inactive</span>
+            <span className="text-[11px] font-mono text-muted-foreground/50">— {t("organizations.inactive")}</span>
           )}
         </TableCell>
 
@@ -183,7 +185,7 @@ export function OrganizationTableRow({
               </div>
             </div>
           ) : (
-            <span className="text-muted-foreground/60 font-mono text-[11px]">— Default Subdomain</span>
+            <span className="text-muted-foreground/60 font-mono text-[11px]">— {t("organizations.default_subdomain")}</span>
           )}
         </TableCell>
 

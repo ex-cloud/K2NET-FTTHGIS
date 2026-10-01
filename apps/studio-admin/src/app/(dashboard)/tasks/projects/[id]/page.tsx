@@ -14,8 +14,10 @@ import {
   type ProjectTab,
 } from "@/components/tasks/projects/ProjectDetailTabsBar";
 import { useProjectDetail } from "@/components/tasks/projects/use-project-detail";
+import { useTranslation } from "@k2net/i18n";
 
 export default function ProjectHubDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: session } = useSession();
@@ -44,12 +46,12 @@ export default function ProjectHubDetailPage() {
   if (!projectTask) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        <p>Project tidak ditemukan.</p>
+        <p>{t("tasks.project_not_found")}</p>
         <button
           onClick={() => router.push("/tasks/projects")}
           className="mt-3 text-xs text-primary underline cursor-pointer"
         >
-          Kembali ke All Projects
+          {t("tasks.back_to_all_projects")}
         </button>
       </div>
     );

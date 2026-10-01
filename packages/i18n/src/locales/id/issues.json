@@ -1,0 +1,21 @@
+{
+  "tickets_title": "Manajemen Trouble Ticket",
+  "tickets_subtitle": "Pelaporan gangguan serat optik, pemadaman klaster, penugasan teknisi, dan pemantauan SLA.",
+  "create_ticket": "Buat Tiket Gangguan",
+  "ticket_number": "Nomor Tiket",
+  "issue_type": "Kategori Gangguan",
+  "priority": "Prioritas",
+  "assigned_technician": "Teknisi Ditugaskan",
+  "sla_remaining": "Sisa Waktu SLA",
+  "resolution_notes": "Catatan Penyelesaian",
+  "status_open": "Terbuka",
+  "status_in_progress": "Sedang Dikerjakan",
+  "status_resolved": "Terselesaikan",
+  "status_closed": "Ditutup",
+  "dispatcher_title": "Pusat Dispatcher & Peta Teknisi",
+  "dispatcher_subtitle": "Alokasi rute perbaikan lapangan dan pelacakan posisi teknisi waktu-nyata.",
+  "unassigned_tickets": "Tiket Belum Ditugaskan",
+  "active_technicians": "Teknisi Lapangan Aktif",
+  "assign_route": "Tugaskan Rute Perbaikan",
+  "eta_arrival": "Estimasi Tiba (ETA)"
+}

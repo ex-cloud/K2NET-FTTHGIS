@@ -1,5 +1,6 @@
 import { Button } from "@k2net/ui";
 import { CheckCircle2, ShieldCheck, Download, ArrowRight } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface BackupCompletedPhaseProps {
   downloadFileName?: string;
@@ -16,6 +17,7 @@ export function BackupCompletedPhase({
   onDownloadFile,
   onClose,
 }: BackupCompletedPhaseProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4 pt-2">
       <div className="rounded-xl border border-primary/40 bg-primary/5 p-4 space-y-3">
@@ -25,22 +27,22 @@ export function BackupCompletedPhase({
           </div>
           <div>
             <h4 className="text-xs font-bold text-foreground">
-              Snapshot Berhasil Dibuat &amp; Terdaftar di Database!
+              {t("organizations.backup_success_title")}
             </h4>
             <p className="text-[11px] text-muted-foreground">
-              Data telah tersimpan di katalog riwayat dan siap digunakan untuk recovery kapan saja.
+              {t("organizations.backup_success_desc")}
             </p>
           </div>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-3 font-mono text-xs space-y-1.5">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span>Nama Berkas:</span>
+            <span>{t("organizations.backup_file_name")}</span>
             <span className="font-bold text-foreground truncate max-w-xs">{downloadFileName}</span>
           </div>
           {fileSizeBytes > 0 && (
             <div className="flex items-center justify-between text-muted-foreground">
-              <span>Ukuran Berkas:</span>
+              <span>{t("organizations.backup_file_size")}</span>
               <span className="text-foreground font-semibold">{(fileSizeBytes / 1024).toFixed(1)} KB</span>
             </div>
           )}
@@ -57,7 +59,7 @@ export function BackupCompletedPhase({
       <div className="flex items-center justify-between pt-2 border-t border-border/60">
         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
           <ShieldCheck className="size-3.5 text-primary" />
-          Tersedia di Tabel Riwayat
+          {t("organizations.backup_available_in_table")}
         </span>
         <div className="flex items-center gap-2">
           {onDownloadFile && (
@@ -68,7 +70,7 @@ export function BackupCompletedPhase({
               className="cursor-pointer gap-1.5"
             >
               <Download className="size-3.5 text-primary" />
-              <span>Unduh Berkas (.json)</span>
+              <span>{t("organizations.backup_download_file_btn")}</span>
             </Button>
           )}
           <Button
@@ -76,7 +78,7 @@ export function BackupCompletedPhase({
             onClick={onClose}
             className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer gap-1"
           >
-            <span>Selesai &amp; Lihat Riwayat</span>
+            <span>{t("organizations.backup_done_view_history")}</span>
             <ArrowRight className="size-3.5" />
           </Button>
         </div>

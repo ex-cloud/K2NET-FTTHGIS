@@ -1,10 +1,8 @@
 import * as React from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Tooltip,
-  TooltipContent,
+  ActionTooltip,
   TooltipProvider,
-  TooltipTrigger,
   PrimarySidebarShell,
   useSidebarMode,
   cn,
@@ -52,6 +50,7 @@ export function TenantProjectSidebar({
     const Icon = item.icon;
     const isActive = checkIsActive(item);
     const itemTitle = item.translationKey ? t(item.translationKey) : item.title;
+    const tooltipLabel = t("nav.go_to_item", { name: itemTitle });
 
     const button = (
       <div
@@ -88,18 +87,17 @@ export function TenantProjectSidebar({
       </Link>
     );
 
-    if (!isExpanded) {
-      return (
-        <Tooltip key={item.id}>
-          <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
-          <TooltipContent side="right" className="text-xs">
-            {itemTitle}
-          </TooltipContent>
-        </Tooltip>
-      );
-    }
-
-    return <React.Fragment key={item.id}>{wrapped}</React.Fragment>;
+    return (
+      <ActionTooltip
+        key={item.id}
+        label={tooltipLabel}
+        shortcut={item.shortcut}
+        side="right"
+        sideOffset={12}
+      >
+        {wrapped}
+      </ActionTooltip>
+    );
   };
 
   return (
@@ -112,25 +110,32 @@ export function TenantProjectSidebar({
         <TooltipProvider delayDuration={0}>
           {/* Top Back to Org Level Button */}
           <div className="px-2 mb-2 pb-2 border-b border-border/80">
-            <Link to="/projects">
-              <div
-                className={cn(
-                  "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium select-none"
-                )}
-              >
-                <div className="relative flex items-center justify-center shrink-0">
-                  <ArrowLeft className="h-4 w-4" />
-                </div>
-                <span
+            <ActionTooltip
+              label={t("nav.go_to_item", { name: t("nav.all_projects") })}
+              shortcut="G then P"
+              side="right"
+              sideOffset={12}
+            >
+              <Link to="/projects">
+                <div
                   className={cn(
-                    "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
-                    isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
+                    "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium select-none"
                   )}
                 >
-                  {t("nav.all_projects")}
-                </span>
-              </div>
-            </Link>
+                  <div className="relative flex items-center justify-center shrink-0">
+                    <ArrowLeft className="h-4 w-4" />
+                  </div>
+                  <span
+                    className={cn(
+                      "text-sm whitespace-nowrap transition-all duration-300 flex-1 truncate",
+                      isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
+                    )}
+                  >
+                    {t("nav.all_projects")}
+                  </span>
+                </div>
+              </Link>
+            </ActionTooltip>
           </div>
 
           {/* Primary Project Navigation Items */}

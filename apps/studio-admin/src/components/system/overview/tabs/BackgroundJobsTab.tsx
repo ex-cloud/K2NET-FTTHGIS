@@ -15,6 +15,7 @@ import { useOverviewTableControls, type FilterPillOption } from "../use-overview
 import { OverviewTabToolbar } from "../OverviewTabToolbar";
 import { OverviewSortableHeader } from "../OverviewSortableHeader";
 import { BackgroundJobContextMenu } from "../OverviewContextMenu";
+import { useTranslation } from "@k2net/i18n";
 
 interface BackgroundJobsTabProps {
   items: BackgroundJobItem[];
@@ -22,16 +23,16 @@ interface BackgroundJobsTabProps {
 }
 
 function getJobIcon(jobType: string) {
-  const t = (jobType ?? "").toLowerCase();
-  if (t.includes("martin") || t.includes("tile") || t.includes("mvt"))
+  const lowerType = (jobType ?? "").toLowerCase();
+  if (lowerType.includes("martin") || lowerType.includes("tile") || lowerType.includes("mvt"))
     return { emoji: "🔄", Icon: RefreshCw };
-  if (t.includes("postgis") || t.includes("spatial") || t.includes("topology"))
+  if (lowerType.includes("postgis") || lowerType.includes("spatial") || lowerType.includes("topology"))
     return { emoji: "🗄️", Icon: Database };
-  if (t.includes("geojson") || t.includes("odp") || t.includes("import"))
+  if (lowerType.includes("geojson") || lowerType.includes("odp") || lowerType.includes("import"))
     return { emoji: "📦", Icon: Database };
-  if (t.includes("keycloak") || t.includes("iam") || t.includes("realm"))
+  if (lowerType.includes("keycloak") || lowerType.includes("iam") || lowerType.includes("realm"))
     return { emoji: "🔐", Icon: Shield };
-  if (t.includes("backup") || t.includes("snapshot") || t.includes("db"))
+  if (lowerType.includes("backup") || lowerType.includes("snapshot") || lowerType.includes("db"))
     return { emoji: "💾", Icon: Database };
   return { emoji: "⚙️", Icon: Clock };
 }
@@ -68,6 +69,7 @@ function getJobStatusBadge(status: string) {
 
 export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Dynamic filter pills
   const filterOptions = useMemo<FilterPillOption[]>(() => {
@@ -76,12 +78,12 @@ export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
     const failedCount = items.filter((j) => (j.status ?? "").toUpperCase() === "FAILED" || (j.status ?? "").toUpperCase() === "ERROR").length;
 
     return [
-      { id: "ALL", label: "Semua", count: items.length },
-      { id: "RUNNING", label: "Running", count: runningCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
-      { id: "COMPLETED", label: "Completed", count: completedCount, badgeVariant: "success", dotColor: "bg-primary" },
-      { id: "FAILED", label: "Failed", count: failedCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
+      { id: "ALL", label: t("observability.filter_all"), count: items.length },
+      { id: "RUNNING", label: t("observability.filter_running"), count: runningCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
+      { id: "COMPLETED", label: t("observability.filter_completed"), count: completedCount, badgeVariant: "success", dotColor: "bg-primary" },
+      { id: "FAILED", label: t("observability.filter_failed"), count: failedCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
     ];
-  }, [items]);
+  }, [items, t]);
 
   const {
     searchQuery,
@@ -163,7 +165,7 @@ export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
       <OverviewTabToolbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Cari tipe job, target worker, ID job..."
+        searchPlaceholder={t("observability.search_jobs_placeholder")}
         filterOptions={filterOptions}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
@@ -181,7 +183,7 @@ export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
               <tr className="divide-x divide-border/30">
                 <th className="py-2.5 px-3.5 min-w-[220px]">
                   <OverviewSortableHeader
-                    title="Tipe Background Job"
+                    title={t("observability.col_job_name")}
                     field="jobType"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -190,7 +192,7 @@ export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[170px]">
                   <OverviewSortableHeader
-                    title="Target Engine / Platform"
+                    title={t("observability.col_target_engine")}
                     field="targetOrg"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -199,7 +201,7 @@ export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 w-36">
                   <OverviewSortableHeader
-                    title="Jadwal / Mulai"
+                    title={t("observability.col_time")}
                     field="startedAt"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -208,7 +210,7 @@ export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 w-28 text-center">
                   <OverviewSortableHeader
-                    title="Status"
+                    title={t("common.status")}
                     field="status"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -227,14 +229,12 @@ export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <FolderKanban className="size-8 text-muted-foreground/40" />
                       <p className="text-sm font-semibold text-foreground">
-                        {activeFilter !== "ALL"
-                          ? `Tidak ada job dengan status ${activeFilter}`
-                          : "Tidak ada background job aktif"}
+                        {t("observability.no_jobs_found")}
                       </p>
                       <p className="text-xs text-muted-foreground max-w-sm">
                         {searchQuery
-                          ? `Tidak ada job yang cocok dengan "${searchQuery}".`
-                          : "Semua scheduler GIS provisioning & maintenance idle."}
+                          ? t("observability.no_jobs_match_query", { query: searchQuery })
+                          : t("observability.no_jobs_empty_state")}
                       </p>
                       {(searchQuery || activeFilter !== "ALL") && (
                         <button
@@ -243,7 +243,7 @@ export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
                           className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all cursor-pointer"
                         >
                           <RotateCcw className="size-3" />
-                          <span>Reset Filter</span>
+                          <span>{t("observability.reset_filter")}</span>
                         </button>
                       )}
                     </div>
@@ -316,7 +316,7 @@ export function BackgroundJobsTab({ items, loading }: BackgroundJobsTabProps) {
             {hasMore && (
               <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground font-mono">
                 <Loader2 className="size-3.5 animate-spin text-primary" />
-                <span>Memuat job berikutnya ({visibleItems.length} / {totalFilteredCount})...</span>
+                <span>{t("observability.loading_next_jobs", { current: visibleItems.length, total: totalFilteredCount })}</span>
               </div>
             )}
           </div>

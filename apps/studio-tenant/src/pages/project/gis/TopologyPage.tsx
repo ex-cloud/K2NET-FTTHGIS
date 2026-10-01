@@ -11,8 +11,10 @@ import {
 import { Button, Badge, PageHeader } from "@k2net/ui";
 import { maplibregl, MAP_COLORS, calculateOpticalAttenuation } from "@k2net/map";
 import { useMapStore } from "../../../store/map-store";
+import { useTranslation } from "@k2net/i18n";
 
 export function TopologyPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
 
@@ -79,11 +81,11 @@ export function TopologyPage() {
       {/* Page Header */}
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: "GIS Infrastructure", href: `/project/${projectId}/infrastructure/topology` },
-          { label: "Topologi Peta" },
+          { label: "Topology" },
         ]}
-        title="Topologi Jaringan Spasial GIS"
+        title={t("gis.map_title")}
         badge={
           <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px] font-medium">
             MARTIN MVT LIVE
@@ -98,11 +100,11 @@ export function TopologyPage() {
               className="h-8 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer rounded-md"
             >
               <Calculator className="h-3.5 w-3.5 text-primary" />
-              <span>Simulasi Redaman</span>
+              <span>{t("inventory.attenuation")}</span>
             </Button>
             <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
               <MapPin className="h-3.5 w-3.5" />
-              <span>+ Pasang Aset Baru</span>
+              <span>{t("common.add")}</span>
             </Button>
           </div>
         }
@@ -117,7 +119,7 @@ export function TopologyPage() {
           <div className="flex items-center justify-between border-b border-border/70 pb-2">
             <div className="flex items-center gap-2">
               <Layers className="h-4 w-4 text-primary" />
-              <span className="text-xs font-bold text-foreground">Layer Spasial GIS</span>
+              <span className="text-xs font-bold text-foreground">{t("gis.layers")}</span>
             </div>
             <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
               VECTOR
@@ -131,7 +133,7 @@ export function TopologyPage() {
             >
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: MAP_COLORS.oltPop }} />
-                <span className="text-foreground font-medium">OLT Core Devices</span>
+                <span className="text-foreground font-medium">{t("gis.layer_olts")}</span>
               </div>
               {layerVisibility.OLT ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
             </div>
@@ -142,7 +144,7 @@ export function TopologyPage() {
             >
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: MAP_COLORS.odcClosure }} />
-                <span className="text-foreground font-medium">ODC Cabinets</span>
+                <span className="text-foreground font-medium">{t("gis.layer_odcs")}</span>
               </div>
               {layerVisibility.ODC ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
             </div>
@@ -153,7 +155,7 @@ export function TopologyPage() {
             >
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: MAP_COLORS.odpFatBox }} />
-                <span className="text-foreground font-medium">ODP FAT Boxes</span>
+                <span className="text-foreground font-medium">{t("gis.layer_odps")}</span>
               </div>
               {layerVisibility.ODP ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
             </div>
@@ -164,7 +166,7 @@ export function TopologyPage() {
             >
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: MAP_COLORS.backboneCable }} />
-                <span className="text-foreground font-medium">Kabel Fiber Optik</span>
+                <span className="text-foreground font-medium">{t("gis.layer_cables")}</span>
               </div>
               {layerVisibility.CABLE ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
             </div>
@@ -175,7 +177,7 @@ export function TopologyPage() {
             >
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
-                <span className="text-foreground font-medium">Pelanggan / Homepass</span>
+                <span className="text-foreground font-medium">{t("inventory.customer_title")}</span>
               </div>
               {layerVisibility.CUSTOMER ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
             </div>
@@ -188,7 +190,7 @@ export function TopologyPage() {
             <div className="flex items-center justify-between border-b border-border/70 pb-2">
               <span className="font-bold text-foreground flex items-center gap-1.5">
                 <Calculator className="h-4 w-4 text-primary" />
-                Kalkulator Redaman Optik
+                {t("inventory.attenuation")}
               </span>
               <button
                 onClick={() => setShowSimModal(false)}
@@ -200,7 +202,7 @@ export function TopologyPage() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground font-medium">Panjang Fiber (km):</span>
+                <span className="text-muted-foreground font-medium">{t("inventory.length_meters")}:</span>
                 <input
                   type="number"
                   step="0.5"
@@ -220,7 +222,7 @@ export function TopologyPage() {
                 <span className="text-foreground font-bold font-mono">{attenuationResult.splitterLossDb} dB</span>
               </div>
               <div className="border-t border-border pt-2 flex justify-between items-center">
-                <span className="font-bold text-foreground">Total Estimasi Loss:</span>
+                <span className="font-bold text-foreground">Total Loss:</span>
                 <span
                   className={`text-sm font-bold font-mono ${
                     attenuationResult.isWithinStandard ? "text-primary" : "text-destructive"
@@ -249,3 +251,4 @@ export function TopologyPage() {
     </div>
   );
 }
+

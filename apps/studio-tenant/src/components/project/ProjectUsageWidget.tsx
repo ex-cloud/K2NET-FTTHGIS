@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import { Button, Card, cn } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type Project } from "../../hooks/useProjects";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 
@@ -48,6 +49,7 @@ function CircularMeter({ percent }: { percent: number }) {
 }
 
 export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
+  const { t } = useTranslation();
   const {
     tier,
     planName,
@@ -101,27 +103,27 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
 
   const usageItems = [
     {
-      label: "Proyek FTTH Aktif",
+      label: t("gis.active_ftth_projects"),
       value: `${projects.length} / ${maxProjects}`,
       percent: projectPercent,
     },
     {
-      label: "Total Pelanggan Terpasang",
+      label: t("gis.total_customers"),
       value: `${totalSubscribers.toLocaleString()} / ${subscriberQuota.toLocaleString()}`,
       percent: subscriberPercent,
     },
     {
-      label: "Bentang Kabel Fiber",
+      label: t("gis.fiber_cable_span"),
       value: `${totalCableKm.toFixed(1)} / ${cableQuotaKm} Km`,
       percent: cablePercent,
     },
     {
-      label: "Perangkat ODC & ODP",
+      label: t("gis.odc_odp_devices"),
       value: `${totalOdc} ODC / ${totalOdp} ODP`,
       percent: odpPercent,
     },
     {
-      label: "Kapasitas Storage S3",
+      label: t("gis.s3_storage"),
       value: `${usedStorageGb.toFixed(1)} / ${maxStorageGb} GB`,
       percent: storagePercentage,
     },
@@ -129,21 +131,21 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
 
   const planDisplayTitle =
     tier === "enterprise"
-      ? "Enterprise Core Plan"
+      ? t("billing.plan_enterprise_title")
       : tier === "pro"
-      ? "Professional ISP Plan"
+      ? t("billing.plan_pro_title")
       : tier === "starter"
-      ? "Starter ISP Plan"
-      : "Starter 14-Day Trial Plan";
+      ? t("billing.plan_starter_title")
+      : t("billing.plan_trial_title");
 
   const upgradeCtaText =
     tier === "free"
-      ? "Upgrade Paket"
+      ? t("billing.upgrade_plan")
       : tier === "starter"
-      ? "Upgrade ke Pro"
+      ? t("billing.upgrade_to_pro")
       : tier === "pro"
-      ? "Upgrade Enterprise"
-      : "Kelola Kuota";
+      ? t("billing.upgrade_to_enterprise")
+      : t("billing.manage_quota");
 
   return (
     <Card
@@ -158,12 +160,12 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
               <h3 className="text-sm font-bold text-foreground">{planDisplayTitle}</h3>
               {isBoosterActive && (
                 <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  Booster ({boosterDaysRemaining}h)
+                  {t("billing.booster_badge", { days: boosterDaysRemaining })}
                 </span>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Pemakaian kuota siklus berjalan ({planName})
+              {t("billing.cycle_quota_usage", { plan: planName })}
             </p>
           </div>
           <Button

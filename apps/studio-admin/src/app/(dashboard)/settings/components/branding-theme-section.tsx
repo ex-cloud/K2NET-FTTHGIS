@@ -3,6 +3,7 @@ import { Badge, Input } from "@k2net/ui";
 import { ShieldCheck } from "lucide-react";
 import { SettingsSection } from "./settings-section";
 import { SettingsFormRow } from "./settings-form-row";
+import { useTranslation } from "@k2net/i18n";
 
 interface BrandingThemeSectionProps {
   brandAccentColor: string;
@@ -17,14 +18,16 @@ export function BrandingThemeSection({
   logoUrl,
   appName,
 }: BrandingThemeSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <SettingsSection
-      title="Theme Accent & Live Preview"
-      description="Warna aksen tema utama dan pratinjau langsung tampilan header portal."
+      title={t("settings.branding.theme_accent_title")}
+      description={t("settings.branding.theme_accent_desc")}
     >
       <SettingsFormRow
-        label="Warna Aksen Branding (Hex Code)"
-        description="Warna primer yang digunakan untuk button, badge, dan highlight pada portal pengguna."
+        label={t("settings.branding.accent_color_label")}
+        description={t("settings.branding.accent_color_desc")}
       >
         <div className="flex items-center gap-2">
           <input
@@ -43,8 +46,8 @@ export function BrandingThemeSection({
       </SettingsFormRow>
 
       <SettingsFormRow
-        label="Live Branding Preview"
-        description="Simulasi pratinjau tampilan header portal pengguna secara real-time."
+        label={t("settings.branding.live_preview_label")}
+        description={t("settings.branding.live_preview_desc")}
         divider={false}
       >
         <div className="p-4 rounded-xl border border-border bg-card/80 flex items-center justify-between w-full max-w-sm shadow-md">

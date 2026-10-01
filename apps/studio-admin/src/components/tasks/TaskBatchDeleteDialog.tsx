@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import {
   Dialog,
@@ -10,6 +8,7 @@ import {
   DialogFooter,
 } from "@k2net/ui";
 import { Trash2, Loader2 } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface TaskBatchDeleteDialogProps {
   open: boolean;
@@ -26,6 +25,8 @@ export function TaskBatchDeleteDialog({
   onConfirmDelete,
   loading = false,
 }: TaskBatchDeleteDialogProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-lg p-6">
@@ -35,10 +36,10 @@ export function TaskBatchDeleteDialog({
           </div>
           <div>
             <DialogTitle className="text-base font-bold text-foreground">
-              Hapus {selectedCount} Tugas Terpilih?
+              {t("tasks.batch_delete_title", { count: selectedCount })}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-              Tindakan ini permanen. Seluruh data {selectedCount} tugas, komentar, riwayat aktivitas, dan referensi terkait akan dihapus dari sistem.
+              {t("tasks.batch_delete_desc", { count: selectedCount })}
             </DialogDescription>
           </div>
         </DialogHeader>
@@ -50,7 +51,7 @@ export function TaskBatchDeleteDialog({
             onClick={() => onOpenChange(false)}
             className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-colors cursor-pointer disabled:opacity-50"
           >
-            Batal
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -59,7 +60,7 @@ export function TaskBatchDeleteDialog({
             className="px-4 py-2 text-xs font-medium rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98] disabled:opacity-50"
           >
             {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            <span>Ya, Hapus {selectedCount} Tugas</span>
+            <span>{t("tasks.batch_delete_confirm", { count: selectedCount })}</span>
           </button>
         </DialogFooter>
       </DialogContent>

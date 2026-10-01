@@ -1,6 +1,7 @@
 import React from "react";
 import { Target, Plus, Trash2 } from "lucide-react";
 import { Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 interface MilestoneItem {
   id: string;
@@ -26,6 +27,8 @@ export const NewProjectMilestones: React.FC<NewProjectMilestonesProps> = ({
   newMilestoneText,
   setNewMilestoneText,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="pt-2 border-t border-border/30 space-y-2">
       <div className="flex items-center justify-between">
@@ -37,10 +40,10 @@ export const NewProjectMilestones: React.FC<NewProjectMilestonesProps> = ({
           type="button"
           onClick={() => setShowMilestoneInput(true)}
           className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer flex items-center gap-1 text-xs"
-          title="Tambah Milestone"
+          title={t("tasks.add_milestone")}
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Add Milestone</span>
+          <span>{t("tasks.add_milestone")}</span>
         </button>
       </div>
 
@@ -79,7 +82,7 @@ export const NewProjectMilestones: React.FC<NewProjectMilestonesProps> = ({
                 onAddMilestone();
               }
             }}
-            placeholder="Nama target milestone (e.g. Phase 1: Core Engine Integration)"
+            placeholder={t("tasks.milestone_name_placeholder")}
             autoFocus
             className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
@@ -89,7 +92,7 @@ export const NewProjectMilestones: React.FC<NewProjectMilestonesProps> = ({
             onClick={onAddMilestone}
             className="h-7 text-xs px-2.5 bg-secondary text-foreground hover:bg-secondary/80"
           >
-            Tambah
+            {t("common.create")}
           </Button>
           <Button
             type="button"
@@ -98,7 +101,7 @@ export const NewProjectMilestones: React.FC<NewProjectMilestonesProps> = ({
             onClick={() => setShowMilestoneInput(false)}
             className="h-7 text-xs px-2"
           >
-            Batal
+            {t("common.cancel")}
           </Button>
         </div>
       )}

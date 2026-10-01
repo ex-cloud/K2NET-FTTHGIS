@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, Input } from "@k2net/ui";
 import { ShieldCheck, CheckCircle2, AlertTriangle } from "lucide-react";
 import type { TenantDocument, DocumentStatus } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface DocumentAuditHeaderProps {
   previewDoc: TenantDocument;
@@ -12,6 +13,7 @@ export function DocumentAuditHeader({
   previewDoc,
   onUpdateStatus,
 }: DocumentAuditHeaderProps) {
+  const { t } = useTranslation();
   const [isRevisionMode, setIsRevisionMode] = useState(false);
   const [revisionNote, setRevisionNote] = useState("");
 
@@ -37,13 +39,13 @@ export function DocumentAuditHeader({
         <div className="flex items-center gap-2 text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 text-primary" />
           <span>
-            Diupload oleh <strong className="text-foreground">{previewDoc.uploadedBy}</strong> ({previewDoc.uploadedAt})
+            Uploaded by <strong className="text-foreground">{previewDoc.uploadedBy}</strong> ({previewDoc.uploadedAt})
           </span>
           {previewDoc.verifiedBy && (
             <>
               <span>•</span>
               <span>
-                Divalidasi oleh <strong className="text-primary">{previewDoc.verifiedBy}</strong> ({previewDoc.verifiedAt})
+                Verified by <strong className="text-primary">{previewDoc.verifiedBy}</strong> ({previewDoc.verifiedAt})
               </span>
             </>
           )}
@@ -59,7 +61,7 @@ export function DocumentAuditHeader({
                 className="h-6 px-2 text-[10px] font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1 cursor-pointer"
               >
                 <CheckCircle2 className="h-3 w-3" />
-                <span>Setujui (Verify)</span>
+                <span>Verify</span>
               </Button>
             )}
             {previewDoc.status !== "REVISION_REQUIRED" && (
@@ -70,7 +72,7 @@ export function DocumentAuditHeader({
                 className="h-6 px-2 text-[10px] text-amber-500 border-amber-500/30 hover:bg-amber-500/10 gap-1 cursor-pointer"
               >
                 <AlertTriangle className="h-3 w-3" />
-                <span>Minta Revisi</span>
+                <span>{t("organizations.request_revision")}</span>
               </Button>
             )}
           </div>
@@ -82,13 +84,13 @@ export function DocumentAuditHeader({
         <div className="mt-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-2">
           <div className="text-xs font-semibold text-amber-500 flex items-center gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5" />
-            <span>Masukkan Catatan Revisi untuk Tenant:</span>
+            <span>{t("organizations.enter_revision_notes")}</span>
           </div>
           <div className="flex items-center gap-2">
             <Input
               value={revisionNote}
               onChange={(e) => setRevisionNote(e.target.value)}
-              placeholder="Contoh: Lampirkan SK Izin Penyelenggaraan ISP terbaru yang telah dilegalisir..."
+              placeholder="e.g. Please attach the updated and legalized ISP operating license..."
               className="h-7 text-xs bg-card border-border flex-1"
             />
             <Button
@@ -96,7 +98,7 @@ export function DocumentAuditHeader({
               onClick={handleSubmitRevision}
               className="h-7 px-3 text-xs font-medium bg-amber-600 text-amber-50 hover:bg-amber-700 cursor-pointer"
             >
-              Kirim Revisi
+              {t("organizations.send_revision")}
             </Button>
             <Button
               variant="ghost"
@@ -104,7 +106,7 @@ export function DocumentAuditHeader({
               onClick={() => setIsRevisionMode(false)}
               className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              Batal
+              {t("common.cancel")}
             </Button>
           </div>
         </div>
@@ -114,7 +116,7 @@ export function DocumentAuditHeader({
       {previewDoc.reviewNotes && (
         <div className="mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center gap-2">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-          <span>Catatan Revisi: {previewDoc.reviewNotes}</span>
+          <span>{t("organizations.revision_notes", { notes: previewDoc.reviewNotes })}</span>
         </div>
       )}
     </>

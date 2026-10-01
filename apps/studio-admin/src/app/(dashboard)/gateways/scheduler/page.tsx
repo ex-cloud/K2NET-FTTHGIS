@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getGatewayConfigByKey, updateGatewayConfigByKey, getSchedulerJobs, type SchedulerJob } from "@/lib/actions/gateways";
 import { Clock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 import { SchedulerConfigForm } from "@/components/gateways/scheduler/SchedulerConfigForm";
 import { SchedulerJobsListCard } from "@/components/gateways/scheduler/SchedulerJobsListCard";
@@ -16,6 +17,7 @@ const schedulerSchema = z.object({
 });
 
 export default function SchedulerGatewayPage() {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ export default function SchedulerGatewayPage() {
   const [jobs, setJobs] = useState<SchedulerJob[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getGatewayConfigByKey("scheduler");
@@ -43,28 +45,28 @@ export default function SchedulerGatewayPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Gagal memuat konfigurasi: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(`${t("gateways.config_load_failed")}: ` + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     try {
       setJobsLoading(true);
       const data = await getSchedulerJobs();
       setJobs(data);
     } catch (err) {
-      console.error("Gagal memuat job:", err);
+      console.error("Failed to load scheduler jobs:", err);
     } finally {
       setJobsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchConfig();
     fetchJobs();
-  }, []);
+  }, [fetchConfig, fetchJobs]);
 
   const handleInputChange = (key: string, value: string) => {
     setConfig((prev) => ({
@@ -96,7 +98,7 @@ export default function SchedulerGatewayPage() {
     });
 
     if (Object.keys(updates).length === 0) {
-      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      toast.info(t("gateways.no_changes_detected"));
       return;
     }
 
@@ -105,9 +107,9 @@ export default function SchedulerGatewayPage() {
       partialSchema.parse(validationData);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+        toast.error(`${t("gateways.validation_failed")}: ${err.issues[0].message}`);
       } else {
-        toast.error("Terjadi kesalahan validasi.");
+        toast.error(t("gateways.validation_error"));
       }
       return;
     }
@@ -115,11 +117,11 @@ export default function SchedulerGatewayPage() {
     setSaving(true);
     try {
       const res = await updateGatewayConfigByKey("scheduler", updates);
-      toast.success(res.message || "Konfigurasi Scheduler berhasil disimpan!");
+      toast.success(res.message || t("gateways.scheduler.save_success"));
       setTimeout(fetchConfig, 3000);
     } catch (err) {
       console.error(err);
-      toast.error("Gagal menyimpan konfigurasi: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(`${t("gateways.config_save_failed")}: ` + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -135,10 +137,10 @@ export default function SchedulerGatewayPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                Scheduler Gateway
+                {t("gateways.scheduler.title")}
               </h1>
               <p className="text-xs text-muted-foreground">
-                Konfigurasi scheduler cron worker, backup otomatis, dan sinkronisasi data background jobs.
+                {t("gateways.scheduler.subtitle")}
               </p>
             </div>
           </div>
@@ -146,7 +148,7 @@ export default function SchedulerGatewayPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <p className="text-xs text-muted-foreground">Memuat konfigurasi scheduler gateway...</p>
+              <p className="text-xs text-muted-foreground">{t("gateways.scheduler.loading")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

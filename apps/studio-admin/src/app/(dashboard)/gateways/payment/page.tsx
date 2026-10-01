@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getGatewayConfigByKey, updateGatewayConfigByKey, getRecentPayments, triggerPaymentReconciliation, type PaymentTransaction } from "@/lib/actions/gateways";
 import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrappe
 import { PaymentConfigForm } from "@/components/gateways/payment/PaymentConfigForm";
 import { PaymentReconciliationCard } from "@/components/gateways/payment/PaymentReconciliationCard";
 import { PaymentTransactionsCard } from "@/components/gateways/payment/PaymentTransactionsCard";
+import { useTranslation } from "@k2net/i18n";
 import { z } from "zod";
 
 const paymentSchema = z.object({
@@ -15,6 +16,7 @@ const paymentSchema = z.object({
 });
 
 export default function PaymentGatewayPage() {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ export default function PaymentGatewayPage() {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getGatewayConfigByKey("payment");
@@ -43,28 +45,28 @@ export default function PaymentGatewayPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Gagal memuat konfigurasi: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(`${t("gateways.config_load_failed")}: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setTxLoading(true);
       const data = await getRecentPayments();
       setTransactions(data);
     } catch (err) {
-      console.error("Gagal memuat transaksi:", err);
+      console.error("Failed to load transactions:", err);
     } finally {
       setTxLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchConfig();
     fetchTransactions();
-  }, []);
+  }, [fetchConfig, fetchTransactions]);
 
   const handleInputChange = (key: string, value: string) => {
     setConfig((prev) => ({
@@ -95,7 +97,7 @@ export default function PaymentGatewayPage() {
     });
 
     if (Object.keys(updates).length === 0) {
-      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      toast.info(t("gateways.no_changes_detected"));
       return;
     }
 
@@ -104,9 +106,9 @@ export default function PaymentGatewayPage() {
       partialSchema.parse(validationData);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+        toast.error(`${t("gateways.validation_failed")}: ${err.issues[0].message}`);
       } else {
-        toast.error("Terjadi kesalahan validasi.");
+        toast.error(t("gateways.validation_error"));
       }
       return;
     }
@@ -114,11 +116,11 @@ export default function PaymentGatewayPage() {
     setSaving(true);
     try {
       const res = await updateGatewayConfigByKey("payment", updates);
-      toast.success(res.message || "Konfigurasi payment berhasil disimpan!");
+      toast.success(res.message || t("gateways.payment.save_success"));
       setTimeout(fetchConfig, 3000);
     } catch (err) {
       console.error(err);
-      toast.error("Gagal menyimpan konfigurasi: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(`${t("gateways.config_save_failed")}: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setSaving(false);
     }
@@ -129,14 +131,14 @@ export default function PaymentGatewayPage() {
       setReconciling(true);
       const res = await triggerPaymentReconciliation();
       if (res.success) {
-        toast.success(res.message || "Sinkronisasi rekonsiliasi manual selesai!");
+        toast.success(res.message || t("gateways.payment.reconcile_success"));
         await fetchTransactions();
       } else {
-        toast.error("Gagal melakukan rekonsiliasi");
+        toast.error(t("gateways.payment.reconcile_failed"));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error rekonsiliasi: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(`${t("gateways.payment.reconcile_failed")}: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setReconciling(false);
     }
@@ -152,10 +154,10 @@ export default function PaymentGatewayPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                Payment Gateway
+                {t("gateways.payment.title")}
               </h1>
               <p className="text-xs text-muted-foreground">
-                Urus integrasi pembayaran, kunci API Xendit, token webhook, serta sinkronisasi penagihan invoice.
+                {t("gateways.payment.subtitle")}
               </p>
             </div>
           </div>
@@ -163,7 +165,7 @@ export default function PaymentGatewayPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <p className="text-xs text-muted-foreground">Memuat konfigurasi payment gateway...</p>
+              <p className="text-xs text-muted-foreground">{t("gateways.payment.loading")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

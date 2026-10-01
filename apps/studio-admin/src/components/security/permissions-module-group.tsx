@@ -1,6 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Code2, Sparkles, Copy, Tag, Trash2, Layers, ChevronDown, ExternalLink } from "lucide-react";
 import { ActionTooltip, UniversalContextMenu, type ContextMenuGroupConfig } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
 import { type Permission, scopeBadge } from "./permissions-types";
@@ -13,6 +14,7 @@ interface ModuleGroupProps {
 }
 
 export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: ModuleGroupProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(true);
   const { canAccess } = usePermissions();
   const canManageSecurity = canAccess("system.security.manage");
@@ -21,12 +23,12 @@ export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: Mod
     {
       items: [
         {
-          label: "Lihat Traceability Endpoint",
+          label: "Traceability Endpoint",
           icon: Code2,
           onClick: () => onViewUsages(p.code),
         },
         {
-          label: "Tanya AI tentang Permission Ini",
+          label: "AI Explainer",
           icon: Sparkles,
           shortcut: "Ctrl+J",
           onClick: () => {
@@ -45,21 +47,21 @@ export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: Mod
     {
       items: [
         {
-          label: "Salin Kode Permission",
+          label: `${t("common.copy")} ${t("security.permission_code")}`,
           icon: Copy,
           shortcut: "Ctrl+C",
           onClick: () => {
             navigator.clipboard.writeText(p.code);
-            toast.success(`Kode permission "${p.code}" disalin!`);
+            toast.success(`"${p.code}" ${t("common.copied")}`);
           },
         },
         {
-          label: "Salin Nama Permission",
+          label: `${t("common.copy")} ${t("security.role_name")}`,
           icon: Tag,
           shortcut: "Alt+C",
           onClick: () => {
             navigator.clipboard.writeText(p.name);
-            toast.success(`Nama permission "${p.name}" disalin!`);
+            toast.success(`"${p.name}" ${t("common.copied")}`);
           },
         },
       ],
@@ -69,7 +71,7 @@ export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: Mod
           {
             items: [
               {
-                label: "Hapus Permission",
+                label: t("security.delete_permission"),
                 icon: Trash2,
                 shortcut: "Del",
                 onClick: () => onDelete(p),
@@ -85,7 +87,7 @@ export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: Mod
       {/* Module header */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-muted/40 transition-colors text-left"
+        className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-muted/40 transition-colors text-left cursor-pointer"
       >
         <Layers className="w-4 h-4 text-muted-foreground shrink-0" />
         <span className="text-sm font-semibold text-foreground capitalize flex-1">{module}</span>
@@ -109,8 +111,8 @@ export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: Mod
                     <button
                       type="button"
                       onClick={() => onViewUsages(p.code)}
-                      className="inline-flex items-center gap-1.5 text-xs font-mono text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded border border-sky-500/20 transition-all text-left group/btn"
-                      title="Klik untuk melihat endpoint yang menggunakan permission ini"
+                      className="inline-flex items-center gap-1.5 text-xs font-mono text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded border border-sky-500/20 transition-all text-left group/btn cursor-pointer"
+                      title="Traceability"
                     >
                       <span>{p.code}</span>
                       <ExternalLink className="w-2.5 h-2.5 opacity-60 group-hover/btn:opacity-100" />
@@ -125,11 +127,11 @@ export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: Mod
                   )}
                 </div>
                 {canManageSecurity && (
-                  <ActionTooltip label="Hapus Permission" shortcut="Del">
+                  <ActionTooltip label={t("security.delete_permission")} shortcut="Del">
                     <button
                       id={`btn-delete-perm-${p.id}`}
                       onClick={() => onDelete(p)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground/60 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground/60 hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

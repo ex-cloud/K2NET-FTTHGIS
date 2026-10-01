@@ -27,6 +27,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../../lib/api-client";
 import { AssetDialog } from "../../../components/inventory/AssetDialogs";
+import { useTranslation } from "@k2net/i18n";
 
 interface OdpItem {
   id: string;
@@ -44,6 +45,7 @@ interface OdpItem {
 }
 
 export function OdpListPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -76,11 +78,11 @@ export function OdpListPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
-          { label: "Inventory", href: `/project/${projectId}/inventory/odp` },
-          { label: "ODP FAT Boxes" },
+          { label: t("nav.projects"), href: "/projects" },
+          { label: t("nav.inventory"), href: `/project/${projectId}/inventory/odp` },
+          { label: t("inventory.odp_title") },
         ]}
-        title="Daftar Kotak ODP (Optical Distribution Point)"
+        title={t("inventory.odp_subtitle")}
         actions={
           <Button
             size="sm"
@@ -88,7 +90,7 @@ export function OdpListPage() {
             className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
           >
             <Plus className="h-4 w-4" />
-            + Tambah ODP Baru
+            {t("inventory.add_odp")}
           </Button>
         }
       />
@@ -98,7 +100,7 @@ export function OdpListPage() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Cari kode ODP, nama, atau ODC induk..."
+              placeholder={t("common.search")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs bg-muted/20"
@@ -115,11 +117,11 @@ export function OdpListPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 text-[11px]">
-                  <TableHead className="font-bold">KODE & NAMA ODP</TableHead>
-                  <TableHead className="font-bold">INDUK ODC</TableHead>
-                  <TableHead className="font-bold">PORT DROP TERPASANG</TableHead>
-                  <TableHead className="font-bold">SPLITTER RATIO</TableHead>
-                  <TableHead className="font-bold">STATUS</TableHead>
+                  <TableHead className="font-bold">{t("inventory.odp_code").toUpperCase()} & NAMA</TableHead>
+                  <TableHead className="font-bold">{t("inventory.parent_odc").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("inventory.port_capacity").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("inventory.splitter_ratio").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
                   <TableHead className="w-12 text-right" />
                 </TableRow>
               </TableHeader>
@@ -174,8 +176,8 @@ export function OdpListPage() {
                           <DropdownMenuContent align="end" className="text-xs">
                             <DropdownMenuItem>Lihat Sambungan Pelanggan</DropdownMenuItem>
                             <DropdownMenuItem>Buka di Peta Spasial</DropdownMenuItem>
-                            <DropdownMenuItem>Edit ODP</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">Hapus ODP</DropdownMenuItem>
+                            <DropdownMenuItem>{t("common.edit")}</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">{t("common.delete")}</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -187,11 +189,11 @@ export function OdpListPage() {
           ) : (
             <div className="p-8 text-center space-y-2">
               <Layers className="h-8 w-8 text-muted-foreground mx-auto" />
-              <p className="text-xs font-semibold text-foreground">Belum Ada Box ODP</p>
+              <p className="text-xs font-semibold text-foreground">{t("common.no_results")}</p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                 {searchQuery
-                  ? "Tidak ada kotak ODP yang sesuai dengan kata kunci pencarian."
-                  : "Tambahkan kotak distribusi ODP pertama Anda untuk mendistribusikan port fiber."}
+                  ? t("common.no_results")
+                  : t("inventory.odp_subtitle")}
               </p>
             </div>
           )}

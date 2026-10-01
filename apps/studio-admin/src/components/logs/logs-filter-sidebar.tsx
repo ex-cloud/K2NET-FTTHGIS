@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useLogsFilter, DEFAULT_SELECTED_TYPES, LOG_GROUPS, type LogGroupKey } from "./logs-filter-context";
 import { LogsDateRangePicker } from "./logs-date-range-picker";
+import { useTranslation } from "@k2net/i18n";
 
 const LOG_TYPE_CONFIG: Record<string, { icon: React.ElementType; description: string }> = {
   edge:         { icon: Network,      description: "HTTP logs routed via Kong" },
@@ -97,11 +98,12 @@ function TenantFilterSection({
   tenantFilter: string;
   setTenantFilter: (v: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">
       <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
         <span className="flex items-center gap-1.5">
-          <User className="w-3 h-3 text-primary" /> Tenant
+          <User className="w-3 h-3 text-primary" /> {t("observability.tenant")}
         </span>
         <div className="flex items-center gap-1.5">
           {tenantFilter && (
@@ -117,7 +119,7 @@ function TenantFilterSection({
           type="text"
           value={tenantFilter}
           onChange={(e) => setTenantFilter(e.target.value)}
-          placeholder="Filter by tenant slug..."
+          placeholder={t("observability.filter_by_tenant_slug")}
           className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-primary"
         />
         {tenantFilter && (
@@ -126,11 +128,11 @@ function TenantFilterSection({
             onClick={() => setTenantFilter("")}
             className="text-[10px] text-muted-foreground hover:text-rose-400 transition-colors font-mono"
           >
-            × clear tenant filter
+            {t("observability.clear_tenant_filter")}
           </button>
         )}
         <p className="text-[9px] text-muted-foreground/50 italic font-sans leading-tight">
-          Super Admin: empty = all tenants visible
+          {t("observability.superadmin_empty_all_tenants")}
         </p>
       </CollapsibleContent>
     </Collapsible>
@@ -144,11 +146,12 @@ function LevelFilterSection({
   selectedLevels: Record<string, boolean>;
   toggleLevel: (lvl: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
       <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
         <span className="flex items-center gap-1.5">
-          <Filter className="w-3 h-3 text-primary" /> Level
+          <Filter className="w-3 h-3 text-primary" /> {t("observability.level")}
         </span>
         <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
       </CollapsibleTrigger>
@@ -302,6 +305,7 @@ export interface LogsFilterSidebarProps {
 }
 
 export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
+  const { t } = useTranslation();
   const {
     timeRange, setTimeRange,
     selectedTypes, toggleType,
@@ -326,7 +330,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
     <div className="flex flex-col h-full w-[240px] font-sans text-xs bg-sidebar select-none border-r border-border/60 shrink-0">
       {onCollapse !== undefined && (
         <SecondarySidebarHeader
-          title="Logs Explorer"
+          title={t("observability.logs_explorer")}
           onCollapse={onCollapse}
           actions={
             hasActiveFilters ? (
@@ -334,10 +338,10 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
                 type="button"
                 onClick={resetAllFilters}
                 className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 cursor-pointer"
-                title="Reset all filters"
+                title={t("observability.reset_filter")}
               >
                 <RotateCcw className="w-3 h-3" />
-                <span>Reset</span>
+                <span>{t("observability.reset_filter")}</span>
               </button>
             ) : null
           }
@@ -348,7 +352,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
         <div className="w-full space-y-1">
           <div className="flex items-center justify-between px-1 py-1">
             <span className="flex items-center gap-1.5 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest">
-              <Clock className="w-3 h-3 text-primary" /> Time Range
+              <Clock className="w-3 h-3 text-primary" /> {t("observability.time_range")}
             </span>
           </div>
           <LogsDateRangePicker value={timeRange} onChange={setTimeRange} />
@@ -359,7 +363,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
         <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
           <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
             <span className="flex items-center gap-1.5">
-              <Layers className="w-3 h-3 text-primary" /> Log Type
+              <Layers className="w-3 h-3 text-primary" /> {t("observability.log_type")}
             </span>
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] font-mono text-muted-foreground/60">
@@ -374,7 +378,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
                 type="text"
                 value={typeSearch}
                 onChange={(e) => setTypeSearch(e.target.value)}
-                placeholder="Search..."
+                placeholder={t("observability.search")}
                 className="bg-background border-border/60 text-foreground text-xs h-7 pl-7 font-mono focus:border-primary"
               />
               <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
@@ -404,7 +408,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
         <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">
           <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
             <span className="flex items-center gap-1.5">
-              <Sliders className="w-3 h-3 text-primary" /> Method
+              <Sliders className="w-3 h-3 text-primary" /> {t("observability.method")}
             </span>
             <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
           </CollapsibleTrigger>
@@ -413,7 +417,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
         <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">
           <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
             <span className="flex items-center gap-1.5">
-              <Globe className="w-3 h-3 text-primary" /> Pathname
+              <Globe className="w-3 h-3 text-primary" /> {t("observability.pathname")}
             </span>
             <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
           </CollapsibleTrigger>
@@ -423,10 +427,10 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
       <div className="p-3 border-t border-border/40 space-y-1 font-mono text-[10px] shrink-0 bg-card/40">
         <div className="flex items-center gap-1.5 text-foreground font-bold font-sans">
           <Activity className="w-3.5 h-3.5 text-primary" />
-          <span>Capture your logs</span>
+          <span>{t("observability.capture_your_logs")}</span>
         </div>
         <p className="text-muted-foreground/70 text-[9px] leading-tight font-sans">
-          Send logs to your preferred observability or storage platform.
+          {t("observability.capture_logs_desc")}
         </p>
       </div>
     </div>

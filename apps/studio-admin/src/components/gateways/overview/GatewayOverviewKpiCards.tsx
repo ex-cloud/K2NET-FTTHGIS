@@ -1,6 +1,7 @@
 import React from "react";
 import { Cpu, Activity, Database, HardDrive } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 interface GatewayOverviewKpiCardsProps {
   activeServicesCount: number;
@@ -13,13 +14,15 @@ export function GatewayOverviewKpiCards({
   totalServices,
   allActive,
 }: GatewayOverviewKpiCardsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       {/* Card 1: Global Health */}
       <Card glowingEffect>
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-foreground/75 dark:text-muted-foreground">
-            <span>Service Health</span>
+            <span>{t("gateways.healthy_gateways")}</span>
             <Cpu className="w-3.5 h-3.5 text-primary group-hover:text-primary/80 transition-colors" />
           </CardDescription>
           <CardTitle className="text-2xl font-bold text-foreground mt-1 flex items-baseline gap-2">
@@ -34,7 +37,7 @@ export function GatewayOverviewKpiCards({
               }`}
             />
             <span className="text-[10px] text-muted-foreground font-medium">
-              {allActive ? "Semua Gateway Berjalan" : "Ada layanan terhenti"}
+              {allActive ? t("gateways.healthy_gateways") : t("common.error")}
             </span>
           </div>
         </CardContent>
@@ -44,7 +47,7 @@ export function GatewayOverviewKpiCards({
       <Card glowingEffect>
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-foreground/75 dark:text-muted-foreground">
-            <span>Avg Latency</span>
+            <span>{t("gateways.avg_latency")}</span>
             <Activity className="w-3.5 h-3.5 text-sky-400 group-hover:text-sky-300 transition-colors" />
           </CardDescription>
           <CardTitle className="text-2xl font-bold text-foreground mt-1 flex items-baseline gap-2">
@@ -54,7 +57,7 @@ export function GatewayOverviewKpiCards({
         <CardContent className="pb-4">
           <div className="flex items-center gap-1.5 text-[10px] text-primary">
             <Activity className="w-3 h-3 text-primary" />
-            <span>Performa sangat stabil (Optimal)</span>
+            <span>Optimal</span>
           </div>
         </CardContent>
       </Card>
@@ -73,7 +76,7 @@ export function GatewayOverviewKpiCards({
         <CardContent className="pb-4">
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
             <Database className="w-3 h-3 text-muted-foreground" />
-            <span>Geocoding Cache Redis Aktif</span>
+            <span>Geocoding Cache Redis Active</span>
           </div>
         </CardContent>
       </Card>
@@ -92,7 +95,7 @@ export function GatewayOverviewKpiCards({
         <CardContent className="pb-4">
           <div className="flex items-center gap-1.5 text-[10px] text-primary">
             <HardDrive className="w-3 h-3 text-primary" />
-            <span>Kompresi otomatis WebP</span>
+            <span>WebP Auto Compress</span>
           </div>
         </CardContent>
       </Card>

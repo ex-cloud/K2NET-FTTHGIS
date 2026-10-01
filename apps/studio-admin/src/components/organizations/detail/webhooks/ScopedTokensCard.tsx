@@ -24,6 +24,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import type { ScopedToken } from "./types";
 import { CreateScopedTokenModal } from "./CreateScopedTokenModal";
 import { ScopedTokenRowItem } from "./ScopedTokenRowItem";
+import { useTranslation } from "@k2net/i18n";
 
 interface ScopedTokensCardProps {
   tokens: ScopedToken[];
@@ -38,6 +39,7 @@ export function ScopedTokensCard({
   onCreateToken,
   onRevokeToken,
 }: ScopedTokensCardProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManage = canAccess("system.organizations.webhooks.manage");
 
@@ -90,7 +92,7 @@ export function ScopedTokensCard({
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Buat token dengan izin akses terbatas (scope) dan tanggal kedaluwarsa untuk integrasi sistem pihak ketiga yang aman.
+              Create tokens with limited access permissions (scopes) and expiration dates for secure third-party integrations.
             </p>
           </div>
         </div>
@@ -108,7 +110,7 @@ export function ScopedTokensCard({
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Aktif ({activeTokens.length})
+                Active ({activeTokens.length})
               </button>
               <button
                 type="button"
@@ -120,7 +122,7 @@ export function ScopedTokensCard({
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Semua ({tokens.length})
+                All ({tokens.length})
               </button>
             </div>
           )}
@@ -135,7 +137,7 @@ export function ScopedTokensCard({
               <span>Generate Scoped Token</span>
             </Button>
           ) : (
-            <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+            <ActionTooltip label={t("organizations.readonly_no_manage_perm")}>
               <span className="inline-block">
                 <Button
                   size="sm"
@@ -171,10 +173,10 @@ export function ScopedTokensCard({
           <div className="p-6 rounded-lg border border-dashed border-border bg-background/50 text-center space-y-2">
             <KeyRound className="h-6 w-6 text-muted-foreground mx-auto" />
             <div className="text-xs font-medium text-foreground">
-              {filterMode === "active" ? "Belum ada Scoped API Token aktif" : "Belum ada Scoped API Token"}
+              {filterMode === "active" ? "No active Scoped API Tokens" : "No Scoped API Tokens"}
             </div>
             <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
-              Gunakan scoped token untuk memberikan akses terbatas kepada developer atau bot eksternal.
+              Use scoped tokens to grant restricted access to developers or external bots.
             </p>
           </div>
         ) : (
@@ -214,10 +216,10 @@ export function ScopedTokensCard({
               </div>
               <div>
                 <DialogTitle className="text-sm font-bold text-foreground">
-                  Cabut (Revoke) Scoped API Token?
+                  Revoke Scoped API Token?
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Tindakan ini permanen dan tidak dapat dibatalkan.
+                  {t("organizations.webhook_permanent_warning")}
                 </DialogDescription>
               </div>
             </div>
@@ -226,24 +228,24 @@ export function ScopedTokensCard({
           {tokenToRevoke && (
             <div className="p-3 rounded-lg bg-background/60 border border-border/70 space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Nama Token:</span>
+                <span className="text-muted-foreground">Token Name:</span>
                 <span className="font-semibold text-foreground">{tokenToRevoke.name}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Prefix Token:</span>
+                <span className="text-muted-foreground">Token Prefix:</span>
                 <span className="font-mono text-foreground font-medium">
                   {tokenToRevoke.tokenPrefix}...{tokenToRevoke.tokenLast4}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Jumlah Scope:</span>
+                <span className="text-muted-foreground">Scope Count:</span>
                 <span className="font-semibold text-primary">{tokenToRevoke.scopes.length} Scopes</span>
               </div>
             </div>
           )}
 
           <p className="text-xs text-muted-foreground">
-            Aplikasi, bot, atau sistem pihak ketiga yang menggunakan token ini akan segera kehilangan akses API seketika setelah dicabut.
+            Applications, bots, or third-party systems using this token will immediately lose API access upon revocation.
           </p>
 
           <DialogFooter className="pt-2 flex items-center justify-end gap-2">
@@ -253,9 +255,9 @@ export function ScopedTokensCard({
               size="sm"
               onClick={() => setTokenToRevoke(null)}
               disabled={isRevoking}
-              className="h-8 text-xs border-border"
+              className="h-8 text-xs border-border cursor-pointer"
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               type="button"
@@ -266,7 +268,7 @@ export function ScopedTokensCard({
               className="h-8 text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-1.5 cursor-pointer shadow-xs"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              <span>{isRevoking ? "Mencabut..." : "Ya, Cabut Token"}</span>
+              <span>{isRevoking ? "Revoking..." : "Yes, Revoke Token"}</span>
             </Button>
           </DialogFooter>
         </DialogContent>

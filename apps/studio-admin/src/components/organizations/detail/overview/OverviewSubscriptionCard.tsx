@@ -2,6 +2,7 @@ import { Badge, Button, Card } from "@k2net/ui";
 import { CreditCard } from "lucide-react";
 import type { EnrichedOrganization } from "../../types";
 import type { TenantSubscriptionSummary } from "@/hooks/useTenantSubscription";
+import { useTranslation } from "@k2net/i18n";
 
 interface OverviewSubscriptionCardProps {
   org: EnrichedOrganization;
@@ -14,6 +15,8 @@ export function OverviewSubscriptionCard({
   summary,
   onOpenPlanUpgrade,
 }: OverviewSubscriptionCardProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="lg:col-span-1 p-5 space-y-4">
       <div className="flex items-center justify-between">
@@ -58,8 +61,8 @@ export function OverviewSubscriptionCard({
           <span className="text-muted-foreground">Account Status:</span>
           <span className="font-mono text-foreground">
             {summary?.trialDaysRemaining
-              ? `Trial (${summary.trialDaysRemaining} hari sisa)`
-              : "Aktif (Auto-renew)"}
+              ? t("organizations.trial_days_remaining", { days: summary.trialDaysRemaining })
+              : t("organizations.active_auto_renew")}
           </span>
         </div>
         <div className="flex justify-between">
@@ -76,7 +79,7 @@ export function OverviewSubscriptionCard({
           className="w-full text-xs font-medium border-border/80 bg-card hover:bg-accent gap-1.5 cursor-pointer"
         >
           <CreditCard className="size-3.5 text-primary" />
-          <span>Upgrade / Ubah Paket</span>
+          <span>{t("organizations.upgrade_change_plan")}</span>
         </Button>
       </div>
     </Card>

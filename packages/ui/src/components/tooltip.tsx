@@ -63,9 +63,24 @@ function TooltipContent({
       >
         <span>{children}</span>
         {shortcut && (
-          <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1 py-0.5 rounded border border-border/60 uppercase shrink-0">
-            {shortcut}
-          </span>
+          <div className="flex items-center gap-1 shrink-0">
+            {shortcut.includes(" then ") ? (
+              shortcut.split(" then ").map((key, i, arr) => (
+                <React.Fragment key={i}>
+                  <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1 py-0.5 rounded border border-border/60 uppercase">
+                    {key.trim()}
+                  </span>
+                  {i < arr.length - 1 && (
+                    <span className="text-[9px] text-muted-foreground/70 font-sans lowercase">then</span>
+                  )}
+                </React.Fragment>
+              ))
+            ) : (
+              <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1 py-0.5 rounded border border-border/60 uppercase">
+                {shortcut}
+              </span>
+            )}
+          </div>
         )}
         {showArrow && (
           <TooltipPrimitive.Arrow className="bg-popover fill-popover border-t border-l border-border z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
@@ -76,6 +91,35 @@ function TooltipContent({
 }
 
 // ─── Shortcut key matching helpers ───────────────────────────────────────────
+
+// Track sequential shortcut leader key (e.g., user pressed "g" or "s")
+let activeLeaderKey = "";
+let leaderKeyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+if (typeof window !== "undefined") {
+  window.addEventListener(
+    "keydown",
+    (e: KeyboardEvent) => {
+      // Don't capture leader keys if typing in an input
+      if (isInputTarget(e.target)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const key = e.key.toLowerCase();
+      if (["shift", "control", "alt", "meta", "capslock", "tab", "escape", "enter"].includes(key)) {
+        return;
+      }
+
+      // If leader key pressed (e.g., 'g' or 's')
+      if (key === "g" || key === "s") {
+        activeLeaderKey = key;
+        if (leaderKeyTimeout) clearTimeout(leaderKeyTimeout);
+        leaderKeyTimeout = setTimeout(() => {
+          activeLeaderKey = "";
+        }, 1500);
+      }
+    },
+    { capture: true }
+  );
+}
 
 function matchesShortcut(e: KeyboardEvent, shortcut: string): boolean {
   if (!shortcut) return false;
@@ -169,6 +213,31 @@ function ActionTooltip({
         return;
       }
 
+      // 1. Sequential Shortcuts (e.g. "G then O", "S then 1")
+      if (shortcut.includes(" then ")) {
+        const parts = shortcut.toLowerCase().split(" then ").map((s) => s.trim());
+        if (parts.length === 2) {
+          const [leader, secondKey] = parts;
+          const currentKey = e.key.toLowerCase();
+
+          if (activeLeaderKey === leader && currentKey === secondKey) {
+            if (isInputTarget(e.target)) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            activeLeaderKey = "";
+            if (leaderKeyTimeout) clearTimeout(leaderKeyTimeout);
+
+            // Execute click on target element or interactive child
+            const interactiveEl = (el.querySelector("button, a, input") as HTMLElement) || el;
+            interactiveEl.click();
+            return;
+          }
+        }
+        return;
+      }
+
+      // 2. Modifier & Single Key Shortcuts (e.g. "⌘K", "Ctrl+J", "N", "R")
       if (matchesShortcut(e, shortcut)) {
         const parts = shortcut.toLowerCase().split("+").map((s) => s.trim());
         const hasModifier = parts.some((p) =>
@@ -180,9 +249,15 @@ function ActionTooltip({
           return;
         }
 
+        // If leader key is active, don't trigger single-key shortcut clash
+        if (activeLeaderKey && !hasModifier) {
+          return;
+        }
+
         e.preventDefault();
         e.stopPropagation();
-        el.click();
+        const interactiveEl = (el.querySelector("button, a, input") as HTMLElement) || el;
+        interactiveEl.click();
       }
     };
 

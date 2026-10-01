@@ -42,5 +42,23 @@
   "ctx_copy_email": "Salin Email",
   "ctx_copy_user_id": "Salin ID Pengguna",
   "ctx_view_audit": "Lihat Log Audit Sesi",
-  "ctx_revoke_session": "Putus Sesi Keycloak"
+  "ctx_revoke_session": "Putus Sesi Keycloak",
+
+  "invite_title": "Undang Anggota Tim Baru",
+  "invite_desc": "Kirimkan email undangan bergabung ke organisasi ISP Anda.",
+  "invite_full_name": "Nama Lengkap",
+  "invite_full_name_placeholder": "misal: Budi Santoso",
+  "invite_email": "Email Perusahaan / Anggota",
+  "invite_role_label": "Peran & Tingkat Izin",
+  "invite_notice": "Anggota akan menerima email dengan tautan aktivasi Keycloak resmi untuk menetapkan password dan MFA.",
+  "invite_send_btn": "Kirim Undangan",
+  "invite_sending": "Mengirim...",
+  "invite_success": "Undangan berhasil dikirim ke {email}",
+  "invite_error_email": "Alamat email tidak valid",
+  "invite_error_name": "Nama lengkap anggota wajib diisi",
+  "role_org_admin": "Admin Organisasi (Akses Penuh)",
+  "role_operator": "Operator GIS & NOC",
+  "role_field_tech": "Teknisi Lapangan (JIT Scoped)",
+  "role_surveyor": "Surveyor Spasial (CAD & Map)",
+  "role_finance": "Finance & Billing"
 }

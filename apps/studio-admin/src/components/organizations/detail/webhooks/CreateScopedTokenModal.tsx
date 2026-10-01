@@ -13,6 +13,7 @@ import {
 } from "@k2net/ui";
 import { KeyRound, CheckCircle2, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 
 interface CreateScopedTokenModalProps {
   isOpen: boolean;
@@ -20,48 +21,12 @@ interface CreateScopedTokenModalProps {
   onCreate: (data: { name: string; scopes: string[]; expiresInDays: number | null }) => Promise<void>;
 }
 
-const AVAILABLE_SCOPES = [
-  {
-    category: "Coverage Maps & ODPs",
-    scopes: [
-      { id: "coverage:read", label: "coverage:read", desc: "Lihat data batas coverage area, ODP, dan pole" },
-      { id: "coverage:write", label: "coverage:write", desc: "Tambah, ubah, dan hapus boundary coverage & ODP" },
-    ],
-  },
-  {
-    category: "Network Infrastructure",
-    scopes: [
-      { id: "network:read", label: "network:read", desc: "Baca status OLT, ONU, kabel feeder, dan splitter" },
-      { id: "network:write", label: "network:write", desc: "Provisioning ONU, manajemen core fiber, dan sambungan" },
-    ],
-  },
-  {
-    category: "Customers & Subscribers",
-    scopes: [
-      { id: "customers:read", label: "customers:read", desc: "Baca data pelanggan, paket internet, dan lokasi drop core" },
-      { id: "customers:write", label: "customers:write", desc: "Registrasi dan modifikasi data pelanggan" },
-    ],
-  },
-  {
-    category: "Billing & Invoicing",
-    scopes: [
-      { id: "billing:read", label: "billing:read", desc: "Baca riwayat tagihan dan transaksi pembayaran" },
-      { id: "billing:write", label: "billing:write", desc: "Generate invoice dan verifikasi status bayar" },
-    ],
-  },
-  {
-    category: "Webhooks & Automation",
-    scopes: [
-      { id: "webhooks:manage", label: "webhooks:manage", desc: "Kelola endpoint webhook dan langganan event" },
-    ],
-  },
-];
-
 export function CreateScopedTokenModal({
   isOpen,
   onOpenChange,
   onCreate,
 }: CreateScopedTokenModalProps) {
+  const { t } = useTranslation();
   const [tokenName, setTokenName] = useState("");
   const [selectedScopes, setSelectedScopes] = useState<string[]>([
     "coverage:read",
@@ -70,6 +35,43 @@ export function CreateScopedTokenModal({
   const [expiryDays, setExpiryDays] = useState<number | null>(90);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const availableScopes = [
+    {
+      category: "Coverage Maps & ODPs",
+      scopes: [
+        { id: "coverage:read", label: "coverage:read", desc: "View coverage boundary, ODP, and pole data" },
+        { id: "coverage:write", label: "coverage:write", desc: t("organizations.scope_coverage_write_desc") },
+      ],
+    },
+    {
+      category: "Network Infrastructure",
+      scopes: [
+        { id: "network:read", label: "network:read", desc: "Read status of OLT, ONU, feeder cables, and splitters" },
+        { id: "network:write", label: "network:write", desc: "ONU provisioning, fiber core management, and splicing" },
+      ],
+    },
+    {
+      category: "Customers & Subscribers",
+      scopes: [
+        { id: "customers:read", label: "customers:read", desc: "Read subscriber data, internet packages, and drop core locations" },
+        { id: "customers:write", label: "customers:write", desc: "Register and modify subscriber data" },
+      ],
+    },
+    {
+      category: "Billing & Invoicing",
+      scopes: [
+        { id: "billing:read", label: "billing:read", desc: "Read invoice history and payment transactions" },
+        { id: "billing:write", label: "billing:write", desc: "Generate invoices and verify payment statuses" },
+      ],
+    },
+    {
+      category: "Webhooks & Automation",
+      scopes: [
+        { id: "webhooks:manage", label: "webhooks:manage", desc: "Manage webhook endpoints and event subscriptions" },
+      ],
+    },
+  ];
+
   const toggleScope = (scopeId: string) => {
     setSelectedScopes((prev) =>
       prev.includes(scopeId) ? prev.filter((s) => s !== scopeId) : [...prev, scopeId]
@@ -77,7 +79,7 @@ export function CreateScopedTokenModal({
   };
 
   const selectAllScopes = () => {
-    const all = AVAILABLE_SCOPES.flatMap((c) => c.scopes.map((s) => s.id));
+    const all = availableScopes.flatMap((c) => c.scopes.map((s) => s.id));
     setSelectedScopes(all);
   };
 
@@ -116,7 +118,7 @@ export function CreateScopedTokenModal({
                 Generate Granular Scoped API Token
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Tentukan izin akses (scope) spesifik untuk token integrasi ini.
+                Specify granular access permissions (scopes) for this integration token.
               </DialogDescription>
             </div>
           </div>
@@ -124,25 +126,25 @@ export function CreateScopedTokenModal({
 
         <div className="space-y-4 pt-1">
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Nama / Deskripsi Token</Label>
+            <Label className="text-xs font-semibold text-foreground">Token Name / Description</Label>
             <Input
               value={tokenName}
               onChange={(e) => setTokenName(e.target.value)}
-              placeholder="Contoh: Billing MikroTik Sync, Grafana Prometheus Exporter"
+              placeholder="e.g. Billing MikroTik Sync, Grafana Prometheus Exporter"
               className="h-9 text-xs bg-background border-border text-foreground"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Masa Berlaku Token (Expiration)</Label>
+            <Label className="text-xs font-semibold text-foreground">Token Expiration Period</Label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {[
-                { label: "30 Hari", val: 30 },
-                { label: "60 Hari", val: 60 },
-                { label: "90 Hari", val: 90 },
-                { label: "180 Hari", val: 180 },
-                { label: "1 Tahun", val: 365 },
-                { label: "Tanpa Batas", val: null },
+                { label: "30 Days", val: 30 },
+                { label: "60 Days", val: 60 },
+                { label: "90 Days", val: 90 },
+                { label: "180 Days", val: 180 },
+                { label: "1 Year", val: 365 },
+                { label: "No Expiry", val: null },
               ].map((item) => (
                 <button
                   key={String(item.val)}
@@ -165,7 +167,7 @@ export function CreateScopedTokenModal({
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Layers className="h-3.5 w-3.5 text-primary" />
-                <span>Izin Akses API (Granular Scopes)</span>
+                <span>API Access Permissions (Granular Scopes)</span>
               </Label>
               <div className="flex items-center gap-2 text-[11px]">
                 <button
@@ -173,7 +175,7 @@ export function CreateScopedTokenModal({
                   onClick={selectAllScopes}
                   className="text-primary hover:underline cursor-pointer"
                 >
-                  Pilih Semua
+                  {t("organizations.select_all")}
                 </button>
                 <span className="text-muted-foreground">•</span>
                 <button
@@ -181,13 +183,13 @@ export function CreateScopedTokenModal({
                   onClick={clearAllScopes}
                   className="text-muted-foreground hover:text-foreground cursor-pointer"
                 >
-                  Reset
+                  {t("common.reset")}
                 </button>
               </div>
             </div>
 
             <div className="space-y-3 p-3 rounded-lg bg-background/50 border border-border">
-              {AVAILABLE_SCOPES.map((cat) => (
+              {availableScopes.map((cat) => (
                 <div key={cat.category} className="space-y-1.5">
                   <div className="text-[11px] font-bold text-foreground/80 tracking-wide uppercase">
                     {cat.category}
@@ -227,25 +229,25 @@ export function CreateScopedTokenModal({
 
         <DialogFooter className="pt-2 sm:justify-between items-center gap-2">
           <span className="text-[11px] text-muted-foreground">
-            {selectedScopes.length} scopes dipilih
+            {selectedScopes.length} scopes selected
           </span>
           <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="h-8 text-xs border-border"
+              className="h-8 text-xs border-border cursor-pointer"
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               type="button"
               onClick={handleCreate}
               disabled={!tokenName.trim() || selectedScopes.length === 0 || isSubmitting}
-              className="h-8 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+              className="h-8 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 cursor-pointer"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>{isSubmitting ? "Membuat..." : "Generate Token"}</span>
+              <span>{isSubmitting ? "Generating..." : "Generate Token"}</span>
             </Button>
           </div>
         </DialogFooter>

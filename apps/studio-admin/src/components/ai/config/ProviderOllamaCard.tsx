@@ -1,6 +1,7 @@
 import React from "react";
 import { Server, CheckCircle2, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 import { Button, Input, Label, Badge } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { ModelCatalogItem } from "@/lib/actions/gateways";
 import type { ProviderTestState } from "./useAiConfigProviders";
 
@@ -25,6 +26,7 @@ export function ProviderOllamaCard({
   onTest,
   onRefreshModels,
 }: ProviderOllamaCardProps) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-border/80 bg-card text-card-foreground shadow-xs hover:border-primary/40 transition-colors flex flex-col justify-between overflow-hidden">
       <div>
@@ -136,7 +138,7 @@ export function ProviderOllamaCard({
           onClick={() => setConfig({ ...config, DEFAULT_LLM_PROVIDER: "ollama" })}
           className="text-xs h-7 cursor-pointer"
         >
-          {defaultProvider === "ollama" ? "✓ Utama" : "Set Utama"}
+          {defaultProvider === "ollama" ? t("ai.primary_provider") : t("ai.set_as_primary")}
         </Button>
       </div>
     </div>

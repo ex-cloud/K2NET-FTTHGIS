@@ -11,6 +11,7 @@ import { useOverviewTableControls, type FilterPillOption } from "../use-overview
 import { OverviewTabToolbar } from "../OverviewTabToolbar";
 import { OverviewSortableHeader } from "../OverviewSortableHeader";
 import { BillingEventContextMenu } from "../OverviewContextMenu";
+import { useTranslation } from "@k2net/i18n";
 
 interface BillingEventsTabProps {
   items: BillingEventItem[];
@@ -57,6 +58,7 @@ function getPlanBadge(plan: string) {
 
 export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Dynamic filter pills
   const filterOptions = useMemo<FilterPillOption[]>(() => {
@@ -65,12 +67,12 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
     const overdueCount = items.filter((b) => (b.status ?? "").toUpperCase() === "OVERDUE").length;
 
     return [
-      { id: "ALL", label: "Semua", count: items.length },
-      { id: "ACTIVE", label: "Active", count: activeCount, badgeVariant: "success", dotColor: "bg-primary" },
-      { id: "TRIAL", label: "Trial", count: trialCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
-      { id: "OVERDUE", label: "Overdue", count: overdueCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
+      { id: "ALL", label: t("observability.filter_all"), count: items.length },
+      { id: "ACTIVE", label: t("observability.filter_active"), count: activeCount, badgeVariant: "success", dotColor: "bg-primary" },
+      { id: "TRIAL", label: t("observability.filter_trial"), count: trialCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
+      { id: "OVERDUE", label: t("observability.filter_overdue"), count: overdueCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
     ];
-  }, [items]);
+  }, [items, t]);
 
   const {
     searchQuery,
@@ -154,7 +156,7 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
       <OverviewTabToolbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Cari tenant, plan tier, status tagihan..."
+        searchPlaceholder={t("observability.search_billing_placeholder")}
         filterOptions={filterOptions}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
@@ -172,7 +174,7 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
               <tr className="divide-x divide-border/30">
                 <th className="py-2.5 px-3.5 min-w-[190px]">
                   <OverviewSortableHeader
-                    title="Organisasi / Tenant"
+                    title={t("observability.col_org_isp")}
                     field="orgName"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -181,7 +183,7 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[140px]">
                   <OverviewSortableHeader
-                    title="Plan Langganan"
+                    title={t("observability.col_plan_tier")}
                     field="planName"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -190,7 +192,7 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[160px]">
                   <OverviewSortableHeader
-                    title="Estimasi Nilai / Siklus"
+                    title={t("observability.col_amount")}
                     field="amount"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -199,7 +201,7 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 w-36">
                   <OverviewSortableHeader
-                    title="Jadwal / Jatuh Tempo"
+                    title={t("observability.col_time")}
                     field="timestamp"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -208,7 +210,7 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 w-28 text-center">
                   <OverviewSortableHeader
-                    title="Status"
+                    title={t("common.status")}
                     field="status"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -227,14 +229,12 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <FolderKanban className="size-8 text-muted-foreground/40" />
                       <p className="text-sm font-semibold text-foreground">
-                        {activeFilter !== "ALL"
-                          ? `Tidak ada data billing dengan status ${activeFilter}`
-                          : "Tidak ada event billing"}
+                        {t("observability.no_events_found")}
                       </p>
                       <p className="text-xs text-muted-foreground max-w-sm">
                         {searchQuery
-                          ? `Tidak ada event yang cocok dengan "${searchQuery}".`
-                          : "Semua tagihan langganan SaaS dalam status teratur."}
+                          ? t("observability.no_events_match_query", { query: searchQuery })
+                          : t("observability.no_events_empty_state")}
                       </p>
                       {(searchQuery || activeFilter !== "ALL") && (
                         <button
@@ -243,7 +243,7 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
                           className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all cursor-pointer"
                         >
                           <RotateCcw className="size-3" />
-                          <span>Reset Filter</span>
+                          <span>{t("observability.reset_filter")}</span>
                         </button>
                       )}
                     </div>
@@ -327,7 +327,7 @@ export function BillingEventsTab({ items, loading }: BillingEventsTabProps) {
             {hasMore && (
               <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground font-mono">
                 <Loader2 className="size-3.5 animate-spin text-primary" />
-                <span>Memuat entri berikutnya ({visibleItems.length} / {totalFilteredCount})...</span>
+                <span>{t("observability.loading_next_events", { current: visibleItems.length, total: totalFilteredCount })}</span>
               </div>
             )}
           </div>

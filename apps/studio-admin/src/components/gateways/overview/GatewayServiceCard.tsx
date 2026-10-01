@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "@/lib/navigation-compat";
 import { Cpu, ArrowRight, Sparkles, Copy, ExternalLink } from "lucide-react";
 import { Card, ActionTooltip, UniversalContextMenu, type ContextMenuGroupConfig } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import type { GatewayServiceStatus } from "@/lib/actions/gateways";
 
@@ -28,13 +29,16 @@ function getServiceMetrics(name: string) {
   return SERVICE_METRICS_MAP[name] ?? { throughput: "-", latency: "-", extra: "OK" };
 }
 
-function getGatewayContextMenuGroups(svc: GatewayServiceStatus): ContextMenuGroupConfig[] {
+export function GatewayServiceCard({ service: svc }: GatewayServiceCardProps) {
+  const { t } = useTranslation();
   const nameClean = svc.name.replace("ftth-", "").replace("-gateway", "");
-  return [
+  const metrics = getServiceMetrics(svc.name);
+
+  const getGatewayContextMenuGroups = (): ContextMenuGroupConfig[] => [
     {
       items: [
         {
-          label: "Tanya AI Diagnosa Gateway",
+          label: "AI Diagnosa Gateway",
           icon: Sparkles,
           shortcut: "Ctrl+J",
           onClick: () => {
@@ -53,7 +57,7 @@ function getGatewayContextMenuGroups(svc: GatewayServiceStatus): ContextMenuGrou
     {
       items: [
         {
-          label: `Buka Konfigurasi ${nameClean}`,
+          label: `${t("common.edit")} ${nameClean}`,
           icon: ExternalLink,
           shortcut: "Enter",
           onClick: () => {
@@ -61,34 +65,29 @@ function getGatewayContextMenuGroups(svc: GatewayServiceStatus): ContextMenuGrou
           },
         },
         {
-          label: "Salin Port Gateway",
+          label: `${t("common.copy")} Port`,
           icon: Copy,
           shortcut: "Ctrl+C",
           onClick: () => {
             navigator.clipboard.writeText(String(svc.port));
-            toast.success(`Port ${svc.port} disalin!`);
+            toast.success(`Port ${svc.port} ${t("common.copied")}`);
           },
         },
         {
-          label: "Salin Nama Service",
+          label: `${t("common.copy")} Name`,
           icon: Cpu,
           shortcut: "Alt+C",
           onClick: () => {
             navigator.clipboard.writeText(svc.name);
-            toast.success(`Nama service ${svc.name} disalin!`);
+            toast.success(`${svc.name} ${t("common.copied")}`);
           },
         },
       ],
     },
   ];
-}
-
-export function GatewayServiceCard({ service: svc }: GatewayServiceCardProps) {
-  const nameClean = svc.name.replace("ftth-", "").replace("-gateway", "");
-  const metrics = getServiceMetrics(svc.name);
 
   return (
-    <UniversalContextMenu groups={getGatewayContextMenuGroups(svc)}>
+    <UniversalContextMenu groups={getGatewayContextMenuGroups()}>
       <Card
         glowingEffect
         className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-6 cursor-context-menu"
@@ -139,12 +138,12 @@ export function GatewayServiceCard({ service: svc }: GatewayServiceCardProps) {
 
         {/* Action */}
         <div className="flex items-center gap-3 border-t md:border-t-0 border-border pt-3 md:pt-0">
-          <ActionTooltip label={`Buka Konfigurasi ${nameClean}`} shortcut="Enter">
+          <ActionTooltip label={`Configure ${nameClean}`} shortcut="Enter">
             <Link
               href={`/gateways/${nameClean}`}
               className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium"
             >
-              Configure <ArrowRight className="w-3.5 h-3.5" />
+              {t("nav.settings")} <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </ActionTooltip>
         </div>

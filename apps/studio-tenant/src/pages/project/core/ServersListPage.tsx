@@ -11,8 +11,10 @@ import {
   TableBody,
   TableCell,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 export function ServersListPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
 
@@ -23,7 +25,7 @@ export function ServersListPage() {
       ip: "10.200.0.10:5010",
       service: "Go SNMP Poller + Redis",
       health: "RUNNING",
-      cycleTime: "30 Detik",
+      cycleTime: "30s",
     },
     {
       id: "srv-02",
@@ -39,11 +41,11 @@ export function ServersListPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: "Core Devices", href: `/project/${projectId}/core/olt` },
-          { label: "Server & NMS" },
+          { label: t("inventory.servers_title") },
         ]}
-        title="Server NMS & Engine Poller"
+        title={t("inventory.servers_title")}
       />
 
       <PageContentShell className="space-y-4 custom-scrollbar">
@@ -51,11 +53,11 @@ export function ServersListPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">NAMA SERVER / DAEMON</TableHead>
-                <TableHead className="font-bold">INTERNAL SOCKET</TableHead>
-                <TableHead className="font-bold">LAYANAN FUNGSI</TableHead>
-                <TableHead className="font-bold">SIKLUS POLLING</TableHead>
-                <TableHead className="font-bold">STATUS</TableHead>
+                <TableHead className="font-bold">{t("inventory.server_name").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.ip_address").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("common.description").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">CYCLE</TableHead>
+                <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -79,3 +81,4 @@ export function ServersListPage() {
     </div>
   );
 }
+

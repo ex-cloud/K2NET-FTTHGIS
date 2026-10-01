@@ -1,15 +1,17 @@
 import { type ReactNode } from "react";
 import { PermissionGuard } from "../../hooks/use-permissions";
 import { TenantAccessDenied } from "./TenantAccessDenied";
+import { useTranslation } from "@k2net/i18n";
 
 export function GisPageWrapper({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <PermissionGuard
       permission={["network.view", "map.view", "projects.view"]}
       fallback={
         <TenantAccessDenied
-          title="Akses GIS Studio Dibatasi"
-          description="Anda tidak memiliki hak akses untuk memuat peta topologi spasial, redaman fiber optik, atau canvas CAD."
+          title={t("security.access_denied")}
+          description={t("security.access_denied_gateway")}
           requiredPermission="network.view"
         />
       }

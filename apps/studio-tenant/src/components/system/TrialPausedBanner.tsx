@@ -3,8 +3,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { Clock, ArrowRight, ShieldAlert } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
+import { useTranslation } from "@k2net/i18n";
 
 export function TrialPausedBanner() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {
     tier,
@@ -15,7 +17,7 @@ export function TrialPausedBanner() {
     trialDaysRemaining,
   } = useTenantSubscription();
 
-  // Format cut-off date nicely in Indonesian locale (Hook called unconditionally)
+  // Format cut-off date nicely using the i18n formatDate helper (Hook called unconditionally)
   const cutOffFormatted = React.useMemo(() => {
     if (!gracePeriodUntil) return null;
     try {
@@ -47,18 +49,18 @@ export function TrialPausedBanner() {
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-foreground">
-                  Masa Evaluasi 14 Hari Berakhir — Proyek Sedang Di-Pause (Mode Read-Only)
+                  {t("billing.trial_expired_banner_title")}
                 </span>
                 <span className="inline-flex items-center px-2 py-0.2 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-500 border border-amber-500/30">
-                  Masa Tenggang: {graceDaysRemaining > 0 ? `${graceDaysRemaining} Hari Tersisa` : "Cut-Off Hari Ini"}
+                  {graceDaysRemaining > 0
+                    ? t("billing.trial_grace_days", { days: graceDaysRemaining })
+                    : t("billing.trial_grace_cutoff_today")}
                 </span>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                Pembuatan dan modifikasi aset jaringan dikunci sementara. Upgrade ke paket berbayar sebelum{" "}
-                <strong className="text-foreground font-semibold">
-                  {cutOffFormatted || "batas cut-off 30 hari"}
-                </strong>{" "}
-                agar topologi dan seluruh data proyek Anda tidak dihapus permanen oleh sistem.
+                {t("billing.trial_expired_banner_desc", {
+                  cutoff: cutOffFormatted || t("billing.trial_cutoff_fallback"),
+                })}
               </p>
             </div>
           </div>
@@ -70,7 +72,7 @@ export function TrialPausedBanner() {
               onClick={() => navigate({ to: "/billing" })}
               className="h-7.5 px-3 text-xs font-semibold gap-1.5 shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
             >
-              <span>Upgrade Paket Sekarang</span>
+              <span>{t("billing.trial_upgrade_btn")}</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -87,8 +89,7 @@ export function TrialPausedBanner() {
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5 text-blue-500 shrink-0" />
             <span className="text-foreground">
-              Masa evaluasi Starter Free Anda tersisa{" "}
-              <strong className="font-semibold text-blue-500">{trialDaysRemaining} hari</strong> lagi.
+              {t("billing.trial_active_banner", { days: trialDaysRemaining })}
             </span>
           </div>
           <Button
@@ -97,7 +98,7 @@ export function TrialPausedBanner() {
             onClick={() => navigate({ to: "/billing" })}
             className="h-6 px-2.5 text-[11px] font-medium border-blue-500/30 hover:bg-blue-500/10 text-foreground cursor-pointer self-end sm:self-auto"
           >
-            Pilih Paket Langganan
+            {t("billing.trial_choose_plan_btn")}
           </Button>
         </div>
       </div>

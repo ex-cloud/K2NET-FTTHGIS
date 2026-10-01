@@ -3,6 +3,7 @@ import { Badge, Button } from "@k2net/ui";
 import { CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ProcessStatus } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface ImportHudTerminalProps {
   processStatus: ProcessStatus;
@@ -21,6 +22,7 @@ export function ImportHudTerminal({
   onClose,
   onReset,
 }: ImportHudTerminalProps) {
+  const { t } = useTranslation();
   return (
     <div className="p-6 md:p-8 space-y-6 bg-card/80 text-foreground flex flex-col justify-between">
       {/* Header with HUD Diamond & Status Badge */}
@@ -111,10 +113,10 @@ export function ImportHudTerminal({
             {processStatus === "COMPLETED" ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                SELESAI & TUTUP
+                {t("organizations.import_done_and_close")}
               </>
             ) : (
-              "TUTUP"
+              t("organizations.import_close")
             )}
           </Button>
         )}

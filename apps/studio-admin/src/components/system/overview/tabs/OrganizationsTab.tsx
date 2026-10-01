@@ -12,6 +12,7 @@ import { OverviewTabToolbar } from "../OverviewTabToolbar";
 import { OverviewSortableHeader } from "../OverviewSortableHeader";
 import { OrganizationContextMenu } from "@/components/organizations/OrganizationContextMenu";
 import { enrichOrganization, type OrganizationStatus } from "@/components/organizations/types";
+import { useTranslation } from "@k2net/i18n";
 
 interface OrganizationsTabProps {
   items: OrganizationItem[];
@@ -71,6 +72,7 @@ function getStatusDisplay(status: string, isTrial: boolean) {
 
 export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Dynamic filter pill options
   const filterOptions = useMemo<FilterPillOption[]>(() => {
@@ -82,12 +84,12 @@ export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
     }).length;
 
     return [
-      { id: "ALL", label: "Semua", count: items.length },
-      { id: "ACTIVE", label: "Active", count: activeCount, badgeVariant: "success", dotColor: "bg-primary" },
-      { id: "TRIAL", label: "Trial", count: trialCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
-      { id: "OVERDUE", label: "Overdue", count: overdueCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
+      { id: "ALL", label: t("observability.filter_all"), count: items.length },
+      { id: "ACTIVE", label: t("observability.filter_active"), count: activeCount, badgeVariant: "success", dotColor: "bg-primary" },
+      { id: "TRIAL", label: t("observability.filter_trial"), count: trialCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
+      { id: "OVERDUE", label: t("observability.filter_overdue"), count: overdueCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
     ];
-  }, [items]);
+  }, [items, t]);
 
   const {
     searchQuery,
@@ -173,7 +175,7 @@ export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
       <OverviewTabToolbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Cari nama tenant, slug, plan tier..."
+        searchPlaceholder={t("observability.search_orgs_placeholder")}
         filterOptions={filterOptions}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
@@ -191,7 +193,7 @@ export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
               <tr className="divide-x divide-border/30">
                 <th className="py-2.5 px-3.5 min-w-[200px]">
                   <OverviewSortableHeader
-                    title="Organisasi / ISP"
+                    title={t("observability.col_org_isp")}
                     field="name"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -200,7 +202,7 @@ export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[140px]">
                   <OverviewSortableHeader
-                    title="Plan Tier"
+                    title={t("observability.col_plan_tier")}
                     field="planTier"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -209,7 +211,7 @@ export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[130px] text-center">
                   <OverviewSortableHeader
-                    title="Status Langganan"
+                    title={t("observability.col_subscription_status")}
                     field="status"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -228,14 +230,12 @@ export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <FolderKanban className="size-8 text-muted-foreground/40" />
                       <p className="text-sm font-semibold text-foreground">
-                        {activeFilter !== "ALL"
-                          ? `Tidak ada organisasi dengan status ${activeFilter}`
-                          : "Tidak ada data organisasi ditemukan"}
+                        {t("observability.no_orgs_found")}
                       </p>
                       <p className="text-xs text-muted-foreground max-w-sm">
                         {searchQuery
-                          ? `Tidak ada organisasi yang cocok dengan "${searchQuery}".`
-                          : "Belum ada tenant ISP terdaftar di platform."}
+                          ? t("observability.no_orgs_match_query", { query: searchQuery })
+                          : t("observability.no_orgs_empty_state")}
                       </p>
                       {(searchQuery || activeFilter !== "ALL") && (
                         <button
@@ -244,7 +244,7 @@ export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
                           className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all cursor-pointer"
                         >
                           <RotateCcw className="size-3" />
-                          <span>Reset Filter</span>
+                          <span>{t("observability.reset_filter")}</span>
                         </button>
                       )}
                     </div>
@@ -326,7 +326,7 @@ export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
             {hasMore && (
               <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground font-mono">
                 <Loader2 className="size-3.5 animate-spin text-primary" />
-                <span>Memuat tenant berikutnya ({visibleItems.length} / {totalFilteredCount})...</span>
+                <span>{t("observability.loading_next_orgs", { current: visibleItems.length, total: totalFilteredCount })}</span>
               </div>
             )}
           </div>

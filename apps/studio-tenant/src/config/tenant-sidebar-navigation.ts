@@ -24,6 +24,7 @@ export interface SubMenuItem {
   icon: LucideIcon;
   description?: string;
   badge?: string;
+  shortcut?: string;
   requiredPermission?: string;
 }
 
@@ -47,6 +48,7 @@ export interface NavItem {
   translationKey?: TranslationKey;
   href: string;
   icon: LucideIcon;
+  shortcut?: string;
   hasSecondarySidebar?: boolean;
   requiredPermission?: string;
 }
@@ -62,6 +64,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     translationKey: "nav.tenant_projects",
     href: "/projects",
     icon: Boxes,
+    shortcut: "G then P",
   },
   {
     id: "team",
@@ -69,6 +72,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     translationKey: "nav.tenant_team",
     href: "/team/members",
     icon: Users,
+    shortcut: "G then M",
     hasSecondarySidebar: true,
   },
   {
@@ -77,6 +81,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     translationKey: "nav.tenant_integrations",
     href: "/integrations",
     icon: Webhook,
+    shortcut: "G then I",
   },
   {
     id: "usage",
@@ -84,6 +89,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     translationKey: "nav.tenant_usage",
     href: "/usage",
     icon: Activity,
+    shortcut: "G then U",
   },
   {
     id: "billing",
@@ -91,6 +97,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     translationKey: "nav.tenant_billing",
     href: "/billing",
     icon: CreditCard,
+    shortcut: "G then B",
   },
   {
     id: "settings",
@@ -98,6 +105,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     translationKey: "nav.tenant_settings",
     href: "/settings/general",
     icon: Settings,
+    shortcut: "G then ,",
     hasSecondarySidebar: true,
   },
 ];
@@ -118,6 +126,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             href: "/team/members",
             icon: Users,
             description: "Daftar pengguna & undangan aktif",
+            shortcut: "S then M",
           },
           {
             id: "roles",
@@ -126,6 +135,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             href: "/team/roles",
             icon: ShieldCheck,
             description: "Hak akses PBAC organisasi",
+            shortcut: "S then R",
           },
           {
             id: "activity",
@@ -134,6 +144,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             href: "/team/activity",
             icon: History,
             description: "Log audit tindakan anggota",
+            shortcut: "S then A",
           },
         ],
       },
@@ -156,6 +167,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             href: "/settings/general",
             icon: Building,
             description: "Nama, domain & kontak resmi",
+            shortcut: "S then G",
           },
           {
             id: "branding",
@@ -164,6 +176,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             href: "/settings/branding",
             icon: PenTool,
             description: "Identitas visual & logo tenant",
+            shortcut: "S then B",
           },
         ],
       },
@@ -178,6 +191,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             href: "/settings/security",
             icon: Shield,
             description: "Autentikasi berlapis & sesi",
+            shortcut: "S then S",
           },
           {
             id: "sso",
@@ -186,6 +200,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             href: "/settings/sso",
             icon: Key,
             description: "Integrasi SAML / OIDC Keycloak",
+            shortcut: "S then K",
           },
           {
             id: "oauth",
@@ -194,6 +209,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             href: "/settings/oauth",
             icon: Webhook,
             description: "Kredensial integrasi gateway",
+            shortcut: "S then O",
           },
           {
             id: "audit-logs",
@@ -202,6 +218,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             href: "/settings/audit-logs",
             icon: History,
             description: "Log kepatuhan & rekam jejak",
+            shortcut: "S then L",
           },
         ],
       },

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WebhookEndpoint, PingResult } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface EndpointRowItemProps {
   endpoint: WebhookEndpoint;
@@ -41,6 +42,8 @@ export function EndpointRowItem({
   onRollSecret,
   onCopy,
 }: EndpointRowItemProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="p-4 rounded-xl border border-border/80 bg-background/40 hover:bg-muted/20 transition-all space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -80,7 +83,7 @@ export function EndpointRowItem({
             onClick={() => onTestPing(ep.id)}
             disabled={isPinging || !ep.isActive}
             className="h-7 px-2 text-xs border-border text-foreground hover:bg-muted gap-1 cursor-pointer"
-            title="Uji kirim ping ke endpoint ini"
+            title={t("organizations.webhook_test_ping_title")}
           >
             <Send className={cn("h-3 w-3 text-primary", isPinging && "animate-pulse")} />
             <span>{isPinging ? "Pinging..." : "Test Ping"}</span>

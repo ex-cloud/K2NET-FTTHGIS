@@ -18,6 +18,7 @@ import {
 import { Archive, FileCode, Download, RotateCcw, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { type TenantSnapshot, formatBackupFileSize } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface BackupSnapshotsTableProps {
   snapshots: TenantSnapshot[];
@@ -34,14 +35,16 @@ export function BackupSnapshotsTable({
   onDownloadSnapshot,
   onRestoreSnapshot,
 }: BackupSnapshotsTableProps) {
+  const { t } = useTranslation();
+
   const handleCopySha = (sha: string) => {
     navigator.clipboard.writeText(sha);
-    toast.success("SHA-256 Checksum berhasil disalin ke clipboard!");
+    toast.success(t("organizations.backup_copy_sha_success"));
   };
 
   const handleCopyFilename = (name: string) => {
     navigator.clipboard.writeText(name);
-    toast.success("Nama berkas snapshot disalin!");
+    toast.success(t("organizations.backup_copy_filename_success"));
   };
 
   return (
@@ -66,26 +69,26 @@ export function BackupSnapshotsTable({
       <Table>
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">
-            <TableHead className="text-xs font-semibold text-foreground">Nama Berkas Snapshot</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Tipe</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Ukuran</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Entitas PostGIS</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Dibuat Pada</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Status S3</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground text-right">Aksi</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.backup_col_filename")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.backup_col_type")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("common.size")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.backup_col_entities")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.backup_col_created_at")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.backup_col_s3_status")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground text-right">{t("common.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-8 text-xs text-muted-foreground">
-                Memuat riwayat snapshot dari database &amp; storage...
+                {t("organizations.backup_loading_history")}
               </TableCell>
             </TableRow>
           ) : snapshots.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-8 text-xs text-muted-foreground">
-                Belum ada snapshot database tersimpan untuk organisasi ini.
+                {t("organizations.backup_empty_history")}
               </TableCell>
             </TableRow>
           ) : (
@@ -127,7 +130,7 @@ export function BackupSnapshotsTable({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <ActionTooltip label="Unduh Snapshot JSON">
+                        <ActionTooltip label={t("organizations.backup_action_download_tooltip")}>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -139,7 +142,7 @@ export function BackupSnapshotsTable({
                         </ActionTooltip>
 
                         {onRestoreSnapshot && (
-                          <ActionTooltip label="Pulihkan Data dari Snapshot Ini">
+                          <ActionTooltip label={t("organizations.backup_action_restore_tooltip")}>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -162,7 +165,7 @@ export function BackupSnapshotsTable({
                     className="cursor-pointer font-medium gap-2 text-foreground focus:bg-accent"
                   >
                     <Download className="h-3.5 w-3.5 text-primary" />
-                    <span>Unduh Snapshot (.json)</span>
+                    <span>{t("organizations.backup_ctx_download")}</span>
                     <ContextMenuShortcut>↵</ContextMenuShortcut>
                   </ContextMenuItem>
 
@@ -173,7 +176,7 @@ export function BackupSnapshotsTable({
                       className="cursor-pointer font-medium gap-2 text-primary focus:bg-primary/10"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
-                      <span>Pulihkan Data Tenant Ini</span>
+                      <span>{t("organizations.backup_ctx_restore")}</span>
                     </ContextMenuItem>
                   )}
 
@@ -184,7 +187,7 @@ export function BackupSnapshotsTable({
                     className="cursor-pointer gap-2 focus:bg-muted"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>Salin SHA-256 Checksum</span>
+                    <span>{t("organizations.backup_ctx_copy_sha")}</span>
                   </ContextMenuItem>
 
                   <ContextMenuItem
@@ -192,7 +195,7 @@ export function BackupSnapshotsTable({
                     className="cursor-pointer gap-2 focus:bg-muted"
                   >
                     <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>Salin Nama Berkas</span>
+                    <span>{t("organizations.backup_ctx_copy_filename")}</span>
                   </ContextMenuItem>
                 </ContextMenuContent>
               </ContextMenu>

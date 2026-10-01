@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button, Input, Label, Switch, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Skeleton, Separator, TracingBeam, ActionTooltip } from "@k2net/ui";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 
 function PasswordComplexityToggles({
   requireSymbols,
@@ -184,6 +185,7 @@ function PasswordEvaluationMatrixCard({
 }
 
 export default function PasswordPolicyPage() {
+  const { t } = useTranslation();
   const { settings, loading, updateSettings, isUpdating } = useSystemSettings();
   const { canAccess } = usePermissions();
   const canManageSecurity = canAccess("system.security.manage");
@@ -334,10 +336,10 @@ export default function PasswordPolicyPage() {
                 <ActionTooltip
                   label={
                     !canManageSecurity
-                      ? "Akses Read-Only: Memerlukan izin system.security.manage"
+                      ? t("security.access_denied_security")
                       : isChanged()
-                      ? "Simpan Perubahan Kebijakan Password"
-                      : "Tidak Ada Perubahan"
+                      ? t("security.save_password_policy_tooltip")
+                      : t("security.no_changes")
                   }
                   shortcut={canManageSecurity && isChanged() ? "Ctrl+S" : undefined}
                 >
@@ -348,7 +350,7 @@ export default function PasswordPolicyPage() {
                     className="h-7 px-2.5 rounded-md text-xs font-medium transition-all shadow-xs gap-1.5 cursor-pointer"
                   >
                     {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                    Apply Password Policies
+                    {t("security.apply_password_policies")}
                   </Button>
                 </ActionTooltip>
               </CardFooter>

@@ -34,6 +34,7 @@ import { apiClient } from "../../lib/api-client";
 import { getCurrentOrgSlug } from "../../lib/domain";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 import { TeamInviteWizard } from "../../components/team/TeamInviteWizard";
+import { useTranslation } from "@k2net/i18n";
 
 interface UserProjectRole {
   projectId: string;
@@ -59,6 +60,7 @@ interface UserDto {
 }
 
 export function TeamPage() {
+  const { t, formatDate } = useTranslation();
   const routerState = useRouterState();
   const navigate = useNavigate();
   const pathname = routerState.location.pathname;
@@ -142,28 +144,28 @@ export function TeamPage() {
       <PageHeader
         title={
           subView === "roles"
-            ? "Peran & Izin PBAC"
+            ? t("security.roles_matrix")
             : subView === "activity"
-            ? "Riwayat Aktivitas Tim"
-            : "Manajemen Anggota Tim"
+            ? t("security.audit_trail_title")
+            : t("users.title")
         }
         breadcrumbs={[
-          { label: "Organisasi", href: "/projects" },
-          { label: "Tim", href: "/team/members" },
+          { label: t("nav.organizations"), href: "/projects" },
+          { label: t("nav.team_members"), href: "/team/members" },
           {
             label:
               subView === "roles"
-                ? "Peran & Izin"
+                ? t("security.roles_matrix")
                 : subView === "activity"
-                ? "Aktivitas"
-                : "Anggota",
+                ? t("security.audit_trail_title")
+                : t("users.title"),
           },
         ]}
         actions={
           subView === "members" && (
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-muted-foreground hidden sm:inline">
-                Kuota Anggota: <strong>{members.length}/{maxMembers}</strong>
+                {t("users.active_now")}: <strong>{members.length}/{maxMembers}</strong>
               </span>
               <Button
                 size="sm"
@@ -171,7 +173,7 @@ export function TeamPage() {
                 className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
               >
                 <Plus className="h-4 w-4" />
-                Undang Anggota
+                {t("users.add_user_button")}
               </Button>
             </div>
           )
@@ -186,7 +188,7 @@ export function TeamPage() {
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Cari nama atau email..."
+                  placeholder={t("users.filter_placeholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="h-8 pl-8 text-xs bg-muted/20"
@@ -203,11 +205,11 @@ export function TeamPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40 text-[11px]">
-                      <TableHead className="font-bold">NAMA & EMAIL</TableHead>
-                      <TableHead className="font-bold">PERAN (ROLE)</TableHead>
-                      <TableHead className="font-bold">STATUS</TableHead>
-                      <TableHead className="font-bold">PROYEK DITUGASKAN</TableHead>
-                      <TableHead className="font-bold">TERDAFTAR SEJAK</TableHead>
+                      <TableHead className="font-bold">{t("users.col_user").toUpperCase()}</TableHead>
+                      <TableHead className="font-bold">{t("users.col_role").toUpperCase()}</TableHead>
+                      <TableHead className="font-bold">{t("users.col_status").toUpperCase()}</TableHead>
+                      <TableHead className="font-bold">{t("projects.overview_title").toUpperCase()}</TableHead>
+                      <TableHead className="font-bold">{t("users.col_created_at").toUpperCase()}</TableHead>
                       <TableHead className="w-12 text-right" />
                     </TableRow>
                   </TableHeader>
@@ -227,7 +229,7 @@ export function TeamPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-mono text-[10px] bg-muted/40">
-                            {member.roleDisplayName || member.roleName || "Anggota Tim"}
+                            {member.roleDisplayName || member.roleName || t("users.role_viewer")}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -238,16 +240,16 @@ export function TeamPage() {
                                 : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                             }`}
                           >
-                            {member.status || "ACTIVE"}
+                            {member.status === "ACTIVE" ? t("users.status_active") : member.status}
                           </span>
                         </TableCell>
                         <TableCell className="font-mono font-semibold">
                           {member.projectRoles && member.projectRoles.length > 0
-                            ? `${member.projectRoles.length} Proyek`
-                            : "Semua Proyek"}
+                            ? `${member.projectRoles.length} ${t("nav.projects")}`
+                            : t("common.all")}
                         </TableCell>
                         <TableCell className="text-muted-foreground font-mono text-[11px]">
-                          {member.createdAt ? new Date(member.createdAt).toLocaleDateString("id-ID") : "-"}
+                          {member.createdAt ? formatDate(new Date(member.createdAt)) : "-"}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -257,9 +259,9 @@ export function TeamPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="text-xs">
-                              <DropdownMenuItem>Ubah Peran</DropdownMenuItem>
-                              <DropdownMenuItem>Kelola Hak Proyek</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">Cabut Akses</DropdownMenuItem>
+                              <DropdownMenuItem>{t("users.ctx_edit_profile")}</DropdownMenuItem>
+                              <DropdownMenuItem>{t("users.ctx_copy_email")}</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">{t("users.ctx_revoke_session")}</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -270,11 +272,11 @@ export function TeamPage() {
               ) : (
                 <div className="p-8 text-center space-y-2">
                   <Users className="h-8 w-8 text-muted-foreground mx-auto" />
-                  <p className="text-xs font-semibold text-foreground">Tidak Ada Anggota Ditemukan</p>
+                  <p className="text-xs font-semibold text-foreground">{t("users.no_users_found")}</p>
                   <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                     {searchQuery
-                      ? "Tidak ada anggota tim yang cocok dengan kriteria pencarian."
-                      : "Mulai dengan mengundang rekan tim Anda untuk berkolaborasi."}
+                      ? t("users.no_users_found")
+                      : t("users.invite_tooltip")}
                   </p>
                 </div>
               )}
@@ -300,7 +302,7 @@ export function TeamPage() {
                 </p>
                 <div className="pt-2 border-t border-border/40">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
-                    Izin Efektif:
+                    {t("security.roles_matrix")}:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {role.permissions.map((p, pIdx) => (
@@ -323,9 +325,9 @@ export function TeamPage() {
           <Card className="p-6 border-border/60 bg-card space-y-3 shadow-xs text-center">
             <div className="flex flex-col items-center justify-center space-y-2">
               <UserCheck className="h-8 w-8 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Log Aktivitas Tim Terpusat</h3>
+              <h3 className="text-sm font-bold text-foreground">{t("security.audit_trail_title")}</h3>
               <p className="text-xs text-muted-foreground max-w-md">
-                Seluruh aktivitas mutasi tim dan audit trail akan dialirkan secara otomatis melalui arsitektur Dual-Layer Audit Log.
+                {t("security.audit_trail_desc")}
               </p>
             </div>
           </Card>
@@ -340,8 +342,8 @@ export function TeamPage() {
       <FeatureUpgradeModal
         open={upgradeModalOpen}
         onOpenChange={setUpgradeModalOpen}
-        featureName="Kapasitas Anggota Tim"
-        featureDescription={`Organisasi Anda telah mencapai batas kuota ${members.length}/${maxMembers} anggota tim untuk paket ${tier.toUpperCase()}. Tingkatkan ke paket yang lebih tinggi untuk menambah anggota tim baru.`}
+        featureName={t("users.total_users")}
+        featureDescription={t("billing.upgrade_prompt")}
         requiredTier={tier === "free" ? "starter" : tier === "starter" ? "pro" : "enterprise"}
         currentTier={tier}
         onUpgradeClick={() => navigate({ to: "/billing" })}

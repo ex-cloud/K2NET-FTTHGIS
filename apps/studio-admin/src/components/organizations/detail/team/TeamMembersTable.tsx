@@ -27,6 +27,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { TenantUser, TenantUserRole } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface TeamMembersTableProps {
   users: TenantUser[];
@@ -60,6 +61,8 @@ export function TeamMembersTable({
   onCopy,
   onRemoveUser,
 }: TeamMembersTableProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">
       <div className="py-3 px-4 border-b border-border/80 bg-muted/20 flex items-center justify-between">
@@ -102,7 +105,7 @@ export function TeamMembersTable({
                 <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs font-mono">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <span>Memuat daftar pengguna Keycloak &amp; Database...</span>
+                    <span>{t("organizations.loading_team_members")}</span>
                   </div>
                 </TableCell>
               </TableRow>
@@ -111,7 +114,7 @@ export function TeamMembersTable({
                 <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs font-mono">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Users className="h-6 w-6 text-muted-foreground/40" />
-                    <span>Belum ada akun pengguna tambahan di realm ini.</span>
+                    <span>{t("organizations.team_empty_members")}</span>
                   </div>
                 </TableCell>
               </TableRow>

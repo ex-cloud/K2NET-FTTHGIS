@@ -13,6 +13,7 @@ import {
 } from "@k2net/ui";
 import type { ImpersonationSessionItem } from "@/hooks/useImpersonationCenter";
 import { formatDuration, formatTimestamp } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface ImpersonationHistoryTableProps {
   historySessions: ImpersonationSessionItem[];
@@ -71,6 +72,7 @@ export function ImpersonationHistoryTable({
   loading,
   onSelectSession,
 }: ImpersonationHistoryTableProps) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs space-y-0">
       {/* Table Filters Header */}
@@ -78,7 +80,7 @@ export function ImpersonationHistoryTable({
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-bold text-foreground">
-            Riwayat &amp; Log Forensik Impersonasi ({totalElements})
+            {t("organizations.impersonation_history_title", { total: totalElements })}
           </h2>
         </div>
 
@@ -92,7 +94,7 @@ export function ImpersonationHistoryTable({
                 setSearchQuery(e.target.value);
                 setPage(0);
               }}
-              placeholder="Cari tenant, admin, tiket, alasan..."
+              placeholder={t("organizations.impersonation_search_placeholder")}
               className="pl-8 h-8 text-xs bg-background"
             />
           </div>
@@ -112,7 +114,7 @@ export function ImpersonationHistoryTable({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {st === "ALL" ? "Semua" : st}
+                {st === "ALL" ? t("common.all") : st}
               </button>
             ))}
           </div>
@@ -126,19 +128,19 @@ export function ImpersonationHistoryTable({
         </div>
       ) : historySessions.length === 0 ? (
         <div className="py-16 text-center text-xs text-muted-foreground">
-          Tidak ada data riwayat yang sesuai dengan filter pencarian.
+          {t("organizations.impersonation_no_history")}
         </div>
       ) : (
         <Table>
           <TableHeader className="bg-muted/40">
             <TableRow className="border-b border-border text-xs">
-              <TableHead className="font-semibold text-muted-foreground">Waktu Mulai</TableHead>
-              <TableHead className="font-semibold text-muted-foreground">Admin Pelaksana</TableHead>
-              <TableHead className="font-semibold text-muted-foreground">Tenant Target</TableHead>
-              <TableHead className="font-semibold text-muted-foreground">Alasan &amp; Referensi</TableHead>
-              <TableHead className="font-semibold text-muted-foreground">Durasi</TableHead>
-              <TableHead className="font-semibold text-muted-foreground">Status</TableHead>
-              <TableHead className="font-semibold text-muted-foreground text-right pr-5">Rincian</TableHead>
+              <TableHead className="font-semibold text-muted-foreground">{t("organizations.col_started_at")}</TableHead>
+              <TableHead className="font-semibold text-muted-foreground">{t("organizations.col_actor")}</TableHead>
+              <TableHead className="font-semibold text-muted-foreground">{t("organizations.col_target_org")}</TableHead>
+              <TableHead className="font-semibold text-muted-foreground">{t("organizations.col_reason")}</TableHead>
+              <TableHead className="font-semibold text-muted-foreground">{t("organizations.col_duration")}</TableHead>
+              <TableHead className="font-semibold text-muted-foreground">{t("organizations.col_status")}</TableHead>
+              <TableHead className="font-semibold text-muted-foreground text-right pr-5">{t("common.details")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -189,7 +191,7 @@ export function ImpersonationHistoryTable({
                     className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
                     <Eye className="h-3.5 w-3.5" />
-                    <span>Lihat Audit</span>
+                    <span>{t("organizations.view_audit_btn")}</span>
                   </Button>
                 </TableCell>
               </TableRow>
@@ -202,7 +204,7 @@ export function ImpersonationHistoryTable({
       {totalPages > 1 && (
         <div className="p-4 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
           <div>
-            Halaman <span className="font-semibold text-foreground">{page + 1}</span> dari <span className="font-semibold text-foreground">{totalPages}</span> ({totalElements} total entri)
+            {t("organizations.pagination_info", { page: page + 1, totalPages, totalElements })}
           </div>
           <div className="flex items-center gap-1">
             <Button

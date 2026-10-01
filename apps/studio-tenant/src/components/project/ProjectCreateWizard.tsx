@@ -20,6 +20,7 @@ import {
 import { Box, MapPin, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useProjects } from "../../hooks/useProjects";
+import { useTranslation } from "@k2net/i18n";
 
 interface ProjectCreateWizardProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface ProjectCreateWizardProps {
 }
 
 export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { createProject, isCreating } = useProjects();
 
@@ -62,11 +64,11 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
   const handleNext = () => {
     if (step === 1) {
       if (!formData.name.trim()) {
-        toast.error("Nama proyek wajib diisi");
+        toast.error(t("projects.validation_name_required"));
         return;
       }
       if (!formData.code.trim()) {
-        toast.error("Kode proyek wajib diisi");
+        toast.error(t("projects.validation_code_required"));
         return;
       }
       setStep(2);
@@ -90,14 +92,14 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
       };
 
       const result = await createProject(payload);
-      toast.success("Proyek FTTH berhasil dibuat!");
+      toast.success(t("projects.create_success"));
       handleClose();
 
       if (result && result.id) {
         navigate({ to: `/project/${result.id}/overview` });
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Gagal membuat proyek";
+      const message = err instanceof Error ? err.message : t("projects.create_error");
       toast.error(message);
     }
   };
@@ -112,10 +114,15 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
             </div>
             <div>
               <DialogTitle className="text-base font-bold">
-                Buat Proyek FTTH Baru
+                {t("projects.wizard_modal_title")}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Langkah {step} dari 3: {step === 1 ? "Informasi Dasar" : step === 2 ? "Konfigurasi GIS" : "Konfirmasi"}
+                {t("projects.wizard_step_of", { step })}:{" "}
+                {step === 1
+                  ? t("projects.wizard_step1_label")
+                  : step === 2
+                    ? t("projects.wizard_step2_label")
+                    : t("projects.wizard_step3_label")}
               </DialogDescription>
             </div>
           </div>
@@ -133,10 +140,10 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
           <div className="space-y-3.5 py-2">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">
-                Nama Proyek <span className="text-destructive">*</span>
+                {t("projects.project_name")} <span className="text-destructive">*</span>
               </Label>
               <Input
-                placeholder="misal: FTTH Cluster Dago Atas"
+                placeholder={t("projects.name_placeholder")}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="h-8.5 text-xs"
@@ -146,10 +153,10 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">
-                  Kode Proyek (Singkatan) <span className="text-destructive">*</span>
+                  {t("projects.project_code_label")} <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  placeholder="misal: BDG-DGO"
+                  placeholder={t("projects.code_placeholder")}
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                   className="h-8.5 text-xs font-mono"
@@ -157,7 +164,7 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Status Awal</Label>
+                <Label className="text-xs font-semibold">{t("projects.initial_status")}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(val) => setFormData({ ...formData, status: val })}
@@ -166,18 +173,18 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PLANNING">PLANNING (Perencanaan)</SelectItem>
-                    <SelectItem value="PRODUCTION">PRODUCTION (Live)</SelectItem>
-                    <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
+                    <SelectItem value="PLANNING">{t("projects.status_planning")}</SelectItem>
+                    <SelectItem value="PRODUCTION">{t("projects.status_production")}</SelectItem>
+                    <SelectItem value="MAINTENANCE">{t("projects.status_maintenance")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Deskripsi Cakupan / Lokasi</Label>
+              <Label className="text-xs font-semibold">{t("projects.description_label")}</Label>
               <Textarea
-                placeholder="Rincian area perumahan, RW/RT, atau target coverage..."
+                placeholder={t("projects.description_placeholder")}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="text-xs min-h-[70px] resize-none"
@@ -192,13 +199,13 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
             <div className="rounded-lg bg-muted/40 p-3 border border-border/60 flex items-start gap-2.5">
               <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Tentukan titik pusat peta default untuk memudahkan navigasi teknisi dan surveyor saat membuka modul Map Studio.
+                {t("projects.center_coords_hint")}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Pusat Longitude (Lng)</Label>
+                <Label className="text-xs font-semibold">{t("projects.center_lng_label")}</Label>
                 <Input
                   placeholder="107.6191"
                   value={formData.centerLng}
@@ -208,7 +215,7 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Pusat Latitude (Lat)</Label>
+                <Label className="text-xs font-semibold">{t("projects.center_lat_label")}</Label>
                 <Input
                   placeholder="-6.9175"
                   value={formData.centerLat}
@@ -219,7 +226,7 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Target Kapasitas Pelanggan (Homepass)</Label>
+              <Label className="text-xs font-semibold">{t("projects.target_subscribers_label")}</Label>
               <Input
                 type="number"
                 placeholder="1000"
@@ -231,31 +238,31 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
           </div>
         )}
 
-        {/* Step 3: Konfirmasi Ringkasan */}
+        {/* Step 3: Confirmation Summary */}
         {step === 3 && (
           <div className="space-y-3 py-2">
             <div className="rounded-xl border border-border bg-card p-4 space-y-2.5">
               <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                <span className="text-xs text-muted-foreground">Nama Proyek:</span>
+                <span className="text-xs text-muted-foreground">{t("projects.project_name")}:</span>
                 <span className="text-xs font-bold text-foreground">{formData.name}</span>
               </div>
               <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                <span className="text-xs text-muted-foreground">Kode Proyek:</span>
+                <span className="text-xs text-muted-foreground">{t("projects.project_code")}:</span>
                 <span className="text-xs font-mono font-semibold text-primary">{formData.code}</span>
               </div>
               <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                <span className="text-xs text-muted-foreground">Status:</span>
+                <span className="text-xs text-muted-foreground">{t("common.status")}:</span>
                 <span className="text-xs font-semibold text-foreground">{formData.status}</span>
               </div>
               <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                <span className="text-xs text-muted-foreground">Koordinat Pusat:</span>
+                <span className="text-xs text-muted-foreground">{t("projects.center_coords_label")}:</span>
                 <span className="text-xs font-mono text-muted-foreground">
                   {formData.centerLng}, {formData.centerLat}
                 </span>
               </div>
               {formData.description && (
                 <div className="pt-1">
-                  <span className="text-[11px] text-muted-foreground block mb-0.5">Deskripsi:</span>
+                  <span className="text-[11px] text-muted-foreground block mb-0.5">{t("common.description")}:</span>
                   <p className="text-xs text-foreground bg-muted/30 p-2 rounded-md">
                     {formData.description}
                   </p>
@@ -276,7 +283,7 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
               className="text-xs gap-1.5"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Kembali
+              {t("common.back")}
             </Button>
           ) : (
             <div />
@@ -291,7 +298,7 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
               disabled={isCreating}
               className="text-xs"
             >
-              Batal
+              {t("common.cancel")}
             </Button>
 
             {step < 3 ? (
@@ -302,7 +309,7 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
                 onClick={handleNext}
                 className="text-xs gap-1.5 font-semibold"
               >
-                Lanjut
+                {t("common.next")}
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             ) : (
@@ -317,12 +324,12 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
                 {isCreating ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Menyimpan...
+                    {t("inventory.saving")}
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    Buat Proyek
+                    {t("projects.create_project_btn")}
                   </>
                 )}
               </Button>

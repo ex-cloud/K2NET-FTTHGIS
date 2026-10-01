@@ -5,6 +5,7 @@ import { useAuth } from "@k2net/auth/client";
 import { AuthLoginLayout, Button } from "@k2net/ui";
 import { extractTenantSlug } from "../../lib/keycloak-config";
 import { Shield, ArrowRight } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface AuthMethod {
   id: string;
@@ -29,6 +30,7 @@ interface OrganizationAuthMethodsResponse {
 }
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const { authenticated, login, initialized } = useAuth();
   const navigate = useNavigate();
   const tenantSlug = extractTenantSlug();
@@ -132,14 +134,14 @@ export function LoginPage() {
                 {authConfig?.name || "ISP Workspace"} Authentication
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
-                Mengalihkan ke Keycloak 1-Step Authentication...
+                {t("auth.logging_in")}
               </p>
             </div>
 
             <div className="my-2 flex items-center justify-center gap-2">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <span className="text-xs font-mono text-muted-foreground">
-                Memverifikasi sesi keamanan...
+                {t("auth.logging_in")}
               </span>
             </div>
 
@@ -149,7 +151,7 @@ export function LoginPage() {
               onClick={handleManualLogin}
               className="mt-2 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer text-xs"
             >
-              <span>Lanjutkan ke Form Login Keycloak</span>
+              <span>{t("auth.sso_button")}</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -158,3 +160,4 @@ export function LoginPage() {
     </AuthLoginLayout>
   );
 }
+

@@ -21,6 +21,7 @@ import {
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 import { 
   CATEGORIES, 
   KNOWLEDGE_SCOPES, 
@@ -34,6 +35,8 @@ interface CategoryDropdownProps {
 }
 
 function ToolbarCategoryDropdown({ selectedCategory, setSelectedCategory }: CategoryDropdownProps) {
+  const { t } = useTranslation();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -44,13 +47,13 @@ function ToolbarCategoryDropdown({ selectedCategory, setSelectedCategory }: Cate
             : "bg-card border-border hover:bg-muted/40 text-foreground"
         )}>
           <Filter className="w-3.5 h-3.5 text-foreground/75 dark:text-muted-foreground" />
-          <span>{CATEGORIES.find(c => c.id === selectedCategory)?.label || "Kategori"}</span>
+          <span>{CATEGORIES.find(c => c.id === selectedCategory)?.label || t("common.all")}</span>
           <ChevronDown className="w-3.5 h-3.5 opacity-60" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg rounded-xl p-1.5 min-w-60 z-50">
         <p className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-wider px-2 py-1.5">
-          Filter Kategori Pengetahuan
+          {t("ai.filter_category")}
         </p>
         <div className="space-y-0.5">
           {CATEGORIES.map((cat) => (
@@ -94,6 +97,8 @@ interface ScopeDropdownProps {
 }
 
 function ToolbarScopeDropdown({ selectedScope, setSelectedScope }: ScopeDropdownProps) {
+  const { t } = useTranslation();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -106,7 +111,7 @@ function ToolbarScopeDropdown({ selectedScope, setSelectedScope }: ScopeDropdown
           <ShieldCheck className="w-3.5 h-3.5 text-foreground/75 dark:text-muted-foreground" />
           <span>
             {selectedScope === "ALL"
-              ? "Semua Scope"
+              ? t("ai.scope_all")
               : KNOWLEDGE_SCOPES.find((s) => s.id === selectedScope)?.shortLabel || selectedScope}
           </span>
           <ChevronDown className="w-3.5 h-3.5 opacity-60" />
@@ -114,7 +119,7 @@ function ToolbarScopeDropdown({ selectedScope, setSelectedScope }: ScopeDropdown
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg rounded-xl p-1.5 min-w-64 z-50">
         <p className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-wider px-2 py-1.5">
-          Filter Scope Visibilitas
+          {t("ai.filter_scope")}
         </p>
         <div className="space-y-0.5">
           <DropdownMenuItem
@@ -126,7 +131,7 @@ function ToolbarScopeDropdown({ selectedScope, setSelectedScope }: ScopeDropdown
                 : "text-foreground hover:bg-muted/50"
             )}
           >
-            <span>Semua Scope (Platform, Tenant & Global)</span>
+            <span>{t("ai.scope_all")}</span>
             {selectedScope === "ALL" && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
           </DropdownMenuItem>
 
@@ -163,6 +168,8 @@ interface StatusDropdownProps {
 }
 
 function ToolbarStatusDropdown({ selectedStatus, setSelectedStatus }: StatusDropdownProps) {
+  const { t } = useTranslation();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -175,7 +182,7 @@ function ToolbarStatusDropdown({ selectedStatus, setSelectedStatus }: StatusDrop
           <Clock className="w-3.5 h-3.5 text-foreground/75 dark:text-muted-foreground" />
           <span>
             {selectedStatus === "ALL"
-              ? "Semua Status"
+              ? t("common.all")
               : STATUS_ITEMS[selectedStatus as KnowledgeStatus]?.label || selectedStatus}
           </span>
           <ChevronDown className="w-3.5 h-3.5 opacity-60" />
@@ -183,7 +190,7 @@ function ToolbarStatusDropdown({ selectedStatus, setSelectedStatus }: StatusDrop
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg rounded-xl p-1.5 min-w-56 z-50">
         <p className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-wider px-2 py-1.5">
-          Filter Status Dokumen
+          {t("ai.filter_status")}
         </p>
         <div className="space-y-0.5">
           <DropdownMenuItem
@@ -195,7 +202,7 @@ function ToolbarStatusDropdown({ selectedStatus, setSelectedStatus }: StatusDrop
                 : "text-foreground hover:bg-muted/50"
             )}
           >
-            <span>Semua Status</span>
+            <span>{t("common.all")}</span>
             {selectedStatus === "ALL" && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
           </DropdownMenuItem>
 
@@ -242,6 +249,7 @@ function ToolbarActionButtons({
   onRefresh,
   onGoToUpload,
 }: ActionButtonsProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManage = canAccess("system.ai.manage");
 
@@ -252,8 +260,8 @@ function ToolbarActionButtons({
           !canManage
             ? "Akses Read-Only: Memerlukan izin system.ai.manage"
             : isSyncing
-            ? "Menyinkronkan Server..."
-            : "Sinkronkan Direktori Server"
+            ? t("ai.syncing_server")
+            : t("ai.sync_server_dir")
         }
         shortcut={canManage ? "S" : undefined}
       >
@@ -261,7 +269,7 @@ function ToolbarActionButtons({
           onClick={onSyncServerDocs}
           disabled={isSyncing || !canManage}
           className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-md transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label="Sinkronkan Direktori Server Docs"
+          aria-label={t("ai.sync_server_dir")}
         >
           {isSyncing ? (
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -271,12 +279,12 @@ function ToolbarActionButtons({
         </button>
       </ActionTooltip>
 
-      <ActionTooltip label="Segarkan Data pgvector" shortcut="R">
+      <ActionTooltip label={t("ai.refresh_pgvector")} shortcut="R">
         <button
           onClick={onRefresh}
           disabled={docsLoading}
           className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-md transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
-          aria-label="Segarkan Data pgvector"
+          aria-label={t("ai.refresh_pgvector")}
         >
           <RefreshCw className={`w-4 h-4 ${docsLoading ? "animate-spin text-primary" : ""}`} />
         </button>
@@ -286,7 +294,7 @@ function ToolbarActionButtons({
         label={
           !canManage
             ? "Akses Read-Only: Memerlukan izin system.ai.manage"
-            : "Tambah Pengetahuan (Upload / Tulis)"
+            : t("ai.add_knowledge_btn")
         }
         shortcut={canManage ? "C" : undefined}
       >
@@ -294,7 +302,7 @@ function ToolbarActionButtons({
           onClick={onGoToUpload}
           disabled={!canManage}
           className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-md transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label="Tambah Pengetahuan (Upload / Tulis)"
+          aria-label={t("ai.add_knowledge_btn")}
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -336,6 +344,8 @@ export function AiKnowledgeToolbar({
   onRefresh,
   onGoToUpload,
 }: AiKnowledgeToolbarProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
       <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto flex-1">
@@ -343,7 +353,7 @@ export function AiKnowledgeToolbar({
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/75 dark:text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Cari judul dokumen..."
+            placeholder={t("ai.search_doc_placeholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="text-xs pl-8 pr-4 h-8 bg-card border-border text-foreground"

@@ -10,6 +10,7 @@ import {
   Cloud,
   Play,
 } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface BackupConfigPhaseProps {
   onClose: () => void;
@@ -22,6 +23,7 @@ export function BackupConfigPhase({
   onStartExecution,
   isOpen,
 }: BackupConfigPhaseProps) {
+  const { t } = useTranslation();
   const [backupNote, setBackupNote] = useState("");
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export function BackupConfigPhase({
         <div className="flex items-center justify-between border-b border-border/60 pb-2">
           <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
             <Layers className="size-3.5 text-primary" />
-            Cakupan Komponen yang Akan Dicadangkan:
+            Components Included in Backup:
           </span>
           <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono">
             AES-256 ENCRYPTED
@@ -48,8 +50,8 @@ export function BackupConfigPhase({
           <div className="flex items-start gap-2 p-2 rounded-lg bg-card border border-border/60">
             <MapPin className="size-3.5 text-purple-500 mt-0.5 shrink-0" />
             <div>
-              <p className="font-medium text-foreground">Topologi PostGIS</p>
-              <p className="text-[10px] text-muted-foreground">Kabel fiber, ODC, ODP, &amp; boundary</p>
+              <p className="font-medium text-foreground">PostGIS Topology</p>
+              <p className="text-[10px] text-muted-foreground">Fiber cables, ODC, ODP, &amp; boundaries</p>
             </div>
           </div>
 
@@ -64,16 +66,16 @@ export function BackupConfigPhase({
           <div className="flex items-start gap-2 p-2 rounded-lg bg-card border border-border/60">
             <FileText className="size-3.5 text-amber-500 mt-0.5 shrink-0" />
             <div>
-              <p className="font-medium text-foreground">Dokumen Vault</p>
-              <p className="text-[10px] text-muted-foreground">Metadata arsip PDF/KMZ tenant</p>
+              <p className="font-medium text-foreground">Document Vault</p>
+              <p className="text-[10px] text-muted-foreground">Tenant PDF/KMZ archive metadata</p>
             </div>
           </div>
 
           <div className="flex items-start gap-2 p-2 rounded-lg bg-card border border-border/60">
             <CreditCard className="size-3.5 text-primary mt-0.5 shrink-0" />
             <div>
-              <p className="font-medium text-foreground">Billing &amp; Kuota</p>
-              <p className="text-[10px] text-muted-foreground">Tier paket &amp; konfigurasi entitas</p>
+              <p className="font-medium text-foreground">Billing &amp; Quota</p>
+              <p className="text-[10px] text-muted-foreground">Plan tiers &amp; entity configurations</p>
             </div>
           </div>
         </div>
@@ -84,14 +86,14 @@ export function BackupConfigPhase({
         <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-card">
           <HardDrive className="size-4 text-primary shrink-0" />
           <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground">Penyimpanan Utama</p>
+            <p className="text-[10px] text-muted-foreground">{t("organizations.backup_primary_storage")}</p>
             <p className="font-mono text-xs font-semibold text-foreground truncate">MinIO S3 Bucket</p>
           </div>
         </div>
         <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-card">
           <Cloud className="size-4 text-blue-500 shrink-0" />
           <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground">Redundansi Cloud</p>
+            <p className="text-[10px] text-muted-foreground">{t("organizations.backup_cloud_redundancy")}</p>
             <p className="font-mono text-xs font-semibold text-foreground truncate">Nextcloud WebDAV</p>
           </div>
         </div>
@@ -100,13 +102,13 @@ export function BackupConfigPhase({
       {/* Optional Snapshot Label */}
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-foreground flex items-center justify-between">
-          <span>Catatan / Keterangan Snapshot (Opsional)</span>
-          <span className="text-[10px] font-normal text-muted-foreground">Label identifikasi</span>
+          <span>{t("organizations.backup_note_label")}</span>
+          <span className="text-[10px] font-normal text-muted-foreground">{t("organizations.backup_note_sublabel")}</span>
         </label>
         <Input
           value={backupNote}
           onChange={(e) => setBackupNote(e.target.value)}
-          placeholder="Misal: Checkpoint migrasi jaringan, audit kepatuhan, dll."
+          placeholder={t("organizations.backup_note_placeholder")}
           className="h-9 text-xs"
         />
       </div>
@@ -114,7 +116,7 @@ export function BackupConfigPhase({
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/60">
         <Button variant="outline" size="sm" onClick={onClose} className="cursor-pointer">
-          Batal
+          {t("common.cancel")}
         </Button>
         <Button
           size="sm"
@@ -122,7 +124,7 @@ export function BackupConfigPhase({
           className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer gap-1.5"
         >
           <Play className="size-3.5 fill-current" />
-          <span>Mulai Proses Cadangkan</span>
+          <span>{t("organizations.backup_start_process_btn")}</span>
         </Button>
       </div>
     </div>

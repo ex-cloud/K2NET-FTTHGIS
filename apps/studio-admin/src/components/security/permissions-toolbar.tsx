@@ -1,6 +1,7 @@
 import { Shield, Plus, Search, Filter, RefreshCw } from "lucide-react";
 import { Card, ActionTooltip } from "@k2net/ui";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 
 interface PermissionsToolbarProps {
   onRefresh: () => void;
@@ -23,6 +24,7 @@ export function PermissionsToolbar({
   scopeFilter,
   onScopeFilterChange,
 }: PermissionsToolbarProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManageSecurity = canAccess("system.security.manage");
 
@@ -35,27 +37,27 @@ export function PermissionsToolbar({
             <Shield className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-foreground">Manajemen Permission</h1>
+            <h1 className="text-xl font-semibold text-foreground">{t("security.roles_matrix")}</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Kelola seluruh kode hak akses yang tersedia di platform
+              {t("security.roles_matrix_subtitle")}
             </p>
           </div>
         </div>
         <div className="sm:ml-auto flex items-center gap-2">
-          <ActionTooltip label="Segarkan Data Permission" shortcut="R">
+          <ActionTooltip label={t("common.refresh")} shortcut="R">
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
               className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-border/80 transition-all disabled:opacity-40 cursor-pointer shadow-xs"
             >
               <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
-              Refresh
+              {t("common.refresh")}
             </button>
           </ActionTooltip>
           <ActionTooltip
             label={
               canManageSecurity
-                ? "Tambah Permission Baru"
+                ? t("security.create_permission")
                 : "Akses Read-Only: Memerlukan izin system.security.manage"
             }
             shortcut={canManageSecurity ? "C" : undefined}
@@ -67,7 +69,7 @@ export function PermissionsToolbar({
               className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Plus className="size-3.5" />
-              Tambah Permission
+              {t("security.create_permission")}
             </button>
           </ActionTooltip>
         </div>
@@ -94,7 +96,7 @@ export function PermissionsToolbar({
           <input
             id="input-permission-search"
             type="text"
-            placeholder="Cari permission (code, name, module)…"
+            placeholder={t("common.search")}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-8 pr-4 h-8 rounded-md border border-border/80 bg-card/40 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary transition-all"
@@ -114,7 +116,7 @@ export function PermissionsToolbar({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {s === "ALL" ? "Semua" : s}
+                {s === "ALL" ? t("common.all") : s}
               </button>
             ))}
           </div>

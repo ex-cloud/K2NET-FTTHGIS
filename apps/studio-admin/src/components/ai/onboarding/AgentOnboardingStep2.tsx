@@ -20,6 +20,7 @@ import {
   Input, 
   Badge 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { 
   type PermissionCatalogData, 
   type RolePresetData 
@@ -186,6 +187,8 @@ export function AgentOnboardingStep2({
   onAuthorize,
   onClose,
 }: Step2Props) {
+  const { t } = useTranslation();
+
   return (
     <>
       <div className="p-4 border-b border-border/80 bg-muted/20 flex items-center justify-between shrink-0">
@@ -194,7 +197,7 @@ export function AgentOnboardingStep2({
             type="button"
             onClick={onBack}
             className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-            title="Kembali ke layar sebelumnya"
+            title={t("common.back")}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -231,10 +234,10 @@ export function AgentOnboardingStep2({
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {tier === "FULL" && "Full access"}
-              {tier === "ROLE_PRESET" && "Role Preset"}
-              {tier === "READ_ONLY" && "Read only"}
-              {tier === "CUSTOM" && "Custom"}
+              {tier === "FULL" && t("ai.agent_tier_full")}
+              {tier === "ROLE_PRESET" && t("ai.agent_tier_role")}
+              {tier === "READ_ONLY" && t("ai.agent_tier_readonly")}
+              {tier === "CUSTOM" && t("ai.agent_tier_custom")}
             </button>
           ))}
         </div>
@@ -242,7 +245,7 @@ export function AgentOnboardingStep2({
         {accessTier === "ROLE_PRESET" && (
           <div className="space-y-1.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
             <div className="text-[10px] font-bold tracking-wider text-primary uppercase">
-              PILIH PRESET SESUAI PERAN ANDA:
+              {t("ai.select_preset_role")}
             </div>
             <div className="flex flex-wrap gap-1.5 pt-1">
               {presets.map((preset) => (
@@ -272,7 +275,7 @@ export function AgentOnboardingStep2({
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Cari nama atau kode permission..."
+            placeholder={t("common.search")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="text-xs h-8 pl-8 font-mono bg-background border-border"
@@ -295,7 +298,7 @@ export function AgentOnboardingStep2({
 
       <div className="p-4 border-t border-border/80 bg-muted/20 flex flex-col space-y-2 shrink-0">
         <p className="text-[10px] text-center text-muted-foreground">
-          Anda dapat mengubah atau mencabut izin kapan saja dari pengaturan K2 Agent.
+          {t("ai.permissions_change_notice")}
         </p>
 
         <div className="flex items-center justify-end gap-2">
@@ -306,7 +309,7 @@ export function AgentOnboardingStep2({
             disabled={submitting}
             className="text-xs cursor-pointer"
           >
-            Kembali
+            {t("common.back")}
           </Button>
           <Button
             size="sm"
@@ -319,7 +322,7 @@ export function AgentOnboardingStep2({
             ) : (
               <Check className="w-3.5 h-3.5" />
             )}
-            <span>Authorize K2 Agent ({totalGranted})</span>
+            <span>{t("ai.authorize_k2_agent", { count: totalGranted })}</span>
           </Button>
         </div>
       </div>

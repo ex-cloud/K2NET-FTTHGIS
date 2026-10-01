@@ -5,6 +5,15 @@ import orgsId from './locales/id/organizations.json';
 import securityId from './locales/id/security.json';
 import observabilityId from './locales/id/observability.json';
 import gisId from './locales/id/gis.json';
+import usersId from './locales/id/users.json';
+import aiId from './locales/id/ai.json';
+import authId from './locales/id/auth.json';
+import projectsId from './locales/id/projects.json';
+import inventoryId from './locales/id/inventory.json';
+import issuesId from './locales/id/issues.json';
+import tasksId from './locales/id/tasks.json';
+import gatewaysId from './locales/id/gateways.json';
+import settingsId from './locales/id/settings.json';
 
 export type SupportedLocale = 'id' | 'en';
 
@@ -16,6 +25,15 @@ export interface TranslationsSchema {
   security: typeof securityId;
   observability: typeof observabilityId;
   gis: typeof gisId;
+  users: typeof usersId;
+  ai: typeof aiId;
+  auth: typeof authId;
+  projects: typeof projectsId;
+  inventory: typeof inventoryId;
+  issues: typeof issuesId;
+  tasks: typeof tasksId;
+  gateways: typeof gatewaysId;
+  settings: typeof settingsId;
 }
 
 export type TranslationNamespace = keyof TranslationsSchema;

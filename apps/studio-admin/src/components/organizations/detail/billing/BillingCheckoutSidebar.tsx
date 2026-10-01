@@ -1,6 +1,7 @@
 import { Button, Input, Label } from "@k2net/ui";
 import { Loader2 } from "lucide-react";
 import type { SubscriptionPlanInfo, ProrationEstimate } from "./billing-types";
+import { useTranslation } from "@k2net/i18n";
 
 interface BillingCheckoutSidebarProps {
   selectedPlanTarget: SubscriptionPlanInfo;
@@ -29,6 +30,7 @@ export function BillingCheckoutSidebar({
   onExecuteDowngrade,
   onClose,
 }: BillingCheckoutSidebarProps) {
+  const { t } = useTranslation();
   const isSubmitDisabled =
     isExecuting || (isDowngradeMode && (!ackOverQuota || !downgradeReason.trim()));
 
@@ -49,23 +51,28 @@ export function BillingCheckoutSidebar({
           {!isDowngradeMode && (
             <>
               <div className="flex items-center justify-between text-muted-foreground text-[11px]">
-                <span>Parameter Siklus</span>
-                <span>Sisa {prorateData?.remainingDays ?? 30} dari {prorateData?.totalCycleDays ?? 30} Hari</span>
+                <span>{t("organizations.billing_cycle_params")}</span>
+                <span>
+                  {t("organizations.billing_remaining_days", {
+                    remaining: prorateData?.remainingDays ?? 30,
+                    total: prorateData?.totalCycleDays ?? 30,
+                  })}
+                </span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-foreground">Kredit Paket Lama:</span>
+                <span className="text-foreground">{t("organizations.billing_old_plan_credit")}</span>
                 <span className="font-mono text-primary font-semibold">
                   - Rp {(prorateData?.unusedOldPlanCredit ?? 0).toLocaleString("id-ID")}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-foreground">Biaya Prorata Baru:</span>
+                <span className="text-foreground">{t("organizations.billing_new_plan_prorated")}</span>
                 <span className="font-mono text-foreground font-semibold">
                   + Rp {(prorateData?.newPlanProratedCost ?? selectedPlanTarget.numericPrice ?? 0).toLocaleString("id-ID")}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-border font-bold text-xs">
-                <span className="text-foreground">Tagihan Bersih:</span>
+                <span className="text-foreground">{t("organizations.billing_net_payable")}</span>
                 <span className="font-mono text-primary text-sm">
                   Rp {(prorateData?.netPayableDelta ?? selectedPlanTarget.numericPrice ?? 0).toLocaleString("id-ID")}
                 </span>
@@ -76,9 +83,9 @@ export function BillingCheckoutSidebar({
 
         {!isDowngradeMode && (
           <div className="space-y-1">
-            <Label className="text-xs font-semibold text-foreground">Referensi PO / Catatan (Opsional)</Label>
+            <Label className="text-xs font-semibold text-foreground">{t("organizations.billing_po_ref_label")}</Label>
             <Input
-              placeholder="Contoh: PO-KIR-2026-08 / BAST Billing"
+              placeholder={t("organizations.billing_po_ref_placeholder")}
               value={upgradeNotes}
               onChange={(e) => setUpgradeNotes(e.target.value)}
               className="h-8 text-xs bg-card border-border text-foreground"
@@ -98,9 +105,9 @@ export function BillingCheckoutSidebar({
           {isExecuting ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : isDowngradeMode ? (
-            "Eksekusi Downgrade"
+            t("organizations.billing_execute_downgrade")
           ) : (
-            "Aktivasi Upgrade Sekarang"
+            t("organizations.billing_activate_upgrade_now")
           )}
         </Button>
 
@@ -110,7 +117,7 @@ export function BillingCheckoutSidebar({
           onClick={onClose}
           className="w-full text-xs text-muted-foreground hover:text-foreground h-7 cursor-pointer"
         >
-          Batal
+          {t("common.cancel")}
         </Button>
       </div>
     </div>

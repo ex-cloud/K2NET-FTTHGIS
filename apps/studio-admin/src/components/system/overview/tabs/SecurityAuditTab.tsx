@@ -12,6 +12,7 @@ import { useOverviewTableControls, type FilterPillOption } from "../use-overview
 import { OverviewTabToolbar } from "../OverviewTabToolbar";
 import { OverviewSortableHeader } from "../OverviewSortableHeader";
 import { SecurityAuditContextMenu } from "../OverviewContextMenu";
+import { useTranslation } from "@k2net/i18n";
 
 interface SecurityAuditTabProps {
   items: SecurityAuditItem[];
@@ -98,6 +99,7 @@ function formatActor(actor: string): { main: string; sub?: string } {
 }
 
 export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
+  const { t } = useTranslation();
   const [selectedLog, setSelectedLog] = useState<SecurityAuditItem | null>(null);
 
   // Dynamic filter pill options with real counts
@@ -113,12 +115,12 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
     }).length;
 
     return [
-      { id: "ALL", label: "Semua", count: items.length },
+      { id: "ALL", label: t("observability.filter_all"), count: items.length },
       { id: "CRITICAL", label: "Critical", count: criticalCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
       { id: "WARNING", label: "Warning", count: warningCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
       { id: "INFO", label: "Info", count: infoCount, badgeVariant: "info", dotColor: "bg-sky-400" },
     ];
-  }, [items]);
+  }, [items, t]);
 
   const {
     searchQuery,
@@ -180,7 +182,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
       <OverviewTabToolbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Cari aktor, tenant, aksi keamanan, IP..."
+        searchPlaceholder={t("observability.search_security_placeholder")}
         filterOptions={filterOptions}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
@@ -198,7 +200,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
               <tr className="divide-x divide-border/30">
                 <th className="py-2.5 px-3.5 w-32">
                   <OverviewSortableHeader
-                    title="Waktu (WIB)"
+                    title={t("observability.col_time_wib")}
                     field="timestamp"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -207,7 +209,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[170px]">
                   <OverviewSortableHeader
-                    title="Aktor / Akun"
+                    title={t("observability.col_actor_account")}
                     field="actor"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -216,7 +218,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[140px]">
                   <OverviewSortableHeader
-                    title="Target Tenant"
+                    title={t("observability.col_target_tenant")}
                     field="targetTenant"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -225,7 +227,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[220px]">
                   <OverviewSortableHeader
-                    title="Aksi Keamanan"
+                    title={t("observability.col_security_action")}
                     field="action"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -234,7 +236,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 w-28 text-center">
                   <OverviewSortableHeader
-                    title="Tingkat Risiko"
+                    title={t("observability.col_risk_level")}
                     field="severity"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -254,13 +256,13 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
                       <FolderKanban className="size-8 text-muted-foreground/40" />
                       <p className="text-sm font-semibold text-foreground">
                         {activeFilter !== "ALL"
-                          ? `Tidak ada event dengan status ${activeFilter}`
-                          : "Tidak ada data audit log ditemukan"}
+                          ? t("observability.no_events_with_status", { status: activeFilter })
+                          : t("observability.no_security_audit_found")}
                       </p>
                       <p className="text-xs text-muted-foreground max-w-sm">
                         {searchQuery
-                          ? `Tidak ada log yang cocok dengan kata kunci "${searchQuery}".`
-                          : "Semua operasi keamanan sistem berjalan normal."}
+                          ? t("observability.no_logs_match_query", { query: searchQuery })
+                          : t("observability.all_security_ops_normal")}
                       </p>
                       {(searchQuery || activeFilter !== "ALL") && (
                         <button
@@ -269,7 +271,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
                           className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all cursor-pointer"
                         >
                           <RotateCcw className="size-3" />
-                          <span>Reset Filter</span>
+                          <span>{t("observability.reset_filter")}</span>
                         </button>
                       )}
                     </div>
@@ -375,7 +377,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
             {hasMore && (
               <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground font-mono">
                 <Loader2 className="size-3.5 animate-spin text-primary" />
-                <span>Memuat log berikutnya ({visibleItems.length} / {totalFilteredCount})...</span>
+                <span>{t("observability.loading_next_logs", { current: visibleItems.length, total: totalFilteredCount })}</span>
               </div>
             )}
           </div>

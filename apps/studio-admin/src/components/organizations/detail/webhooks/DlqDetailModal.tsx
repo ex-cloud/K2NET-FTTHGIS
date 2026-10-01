@@ -9,6 +9,7 @@ import {
 } from "@k2net/ui";
 import { AlertOctagon, RotateCcw, Terminal, Layers } from "lucide-react";
 import type { DeadLetterLog } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface DlqDetailModalProps {
   selectedLog: DeadLetterLog | null;
@@ -21,6 +22,7 @@ export function DlqDetailModal({
   onClose,
   onReplay,
 }: DlqDetailModalProps) {
+  const { t } = useTranslation();
   if (!selectedLog) return null;
 
   return (
@@ -33,7 +35,7 @@ export function DlqDetailModal({
             </div>
             <div>
               <DialogTitle className="text-sm font-bold text-foreground">
-                Detail Gagal Pengiriman Webhook
+                {t("organizations.dlq_detail_title")}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
                 ID: <code className="font-mono text-foreground">{selectedLog.id}</code>
@@ -53,18 +55,18 @@ export function DlqDetailModal({
               <span className="font-mono text-foreground text-[11px] truncate block">{selectedLog.targetUrl}</span>
             </div>
             <div>
-              <span className="text-[10px] text-muted-foreground block">Percobaan Retry:</span>
-              <span className="font-mono text-foreground">{selectedLog.retryCount} dari {selectedLog.maxRetries}x</span>
+              <span className="text-[10px] text-muted-foreground block">Retry Attempts:</span>
+              <span className="font-mono text-foreground">{selectedLog.retryCount} of {selectedLog.maxRetries}x</span>
             </div>
             <div>
-              <span className="text-[10px] text-muted-foreground block">Waktu Dibuat:</span>
-              <span className="text-foreground">{new Date(selectedLog.createdAt).toLocaleString("id-ID")}</span>
+              <span className="text-[10px] text-muted-foreground block">Created At:</span>
+              <span className="text-foreground">{new Date(selectedLog.createdAt).toLocaleString()}</span>
             </div>
           </div>
 
           {selectedLog.errorMessage && (
             <div className="space-y-1">
-              <span className="font-semibold text-foreground text-xs">Pesan Error Terakhir:</span>
+              <span className="font-semibold text-foreground text-xs">Last Error Message:</span>
               <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 font-mono text-[11px] text-destructive">
                 {selectedLog.errorMessage}
               </div>
@@ -75,7 +77,7 @@ export function DlqDetailModal({
             <div className="space-y-1">
               <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
                 <Terminal className="h-3.5 w-3.5 text-primary" />
-                <span>Payload JSON yang Dikirimkan:</span>
+                <span>Dispatched JSON Payload:</span>
               </span>
               <pre className="p-3 rounded-lg bg-background border border-border font-mono text-[10px] max-h-48 overflow-y-auto select-all text-foreground leading-relaxed">
                 {selectedLog.payloadJson}
@@ -87,7 +89,7 @@ export function DlqDetailModal({
             <div className="space-y-1">
               <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
                 <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Response Body dari Server Tujuan:</span>
+                <span>Destination Server Response Body:</span>
               </span>
               <pre className="p-2.5 rounded-lg bg-background border border-border font-mono text-[10px] max-h-24 overflow-y-auto text-muted-foreground">
                 {selectedLog.responseBody}
@@ -101,9 +103,9 @@ export function DlqDetailModal({
             type="button"
             variant="outline"
             onClick={onClose}
-            className="h-8 text-xs border-border"
+            className="h-8 text-xs border-border cursor-pointer"
           >
-            Tutup
+            {t("common.close")}
           </Button>
           <Button
             type="button"
@@ -112,10 +114,10 @@ export function DlqDetailModal({
               onClose();
               onReplay(id);
             }}
-            className="h-8 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+            className="h-8 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 cursor-pointer"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span>Kirim Ulang Sekarang</span>
+            <span>{t("organizations.resend_now")}</span>
           </Button>
         </DialogFooter>
       </DialogContent>

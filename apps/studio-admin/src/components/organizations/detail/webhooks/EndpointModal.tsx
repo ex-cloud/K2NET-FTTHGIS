@@ -14,6 +14,7 @@ import {
 } from "@k2net/ui";
 import { Network, CheckCircle2 } from "lucide-react";
 import type { WebhookEndpoint, WebhookSubscriptions } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface EndpointModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export function EndpointModal({
   editingEndpoint,
   onSubmit,
 }: EndpointModalProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
   const [description, setDescription] = useState("");
@@ -94,10 +96,10 @@ export function EndpointModal({
             </div>
             <div>
               <DialogTitle className="text-sm font-bold text-foreground">
-                {editingEndpoint ? "Edit Webhook Endpoint" : "Tambah Webhook Endpoint Baru"}
+                {editingEndpoint ? t("organizations.webhook_edit_title") : t("organizations.webhook_create_title")}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Konfigurasikan URL penerima webhook dan pilih kategori event yang ingin dikirimkan.
+                {t("organizations.webhook_modal_desc")}
               </DialogDescription>
             </div>
           </div>
@@ -105,11 +107,11 @@ export function EndpointModal({
 
         <div className="space-y-3.5 pt-1">
           <div className="space-y-1">
-            <Label className="text-xs font-semibold text-foreground">Nama Endpoint</Label>
+            <Label className="text-xs font-semibold text-foreground">Endpoint Name</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: NOC Incident Discord, Telegram Alert Bot"
+              placeholder="e.g. NOC Incident Discord, Telegram Alert Bot"
               className="h-9 text-xs bg-background border-border text-foreground"
             />
           </div>
@@ -130,17 +132,17 @@ export function EndpointModal({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs font-semibold text-foreground">Deskripsi / Catatan Integrasi</Label>
+            <Label className="text-xs font-semibold text-foreground">Description / Integration Notes</Label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Opsional: Tujuan penggunaan webhook ini"
+              placeholder="Optional: Purpose of this webhook endpoint"
               className="h-9 text-xs bg-background border-border text-foreground"
             />
           </div>
 
           <div className="space-y-2 pt-1 border-t border-border/60">
-            <Label className="text-xs font-semibold text-foreground">Langganan Event</Label>
+            <Label className="text-xs font-semibold text-foreground">Subscribed Events</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="flex items-center gap-2 p-2 rounded-md bg-background border border-border">
                 <Checkbox
@@ -195,7 +197,7 @@ export function EndpointModal({
               onCheckedChange={(c) => setIsActive(!!c)}
             />
             <Label htmlFor="ep-active" className="text-xs font-semibold text-foreground cursor-pointer">
-              Aktifkan pengiriman webhook ke endpoint ini
+              {t("organizations.webhook_enable_endpoint")}
             </Label>
           </div>
         </div>
@@ -205,18 +207,18 @@ export function EndpointModal({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="h-8 text-xs border-border"
+            className="h-8 text-xs border-border cursor-pointer"
           >
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
             onClick={handleFormSubmit}
             disabled={!name.trim() || !targetUrl.trim() || isSubmitting}
-            className="h-8 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+            className="h-8 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 cursor-pointer"
           >
             <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>{isSubmitting ? "Menyimpan..." : editingEndpoint ? "Simpan Perubahan" : "Buat Endpoint"}</span>
+            <span>{isSubmitting ? t("organizations.webhook_saving") : editingEndpoint ? t("organizations.webhook_save_changes") : t("organizations.webhook_create_btn")}</span>
           </Button>
         </DialogFooter>
       </DialogContent>

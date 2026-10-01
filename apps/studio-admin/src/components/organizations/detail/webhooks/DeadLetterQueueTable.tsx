@@ -16,6 +16,7 @@ import {
 import { usePermissions } from "@/hooks/use-permissions";
 import type { DeadLetterLog, PingResult } from "./types";
 import { DlqDetailModal } from "./DlqDetailModal";
+import { useTranslation } from "@k2net/i18n";
 
 interface DeadLetterQueueTableProps {
   dlqLogs: DeadLetterLog[];
@@ -30,6 +31,7 @@ export function DeadLetterQueueTable({
   onReplayWebhook,
   onRefreshDlq,
 }: DeadLetterQueueTableProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManage = canAccess("system.organizations.webhooks.manage");
 
@@ -93,7 +95,7 @@ export function DeadLetterQueueTable({
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Antrean event yang gagal terkirim ke server tujuan setelah 4x percobaan bertahap (0s, 30s, 5m, 30m).
+              {t("organizations.dlq_desc")}
             </p>
           </div>
         </div>
@@ -112,14 +114,14 @@ export function DeadLetterQueueTable({
 
       {loadingDlq ? (
         <div className="p-6 text-center text-xs text-muted-foreground animate-pulse">
-          Memeriksa antrean Dead Letter Queue...
+          Checking Dead Letter Queue...
         </div>
       ) : dlqLogs.length === 0 ? (
         <div className="p-6 rounded-lg border border-dashed border-border bg-background/50 text-center space-y-2">
           <CheckCircle2 className="h-6 w-6 text-primary mx-auto" />
-          <div className="text-xs font-medium text-foreground">Tidak Ada Antrean Dead Letter Queue</div>
+          <div className="text-xs font-medium text-foreground">No Dead Letter Queue Entries</div>
           <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
-            Semua webhook berhasil terkirim ke endpoint tujuan tenant atau telah dipulihkan dengan sukses.
+            {t("organizations.dlq_all_healthy")}
           </p>
         </div>
       ) : (
@@ -132,7 +134,7 @@ export function DeadLetterQueueTable({
                 <th className="py-2.5 px-3">Status / Retries</th>
                 <th className="py-2.5 px-3">Last Error</th>
                 <th className="py-2.5 px-3">Next Retry</th>
-                <th className="py-2.5 px-3 text-right">Aksi</th>
+                <th className="py-2.5 px-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -150,8 +152,8 @@ export function DeadLetterQueueTable({
                   </td>
                   <td className="py-2.5 px-3 text-[10px] text-muted-foreground font-mono">
                     {log.nextRetryAt
-                      ? new Date(log.nextRetryAt).toLocaleTimeString("id-ID")
-                      : "Selesai"}
+                      ? new Date(log.nextRetryAt).toLocaleTimeString()
+                      : t("organizations.webhook_dlq_status_done")}
                   </td>
                   <td className="py-2.5 px-3 text-right">
                     <div className="flex items-center justify-end gap-1.5">
@@ -175,7 +177,7 @@ export function DeadLetterQueueTable({
                           <span>{replayingId === log.id ? "Replaying..." : "Replay"}</span>
                         </Button>
                       ) : (
-                        <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+                        <ActionTooltip label={t("organizations.readonly_no_manage_perm")}>
                           <span className="inline-block">
                             <Button
                               size="sm"

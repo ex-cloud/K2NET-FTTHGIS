@@ -1,5 +1,6 @@
 import * as React from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import {
   setApiAuthToken,
   setImpersonationSessionId,
@@ -109,6 +110,7 @@ const ImpersonationContext = React.createContext<ImpersonationContextValue | nul
 
 export function ImpersonationProvider({ children }: { children: React.ReactNode }) {
   const initial = React.useMemo(() => readInitialSession(), []);
+  const { t } = useTranslation();
 
   const [isImpersonating, setIsImpersonating] = React.useState(initial.isImpersonating);
   const [sessionId, setSessionId] = React.useState<string | null>(initial.sessionId);
@@ -291,8 +293,8 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
           if (!res.ok) {
             sessionStorage.removeItem("k2net_impersonating_in_progress");
             const err = await res.json().catch(() => ({}));
-            toast.error("Gagal Memulai Sesi Impersonasi", {
-              description: err.message || "Kode penukaran tidak valid atau sudah kedaluwarsa.",
+            toast.error(t("auth.impersonation_start_failed"), {
+              description: err.message || t("auth.impersonation_invalid_code"),
             });
             return;
           }
@@ -330,7 +332,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
           url.searchParams.delete("impersonate_code");
           window.history.replaceState({}, "", url.pathname + url.search);
 
-          toast.success(`Mode Bantuan: Terhubung ke ${name}`);
+          toast.success(t("auth.support_mode_connected", { name }));
 
           scheduleRefresh(expiresInSeconds, newSessionId);
 
@@ -349,7 +351,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
             !msg.includes("Failed to fetch") &&
             !msg.includes("Load failed")
           ) {
-            toast.error("Gagal Memulai Sesi Impersonasi", { description: msg });
+            toast.error(t("auth.impersonation_start_failed"), { description: msg });
           }
         }
       })();
@@ -402,7 +404,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
-  }, [clearSession, pollStatus, scheduleRefresh]);
+  }, [clearSession, pollStatus, scheduleRefresh, t]);
 
   const exitSession = React.useCallback(async () => {
     if (!sessionId) return;
@@ -418,7 +420,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       });
 
       if (res.ok) {
-        toast.success("Sesi impersonasi berhasil diakhiri.");
+        toast.success(t("auth.impersonation_ended_success"));
       }
     } catch {
       // ignore
@@ -433,7 +435,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
         }, 300);
       }
     }
-  }, [sessionId, clearSession]);
+  }, [sessionId, clearSession, t]);
 
   const contextValue = React.useMemo<ImpersonationContextValue>(() => ({
     isImpersonating,

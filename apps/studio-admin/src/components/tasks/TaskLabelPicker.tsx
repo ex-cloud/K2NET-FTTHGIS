@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 
 export interface TaskLabel {
   id: string;
@@ -200,6 +201,7 @@ export function TaskLabelPicker({
   onChange,
   className,
 }: TaskLabelPickerProps) {
+  const { t } = useTranslation();
   const [allLabels, setAllLabels] = useState<TaskLabel[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -254,7 +256,7 @@ export function TaskLabelPicker({
     } catch { /* ignore */ }
 
     onChange(Array.from(new Set([...selectedLabelIds, id])));
-    toast.success(`Label "${newLbl.name}" berhasil dibuat`);
+    toast.success(t("tasks.label_created_success", { name: newLbl.name }));
 
     setLabelSearch("");
     setLabelStep("search");

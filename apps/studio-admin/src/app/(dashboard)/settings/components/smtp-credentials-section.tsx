@@ -3,6 +3,7 @@ import { Input } from "@k2net/ui";
 import { Eye, EyeOff } from "lucide-react";
 import { SettingsSection } from "./settings-section";
 import { SettingsFormRow } from "./settings-form-row";
+import { useTranslation } from "@k2net/i18n";
 
 interface SmtpCredentialsSectionProps {
   smtpHost: string;
@@ -29,16 +30,17 @@ export function SmtpCredentialsSection({
   smtpFrom,
   onSmtpFromChange,
 }: SmtpCredentialsSectionProps) {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <SettingsSection
-      title="SMTP Relay Credentials & Host"
-      description="Kredensial otentikasi server mail relay (Brevo / SendGrid / Custom SMTP Server)."
+      title={t("settings.smtp.credentials_title")}
+      description={t("settings.smtp.credentials_desc")}
     >
       <SettingsFormRow
-        label="SMTP Hostname"
-        description="Alamat host server SMTP (misal: smtp-relay.brevo.com atau smtp.gmail.com)."
+        label={t("settings.smtp.hostname_label")}
+        description={t("settings.smtp.hostname_desc")}
       >
         <Input
           type="text"
@@ -50,8 +52,8 @@ export function SmtpCredentialsSection({
       </SettingsFormRow>
 
       <SettingsFormRow
-        label="SMTP Server Port"
-        description="Port TLS/STARTTLS (587 atau 2525) atau SSL (465)."
+        label={t("settings.smtp.port_label")}
+        description={t("settings.smtp.port_desc")}
       >
         <Input
           type="number"
@@ -63,8 +65,8 @@ export function SmtpCredentialsSection({
       </SettingsFormRow>
 
       <SettingsFormRow
-        label="SMTP Username"
-        description="Username atau ID akun otentikasi relay email."
+        label={t("settings.smtp.username_label")}
+        description={t("settings.smtp.username_desc")}
       >
         <Input
           type="text"
@@ -76,8 +78,8 @@ export function SmtpCredentialsSection({
       </SettingsFormRow>
 
       <SettingsFormRow
-        label="SMTP Password / API Key"
-        description="Kata sandi otentikasi atau kunci API relay email."
+        label={t("settings.smtp.password_label")}
+        description={t("settings.smtp.password_desc")}
       >
         <div className="relative w-full max-w-sm">
           <Input
@@ -98,8 +100,8 @@ export function SmtpCredentialsSection({
       </SettingsFormRow>
 
       <SettingsFormRow
-        label="Default Sender Email ('From' Address)"
-        description="Alamat email pengirim default yang tercantum pada penerima email."
+        label={t("settings.smtp.sender_email_label")}
+        description={t("settings.smtp.sender_email_desc")}
         divider={false}
       >
         <Input

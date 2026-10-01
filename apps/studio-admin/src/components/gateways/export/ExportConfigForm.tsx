@@ -2,6 +2,7 @@ import React from "react";
 import { Server, Lock, Save, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, ActionTooltip } from "@k2net/ui";
 import { PermissionGuard } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 
 interface ExportConfigFormProps {
   config: Record<string, string>;
@@ -18,15 +19,17 @@ export function ExportConfigForm({
   onSave,
   onReset,
 }: ExportConfigFormProps) {
+  const { t } = useTranslation();
+
   return (
     <form onSubmit={onSave} className="lg:col-span-2 space-y-6">
       <Card glowingEffect className="bg-card/60 border-border shadow-xl">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Server className="w-4 h-4 text-primary" /> Infrastructure Connections
+            <Server className="w-4 h-4 text-primary" /> {t("gateways.export.infra_title")}
           </CardTitle>
           <CardDescription className="text-[10px] text-muted-foreground">
-            Koneksi database PostgreSQL, Redis Queue, dan Storage Gateway S3.
+            {t("gateways.export.infra_desc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -71,10 +74,10 @@ export function ExportConfigForm({
       <Card glowingEffect className="bg-card/60 border-border shadow-xl">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Lock className="w-4 h-4 text-primary" /> Export System Resources
+            <Lock className="w-4 h-4 text-primary" /> {t("gateways.export.resources_title")}
           </CardTitle>
           <CardDescription className="text-[10px] text-muted-foreground">
-            Konfigurasi batasan proses pembuatan file Excel/PDF dan direktori template.
+            {t("gateways.export.resources_desc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -132,7 +135,7 @@ export function ExportConfigForm({
 
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-2.5">
-        <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+        <ActionTooltip label={t("common.reset_form")} shortcut="Alt+R">
           <Button
             type="button"
             onClick={onReset}
@@ -140,11 +143,11 @@ export function ExportConfigForm({
             size="default"
             className="border-border/80 text-muted-foreground hover:text-foreground"
           >
-            Reset Form
+            {t("common.reset_form")}
           </Button>
         </ActionTooltip>
         <PermissionGuard permission="system.gateway.manage">
-          <ActionTooltip label="Simpan Konfigurasi Export Gateway" shortcut="Ctrl+S">
+          <ActionTooltip label={t("gateways.save_config")} shortcut="Ctrl+S">
             <Button
               type="submit"
               disabled={saving}
@@ -152,7 +155,7 @@ export function ExportConfigForm({
               className="gap-1.5"
             >
               {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-              Save Configuration
+              {t("gateways.save_config")}
             </Button>
           </ActionTooltip>
         </PermissionGuard>

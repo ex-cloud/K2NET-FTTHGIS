@@ -1,9 +1,8 @@
-
-
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "@/lib/navigation-compat";
 import { UploadCloud, Database, FileCode } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { createManualAiDocument } from "@/lib/actions/gateways";
@@ -13,6 +12,7 @@ import { type KnowledgeScope, KNOWLEDGE_TEMPLATES } from "@/components/ai/types"
 function AiAddContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
 
   // Upload State
   const [uploadTitle, setUploadTitle] = useState("");
@@ -39,15 +39,15 @@ function AiAddContent() {
         setManualTitle(template.title);
         setManualCategory(template.category);
         setManualContent(template.content);
-        toast.info(`Template '${template.title}' dimuat.`);
+        toast.info(t("ai.template_loaded", { title: template.title }));
       }
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
-      toast.error("Silakan pilih berkas PDF/Markdown/TXT terlebih dahulu");
+      toast.error(t("ai.select_file_prompt"));
       return;
     }
 
@@ -66,18 +66,19 @@ function AiAddContent() {
       });
 
       if (res.ok) {
+        const docName = uploadTitle || selectedFile.name;
         toast.success(
           uploadAutoApprove
-            ? `Dokumen "${uploadTitle || selectedFile.name}" berhasil diunggah dan diindeks ke pgvector!`
-            : `Dokumen "${uploadTitle || selectedFile.name}" berhasil diunggah sebagai draf pending review.`
+            ? t("ai.upload_success_indexed", { title: docName })
+            : t("ai.upload_success_draft", { title: docName })
         );
         router.push("/ai");
       } else {
         const errJson = await res.json().catch(() => ({}));
-        toast.error(errJson.detail || "Gagal mengunggah dokumen ke microservice AI");
+        toast.error(errJson.detail || t("ai.upload_failed"));
       }
     } catch {
-      toast.error("Terjadi kegagalan jaringan saat mengunggah berkas");
+      toast.error(t("ai.upload_network_failed"));
     } finally {
       setUploading(false);
     }
@@ -86,7 +87,7 @@ function AiAddContent() {
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualTitle.trim() || !manualContent.trim()) {
-      toast.error("Judul dan isi konten SOP wajib diisi");
+      toast.error(t("ai.manual_fields_required"));
       return;
     }
 
@@ -103,15 +104,15 @@ function AiAddContent() {
       if (res && res.id) {
         toast.success(
           manualAutoApprove
-            ? `SOP "${manualTitle}" berhasil disimpan & diindeks ke pgvector!`
-            : `SOP "${manualTitle}" berhasil disimpan sebagai draf pending review.`
+            ? t("ai.manual_success_indexed", { title: manualTitle })
+            : t("ai.manual_success_draft", { title: manualTitle })
         );
         router.push("/ai");
       } else {
-        toast.error("Gagal menyimpan catatan manual");
+        toast.error(t("ai.manual_save_failed"));
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Terjadi kegagalan jaringan saat memproses catatan";
+      const message = err instanceof Error ? err.message : t("ai.upload_network_failed");
       toast.error(message);
     } finally {
       setManualSubmitting(false);
@@ -130,20 +131,20 @@ function AiAddContent() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                Tambah Basis Pengetahuan
+                {t("ai.add_document_title")}
               </h1>
               <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-primary/30 text-primary bg-primary/10">
-                Ingestion Studio
+                {t("ai.ingestion_studio")}
               </Badge>
             </div>
             <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
-              Unggah dokumen teknis (PDF, Markdown, TXT) atau tulis prosedur operasional lapangan secara langsung.
+              {t("ai.add_document_subtitle")}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionTooltip label="Lihat Daftar Dokumen" shortcut="Esc">
+          <ActionTooltip label={t("ai.view_doc_list")} shortcut="Esc">
             <Button
               variant="outline"
               size="sm"
@@ -151,10 +152,10 @@ function AiAddContent() {
               className="text-xs gap-1.5 cursor-pointer"
             >
               <Database className="w-3.5 h-3.5" />
-              Lihat Daftar Dokumen
+              {t("ai.view_doc_list")}
             </Button>
           </ActionTooltip>
-          <ActionTooltip label="Katalog Template SOP" shortcut="T">
+          <ActionTooltip label={t("ai.sop_template_catalog")} shortcut="T">
             <Button
               variant="outline"
               size="sm"
@@ -162,7 +163,7 @@ function AiAddContent() {
               className="text-xs gap-1.5 cursor-pointer"
             >
               <FileCode className="w-3.5 h-3.5" />
-              Katalog Template SOP
+              {t("ai.sop_template_catalog")}
             </Button>
           </ActionTooltip>
         </div>
@@ -205,9 +206,11 @@ function AiAddContent() {
 }
 
 export default function AiAddPage() {
+  const { t } = useTranslation();
+
   return (
     <AiPageWrapper>
-      <Suspense fallback={<div className="p-6 text-xs text-foreground/75 dark:text-muted-foreground">Memuat Ingestion Studio...</div>}>
+      <Suspense fallback={<div className="p-6 text-xs text-foreground/75 dark:text-muted-foreground">{t("ai.loading_ingestion")}</div>}>
         <AiAddContent />
       </Suspense>
     </AiPageWrapper>

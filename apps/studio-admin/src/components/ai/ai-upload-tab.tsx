@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import { 
   UploadCloud, 
@@ -15,6 +13,7 @@ import {
   Input, 
   Label 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { CATEGORIES } from "./types";
 
 interface AiUploadTabProps {
@@ -40,6 +39,8 @@ export function AiUploadTab({
   onUploadSubmit,
   onCancel,
 }: AiUploadTabProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="border-border bg-card max-w-2xl mx-auto shadow-xs">
       <CardHeader className="border-b border-border pb-4">
@@ -49,7 +50,7 @@ export function AiUploadTab({
           </div>
           <div>
             <CardTitle className="text-base font-bold text-foreground">
-              Unggah Berkas Pengetahuan SOP / Manual
+              {t("ai.tab_upload")}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
               Format didukung: PDF, Markdown (.md), atau Plain Text (.txt). Maksimal 20 MB. Sistem otomatis memecah file menjadi token chunks dan menyimpan embedding ke pgvector.
@@ -61,7 +62,7 @@ export function AiUploadTab({
       <CardContent className="pt-5">
         <form onSubmit={onUploadSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="docTitle" className="text-xs">Judul Dokumen (Opsional, default sesuai nama file)</Label>
+            <Label htmlFor="docTitle" className="text-xs">{t("ai.doc_title")}</Label>
             <Input
               id="docTitle"
               type="text"
@@ -73,7 +74,7 @@ export function AiUploadTab({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="docCategory" className="text-xs">Kategori Pengetahuan</Label>
+            <Label htmlFor="docCategory" className="text-xs">{t("ai.doc_category")}</Label>
             <select
               id="docCategory"
               value={uploadCategory}
@@ -89,7 +90,7 @@ export function AiUploadTab({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Pilih Berkas</Label>
+            <Label className="text-xs">{t("ai.doc_source")}</Label>
             <div className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-6 text-center bg-muted/20 cursor-pointer">
               <input
                 type="file"
@@ -108,11 +109,11 @@ export function AiUploadTab({
                   {selectedFile ? (
                     <span className="text-primary font-semibold font-mono">{selectedFile.name}</span>
                   ) : (
-                    "Klik untuk memilih berkas atau geser file ke sini"
+                    t("ai.upload_drop_cta")
                   )}
                 </div>
                 <div className="text-[11px] text-muted-foreground">
-                  PDF, MD, atau TXT hingga 20 MB
+                  {t("ai.upload_file_types_limit")}
                 </div>
               </label>
             </div>
@@ -125,7 +126,7 @@ export function AiUploadTab({
               size="sm"
               onClick={onCancel}
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -134,7 +135,7 @@ export function AiUploadTab({
               className="gap-1.5"
             >
               {uploading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {uploading ? "Mengunggah & Indexing..." : "Unggah & Simpan ke Memori"}
+              {uploading ? t("common.processing") : t("common.save")}
             </Button>
           </div>
         </form>

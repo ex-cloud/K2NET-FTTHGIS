@@ -1,7 +1,6 @@
-
-
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { AlertCircle } from "lucide-react";
 
 interface ResetConfirmModalProps {
@@ -15,13 +14,15 @@ export function ResetConfirmModal({
   onOpenChange,
   onConfirm,
 }: ResetConfirmModalProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-border sm:max-w-[450px] p-6 shadow-lg">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-rose-500" />
-            Reset Statistics Report?
+            {t("common.confirm")}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground mt-2 leading-relaxed">
             This action will reset all metrics gathered by the{" "}
@@ -34,18 +35,18 @@ export function ResetConfirmModal({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="inline-flex items-center justify-center h-8 px-3 text-xs font-medium rounded-md border border-border bg-card hover:bg-muted text-foreground transition-colors"
+            className="inline-flex items-center justify-center h-8 px-3 text-xs font-medium rounded-md border border-border bg-card hover:bg-muted text-foreground transition-colors cursor-pointer"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
             onClick={() => {
               onConfirm();
             }}
-            className="inline-flex items-center justify-center h-8 px-3 text-xs font-medium rounded-md bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors"
+            className="inline-flex items-center justify-center h-8 px-3 text-xs font-medium rounded-md bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors cursor-pointer"
           >
-            Reset stats
+            {t("common.confirm")}
           </button>
         </div>
       </DialogContent>

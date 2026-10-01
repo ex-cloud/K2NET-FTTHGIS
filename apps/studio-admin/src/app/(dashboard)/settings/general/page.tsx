@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import { Badge, Button, Input, PageLayout, Switch, ActionTooltip } from "@k2net/ui";
 import { Sliders, Save, RefreshCw, HardDrive } from "lucide-react";
@@ -7,9 +5,11 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
 import { SettingsSection } from "../components/settings-section";
 import { SettingsFormRow } from "../components/settings-form-row";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 
 export default function SettingsGeneralPage() {
+  const { t } = useTranslation();
   const { settings, loading, updateSettings, isUpdating, refresh } = useSystemSettings();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
@@ -37,10 +37,10 @@ export default function SettingsGeneralPage() {
 
     try {
       await updateSettings(keysToSave);
-      toast.success("Pengaturan Umum berhasil diperbarui!");
+      toast.success(t("settings.general.updated_success"));
     } catch (e: unknown) {
       const err = e as Error;
-      toast.error(err.message || "Gagal memperbarui pengaturan");
+      toast.error(err.message || t("settings.general.update_failed"));
     }
   };
 
@@ -53,20 +53,20 @@ export default function SettingsGeneralPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
-                Platform Config
+                {t("settings.general.platform_config_badge")}
               </Badge>
-              <span className="text-xs text-muted-foreground">• System Identity & Limits</span>
+              <span className="text-xs text-muted-foreground">• {t("settings.general.platform_badge_subtitle")}</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <Sliders className="w-6 h-6 text-primary" /> General Settings
+              <Sliders className="w-6 h-6 text-primary" /> {t("settings.general.title")}
             </h1>
             <p className="text-xs text-muted-foreground">
-              Konfigurasi identitas platform utama, alokasi kuota penyimpanan default, dan status pemeliharaan sistem.
+              {t("settings.general_subtitle")}
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <ActionTooltip label="Muat Ulang Pengaturan" shortcut="R">
+            <ActionTooltip label={t("common.reload")} shortcut="R">
               <Button
                 variant="outline"
                 size="sm"
@@ -74,10 +74,10 @@ export default function SettingsGeneralPage() {
                 disabled={loading}
                 className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> {t("common.reload")}
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Simpan Perubahan Pengaturan" shortcut="Ctrl+S">
+            <ActionTooltip label={t("common.save_changes")} shortcut="Ctrl+S">
               <Button
                 size="sm"
                 onClick={handleSave}
@@ -85,7 +85,7 @@ export default function SettingsGeneralPage() {
                 className="text-xs h-7 px-2.5 font-medium gap-1.5 shadow-xs rounded-md cursor-pointer"
               >
                 {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                Save Changes
+                {t("common.save_changes")}
               </Button>
             </ActionTooltip>
           </div>
@@ -96,12 +96,12 @@ export default function SettingsGeneralPage() {
           
           {/* Section 1: Platform Identity */}
           <SettingsSection
-            title="Platform Identity & Instance"
-            description="Informasi identitas dasar yang ditampilkan di seluruh portal admin & header sistem."
+            title={t("settings.general.platform_identity_title")}
+            description={t("settings.general.platform_identity_desc")}
           >
             <SettingsFormRow
-              label="Nama Platform Global"
-              description="Nama resmi platform yang akan muncul pada title bar browser, email notifikasi, dan header aplikasi."
+              label={t("settings.general.app_name_label")}
+              description={t("settings.general.app_name_desc")}
             >
               <Input
                 type="text"
@@ -113,8 +113,8 @@ export default function SettingsGeneralPage() {
             </SettingsFormRow>
 
             <SettingsFormRow
-              label="Instance System ID"
-              description="Kode identifikasi unik instance backend yang terdaftar pada klaster enterprise."
+              label={t("settings.general.instance_id_label")}
+              description={t("settings.general.instance_id_desc")}
               divider={false}
             >
               <div className="flex items-center gap-2">
@@ -130,12 +130,12 @@ export default function SettingsGeneralPage() {
 
           {/* Section 2: Default Storage Quota */}
           <SettingsSection
-            title="Global Storage Allocation"
-            description="Batasan kuota penyimpanan default untuk tenant/organisasi baru yang terdaftar di platform."
+            title={t("settings.general.storage_allocation_title")}
+            description={t("settings.general.storage_allocation_desc")}
           >
             <SettingsFormRow
-              label="Default Storage Quota per Tenant (GB)"
-              description="Batas kapasitas penyimpanan MinIO S3 yang diberikan secara otomatis saat tenant baru diaktifkan."
+              label={t("settings.general.default_quota_label")}
+              description={t("settings.general.default_quota_desc")}
               divider={false}
             >
               <div className="flex items-center gap-2">
@@ -155,12 +155,12 @@ export default function SettingsGeneralPage() {
 
           {/* Section 3: System Maintenance Mode */}
           <SettingsSection
-            title="System Maintenance Lock"
-            description="Kunci pemeliharaan darurat untuk menutup akses seluruh pengguna non-Super Admin."
+            title={t("settings.general.maintenance_lock_title")}
+            description={t("settings.general.maintenance_lock_desc")}
           >
             <SettingsFormRow
-              label="System-wide Maintenance Mode"
-              description="Saat diaktifkan, seluruh portal tenant dan pengguna publik akan dikunci dengan layar pemeliharaan. Hanya Super Admin yang dapat mengakses sistem."
+              label={t("settings.general.maintenance_mode_label")}
+              description={t("settings.general.maintenance_mode_desc")}
             >
               <Switch
                 checked={getValue("system_maintenance_mode", "false") === "true"}
@@ -170,8 +170,8 @@ export default function SettingsGeneralPage() {
             </SettingsFormRow>
 
             <SettingsFormRow
-              label="Pesan Banner Pemeliharaan"
-              description="Pesan kustom yang akan ditampilkan kepada pengguna saat mode pemeliharaan aktif."
+              label={t("settings.general.maintenance_message_label")}
+              description={t("settings.general.maintenance_message_desc")}
               divider={false}
             >
               <Input

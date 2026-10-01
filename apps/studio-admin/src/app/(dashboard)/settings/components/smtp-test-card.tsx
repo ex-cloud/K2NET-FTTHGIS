@@ -1,5 +1,6 @@
 import { Button } from "@k2net/ui";
 import { Play, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface SmtpTestCardProps {
   onTest: () => void;
@@ -8,15 +9,17 @@ interface SmtpTestCardProps {
 }
 
 export function SmtpTestCard({ onTest, isTestingEmail, smtpTestResult }: SmtpTestCardProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="bg-muted/10 border border-dashed border-border/80 p-6 rounded-xl space-y-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <Play className="w-4 h-4 text-primary" /> Interactive Connection Test
+            <Play className="w-4 h-4 text-primary" /> {t("settings.smtp.test_card_title")}
           </h3>
           <p className="text-xs text-muted-foreground">
-            Uji konektivitas pengaturan SMTP secara langsung dengan menghubungkan socket ke host server SMTP.
+            {t("settings.smtp.test_card_desc")}
           </p>
         </div>
         <Button
@@ -28,7 +31,7 @@ export function SmtpTestCard({ onTest, isTestingEmail, smtpTestResult }: SmtpTes
           className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 shrink-0 rounded-md shadow-xs cursor-pointer"
         >
           {isTestingEmail ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-          Run Connection Test
+          {t("settings.smtp.run_test_btn")}
         </Button>
       </div>
 

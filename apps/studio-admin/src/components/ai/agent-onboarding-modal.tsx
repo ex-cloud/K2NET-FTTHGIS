@@ -8,6 +8,7 @@ import {
   type RolePresetData, 
   type AgentAuthorizationData 
 } from "@/lib/actions/gateways";
+import { useTranslation } from "@k2net/i18n";
 import { AgentOnboardingStep1 } from "./onboarding/AgentOnboardingStep1";
 import { AgentOnboardingStep2 } from "./onboarding/AgentOnboardingStep2";
 
@@ -26,6 +27,7 @@ export function AgentOnboardingModal({
   scope = "PLATFORM_INTERNAL",
   currentAccountName = "K2NET Core Platform (Root HQ)",
 }: AgentOnboardingModalProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<1 | 2>(1);
   const [catalog, setCatalog] = useState<PermissionCatalogData | null>(null);
   const [presets, setPresets] = useState<RolePresetData[]>([]);
@@ -54,13 +56,13 @@ export function AgentOnboardingModal({
         setSelectedPermissions(new Set<string>(catRes.domains.flatMap((d) => d.permissions.map((p) => p.id))));
       } catch (err) {
         console.error("Gagal memuat katalog izin:", err);
-        toast.error("Gagal memuat katalog izin K2 Agent");
+        toast.error(t("ai.failed_load_agent_catalog"));
       } finally {
         setLoading(false);
       }
     }
     loadData();
-  }, [isOpen, scope]);
+  }, [isOpen, scope, t]);
 
   const handleTierChange = (tier: "FULL" | "ROLE_PRESET" | "READ_ONLY" | "CUSTOM") => {
     setAccessTier(tier);
@@ -114,10 +116,10 @@ export function AgentOnboardingModal({
       };
 
       const res = await saveAgentAuthorization(payload);
-      toast.success("Otorisasi K2 Agent berhasil diaktifkan!");
+      toast.success(t("common.success"));
       onAuthorized(res);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Gagal mengotorisasi K2 Agent";
+      const msg = err instanceof Error ? err.message : t("common.error");
       toast.error(msg);
     } finally {
       setSubmitting(false);

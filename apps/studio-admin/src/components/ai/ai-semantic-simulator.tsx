@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import { 
   FlaskConical, 
@@ -19,6 +17,7 @@ import {
   Label, 
   Badge 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { CATEGORIES, KNOWLEDGE_SCOPES } from "./types";
 import type { VectorSearchResultItem } from "@/lib/actions/gateways/ai";
 
@@ -71,18 +70,20 @@ function AiSimulatorForm({
   simSearching,
   onSimulateSearch,
 }: FormProps) {
+  const { t } = useTranslation();
+
   return (
     <form onSubmit={onSimulateSearch} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="simQuery" className="text-xs font-semibold text-foreground">
-          Pertanyaan / Kata Kunci Semantik
+          {t("ai.query_input_label")}
         </Label>
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/75 dark:text-muted-foreground" />
           <Input
             id="simQuery"
             type="text"
-            placeholder="Ketik pertanyaan untuk diuji ke mesin pgvector..."
+            placeholder={t("ai.query_placeholder")}
             value={simQuery}
             onChange={(e) => setSimQuery(e.target.value)}
             className="pl-10 pr-24 h-11 text-xs bg-background border-border text-foreground"
@@ -98,13 +99,15 @@ function AiSimulatorForm({
             ) : (
               <FlaskConical className="w-3.5 h-3.5" />
             )}
-            Uji Vektor
+            {t("ai.test_vector_btn")}
           </Button>
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <span className="text-[11px] font-medium text-foreground/75 dark:text-muted-foreground">Uji Coba Cepat (Preset):</span>
+        <span className="text-[11px] font-medium text-foreground/75 dark:text-muted-foreground">
+          {t("ai.quick_presets")}
+        </span>
         <div className="flex flex-wrap gap-1.5">
           {PRESET_QUERIES.map((preset, idx) => (
             <button
@@ -124,7 +127,7 @@ function AiSimulatorForm({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-border/60">
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-foreground flex items-center justify-between">
-            <span>Scope Visibilitas / Kategori</span>
+            <span>{t("ai.scope_visibility_category")}</span>
             <span className="text-[10px] text-foreground/75 dark:text-muted-foreground font-mono">{simScope}</span>
           </Label>
           <select
@@ -132,13 +135,13 @@ function AiSimulatorForm({
             onChange={(e) => setSimScope(e.target.value)}
             className="w-full h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
           >
-            <optgroup label="Scope Visibilitas Multi-Tenant">
-              <option value="ALL">Semua Scope (Global + Tenant + Platform)</option>
-              <option value="PLATFORM_INTERNAL">🔴 Platform Super Admin (Super Admin Only)</option>
-              <option value="TENANT_INTERNAL">🔵 Tenant NOC ISP (Mitra ISP Scope)</option>
-              <option value="GLOBAL">🟢 Global Knowledge (Publik)</option>
+            <optgroup label={t("ai.scope_multitenant_group")}>
+              <option value="ALL">{t("ai.scope_all")}</option>
+              <option value="PLATFORM_INTERNAL">{t("ai.scope_platform")}</option>
+              <option value="TENANT_INTERNAL">{t("ai.scope_tenant")}</option>
+              <option value="GLOBAL">{t("ai.scope_global")}</option>
             </optgroup>
-            <optgroup label="Kategori Spesifik">
+            <optgroup label={t("ai.specific_category_group")}>
               {CATEGORIES.filter((c) => c.id !== "ALL").map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
@@ -150,7 +153,7 @@ function AiSimulatorForm({
 
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-foreground flex items-center justify-between">
-            <span>Batas Minimum Similarity</span>
+            <span>{t("ai.min_similarity_threshold")}</span>
             <span className="text-[10px] font-mono text-primary font-semibold">
               {(simMinSimilarity * 100).toFixed(0)}%
             </span>
@@ -168,8 +171,10 @@ function AiSimulatorForm({
 
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-foreground flex items-center justify-between">
-            <span>Limit Chunk Hasil</span>
-            <span className="text-[10px] font-mono text-primary font-semibold">{simLimit} chunks</span>
+            <span>{t("ai.chunk_limit")}</span>
+            <span className="text-[10px] font-mono text-primary font-semibold">
+              {t("ai.chunks_count", { count: simLimit })}
+            </span>
           </Label>
           <input
             type="range"
@@ -201,16 +206,18 @@ function AiSimulatorResultList({
   hasSearched,
   simMinSimilarity,
 }: ResultsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-3 pt-2">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground flex items-center gap-1.5">
           <Database className="w-3.5 h-3.5 text-primary" />
-          Hasil Pencarian Vektor pgvector ({simTotalMatches} Chunks Cocok)
+          {t("ai.results_header", { count: simTotalMatches })}
         </h3>
         {hasSearched && (
           <Badge variant="outline" className="text-[10px] font-mono">
-            Cosine Threshold: {(simMinSimilarity * 100).toFixed(0)}%
+            {t("ai.cosine_threshold_badge", { pct: (simMinSimilarity * 100).toFixed(0) })}
           </Badge>
         )}
       </div>
@@ -218,13 +225,15 @@ function AiSimulatorResultList({
       {simSearching ? (
         <div className="p-8 text-center border border-border/80 rounded-xl bg-muted/20">
           <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
-          <p className="text-xs text-foreground/75 dark:text-muted-foreground">Mengalkulasi cosine distance di PostgreSQL pgvector...</p>
+          <p className="text-xs text-foreground/75 dark:text-muted-foreground">
+            {t("ai.cosine_calculating")}
+          </p>
         </div>
       ) : simResults.length === 0 ? (
         <div className="p-8 text-center border border-dashed border-border rounded-xl bg-muted/20 text-foreground/75 dark:text-muted-foreground text-xs">
           {hasSearched
-            ? "Tidak ada dokumen dengan skor kemiripan di atas batas toleransi. Coba turunkan ambang batas similarity."
-            : "Ketik pertanyaan di atas dan klik 'Uji Vektor' untuk melihat peringkat kemiripan semantik."}
+            ? t("ai.no_results_tolerance")
+            : t("ai.no_results_cta")}
         </div>
       ) : (
         <div className="space-y-3">
@@ -241,7 +250,7 @@ function AiSimulatorResultList({
                     <div className="text-xs font-bold text-foreground flex items-center gap-2">
                       <span>#{i + 1} {res.title}</span>
                       <Badge variant="secondary" className="text-[9px] font-mono">
-                        Chunk #{res.chunk_index}
+                        {t("ai.chunk_number", { index: res.chunk_index })}
                       </Badge>
                       {res.scope && (
                         <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-medium border ${scopeMeta.accentBg} ${scopeMeta.accentBorder}`}>
@@ -250,7 +259,7 @@ function AiSimulatorResultList({
                       )}
                     </div>
                     <span className="text-[10px] text-foreground/75 dark:text-muted-foreground font-mono">
-                      Kategori: {res.category} • Doc ID: {res.document_id?.slice(0, 8)}...
+                      {t("ai.category_label", { category: res.category })} • {t("ai.doc_id_label", { id: res.document_id?.slice(0, 8) })}...
                     </span>
                   </div>
 
@@ -295,6 +304,8 @@ export function AiSemanticSimulator({
   hasSearched,
   onSimulateSearch,
 }: AiSemanticSimulatorProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-6">
       <Card className="border-border bg-card shadow-xs">
@@ -305,13 +316,13 @@ export function AiSemanticSimulator({
             </div>
             <div>
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                RAG Semantic Search Simulator & Vector Inspector
+                {t("ai.sim_card_title")}
                 <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10 font-mono">
-                  Live pgvector Test
+                  {t("ai.live_pgvector_test")}
                 </Badge>
               </CardTitle>
               <CardDescription className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
-                Uji coba akurasi dan skor kemiripan vektor cosine pgvector secara real-time terhadap dokumen yang telah diindeks.
+                {t("ai.sim_card_subtitle")}
               </CardDescription>
             </div>
           </div>

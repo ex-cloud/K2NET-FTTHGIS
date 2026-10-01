@@ -1,6 +1,7 @@
 import React from "react";
 import { Loader2, Sparkles, Check } from "lucide-react";
 import { Button, Input, Label } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { CATEGORIES, KNOWLEDGE_SCOPES, type KnowledgeScope } from "../types";
 import { AiRichEditor } from "../ai-rich-editor";
 import { useAiSopGenerator } from "./useAiSopGenerator";
@@ -39,6 +40,7 @@ export function AiManualKnowledgeForm({
   onCancel,
   onGoToTemplates,
 }: AiManualKnowledgeFormProps) {
+  const { t } = useTranslation();
   const {
     aiGenerating,
     aiGeneratedChars,
@@ -58,12 +60,12 @@ export function AiManualKnowledgeForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="manualDocTitle" className="text-xs font-medium text-foreground">
-            Judul SOP / Catatan Teknis <span className="text-destructive">*</span>
+            {t("ai.doc_title")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="manualDocTitle"
             type="text"
-            placeholder="Contoh: Standar Redaman GPON 1:64"
+            placeholder={t("ai.search_doc_placeholder")}
             value={manualTitle}
             onChange={(e) => setManualTitle(e.target.value)}
             required
@@ -73,7 +75,7 @@ export function AiManualKnowledgeForm({
 
         <div className="space-y-1.5">
           <Label htmlFor="manualDocCategory" className="text-xs font-medium text-foreground">
-            Kategori
+            {t("ai.doc_category")}
           </Label>
           <select
             id="manualDocCategory"
@@ -92,9 +94,9 @@ export function AiManualKnowledgeForm({
 
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
-          <span>Scope Visibilitas & Hak Akses</span>
+          <span>{t("ai.doc_scope")}</span>
           <span className="text-[11px] font-normal text-foreground/75 dark:text-muted-foreground">
-            Isolasi Multi-Tenant
+            {t("ai.scope_multitenant_group")}
           </span>
         </Label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -132,11 +134,11 @@ export function AiManualKnowledgeForm({
 
       <div className="p-3 rounded-lg bg-muted/20 border border-border flex items-center justify-between text-xs">
         <div className="space-y-0.5">
-          <p className="font-semibold text-foreground">Mode Approval Dokumen</p>
+          <p className="font-semibold text-foreground">{t("ai.filter_status")}</p>
           <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">
             {manualAutoApprove
-              ? "Langsung dipublikasikan & diindeks ke pgvector (Super Admin)."
-              : "Simpan sebagai draf pending untuk di-review terlebih dahulu."}
+              ? t("ai.save_and_publish")
+              : t("ai.save_as_draft")}
           </p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
@@ -166,7 +168,7 @@ export function AiManualKnowledgeForm({
         <AiRichEditor
           value={manualContent}
           onChange={(val) => setManualContent(val)}
-          placeholder="# Standar Redaman GPON 1:64&#10;&#10;- Batas minimum: -27 dBm&#10;- Batas ideal: -15 s/d -22 dBm&#10;- Prosedur perbaikan FO cut..."
+          placeholder="# SOP Standar ..."
           disabled={manualSubmitting || aiGenerating}
           minHeight="380px"
         />
@@ -182,7 +184,7 @@ export function AiManualKnowledgeForm({
             disabled={manualSubmitting}
             className="text-xs"
           >
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             type="submit"
@@ -193,12 +195,12 @@ export function AiManualKnowledgeForm({
             {manualSubmitting ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Memvektorisasi...
+                {t("common.processing")}
               </>
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5" />
-                {manualAutoApprove ? "Simpan & Publikasikan" : "Simpan sebagai Draf"}
+                {manualAutoApprove ? t("ai.save_and_publish") : t("ai.save_as_draft")}
               </>
             )}
           </Button>

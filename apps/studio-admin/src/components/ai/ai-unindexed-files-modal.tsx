@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import { 
   FolderSync, 
@@ -19,6 +17,7 @@ import {
   DialogFooter, 
   Badge 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type ServerSyncStatus } from "@/lib/actions/gateways";
 import { formatBytes } from "./types";
 
@@ -47,6 +46,8 @@ export function AiUnindexedFilesModal({
   onReject,
   onIndexSingle,
 }: AiUnindexedFilesModalProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl bg-card border-border shadow-lg p-0 overflow-hidden rounded-xl">
@@ -57,10 +58,10 @@ export function AiUnindexedFilesModal({
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-foreground">
-                Berkas Server Belum Terindeks ({syncStatus?.unindexed_count || 0})
+                {t("ai.unindexed_modal_title", { count: syncStatus?.unindexed_count || 0 })}
               </DialogTitle>
               <DialogDescription className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
-                Daftar berkas Markdown (.md) di direktori server (/opt/project5/docs) yang belum masuk ke database & pgvector.
+                {t("ai.unindexed_modal_desc")}
               </DialogDescription>
             </div>
           </div>
@@ -102,7 +103,7 @@ export function AiUnindexedFilesModal({
                       ) : (
                         <Eye className="w-3 h-3 text-blue-500 dark:text-blue-400" />
                       )}
-                      <span>Pratinjau</span>
+                      <span>{t("ai.preview_btn")}</span>
                     </Button>
 
                     {/* Tombol Tolak */}
@@ -118,7 +119,7 @@ export function AiUnindexedFilesModal({
                       ) : (
                         <XCircle className="w-3 h-3" />
                       )}
-                      <span>Tolak</span>
+                      <span>{t("ai.reject_btn")}</span>
                     </Button>
 
                     {/* Tombol Indeks 1-Click */}
@@ -134,7 +135,7 @@ export function AiUnindexedFilesModal({
                       ) : (
                         <Sparkles className="w-3 h-3" />
                       )}
-                      <span>Indeks</span>
+                      <span>{t("ai.index_single_btn")}</span>
                     </Button>
                   </div>
                 </div>
@@ -142,14 +143,14 @@ export function AiUnindexedFilesModal({
             ))
           ) : (
             <div className="py-8 text-center text-xs text-foreground/75 dark:text-muted-foreground">
-              Semua berkas server telah terindeks sepenuhnya.
+              {t("common.no_data")}
             </div>
           )}
         </div>
 
         <DialogFooter className="p-4 border-t border-border/80 bg-muted/20 flex flex-row items-center justify-between gap-2">
           <span className="text-[11px] text-foreground/75 dark:text-muted-foreground font-mono">
-            Total: {syncStatus?.total_server_files || 0} berkas ({syncStatus?.indexed_count || 0} terindeks)
+            {t("ai.total_server_files_indexed", { total: syncStatus?.total_server_files || 0, indexed: syncStatus?.indexed_count || 0 })}
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -158,7 +159,7 @@ export function AiUnindexedFilesModal({
               onClick={() => onOpenChange(false)}
               className="text-xs h-8 cursor-pointer"
             >
-              Tutup
+              {t("common.close")}
             </Button>
             <Button
               size="sm"
@@ -170,7 +171,7 @@ export function AiUnindexedFilesModal({
               className="text-xs h-8 gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer"
             >
               <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-              {isSyncing ? "Menyinkronkan..." : "Indeks Semua Berkas Sekaligus"}
+              {isSyncing ? t("ai.syncing_server") : t("ai.sync_server_dir")}
             </Button>
           </div>
         </DialogFooter>

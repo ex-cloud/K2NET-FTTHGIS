@@ -1,11 +1,10 @@
-
-
 import { useState } from "react";
 import { Button, Card, ActionTooltip } from "@k2net/ui";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "@/lib/auth-compat";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 import {
   PauseCircle,
   PlayCircle,
@@ -31,6 +30,7 @@ export function OrgDangerZoneTab({
   onUpdateStatus,
   onDelete,
 }: OrgDangerZoneTabProps) {
+  const { t } = useTranslation();
   const { data: session } = useSession();
   const { canAccess } = usePermissions();
   const canImpersonate = canAccess("system.support.impersonate");
@@ -50,16 +50,16 @@ export function OrgDangerZoneTab({
         token: session.accessToken,
       });
       if (res.ok) {
-        toast.success(`Keycloak IAM Realm untuk ${org.name} berhasil disinkronkan ulang`, {
-          description: "Konfigurasi client secret dan metadata realm telah diperbarui.",
+        toast.success(t("organizations.reset_iam_success", { name: org.name }), {
+          description: t("organizations.reset_iam_success_desc"),
         });
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(`Gagal reset realm: ${data.message || "Terjadi kesalahan pada server"}`);
+        toast.error(t("organizations.reset_iam_failed", { error: data.message || "Server error" }));
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Koneksi terputus";
-      toast.error(`Gagal sinkronisasi realm: ${msg}`);
+      const msg = e instanceof Error ? e.message : "Connection failed";
+      toast.error(t("organizations.reset_iam_failed", { error: msg }));
     } finally {
       setResettingRealm(false);
     }
@@ -74,10 +74,10 @@ export function OrgDangerZoneTab({
         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
         <div className="space-y-1 text-xs">
           <span className="font-bold text-foreground block">
-            Critical Multi-Tenant Actions & Danger Zone
+            {t("organizations.danger_zone_title")}
           </span>
           <p className="text-muted-foreground leading-relaxed">
-            Aksi di bawah ini berdampak langsung terhadap ketersediaan layanan operasional mitra ISP, isolasi skema PostGIS database, dan realm Keycloak IAM.
+            {t("organizations.danger_zone_subtitle")}
           </p>
         </div>
       </div>
@@ -87,17 +87,17 @@ export function OrgDangerZoneTab({
         <Card className="flex items-center justify-between p-3.5">
           <div className="space-y-0.5 max-w-xl">
             <span className="text-xs font-semibold text-foreground block">
-              Super Admin Impersonation (God Mode)
+              {t("organizations.impersonate_title")}
             </span>
             <p className="text-[11px] text-muted-foreground">
-              Masuk langsung ke dashboard portal tenant sebagai Super Admin tanpa memerlukan kata sandi pengguna mitra.
+              {t("organizations.impersonate_desc")}
             </p>
           </div>
           <ActionTooltip
             label={
               canImpersonate
-                ? "Login to tenant portal as Super Admin"
-                : "Akses Read-Only: Memerlukan izin system.support.impersonate"
+                ? t("organizations.impersonate_tooltip_allowed")
+                : t("organizations.impersonate_tooltip_denied")
             }
             shortcut={canImpersonate ? "Ctrl+Enter" : undefined}
           >
@@ -107,7 +107,7 @@ export function OrgDangerZoneTab({
               disabled={!canImpersonate}
               className="h-7 px-2.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
             >
-              <span>Open Tenant Portal</span>
+              <span>{t("organizations.open_tenant_portal_btn")}</span>
               <ExternalLink className="h-3.5 w-3.5" />
             </Button>
           </ActionTooltip>
@@ -117,21 +117,21 @@ export function OrgDangerZoneTab({
         <Card className="flex items-center justify-between p-3.5">
           <div className="space-y-0.5 max-w-xl">
             <span className="text-xs font-semibold text-foreground block">
-              {isSuspended ? "Resume Tenant Operations" : "Suspend Organization Access"}
+              {isSuspended ? t("organizations.resume_tenant_title") : t("organizations.suspend_tenant_title")}
             </span>
             <p className="text-[11px] text-muted-foreground">
               {isSuspended
-                ? "Mengaktifkan kembali seluruh endpoint API Kong, polling OLT, dan akses peta GIS tenant."
-                : "Membekukan sementara akses seluruh pengguna tenant dan menolak query peta GIS."}
+                ? t("organizations.resume_tenant_desc")
+                : t("organizations.suspend_tenant_desc")}
             </p>
           </div>
           <ActionTooltip
             label={
               !canUpdateOrg
-                ? "Akses Read-Only: Memerlukan izin system.organizations.update"
+                ? t("organizations.impersonate_tooltip_denied")
                 : isSuspended
-                ? "Unfreeze and resume tenant operations"
-                : "Freeze tenant API and poller access"
+                ? t("organizations.resume_tenant_title")
+                : t("organizations.suspend_tenant_title")
             }
           >
             <Button
@@ -146,7 +146,7 @@ export function OrgDangerZoneTab({
               }
             >
               {isSuspended ? <PlayCircle className="h-3.5 w-3.5" /> : <PauseCircle className="h-3.5 w-3.5" />}
-              <span>{isSuspended ? "Resume Tenant" : "Suspend Tenant"}</span>
+              <span>{isSuspended ? t("organizations.resume_btn") : t("organizations.suspend_btn")}</span>
             </Button>
           </ActionTooltip>
         </Card>
@@ -155,17 +155,17 @@ export function OrgDangerZoneTab({
         <Card className="flex items-center justify-between p-3.5">
           <div className="space-y-0.5 max-w-xl">
             <span className="text-xs font-semibold text-foreground block">
-              Reset Keycloak IAM Realm Secret
+              {t("organizations.reset_iam_title")}
             </span>
             <p className="text-[11px] text-muted-foreground">
-              Mengatur ulang client secret OAuth2 dan melakukan sinkronisasi ulang role RBAC Keycloak untuk realm <code className="text-primary font-mono text-[10px]">{org.slug}-realm</code>.
+              {t("organizations.reset_iam_desc", { realm: `${org.slug}-realm` })}
             </p>
           </div>
           <ActionTooltip
             label={
               !canManageSecurity
-                ? "Akses Read-Only: Memerlukan izin system.security.manage"
-                : "Re-sync Keycloak client secrets & RBAC roles"
+                ? t("organizations.impersonate_tooltip_denied")
+                : t("organizations.reset_iam_tooltip")
             }
           >
             <Button
@@ -176,7 +176,7 @@ export function OrgDangerZoneTab({
               className="h-7 px-2.5 text-xs font-medium border-border bg-card hover:bg-muted text-foreground gap-1.5 shrink-0 shadow-2xs disabled:opacity-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${resettingRealm ? "animate-spin text-primary" : ""}`} />
-              <span>Reset IAM Realm</span>
+              <span>{t("organizations.reset_iam_btn")}</span>
             </Button>
           </ActionTooltip>
         </Card>
@@ -188,11 +188,11 @@ export function OrgDangerZoneTab({
               <div className="flex items-center gap-2">
                 <Lock className="h-3.5 w-3.5 text-primary" />
                 <span className="text-xs font-semibold text-foreground block">
-                  Root Platform Tenant (Immutable)
+                  {t("organizations.root_tenant_title")}
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Organisasi utama sistem (default) diproteksi secara permanen dari penghapusan demi integritas foreign key dan background automation.
+                {t("organizations.root_tenant_desc")}
               </p>
             </div>
             <Button
@@ -202,24 +202,24 @@ export function OrgDangerZoneTab({
               className="h-7 px-2.5 text-xs font-medium opacity-60 cursor-not-allowed gap-1.5 shrink-0"
             >
               <Lock className="h-3.5 w-3.5" />
-              <span>Protected from Deletion</span>
+              <span>{t("organizations.protected_deletion_btn")}</span>
             </Button>
           </div>
         ) : (
           <div className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/5 p-3.5">
             <div className="space-y-0.5 max-w-xl">
               <span className="text-xs font-semibold text-destructive block">
-                Delete Organization Permanently
+                {t("organizations.delete_perm_title")}
               </span>
               <p className="text-[11px] text-muted-foreground">
-                Menghapus permanen skema database tenant, akun Keycloak, dan seluruh topologi peta GIS yang terafiliasi.
+                {t("organizations.delete_perm_desc")}
               </p>
             </div>
             <ActionTooltip
               label={
                 canDeleteOrg
-                  ? "Danger: Open permanent deletion confirmation dialog"
-                  : "Akses Read-Only: Memerlukan izin system.organizations.delete"
+                  ? t("organizations.delete_perm_title")
+                  : t("organizations.impersonate_tooltip_denied")
               }
             >
               <Button
@@ -230,7 +230,7 @@ export function OrgDangerZoneTab({
                 className="h-7 px-2.5 text-xs font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                <span>Delete Tenant</span>
+                <span>{t("organizations.delete_tenant_btn")}</span>
               </Button>
             </ActionTooltip>
           </div>

@@ -16,6 +16,7 @@ import {
   Badge, 
   Progress 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type AiKnowledgeStats, type AiDocumentItem } from "@/lib/actions/gateways";
 
 interface AiVectorExplorerModalProps {
@@ -33,6 +34,8 @@ export function AiVectorExplorerModal({
   documents,
   onOpenSimulator,
 }: AiVectorExplorerModalProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col bg-background border-border">
@@ -43,13 +46,13 @@ export function AiVectorExplorerModal({
             </div>
             <div>
               <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                pgvector Chunk & Index Explorer
+                {t("ai.vector_explorer_title")}
                 <Badge variant="outline" className="text-[10px] font-mono text-purple-400 bg-purple-500/10 border-purple-500/30">
                   HNSW • 1536 dim
                 </Badge>
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Inspeksi pecahan dokumen teks (chunks) dan vektor embedding yang tersimpan di PostgreSQL pgvector.
+                {t("ai.vector_explorer_desc")}
               </DialogDescription>
             </div>
           </div>
@@ -59,15 +62,15 @@ export function AiVectorExplorerModal({
           {/* Summary Stats Grid */}
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 rounded-xl bg-card border border-border space-y-1">
-              <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Dokumen</div>
-              <div className="text-lg font-bold text-foreground">{stats?.total_documents || 0} Berkas</div>
+              <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{t("ai.total_docs")}</div>
+              <div className="text-lg font-bold text-foreground">{stats?.total_documents || 0}</div>
             </div>
             <div className="p-3 rounded-xl bg-card border border-border space-y-1">
-              <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Vektor Chunks</div>
+              <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{t("ai.total_vector_chunks")}</div>
               <div className="text-lg font-bold text-purple-400">{stats?.total_chunks || 0} Chunks</div>
             </div>
             <div className="p-3 rounded-xl bg-card border border-border space-y-1">
-              <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Indeks Algoritma</div>
+              <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{t("ai.index_algorithm")}</div>
               <div className="text-xs font-mono font-semibold text-primary mt-1">HNSW Cosine Distance</div>
             </div>
           </div>
@@ -75,16 +78,16 @@ export function AiVectorExplorerModal({
           {/* Document Chunks List */}
           <div className="space-y-2">
             <div className="text-xs font-semibold text-foreground flex items-center justify-between">
-              <span>Daftar Dokumen & Kapasitas Chunk</span>
+              <span>{t("ai.docs_and_chunks_list")}</span>
               <span className="text-[11px] text-muted-foreground font-normal">
-                Menampilkan {documents.length} dokumen terindeks
+                {t("ai.showing_indexed_docs_count", { count: documents.length })}
               </span>
             </div>
 
             <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
               {documents.length === 0 ? (
                 <div className="text-center py-8 text-xs text-muted-foreground">
-                  Belum ada dokumen yang terindeks di database pgvector.
+                  {t("ai.no_indexed_docs_pgvector")}
                 </div>
               ) : (
                 documents.map((doc) => (
@@ -98,7 +101,7 @@ export function AiVectorExplorerModal({
                         <div>
                           <div className="text-xs font-semibold text-foreground">{doc.title}</div>
                           <div className="text-[10px] text-muted-foreground font-mono">
-                            ID: {doc.id.slice(0, 18)}... • Kategori: {doc.category}
+                            ID: {doc.id.slice(0, 18)}... • {t("ai.doc_category")}: {doc.category}
                           </div>
                         </div>
                       </div>
@@ -110,7 +113,7 @@ export function AiVectorExplorerModal({
                     {/* Chunk Token Estimate Progress Bar */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                        <span>Estimasi Token Chunks (~500 token/chunk)</span>
+                        <span>{t("ai.chunk_token_estimate")}</span>
                         <span>{doc.chunk_count * 500} tokens</span>
                       </div>
                       <Progress value={Math.min(doc.chunk_count * 20, 100)} className="h-1.5 bg-muted" />
@@ -130,7 +133,7 @@ export function AiVectorExplorerModal({
             className="text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
           >
             <FlaskConical className="w-3.5 h-3.5" />
-            Uji Coba RAG Simulator
+            {t("ai.test_rag_simulator_btn")}
           </Button>
           <Button
             variant="default"
@@ -138,7 +141,7 @@ export function AiVectorExplorerModal({
             onClick={() => setIsOpen(false)}
             className="text-xs"
           >
-            Tutup
+            {t("common.close")}
           </Button>
         </div>
       </DialogContent>

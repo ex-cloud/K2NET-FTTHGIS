@@ -8,6 +8,7 @@ import {
   Button, 
   Badge 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 export interface Step1Props {
   scope: string;
@@ -28,6 +29,8 @@ export function AgentOnboardingStep1({
   onNext,
   onClose,
 }: Step1Props) {
+  const { t } = useTranslation();
+
   return (
     <div className="p-6 md:p-8 space-y-6 flex flex-col items-center text-center">
       <div className="relative mt-2">
@@ -41,10 +44,12 @@ export function AgentOnboardingStep1({
 
       <div className="space-y-1.5 max-w-sm">
         <h2 className="text-xl font-bold tracking-tight text-foreground">
-          Enable K2 Agent access
+          {t("ai.agent_onboarding_title")}
         </h2>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Token API aman akan dibuat untuk mengizinkan K2 Agent mengakses sumber daya {scope === "PLATFORM_INTERNAL" ? "platform internal K2NET" : "operasional tenant Anda"}.
+          {t("ai.agent_token_secure_notice", {
+            scope: scope === "PLATFORM_INTERNAL" ? t("ai.scope_platform_internal") : t("ai.scope_tenant_ops")
+          })}
         </p>
       </div>
 
@@ -52,10 +57,10 @@ export function AgentOnboardingStep1({
         <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-3">
           <div>
             <p className="text-xs font-semibold text-foreground">
-              {scope === "PLATFORM_INTERNAL" ? "Akses Seluruh Modul Internal" : "Akses Seluruh Modul Tenant"}
+              {scope === "PLATFORM_INTERNAL" ? t("ai.agent_scope_platform") : t("ai.agent_scope_tenant")}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Termasuk modul baru yang ditambahkan di masa mendatang
+              {t("ai.include_future_modules")}
             </p>
           </div>
           <input
@@ -68,8 +73,8 @@ export function AgentOnboardingStep1({
 
         <div>
           <div className="flex items-center justify-between text-[11px] font-medium text-foreground/75 dark:text-muted-foreground mb-1.5">
-            <span>Pilih Workspace / Akun:</span>
-            <span className="font-mono text-primary text-[10px]">1 terpilih</span>
+            <span>{t("ai.select_workspace_account")}</span>
+            <span className="font-mono text-primary text-[10px]">{t("ai.selected_count", { count: 1 })}</span>
           </div>
           
           <div className="p-3 rounded-md border border-primary/40 bg-primary/5 flex items-center justify-between">
@@ -102,7 +107,7 @@ export function AgentOnboardingStep1({
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
             <>
-              <span>Review permissions</span>
+              <span>{t("ai.review_permissions")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </>
           )}
@@ -114,7 +119,7 @@ export function AgentOnboardingStep1({
             onClick={onClose}
             className="text-xs text-muted-foreground hover:text-foreground cursor-pointer pt-1"
           >
-            Batal
+            {t("common.cancel")}
           </button>
         )}
       </div>

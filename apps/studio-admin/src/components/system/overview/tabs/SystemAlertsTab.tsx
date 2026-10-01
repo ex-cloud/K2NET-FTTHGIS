@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useRouter } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 import {
   CheckCircle2,
   Database,
@@ -74,6 +75,7 @@ function HealthPill({
 
 export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Dynamic filter pills
   const filterOptions = useMemo<FilterPillOption[]>(() => {
@@ -82,12 +84,12 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
     const infoCount = items.filter((a) => (a.severity ?? "").toLowerCase() === "info").length;
 
     return [
-      { id: "ALL", label: "Semua", count: items.length },
+      { id: "ALL", label: t("observability.filter_all"), count: items.length },
       { id: "CRITICAL", label: "Critical", count: criticalCount, badgeVariant: "critical", dotColor: "bg-rose-500" },
       { id: "WARNING", label: "Warning", count: warningCount, badgeVariant: "warning", dotColor: "bg-amber-400" },
       { id: "INFO", label: "Info", count: infoCount, badgeVariant: "info", dotColor: "bg-sky-400" },
     ];
-  }, [items]);
+  }, [items, t]);
 
   const {
     searchQuery,
@@ -177,11 +179,10 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
         </div>
         <div>
           <h4 className="text-sm font-semibold text-foreground">
-            Semua Layanan Beroperasi Normal
+            {t("observability.all_services_normal")}
           </h4>
           <p className="text-[11px] text-muted-foreground mt-1 max-w-sm mx-auto">
-            Tidak ada insiden aktif atau anomali telemetri yang terdeteksi pada microservices,
-            database, maupun gateway API.
+            {t("observability.all_services_normal_desc")}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
@@ -208,7 +209,7 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
       <OverviewTabToolbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Cari service, judul alert, pesan error..."
+        searchPlaceholder={t("observability.search_alerts_placeholder")}
         filterOptions={filterOptions}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
@@ -226,7 +227,7 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
               <tr className="divide-x divide-border/30">
                 <th className="py-2.5 px-3.5 w-28 text-center">
                   <OverviewSortableHeader
-                    title="Severity"
+                    title={t("observability.col_severity")}
                     field="severity"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -236,7 +237,7 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[180px]">
                   <OverviewSortableHeader
-                    title="Target Service / Layer"
+                    title={t("observability.col_target_service")}
                     field="service"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -245,7 +246,7 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 min-w-[240px]">
                   <OverviewSortableHeader
-                    title="Deskripsi Masalah / Alert"
+                    title={t("observability.col_alert_desc")}
                     field="title"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -254,7 +255,7 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
                 </th>
                 <th className="py-2.5 px-3.5 w-32 whitespace-nowrap">
                   <OverviewSortableHeader
-                    title="Status Waktu"
+                    title={t("observability.col_time_status")}
                     field="triggerTime"
                     currentSortField={sortField}
                     currentSortDir={sortDir}
@@ -273,13 +274,13 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
                       <FolderKanban className="size-8 text-muted-foreground/40" />
                       <p className="text-sm font-semibold text-foreground">
                         {activeFilter !== "ALL"
-                          ? `Tidak ada alert dengan status ${activeFilter}`
-                          : "Tidak ada alert yang cocok"}
+                          ? t("observability.no_alerts_with_status", { status: activeFilter })
+                          : t("observability.no_alerts_match_filter")}
                       </p>
                       <p className="text-xs text-muted-foreground max-w-sm">
                         {searchQuery
-                          ? `Tidak ada alert yang cocok dengan kata kunci "${searchQuery}".`
-                          : "Semua komponen sistem beroperasi dalam batas toleransi normal."}
+                          ? t("observability.no_alerts_match_query", { query: searchQuery })
+                          : t("observability.all_systems_normal_tol")}
                       </p>
                       {(searchQuery || activeFilter !== "ALL") && (
                         <button
@@ -288,7 +289,7 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
                           className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all cursor-pointer"
                         >
                           <RotateCcw className="size-3" />
-                          <span>Reset Filter</span>
+                          <span>{t("observability.reset_filter")}</span>
                         </button>
                       )}
                     </div>
@@ -353,7 +354,7 @@ export function SystemAlertsTab({ items, loading }: SystemAlertsTabProps) {
             {hasMore && (
               <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground font-mono">
                 <Loader2 className="size-3.5 animate-spin text-primary" />
-                <span>Memuat alert berikutnya ({visibleItems.length} / {totalFilteredCount})...</span>
+                <span>{t("observability.loading_next_alerts", { current: visibleItems.length, total: totalFilteredCount })}</span>
               </div>
             )}
           </div>

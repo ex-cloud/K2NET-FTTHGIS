@@ -14,10 +14,10 @@ interface DocumentsTableToolbarProps {
 
 const CATEGORIES = ["ALL", "LEGAL", "TECHNICAL", "COMPLIANCE", "BILLING"] as const;
 const STATUS_FILTERS = [
-  { key: "ALL", label: "Semua Status" },
-  { key: "PENDING", label: "Menunggu Review" },
-  { key: "VERIFIED", label: "Terverifikasi" },
-  { key: "REVISION", label: "Perlu Revisi" },
+  { key: "ALL", label: "All Statuses" },
+  { key: "PENDING", label: "Pending Review" },
+  { key: "VERIFIED", label: "Verified" },
+  { key: "REVISION", label: "Revision Required" },
 ] as const;
 
 export function DocumentsTableToolbar({

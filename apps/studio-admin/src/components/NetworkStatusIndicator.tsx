@@ -1,11 +1,11 @@
-
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { WifiOff, Wifi } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 
 export function NetworkStatusIndicator() {
+  const { t } = useTranslation();
   const [_isOnline, setIsOnline] = useState<boolean>(true);
   const [showBanner, setShowBanner] = useState<boolean>(false);
 
@@ -19,8 +19,8 @@ export function NetworkStatusIndicator() {
     const handleOnline = () => {
       setIsOnline(true);
       setShowBanner(false);
-      toast.success("Koneksi Internet Terhubung Kembali", {
-        description: "Semua sinkronisasi telemetri & data GIS aktif kembali.",
+      toast.success(t("common.network_reconnected"), {
+        description: t("common.network_reconnected_desc"),
         icon: <Wifi className="h-4 w-4 text-primary" />,
         duration: 4000,
       });
@@ -29,8 +29,8 @@ export function NetworkStatusIndicator() {
     const handleOffline = () => {
       setIsOnline(false);
       setShowBanner(true);
-      toast.error("Koneksi Internet Terputus", {
-        description: "Anda sedang dalam mode offline. Data yang belum tersimpan akan tertunda.",
+      toast.error(t("common.network_disconnected"), {
+        description: t("common.network_disconnected_desc"),
         icon: <WifiOff className="h-4 w-4 text-destructive" />,
         duration: 6000,
       });
@@ -43,7 +43,7 @@ export function NetworkStatusIndicator() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, []);
+  }, [t]);
 
   if (!showBanner) return null;
 
@@ -63,7 +63,7 @@ export function NetworkStatusIndicator() {
         <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
       </span>
       <WifiOff className="h-3.5 w-3.5" />
-      <span>Mode Offline — Menunggu koneksi internet pulih...</span>
+      <span>{t("common.offline_mode_waiting")}</span>
     </div>
   );
 }

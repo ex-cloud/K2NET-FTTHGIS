@@ -6,6 +6,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
   SecondarySidebarHeader,
+  ActionTooltip,
 } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import {
@@ -78,27 +79,34 @@ export function TenantSecondarySidebar({ projectId }: TenantSecondarySidebarProp
                     const itemTitle = item.translationKey ? t(item.translationKey) : item.title;
 
                     return (
-                      <Link
+                      <ActionTooltip
                         key={item.id}
-                        to={item.href}
-                        className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
-                          isActive
-                            ? "bg-sidebar-accent text-foreground font-semibold border border-border/80"
-                            : "text-foreground/85 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium"
-                        }`}
+                        label={t("nav.go_to_item", { name: itemTitle })}
+                        shortcut={item.shortcut}
+                        side="right"
+                        sideOffset={8}
                       >
-                        <Icon
-                          className={`w-3.5 h-3.5 shrink-0 ${
-                            isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"
+                        <Link
+                          to={item.href}
+                          className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
+                            isActive
+                              ? "bg-sidebar-accent text-foreground font-semibold border border-border/80"
+                              : "text-foreground/85 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium"
                           }`}
-                        />
-                        <span className="truncate flex-1">{itemTitle}</span>
-                        {item.badge && (
-                          <span className="ml-auto text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20">
-                            {item.badge}
-                          </span>
-                        )}
-                      </Link>
+                        >
+                          <Icon
+                            className={`w-3.5 h-3.5 shrink-0 ${
+                              isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"
+                            }`}
+                          />
+                          <span className="truncate flex-1">{itemTitle}</span>
+                          {item.badge && (
+                            <span className="ml-auto text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20">
+                              {item.badge}
+                            </span>
+                          )}
+                        </Link>
+                      </ActionTooltip>
                     );
                   })}
                 </CollapsibleContent>

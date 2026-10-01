@@ -1,3 +1,4 @@
+import React from "react";
 import { Fingerprint, Globe } from "lucide-react";
 import {
   Button,
@@ -10,6 +11,7 @@ import {
   CardTitle,
   ActionTooltip,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { SsoProvider } from "@/hooks/useSecuritySettings";
 
 export function AuthSsoProvidersCard({
@@ -33,6 +35,8 @@ export function AuthSsoProvidersCard({
   handleSaveSso: (providerId: string) => void;
   isUpdatingSsoProvider: boolean;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
       <CardHeader className="border-b border-border/40">
@@ -50,12 +54,13 @@ export function AuthSsoProvidersCard({
             return (
               <button
                 key={provider}
+                type="button"
                 onClick={() => {
                   setSelectedProvider(provider);
                   setClientIdInput(configured?.clientId || "");
                   setClientSecretInput("");
                 }}
-                className={`p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${
+                className={`p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${
                   selectedProvider === provider
                     ? "border-primary bg-primary/10 text-primary"
                     : configured?.enabled
@@ -68,7 +73,7 @@ export function AuthSsoProvidersCard({
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
                   configured?.enabled ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground/60"
                 }`}>
-                  {configured?.enabled ? "Active" : "Not Configured"}
+                  {configured?.enabled ? t("common.active") : t("common.inactive")}
                 </span>
               </button>
             );
@@ -79,7 +84,7 @@ export function AuthSsoProvidersCard({
           <div className="p-4 rounded-xl border border-border bg-background/60 space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-semibold capitalize text-primary">Configure {selectedProvider.replace("-openid", "")} SSO</h4>
-              <button onClick={() => setSelectedProvider(null)} className="text-[10px] text-muted-foreground hover:text-muted-foreground">Cancel</button>
+              <button onClick={() => setSelectedProvider(null)} className="text-[10px] text-muted-foreground hover:text-muted-foreground cursor-pointer">{t("common.cancel")}</button>
             </div>
             <div className="space-y-3">
               <div className="space-y-1">
@@ -103,13 +108,13 @@ export function AuthSsoProvidersCard({
                   className="bg-muted/60 border-border text-foreground text-xs h-8"
                 />
               </div>
-              <ActionTooltip label={`Aktifkan Integrasi SSO ${selectedProvider}`} shortcut="Enter">
+              <ActionTooltip label={`${t("common.active")} SSO ${selectedProvider}`} shortcut="Enter">
                 <Button
                   onClick={() => handleSaveSso(selectedProvider)}
                   disabled={isUpdatingSsoProvider}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8 font-medium transition-all"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8 font-medium transition-all cursor-pointer"
                 >
-                  {isUpdatingSsoProvider ? "Connecting..." : "Enable Provider"}
+                  {isUpdatingSsoProvider ? t("common.loading") : t("common.save")}
                 </Button>
               </ActionTooltip>
             </div>

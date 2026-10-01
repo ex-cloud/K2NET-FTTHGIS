@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, ChevronDown, History } from "lucide-react";
 import { Calendar, cn } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
+import { useTranslation } from "@k2net/i18n";
 
 const PRESETS = [
   { label: "Last 60 minutes", value: "1h" },
@@ -63,6 +64,7 @@ function parseTimeStr(t: string): { h: number; m: number; s: number } {
 }
 
 export function TelemetryDateRangePicker({ value, onChange }: TelemetryDateRangePickerProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
@@ -273,7 +275,7 @@ export function TelemetryDateRangePicker({ value, onChange }: TelemetryDateRange
                   onClick={handleToday}
                   className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer px-2 py-1 rounded hover:bg-muted"
                 >
-                  Hari Ini
+                  {t("common.day")}
                 </button>
                 <div className="flex items-center gap-2">
                   <button
@@ -281,7 +283,7 @@ export function TelemetryDateRangePicker({ value, onChange }: TelemetryDateRange
                     onClick={() => setOpen(false)}
                     className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
                   >
-                    Batal
+                    {t("common.cancel")}
                   </button>
                   <button
                     type="button"
@@ -294,7 +296,7 @@ export function TelemetryDateRangePicker({ value, onChange }: TelemetryDateRange
                         : "bg-muted text-muted-foreground/50 cursor-not-allowed"
                     )}
                   >
-                    Terapkan
+                    {t("common.apply")}
                   </button>
                 </div>
               </div>

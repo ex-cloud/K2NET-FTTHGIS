@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
 import type { EventSchema, SimulateEventResponse, WebhookEndpoint } from "./types";
 import { PayloadSimulatorResult } from "./PayloadSimulatorResult";
+import { useTranslation } from "@k2net/i18n";
 
 interface PayloadSimulatorCardProps {
   eventSchemas: EventSchema[];
@@ -41,6 +42,7 @@ export function PayloadSimulatorCard({
   onSimulateEvent,
   onCopy,
 }: PayloadSimulatorCardProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManage = canAccess("system.organizations.webhooks.manage");
 
@@ -96,7 +98,7 @@ export function PayloadSimulatorCard({
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Uji coba pengiriman JSON payload langsung ke server webhook tanpa harus menunggu alarm jaringan rill terjadi.
+              Test real-time JSON payload delivery directly to your webhook server without waiting for live network alarms.
             </p>
           </div>
         </div>
@@ -104,7 +106,7 @@ export function PayloadSimulatorCard({
 
       {loadingSchemas ? (
         <div className="p-6 text-center text-xs text-muted-foreground animate-pulse">
-          Memuat katalog schema event...
+          {t("organizations.webhook_loading_schema")}
         </div>
       ) : (
         <div className="space-y-4 pt-1">
@@ -134,14 +136,14 @@ export function PayloadSimulatorCard({
                 <strong>{activeSchema.displayName}</strong>: {activeSchema.description}
               </div>
               <Badge variant="outline" className="text-[9px] font-mono border-border text-muted-foreground">
-                Kategori: {activeSchema.category}
+                Category: {activeSchema.category}
               </Badge>
             </div>
           )}
 
           <div className="space-y-2">
             <Label className="text-xs font-medium text-foreground flex items-center justify-between">
-              <span>Target URL Tujuan Uji Coba (HTTPS)</span>
+              <span>Destination Target URL (HTTPS)</span>
               <Badge variant="outline" className="text-[9px] font-mono border-primary/30 bg-primary/10 text-primary">
                 SSRF L2 GUARDED (HTTPS ONLY)
               </Badge>
@@ -150,7 +152,7 @@ export function PayloadSimulatorCard({
               <Input
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
-                placeholder="https://noc.isp.net/webhook-receiver atau pilih tombol di bawah"
+                placeholder={t("organizations.webhook_payload_placeholder")}
                 className="h-8 text-xs font-mono bg-background border-border text-foreground flex-1 rounded-md"
               />
               {canManage ? (
@@ -162,10 +164,10 @@ export function PayloadSimulatorCard({
                   className="h-8 px-3 text-xs font-medium gap-1.5 shrink-0 rounded-md cursor-pointer"
                 >
                   <Send className={cn("h-3.5 w-3.5", isSimulating && "animate-pulse")} />
-                  <span>{isSimulating ? "Mengirim..." : "Send Sample Payload"}</span>
+                  <span>{isSimulating ? "Sending..." : "Send Sample Payload"}</span>
                 </Button>
               ) : (
-                <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+                <ActionTooltip label={t("organizations.readonly_no_manage_perm")}>
                   <span className="inline-block">
                     <Button
                       type="button"
@@ -183,7 +185,7 @@ export function PayloadSimulatorCard({
 
             {endpoints.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                <span className="text-[10px] text-muted-foreground">Gunakan endpoint:</span>
+                <span className="text-[10px] text-muted-foreground">Use endpoint:</span>
                 {endpoints.map((ep) => (
                   <button
                     key={ep.id}
@@ -202,7 +204,7 @@ export function PayloadSimulatorCard({
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Terminal className="h-3.5 w-3.5 text-primary" />
-                <span>Sample JSON Payload Body (Dapat Dimodifikasi)</span>
+                <span>Sample JSON Payload Body (Editable)</span>
               </Label>
               <div className="flex items-center gap-2">
                 <Button
@@ -213,7 +215,7 @@ export function PayloadSimulatorCard({
                   className="h-6 px-2 text-[10px] border-border gap-1 cursor-pointer"
                 >
                   <Copy className="h-2.5 w-2.5" />
-                  <span>Salin JSON</span>
+                  <span>Copy JSON</span>
                 </Button>
                 {customPayload !== "" && (
                   <Button

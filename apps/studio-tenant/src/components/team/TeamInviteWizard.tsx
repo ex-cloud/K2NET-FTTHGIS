@@ -19,6 +19,7 @@ import { UserPlus, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../../lib/api-client";
 import { getCurrentOrgSlug } from "../../lib/domain";
+import { useTranslation } from "@k2net/i18n";
 
 interface TeamInviteWizardProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface TeamInviteWizardProps {
 }
 
 export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWizardProps) {
+  const { t } = useTranslation();
   const [email, setEmail] = React.useState("");
   const [fullName, setFullName] = React.useState("");
   const [role, setRole] = React.useState("OPERATOR");
@@ -35,11 +37,11 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !email.includes("@")) {
-      toast.error("Alamat email tidak valid");
+      toast.error(t("users.invite_error_email"));
       return;
     }
     if (!fullName.trim()) {
-      toast.error("Nama lengkap anggota wajib diisi");
+      toast.error(t("users.invite_error_name"));
       return;
     }
 
@@ -51,7 +53,7 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
         body: JSON.stringify({ email, fullName, role }),
       });
 
-      toast.success(`Undangan berhasil dikirim ke ${email}`);
+      toast.success(t("users.invite_success", { email }));
       setEmail("");
       setFullName("");
       setRole("OPERATOR");
@@ -59,7 +61,7 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
       onSuccess?.();
     } catch {
       // Fallback optimistic simulation if endpoint is mock
-      toast.success(`Undangan berhasil dikirim ke ${email}`);
+      toast.success(t("users.invite_success", { email }));
       setEmail("");
       setFullName("");
       setRole("OPERATOR");
@@ -79,9 +81,9 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
               <UserPlus className="h-4 w-4" />
             </div>
             <div>
-              <DialogTitle className="text-base font-bold">Undang Anggota Tim Baru</DialogTitle>
+              <DialogTitle className="text-base font-bold">{t("users.invite_title")}</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Kirimkan email undangan bergabung ke organisasi ISP Anda.
+                {t("users.invite_desc")}
               </DialogDescription>
             </div>
           </div>
@@ -89,9 +91,9 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
 
         <form onSubmit={handleSubmit} className="space-y-3.5 py-2">
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Nama Lengkap</Label>
+            <Label className="text-xs font-semibold">{t("users.invite_full_name")}</Label>
             <Input
-              placeholder="misal: Budi Santoso"
+              placeholder={t("users.invite_full_name_placeholder")}
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="h-8.5 text-xs"
@@ -100,7 +102,7 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Email Perusahaan / Anggota</Label>
+            <Label className="text-xs font-semibold">{t("users.invite_email")}</Label>
             <Input
               type="email"
               placeholder="budi@ispnet.id"
@@ -112,23 +114,23 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Peran & Tingkat Izin</Label>
+            <Label className="text-xs font-semibold">{t("users.invite_role_label")}</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger className="h-8.5 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ORG_ADMIN">Admin Organisasi (Akses Penuh)</SelectItem>
-                <SelectItem value="OPERATOR">Operator GIS & NOC</SelectItem>
-                <SelectItem value="TECHNICIAN">Teknisi Lapangan (JIT Scoped)</SelectItem>
-                <SelectItem value="SURVEYOR">Surveyor Spasial (CAD & Map)</SelectItem>
-                <SelectItem value="FINANCE">Finance & Billing</SelectItem>
+                <SelectItem value="ORG_ADMIN">{t("users.role_org_admin")}</SelectItem>
+                <SelectItem value="OPERATOR">{t("users.role_operator")}</SelectItem>
+                <SelectItem value="TECHNICIAN">{t("users.role_field_tech")}</SelectItem>
+                <SelectItem value="SURVEYOR">{t("users.role_surveyor")}</SelectItem>
+                <SelectItem value="FINANCE">{t("users.role_finance")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="rounded-lg bg-muted/40 p-2.5 border border-border/50 text-[11px] text-muted-foreground leading-relaxed">
-            Anggota akan menerima email dengan tautan aktivasi Keycloak resmi untuk menetapkan password dan MFA.
+            {t("users.invite_notice")}
           </div>
 
           <DialogFooter className="pt-2">
@@ -140,7 +142,7 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
               disabled={isSubmitting}
               className="text-xs"
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -152,12 +154,12 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Mengirim...
+                  {t("users.invite_sending")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Kirim Undangan
+                  {t("users.invite_send_btn")}
                 </>
               )}
             </Button>

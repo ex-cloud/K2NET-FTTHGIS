@@ -1,21 +1,8 @@
+import React from "react";
 import { type UseFormRegister, type FieldErrors } from "react-hook-form";
 import { Cpu, AlertTriangle } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
-
-export const TYPE_CONFIG = {
-  TICKET: {
-    emoji: "🎫",
-    label: "Tiket Internal / DevOps Alert",
-    desc: "Insiden server, monitoring alert, bug kritis platform, atau permintaan dukungan teknis internal K2NET.",
-    hint: "Tiket B2B dari mitra ISP masuk secara otomatis ke tab B2B Inbox di halaman Tasks.",
-  },
-  PROJECT: {
-    emoji: "📋",
-    label: "Proyek Platform Engineering",
-    desc: "Rilis fitur baru, refactor codebase, migrasi database, setup infrastruktur, atau perencanaan sprint.",
-    hint: "Proyek akan otomatis disinkronkan ke Obsidian Vault di folder 01_Projects/Platform/",
-  },
-} as const;
 
 export interface CreateTaskFormValues {
   type: "TICKET" | "PROJECT";
@@ -51,45 +38,77 @@ export function NewTaskFormSections({
   errors,
   selectedType,
 }: NewTaskFormSectionsProps) {
-  const typeConfig = TYPE_CONFIG[selectedType] ?? TYPE_CONFIG.TICKET;
+  const { t } = useTranslation();
+
+  const typeConfig = {
+    TICKET: {
+      emoji: "🎫",
+      label: t("tasks.type_ticket_label"),
+      desc: t("tasks.type_ticket_desc"),
+      hint: t("tasks.type_ticket_hint"),
+    },
+    PROJECT: {
+      emoji: "📋",
+      label: t("tasks.type_project_label"),
+      desc: t("tasks.type_project_desc"),
+      hint: t("tasks.type_project_hint"),
+    },
+  }[selectedType] ?? {
+    emoji: "🎫",
+    label: t("tasks.type_ticket_label"),
+    desc: t("tasks.type_ticket_desc"),
+    hint: t("tasks.type_ticket_hint"),
+  };
+
+  const typeOptions = [
+    {
+      key: "TICKET" as const,
+      emoji: "🎫",
+      label: t("tasks.type_ticket_label"),
+      desc: t("tasks.type_ticket_desc"),
+    },
+    {
+      key: "PROJECT" as const,
+      emoji: "📋",
+      label: t("tasks.type_project_label"),
+      desc: t("tasks.type_project_desc"),
+    },
+  ];
 
   return (
     <>
       {/* ── Section 1: Classification ── */}
       <div className="bg-card border border-border rounded-lg p-6 space-y-5">
         <p className="text-xs font-semibold text-foreground/75 dark:text-muted-foreground uppercase tracking-wide">
-          Klasifikasi
+          {t("tasks.section_classification")}
         </p>
 
         {/* Type selector */}
         <div>
-          <FieldLabel required>Tipe Task</FieldLabel>
+          <FieldLabel required>{t("tasks.task_type")}</FieldLabel>
           <div className="grid grid-cols-2 gap-3">
-            {(["TICKET", "PROJECT"] as const).map((t) => {
-              const cfg = TYPE_CONFIG[t];
-              return (
-                <label
-                  key={t}
-                  className={cn(
-                    "flex flex-col gap-1.5 p-4 border rounded-md cursor-pointer transition-colors",
-                    selectedType === t
-                      ? "border-primary bg-primary/5 text-foreground"
-                      : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    value={t}
-                    {...register("type")}
-                    className="sr-only"
-                  />
-                  <span className="text-sm font-semibold">
-                    {cfg.emoji} {cfg.label}
-                  </span>
-                  <span className="text-xs leading-relaxed">{cfg.desc}</span>
-                </label>
-              );
-            })}
+            {typeOptions.map((opt) => (
+              <label
+                key={opt.key}
+                className={cn(
+                  "flex flex-col gap-1.5 p-4 border rounded-md cursor-pointer transition-colors",
+                  selectedType === opt.key
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border bg-muted/30 text-muted-foreground hover:border-border/80"
+                )}
+              >
+                <input
+                  type="radio"
+                  value={opt.key}
+                  {...register("type")}
+                  className="sr-only"
+                />
+                <span className="text-sm font-semibold">
+                  {opt.emoji} {opt.label}
+                </span>
+                <span className="text-xs leading-relaxed">{opt.desc}</span>
+              </label>
+            ))}
           </div>
           <FieldError message={errors.type?.message} />
         </div>
@@ -106,19 +125,19 @@ export function NewTaskFormSections({
       {/* ── Section 2: Detail ── */}
       <div className="bg-card border border-border rounded-lg p-6 space-y-5">
         <p className="text-xs font-semibold text-foreground/75 dark:text-muted-foreground uppercase tracking-wide">
-          Detail
+          {t("tasks.section_detail")}
         </p>
 
         {/* Title */}
         <div>
-          <FieldLabel required>Judul</FieldLabel>
+          <FieldLabel required>{t("tasks.col_title")}</FieldLabel>
           <input
             {...register("title")}
             className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
             placeholder={
               selectedType === "PROJECT"
-                ? "Cth: Migrate Auth Flow to PKCE — Sprint 24"
-                : "Cth: Kong Gateway CPU spike > 95% — Investigate"
+                ? t("tasks.project_title_placeholder")
+                : t("tasks.ticket_title_placeholder")
             }
           />
           <FieldError message={errors.title?.message} />
@@ -126,15 +145,15 @@ export function NewTaskFormSections({
 
         {/* Description */}
         <div>
-          <FieldLabel>Deskripsi</FieldLabel>
+          <FieldLabel>{t("common.description")}</FieldLabel>
           <textarea
             {...register("description")}
             rows={4}
             className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors resize-none"
             placeholder={
               selectedType === "PROJECT"
-                ? "Jelaskan lingkup pekerjaan, tujuan, dan kriteria selesai (Definition of Done)..."
-                : "Deskripsikan insiden: waktu kejadian, dampak, langkah reproduksi, dan langkah investigasi awal..."
+                ? t("tasks.project_desc_placeholder")
+                : t("tasks.ticket_desc_placeholder")
             }
           />
         </div>
@@ -143,25 +162,25 @@ export function NewTaskFormSections({
       {/* ── Section 3: Scheduling ── */}
       <div className="bg-card border border-border rounded-lg p-6 space-y-5">
         <p className="text-xs font-semibold text-foreground/75 dark:text-muted-foreground uppercase tracking-wide">
-          Jadwal &amp; Penugasan
+          {t("tasks.section_schedule")}
         </p>
 
         {/* Priority + Due Date */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <FieldLabel>Prioritas</FieldLabel>
+            <FieldLabel>{t("tasks.priority")}</FieldLabel>
             <select
               {...register("priority")}
               className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
             >
-              <option value="URGENT">🔴 URGENT — Eskalasi segera</option>
-              <option value="HIGH">🟠 HIGH — Dalam 24 jam</option>
-              <option value="NORMAL">🟡 NORMAL — Standar sprint</option>
-              <option value="LOW">⬜ LOW — Backlog</option>
+              <option value="URGENT">{t("tasks.priority_urgent_desc")}</option>
+              <option value="HIGH">{t("tasks.priority_high_desc")}</option>
+              <option value="NORMAL">{t("tasks.priority_normal_desc")}</option>
+              <option value="LOW">{t("tasks.priority_low_desc")}</option>
             </select>
           </div>
           <div>
-            <FieldLabel>Tenggat (Target)</FieldLabel>
+            <FieldLabel>{t("tasks.due_date_target")}</FieldLabel>
             <input
               type="date"
               {...register("dueDate")}
@@ -172,11 +191,11 @@ export function NewTaskFormSections({
 
         {/* Assignee */}
         <div>
-          <FieldLabel>Assignee (Keycloak User ID)</FieldLabel>
+          <FieldLabel>{t("tasks.assignee_keycloak_id")}</FieldLabel>
           <input
             {...register("assigneeId")}
             className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
-            placeholder="UUID Keycloak user — kosongkan jika belum ditugaskan"
+            placeholder={t("tasks.assignee_placeholder")}
           />
         </div>
       </div>
@@ -185,10 +204,9 @@ export function NewTaskFormSections({
       <div className="flex items-start gap-2.5 p-3 bg-amber-500/5 border border-amber-500/20 rounded-md">
         <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
         <div className="text-xs text-amber-600 dark:text-amber-400 space-y-0.5">
-          <p className="font-semibold">Field GIS tidak tersedia di Portal Utama</p>
+          <p className="font-semibold">{t("tasks.gis_exclusion_title")}</p>
           <p className="opacity-80">
-            Referensi spasial (ODP/ODC/koordinat) hanya berlaku untuk proyek fisik FTTH
-            di Portal Tenant. Task platform tidak memiliki keterikatan spasial.
+            {t("tasks.gis_exclusion_desc")}
           </p>
         </div>
       </div>

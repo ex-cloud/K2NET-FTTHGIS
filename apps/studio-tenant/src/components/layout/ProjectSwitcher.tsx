@@ -19,6 +19,7 @@ import {
 } from "@k2net/ui";
 import { useProjects, type Project } from "../../hooks/useProjects";
 import { useMapStore } from "../../store/map-store";
+import { useTranslation } from "@k2net/i18n";
 
 interface ProjectSwitcherProps {
   activeProjectId?: string;
@@ -28,6 +29,7 @@ interface ProjectSwitcherProps {
 export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitcherProps) {
   const navigate = useNavigate();
   const { projects, isLoading } = useProjects();
+  const { t } = useTranslation();
   const setActiveProjectId = useMapStore((s) => s.setActiveProjectId);
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchFilter, setSearchFilter] = React.useState("");
@@ -84,7 +86,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
         >
           <Box className="size-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors hidden sm:inline-block" />
           <span className="text-xs sm:text-sm font-semibold tracking-tight text-foreground truncate">
-            {isLoading ? "Memuat..." : activeProject?.name || "Pilih Proyek FTTH"}
+            {isLoading ? t("projects.loading") : activeProject?.name || t("projects.select_project")}
           </span>
 
           {activeProject?.status && (
@@ -105,7 +107,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
         <div className="px-2 py-1.5 space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Daftar Proyek Operasional
+              {t("projects.project_list_label")}
             </span>
             <span className="text-[10px] font-mono text-muted-foreground">
               {projects.length} Proyek
@@ -115,7 +117,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
             <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Cari nama / kode proyek..."
+              placeholder={t("projects.search_placeholder")}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               className="h-7 pl-7 text-xs bg-muted/40"
@@ -171,7 +173,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
 
           {filteredProjects.length === 0 && (
             <div className="py-4 text-center text-xs text-muted-foreground">
-              Tidak ada proyek yang sesuai pencarian.
+              {t("projects.no_project_match")}
             </div>
           )}
         </div>
@@ -184,7 +186,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
             className="flex items-center gap-2 text-xs font-medium text-primary hover:bg-primary/10 cursor-pointer p-2 rounded-md"
           >
             <Plus className="h-4 w-4" />
-            <span>+ Buat Proyek Baru</span>
+            <span>+ {t("projects.new_project")}</span>
           </DropdownMenuItem>
         )}
 
@@ -194,7 +196,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
             className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer p-2 rounded-md"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Semua Proyek (Scope Organisasi)</span>
+            <span>{t("projects.all_projects")}</span>
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

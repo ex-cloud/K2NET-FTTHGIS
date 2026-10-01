@@ -1,6 +1,7 @@
 import React from "react";
 import { Save, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { useAiConfigProviders } from "./config/useAiConfigProviders";
 import { ProviderGeminiCard } from "./config/ProviderGeminiCard";
 import { ProviderOpenAiCard } from "./config/ProviderOpenAiCard";
@@ -23,6 +24,7 @@ export function AiConfigTab({
   configSaving,
   onSaveConfig,
 }: AiConfigTabProps) {
+  const { t } = useTranslation();
   const {
     testStates,
     providerModels,
@@ -40,7 +42,7 @@ export function AiConfigTab({
       {configLoading ? (
         <div className="text-center py-16 text-muted-foreground text-xs">
           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-          Memuat data konfigurasi provider AI...
+          {t("ai.loading_provider_config")}
         </div>
       ) : (
         <form onSubmit={onSaveConfig} className="space-y-6">
@@ -98,7 +100,7 @@ export function AiConfigTab({
             <div className="text-xs text-muted-foreground flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
               <span>
-                Perubahan konfigurasi provider tersimpan di file konfigurasi server dan aktif secara instan.
+                {t("ai.config_storage_notice")}
               </span>
             </div>
 
@@ -110,12 +112,12 @@ export function AiConfigTab({
               {configSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Menyimpan...</span>
+                  <span>{t("common.saving")}</span>
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  <span>Simpan Seluruh Konfigurasi</span>
+                  <span>{t("ai.save_all_config")}</span>
                 </>
               )}
             </Button>

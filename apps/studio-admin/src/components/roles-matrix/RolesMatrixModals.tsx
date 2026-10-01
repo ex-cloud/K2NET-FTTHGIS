@@ -8,6 +8,7 @@ import {
   DialogTitle,
   Button,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { Role, ImpactData } from "./types";
 
 interface RolesMatrixModalsProps {
@@ -31,6 +32,8 @@ export function RolesMatrixModals({
   impactData,
   onConfirmImpact,
 }: RolesMatrixModalsProps) {
+  const { t } = useTranslation();
+
   return (
     <>
       {/* Confirmation Dialog for Standard Template */}
@@ -42,7 +45,7 @@ export function RolesMatrixModals({
                 <AlertTriangle className="w-6 h-6 text-blue-400" />
               </div>
               <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
-                Standard Template
+                {t("security.standard_template_title")}
               </DialogTitle>
             </div>
             <DialogDescription className="text-muted-foreground text-base leading-relaxed">
@@ -67,7 +70,7 @@ export function RolesMatrixModals({
               onClick={() => setShowConfirmDialog(false)}
               className="border-border/80 text-muted-foreground hover:text-foreground"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               size="sm"
@@ -79,7 +82,7 @@ export function RolesMatrixModals({
               }}
               className="bg-blue-600 hover:bg-blue-500 text-primary-foreground"
             >
-              Continue &amp; Save
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -94,11 +97,11 @@ export function RolesMatrixModals({
                 <ShieldAlert className="w-6 h-6" />
               </div>
               <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
-                Konfirmasi Dampak Perubahan Akses
+                {t("security.impact_confirm_title")}
               </DialogTitle>
             </div>
             <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
-              Pencabutan hak akses terdeteksi pada role yang sedang digunakan oleh akun aktif:
+              {t("security.impact_confirm_desc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -114,12 +117,12 @@ export function RolesMatrixModals({
                     <span className="font-semibold text-foreground text-sm">{r.displayName || r.name}</span>
                     <span className="flex items-center gap-1 text-xs font-mono font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded">
                       <UserCheck className="size-3.5" />
-                      {count.activeUserCount} Pengguna Aktif
+                      {t("security.active_users_count", { count: count.activeUserCount })}
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     <span className="font-medium text-foreground block mb-1">
-                      Hak akses yang akan dicabut ({revoked.length}):
+                      {t("security.revoked_permissions_count", { count: revoked.length })}
                     </span>
                     <ul className="list-disc list-inside space-y-0.5 font-mono text-[11px] text-amber-300">
                       {revoked.map((p) => (
@@ -139,7 +142,7 @@ export function RolesMatrixModals({
               onClick={() => setImpactModalOpen(false)}
               className="border-border/80 text-muted-foreground hover:text-foreground"
             >
-              Batalkan
+              {t("common.cancel")}
             </Button>
             <Button
               size="sm"
@@ -151,7 +154,7 @@ export function RolesMatrixModals({
               }}
               className="bg-amber-600 hover:bg-amber-500 text-primary-foreground"
             >
-              Saya Mengerti &amp; Simpan Perubahan
+              {t("security.impact_confirm_btn")}
             </Button>
           </DialogFooter>
         </DialogContent>

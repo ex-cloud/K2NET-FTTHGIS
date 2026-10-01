@@ -4,6 +4,7 @@ import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { Button, ActionTooltip } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 interface OrphanedPermission {
   id: number;
@@ -44,15 +45,17 @@ function OrphansTabContent({
   permissions: OrphanedPermission[];
   onSelect?: (code: string) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
-        Permission berikut terdaftar dalam katalog database tetapi belum pernah dipetakan ke role manapun:
+        {t("security.governance_orphaned_desc")}
       </p>
       {permissions.length === 0 ? (
         <div className="p-3 bg-card/40 rounded-lg text-xs text-muted-foreground flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-primary" />
-          Semua permission telah dipetakan ke minimal satu role.
+          {t("security.governance_orphaned_clean")}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -86,15 +89,17 @@ function EmptyRolesTabContent({
   roles: EmptyRole[];
   onSelect?: (roleName: string) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
-        Role berikut ada di database tetapi memiliki 0 permission (tidak memiliki hak akses sama sekali):
+        {t("security.governance_empty_roles_desc")}
       </p>
       {roles.length === 0 ? (
         <div className="p-3 bg-card/40 rounded-lg text-xs text-muted-foreground flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-primary" />
-          Semua role memiliki setidaknya satu hak akses aktif.
+          {t("security.governance_empty_roles_clean")}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -122,15 +127,17 @@ function EmptyRolesTabContent({
 }
 
 function SimilarRolesTabContent({ pairs }: { pairs: SimilarRolePair[] }) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
-        Pasangan role dengan kemiripan nama &gt; 40% (potensi duplikasi atau kerancuan konsep):
+        {t("security.governance_similar_roles_desc")}
       </p>
       {pairs.length === 0 ? (
         <div className="p-3 bg-card/40 rounded-lg text-xs text-muted-foreground flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-primary" />
-          Tidak ditemukan role dengan penamaan yang mirip.
+          {t("security.governance_similar_roles_clean")}
         </div>
       ) : (
         <div className="space-y-2">
@@ -174,6 +181,8 @@ function GovernanceHealthDetailsDrawer({
   onSelectPermission?: (code: string) => void;
   onSelectRole?: (roleName: string) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="mt-4 pt-4 border-t border-amber-500/20 space-y-4">
       <div className="flex gap-2 border-b border-border/50 pb-2 overflow-x-auto">
@@ -187,7 +196,7 @@ function GovernanceHealthDetailsDrawer({
           }`}
         >
           <Tag className="w-3.5 h-3.5" />
-          Orphaned Permissions ({report.orphanedPermissions.length})
+          {t("security.governance_tab_orphaned")} ({report.orphanedPermissions.length})
         </button>
         <button
           type="button"
@@ -199,7 +208,7 @@ function GovernanceHealthDetailsDrawer({
           }`}
         >
           <Lock className="w-3.5 h-3.5" />
-          Role Tanpa Permission ({report.rolesWithoutPermissions.length})
+          {t("security.governance_tab_empty")} ({report.rolesWithoutPermissions.length})
         </button>
         <button
           type="button"
@@ -211,7 +220,7 @@ function GovernanceHealthDetailsDrawer({
           }`}
         >
           <Users className="w-3.5 h-3.5" />
-          Kemiripan Nama ({report.similarRoleNamePairs.length})
+          {t("security.governance_tab_similar")} ({report.similarRoleNamePairs.length})
         </button>
       </div>
 
@@ -235,6 +244,7 @@ export function GovernanceHealthBanner({
   onSelectPermission?: (code: string) => void;
   onSelectRole?: (roleName: string) => void;
 }) {
+  const { t } = useTranslation();
   const { data: session } = useSession();
   const [report, setReport] = useState<GovernanceHealthReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -279,26 +289,26 @@ export function GovernanceHealthBanner({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="font-semibold text-sm text-foreground">
-                Peringatan Tata Kelola Keamanan (Governance Health)
+                {t("security.governance_alert_title")}
               </h4>
               <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono">
-                {report.totalIssues} ISU DITEMUKAN
+                {t("security.governance_issues_found", { count: report.totalIssues })}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
               {report.orphanedPermissions.length > 0 && (
                 <span className="mr-3 font-medium">
-                  • <strong className="text-amber-400">{report.orphanedPermissions.length}</strong> permission belum di-assign
+                  • <strong className="text-amber-400">{report.orphanedPermissions.length}</strong> {t("security.governance_unassigned_perm_count", { count: report.orphanedPermissions.length })}
                 </span>
               )}
               {report.rolesWithoutPermissions.length > 0 && (
                 <span className="mr-3 font-medium">
-                  • <strong className="text-amber-400">{report.rolesWithoutPermissions.length}</strong> role tanpa permission
+                  • <strong className="text-amber-400">{report.rolesWithoutPermissions.length}</strong> {t("security.governance_empty_role_count", { count: report.rolesWithoutPermissions.length })}
                 </span>
               )}
               {report.similarRoleNamePairs.length > 0 && (
                 <span className="font-medium">
-                  • <strong className="text-amber-400">{report.similarRoleNamePairs.length}</strong> pasang nama role mirip
+                  • <strong className="text-amber-400">{report.similarRoleNamePairs.length}</strong> {t("security.governance_similar_pair_count", { count: report.similarRoleNamePairs.length })}
                 </span>
               )}
             </p>
@@ -306,7 +316,7 @@ export function GovernanceHealthBanner({
         </div>
 
         <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
-          <ActionTooltip label="Refresh audit status">
+          <ActionTooltip label={t("security.governance_refresh_tooltip")}>
             <Button
               variant="outline"
               size="sm"
@@ -325,11 +335,11 @@ export function GovernanceHealthBanner({
           >
             {isExpanded ? (
               <>
-                Tutup Detail <ChevronUp className="w-3.5 h-3.5" />
+                {t("common.close")} <ChevronUp className="w-3.5 h-3.5" />
               </>
             ) : (
               <>
-                Lihat Detail <ChevronDown className="w-3.5 h-3.5" />
+                {t("common.view_details")} <ChevronDown className="w-3.5 h-3.5" />
               </>
             )}
           </Button>

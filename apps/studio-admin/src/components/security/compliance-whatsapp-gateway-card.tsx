@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { MessageSquare, Eye, EyeOff, AlertTriangle, RefreshCw, ShieldCheck } from "lucide-react";
 import {
   Button,
@@ -13,6 +13,7 @@ import {
   CardTitle,
   ActionTooltip,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 interface ComplianceWhatsappGatewayCardProps {
   waEnabled: boolean;
@@ -37,6 +38,7 @@ export function ComplianceWhatsappGatewayCard({
   isUpdating,
   onSave,
 }: ComplianceWhatsappGatewayCardProps) {
+  const { t } = useTranslation();
   const [showToken, setShowToken] = useState<boolean>(false);
 
   return (
@@ -99,7 +101,7 @@ export function ComplianceWhatsappGatewayCard({
                 type="button"
                 disabled={!waEnabled}
                 onClick={() => setShowToken(!showToken)}
-                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
+                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 cursor-pointer"
               >
                 {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -120,7 +122,7 @@ export function ComplianceWhatsappGatewayCard({
       </CardContent>
       <CardFooter className="border-t border-border/40 pt-4 flex justify-end">
         <ActionTooltip
-          label={isChanged ? "Simpan Perubahan Pengaturan Compliance" : "Tidak Ada Perubahan"}
+          label={isChanged ? t("security.save_changes") : t("security.no_matrix_changes")}
           shortcut="Ctrl+S"
         >
           <Button
@@ -134,7 +136,7 @@ export function ComplianceWhatsappGatewayCard({
             ) : (
               <ShieldCheck className="w-3.5 h-3.5" />
             )}
-            Apply Configuration Settings
+            {t("common.save")}
           </Button>
         </ActionTooltip>
       </CardFooter>

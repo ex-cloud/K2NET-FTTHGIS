@@ -31,6 +31,7 @@ import {
   resolveHttpMethod,
   buildJsonPayloadString,
 } from "./SecurityAuditModalUtils";
+import { useTranslation } from "@k2net/i18n";
 
 interface SecurityAuditLogDetailModalProps {
   audit: SecurityAuditItem | null;
@@ -49,6 +50,7 @@ function ModalHeader({
   severityMeta: { label: string; dot: string; badge: string };
   groupMeta: { label: string; color: string; bg: string; border: string };
 }) {
+  const { t } = useTranslation();
   return (
     <div className="p-4 sm:p-5 border-b border-border/80 bg-muted/30 flex items-start justify-between gap-3 shrink-0">
       <div className="flex items-center gap-3">
@@ -58,7 +60,7 @@ function ModalHeader({
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
-              Log Details
+              {t("observability.log_details")}
             </DialogTitle>
             <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold tracking-wider uppercase", severityMeta.badge)}>
               <span className={cn("size-1.5 rounded-full", severityMeta.dot)} />
@@ -74,7 +76,7 @@ function ModalHeader({
             </span>
           </div>
           <DialogDescription className="text-xs text-muted-foreground font-mono mt-1 flex items-center gap-1.5">
-            <span>EVENT ID:</span>
+            <span>{t("observability.event_id")}</span>
             <span className="text-foreground/90 font-semibold">{eventId}</span>
           </DialogDescription>
         </div>
@@ -96,12 +98,13 @@ function KeyPropertiesGrid({
   targetTenant: string;
   serviceSource: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
       {/* Aksi Keamanan */}
       <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
         <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted-foreground block">
-          Aksi Keamanan
+          {t("observability.col_security_action")}
         </span>
         <div className="flex items-center gap-1.5 min-w-0">
           {friendlyAction.icon}
@@ -117,7 +120,7 @@ function KeyPropertiesGrid({
       {/* Aktor / Akun */}
       <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
         <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted-foreground block">
-          Aktor / Akun
+          {t("observability.col_actor_account")}
         </span>
         <div className="flex items-center gap-1.5 min-w-0">
           <User className="size-3.5 text-muted-foreground shrink-0" />
@@ -130,7 +133,7 @@ function KeyPropertiesGrid({
       {/* Target Tenant */}
       <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
         <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted-foreground block">
-          Target Tenant
+          {t("observability.col_target_tenant")}
         </span>
         <div className="flex items-center gap-1.5 min-w-0">
           <Building2 className="size-3.5 text-primary shrink-0" />
@@ -143,7 +146,7 @@ function KeyPropertiesGrid({
       {/* Service Source */}
       <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
         <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted-foreground block">
-          Service Source
+          {t("observability.service_source")}
         </span>
         <div className="flex items-center gap-1.5">
           {getSourceIcon(serviceSource)}
@@ -165,11 +168,12 @@ function SecurityActionDetailsSection({
   details?: string;
   eventMessage: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
         <Shield className="size-3 text-primary" />
-        <span>Keterangan & Detail Aksi Keamanan</span>
+        <span>{t("observability.security_action_desc")}</span>
       </div>
       <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 space-y-2">
         <div className="flex items-center gap-2">
@@ -185,7 +189,7 @@ function SecurityActionDetailsSection({
           </div>
         )}
         <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
-          <span className="text-muted-foreground/60">Event Message:</span>
+          <span className="text-muted-foreground/60">{t("observability.event_message")}</span>
           <span className="text-foreground/90 font-medium">{eventMessage}</span>
         </div>
       </div>
@@ -206,17 +210,18 @@ function TimestampEventIdRow({
   copiedId: boolean;
   onCopyId: (e: React.MouseEvent) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
       <div className="p-3 rounded-xl bg-muted/30 border border-border/50 flex items-start gap-2.5">
         <Clock className="size-4 text-muted-foreground mt-0.5 shrink-0" />
         <div className="space-y-0.5 min-w-0">
           <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted-foreground block">
-            Timestamp
+            {t("observability.timestamp")}
           </span>
           <p className="text-xs font-mono text-foreground font-medium break-all">{timestamp}</p>
           {localTimestamp && localTimestamp !== timestamp && (
-            <p className="text-[10px] font-mono text-muted-foreground/80">Waktu lokal: {localTimestamp}</p>
+            <p className="text-[10px] font-mono text-muted-foreground/80">{t("observability.local_time")} {localTimestamp}</p>
           )}
         </div>
       </div>
@@ -224,7 +229,7 @@ function TimestampEventIdRow({
       <div className="p-3 rounded-xl bg-muted/30 border border-border/50 flex items-start justify-between gap-2">
         <div className="space-y-0.5 min-w-0">
           <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted-foreground block">
-            Event ID
+            {t("observability.event_id")}
           </span>
           <p className="text-xs font-mono text-foreground font-semibold break-all">{eventId}</p>
         </div>
@@ -233,10 +238,10 @@ function TimestampEventIdRow({
           size="sm"
           onClick={onCopyId}
           className="h-7 px-2 text-[11px] font-mono text-muted-foreground hover:text-primary gap-1 shrink-0"
-          title="Salin Event ID"
+          title={t("observability.copy_event_id")}
         >
           {copiedId ? <Check className="size-3 text-primary" /> : <Copy className="size-3" />}
-          <span className="hidden sm:inline">{copiedId ? "Tersalin" : "Copy"}</span>
+          <span className="hidden sm:inline">{copiedId ? t("observability.copied") : t("observability.copy")}</span>
         </Button>
       </div>
     </div>
@@ -258,6 +263,7 @@ function HttpRequestSection({
   resourceType?: string;
   resourceId?: string;
 }) {
+  const { t } = useTranslation();
   const methodClass =
     method === "POST"
       ? "text-sky-400 bg-sky-500/10 border-sky-500/20"
@@ -278,12 +284,12 @@ function HttpRequestSection({
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
         <Network className="size-3 text-primary" />
-        <span>HTTP Request & Target Entity</span>
+        <span>{t("observability.http_request_target_entity")}</span>
       </div>
       <div className="p-3 rounded-xl bg-muted/30 border border-border/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Method */}
         <div className="space-y-1">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">Method</span>
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">{t("observability.http_method")}</span>
           <span className={cn("inline-block px-2 py-0.5 rounded text-[11px] font-mono font-bold border", methodClass)}>
             {method}
           </span>
@@ -291,13 +297,13 @@ function HttpRequestSection({
 
         {/* Status */}
         <div className="space-y-1">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">Status</span>
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">{t("observability.http_status")}</span>
           <span className={cn("inline-block font-mono text-xs font-bold", statusClass)}>{status}</span>
         </div>
 
         {/* Endpoint / REST Path */}
         <div className="space-y-1 sm:col-span-2">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">Endpoint / API Path</span>
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">{t("observability.endpoint_api_path")}</span>
           <p className="font-mono text-xs text-primary font-semibold break-all" title={path}>
             {path}
           </p>
@@ -306,7 +312,7 @@ function HttpRequestSection({
         {/* Target Entity */}
         {(resourceType || resourceId) && (
           <div className="space-y-1 sm:col-span-2">
-            <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">Target Resource Entity</span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">{t("observability.target_resource_entity")}</span>
             <div className="flex items-center gap-2 flex-wrap">
               {resourceType && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/80 border border-border text-[10px] font-mono font-bold text-foreground">
@@ -325,7 +331,7 @@ function HttpRequestSection({
 
         {/* Client IP */}
         <div className="space-y-1 sm:col-span-2">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">Client IP</span>
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-mono">{t("observability.client_ip")}</span>
           <p className="font-mono text-xs text-foreground">{ip}</p>
         </div>
       </div>
@@ -342,12 +348,13 @@ function JsonPayloadSection({
   copied: boolean;
   onCopy: (e?: React.MouseEvent) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
           <Terminal className="size-3 text-primary" />
-          <span>Raw JSON Payload</span>
+          <span>{t("observability.raw_json_payload")}</span>
         </div>
         <Button
           variant="ghost"
@@ -356,7 +363,7 @@ function JsonPayloadSection({
           className="h-6 px-2 text-[10px] font-mono text-muted-foreground hover:text-primary gap-1"
         >
           {copied ? <Check className="size-3 text-primary" /> : <Copy className="size-3" />}
-          <span>{copied ? "JSON Tersalin!" : "Copy JSON"}</span>
+          <span>{copied ? t("observability.json_copied") : t("observability.copy_json")}</span>
         </Button>
       </div>
       <div className="relative rounded-xl border border-border bg-background/90 overflow-hidden shadow-inner">
@@ -373,6 +380,7 @@ export function SecurityAuditLogDetailModal({
   isOpen,
   onClose,
 }: SecurityAuditLogDetailModalProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
 
@@ -414,10 +422,10 @@ export function SecurityAuditLogDetailModal({
     try {
       await navigator.clipboard.writeText(jsonPayloadString);
       setCopied(true);
-      toast.success("Raw Event JSON berhasil disalin ke clipboard!");
+      toast.success(t("observability.raw_json_copy_success"));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Gagal menyalin JSON ke clipboard");
+      toast.error(t("observability.raw_json_copy_fail"));
     }
   };
 
@@ -426,10 +434,10 @@ export function SecurityAuditLogDetailModal({
     try {
       await navigator.clipboard.writeText(audit.id);
       setCopiedId(true);
-      toast.success("Event ID disalin!");
+      toast.success(t("observability.event_id_copy_success"));
       setTimeout(() => setCopiedId(false), 2000);
     } catch {
-      toast.error("Gagal menyalin Event ID");
+      toast.error(t("observability.event_id_copy_fail"));
     }
   };
 
@@ -489,7 +497,7 @@ export function SecurityAuditLogDetailModal({
             className="w-full sm:w-auto h-8 text-xs font-mono gap-1.5 border-border hover:border-primary/40 cursor-pointer"
           >
             {copied ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
-            <span>Copy Raw Event JSON</span>
+            <span>{t("observability.copy_raw_event_json")}</span>
           </Button>
 
           <Button
@@ -498,7 +506,7 @@ export function SecurityAuditLogDetailModal({
             onClick={onClose}
             className="w-full sm:w-auto h-8 text-xs font-medium cursor-pointer"
           >
-            Tutup
+            {t("common.close")}
           </Button>
         </div>
       </DialogContent>

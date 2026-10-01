@@ -15,6 +15,8 @@ import {
   Badge,
 } from "@k2net/ui";
 
+import { useTranslation } from "@k2net/i18n";
+
 interface NotificationItem {
   id: string;
   type: "warning" | "success" | "info";
@@ -34,45 +36,47 @@ export function TenantNotificationsSheet({
   open,
   onOpenChange,
 }: TenantNotificationsSheetProps) {
+  const { t } = useTranslation();
   const [filter, setFilter] = React.useState<"all" | "optical" | "system">("all");
-  const [notifications, setNotifications] = React.useState<NotificationItem[]>([
+  const [notifications, setNotifications] = React.useState<NotificationItem[]>(() => [
     {
       id: "notif-1",
       type: "warning",
-      title: "Peringatan Redaman Kritis",
-      description: "Pelanggan Rina Wijaya (ODP-JKT-018 #7) mengalami degradasi sinyal optik menjadi -27.8 dBm.",
-      time: "5 menit lalu",
+      title: t("common.notif_optical_alert_title"),
+      description: t("common.notif_optical_alert_desc"),
+      time: t("common.notif_time_5min"),
       read: false,
       category: "optical",
     },
     {
       id: "notif-2",
       type: "success",
-      title: "Telemetri OLT Stabil",
-      description: "Seluruh 4 unit OLT merespons SNMP polling dengan average latency 14ms.",
-      time: "24 menit lalu",
+      title: t("common.notif_olt_stable_title"),
+      description: t("common.notif_olt_stable_desc"),
+      time: t("common.notif_time_24min"),
       read: false,
       category: "system",
     },
     {
       id: "notif-3",
       type: "info",
-      title: "Aktivasi Pelanggan Baru",
-      description: "Provisioning PPPoE budi.santoso@net pada port ODP-JKT-012 #3 berhasil diaktifkan.",
-      time: "1 jam lalu",
+      title: t("common.notif_customer_active_title"),
+      description: t("common.notif_customer_active_desc"),
+      time: t("common.notif_time_1h"),
       read: true,
       category: "customer",
     },
     {
       id: "notif-4",
       type: "warning",
-      title: "Utilitas Port FAT Mendekati 90%",
-      description: "ODP-JKT-004 telah terisi 7 dari 8 port. Disarankan ekspansi ODP split kedua.",
-      time: "3 jam lalu",
+      title: t("common.notif_port_utilization_title"),
+      description: t("common.notif_port_utilization_desc"),
+      time: t("common.notif_time_3h"),
       read: true,
       category: "optical",
     },
   ]);
+
 
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));

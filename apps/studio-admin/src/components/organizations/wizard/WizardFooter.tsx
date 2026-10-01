@@ -2,6 +2,7 @@ import * as React from "react";
 import { ChevronRight, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@k2net/ui";
 import type { WizardFormData } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface WizardFooterProps {
   step: number;
@@ -27,6 +28,8 @@ export function WizardFooter({
   formData,
   ldapTestPassed,
 }: WizardFooterProps) {
+  const { t } = useTranslation();
+
   if (step === 5) {
     return (
       <div className="p-4 px-6 bg-card/60 border-t border-border flex items-center justify-end">
@@ -35,7 +38,7 @@ export function WizardFooter({
           onClick={closeWizard}
           className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-8 min-w-[140px]"
         >
-          Tutup & Buka Workspace
+          {t("organizations.wizard_close_workspace")}
         </Button>
       </div>
     );
@@ -57,7 +60,7 @@ export function WizardFooter({
           disabled={isSubmitting}
           className="text-muted-foreground hover:text-foreground text-xs gap-1.5 disabled:opacity-40"
         >
-          <ArrowLeft className="size-3.5" /> Kembali
+          <ArrowLeft className="size-3.5" /> {t("common.back")}
         </Button>
       ) : (
         <div />
@@ -71,7 +74,7 @@ export function WizardFooter({
           onClick={() => onOpenChange(false)}
           className="text-muted-foreground hover:text-foreground text-xs border-border h-8 disabled:opacity-40"
         >
-          Batal
+          {t("common.cancel")}
         </Button>
 
         {step < 4 ? (
@@ -81,7 +84,7 @@ export function WizardFooter({
             disabled={isNextDisabled}
             className="text-xs font-medium h-8 min-w-[90px] gap-1 rounded-md shadow-xs"
           >
-            <span>Lanjut</span>
+            <span>{t("common.next")}</span>
             <ChevronRight className="size-3.5" />
           </Button>
         ) : (
@@ -94,10 +97,10 @@ export function WizardFooter({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-3.5 mr-1.5 animate-spin" />
-                <span>Memproses Provisi...</span>
+                <span>{t("organizations.wizard_provisioning_progress")}</span>
               </>
             ) : (
-              "Deploy Organization Now"
+              t("organizations.wizard_deploy_org_btn")
             )}
           </Button>
         )}
@@ -105,4 +108,3 @@ export function WizardFooter({
     </div>
   );
 }
-

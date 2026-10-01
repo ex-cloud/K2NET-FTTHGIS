@@ -1,9 +1,8 @@
-
-
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "@/lib/navigation-compat";
 import { Cpu, Database, RefreshCw, Sparkles } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
@@ -11,6 +10,7 @@ import { AiConfigTab } from "@/components/ai/ai-config-tab";
 
 export default function AiConfigPage() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Engine Configuration State
   const [config, setConfig] = useState<Record<string, string>>({
@@ -53,10 +53,10 @@ export default function AiConfigPage() {
     try {
       setConfigSaving(true);
       await updateGatewayConfigByKey("ai", config);
-      toast.success("Konfigurasi AI Engine & Multi-Provider berhasil disimpan");
+      toast.success(t("ai.config_saved_success"));
     } catch (err) {
       console.error("Gagal menyimpan konfigurasi AI:", err);
-      toast.error("Gagal menyimpan konfigurasi gateway");
+      toast.error(t("ai.config_save_failed"));
     } finally {
       setConfigSaving(false);
     }
@@ -79,20 +79,20 @@ export default function AiConfigPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                  Multi-Provider Hub & AI Config
+                  {t("ai.config_title")}
                 </h1>
                 <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-primary/30 text-primary bg-primary/10">
-                  Model Router
+                  {t("ai.model_router")}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Konfigurasi provider model bahasa (Google Gemini, OpenAI, DeepSeek Custom, Local Ollama) dengan validasi API token live.
+                {t("ai.config_subtitle")}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <ActionTooltip label="Saran Prompt & Trending">
+            <ActionTooltip label={t("ai.suggested_prompts_btn")}>
               <Button
                 variant="outline"
                 size="sm"
@@ -100,10 +100,10 @@ export default function AiConfigPage() {
                 className="text-xs gap-1.5 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                Saran Prompt & Trending
+                {t("ai.suggested_prompts_btn")}
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Daftar Pengetahuan" shortcut="Esc">
+            <ActionTooltip label={t("ai.knowledge_catalog_btn")} shortcut="Esc">
               <Button
                 variant="outline"
                 size="sm"
@@ -111,10 +111,10 @@ export default function AiConfigPage() {
                 className="text-xs gap-1.5 cursor-pointer"
               >
                 <Database className="w-3.5 h-3.5" />
-                Daftar Pengetahuan
+                {t("ai.knowledge_catalog_btn")}
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Reload Konfigurasi" shortcut="R">
+            <ActionTooltip label={t("ai.reload_config_tooltip")} shortcut="R">
               <Button
                 variant="outline"
                 size="sm"
@@ -122,7 +122,7 @@ export default function AiConfigPage() {
                 className="text-xs gap-1.5 cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                Reload Config
+                {t("ai.reload_config_btn")}
               </Button>
             </ActionTooltip>
           </div>

@@ -1,3 +1,4 @@
+import React from "react";
 import { Plus, Trash2, Copy, Sparkles, ShieldAlert as ShieldIcon } from "lucide-react";
 import {
   Button,
@@ -13,6 +14,7 @@ import {
   UniversalContextMenu,
   type ContextMenuGroupConfig,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import type { BlockedIpDto } from "@/hooks/useSecuritySettings";
 
@@ -39,11 +41,13 @@ export function AlertsFirewallCard({
   blockedIps,
   handleUnblockIp,
 }: AlertsFirewallCardProps) {
+  const { t } = useTranslation();
+
   const getFirewallContextMenuGroups = (rule: BlockedIpDto): ContextMenuGroupConfig[] => [
     {
       items: [
         {
-          label: "Tanya AI Evaluasi Rule Firewall",
+          label: "AI Firewall Review",
           icon: Sparkles,
           shortcut: "Ctrl+J",
           onClick: () => {
@@ -62,21 +66,21 @@ export function AlertsFirewallCard({
     {
       items: [
         {
-          label: "Salin IP / Subnet CIDR",
+          label: `${t("common.copy")} IP/CIDR`,
           icon: Copy,
           shortcut: "Ctrl+C",
           onClick: () => {
             navigator.clipboard.writeText(rule.ipAddressOrCidr || "");
-            toast.success(`IP ${rule.ipAddressOrCidr} disalin!`);
+            toast.success(`IP ${rule.ipAddressOrCidr} ${t("common.copied")}`);
           },
         },
         {
-          label: "Salin Alasan Blokir",
+          label: `${t("common.copy")} Reason`,
           icon: ShieldIcon,
           shortcut: "Alt+C",
           onClick: () => {
             navigator.clipboard.writeText(rule.reason || "");
-            toast.success(`Alasan disalin!`);
+            toast.success(t("common.copied"));
           },
         },
       ],
@@ -84,7 +88,7 @@ export function AlertsFirewallCard({
     {
       items: [
         {
-          label: "Buka Blokir IP (Hapus Rule)",
+          label: t("security.delete_role"),
           icon: Trash2,
           shortcut: "Del",
           onClick: () => handleUnblockIp(rule.id),
@@ -129,12 +133,12 @@ export function AlertsFirewallCard({
               className="bg-background/60 border-border text-foreground text-xs h-8 rounded-md"
             />
           </div>
-          <ActionTooltip label="Tambahkan Rule Blokir Firewall" shortcut="Enter">
+          <ActionTooltip label={t("common.add")} shortcut="Enter">
             <Button
               type="submit"
               size="sm"
               disabled={isBlockingIp}
-              className="w-full text-xs h-8 font-medium transition-all shadow-xs gap-1.5 rounded-md"
+              className="w-full text-xs h-8 font-medium transition-all shadow-xs gap-1.5 rounded-md cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Block Network IP
             </Button>
@@ -174,10 +178,10 @@ export function AlertsFirewallCard({
                           {rule.reason}
                         </td>
                         <td className="p-2 text-right">
-                          <ActionTooltip label="Buka Blokir IP" shortcut="Del">
+                          <ActionTooltip label={t("security.delete_role")} shortcut="Del">
                             <button
                               onClick={() => handleUnblockIp(rule.id)}
-                              className="text-rose-400 hover:text-rose-300 p-1 transition-all"
+                              className="text-rose-400 hover:text-rose-300 p-1 transition-all cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>

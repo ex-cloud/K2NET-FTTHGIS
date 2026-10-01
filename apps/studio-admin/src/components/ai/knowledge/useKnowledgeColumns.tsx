@@ -3,6 +3,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { Copy, Check, FileEdit, CheckCircle2, Trash2, BrainCircuit } from "lucide-react";
 import { Button, ActionTooltip } from "@k2net/ui";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 import {
   type AiDocumentItem,
   CATEGORIES,
@@ -30,13 +31,14 @@ export function useKnowledgeColumns({
   onApprove,
   onDelete,
 }: UseKnowledgeColumnsProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManage = canAccess("system.ai.manage");
 
   return useMemo(
     () => [
       columnHelper.accessor("title", {
-        header: "Judul Pengetahuan",
+        header: t("ai.doc_title"),
         cell: (info) => {
           const doc = info.row.original;
           return (
@@ -48,7 +50,7 @@ export function useKnowledgeColumns({
                   handleCopy(doc.file_name || doc.title, doc.id);
                 }}
                 className="p-1 rounded-md hover:bg-muted/80 text-foreground/75 dark:text-muted-foreground hover:text-foreground shrink-0 transition-colors cursor-pointer"
-                title="Salin nama file / judul"
+                title={t("ai.copy_title")}
               >
                 {copiedId === doc.id ? (
                   <Check className="h-3.5 w-3.5 text-primary" />
@@ -60,7 +62,7 @@ export function useKnowledgeColumns({
                 <div
                   onClick={() => onEdit?.(doc)}
                   className="text-xs font-semibold text-foreground truncate hover:text-primary transition-colors cursor-pointer"
-                  title="Klik untuk melihat / edit revisi"
+                  title={t("ai.edit_doc_title")}
                 >
                   {doc.title}
                 </div>
@@ -75,7 +77,7 @@ export function useKnowledgeColumns({
         },
       }),
       columnHelper.accessor("category", {
-        header: "Kategori",
+        header: t("ai.prompt_category"),
         cell: (info) => {
           const catMeta = CATEGORIES.find((c) => c.id === info.getValue());
           return (
@@ -90,7 +92,7 @@ export function useKnowledgeColumns({
         },
       }),
       columnHelper.accessor("scope", {
-        header: "Visibilitas / Scope",
+        header: t("ai.doc_scope"),
         cell: (info) => {
           const scopeVal = (info.getValue() || "GLOBAL") as KnowledgeScope;
           const meta = KNOWLEDGE_SCOPES.find((s) => s.id === scopeVal) || KNOWLEDGE_SCOPES[2];
@@ -106,7 +108,7 @@ export function useKnowledgeColumns({
         },
       }),
       columnHelper.accessor("file_size_bytes", {
-        header: "Ukuran Berkas",
+        header: t("ai.file_size"),
         cell: (info) => (
           <span className="block text-xs font-mono text-foreground/75 dark:text-muted-foreground text-right">
             {formatBytes(info.getValue())}
@@ -114,7 +116,7 @@ export function useKnowledgeColumns({
         ),
       }),
       columnHelper.accessor("chunk_count", {
-        header: "Vector Chunks",
+        header: t("ai.vector_chunks"),
         cell: (info) => {
           const count = info.getValue();
           return (
@@ -134,7 +136,7 @@ export function useKnowledgeColumns({
         },
       }),
       columnHelper.accessor("status", {
-        header: "Status Indeks",
+        header: t("common.status"),
         cell: (info) => {
           const status = (info.getValue() || "INDEXED") as KnowledgeStatus;
           const statusMeta = STATUS_ITEMS[status] || STATUS_ITEMS.INDEXED;
@@ -154,7 +156,7 @@ export function useKnowledgeColumns({
         },
       }),
       columnHelper.accessor("updated_at", {
-        header: "Tanggal Diperbarui",
+        header: t("common.details"),
         cell: (info) => {
           const raw = info.getValue() || info.row.original.created_at;
           return (
@@ -172,20 +174,20 @@ export function useKnowledgeColumns({
       }),
       columnHelper.display({
         id: "actions",
-        header: "Aksi",
+        header: t("common.actions"),
         cell: (info) => {
           const doc = info.row.original;
           return (
             <div className="flex items-center justify-end gap-1">
               {onEdit && (
-                <ActionTooltip label={canManage ? "Edit & Revisi Pengetahuan" : "Akses Read-Only: Memerlukan izin system.ai.manage"}>
+                <ActionTooltip label={canManage ? t("ai.edit_doc_title") : "Akses Read-Only: Memerlukan izin system.ai.manage"}>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onEdit(doc)}
                     disabled={!canManage}
                     className="h-7 w-7 p-0 text-foreground/75 dark:text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Edit & Revisi Pengetahuan"
+                    title={t("ai.edit_doc_title")}
                   >
                     <FileEdit className="w-3.5 h-3.5" />
                   </Button>
@@ -193,28 +195,28 @@ export function useKnowledgeColumns({
               )}
 
               {doc.status !== "INDEXED" && onApprove && (
-                <ActionTooltip label={canManage ? "Setujui & Publikasikan (Approve)" : "Akses Read-Only: Memerlukan izin system.ai.manage"}>
+                <ActionTooltip label={canManage ? t("ai.save_and_publish") : "Akses Read-Only: Memerlukan izin system.ai.manage"}>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onApprove(doc.id, doc.title)}
                     disabled={!canManage}
                     className="h-7 w-7 p-0 text-primary hover:bg-primary/10 rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Setujui & Publikasikan (Approve)"
+                    title={t("ai.save_and_publish")}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                   </Button>
                 </ActionTooltip>
               )}
 
-              <ActionTooltip label={canManage ? "Hapus dari memori AI" : "Akses Read-Only: Memerlukan izin system.ai.manage"}>
+              <ActionTooltip label={canManage ? t("ai.delete_from_kb") : "Akses Read-Only: Memerlukan izin system.ai.manage"}>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onDelete(doc.id, doc.title)}
                   disabled={!canManage}
                   className="h-7 w-7 p-0 text-foreground/75 dark:text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Hapus dari memori AI"
+                  title={t("ai.delete_from_kb")}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
@@ -224,6 +226,6 @@ export function useKnowledgeColumns({
         },
       }),
     ],
-    [copiedId, handleCopy, onDelete, onEdit, onApprove, canManage]
+    [copiedId, handleCopy, onDelete, onEdit, onApprove, canManage, t]
   );
 }

@@ -1,9 +1,8 @@
-
-
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "@/lib/navigation-compat";
 import { FlaskConical, Plus, Network, Database } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { simulateVectorSearch, type VectorSearchResultItem } from "@/lib/actions/gateways";
@@ -12,6 +11,7 @@ import { AiSemanticSimulator } from "@/components/ai/ai-semantic-simulator";
 function AiSimulatorContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Semantic Search Simulator State (Real-time pgvector testing)
   const initialQuery = searchParams.get("query") || "Standar redaman GPON ZTE C320";
@@ -27,7 +27,7 @@ function AiSimulatorContent() {
   const handleSimulateSearch = useCallback(async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!simQuery.trim()) {
-      toast.error("Silakan masukkan kata kunci pertanyaan kueri");
+      toast.error(t("ai.enter_query_prompt"));
       return;
     }
 
@@ -44,17 +44,17 @@ function AiSimulatorContent() {
         setSimTotalMatches(res.total_matches || 0);
         setHasSearched(true);
         if ((res.results || []).length === 0) {
-          toast.info("Tidak ada potongan dokumen yang memenuhi ambang kemiripan kosinus");
+          toast.info(t("ai.no_chunks_found"));
         }
       } else {
-        toast.error("Gagal menjalankan simulasi vektor");
+        toast.error(t("ai.sim_vector_failed"));
       }
     } catch {
-      toast.error("Terjadi kegagalan jaringan saat menghubungi modul pgvector");
+      toast.error(t("ai.network_pgvector_failed"));
     } finally {
       setSimSearching(false);
     }
-  }, [simQuery, simMinSimilarity, simLimit, simScope]);
+  }, [simQuery, simMinSimilarity, simLimit, simScope, t]);
 
   useEffect(() => {
     if (searchParams.get("query")) {
@@ -74,20 +74,20 @@ function AiSimulatorContent() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                RAG Semantic Simulator
+                {t("ai.simulator_title")}
               </h1>
               <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-primary/30 text-primary bg-primary/10">
-                Live Vector Probe
+                {t("ai.live_vector_probe")}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Uji langsung penelusuran semantik vektor pgvector dengan parameter ambang batas kemiripan kosinus dan batas rekaman.
+              {t("ai.simulator_subtitle")}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionTooltip label="Daftar Dokumen" shortcut="Esc">
+          <ActionTooltip label={t("ai.doc_list_tooltip")} shortcut="Esc">
             <Button
               variant="outline"
               size="sm"
@@ -95,10 +95,10 @@ function AiSimulatorContent() {
               className="text-xs gap-1.5 cursor-pointer"
             >
               <Database className="w-3.5 h-3.5" />
-              Daftar Dokumen
+              {t("ai.doc_list")}
             </Button>
           </ActionTooltip>
-          <ActionTooltip label="Graf Pengetahuan 2D" shortcut="G">
+          <ActionTooltip label={t("ai.graph_2d_tooltip")} shortcut="S then G">
             <Button
               variant="outline"
               size="sm"
@@ -106,17 +106,17 @@ function AiSimulatorContent() {
               className="text-xs gap-1.5 cursor-pointer"
             >
               <Network className="w-3.5 h-3.5" />
-              Graf 2D
+              {t("ai.graph_2d")}
             </Button>
           </ActionTooltip>
-          <ActionTooltip label="Tambah Dokumen Baru" shortcut="C">
+          <ActionTooltip label={t("ai.add_document_tooltip")} shortcut="N">
             <Button
               size="sm"
               onClick={() => router.push("/ai/add")}
               className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              Tambah Dokumen
+              {t("ai.add_document")}
             </Button>
           </ActionTooltip>
         </div>
@@ -144,9 +144,11 @@ function AiSimulatorContent() {
 }
 
 export default function AiSimulatorPage() {
+  const { t } = useTranslation();
+
   return (
     <AiPageWrapper>
-      <Suspense fallback={<div className="p-8 text-center text-xs text-muted-foreground">Memuat simulator...</div>}>
+      <Suspense fallback={<div className="p-8 text-center text-xs text-muted-foreground">{t("ai.loading_simulator")}</div>}>
         <AiSimulatorContent />
       </Suspense>
     </AiPageWrapper>

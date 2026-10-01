@@ -8,24 +8,26 @@ import {
   Button,
 } from "@k2net/ui";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 
 export function GisDataImportPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
 
   const handleUploadKml = () => {
-    toast.success("File KML/GeoJSON berhasil di-parse dan di-import ke PostGIS!");
+    toast.success(t("projects.import_success"));
   };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
-          { label: "Settings", href: `/project/${projectId}/settings/general` },
-          { label: "Import Data GIS" },
+          { label: t("nav.projects"), href: "/projects" },
+          { label: t("nav.settings"), href: `/project/${projectId}/settings/general` },
+          { label: t("projects.gis_import_title") },
         ]}
-        title="Import Data Spasial GIS & Berkas KML"
+        title={t("projects.gis_import_title")}
       />
 
       <PageContentShell className="space-y-4 custom-scrollbar max-w-4xl">
@@ -36,10 +38,10 @@ export function GisDataImportPage() {
             </div>
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-foreground">
-                Tarik & Lepas File GIS di Sini
+                {t("projects.upload_dropzone")}
               </h3>
               <p className="text-xs text-muted-foreground">
-                Format didukung: <strong>.kml, .kmz, .geojson, .shp (zip)</strong> (Maksimal 25 MB)
+                {t("projects.supported_formats")}
               </p>
             </div>
             <Button
@@ -47,7 +49,7 @@ export function GisDataImportPage() {
               onClick={handleUploadKml}
               className="h-8 text-xs font-semibold gap-1.5 shadow-xs"
             >
-              Pilih Berkas dari Komputer
+              {t("common.import")}
             </Button>
           </div>
 

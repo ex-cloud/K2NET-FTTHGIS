@@ -16,6 +16,7 @@ import {
 } from "@k2net/ui";
 import { Upload, FileText } from "lucide-react";
 import type { DocumentCategory } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ export function DocumentUploadModal({
   uploading,
   onSubmit,
 }: DocumentUploadModalProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-popover/95 backdrop-blur-xl border-border text-foreground rounded-2xl shadow-lg p-6">
@@ -53,46 +55,48 @@ export function DocumentUploadModal({
             <span>MinIO S3 Document Vault</span>
           </div>
           <DialogTitle className="text-lg font-bold text-foreground">
-            Unggah Dokumen Tenant
+            Upload Tenant Document
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Unggah dokumen legalitas atau berkas teknis khusus untuk organisasi{" "}
+            Upload legal documents or technical files specifically for organization{" "}
             <strong className="text-foreground">{orgName}</strong>.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={onSubmit} className="space-y-4 py-2">
+        <form onSubmit={onSubmit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Nama Dokumen</Label>
+            <Label className="text-xs font-semibold text-foreground">
+              Document Name
+            </Label>
             <Input
               value={newDocName}
               onChange={(e) => setNewDocName(e.target.value)}
-              placeholder="Contoh: MoU-Kerjasama-2026.pdf"
+              placeholder="e.g. MoU-Partnership-2026.pdf"
               className="h-9 text-xs bg-card border-border text-foreground"
               required
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Kategori Dokumen</Label>
+            <Label className="text-xs font-semibold text-foreground">Document Category</Label>
             <Select
               value={newDocCategory}
               onValueChange={(v) => setNewDocCategory(v as DocumentCategory)}
             >
               <SelectTrigger className="h-9 text-xs bg-card border-border text-foreground">
-                <SelectValue placeholder="Pilih kategori" />
+                <SelectValue placeholder={t("common.select_option")} />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-xs">
-                <SelectItem value="LEGAL">LEGAL — MoU & Kontrak B2B</SelectItem>
-                <SelectItem value="TECHNICAL">TECHNICAL — BAST & Topologi BRAS</SelectItem>
-                <SelectItem value="COMPLIANCE">COMPLIANCE — NIB / NPWP / Izin ISP</SelectItem>
-                <SelectItem value="BILLING">BILLING — Bukti Pembayaran / Faktur</SelectItem>
+                <SelectItem value="LEGAL">LEGAL — MoU &amp; B2B Contract</SelectItem>
+                <SelectItem value="TECHNICAL">TECHNICAL — BAST &amp; BRAS Topology</SelectItem>
+                <SelectItem value="COMPLIANCE">COMPLIANCE — NIB / Tax ID / ISP License</SelectItem>
+                <SelectItem value="BILLING">BILLING — Payment Proof / Invoice</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Pilih Berkas (PDF / ZIP / KMZ)</Label>
+            <Label className="text-xs font-semibold text-foreground">Select File (PDF / ZIP / KMZ)</Label>
             <div className="border-2 border-dashed border-border rounded-xl p-4 text-center bg-card/40 hover:bg-card/70 transition-colors cursor-pointer">
               <input
                 type="file"
@@ -104,10 +108,10 @@ export function DocumentUploadModal({
               <label htmlFor="doc-file-upload" className="cursor-pointer block space-y-1.5">
                 <FileText className="h-6 w-6 text-muted-foreground mx-auto" />
                 <span className="text-xs font-medium text-foreground block">
-                  {newDocFile ? newDocFile.name : "Klik untuk memilih berkas dari komputer"}
+                  {newDocFile ? newDocFile.name : "Click to select file from your computer"}
                 </span>
                 <span className="text-[10px] text-muted-foreground block font-mono">
-                  Maksimum ukuran berkas: 25 MB
+                  Maximum file size: 25 MB
                 </span>
               </label>
             </div>
@@ -121,7 +125,7 @@ export function DocumentUploadModal({
               onClick={() => onOpenChange(false)}
               className="h-8 text-xs border-border"
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -129,7 +133,7 @@ export function DocumentUploadModal({
               disabled={uploading}
               className="h-8 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
             >
-              {uploading ? "Mengunggah..." : "Simpan Dokumen"}
+              {uploading ? t("common.loading") : t("common.save")}
             </Button>
           </DialogFooter>
         </form>

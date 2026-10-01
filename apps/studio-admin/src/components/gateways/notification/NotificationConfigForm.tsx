@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Lock, Server, MessageCircle, Save, Loader2, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, ActionTooltip } from "@k2net/ui";
 import { PermissionGuard } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 
 interface NotificationConfigFormProps {
   config: Record<string, string>;
@@ -18,6 +19,7 @@ export function NotificationConfigForm({
   onSave,
   onReset,
 }: NotificationConfigFormProps) {
+  const { t } = useTranslation();
   const [showAuthToken, setShowAuthToken] = useState(false);
   const [showTwilioToken, setShowTwilioToken] = useState(false);
 
@@ -27,10 +29,10 @@ export function NotificationConfigForm({
       <Card glowingEffect className="bg-card/60 border-border shadow-xl">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Lock className="w-4 h-4 text-primary" /> Keamanan & Akses Internal
+            <Lock className="w-4 h-4 text-primary" /> {t("gateways.notification.security_title")}
           </CardTitle>
           <CardDescription className="text-[10px] text-muted-foreground">
-            Token static yang digunakan untuk autentikasi komunikasi antar microservice.
+            {t("gateways.notification.security_desc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -43,7 +45,7 @@ export function NotificationConfigForm({
                 className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
               >
                 {showAuthToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                {showAuthToken ? "Sembunyikan" : "Tampilkan"}
+                {showAuthToken ? t("common.hide") : t("common.show")}
               </button>
             </div>
             <Input
@@ -62,10 +64,10 @@ export function NotificationConfigForm({
       <Card glowingEffect className="bg-card/60 border-border shadow-xl">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Server className="w-4 h-4 text-primary" /> Broker Antrean (Redis)
+            <Server className="w-4 h-4 text-primary" /> {t("gateways.notification.queue_title")}
           </CardTitle>
           <CardDescription className="text-[10px] text-muted-foreground">
-            Alamat koneksi Redis untuk asynq queue worker pengiriman WhatsApp/SMS.
+            {t("gateways.notification.queue_desc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -87,10 +89,10 @@ export function NotificationConfigForm({
       <Card glowingEffect className="bg-card/60 border-border shadow-xl">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <MessageCircle className="w-4 h-4 text-primary" /> Twilio Provider Credentials
+            <MessageCircle className="w-4 h-4 text-primary" /> {t("gateways.notification.twilio_title")}
           </CardTitle>
           <CardDescription className="text-[10px] text-muted-foreground">
-            Kredensial akun Twilio Anda untuk mengaktifkan modul SMS & WhatsApp Business API.
+            {t("gateways.notification.twilio_desc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -115,7 +117,7 @@ export function NotificationConfigForm({
                 className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
               >
                 {showTwilioToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                {showTwilioToken ? "Sembunyikan" : "Tampilkan"}
+                {showTwilioToken ? t("common.hide") : t("common.show")}
               </button>
             </div>
             <Input
@@ -144,7 +146,7 @@ export function NotificationConfigForm({
 
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-2.5">
-        <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+        <ActionTooltip label={t("common.reset_form")} shortcut="Alt+R">
           <Button
             type="button"
             onClick={onReset}
@@ -152,11 +154,11 @@ export function NotificationConfigForm({
             size="default"
             className="border-border/80 text-muted-foreground hover:text-foreground"
           >
-            Reset Form
+            {t("common.reset_form")}
           </Button>
         </ActionTooltip>
         <PermissionGuard permission="system.gateway.manage">
-          <ActionTooltip label="Simpan Konfigurasi Notification Gateway" shortcut="Ctrl+S">
+          <ActionTooltip label={t("gateways.save_config")} shortcut="Ctrl+S">
             <Button
               type="submit"
               disabled={saving}
@@ -164,7 +166,7 @@ export function NotificationConfigForm({
               className="gap-1.5"
             >
               {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-              Save Configuration
+              {t("gateways.save_config")}
             </Button>
           </ActionTooltip>
         </PermissionGuard>

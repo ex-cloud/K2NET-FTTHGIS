@@ -2,6 +2,7 @@ import { CATEGORIES } from "../types";
 import { type KnowledgeGraphData } from "@/lib/actions/gateways";
 import { Button, Badge, Input } from "@k2net/ui";
 import { Network, ZoomIn, ZoomOut, RotateCcw, FlaskConical, Search } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import React from "react";
 
 export interface SimNode {
@@ -191,6 +192,7 @@ export function drawSingleNode(config: DrawNodeConfig) {
 }
 
 export function GraphStatsBadge({ stats }: { stats?: KnowledgeGraphData["stats"] }) {
+  const { t } = useTranslation();
   return (
     <div className="absolute top-3 left-3 bg-background/90 backdrop-blur-md border border-border/80 px-3 py-2 rounded-xl text-[11px] font-mono space-y-1 shadow-md pointer-events-none">
       <div className="flex items-center gap-2 text-foreground font-bold">
@@ -198,9 +200,9 @@ export function GraphStatsBadge({ stats }: { stats?: KnowledgeGraphData["stats"]
         <span>Obsidian Semantic Graph</span>
       </div>
       <div className="flex items-center gap-3 text-muted-foreground text-[10px]">
-        <span>Nodes: <strong className="text-primary">{stats?.total_nodes || 0}</strong></span>
-        <span>Links: <strong className="text-purple-400">{stats?.total_links || 0}</strong></span>
-        <span>Clusters: <strong className="text-cyan-400">{stats?.categories_count || 0}</strong></span>
+        <span>{t("ai.graph_nodes")}: <strong className="text-primary">{stats?.total_nodes || 0}</strong></span>
+        <span>{t("ai.graph_links")}: <strong className="text-purple-400">{stats?.total_links || 0}</strong></span>
+        <span>{t("ai.graph_clusters")}: <strong className="text-cyan-400">{stats?.categories_count || 0}</strong></span>
       </div>
     </div>
   );
@@ -215,6 +217,7 @@ export function GraphNodeInspector({
   onClose: () => void;
   onTestSimulator?: (title: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="absolute bottom-4 right-4 w-80 bg-background/95 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-lg space-y-3 z-30 animate-in fade-in slide-in-from-bottom-3">
       <div className="flex items-start justify-between gap-2">
@@ -236,20 +239,20 @@ export function GraphNodeInspector({
 
       <div className="grid grid-cols-2 gap-2 text-[10px] font-mono bg-muted/30 p-2.5 rounded-xl border border-border/60">
         <div>
-          <span className="text-muted-foreground block">Vector Chunks:</span>
+          <span className="text-muted-foreground block">{t("ai.vector_chunks")}:</span>
           <span className="text-purple-400 font-bold">{selectedNode.chunk_count} Chunks</span>
         </div>
         <div>
-          <span className="text-muted-foreground block">Vendor Tag:</span>
+          <span className="text-muted-foreground block">{t("ai.vendor_tag")}:</span>
           <span className="text-primary font-bold">{selectedNode.vendor}</span>
         </div>
         <div>
-          <span className="text-muted-foreground block">File Size:</span>
+          <span className="text-muted-foreground block">{t("ai.file_size")}:</span>
           <span className="text-foreground">{(selectedNode.file_size_bytes / 1024).toFixed(1)} KB</span>
         </div>
         <div>
-          <span className="text-muted-foreground block">Keterhubungan:</span>
-          <span className="text-cyan-400 font-bold">{selectedNode.degree} Connections</span>
+          <span className="text-muted-foreground block">{t("ai.connectivity")}:</span>
+          <span className="text-cyan-400 font-bold">{selectedNode.degree} {t("ai.connections")}</span>
         </div>
       </div>
 
@@ -261,7 +264,7 @@ export function GraphNodeInspector({
             className="text-xs flex-1 gap-1.5 cursor-pointer font-semibold"
           >
             <FlaskConical className="w-3.5 h-3.5" />
-            <span>Uji di Simulator</span>
+            <span>{t("ai.test_in_simulator")}</span>
           </Button>
         )}
       </div>
@@ -286,6 +289,7 @@ export function GraphToolbar({
   onZoomOut: () => void;
   onResetZoom: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-3 rounded-lg shadow-xs">
       <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
@@ -309,7 +313,7 @@ export function GraphToolbar({
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Filter node..."
+            placeholder={t("ai.filter_node_placeholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="text-xs pl-7 h-8 bg-background border-border rounded-md"
@@ -322,7 +326,7 @@ export function GraphToolbar({
             size="sm"
             onClick={onZoomIn}
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-            title="Zoom In"
+            title={t("ai.zoom_in")}
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </Button>
@@ -331,7 +335,7 @@ export function GraphToolbar({
             size="sm"
             onClick={onZoomOut}
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-            title="Zoom Out"
+            title={t("ai.zoom_out")}
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </Button>
@@ -340,7 +344,7 @@ export function GraphToolbar({
             size="sm"
             onClick={onResetZoom}
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-            title="Reset View"
+            title={t("ai.reset_view")}
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </Button>

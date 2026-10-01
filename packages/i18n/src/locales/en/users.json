@@ -42,5 +42,23 @@
   "ctx_copy_email": "Copy Email",
   "ctx_copy_user_id": "Copy User ID",
   "ctx_view_audit": "View Audit Log",
-  "ctx_revoke_session": "Revoke Keycloak Session"
+  "ctx_revoke_session": "Revoke Keycloak Session",
+
+  "invite_title": "Invite New Team Member",
+  "invite_desc": "Send a join invitation email to your ISP organization.",
+  "invite_full_name": "Full Name",
+  "invite_full_name_placeholder": "e.g. John Doe",
+  "invite_email": "Corporate / Member Email",
+  "invite_role_label": "Role & Permission Level",
+  "invite_notice": "The member will receive an official Keycloak activation link to set password and MFA.",
+  "invite_send_btn": "Send Invitation",
+  "invite_sending": "Sending...",
+  "invite_success": "Invitation sent successfully to {email}",
+  "invite_error_email": "Invalid email address",
+  "invite_error_name": "Full member name is required",
+  "role_org_admin": "Organization Admin (Full Access)",
+  "role_operator": "GIS & NOC Operator",
+  "role_field_tech": "Field Technician (JIT Scoped)",
+  "role_surveyor": "Spatial Surveyor (CAD & Map)",
+  "role_finance": "Finance & Billing"
 }

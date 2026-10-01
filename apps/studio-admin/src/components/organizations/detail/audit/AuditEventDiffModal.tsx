@@ -9,6 +9,7 @@ import {
 } from "@k2net/ui";
 import { Code2 } from "lucide-react";
 import type { TenantAuditEvent } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface AuditEventDiffModalProps {
   selectedEvent: TenantAuditEvent | null;
@@ -19,6 +20,7 @@ export function AuditEventDiffModal({
   selectedEvent,
   onClose,
 }: AuditEventDiffModalProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-xl bg-popover/95 backdrop-blur-2xl border-border text-foreground rounded-2xl shadow-lg p-6 max-h-[85vh] flex flex-col">
@@ -26,7 +28,7 @@ export function AuditEventDiffModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-primary font-mono text-xs uppercase font-bold">
               <Code2 className="h-4 w-4" />
-              <span>Audit Event Payload Inspector</span>
+              <span>{t("organizations.audit_inspector_title")}</span>
             </div>
             <Badge variant="outline" className="border-border text-[10px] font-mono">
               {selectedEvent?.id}
@@ -44,23 +46,23 @@ export function AuditEventDiffModal({
           {/* Event Meta */}
           <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded-xl bg-card border border-border">
             <div>
-              <span className="text-[10px] uppercase font-mono text-muted-foreground block">Actor</span>
+              <span className="text-[10px] uppercase font-mono text-muted-foreground block">{t("organizations.audit_col_actor")}</span>
               <span className="font-semibold text-foreground">
                 {selectedEvent?.actorUsername} ({selectedEvent?.actorEmail})
               </span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-mono text-muted-foreground block">Client IP</span>
+              <span className="text-[10px] uppercase font-mono text-muted-foreground block">{t("organizations.audit_col_ip")}</span>
               <span className="font-mono text-foreground">{selectedEvent?.ipAddress}</span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-mono text-muted-foreground block">Target</span>
+              <span className="text-[10px] uppercase font-mono text-muted-foreground block">{t("organizations.audit_col_target")}</span>
               <span className="font-mono text-foreground">
                 {selectedEvent?.targetEntity} ({selectedEvent?.targetId})
               </span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-mono text-muted-foreground block">Waktu Event</span>
+              <span className="text-[10px] uppercase font-mono text-muted-foreground block">{t("organizations.audit_time_label")}</span>
               <span className="font-mono text-foreground">{selectedEvent?.timestamp}</span>
             </div>
           </div>
@@ -70,7 +72,7 @@ export function AuditEventDiffModal({
             <div className="space-y-1.5">
               <span className="text-[11px] font-mono font-bold text-muted-foreground uppercase flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-amber-500" />
-                <span>State Sebelum (Before)</span>
+                <span>{t("organizations.audit_before_state")}</span>
               </span>
               <pre className="p-3 rounded-xl bg-card border border-border text-[11px] font-mono text-foreground overflow-auto max-h-48 leading-relaxed">
                 {JSON.stringify(selectedEvent?.beforeState || {}, null, 2)}
@@ -80,7 +82,7 @@ export function AuditEventDiffModal({
             <div className="space-y-1.5">
               <span className="text-[11px] font-mono font-bold text-muted-foreground uppercase flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-primary" />
-                <span>State Sesudah (After)</span>
+                <span>{t("organizations.audit_after_state")}</span>
               </span>
               <pre className="p-3 rounded-xl bg-card border border-border text-[11px] font-mono text-primary overflow-auto max-h-48 leading-relaxed">
                 {JSON.stringify(selectedEvent?.afterState || {}, null, 2)}
@@ -96,7 +98,7 @@ export function AuditEventDiffModal({
             onClick={onClose}
             className="h-8 text-xs border-border cursor-pointer"
           >
-            Tutup Inspector
+            {t("organizations.audit_close_inspector")}
           </Button>
         </div>
       </DialogContent>

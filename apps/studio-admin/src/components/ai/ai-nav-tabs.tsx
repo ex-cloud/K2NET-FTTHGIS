@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import { 
   Database, 
@@ -12,6 +10,7 @@ import {
   Network 
 } from "lucide-react";
 import { Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import { type AiTabType } from "./types";
 
@@ -36,6 +35,8 @@ export function AiNavTabs({
   docsLoading,
   onLoadConfig,
 }: AiNavTabsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="border-b border-border flex items-center justify-between flex-wrap gap-4">
       <nav className="flex items-center gap-5 text-sm font-medium overflow-x-auto custom-scrollbar">
@@ -50,7 +51,7 @@ export function AiNavTabs({
           )}
         >
           <Database className="w-4 h-4" />
-          <span>Daftar Pengetahuan ({docsTotal})</span>
+          <span>{t("ai.knowledge_catalog_btn")} ({docsTotal})</span>
         </button>
 
         {/* Tab 2: 2D Obsidian-Style Semantic Graph */}
@@ -64,7 +65,7 @@ export function AiNavTabs({
           )}
         >
           <Network className="w-4 h-4 text-purple-400" />
-          <span>Graf Pengetahuan 2D</span>
+          <span>{t("ai.graph_2d")}</span>
           <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono bg-purple-500/10 text-purple-400 border border-purple-500/20">
             Obsidian Graph
           </span>
@@ -81,7 +82,7 @@ export function AiNavTabs({
           )}
         >
           <UploadCloud className="w-4 h-4 text-primary" />
-          <span>Tambah Pengetahuan (Upload / Tulis)</span>
+          <span>{t("ai.add_knowledge_btn")}</span>
         </button>
 
         {/* Tab 4: Semantic Simulator */}
@@ -95,7 +96,7 @@ export function AiNavTabs({
           )}
         >
           <FlaskConical className="w-4 h-4 text-blue-400" />
-          <span>RAG Semantic Simulator</span>
+          <span>{t("ai.open_rag_simulator")}</span>
           <span className="px-1.5 py-0.5 rounded-full text-[9px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
             Live Test
           </span>
@@ -112,7 +113,7 @@ export function AiNavTabs({
           )}
         >
           <FileCode className="w-4 h-4 text-amber-400" />
-          <span>Contoh & Template SOP</span>
+          <span>{t("ai.templates_title")}</span>
         </button>
 
         {/* Tab 6: Multi-Provider Hub & Config */}
@@ -129,7 +130,7 @@ export function AiNavTabs({
           )}
         >
           <Cpu className="w-4 h-4 text-cyan-400" />
-          <span>Multi-Provider Hub</span>
+          <span>{t("ai.model_router")}</span>
         </button>
       </nav>
 
@@ -143,7 +144,7 @@ export function AiNavTabs({
             className="text-xs gap-1.5 border-primary/40 hover:bg-primary/10 text-primary font-medium"
           >
             <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-            {isSyncing ? "Menyinkronkan Server..." : "Sinkronkan Folder Server Docs"}
+            {isSyncing ? t("ai.syncing_server") : t("ai.sync_server_dir")}
           </Button>
           <Button
             variant="outline"
@@ -152,7 +153,7 @@ export function AiNavTabs({
             className="text-xs gap-1.5"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${docsLoading ? "animate-spin" : ""}`} />
-            Refresh
+            {t("common.refresh")}
           </Button>
         </div>
       )}

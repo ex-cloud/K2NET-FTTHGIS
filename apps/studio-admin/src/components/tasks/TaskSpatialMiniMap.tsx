@@ -6,6 +6,7 @@ import { useTheme } from "@/lib/navigation-compat";
 import { MapPin, ExternalLink, Copy, Radio } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 
 interface TaskSpatialMiniMapProps {
   latitude?: number | string | null;
@@ -30,6 +31,7 @@ export function TaskSpatialMiniMap({
   className,
 }: TaskSpatialMiniMapProps) {
   const { resolvedTheme } = useTheme();
+  const { t } = useTranslation();
 
   // Parse numeric coordinates or extract from textContext
   const parsedCoords = useMemo(() => {
@@ -64,7 +66,7 @@ export function TaskSpatialMiniMap({
   const handleCopyCoords = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(`${parsedCoords.lat.toFixed(6)}, ${parsedCoords.lng.toFixed(6)}`);
-    toast.success("Koordinat disalin ke clipboard");
+    toast.success(t("common.copy_coords"));
   };
 
   const handleOpenGis = (e: React.MouseEvent) => {

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BACKUP_PIPELINE_STAGES } from "./BackupProgressModal";
+import { useTranslation } from "@k2net/i18n";
 
 interface BackupRunningPhaseProps {
   progress: number;
@@ -28,6 +29,7 @@ export function BackupRunningPhase({
   onClose,
   onRetry,
 }: BackupRunningPhaseProps) {
+  const { t } = useTranslation();
   const isRunning = status === "RUNNING";
   const isFailed = status === "FAILED";
 
@@ -127,12 +129,12 @@ export function BackupRunningPhase({
         </div>
       </div>
 
-      {/* Error Banner if Failed */}
+        {/* Error Banner if Failed */}
       {isFailed && error && (
         <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-start gap-2">
           <AlertTriangle className="size-4 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-semibold">Pencadangan Gagal</p>
+            <p className="font-semibold">{t("organizations.backup_failed_title")}</p>
             <p className="text-[11px] opacity-90 mt-0.5">{error}</p>
           </div>
         </div>
@@ -143,10 +145,10 @@ export function BackupRunningPhase({
         {isFailed && (
           <>
             <Button variant="outline" size="sm" onClick={onClose} className="cursor-pointer">
-              Tutup
+              {t("common.close")}
             </Button>
             <Button size="sm" onClick={onRetry} className="bg-primary text-primary-foreground cursor-pointer">
-              Coba Lagi
+              {t("organizations.backup_retry_btn")}
             </Button>
           </>
         )}
@@ -154,7 +156,7 @@ export function BackupRunningPhase({
         {isRunning && (
           <Button size="sm" disabled className="bg-muted text-muted-foreground cursor-not-allowed gap-2">
             <Loader2 className="size-3.5 animate-spin" />
-            <span>Memproses Snapshot Pipeline...</span>
+            <span>{t("organizations.backup_processing_pipeline")}</span>
           </Button>
         )}
       </div>

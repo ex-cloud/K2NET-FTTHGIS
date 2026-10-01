@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from "@k2net/ui";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 
 interface IntegrationItem {
   id: string;
@@ -34,31 +35,32 @@ interface IntegrationItem {
 }
 
 export function IntegrationsPage() {
+  const { t } = useTranslation();
   const [selectedIntegration, setSelectedIntegration] = React.useState<IntegrationItem | null>(null);
   const [configOpen, setConfigOpen] = React.useState(false);
 
   const integrations: IntegrationItem[] = [
     {
       id: "whatsapp",
-      title: "WhatsApp Notification Gateway",
+      title: t("gateways.gateway_notification_title"),
       category: "Messaging",
-      description: "Kirimkan notifikasi gangguan dan konfirmasi aktivasi pelanggan via WhatsApp resmi.",
+      description: t("gateways.gateway_notification_subtitle"),
       status: "CONNECTED",
       icon: MessageSquare,
     },
     {
       id: "sms",
-      title: "SMS Gateway (Twilio / Local SMSC)",
+      title: "SMS Gateway (Twilio / SMSC)",
       category: "Messaging",
-      description: "Kirim SMS OTP dan broadcast pemeliharaan darurat saat sinyal data pelanggan terputus.",
+      description: t("gateways.gateway_notification_subtitle"),
       status: "CONNECTED",
       icon: MessageSquare,
     },
     {
       id: "smtp",
-      title: "Custom SMTP Email Server",
+      title: t("settings.smtp_title"),
       category: "Email",
-      description: "Gunakan server mail perusahaan untuk pengiriman tagihan dan laporan resmi.",
+      description: t("settings.smtp_subtitle"),
       status: "NOT_CONFIGURED",
       icon: Mail,
     },
@@ -66,23 +68,23 @@ export function IntegrationsPage() {
       id: "webhooks",
       title: "Event-Driven Webhooks",
       category: "Developer",
-      description: "Kirimkan payload HTTP POST real-time saat terjadi alarm OLT atau tiket baru.",
+      description: t("gateways.gateway_audit_subtitle"),
       status: "CONNECTED",
       icon: Webhook,
     },
     {
       id: "minio-s3",
-      title: "MinIO S3 Storage Bucket",
+      title: t("gateways.gateway_storage_title"),
       category: "Storage",
-      description: "Penyimpanan foto dokumentasi instalasi rumah pelanggan dan backup konfigurasi OLT.",
+      description: t("gateways.gateway_storage_subtitle"),
       status: "CONNECTED",
       icon: HardDrive,
     },
     {
       id: "maps-api",
-      title: "Google Maps / HERE Geocoding",
+      title: t("gateways.gateway_map_title"),
       category: "GIS & Maps",
-      description: "Pencarian alamat otomatis dan validasi koordinat lat/lng pelanggan presisi tinggi.",
+      description: t("gateways.gateway_map_subtitle"),
       status: "CONNECTED",
       icon: MapPin,
     },
@@ -94,19 +96,20 @@ export function IntegrationsPage() {
   };
 
   const handleSaveConfig = () => {
-    toast.success(`Konfigurasi ${selectedIntegration?.title} berhasil disimpan`);
+    toast.success(t("common.saved_successfully"));
     setConfigOpen(false);
   };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
-        title="Integrasi Layanan Eksternal"
+        title={t("nav.integrations")}
         breadcrumbs={[
-          { label: "Organisasi", href: "/projects" },
-          { label: "Integrasi" },
+          { label: t("nav.organizations"), href: "/projects" },
+          { label: t("nav.integrations") },
         ]}
       />
+
 
       <PageContentShell className="space-y-4 custom-scrollbar">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -148,7 +151,7 @@ export function IntegrationsPage() {
                 </div>
 
                 <div className="pt-3 border-t border-border/40 flex items-center justify-between">
-                  <span className="text-[11px] text-muted-foreground">Status: Real-time API</span>
+                  <span className="text-[11px] text-muted-foreground">API Gateway</span>
                   <Button
                     variant="outline"
                     size="sm"
@@ -156,7 +159,7 @@ export function IntegrationsPage() {
                     className="h-7.5 px-2.5 text-xs gap-1.5"
                   >
                     <Key className="h-3 w-3" />
-                    Konfigurasi
+                    {t("common.edit")}
                   </Button>
                 </div>
               </Card>
@@ -170,16 +173,16 @@ export function IntegrationsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-base font-bold">
-              Konfigurasi {selectedIntegration?.title}
+              {selectedIntegration?.title}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Masukkan kredensial API dan endpoint komunikasi gateway untuk organisasi Anda.
+              {t("settings.general_subtitle")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3.5 py-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">API Key / Token Gateway</Label>
+              <Label className="text-xs font-semibold">{t("nav.api_keys_tokens")}</Label>
               <Input
                 type="password"
                 placeholder="sk_live_k2net_..."
@@ -199,9 +202,9 @@ export function IntegrationsPage() {
 
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/60">
               <div className="space-y-0.5">
-                <Label className="text-xs font-semibold">Aktifkan Integrasi Ini</Label>
+                <Label className="text-xs font-semibold">{t("common.active")}</Label>
                 <p className="text-[10px] text-muted-foreground">
-                  Gunakan untuk seluruh proyek organisasi
+                  {t("common.status")}
                 </p>
               </div>
               <Switch defaultChecked />
@@ -210,10 +213,10 @@ export function IntegrationsPage() {
 
           <DialogFooter className="pt-2">
             <Button variant="ghost" size="sm" onClick={() => setConfigOpen(false)} className="text-xs">
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button size="sm" onClick={handleSaveConfig} className="text-xs font-medium">
-              Simpan Konfigurasi
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -221,3 +224,4 @@ export function IntegrationsPage() {
     </div>
   );
 }
+

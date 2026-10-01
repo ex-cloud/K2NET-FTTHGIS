@@ -1,6 +1,7 @@
 import React from "react";
 import { Sparkles, X, Loader2, Check } from "lucide-react";
 import { Button, Input, Label } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import type { SuggestedPromptItem } from "@/lib/actions/gateways";
 import { AVAILABLE_ICONS, PROMPT_CATEGORIES, PROMPT_ROLES } from "./types";
@@ -35,6 +36,8 @@ export function PromptFormModal({
   formSubmitting,
   onSubmit,
 }: PromptFormModalProps) {
+  const { t } = useTranslation();
+
   if (!isOpen) return null;
 
   return (
@@ -46,7 +49,7 @@ export function PromptFormModal({
               <Sparkles className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold text-foreground">
-              {editingPrompt ? "Edit Kartu Prompt Rekomendasi" : "Tambah Prompt Rekomendasi Baru"}
+              {editingPrompt ? t("ai.edit_prompt") : t("ai.create_prompt")}
             </h3>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground cursor-pointer">
@@ -57,7 +60,7 @@ export function PromptFormModal({
         <form onSubmit={onSubmit} className="p-5 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="promptTitle" className="text-xs font-medium text-foreground">
-              Judul Kartu (Ringkas & Informatif) *
+              {t("ai.doc_title")} *
             </Label>
             <Input
               id="promptTitle"
@@ -88,7 +91,7 @@ export function PromptFormModal({
 
           <div className="space-y-1.5">
             <Label htmlFor="promptText" className="text-xs font-medium text-foreground">
-              Teks Prompt Lengkap (Akan disuntikkan ke kolom chat saat kartu diklik) *
+              {t("ai.prompt_text")} *
             </Label>
             <textarea
               id="promptText"
@@ -104,7 +107,7 @@ export function PromptFormModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="promptCategory" className="text-xs font-medium text-foreground">
-                Kategori Sistem
+                {t("ai.prompt_category")}
               </Label>
               <select
                 id="promptCategory"
@@ -184,7 +187,7 @@ export function PromptFormModal({
                 onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                 className="rounded border-border text-primary focus:ring-0 cursor-pointer"
               />
-              <span className="font-medium">Aktifkan di Ask AI Drawer</span>
+              <span className="font-medium">{t("ai.prompt_active")}</span>
             </label>
           </div>
 
@@ -196,7 +199,7 @@ export function PromptFormModal({
               onClick={onClose}
               className="text-xs cursor-pointer"
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -209,7 +212,7 @@ export function PromptFormModal({
               ) : (
                 <Check className="w-3.5 h-3.5" />
               )}
-              <span>{editingPrompt ? "Simpan Perubahan" : "Buat Prompt"}</span>
+              <span>{editingPrompt ? t("common.save") : t("common.create")}</span>
             </Button>
           </div>
         </form>

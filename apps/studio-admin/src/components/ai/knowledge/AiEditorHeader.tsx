@@ -33,7 +33,7 @@ export function AiEditorHeader({
           htmlFor="manualDocContent"
           className="text-xs font-medium text-foreground flex items-center gap-1.5"
         >
-          <span>Konten SOP / Manual (Format Markdown)</span>
+          <span>SOP / Manual Content (Markdown Format)</span>
           <span className="text-destructive">*</span>
         </Label>
 
@@ -44,7 +44,7 @@ export function AiEditorHeader({
             className="text-[11px] text-primary/80 hover:text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer transition-colors"
           >
             <Sparkles className="w-3 h-3" />
-            Gunakan Template SOP
+            Use SOP Template
           </button>
 
           <span className="text-border text-[11px]">|</span>
@@ -56,7 +56,7 @@ export function AiEditorHeader({
               className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-medium bg-amber-500/10 text-amber-600 border border-amber-500/30 hover:bg-amber-500/20 transition-colors cursor-pointer"
             >
               <StopCircle className="w-3 h-3 animate-pulse" />
-              Hentikan ({aiGeneratedChars} karakter)
+              Stop ({aiGeneratedChars} chars)
             </button>
           ) : (
             <button
@@ -65,13 +65,13 @@ export function AiEditorHeader({
               disabled={!canGenerateAi}
               title={
                 !manualTitle.trim() || manualTitle.trim().length < 5
-                  ? "Isi judul minimal 5 karakter terlebih dahulu"
-                  : "Generate draft SOP dengan AI berdasarkan judul, kategori & visibilitas"
+                  ? "Enter title with at least 5 characters first"
+                  : "Generate SOP draft with AI based on title, category & visibility"
               }
               className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Wand2 className="w-3 h-3" />
-              Generate dengan AI
+              Generate with AI
             </button>
           )}
         </div>
@@ -81,14 +81,14 @@ export function AiEditorHeader({
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/5 border border-primary/20 text-[11px] text-primary">
           <BrainCircuit className="w-3.5 h-3.5 animate-pulse shrink-0" />
           <span>
-            AI sedang menyusun draft SOP berdasarkan:{" "}
+            AI is drafting SOP based on:{" "}
             <span className="font-semibold">{manualTitle}</span>
             {" · "}
             <span className="opacity-75">
               {manualCategory} · {manualScope}
             </span>
           </span>
-          <span className="ml-auto font-mono text-primary/60">{aiGeneratedChars} kar</span>
+          <span className="ml-auto font-mono text-primary/60">{aiGeneratedChars} chars</span>
         </div>
       )}
     </>

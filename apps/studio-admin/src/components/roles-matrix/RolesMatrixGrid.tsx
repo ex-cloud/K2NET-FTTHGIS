@@ -1,5 +1,6 @@
 import { Lock, ShieldCheck, Check, Loader2, Save } from "lucide-react";
 import type { Role, Permission } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface RolesMatrixGridProps {
   roles: Role[];
@@ -24,6 +25,7 @@ export function RolesMatrixGrid({
   togglePermission,
   onSaveRole,
 }: RolesMatrixGridProps) {
+  const { t } = useTranslation();
   const moduleEntries = Object.entries(filteredGroupedPermissions);
 
   return (
@@ -133,7 +135,7 @@ export function RolesMatrixGrid({
                   ) : (
                     <Save className="w-3.5 h-3.5" />
                   )}
-                  Simpan Perubahan Role Ini
+                  {t("security.save_role_changes")}
                 </button>
               </div>
             )}

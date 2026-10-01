@@ -48,16 +48,16 @@ function EmptyRoutes({ error }: { error: string | null }) {
       <ServerCrash className="h-10 w-10 text-muted-foreground/40" />
       <div>
         <p className="text-sm font-semibold text-foreground">
-          Tidak ada route yang dapat dimuat
+          No routes could be loaded
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {error
             ? `Error: ${error}`
-            : "Kong Admin API tidak merespons atau belum ada route yang terdaftar."}
+            : "Kong Admin API is not responding or no routes have been registered."}
         </p>
         <p className="text-xs text-muted-foreground/70 mt-1">
-          Periksa bahwa container <code className="font-mono text-primary">kong</code> berjalan
-          dan port <code className="font-mono text-primary">8001</code> dapat diakses dari jaringan Docker internal.
+          Ensure the container <code className="font-mono text-primary">kong</code> is running
+          and port <code className="font-mono text-primary">8001</code> is reachable from the internal Docker network.
         </p>
       </div>
     </div>
@@ -104,7 +104,7 @@ function ApiGatewayHeader({
         >
           {isKongUp ? "LIVE" : "OFFLINE"}
         </Badge>
-        <ActionTooltip label="Segarkan Metrik API Gateway" shortcut="R">
+        <ActionTooltip label="Refresh API Gateway Metrics" shortcut="R">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-primary" : ""}`} />
             Refresh

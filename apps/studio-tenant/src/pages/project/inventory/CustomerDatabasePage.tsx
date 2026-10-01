@@ -28,6 +28,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../../lib/api-client";
 import { AssetDialog } from "../../../components/inventory/AssetDialogs";
+import { useTranslation } from "@k2net/i18n";
 
 interface CustomerItem {
   id: string;
@@ -43,6 +44,7 @@ interface CustomerItem {
 }
 
 export function CustomerDatabasePage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -75,11 +77,11 @@ export function CustomerDatabasePage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
-          { label: "Inventory", href: `/project/${projectId}/inventory/customers` },
-          { label: "Database Pelanggan" },
+          { label: t("nav.projects"), href: "/projects" },
+          { label: t("nav.inventory"), href: `/project/${projectId}/inventory/customers` },
+          { label: t("inventory.customer_title") },
         ]}
-        title="Database Pelanggan & Sambungan Homepass"
+        title={t("inventory.customer_subtitle")}
         actions={
           <Button
             size="sm"
@@ -87,7 +89,7 @@ export function CustomerDatabasePage() {
             className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs"
           >
             <Plus className="h-4 w-4" />
-            + Registrasi Pelanggan
+            {t("inventory.add_customer")}
           </Button>
         }
       />
@@ -97,7 +99,7 @@ export function CustomerDatabasePage() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Cari ID pelanggan, nama, atau ODP..."
+              placeholder={t("common.search")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs bg-muted/20"
@@ -114,10 +116,10 @@ export function CustomerDatabasePage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 text-[11px]">
-                  <TableHead className="font-bold">ID & NAMA PELANGGAN</TableHead>
-                  <TableHead className="font-bold">ODP TERHUBUNG</TableHead>
-                  <TableHead className="font-bold">ALAMAT / LOKASI</TableHead>
-                  <TableHead className="font-bold">STATUS OPERASIONAL</TableHead>
+                  <TableHead className="font-bold">{t("inventory.customer_id").toUpperCase()} & {t("inventory.customer_name").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("inventory.odp_port").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("inventory.address").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
                   <TableHead className="w-12 text-right" />
                 </TableRow>
               </TableHeader>
@@ -162,8 +164,8 @@ export function CustomerDatabasePage() {
                         <DropdownMenuContent align="end" className="text-xs">
                           <DropdownMenuItem>Pindai Sinyal ONT</DropdownMenuItem>
                           <DropdownMenuItem>Lihat Sambungan di Peta</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Profil</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Putus Sambungan</DropdownMenuItem>
+                          <DropdownMenuItem>{t("common.edit")}</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">{t("common.delete")}</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -174,11 +176,11 @@ export function CustomerDatabasePage() {
           ) : (
             <div className="p-8 text-center space-y-2">
               <Users className="h-8 w-8 text-muted-foreground mx-auto" />
-              <p className="text-xs font-semibold text-foreground">Belum Ada Data Pelanggan</p>
+              <p className="text-xs font-semibold text-foreground">{t("common.no_results")}</p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                 {searchQuery
-                  ? "Tidak ada pelanggan yang cocok dengan pencarian Anda."
-                  : "Mulai dengan meregistrasikan pelanggan baru pada port ODP proyek ini."}
+                  ? t("common.no_results")
+                  : t("inventory.customer_subtitle")}
               </p>
             </div>
           )}

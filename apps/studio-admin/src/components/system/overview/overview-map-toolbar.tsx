@@ -1,5 +1,6 @@
 import { Button } from "@k2net/ui";
 import { Minimize2, RefreshCw, ZoomIn, ZoomOut } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface MapToolbarProps {
   zoom: number;
@@ -16,6 +17,7 @@ export function MapToolbar({
   onResetZoom,
   onResetAll,
 }: MapToolbarProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between z-20 pointer-events-none">
       <div>
@@ -57,7 +59,7 @@ export function MapToolbar({
           size="icon"
           className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
           onClick={onResetZoom}
-          title="Reset Zoom (100%)"
+          title={t("observability.reset_zoom")}
         >
           <RefreshCw className="h-3 w-3" />
         </Button>
@@ -66,7 +68,7 @@ export function MapToolbar({
           variant="ghost"
           className="h-6 px-2 text-[9px] font-medium text-muted-foreground hover:text-foreground gap-1 cursor-pointer"
           onClick={onResetAll}
-          title="Reset View & Node Positions"
+          title={t("observability.reset_view_nodes")}
         >
           <Minimize2 className="h-3 w-3" />
           <span>Reset</span>

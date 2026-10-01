@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/use-permissions";
 import type { PingResult, WebhookSubscriptions } from "./types";
 import { WebhookEventCheckboxes } from "./WebhookEventCheckboxes";
+import { useTranslation } from "@k2net/i18n";
 
 interface WebhookConfigCardProps {
   lastPingResult: PingResult | null;
@@ -40,10 +41,11 @@ export function WebhookConfigCard({
   onSaveWebhook,
   onCopy,
 }: WebhookConfigCardProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManage = canAccess("system.organizations.webhooks.manage");
 
-  const secretDisplay = webhookSecretMasked || (hasSecret ? "whsec_••••••••••••••••" : "Belum dibuat (Klik Roll Secret)");
+  const secretDisplay = webhookSecretMasked || (hasSecret ? "whsec_••••••••••••••••" : "Not generated (Click Roll Secret)");
 
   return (
     <Card className="p-5 space-y-4 bg-card border-border shadow-xs">
@@ -74,7 +76,7 @@ export function WebhookConfigCard({
               )}
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Kirim payload event otomatis saat terjadi alarm fiber optik atau gangguan perangkat.
+              {t("organizations.webhook_config_desc")}
             </p>
           </div>
         </div>
@@ -132,7 +134,7 @@ export function WebhookConfigCard({
                 size="sm"
                 onClick={() => onCopy(secretDisplay, "Webhook Secret")}
                 className="h-8 px-2.5 border-border shrink-0 cursor-pointer rounded-md"
-                title="Salin Masked Secret"
+                title="Copy Masked Secret"
               >
                 <Copy className="h-3.5 w-3.5" />
               </Button>
@@ -145,13 +147,13 @@ export function WebhookConfigCard({
                 onClick={onRollSecret}
                 disabled={isRollingSecret}
                 className="h-8 px-2.5 border-border gap-1 shrink-0 text-xs cursor-pointer rounded-md"
-                title="Buat Secret HMAC Baru"
+                title="Generate New HMAC Secret"
               >
                 <RefreshCw className={cn("h-3 w-3", isRollingSecret && "animate-spin")} />
                 <span>Roll Secret</span>
               </Button>
             ) : (
-              <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+              <ActionTooltip label={t("organizations.readonly_no_manage_perm")}>
                 <span className="inline-block">
                   <Button
                     type="button"
@@ -172,7 +174,7 @@ export function WebhookConfigCard({
 
       {/* Subscribed Events Grid */}
       <div className="space-y-2 pt-2 border-t border-border/50">
-        <Label className="text-xs font-semibold text-foreground">Langganan Event Alarm (Event Subscriptions)</Label>
+        <Label className="text-xs font-semibold text-foreground">Alarm Event Subscriptions</Label>
         <WebhookEventCheckboxes
           subscribedEvents={subscribedEvents}
           setSubscribedEvents={setSubscribedEvents}
@@ -182,9 +184,9 @@ export function WebhookConfigCard({
       <div className="flex items-center justify-between pt-2">
         <span className="text-[11px] text-muted-foreground">
           {isDirty ? (
-            <span className="text-amber-500 font-medium">Ada perubahan yang belum disimpan.</span>
+            <span className="text-amber-500 font-medium">Unsaved changes pending.</span>
           ) : (
-            <span>Konfigurasi webhook telah tersimpan.</span>
+            <span>Webhook configuration is up to date.</span>
           )}
         </span>
         {canManage ? (
@@ -195,10 +197,10 @@ export function WebhookConfigCard({
             className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer gap-1.5 disabled:opacity-50"
           >
             <Save className="h-3.5 w-3.5" />
-            <span>{isSaving ? "Menyimpan..." : "Simpan Konfigurasi Webhook"}</span>
+            <span>{isSaving ? t("organizations.webhook_saving") : t("organizations.webhook_save_config")}</span>
           </Button>
         ) : (
-          <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+          <ActionTooltip label={t("organizations.readonly_no_manage_perm")}>
             <span className="inline-block">
               <Button
                 size="sm"

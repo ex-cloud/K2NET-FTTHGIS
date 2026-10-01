@@ -6,6 +6,7 @@ import { TenantProjectLayout } from "./components/layout/TenantProjectLayout";
 import { Button } from "@k2net/ui";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import * as React from "react";
+import { useTranslation } from "@k2net/i18n";
 import {
   ProjectsPageWrapper,
   TeamPageWrapper,
@@ -170,6 +171,7 @@ function PageFallback() {
 }
 
 function NotFoundFallback() {
+  const { t } = useTranslation();
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
       <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-lg backdrop-blur-sm max-w-md w-full space-y-4">
@@ -184,7 +186,7 @@ function NotFoundFallback() {
           href="/projects"
           className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
         >
-          Kembali ke Daftar Proyek
+          {t("common.back_to_projects")}
         </a>
       </div>
     </div>
@@ -192,6 +194,7 @@ function NotFoundFallback() {
 }
 
 function RouterErrorComponent({ error, reset }: { error: unknown; reset?: () => void }) {
+  const { t } = useTranslation();
   const message = error instanceof Error ? error.message : String(error);
   const isChunkError =
     message.includes("dynamically imported module") ||
@@ -219,8 +222,8 @@ function RouterErrorComponent({ error, reset }: { error: unknown; reset?: () => 
         </h2>
         <p className="text-xs text-muted-foreground">
           {isChunkError
-            ? "Versi terbaru FTTH GIS telah diperbarui di server. Muat ulang halaman untuk memuat versi baru."
-            : "Halaman tidak dapat memuat konten karena kendala jaringan atau pembaruan modul."}
+            ? t("common.chunk_update_available")
+            : t("common.chunk_load_error")}
         </p>
         <div className="flex flex-col gap-2 pt-2">
           <Button

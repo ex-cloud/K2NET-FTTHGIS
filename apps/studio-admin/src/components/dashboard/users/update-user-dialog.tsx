@@ -1,6 +1,4 @@
-
-
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +19,7 @@ import { type User } from "@/types/user";
 import { useSession } from "@/lib/auth-compat";
 import { updateUser } from "@/lib/api/users";
 import { useRouter } from "@/lib/navigation-compat";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -35,6 +34,7 @@ export function UpdateUserDialog({
   open,
   onOpenChange,
 }: UpdateUserDialogProps) {
+  const { t } = useTranslation();
   const { data: session } = useSession();
   const router = useRouter();
   const [role, setRole] = useState<string>(user?.roleName || "");
@@ -54,12 +54,12 @@ export function UpdateUserDialog({
     setLoading(true);
     try {
       await updateUser(user.id, { role, status, reason: reason.trim() }, session.accessToken);
-      toast.success("User updated successfully");
+      toast.success(t("common.save"));
       setReason("");
       onOpenChange(false);
       router.refresh();
     } catch (e) {
-      toast.error("Failed to update user");
+      toast.error(t("common.error"));
       console.error(e);
     } finally {
       setLoading(false);
@@ -70,19 +70,19 @@ export function UpdateUserDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur border-border/40">
         <DialogHeader>
-          <DialogTitle>Edit User Access</DialogTitle>
+          <DialogTitle>{t("security.edit_role")}</DialogTitle>
           <DialogDescription>
-            Update role and status for {user?.fullName}
+            {user?.fullName}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
-          {/* Role Selection */}
+          {/* Role Assignment */}
           <div className="space-y-2">
-            <Label>Role Assignment</Label>
+            <Label>{t("security.role_name")}</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger>
-                <SelectValue placeholder="Select role" />
+                <SelectValue placeholder={t("security.role_name")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
@@ -93,13 +93,13 @@ export function UpdateUserDialog({
               </SelectContent>
             </Select>
             <p className="text-[10px] text-muted-foreground">
-              Changing role will update permissions immediately.
+              {t("security.roles_matrix_subtitle")}
             </p>
           </div>
 
           {/* Status Selection */}
           <div className="space-y-2">
-            <Label>Account Status</Label>
+            <Label>{t("organizations.col_status")}</Label>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -111,14 +111,14 @@ export function UpdateUserDialog({
                 }
                 onClick={() => setStatus("ACTIVE")}
               >
-                Active
+                {t("common.active")}
               </Button>
               <Button
                 type="button"
                 variant={status === "INACTIVE" ? "destructive" : "outline"}
                 onClick={() => setStatus("INACTIVE")}
               >
-                Inactive
+                {t("common.inactive")}
               </Button>
             </div>
           </div>
@@ -126,18 +126,15 @@ export function UpdateUserDialog({
           {/* Audit Notes / Reason */}
           <div className="space-y-2">
             <Label className="flex justify-between">
-              <span>Reason for Change / Audit Notes <span className="text-destructive">*</span></span>
+              <span>{t("security.audit_trail_title")} <span className="text-destructive">*</span></span>
               <span className="text-[10px] text-muted-foreground">Min. 5 characters</span>
             </Label>
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Provide a valid business reason for modifying this user's access or status..."
+              placeholder="..."
               className="resize-none h-20"
             />
-            <p className="text-[10px] text-muted-foreground">
-              This action will be permanently recorded in the system audit logs.
-            </p>
           </div>
         </div>
 
@@ -147,7 +144,7 @@ export function UpdateUserDialog({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSave}
@@ -155,7 +152,7 @@ export function UpdateUserDialog({
             className="bg-primary hover:bg-primary/90"
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save Changes
+            {t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

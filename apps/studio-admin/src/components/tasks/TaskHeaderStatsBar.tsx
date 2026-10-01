@@ -5,6 +5,7 @@ import { ClipboardList, Plus, PanelRight, HelpCircle, Keyboard, LayoutGrid, Layo
 import { ActionTooltip } from "@k2net/ui";
 import { usePermissions } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 
 interface TaskHeaderStatsBarProps {
   pageTitle: string;
@@ -35,6 +36,7 @@ export function TaskHeaderStatsBar({
   summary,
   totalElements,
 }: TaskHeaderStatsBarProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManageTask = canAccess("system.task.manage");
 
@@ -51,7 +53,7 @@ export function TaskHeaderStatsBar({
         </div>
         <div className="flex items-center gap-1.5">
           {onToggleKpiCards && (
-            <ActionTooltip label={showKpiCards ? "Compact View (Sembunyikan KPI Strip)" : "Standard View (Tampilkan KPI Strip)"}>
+            <ActionTooltip label={showKpiCards ? t("tasks.compact_view_tooltip") : t("tasks.standard_view_tooltip")}>
               <button
                 onClick={onToggleKpiCards}
                 className={cn(
@@ -66,7 +68,7 @@ export function TaskHeaderStatsBar({
               </button>
             </ActionTooltip>
           )}
-          <ActionTooltip label="Keyboard Shortcuts" shortcut="?">
+          <ActionTooltip label={t("tasks.keyboard_shortcuts")} shortcut="?">
             <button
               onClick={onOpenShortcutsHelp}
               className="size-8 rounded-md border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center justify-center transition-colors cursor-pointer"
@@ -75,7 +77,7 @@ export function TaskHeaderStatsBar({
               <Keyboard className="size-3.5" />
             </button>
           </ActionTooltip>
-          <ActionTooltip label={rightPanelOpen ? "Tutup Panel Overview" : "Buka Panel Overview"}>
+          <ActionTooltip label={rightPanelOpen ? t("tasks.close_overview_panel") : t("tasks.open_overview_panel")}>
             <button
               onClick={onToggleRightPanel}
               className={cn(
@@ -92,8 +94,8 @@ export function TaskHeaderStatsBar({
           <ActionTooltip
             label={
               canManageTask
-                ? "Buat Issue Baru"
-                : "Akses Read-Only: Memerlukan izin system.task.manage"
+                ? t("tasks.create_issue")
+                : t("tasks.read_only_manage_permission")
             }
             shortcut={canManageTask ? "C" : undefined}
           >
@@ -104,7 +106,7 @@ export function TaskHeaderStatsBar({
               aria-label="New Issue"
             >
               <Plus className="size-3.5" />
-              <span className="hidden sm:inline">New Issue</span>
+              <span className="hidden sm:inline">{t("tasks.new_issue")}</span>
               <kbd className="hidden sm:inline text-[10px] opacity-70 font-mono">C</kbd>
             </button>
           </ActionTooltip>
@@ -115,7 +117,7 @@ export function TaskHeaderStatsBar({
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground/90 font-medium px-4 md:px-6 shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="font-bold text-foreground font-mono">{summary?.totalOpen ?? "—"}</span>
-          <span>Active Issues</span>
+          <span>{t("tasks.active_issues")}</span>
           <span title="Total open non-terminal issues" className="cursor-help text-muted-foreground/60 hover:text-foreground">
             <HelpCircle className="h-3.5 w-3.5" />
           </span>
@@ -130,7 +132,7 @@ export function TaskHeaderStatsBar({
           >
             {summary?.urgentCount ?? "—"}
           </span>
-          <span>Urgent</span>
+          <span>{t("tasks.urgent")}</span>
           <span title="Tasks marked URGENT priority" className="cursor-help text-muted-foreground/60 hover:text-foreground">
             <HelpCircle className="h-3.5 w-3.5" />
           </span>
@@ -138,7 +140,7 @@ export function TaskHeaderStatsBar({
         <span className="text-muted-foreground/30 px-1">/</span>
         <div className="flex items-center gap-1.5">
           <span className="font-bold text-foreground font-mono">{summary?.resolvedToday ?? "—"}</span>
-          <span>Resolved Today</span>
+          <span>{t("tasks.resolved_today")}</span>
           <span title="Tickets resolved or closed today" className="cursor-help text-muted-foreground/60 hover:text-foreground">
             <HelpCircle className="h-3.5 w-3.5" />
           </span>
@@ -148,7 +150,7 @@ export function TaskHeaderStatsBar({
             <span className="text-muted-foreground/30 px-1">/</span>
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-foreground font-mono">{totalElements}</span>
-              <span>Total</span>
+              <span>{t("tasks.total")}</span>
             </div>
           </>
         )}

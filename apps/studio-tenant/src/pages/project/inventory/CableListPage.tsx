@@ -24,8 +24,10 @@ import {
   DropdownMenuItem,
 } from "@k2net/ui";
 import { AssetDialog } from "../../../components/inventory/AssetDialogs";
+import { useTranslation } from "@k2net/i18n";
 
 export function CableListPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -71,11 +73,11 @@ export function CableListPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: "Inventory", href: `/project/${projectId}/inventory/cable` },
-          { label: "Kabel Optik" },
+          { label: t("inventory.cable_title") },
         ]}
-        title="Daftar Bentang Kabel Fiber Optik"
+        title={t("inventory.cable_title")}
         actions={
           <Button
             size="sm"
@@ -83,7 +85,7 @@ export function CableListPage() {
             className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs"
           >
             <Plus className="h-4 w-4" />
-            + Tambah Kabel Baru
+            {t("inventory.add_cable")}
           </Button>
         }
       />
@@ -93,7 +95,7 @@ export function CableListPage() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Cari kode kabel, node asal atau tujuan..."
+              placeholder={t("common.search")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs bg-muted/20"
@@ -105,12 +107,12 @@ export function CableListPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">KODE KABEL</TableHead>
-                <TableHead className="font-bold">JENIS SEGMENT</TableHead>
-                <TableHead className="font-bold">TOTAL CORE</TableHead>
-                <TableHead className="font-bold">PANJANG BENTANG</TableHead>
-                <TableHead className="font-bold">RUTE NODE (ASAL → TUJUAN)</TableHead>
-                <TableHead className="font-bold">STATUS</TableHead>
+                <TableHead className="font-bold">{t("inventory.cable_name").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.cable_type").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.core_count").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.length_meters").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.origin_node").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
                 <TableHead className="w-12 text-right" />
               </TableRow>
             </TableHeader>
@@ -127,7 +129,7 @@ export function CableListPage() {
                   </TableCell>
                   <TableCell>
                     <span className="font-mono font-bold text-foreground">
-                      {c.usedCore} / {c.coreCount} Core
+                      {c.usedCore} / {c.coreCount} Cores
                     </span>
                   </TableCell>
                   <TableCell className="font-mono font-semibold text-foreground">
@@ -155,10 +157,8 @@ export function CableListPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuItem>Trace Jalur Optik</DropdownMenuItem>
-                        <DropdownMenuItem>Lihat di Map Studio</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Bentang</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Hapus Kabel</DropdownMenuItem>
+                        <DropdownMenuItem>{t("common.edit")}</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">{t("common.delete")}</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -178,3 +178,4 @@ export function CableListPage() {
     </div>
   );
 }
+

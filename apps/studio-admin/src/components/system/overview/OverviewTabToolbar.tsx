@@ -1,6 +1,7 @@
 import React from "react";
 import { Search, X, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 import type { FilterPillOption } from "./use-overview-table-controls";
 
 interface OverviewTabToolbarProps {
@@ -34,7 +35,7 @@ function getBadgeVariantClass(variant?: FilterPillOption["badgeVariant"], isSele
 export const OverviewTabToolbar: React.FC<OverviewTabToolbarProps> = ({
   searchQuery,
   onSearchChange,
-  searchPlaceholder = "Cari data...",
+  searchPlaceholder,
   filterOptions,
   activeFilter,
   onFilterChange,
@@ -43,6 +44,8 @@ export const OverviewTabToolbar: React.FC<OverviewTabToolbarProps> = ({
   onResetFilters,
   className,
 }) => {
+  const { t } = useTranslation();
+  const effectivePlaceholder = searchPlaceholder ?? t("observability.search_data_placeholder");
   const isFiltered = activeFilter !== "ALL" || searchQuery.trim().length > 0;
 
   return (
@@ -61,7 +64,7 @@ export const OverviewTabToolbar: React.FC<OverviewTabToolbarProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={searchPlaceholder}
+            placeholder={effectivePlaceholder}
             className="w-full h-8 pl-8 pr-7 text-xs bg-background/80 border border-border rounded-lg text-foreground placeholder:text-muted-foreground/60 focus:outline-hidden focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-colors"
           />
           {searchQuery && (
@@ -122,7 +125,7 @@ export const OverviewTabToolbar: React.FC<OverviewTabToolbarProps> = ({
             type="button"
             onClick={onResetFilters}
             className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium px-2 py-0.5 rounded hover:bg-primary/10 transition-colors cursor-pointer"
-            title="Reset semua filter dan pencarian"
+            title={t("observability.reset_all_filters")}
           >
             <RotateCcw className="size-3" />
             <span>Reset</span>

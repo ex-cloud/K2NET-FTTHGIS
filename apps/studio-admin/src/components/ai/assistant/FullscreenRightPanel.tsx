@@ -1,6 +1,7 @@
 import React from "react";
 import { X, ArrowLeft, Settings, Check, SlidersHorizontal } from "lucide-react";
 import { Badge, ScrollArea, Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { AiDrawerSettings, type PermTier } from "../ai-drawer-permissions";
 import type { AgentAuthorizationData, PermissionCatalogData } from "@/lib/actions/gateways";
 
@@ -49,6 +50,7 @@ export function FullscreenRightPanel({
   onSavePermissions,
   onRevokePermissions,
 }: FullscreenRightPanelProps) {
+  const { t } = useTranslation();
   if (!rightPanelOpen) return null;
 
   return (
@@ -62,12 +64,12 @@ export function FullscreenRightPanel({
               className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-1 text-xs font-semibold"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back</span>
+              <span>{t("common.back")}</span>
             </button>
           ) : (
             <>
               <Settings className="w-4 h-4 text-primary" />
-              <span className="text-sm font-bold text-foreground">K2 Agent Config</span>
+              <span className="text-sm font-bold text-foreground">{t("ai.agent_config")}</span>
             </>
           )}
         </div>
@@ -85,16 +87,16 @@ export function FullscreenRightPanel({
           <div className="p-3.5 rounded-2xl bg-primary/5 border border-primary/20 space-y-2">
             <div className="flex items-center gap-1.5 font-bold text-primary text-xs">
               <Check className="w-3.5 h-3.5" />
-              <span>API Token Active</span>
+              <span>{t("ai.token_active")}</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Scope:{" "}
+              {t("ai.scope")}:{" "}
               <span className="font-semibold text-foreground">
                 {agentAuth?.user_scope || "PLATFORM_INTERNAL"}
               </span>
             </p>
             <p className="text-xs text-muted-foreground flex items-center gap-2">
-              Access Tier:{" "}
+              {t("ai.access_tier")}:{" "}
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary">
                 {agentAuth?.access_tier || "FULL"}
               </Badge>
@@ -102,10 +104,10 @@ export function FullscreenRightPanel({
           </div>
 
           <div className="p-3.5 rounded-2xl bg-muted/40 border border-border space-y-1.5">
-            <p className="text-xs font-semibold text-foreground">Active Model Engine</p>
+            <p className="text-xs font-semibold text-foreground">{t("ai.active_model_engine")}</p>
             <p className="text-xs text-primary font-mono font-semibold">{activeModelLabel}</p>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Model default dikonfigurasi terpusat oleh Super Admin untuk efisiensi kuota tenant.
+              {t("ai.model_engine_desc")}
             </p>
           </div>
 
@@ -116,7 +118,7 @@ export function FullscreenRightPanel({
               className="w-full text-xs font-semibold flex items-center justify-center gap-2 py-2 rounded-xl"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
-              <span>Manage Permissions</span>
+              <span>{t("ai.manage_permissions")}</span>
             </Button>
           </div>
         </ScrollArea>
@@ -131,13 +133,13 @@ export function FullscreenRightPanel({
             selected={permSelected}
             search={permSearch}
             expandedDomains={permExpandedDomains}
-            onSetTier={(t) => {
-              setPermTier(t);
-              if (t === "FULL" && permCatalog) {
+            onSetTier={(tTier) => {
+              setPermTier(tTier);
+              if (tTier === "FULL" && permCatalog) {
                 setPermSelected(
                   new Set(permCatalog.domains.flatMap((d) => d.permissions.map((p) => p.id)))
                 );
-              } else if (t === "READ_ONLY" && permCatalog) {
+              } else if (tTier === "READ_ONLY" && permCatalog) {
                 setPermSelected(
                   new Set(
                     permCatalog.domains
@@ -162,10 +164,10 @@ export function FullscreenRightPanel({
             onSearchChange={setPermSearch}
             accessTier={
               permTier === "FULL"
-                ? "Full access"
+                ? t("ai.agent_tier_full")
                 : permTier === "READ_ONLY"
-                ? "Read only"
-                : "Custom"
+                ? t("ai.agent_tier_readonly")
+                : t("ai.agent_tier_custom")
             }
             saving={permSaving}
             revoking={permRevoking}

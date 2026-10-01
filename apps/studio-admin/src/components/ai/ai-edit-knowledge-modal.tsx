@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -12,6 +10,7 @@ import {
   Input,
   Label,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import {
   CATEGORIES,
   KNOWLEDGE_SCOPES,
@@ -45,12 +44,14 @@ interface ScopeSelectorProps {
 }
 
 function EditScopeSelector({ scope, setScope }: ScopeSelectorProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-1.5">
       <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
-        <span>Scope Visibilitas & Hak Akses (Multi-Tenant Isolation)</span>
+        <span>{t("ai.scope_multitenant_group")}</span>
         <span className="text-[11px] font-normal text-foreground/75 dark:text-muted-foreground">
-          Menentukan batasan pengguna yang boleh memanggil pengetahuan ini via AI RAG
+          {t("ai.scope_visibility_category")}
         </span>
       </Label>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -81,9 +82,9 @@ function EditScopeSelector({ scope, setScope }: ScopeSelectorProps) {
                 {item.description}
               </p>
               <div className="mt-2 text-[10px] font-mono font-medium text-foreground/80">
-                {item.id === "PLATFORM_INTERNAL" && "Super Admin Only"}
-                {item.id === "TENANT_INTERNAL" && "Mitra ISP Scope"}
-                {item.id === "GLOBAL" && "Global Knowledge"}
+                {item.id === "PLATFORM_INTERNAL" && t("ai.scope_platform")}
+                {item.id === "TENANT_INTERNAL" && t("ai.scope_tenant")}
+                {item.id === "GLOBAL" && t("ai.scope_global")}
               </div>
             </button>
           );
@@ -101,6 +102,8 @@ interface EditFooterProps {
 }
 
 function EditModalFooter({ loading, fetchingDetail, onClose, onSave }: EditFooterProps) {
+  const { t } = useTranslation();
+
   return (
     <DialogFooter className="px-6 py-3.5 border-t border-border bg-muted/20 flex items-center justify-between sm:justify-between w-full">
       <Button
@@ -111,7 +114,7 @@ function EditModalFooter({ loading, fetchingDetail, onClose, onSave }: EditFoote
         disabled={loading}
         className="text-xs border-border text-foreground hover:bg-muted cursor-pointer"
       >
-        Batal
+        {t("common.cancel")}
       </Button>
 
       <div className="flex items-center gap-2">
@@ -124,7 +127,7 @@ function EditModalFooter({ loading, fetchingDetail, onClose, onSave }: EditFoote
           className="text-xs cursor-pointer"
         >
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
-          Simpan sebagai Draft
+          {t("ai.save_as_draft")}
         </Button>
 
         <Button
@@ -140,7 +143,7 @@ function EditModalFooter({ loading, fetchingDetail, onClose, onSave }: EditFoote
           ) : (
             <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
           )}
-          Simpan & Publikasikan (Re-Index)
+          {t("ai.save_and_publish")}
         </Button>
       </div>
     </DialogFooter>
@@ -153,6 +156,7 @@ export function AiEditKnowledgeModal({
   onClose,
   onSuccess,
 }: AiEditKnowledgeModalProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [fetchingDetail, setFetchingDetail] = useState(false);
 
@@ -183,21 +187,21 @@ export function AiEditKnowledgeModal({
       })
       .catch((err) => {
         console.error("Gagal memuat detail dokumen:", err);
-        toast.error("Gagal memuat isi dokumen: " + err.message);
+        toast.error(t("common.error") + ": " + err.message);
       })
       .finally(() => {
         setFetchingDetail(false);
       });
-  }, [document, isOpen]);
+  }, [document, isOpen, t]);
 
   const handleSave = async (targetStatus: KnowledgeStatus, shouldReindex: boolean) => {
     if (!document) return;
     if (!title.trim()) {
-      toast.error("Judul dokumen tidak boleh kosong.");
+      toast.error(t("common.required_field") + ": " + t("ai.doc_title"));
       return;
     }
     if (!content.trim()) {
-      toast.error("Konten dokumen tidak boleh kosong.");
+      toast.error(t("common.required_field") + ": " + t("ai.doc_content"));
       return;
     }
 
@@ -214,14 +218,14 @@ export function AiEditKnowledgeModal({
 
       toast.success(
         targetStatus === "INDEXED"
-          ? `Dokumen '${title}' berhasil diperbarui dan dipublikasikan (Re-indexing otomatis berjalan)!`
-          : `Dokumen '${title}' berhasil disimpan sebagai revisi (${targetStatus}).`
+          ? `${t("common.success")}: ${title} (${t("ai.save_and_publish")})`
+          : `${t("common.success")}: ${title} (${t("ai.save_as_draft")})`
       );
       onSuccess();
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error("Gagal menyimpan revisi dokumen: " + msg);
+      toast.error(t("common.error") + ": " + msg);
     } finally {
       setLoading(false);
     }
@@ -238,10 +242,10 @@ export function AiEditKnowledgeModal({
               </div>
               <div>
                 <DialogTitle className="text-lg font-semibold text-foreground">
-                  Edit & Revisi Pengetahuan
+                  {t("ai.edit_doc_title")}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-foreground/75 dark:text-muted-foreground">
-                  ID: <span className="font-mono text-foreground">{document?.id.substring(0, 13)}...</span> • Dibuat:{" "}
+                  ID: <span className="font-mono text-foreground">{document?.id.substring(0, 13)}...</span> • {t("billing.date") || "Date"}:{" "}
                   {document?.created_at ? new Date(document.created_at).toLocaleDateString("id-ID") : "—"}
                 </DialogDescription>
               </div>
@@ -251,7 +255,7 @@ export function AiEditKnowledgeModal({
               <div className="flex items-center gap-2">
                 <div className="text-right hidden sm:block">
                   <span className="text-[10px] uppercase font-semibold text-foreground/75 dark:text-muted-foreground block">
-                    Visibilitas Terpilih
+                    {t("ai.doc_scope")}
                   </span>
                   <span className="text-xs font-medium text-foreground">
                     {KNOWLEDGE_SCOPES.find((s) => s.id === scope)?.shortLabel}
@@ -266,14 +270,14 @@ export function AiEditKnowledgeModal({
           {fetchingDetail && !content ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-foreground/75 dark:text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm font-medium">Memuat isi dokumen asli dari memori AI...</p>
+              <p className="text-sm font-medium">{t("common.loading")}</p>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2 space-y-1.5">
                   <Label htmlFor="edit-title" className="text-xs font-semibold text-foreground">
-                    Judul Dokumen <span className="text-destructive">*</span>
+                    {t("ai.doc_title")} <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="edit-title"
@@ -286,7 +290,7 @@ export function AiEditKnowledgeModal({
 
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-category" className="text-xs font-semibold text-foreground">
-                    Kategori Taksonomi
+                    {t("ai.prompt_category")}
                   </Label>
                   <select
                     id="edit-category"
@@ -308,12 +312,9 @@ export function AiEditKnowledgeModal({
               <div className="space-y-1.5">
                 <Label htmlFor="edit-content" className="text-xs font-semibold text-foreground flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span>Isi Dokumen (Editor Visual WYSIWYG / Markdown)</span>
+                    <span>{t("ai.doc_content")} (WYSIWYG / Markdown)</span>
                     <span className="text-destructive">*</span>
                   </div>
-                  <span className="text-[11px] font-normal text-foreground/75 dark:text-muted-foreground">
-                    Format Markdown murni otomatis diselaraskan untuk pgvector RAG
-                  </span>
                 </Label>
                 <AiRichEditor
                   value={content}
@@ -327,11 +328,9 @@ export function AiEditKnowledgeModal({
               <div className="rounded-lg p-3 bg-muted/20 border border-border flex items-start gap-2.5 text-xs text-foreground/80">
                 <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
-                  <p className="font-medium text-foreground">Informasi Siklus Vektor & Re-Indexing:</p>
+                  <p className="font-medium text-foreground">{t("ai.sim_card_title")}:</p>
                   <p className="text-[11px] text-foreground/75 dark:text-muted-foreground leading-normal">
-                    Jika memilih <strong>Simpan & Publikasikan</strong>, teks markdown akan di-chunk ulang
-                    (~500 kata), dihitung vektor embedding barunya, dan langsung aktif untuk semantic similarity RAG
-                    sesuai scope visibilitas yang dipilih.
+                    {t("ai.sim_card_subtitle")}
                   </p>
                 </div>
               </div>

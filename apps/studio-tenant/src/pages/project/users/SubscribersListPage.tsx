@@ -13,8 +13,10 @@ import {
   TableBody,
   TableCell,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 export function SubscribersListPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -62,11 +64,11 @@ export function SubscribersListPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: "Subscribers", href: `/project/${projectId}/users/subscribers` },
-          { label: "Pelanggan Aktif" },
+          { label: t("inventory.customer_title") },
         ]}
-        title="Daftar Pelanggan & Telemetri ONT"
+        title={t("inventory.customer_subtitle")}
       />
 
       <PageContentShell className="space-y-4 custom-scrollbar">
@@ -74,7 +76,7 @@ export function SubscribersListPage() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Cari nama, user PPPoE, atau ONT..."
+              placeholder={t("common.search")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs bg-muted/20"
@@ -86,13 +88,13 @@ export function SubscribersListPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">PELANGGAN</TableHead>
+                <TableHead className="font-bold">{t("inventory.customer_name").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">USER PPPOE</TableHead>
                 <TableHead className="font-bold">IP ASSIGNED</TableHead>
-                <TableHead className="font-bold">SAMBUNGAN ODP</TableHead>
-                <TableHead className="font-bold">ONT SERIAL NUMBER</TableHead>
-                <TableHead className="font-bold">RX POWER (DBM)</TableHead>
-                <TableHead className="font-bold">STATUS</TableHead>
+                <TableHead className="font-bold">{t("inventory.odp_code").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.ont_sn").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.optical_rx_power").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

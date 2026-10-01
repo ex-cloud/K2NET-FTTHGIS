@@ -1,5 +1,6 @@
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { Users, UserPlus } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface TeamHeaderBarProps {
   slug: string;
@@ -7,6 +8,8 @@ interface TeamHeaderBarProps {
 }
 
 export function TeamHeaderBar({ slug, onOpenInvite }: TeamHeaderBarProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="p-3.5 rounded-xl border border-border bg-card/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
       <div className="space-y-0.5">
@@ -18,7 +21,7 @@ export function TeamHeaderBar({ slug, onOpenInvite }: TeamHeaderBarProps) {
           </Badge>
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Pengaturan akun staf, teknisi lapangan, dan hak akses RBAC Keycloak terisolasi.
+          {t("organizations.team_header_desc")}
         </p>
       </div>
 

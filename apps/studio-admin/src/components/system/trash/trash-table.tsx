@@ -22,6 +22,7 @@ import {
 } from "@k2net/ui";
 import { PermissionGuard } from "@/hooks/use-permissions";
 import type { TrashItem, TrashStats } from "@/hooks/useTrashCan";
+import { useTranslation } from "@k2net/i18n";
 
 interface TrashTableProps {
   items: TrashItem[];
@@ -130,6 +131,7 @@ export function TrashTable({
   onRestoreClick,
   onDeleteClick,
 }: TrashTableProps) {
+  const { t } = useTranslation();
   return (
     <Card className="bg-card border-border shadow-xs">
       <CardHeader className="p-4 border-b border-border/40 space-y-4">
@@ -181,10 +183,10 @@ export function TrashTable({
             </div>
             <div className="space-y-1">
               <p className="text-sm font-semibold text-foreground">
-                Recycle Bin Kosong
+                {t("common.trash_empty_bin")}
               </p>
               <p className="text-xs text-muted-foreground max-w-sm">
-                Tidak ada entitas yang sedang berada di Recycle Bin. Data atau berkas dokumen yang dihapus akan otomatis disimpan di sini selama 30 hari.
+                {t("common.trash_empty_bin_desc")}
               </p>
             </div>
           </div>
@@ -298,7 +300,7 @@ export function TrashTable({
                             className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="h-3 w-3" />
-                            Hapus
+                            {t("common.delete")}
                           </Button>
                         </div>
                       </PermissionGuard>

@@ -1,6 +1,7 @@
 import { Badge, Button } from "@k2net/ui";
 import { Database, Upload, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 
 interface BackupsHeaderBarProps {
   onOpenImportModal?: () => void;
@@ -13,6 +14,8 @@ export function BackupsHeaderBar({
   onTriggerSnapshot,
   triggering,
 }: BackupsHeaderBarProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="p-4 rounded-xl border border-border bg-card/70 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
       <div className="flex items-start md:items-center gap-3.5">
@@ -27,7 +30,7 @@ export function BackupsHeaderBar({
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            Semua data spasial topologi, konfigurasi Keycloak realm, dan OLT poller dicadangkan otomatis ke MinIO S3 & Offsite Cloud.
+            {t("organizations.backup_header_desc")}
           </p>
         </div>
       </div>
@@ -51,7 +54,7 @@ export function BackupsHeaderBar({
           className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer rounded-md"
         >
           <RefreshCw className={cn("h-3.5 w-3.5", triggering && "animate-spin")} />
-          <span>{triggering ? "Creating Snapshot..." : "Trigger Full Backup Now"}</span>
+          <span>{triggering ? t("organizations.backup_creating_snapshot") : t("organizations.backup_trigger_now")}</span>
         </Button>
       </div>
     </div>

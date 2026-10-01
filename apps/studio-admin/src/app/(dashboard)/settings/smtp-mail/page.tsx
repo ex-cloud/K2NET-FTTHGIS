@@ -3,11 +3,13 @@ import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import { Mail, Save, RefreshCw } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { SmtpCredentialsSection } from "../components/smtp-credentials-section";
 import { SmtpTestCard } from "../components/smtp-test-card";
 
 export default function SettingsSmtpMailPage() {
+  const { t } = useTranslation();
   const { settings, loading, updateSettings, isUpdating, testEmail, isTestingEmail, refresh } = useSystemSettings();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -33,10 +35,10 @@ export default function SettingsSmtpMailPage() {
 
     try {
       await updateSettings(keysToSave);
-      toast.success("Konfigurasi SMTP Mail Server berhasil disimpan!");
+      toast.success(t("settings.smtp.saved_success"));
     } catch (e: unknown) {
       const err = e as Error;
-      toast.error(err.message || "Gagal menyimpan konfigurasi SMTP");
+      toast.error(err.message || t("settings.smtp.save_failed"));
     }
   };
 
@@ -47,19 +49,19 @@ export default function SettingsSmtpMailPage() {
     const password = getValue("smtp_password");
 
     if (!host || !port) {
-      toast.error("SMTP Host dan Port wajib diisi untuk pengujian.");
+      toast.error(t("settings.smtp.host_port_required"));
       return;
     }
 
     setSmtpTestResult(null);
     try {
       const res = await testEmail({ host, port, username, password });
-      setSmtpTestResult({ success: true, message: res.message || "Koneksi SMTP berhasil terhubung!" });
-      toast.success("Pengujian koneksi SMTP berhasil!");
+      setSmtpTestResult({ success: true, message: res.message || t("settings.smtp.connected_success") });
+      toast.success(t("settings.smtp.test_success_toast"));
     } catch (e: unknown) {
       const error = e as Error;
-      setSmtpTestResult({ success: false, message: error.message || "Gagal me-connect socket SMTP host." });
-      toast.error("Pengujian koneksi SMTP gagal");
+      setSmtpTestResult({ success: false, message: error.message || t("settings.smtp.socket_error") });
+      toast.error(t("settings.smtp.test_failed_toast"));
     }
   };
 
@@ -71,20 +73,20 @@ export default function SettingsSmtpMailPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
-                System Communications
+                {t("settings.smtp.badge_title")}
               </Badge>
-              <span className="text-xs text-muted-foreground">• Central Mail Server Relay</span>
+              <span className="text-xs text-muted-foreground">• {t("settings.smtp.badge_subtitle")}</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <Mail className="w-6 h-6 text-primary" /> SMTP Mail Server
+              <Mail className="w-6 h-6 text-primary" /> {t("settings.smtp.title")}
             </h1>
             <p className="text-xs text-muted-foreground">
-              Konfigurasi server email keluar utama untuk pengiriman link verifikasi akun, reset password, dan notifikasi sistem.
+              {t("settings.smtp_subtitle")}
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <ActionTooltip label="Muat Ulang Pengaturan SMTP" shortcut="R">
+            <ActionTooltip label={t("common.reload")} shortcut="R">
               <Button
                 variant="outline"
                 size="sm"
@@ -92,10 +94,10 @@ export default function SettingsSmtpMailPage() {
                 disabled={loading}
                 className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> {t("common.reload")}
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Simpan Pengaturan SMTP" shortcut="Ctrl+S">
+            <ActionTooltip label={t("settings.smtp.save_smtp_btn")} shortcut="Ctrl+S">
               <Button
                 size="sm"
                 onClick={handleSave}
@@ -103,7 +105,7 @@ export default function SettingsSmtpMailPage() {
                 className="text-xs h-7 px-2.5 font-medium gap-1.5 shadow-xs rounded-md cursor-pointer"
               >
                 {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                Save SMTP Settings
+                {t("settings.smtp.save_smtp_btn")}
               </Button>
             </ActionTooltip>
           </div>

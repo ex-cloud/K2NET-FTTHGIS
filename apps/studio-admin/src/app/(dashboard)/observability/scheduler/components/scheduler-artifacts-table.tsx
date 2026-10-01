@@ -189,9 +189,9 @@ export function SchedulerArtifactsTable({
     if (!deleteDialog) return;
     try {
       await deleteArtifact(deleteDialog.artifactName);
-      toast.success("Berkas cadangan berhasil dihapus!");
+      toast.success("Backup artifact deleted successfully!");
     } catch (_err) {
-      toast.error("Gagal menghapus berkas cadangan.");
+      toast.error("Failed to delete backup artifact.");
     } finally {
       setDeleteDialog(null);
     }
@@ -199,7 +199,7 @@ export function SchedulerArtifactsTable({
 
   const handleDownload = async (artifact: BackupArtifact) => {
     if (!session?.accessToken) {
-      toast.error("Sesi berakhir. Silakan muat ulang halaman.");
+      toast.error("Session expired. Please reload the page.");
       return;
     }
 
@@ -210,7 +210,7 @@ export function SchedulerArtifactsTable({
         const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
          
         if (Date.now() / 1000 > payload.exp - 5) {
-          toast.info("Sesi kedaluwarsa. Memperbarui token...");
+          toast.info("Session expired. Refreshing token...");
           await update();
           window.location.reload();
           return;
@@ -221,7 +221,7 @@ export function SchedulerArtifactsTable({
     }
 
     setDownloadingId(artifact.id);
-    const loadToast = toast.loading(`Menyiapkan unduhan ${artifact.artifactName.split("/").pop()}...`);
+    const loadToast = toast.loading(`Preparing download for ${artifact.artifactName.split("/").pop()}...`);
     try {
       const res = await fetch(`/api/v1/system/backup-status/download?file=${encodeURIComponent(artifact.artifactName)}`, {
         headers: { Authorization: `Bearer ${session.accessToken}` },
@@ -236,13 +236,13 @@ export function SchedulerArtifactsTable({
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
-        toast.success("Berkas berhasil diunduh!", { id: loadToast });
+        toast.success("File downloaded successfully!", { id: loadToast });
       } else {
-        toast.error(`Gagal mengunduh: HTTP ${res.status}`, { id: loadToast });
+        toast.error(`Download failed: HTTP ${res.status}`, { id: loadToast });
       }
     } catch (e) {
       console.error("Download error:", e);
-      toast.error("Gagal mengunduh berkas.", { id: loadToast });
+      toast.error("Failed to download file.", { id: loadToast });
     } finally {
       setDownloadingId(null);
     }

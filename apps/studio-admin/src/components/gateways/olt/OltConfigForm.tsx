@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Server, Lock, Save, Loader2, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, ActionTooltip } from "@k2net/ui";
 import { PermissionGuard } from "@/hooks/use-permissions";
+import { useTranslation } from "@k2net/i18n";
 
 interface OltConfigFormProps {
   config: Record<string, string>;
@@ -18,6 +19,7 @@ export function OltConfigForm({
   onSave,
   onReset,
 }: OltConfigFormProps) {
+  const { t } = useTranslation();
   const [showOltKey, setShowOltKey] = useState(false);
 
   return (
@@ -25,10 +27,10 @@ export function OltConfigForm({
       <Card glowingEffect className="bg-card/60 border-border shadow-xl">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Server className="w-4 h-4 text-primary" /> Infrastructure Connections
+            <Server className="w-4 h-4 text-primary" /> {t("gateways.olt.infra_title")}
           </CardTitle>
           <CardDescription className="text-[10px] text-muted-foreground">
-            Koneksi database PostgreSQL dan Redis Queue untuk komunikasi OLT device workers.
+            {t("gateways.olt.infra_desc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -61,10 +63,10 @@ export function OltConfigForm({
       <Card glowingEffect className="bg-card/60 border-border shadow-xl">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Lock className="w-4 h-4 text-primary" /> Keamanan & Batas Koneksi OLT
+            <Lock className="w-4 h-4 text-primary" /> {t("gateways.olt.security_title")}
           </CardTitle>
           <CardDescription className="text-[10px] text-muted-foreground">
-            Kunci enkripsi AES-256 untuk kredensial OLT serta batasan waktu koneksi SNMP/SSH.
+            {t("gateways.olt.security_desc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -77,7 +79,7 @@ export function OltConfigForm({
                 className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
               >
                 {showOltKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                {showOltKey ? "Sembunyikan" : "Tampilkan"}
+                {showOltKey ? t("common.hide") : t("common.show")}
               </button>
             </div>
             <Input
@@ -132,7 +134,7 @@ export function OltConfigForm({
 
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-2.5">
-        <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+        <ActionTooltip label={t("common.reset_form")} shortcut="Alt+R">
           <Button
             type="button"
             onClick={onReset}
@@ -140,11 +142,11 @@ export function OltConfigForm({
             size="default"
             className="border-border/80 text-muted-foreground hover:text-foreground"
           >
-            Reset Form
+            {t("common.reset_form")}
           </Button>
         </ActionTooltip>
         <PermissionGuard permission="system.gateway.manage">
-          <ActionTooltip label="Simpan Konfigurasi OLT Gateway" shortcut="Ctrl+S">
+          <ActionTooltip label={t("gateways.save_config")} shortcut="Ctrl+S">
             <Button
               type="submit"
               disabled={saving}
@@ -152,7 +154,7 @@ export function OltConfigForm({
               className="gap-1.5"
             >
               {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-              Save Configuration
+              {t("gateways.save_config")}
             </Button>
           </ActionTooltip>
         </PermissionGuard>

@@ -65,7 +65,7 @@ export default function SchedulerPage() {
       {error && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
           <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>Gagal memuat status telemetri scheduler: {error}. Menampilkan data status cache terakhir.</span>
+          <span>Failed to load scheduler telemetry status: {error}. Showing last cached status data.</span>
         </div>
       )}
 

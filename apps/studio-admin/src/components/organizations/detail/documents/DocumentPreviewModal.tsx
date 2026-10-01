@@ -20,6 +20,7 @@ import type { EnrichedOrganization } from "../../types";
 import { getDocumentTemplate, generateDownloadableHtml } from "./document-templates";
 import { DocumentLetterheadContent } from "./DocumentLetterheadContent";
 import { DocumentAuditHeader } from "./DocumentAuditHeader";
+import { useTranslation } from "@k2net/i18n";
 
 interface DocumentPreviewModalProps {
   previewDoc: TenantDocument | null;
@@ -36,6 +37,7 @@ export function DocumentPreviewModal({
   onDownload,
   onUpdateStatus,
 }: DocumentPreviewModalProps) {
+  const { t } = useTranslation();
   if (!previewDoc) return null;
 
   const tpl = getDocumentTemplate(previewDoc, org);
@@ -102,7 +104,7 @@ export function DocumentPreviewModal({
 
         <DialogFooter className="gap-2 pt-2 border-t border-border flex flex-row items-center justify-between sm:justify-between w-full">
           <div className="text-[11px] font-mono text-muted-foreground hidden sm:block">
-            Ukuran: <span className="text-foreground">{formatFileSize(previewDoc.sizeBytes)}</span> • Status: <span className="text-primary font-semibold">{previewDoc.status}</span>
+            {t("common.size")}: <span className="text-foreground">{formatFileSize(previewDoc.sizeBytes)}</span> • {t("common.status")}: <span className="text-primary font-semibold">{previewDoc.status}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -113,7 +115,7 @@ export function DocumentPreviewModal({
               className="h-8 text-xs border-border gap-1.5 cursor-pointer hover:text-primary"
             >
               <Printer className="h-3.5 w-3.5" />
-              <span>Cetak / PDF</span>
+              <span>Print / PDF</span>
             </Button>
             <Button
               size="sm"
@@ -121,7 +123,7 @@ export function DocumentPreviewModal({
               className="h-8 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 cursor-pointer"
             >
               <Download className="h-3.5 w-3.5" />
-              <span>Unduh Berkas</span>
+              <span>{t("common.download")}</span>
             </Button>
             <Button
               variant="ghost"
@@ -129,7 +131,7 @@ export function DocumentPreviewModal({
               onClick={onClose}
               className="h-8 text-xs cursor-pointer"
             >
-              Tutup
+              {t("common.close")}
             </Button>
           </div>
         </DialogFooter>

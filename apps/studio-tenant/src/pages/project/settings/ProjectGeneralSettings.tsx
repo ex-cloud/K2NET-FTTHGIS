@@ -21,8 +21,10 @@ import {
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { useProjects } from "../../../hooks/useProjects";
+import { useTranslation } from "@k2net/i18n";
 
 export function ProjectGeneralSettings() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
   const { projects, updateProject } = useProjects();
@@ -43,9 +45,9 @@ export function ProjectGeneralSettings() {
   const handleSave = async () => {
     try {
       await updateProject({ id: projectId, name, description, status });
-      toast.success("Pengaturan proyek berhasil disimpan");
+      toast.success(t("common.success"));
     } catch {
-      toast.success("Pengaturan proyek berhasil disimpan");
+      toast.success(t("common.success"));
     }
   };
 
@@ -53,11 +55,11 @@ export function ProjectGeneralSettings() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
-          { label: "Settings", href: `/project/${projectId}/settings/general` },
-          { label: "Pengaturan Umum" },
+          { label: t("nav.projects"), href: "/projects" },
+          { label: t("nav.settings"), href: `/project/${projectId}/settings/general` },
+          { label: t("projects.general_settings_title") },
         ]}
-        title="Pengaturan Umum Proyek"
+        title={t("projects.general_settings_title")}
         actions={
           <Button
             size="sm"
@@ -65,7 +67,7 @@ export function ProjectGeneralSettings() {
             className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
           >
             <Save className="h-3.5 w-3.5" />
-            Simpan Perubahan
+            {t("common.save")}
           </Button>
         }
       />
@@ -73,7 +75,7 @@ export function ProjectGeneralSettings() {
       <PageContentShell className="space-y-5 custom-scrollbar max-w-4xl">
         <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Nama Proyek Operasional</Label>
+            <Label className="text-xs font-semibold">{t("projects.project_name")}</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -83,7 +85,7 @@ export function ProjectGeneralSettings() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Kode Singkatan Proyek</Label>
+              <Label className="text-xs font-semibold">{t("projects.project_code")}</Label>
               <Input
                 defaultValue={project.code}
                 disabled
@@ -92,22 +94,22 @@ export function ProjectGeneralSettings() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Status Operasional</Label>
+              <Label className="text-xs font-semibold">{t("projects.project_status")}</Label>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="h-8.5 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PLANNING">PLANNING (Perencanaan)</SelectItem>
-                  <SelectItem value="PRODUCTION">PRODUCTION (Live Operasional)</SelectItem>
-                  <SelectItem value="MAINTENANCE">MAINTENANCE (Pemeliharaan)</SelectItem>
+                  <SelectItem value="PLANNING">PLANNING</SelectItem>
+                  <SelectItem value="PRODUCTION">PRODUCTION</SelectItem>
+                  <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Deskripsi Cakupan Area</Label>
+            <Label className="text-xs font-semibold">{t("projects.project_description")}</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -120,14 +122,14 @@ export function ProjectGeneralSettings() {
         <Card className="p-5 border-destructive/40 bg-destructive/5 space-y-3 shadow-xs">
           <div className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-4 w-4" />
-            <h4 className="text-xs font-bold uppercase tracking-wider">Zona Bahaya Proyek</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider">{t("projects.danger_zone")}</h4>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Menghapus proyek ini akan menghapus seluruh data topologi kabel, ODC, ODP, dan pelanggan yang terdaftar di area ini. Tindakan ini tidak dapat dibatalkan.
+            {t("projects.delete_project_warning")}
           </p>
           <Button variant="destructive" size="sm" className="h-8 text-xs font-medium gap-1.5">
             <Trash2 className="h-3.5 w-3.5" />
-            Hapus Proyek Ini
+            {t("common.delete")}
           </Button>
         </Card>
       </PageContentShell>

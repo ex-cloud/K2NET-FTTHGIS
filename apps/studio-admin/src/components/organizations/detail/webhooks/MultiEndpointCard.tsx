@@ -16,6 +16,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import type { WebhookEndpoint, WebhookSubscriptions, PingResult } from "./types";
 import { EndpointModal } from "./EndpointModal";
 import { EndpointRowItem } from "./EndpointRowItem";
+import { useTranslation } from "@k2net/i18n";
 
 interface MultiEndpointCardProps {
   endpoints: WebhookEndpoint[];
@@ -53,6 +54,7 @@ export function MultiEndpointCard({
   onTestPingEndpoint,
   onCopy,
 }: MultiEndpointCardProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const canManage = canAccess("system.organizations.webhooks.manage");
 
@@ -108,7 +110,7 @@ export function MultiEndpointCard({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus endpoint webhook ini secara permanen? Log pengiriman sebelumnya tetap tersimpan.")) {
+    if (!confirm(t("organizations.webhook_delete_confirm"))) {
       return;
     }
     try {
@@ -138,7 +140,7 @@ export function MultiEndpointCard({
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Kirim sinyal event ke berbagai sistem tujuan secara independen (NOC Discord, Telegram Bot, CRM Billing).
+              {t("organizations.webhook_multi_desc")}
             </p>
           </div>
         </div>
@@ -153,7 +155,7 @@ export function MultiEndpointCard({
             <span>Add Webhook Endpoint</span>
           </Button>
         ) : (
-          <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+          <ActionTooltip label={t("organizations.readonly_no_manage_perm")}>
             <span className="inline-block">
               <Button
                 size="sm"
@@ -187,9 +189,9 @@ export function MultiEndpointCard({
         ) : endpoints.length === 0 ? (
           <div className="p-6 rounded-lg border border-dashed border-border bg-background/50 text-center space-y-2">
             <Network className="h-6 w-6 text-muted-foreground mx-auto" />
-            <div className="text-xs font-medium text-foreground">Belum ada Webhook Endpoint Tambahan</div>
+            <div className="text-xs font-medium text-foreground">No Additional Webhook Endpoints</div>
             <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
-              Tambahkan endpoint tujuan untuk memisahkan notifikasi alarm kritis NOC dengan notifikasi billing atau status pelanggan.
+              Add destination endpoints to route critical NOC alarm notifications separately from billing or customer status updates.
             </p>
           </div>
         ) : (

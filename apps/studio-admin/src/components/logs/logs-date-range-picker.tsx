@@ -4,16 +4,17 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, ChevronDown, History } from "lucide-react";
 import { Calendar, cn } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
+import { useTranslation } from "@k2net/i18n";
 
-const PRESETS = [
-  { label: "Last 10 minutes", value: "10m" },
-  { label: "Last 30 minutes", value: "30m" },
-  { label: "Last 60 minutes", value: "1h" },
-  { label: "Last 3 hours", value: "3h" },
-  { label: "Last 24 hours", value: "24h" },
-  { label: "Last 7 days", value: "7d" },
-  { label: "Last 14 days", value: "14d" },
-  { label: "Last 28 days", value: "28d" },
+const PRESET_VALUES = [
+  { key: "preset_last_10m", value: "10m", fallback: "Last 10 minutes" },
+  { key: "preset_last_30m", value: "30m", fallback: "Last 30 minutes" },
+  { key: "preset_last_60m", value: "1h", fallback: "Last 60 minutes" },
+  { key: "preset_last_3h", value: "3h", fallback: "Last 3 hours" },
+  { key: "preset_last_24h", value: "24h", fallback: "Last 24 hours" },
+  { key: "preset_last_7d", value: "7d", fallback: "Last 7 days" },
+  { key: "preset_last_14d", value: "14d", fallback: "Last 14 days" },
+  { key: "preset_last_28d", value: "28d", fallback: "Last 28 days" },
 ];
 
 interface LogsDateRangePickerProps {
@@ -33,7 +34,7 @@ function parseValue(value: string): { preset: string | null; range: DateRange | 
   return { preset: value, range: undefined };
 }
 
-function getDisplayLabel(value: string): string {
+function getDisplayLabel(value: string, t: ReturnType<typeof useTranslation>["t"]): string {
   if (value.startsWith("custom:")) {
     const parts = value.substring(7).split("_");
     if (parts.length === 2) {
@@ -42,8 +43,8 @@ function getDisplayLabel(value: string): string {
       return `${format(from, "MMM d, HH:mm")} → ${format(to, "MMM d, HH:mm")}`;
     }
   }
-  const preset = PRESETS.find((p) => p.value === value);
-  return preset ? preset.label : value;
+  const preset = PRESET_VALUES.find((p) => p.value === value);
+  return preset ? t(`observability.${preset.key}`) : value;
 }
 
 function getPresetRange(preset: string): { from: Date; to: Date } {
@@ -78,6 +79,7 @@ function PresetsSidebar({
   onCustomSubmit: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onPresetSelect: (val: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="w-[200px] shrink-0 border-r border-border/40 flex flex-col p-2 gap-px">
       <input
@@ -89,8 +91,9 @@ function PresetsSidebar({
         className="flex w-full border border-border bg-foreground/[.026] placeholder:text-muted-foreground/40 px-3 py-2 mb-2 text-xs h-7 rounded-sm focus:outline-none focus:border-border/80 transition-colors font-sans"
       />
       <div className="flex flex-col gap-px">
-        {PRESETS.map((p) => {
+        {PRESET_VALUES.map((p) => {
           const isActive = activePreset === p.value;
+          const label = t(`observability.${p.key}`);
           return (
             <label
               key={p.value}
@@ -104,7 +107,7 @@ function PresetsSidebar({
             >
               <span className="flex items-center gap-2">
                 {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                {p.label}
+                {label}
               </span>
             </label>
           );
@@ -127,6 +130,7 @@ function TimePickerInputs({
   setToTime: (t: string) => void;
   onResetTime: () => void;
 }) {
+  const { t } = useTranslation();
   const { h: fh, m: fm, s: fs } = parseTimeStr(fromTime);
   const { h: th, m: tm, s: ts } = parseTimeStr(toTime);
 
@@ -220,7 +224,7 @@ function TimePickerInputs({
       <button
         type="button"
         onClick={onResetTime}
-        title="Reset times"
+        title={t("observability.reset_times")}
         className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-transparent text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors shrink-0"
       >
         <History className="w-3.5 h-3.5" />
@@ -240,6 +244,7 @@ function CalendarFooterActions({
   onToday: () => void;
   onApply: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-end gap-2 px-[14px] py-2 border-t border-border/40">
       <button
@@ -247,14 +252,14 @@ function CalendarFooterActions({
         onClick={onCopy}
         className="relative inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors hover:bg-muted text-xs h-[26px] px-2.5 text-muted-foreground hover:text-foreground"
       >
-        <span className="truncate">Copy range</span>
+        <span className="truncate">{t("observability.copy_range")}</span>
       </button>
       <button
         type="button"
         onClick={onToday}
         className="relative inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors border border-border bg-muted/40 hover:bg-muted text-xs h-[26px] px-2.5 text-foreground"
       >
-        <span className="truncate">Today</span>
+        <span className="truncate">{t("observability.today")}</span>
       </button>
       <button
         type="button"
@@ -267,13 +272,14 @@ function CalendarFooterActions({
             : "bg-muted/40 text-muted-foreground/50 cursor-not-allowed border border-border/40"
         )}
       >
-        <span className="truncate">Apply</span>
+        <span className="truncate">{t("observability.apply")}</span>
       </button>
     </div>
   );
 }
 
 export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
@@ -427,7 +433,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
       >
         <span className="flex items-center gap-1.5 truncate">
           <CalendarIcon className="w-3 h-3 text-primary shrink-0" />
-          {mounted ? getDisplayLabel(value) : "Loading..."}
+          {mounted ? getDisplayLabel(value, t) : t("observability.loading")}
         </span>
         <ChevronDown className={cn("w-3 h-3 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>

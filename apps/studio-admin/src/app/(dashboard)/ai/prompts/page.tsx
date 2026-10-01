@@ -1,13 +1,13 @@
-
-
 import { useRouter } from "@/lib/navigation-compat";
 import { Sparkles, Database, Bot } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { AiPromptsTab } from "@/components/ai/ai-prompts-tab";
 
 export default function AiPromptsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <AiPageWrapper>
@@ -22,20 +22,20 @@ export default function AiPromptsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                  Saran Prompt & Analitik Trending
+                  {t("ai.prompts_title")}
                 </h1>
                 <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-primary/30 text-primary bg-primary/10">
-                  Interactive Ideas
+                  {t("ai.interactive_ideas")}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Kelola kartu ide pertanyaan cepat (Quick Actions) dan pantau topik trending yang sering ditanyakan pengguna di Ask AI Copilot.
+                {t("ai.prompts_subtitle")}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <ActionTooltip label="Kembali ke Basis Pengetahuan AI">
+            <ActionTooltip label={t("ai.back_to_knowledge_base_tooltip")}>
               <Button
                 variant="outline"
                 size="sm"
@@ -43,11 +43,11 @@ export default function AiPromptsPage() {
                 className="text-xs gap-1.5 cursor-pointer"
               >
                 <Database className="w-3.5 h-3.5" />
-                Basis Pengetahuan
+                {t("ai.back_to_knowledge_base")}
               </Button>
             </ActionTooltip>
 
-            <ActionTooltip label="Buka Multi-Provider Hub">
+            <ActionTooltip label={t("ai.ai_config_tooltip")}>
               <Button
                 variant="outline"
                 size="sm"
@@ -55,7 +55,7 @@ export default function AiPromptsPage() {
                 className="text-xs gap-1.5 cursor-pointer"
               >
                 <Bot className="w-3.5 h-3.5" />
-                Konfigurasi AI
+                {t("ai.ai_config_btn")}
               </Button>
             </ActionTooltip>
           </div>

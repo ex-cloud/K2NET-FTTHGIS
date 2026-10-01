@@ -3,12 +3,14 @@ import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import { Palette, Save, RefreshCw } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { BrandingLogoSection } from "../components/branding-logo-section";
 import { BrandingThemeSection } from "../components/branding-theme-section";
 import { BrandingInterfaceSection } from "../components/branding-interface-section";
 
 export default function SettingsBrandingPage() {
+  const { t } = useTranslation();
   const { settings, loading, updateSettings, isUpdating, refresh } = useSystemSettings();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
@@ -32,10 +34,10 @@ export default function SettingsBrandingPage() {
 
     try {
       await updateSettings(keysToSave);
-      toast.success("Pengaturan Branding & Whitelabel berhasil diperbarui!");
+      toast.success(t("settings.branding.updated_success"));
     } catch (e: unknown) {
       const err = e as Error;
-      toast.error(err.message || "Gagal memperbarui branding");
+      toast.error(err.message || t("settings.branding.update_failed"));
     }
   };
 
@@ -47,20 +49,20 @@ export default function SettingsBrandingPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
-                Platform Config
+                {t("settings.general.platform_config_badge")}
               </Badge>
-              <span className="text-xs text-muted-foreground">• Whitelabel Identity & Aesthetics</span>
+              <span className="text-xs text-muted-foreground">• {t("settings.branding.badge_subtitle")}</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <Palette className="w-6 h-6 text-primary" /> Branding & Whitelabel
+              <Palette className="w-6 h-6 text-primary" /> {t("settings.branding.title")}
             </h1>
             <p className="text-xs text-muted-foreground">
-              Kustomisasi logo, favicon, warna aksen tema, dan teks hak cipta pada seluruh portal aplikasi secara global.
+              {t("settings.branding_subtitle")}
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <ActionTooltip label="Muat Ulang Pengaturan Branding" shortcut="R">
+            <ActionTooltip label={t("common.reload")} shortcut="R">
               <Button
                 variant="outline"
                 size="sm"
@@ -68,10 +70,10 @@ export default function SettingsBrandingPage() {
                 disabled={loading}
                 className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> {t("common.reload")}
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Simpan Perubahan Branding" shortcut="Ctrl+S">
+            <ActionTooltip label={t("common.save_changes")} shortcut="Ctrl+S">
               <Button
                 size="sm"
                 onClick={handleSave}
@@ -79,7 +81,7 @@ export default function SettingsBrandingPage() {
                 className="text-xs h-7 px-2.5 font-medium gap-1.5 shadow-xs rounded-md cursor-pointer"
               >
                 {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                Save Changes
+                {t("common.save_changes")}
               </Button>
             </ActionTooltip>
           </div>
@@ -112,7 +114,7 @@ export default function SettingsBrandingPage() {
               if (val === "magic_blue") handleInputChange("brand_accent_color", "#3b82f6");
               else if (val === "dark") handleInputChange("brand_accent_color", "#10b981");
               else if (val === "classic_dark") handleInputChange("brand_accent_color", "#6366f1");
-              toast.success(`Skema tema diubah ke ${val}`);
+              toast.success(`${t("settings.branding.theme_changed_toast")} ${val}`);
             }}
           />
         </div>

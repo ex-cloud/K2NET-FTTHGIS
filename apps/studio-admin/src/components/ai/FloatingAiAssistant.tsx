@@ -19,8 +19,10 @@ import { useAssistantPermissions } from "./assistant/useAssistantPermissions";
 import { useAssistantInit } from "./assistant/useAssistantInit";
 import { useFullscreenPermissions } from "./assistant/useFullscreenPermissions";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 
 export function FloatingAiAssistant() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [view, setView] = useState<DrawerView>("chat");
@@ -132,7 +134,7 @@ export function FloatingAiAssistant() {
     return (
       <AiAssistantFullscreen
         open={isFullscreen}
-        title="Ask AI"
+        title={t("ai.ask_ai")}
         subtitle="RAG Knowledge Base • Spasial PostGIS"
         messages={messages}
         sessions={sessions}
@@ -224,7 +226,7 @@ export function FloatingAiAssistant() {
     <AiAssistantDrawer
       open={isOpen}
       onOpenChange={setIsOpen}
-      title="Ask AI"
+      title={t("ai.ask_ai")}
       subtitle={
         view === "chat"
           ? "RAG Knowledge Base • Spasial PostGIS"

@@ -22,6 +22,7 @@ import type {
   SystemAlertItem,
   BillingEventItem,
 } from "./recent-operations-types";
+import { useTranslation } from "@k2net/i18n";
 
 /* ── 1. Security Audit Context Menu (Reusing UniversalContextMenu) ── */
 interface SecurityAuditContextMenuProps {
@@ -36,12 +37,13 @@ export function SecurityAuditContextMenu({
   children,
 }: SecurityAuditContextMenuProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const groups: ContextMenuGroupConfig[] = [
     {
       items: [
         {
-          label: "Tanya AI Analisis Log Ini",
+          label: t("observability.ask_ai_analyze_log"),
           icon: Sparkles,
           shortcut: "Ctrl+J",
           onClick: () => {
@@ -55,7 +57,7 @@ export function SecurityAuditContextMenu({
           },
         },
         {
-          label: "Buka Modal Detail Log",
+          label: t("observability.open_log_detail_modal"),
           icon: FileCode,
           shortcut: "↵",
           onClick: () => onOpenDetail(item),
@@ -65,32 +67,32 @@ export function SecurityAuditContextMenu({
     {
       items: [
         {
-          label: "Salin Log JSON",
+          label: t("observability.copy_log_json"),
           icon: Copy,
           shortcut: "Ctrl+C",
           onClick: () => {
             const payload = item.rawJsonPayload || JSON.stringify(item, null, 2);
             navigator.clipboard.writeText(payload);
-            toast.success("Payload log JSON disalin ke clipboard!");
+            toast.success(t("observability.log_copied"));
           },
         },
         {
-          label: "Salin Event ID",
+          label: t("observability.copy_event_id"),
           icon: Terminal,
           shortcut: "Alt+C",
           onClick: () => {
             navigator.clipboard.writeText(item.id);
-            toast.success(`Event ID ${item.id.substring(0, 8)}... disalin!`);
+            toast.success(t("observability.event_id_copy_success"));
           },
         },
         ...(item.requestPath
           ? [
               {
-                label: "Salin Pathname URL",
+                label: t("observability.copy_pathname"),
                 icon: Globe,
                 onClick: () => {
                   navigator.clipboard.writeText(item.requestPath || item.action);
-                  toast.success("Pathname disalin!");
+                  toast.success(t("observability.pathname_copied"));
                 },
               },
             ]
@@ -100,7 +102,7 @@ export function SecurityAuditContextMenu({
     {
       items: [
         {
-          label: "Buka di Global Logs Explorer",
+          label: t("observability.open_in_logs_explorer"),
           icon: ExternalLink,
           onClick: () => {
             const sev = (item.severity || "").toUpperCase();
@@ -122,18 +124,19 @@ interface BackgroundJobContextMenuProps {
 
 export function BackgroundJobContextMenu({ item, children }: BackgroundJobContextMenuProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const groups: ContextMenuGroupConfig[] = [
     {
       items: [
         {
-          label: "Buka Scheduler Monitor",
+          label: t("observability.open_scheduler_monitor"),
           icon: Cpu,
           shortcut: "↵",
           onClick: () => router.push("/observability/scheduler"),
         },
         {
-          label: "Tanya AI Analisis Job Ini",
+          label: t("observability.ask_ai_analyze_job"),
           icon: Sparkles,
           shortcut: "Ctrl+J",
           onClick: () => {
@@ -151,7 +154,7 @@ export function BackgroundJobContextMenu({ item, children }: BackgroundJobContex
     {
       items: [
         {
-          label: "Salin Job ID",
+          label: t("observability.copy_job_id"),
           icon: Copy,
           onClick: () => {
             navigator.clipboard.writeText(item.id);
@@ -159,11 +162,11 @@ export function BackgroundJobContextMenu({ item, children }: BackgroundJobContex
           },
         },
         {
-          label: "Salin Tipe Job",
+          label: t("observability.copy_job_type"),
           icon: Clock,
           onClick: () => {
             navigator.clipboard.writeText(item.jobType);
-            toast.success("Nama tipe job disalin!");
+            toast.success(t("observability.job_type_copied"));
           },
         },
       ],
@@ -181,12 +184,13 @@ interface SystemAlertContextMenuProps {
 
 export function SystemAlertContextMenu({ item, children }: SystemAlertContextMenuProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const groups: ContextMenuGroupConfig[] = [
     {
       items: [
         {
-          label: item.actionLabel || "Buka Observability & Diagnostik",
+          label: item.actionLabel || t("observability.open_observability_diag"),
           icon: ExternalLink,
           shortcut: "↵",
           onClick: () => {
@@ -195,7 +199,7 @@ export function SystemAlertContextMenu({ item, children }: SystemAlertContextMen
           },
         },
         {
-          label: "Tanya AI Solusi Alert Ini",
+          label: t("observability.ask_ai_alert_solution"),
           icon: Sparkles,
           shortcut: "Ctrl+J",
           onClick: () => {
@@ -213,11 +217,11 @@ export function SystemAlertContextMenu({ item, children }: SystemAlertContextMen
     {
       items: [
         {
-          label: "Salin Deskripsi Alert",
+          label: t("observability.copy_alert_desc"),
           icon: Copy,
           onClick: () => {
             navigator.clipboard.writeText(`[${item.severity.toUpperCase()}] ${item.title} (${item.service}): ${item.message}`);
-            toast.success("Deskripsi alert disalin ke clipboard!");
+            toast.success(t("observability.alert_desc_copied"));
           },
         },
       ],
@@ -235,18 +239,19 @@ interface BillingEventContextMenuProps {
 
 export function BillingEventContextMenu({ item, children }: BillingEventContextMenuProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const groups: ContextMenuGroupConfig[] = [
     {
       items: [
         {
-          label: "Buka Subscriptions Organisasi",
+          label: t("observability.open_org_subscriptions"),
           icon: CreditCard,
           shortcut: "↵",
           onClick: () => router.push("/organizations"),
         },
         {
-          label: "Tanya AI Analisis Billing Ini",
+          label: t("observability.ask_ai_analyze_billing"),
           icon: Sparkles,
           shortcut: "Ctrl+J",
           onClick: () => {
@@ -264,19 +269,19 @@ export function BillingEventContextMenu({ item, children }: BillingEventContextM
     {
       items: [
         {
-          label: "Salin Info Billing",
+          label: t("observability.copy_billing_info"),
           icon: Copy,
           onClick: () => {
             navigator.clipboard.writeText(`${item.orgName} (${item.orgSlug}) - ${item.planName}: ${item.amount} [${item.status}]`);
-            toast.success("Info billing disalin ke clipboard!");
+            toast.success(t("observability.billing_info_copied"));
           },
         },
         {
-          label: "Salin Slug Tenant",
+          label: t("observability.copy_tenant_slug"),
           icon: Terminal,
           onClick: () => {
             navigator.clipboard.writeText(item.orgSlug || item.orgName);
-            toast.success("Slug organisasi disalin!");
+            toast.success(t("observability.tenant_slug_copied"));
           },
         },
       ],

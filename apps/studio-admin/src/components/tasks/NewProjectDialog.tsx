@@ -9,6 +9,7 @@ import {
 } from "@k2net/ui";
 import { FolderKanban, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 import { type TaskScope } from "@/hooks/useTasksQuery";
 import { PROJECT_ICONS } from "./new-project-constants";
 import { NewProjectPropertyPills } from "./NewProjectPropertyPills";
@@ -38,6 +39,7 @@ export function NewProjectDialog({
   onSuccess,
   defaultValues,
 }: NewProjectDialogProps) {
+  const { t } = useTranslation();
   const form = useNewProjectForm({ open, onOpenChange, onSuccess, defaultValues });
   const IconComponent = form.activeIconObj.icon;
 
@@ -69,7 +71,7 @@ export function NewProjectDialog({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    title="Pilih Icon Projek"
+                    title={t("tasks.select_project_icon")}
                     className={cn(
                       "w-8 h-8 rounded-md border flex items-center justify-center shrink-0 transition-all hover:scale-105 cursor-pointer shadow-xs mt-0.5",
                       form.activeIconObj.color

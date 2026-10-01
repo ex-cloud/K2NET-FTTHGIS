@@ -2,6 +2,7 @@ import { Badge, Button, Card } from "@k2net/ui";
 import { FileCheck, CheckCircle2, Sparkles, Eye } from "lucide-react";
 import type { EnrichedOrganization } from "../../types";
 import type { TenantDocument } from "./types";
+import { useTranslation } from "@k2net/i18n";
 
 interface DocumentsKeyCardsProps {
   org: EnrichedOrganization;
@@ -14,6 +15,7 @@ export function DocumentsKeyCards({
   documents,
   onPreview,
 }: DocumentsKeyCardsProps) {
+  const { t } = useTranslation();
   const doc0 = documents[0];
   const doc1 = documents[1];
 
@@ -30,9 +32,9 @@ export function DocumentsKeyCards({
           </Badge>
         </div>
         <div>
-          <h4 className="text-xs font-bold text-foreground">Perjanjian Kerja Sama (MoU)</h4>
+          <h4 className="text-xs font-bold text-foreground">Partnership Agreement (MoU)</h4>
           <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-            Kontrak Induk SaaS FTTH GIS K2NET
+            K2NET FTTH GIS Master SaaS Contract
           </p>
         </div>
         <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px]">
@@ -51,7 +53,7 @@ export function DocumentsKeyCards({
         </div>
       </Card>
 
-      {/* Card 2: BAST Serah Terima */}
+      {/* Card 2: BAST Handover Certificate */}
       <Card className="p-4 space-y-3 bg-card border-border shadow-xs hover:border-primary/40 transition-colors">
         <div className="flex items-center justify-between">
           <div className="h-8 w-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -62,9 +64,9 @@ export function DocumentsKeyCards({
           </Badge>
         </div>
         <div>
-          <h4 className="text-xs font-bold text-foreground">Berita Acara Serah Terima (BAST)</h4>
+          <h4 className="text-xs font-bold text-foreground">Handover Certificate (BAST)</h4>
           <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-            Onboarding &amp; Integrasi Jaringan Selesai
+            {t("organizations.onboarding_network_done")}
           </p>
         </div>
         <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px]">
@@ -96,7 +98,7 @@ export function DocumentsKeyCards({
         <div>
           <h4 className="text-xs font-bold text-foreground">SLA &amp; Uptime Guarantee</h4>
           <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-            Jaminan Kompensasi Downtime Core Server
+            Core Server Downtime Compensation Guarantee
           </p>
         </div>
         <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px]">

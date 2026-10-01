@@ -1,3 +1,4 @@
+import { useTranslation } from "@k2net/i18n";
 import { useProjectTimeline } from "./use-project-timeline";
 import { ProjectTimelineHeaderBar } from "./ProjectTimelineHeaderBar";
 import { ProjectTimelineHeaderScale } from "./ProjectTimelineHeaderScale";
@@ -27,6 +28,7 @@ export function ProjectTimelineView({
   projects,
   onProjectClick,
 }: ProjectTimelineViewProps) {
+  const { t } = useTranslation();
   const {
     granularity,
     setGranularity,
@@ -93,7 +95,7 @@ export function ProjectTimelineView({
             {/* Empty State */}
             {projects.length === 0 ? (
               <div className="py-20 text-center text-xs text-muted-foreground italic w-full">
-                Tidak ada data roadmap project untuk filter ini.
+                {t("tasks.no_roadmap_data")}
               </div>
             ) : (
               projects.map((p) => {

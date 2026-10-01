@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { PermissionUsageResponse } from "./permissions-types";
 
 interface TraceabilityModalProps {
@@ -18,6 +19,8 @@ interface TraceabilityModalProps {
 }
 
 export function TraceabilityModal({ code, data, loading, onClose }: TraceabilityModalProps) {
+  const { t } = useTranslation();
+
   if (!code) return null;
 
   return (
@@ -46,7 +49,7 @@ export function TraceabilityModal({ code, data, loading, onClose }: Traceability
           {loading ? (
             <div className="flex items-center justify-center p-8 text-muted-foreground">
               <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
-              Memindai metadata otorisasi endpoint...
+              {t("common.loading")}
             </div>
           ) : !data || data.usages.length === 0 ? (
             <div className="p-4 rounded-xl border border-dashed border-amber-500/40 bg-amber-500/10 space-y-1 text-center">
@@ -90,7 +93,7 @@ export function TraceabilityModal({ code, data, loading, onClose }: Traceability
 
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose} className="border-border">
-            Tutup
+            {t("common.close")}
           </Button>
         </DialogFooter>
       </DialogContent>

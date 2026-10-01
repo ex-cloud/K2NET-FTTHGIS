@@ -1,6 +1,7 @@
 import React from "react";
 import { Pin, Edit2, Trash2, Zap } from "lucide-react";
 import { Badge } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import type { SuggestedPromptItem } from "@/lib/actions/gateways";
 import { AVAILABLE_ICONS } from "./types";
@@ -20,6 +21,7 @@ export function PromptRowItem({
   onOpenEditModal,
   onDeletePromptId,
 }: PromptRowItemProps) {
+  const { t } = useTranslation();
   const IconComp = AVAILABLE_ICONS.find((ic) => ic.id === item.icon)?.icon || Zap;
 
   return (
@@ -83,7 +85,7 @@ export function PromptRowItem({
               ? "bg-amber-500/15 border-amber-500/40 text-amber-500 hover:bg-amber-500/25"
               : "bg-background border-border text-muted-foreground hover:text-foreground"
           )}
-          title={item.is_pinned ? "Lepas Pin" : "Pin ke Urutan Teratas"}
+          title={item.is_pinned ? t("ai.unpin") : t("ai.pin")}
         >
           <Pin className="w-3.5 h-3.5" />
         </button>
@@ -106,7 +108,7 @@ export function PromptRowItem({
               : "bg-muted border-border text-muted-foreground hover:bg-muted/80"
           )}
         >
-          {item.is_active ? "Aktif" : "Nonaktif"}
+          {item.is_active ? t("common.active") : t("common.inactive")}
         </button>
       </td>
 
@@ -116,7 +118,7 @@ export function PromptRowItem({
             type="button"
             onClick={() => onOpenEditModal(item)}
             className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="Edit Prompt"
+            title={t("ai.edit_prompt")}
           >
             <Edit2 className="w-3.5 h-3.5" />
           </button>
@@ -124,7 +126,7 @@ export function PromptRowItem({
             type="button"
             onClick={() => onDeletePromptId(item.id)}
             className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-            title="Hapus Prompt"
+            title={t("common.delete")}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

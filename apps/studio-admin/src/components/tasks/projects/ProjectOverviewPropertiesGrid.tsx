@@ -5,6 +5,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type Task } from "@/hooks/useTasksQuery";
 import { type TeamUser } from "@/hooks/useTeamUsers";
 import { LinearDatePicker } from "@/components/tasks/LinearDatePicker";
@@ -41,13 +42,15 @@ export function ProjectOverviewPropertiesGrid({
   totalIssuesCount = 0,
   onSaveField,
 }: ProjectOverviewPropertiesGridProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-card/50 border border-border/60 rounded-xl p-3 text-xs shadow-xs">
       {/* Status */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <div className="cursor-pointer hover:bg-muted/40 p-2 rounded-lg transition-colors border border-transparent hover:border-border/40">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Status</span>
+            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("tasks.status")}</span>
             <div className="mt-1 font-semibold flex items-center gap-1.5 text-foreground">
               <div
                 className={cn(
@@ -83,7 +86,7 @@ export function ProjectOverviewPropertiesGrid({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <div className="cursor-pointer hover:bg-muted/40 p-2 rounded-lg transition-colors border border-transparent hover:border-border/40">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Priority</span>
+            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("tasks.priority")}</span>
             <div className="mt-1 font-semibold flex items-center gap-1.5 text-foreground">
               <Flame
                 className={cn(
@@ -119,12 +122,12 @@ export function ProjectOverviewPropertiesGrid({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <div className="cursor-pointer hover:bg-muted/40 p-2 rounded-lg transition-colors border border-transparent hover:border-border/40">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Lead</span>
+            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("projects.lead")}</span>
             <div className="mt-1 flex items-center gap-1.5 text-foreground truncate">
               <div className="w-4 h-4 rounded-full bg-primary/20 text-primary text-[9px] font-bold flex items-center justify-center shrink-0">
                 {assigneeId ? assigneeId.substring(0, 1).toUpperCase() : "?"}
               </div>
-              <span className="truncate">{assigneeId ? assigneeId.split("@")[0] : "Unassigned"}</span>
+              <span className="truncate">{assigneeId ? assigneeId.split("@")[0] : t("tasks.unassigned")}</span>
             </div>
           </div>
         </DropdownMenuTrigger>
@@ -136,7 +139,7 @@ export function ProjectOverviewPropertiesGrid({
             }}
             className="text-xs text-muted-foreground cursor-pointer"
           >
-            Unassigned
+            {t("tasks.unassigned")}
           </DropdownMenuItem>
           {teamUsers.map((u) => (
             <DropdownMenuItem
@@ -160,7 +163,7 @@ export function ProjectOverviewPropertiesGrid({
 
       {/* Target Date */}
       <div className="p-2 rounded-lg hover:bg-muted/40 transition-colors border border-transparent hover:border-border/40 flex flex-col justify-center">
-        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5">Target date</span>
+        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5">{t("projects.target_date")}</span>
         <LinearDatePicker
           type="target"
           value={dueDate || undefined}
@@ -175,7 +178,7 @@ export function ProjectOverviewPropertiesGrid({
       {/* Delivery Progress */}
       <div className="p-2 rounded-lg bg-muted/20 border border-transparent flex flex-col justify-center col-span-2 sm:col-span-1">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Progress</span>
+          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("projects.progress")}</span>
           <span className="text-[10px] font-mono font-bold text-foreground">{progressPercent}%</span>
         </div>
         <div className="mt-1.5 w-full h-1.5 rounded-full bg-muted overflow-hidden">
@@ -185,7 +188,7 @@ export function ProjectOverviewPropertiesGrid({
           />
         </div>
         <span className="text-[9px] text-muted-foreground font-mono mt-1">
-          {resolvedIssuesCount}/{totalIssuesCount} issues resolved
+          {t("projects.issues_resolved", { resolved: resolvedIssuesCount, total: totalIssuesCount })}
         </span>
       </div>
     </div>

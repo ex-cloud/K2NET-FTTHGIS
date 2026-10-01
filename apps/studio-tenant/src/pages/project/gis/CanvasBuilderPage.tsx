@@ -10,8 +10,10 @@ import {
 import { Button, Badge, PageHeader, TierQuotaGuard } from "@k2net/ui";
 import { toast } from "sonner";
 import { useTenantSubscription } from "../../../hooks/useTenantSubscription";
+import { useTranslation } from "@k2net/i18n";
 
 export function CanvasBuilderPage() {
+  const { t, formatCurrency } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const navigate = useNavigate();
   const projectId = params?.projectId || "proj-bdg-01";
@@ -21,18 +23,18 @@ export function CanvasBuilderPage() {
   const totalLength = 1240; // meters
 
   const handleSaveDesign = () => {
-    toast.success("Rancangan canvas jalur kabel berhasil disimpan ke database GIS");
+    toast.success(t("common.saved_successfully"));
   };
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden select-none">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: "GIS Infrastructure", href: `/project/${projectId}/infrastructure/topology` },
           { label: "Canvas Builder" },
         ]}
-        title="Desain Canvas Jalur Kabel & CAD Editor"
+        title={t("gis.map_title")}
         badge={
           <Badge variant="outline" className="border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-400 font-mono text-[10px] font-medium">
             CAD DESIGNER
@@ -47,7 +49,7 @@ export function CanvasBuilderPage() {
                 className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs"
               >
                 <Save className="h-3.5 w-3.5" />
-                Simpan Jalur
+                {t("common.save")}
               </Button>
             </div>
           )
@@ -56,7 +58,7 @@ export function CanvasBuilderPage() {
 
       <TierQuotaGuard
         featureName="CAD Canvas Builder"
-        featureDescription="Modul CAD Builder dan perancangan span serat optik memerlukan paket Professional ISP atau Enterprise Telco."
+        featureDescription={t("billing.upgrade_prompt")}
         isAllowed={canAccessCadBuilder}
         requiredTier="pro"
         currentTier={tier}
@@ -74,7 +76,7 @@ export function CanvasBuilderPage() {
                 className="h-7.5 px-2.5 text-xs gap-1.5"
               >
                 <PenTool className="h-3.5 w-3.5" />
-                Pilih / Geser
+                {t("common.filter")}
               </Button>
               <Button
                 size="sm"
@@ -83,7 +85,7 @@ export function CanvasBuilderPage() {
                 className="h-7.5 px-2.5 text-xs gap-1.5"
               >
                 <Network className="h-3.5 w-3.5 text-sky-500" />
-                Kabel Feeder (48c)
+                {t("gis.layer_cables")} (Feeder)
               </Button>
               <Button
                 size="sm"
@@ -92,7 +94,7 @@ export function CanvasBuilderPage() {
                 className="h-7.5 px-2.5 text-xs gap-1.5"
               >
                 <Network className="h-3.5 w-3.5 text-amber-500" />
-                Distribusi (24c)
+                {t("gis.layer_cables")} (Dist)
               </Button>
               <Button
                 size="sm"
@@ -101,7 +103,7 @@ export function CanvasBuilderPage() {
                 className="h-7.5 px-2.5 text-xs gap-1.5"
               >
                 <Network className="h-3.5 w-3.5 text-primary" />
-                Drop Core (2c)
+                Drop Cable
               </Button>
             </div>
 
@@ -122,9 +124,9 @@ export function CanvasBuilderPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mx-auto">
                 <PenTool className="h-6 w-6" />
               </div>
-              <h3 className="text-sm font-bold text-foreground">Canvas Editor Aktif</h3>
+              <h3 className="text-sm font-bold text-foreground">{t("gis.map_title")}</h3>
               <p className="text-xs text-muted-foreground max-w-sm">
-                Klik pada area kerja untuk mulai menarik span kabel, menghubungkan ODC ke ODP, dan mengukur jarak bentang secara presisi.
+                {t("gis.map_subtitle")}
               </p>
             </div>
           </div>
@@ -133,14 +135,14 @@ export function CanvasBuilderPage() {
           <div className="flex items-center justify-between p-3 rounded-xl border border-border/80 bg-card/90 shadow-md backdrop-blur-xl text-xs">
             <div className="flex items-center gap-4">
               <span className="text-muted-foreground">
-                Total Estimasi Bentang: <strong className="text-foreground font-mono">{(totalLength / 1000).toFixed(2)} Km</strong> ({totalLength} m)
+                {t("projects.stats_cable_length")}: <strong className="text-foreground font-mono">{(totalLength / 1000).toFixed(2)} Km</strong> ({totalLength} m)
               </span>
               <span className="text-muted-foreground">
-                Mode Snap: <strong className="text-primary">Tiang / Pole Otomatis</strong>
+                Snap Mode: <strong className="text-primary">{t("common.active")}</strong>
               </span>
             </div>
             <span className="text-xs font-mono font-bold text-primary">
-              Estimasi Biaya Material: Rp 18.600.000
+              {t("inventory.total_estimated_cost")}: {formatCurrency(18600000)}
             </span>
           </div>
         </div>
@@ -148,3 +150,4 @@ export function CanvasBuilderPage() {
     </div>
   );
 }
+

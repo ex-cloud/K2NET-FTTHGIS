@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from "react";
 import { Badge, Button, Switch, ActionTooltip } from "@k2net/ui";
 import {
@@ -12,6 +10,7 @@ import {
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import type { EnrichedOrganization, OrganizationFeatureFlags } from "../types";
 import { useOrganizations } from "@/hooks/useOrganizations";
 
@@ -24,6 +23,7 @@ export function OrgFeatureFlagsTab({
   organization: org,
   onSaveFlags,
 }: OrgFeatureFlagsTabProps) {
+  const { t } = useTranslation();
   const { updateFeatureFlags, refresh } = useOrganizations();
   const [flags, setFlags] = useState<OrganizationFeatureFlags>(org.featureFlags);
   const [saving, setSaving] = useState(false);
@@ -41,12 +41,12 @@ export function OrgFeatureFlagsTab({
     try {
       await updateFeatureFlags({ slug: org.slug, flags: flags as Record<string, boolean> });
       onSaveFlags?.(flags);
-      toast.success(`Feature flags and entitlements updated for ${org.name}`, {
-        description: "Add-on permissions are now active across tenant sessions and saved in database.",
+      toast.success(t("organizations.flags_update_success", { name: org.name }), {
+        description: t("organizations.flags_update_success_desc"),
       });
       refresh();
     } catch (err) {
-      toast.error(`Failed to update feature flags: ${err instanceof Error ? err.message : "Server error"}`);
+      toast.error(t("organizations.flags_update_failed", { error: err instanceof Error ? err.message : "Server error" }));
     } finally {
       setSaving(false);
     }
@@ -62,18 +62,23 @@ export function OrgFeatureFlagsTab({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-bold text-foreground">B2B Module Entitlements & Feature Flags</h3>
+              <h3 className="text-xs font-bold text-foreground">
+                {t("organizations.feature_flags_section_title")}
+              </h3>
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono px-1.5 py-0.2">
-                {Object.values(flags).filter(Boolean).length} of 5 Active
+                {t("organizations.active_of_total", {
+                  active: Object.values(flags).filter(Boolean).length,
+                  total: 5,
+                })}
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Kelola modul fitur tambahan yang dibeli oleh mitra ISP ini secara real-time.
+              {t("organizations.feature_flags_section_subtitle")}
             </p>
           </div>
         </div>
 
-        <ActionTooltip label="Save updated feature flag permissions for this tenant" shortcut="S">
+        <ActionTooltip label={t("organizations.save_flags_tooltip")} shortcut="Ctrl+S">
           <Button
             size="sm"
             onClick={handleSave}
@@ -81,7 +86,7 @@ export function OrgFeatureFlagsTab({
             className="h-7 px-2.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs"
           >
             <Save className="h-3.5 w-3.5" />
-            <span>{saving ? "Saving..." : "Save Entitlements"}</span>
+            <span>{saving ? t("organizations.saving_flags_btn") : t("organizations.save_flags_btn")}</span>
           </Button>
         </ActionTooltip>
       </div>
@@ -97,12 +102,12 @@ export function OrgFeatureFlagsTab({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-foreground">
-                  GIS Spatial Mapping Core
+                  {t("organizations.flag_gis_title")}
                 </span>
                 <Badge variant="outline" className="border-border text-[9px] font-mono px-1.5 py-0">CORE</Badge>
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                PostGIS spatial map rendering, ODC/ODP splitters, and fiber cable route tracing.
+                {t("organizations.flag_gis_desc")}
               </p>
             </div>
           </div>
@@ -121,12 +126,12 @@ export function OrgFeatureFlagsTab({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-foreground">
-                  OLT SNMP / SSH Poller Gateway
+                  {t("organizations.flag_olt_title")}
                 </span>
                 <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono px-1.5 py-0">PRO / ENT</Badge>
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Real-time optical telemetry, optical power level dBm monitoring, and port status tracking.
+                {t("organizations.flag_olt_desc")}
               </p>
             </div>
           </div>
@@ -145,12 +150,12 @@ export function OrgFeatureFlagsTab({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-foreground">
-                  WhatsApp Notification & Billing Engine
+                  {t("organizations.flag_whatsapp_title")}
                 </span>
                 <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-500 text-[9px] font-mono px-1.5 py-0">ADD-ON</Badge>
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Automated monthly invoice reminders and optical outage alerts to subscribers.
+                {t("organizations.flag_whatsapp_desc")}
               </p>
             </div>
           </div>
@@ -169,12 +174,12 @@ export function OrgFeatureFlagsTab({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-foreground">
-                  AI Automated Fiber Routing Copilot
+                  {t("organizations.flag_ai_title")}
                 </span>
                 <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 text-[9px] font-mono px-1.5 py-0">PREMIUM</Badge>
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                AI automated cable shortest-path routing algorithm with obstacle detection.
+                {t("organizations.flag_ai_desc")}
               </p>
             </div>
           </div>
@@ -193,12 +198,12 @@ export function OrgFeatureFlagsTab({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-foreground">
-                  Sandbox & Topology Simulation Mode
+                  {t("organizations.flag_sandbox_title")}
                 </span>
                 <Badge variant="outline" className="border-border text-[9px] font-mono px-1.5 py-0">TESTING</Badge>
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Isolated sandbox testing environment with simulated OLTs and test customers.
+                {t("organizations.flag_sandbox_desc")}
               </p>
             </div>
           </div>

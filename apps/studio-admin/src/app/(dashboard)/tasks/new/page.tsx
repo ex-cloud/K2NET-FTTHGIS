@@ -13,17 +13,18 @@ import {
   NewTaskFormSections,
   type CreateTaskFormValues,
 } from "@/components/tasks/new-task-form-sections";
+import { useTranslation } from "@k2net/i18n";
 
 const STUDIO_ADMIN_SCOPE = "PLATFORM_INTERNAL" as const;
 
 const createTaskSchema = z.object({
   type: z.enum(["TICKET", "PROJECT"] as const, {
-    message: "Tipe task wajib dipilih",
+    message: "Task type is required",
   }),
   title: z
     .string()
-    .min(3, "Judul minimal 3 karakter")
-    .max(500, "Judul maksimal 500 karakter"),
+    .min(3, "Title must be at least 3 characters")
+    .max(500, "Title must not exceed 500 characters"),
   description: z.string().optional(),
   priority: z.enum(["URGENT", "HIGH", "NORMAL", "LOW"] as const),
   assigneeId: z.string().optional(),
@@ -31,6 +32,7 @@ const createTaskSchema = z.object({
 });
 
 export default function NewTaskPage() {
+  const { t } = useTranslation();
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,7 +56,7 @@ export default function NewTaskPage() {
 
   const onSubmit = async (data: CreateTaskFormValues) => {
     if (!session?.accessToken) {
-      toast.error("Sesi Anda telah kedaluwarsa. Silakan login kembali.");
+      toast.error(t("tasks.session_expired_login_again"));
       return;
     }
     setIsSubmitting(true);
@@ -73,18 +75,18 @@ export default function NewTaskPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? "Gagal membuat task");
+        throw new Error(err.message ?? t("tasks.failed_create_task"));
       }
 
       const created = await res.json();
       toast.success(
         selectedType === "PROJECT"
-          ? `Proyek berhasil dibuat — Ref: ${created.obsidianRef ?? created.id}`
-          : "Tiket berhasil dibuat"
+          ? t("tasks.project_created_success_ref", { ref: created.obsidianRef ?? created.id })
+          : t("tasks.ticket_created_success")
       );
       router.push(`/tasks/${created.id}`);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan saat membuat task");
+      toast.error(err instanceof Error ? err.message : t("tasks.failed_create_task"));
     } finally {
       setIsSubmitting(false);
     }
@@ -96,10 +98,10 @@ export default function NewTaskPage() {
         {/* ── Back link ── */}
         <button
           onClick={() => router.push("/tasks")}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 cursor-pointer"
         >
           <ChevronLeft className="h-4 w-4" />
-          Kembali ke Tasks &amp; Tickets
+          {t("tasks.back_to_tasks_tickets")}
         </button>
 
         {/* ── Header ── */}
@@ -112,9 +114,9 @@ export default function NewTaskPage() {
             )}
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Buat Task Baru</h1>
+            <h1 className="text-xl font-bold text-foreground">{t("tasks.create_task")}</h1>
             <p className="text-sm text-foreground/75 dark:text-muted-foreground">
-              Portal Utama — Scope: <span className="font-mono text-primary text-xs">PLATFORM_INTERNAL</span>
+              Main Portal — Scope: <span className="font-mono text-primary text-xs">PLATFORM_INTERNAL</span>
             </p>
           </div>
         </div>
@@ -132,21 +134,21 @@ export default function NewTaskPage() {
             <button
               type="button"
               onClick={() => router.push("/tasks")}
-              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg transition-colors cursor-pointer"
             >
-              Batal
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer"
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {isSubmitting
-                ? "Membuat..."
+                ? "Creating..."
                 : selectedType === "PROJECT"
-                ? "Buat Proyek Platform"
-                : "Buat Tiket Internal"}
+                ? "Create Platform Project"
+                : "Create Internal Ticket"}
             </button>
           </div>
         </form>

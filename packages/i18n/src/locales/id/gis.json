@@ -16,5 +16,22 @@
   "port_capacity": "Kapasitas Port Terpakai",
   "device_details": "Rincian Teknis Perangkat",
   "export_kml": "Ekspor KML / GeoJSON",
-  "import_kml": "Impor Berkas KML / GeoJSON"
+  "import_kml": "Impor Berkas KML / GeoJSON",
+  "search_projects": "Cari proyek / kode...",
+  "search_assets": "Cari aset spasial / perangkat...",
+  "create_project": "Buat Proyek",
+  "create_new_project": "Buat Proyek Baru",
+  "all_projects_count": "Semua ({{count}})",
+  "refresh_projects": "Segarkan data proyek",
+  "grid_view": "Tampilan Grid",
+  "list_view": "Tampilan Daftar",
+  "loading_projects": "Memuat data proyek...",
+  "no_projects_found": "Tidak Ada Proyek Ditemukan",
+  "no_projects_search_desc": "Tidak ada proyek yang sesuai dengan kriteria pencarian Anda.",
+  "no_projects_empty_desc": "Mulai dengan membuat proyek FTTH pertama untuk organisasi Anda.",
+  "active_ftth_projects": "Proyek FTTH Aktif",
+  "total_customers": "Total Pelanggan Terpasang",
+  "fiber_cable_span": "Bentang Kabel Fiber",
+  "odc_odp_devices": "Perangkat ODC & ODP",
+  "s3_storage": "Kapasitas Storage S3"
 }

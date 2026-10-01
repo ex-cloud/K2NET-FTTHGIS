@@ -4,6 +4,7 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { SettingsSection } from "./settings-section";
 import { SettingsFormRow } from "./settings-form-row";
+import { useTranslation } from "@k2net/i18n";
 
 interface BrandingLogoSectionProps {
   logoUrl: string;
@@ -11,15 +12,16 @@ interface BrandingLogoSectionProps {
 }
 
 export function BrandingLogoSection({ logoUrl, onLogoUrlChange }: BrandingLogoSectionProps) {
+  const { t } = useTranslation();
   const [dragActive, setDragActive] = useState(false);
 
   const handleLogoFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      toast.error("Format file harus berupa gambar (PNG, JPG, SVG, WEBP).");
+      toast.error(t("settings.branding.logo_file_type_error"));
       return;
     }
     if (file.size > 1 * 1024 * 1024) {
-      toast.error("Ukuran logo maksimal 1MB.");
+      toast.error(t("settings.branding.logo_file_size_error"));
       return;
     }
 
@@ -27,7 +29,7 @@ export function BrandingLogoSection({ logoUrl, onLogoUrlChange }: BrandingLogoSe
     reader.onload = (e) => {
       if (e.target?.result) {
         onLogoUrlChange(e.target.result as string);
-        toast.success("Logo berhasil diimpor! Lihat pratinjau di sebelah kanan.");
+        toast.success(t("settings.branding.logo_import_success"));
       }
     };
     reader.readAsDataURL(file);
@@ -35,12 +37,12 @@ export function BrandingLogoSection({ logoUrl, onLogoUrlChange }: BrandingLogoSe
 
   return (
     <SettingsSection
-      title="Logo & Brand Assets"
-      description="Unggah logo resmi organisasi atau masukkan URL / string Base64 data logo."
+      title={t("settings.branding.logo_section_title")}
+      description={t("settings.branding.logo_section_desc")}
     >
       <SettingsFormRow
-        label="System Logo URL / Base64"
-        description="URL gambar logo platform atau string Base64 yang akan ditampilkan di header dan login."
+        label={t("settings.branding.logo_url_label")}
+        description={t("settings.branding.logo_url_desc")}
       >
         <Input
           type="text"
@@ -52,8 +54,8 @@ export function BrandingLogoSection({ logoUrl, onLogoUrlChange }: BrandingLogoSe
       </SettingsFormRow>
 
       <SettingsFormRow
-        label="Upload File Logo Image"
-        description="Drag & drop atau pilih gambar logo dari komputer Anda (Format PNG, SVG, WEBP; Maks 1MB)."
+        label={t("settings.branding.logo_upload_label")}
+        description={t("settings.branding.logo_upload_desc")}
         divider={false}
       >
         <div
@@ -84,7 +86,7 @@ export function BrandingLogoSection({ logoUrl, onLogoUrlChange }: BrandingLogoSe
             }}
           />
           <Upload className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-          <p className="text-xs font-medium text-foreground">Klik atau drag file logo ke sini</p>
+          <p className="text-xs font-medium text-foreground">{t("settings.branding.logo_drag_hint")}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">PNG, SVG, WEBP (Max 1MB)</p>
         </div>
       </SettingsFormRow>

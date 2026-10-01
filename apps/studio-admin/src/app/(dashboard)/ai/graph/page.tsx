@@ -1,13 +1,13 @@
-
-
 import { useRouter } from "@/lib/navigation-compat";
 import { Network, ArrowLeft, Plus, FlaskConical } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { AiKnowledgeGraphTab } from "@/components/ai/ai-knowledge-graph-tab";
 
 export default function AiGraphPage() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <AiPageWrapper>
@@ -22,20 +22,20 @@ export default function AiGraphPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                  Graf Pengetahuan 2D (Obsidian Graph)
+                  {t("ai.knowledge_graph_title")}
                 </h1>
                 <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-purple-500/30 text-purple-400 bg-purple-500/10">
-                  60 FPS Force-Directed
+                  {t("ai.fps_force_directed")}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Visualisasi topologi semantik koneksi antar dokumen SOP dengan simulasi hukum gravitasi Coulomb & pegas Hooke.
+                {t("ai.knowledge_graph_subtitle")}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <ActionTooltip label="Kembali ke Daftar Dokumen SOP">
+            <ActionTooltip label={t("ai.back_to_docs_tooltip")} shortcut="Esc">
               <Button
                 variant="outline"
                 size="sm"
@@ -43,28 +43,28 @@ export default function AiGraphPage() {
                 className="text-xs gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                Kembali ke Tabel
+                {t("ai.back_to_table")}
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Buka Pengujian Semantic RAG Simulator" shortcut="S">
+            <ActionTooltip label={t("ai.open_rag_simulator_tooltip")} shortcut="S then S">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/ai/simulator")}
-                className="text-xs gap-1.5 border-sky-500/30 text-sky-400 hover:bg-sky-500/10 cursor-pointer"
+                className="text-xs gap-1.5 border-border/80 text-foreground hover:bg-muted/50 cursor-pointer"
               >
                 <FlaskConical className="w-3.5 h-3.5" />
-                Buka RAG Simulator
+                {t("ai.open_rag_simulator")}
               </Button>
             </ActionTooltip>
-            <ActionTooltip label="Tulis Dokumen SOP Baru" shortcut="N">
+            <ActionTooltip label={t("ai.write_new_sop_tooltip")} shortcut="N">
               <Button
                 size="sm"
                 onClick={() => router.push("/ai/add")}
                 className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Tulis SOP Baru
+                {t("ai.write_new_sop")}
               </Button>
             </ActionTooltip>
           </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 interface PromptDeleteModalProps {
   deletePromptId: string | null;
@@ -15,6 +16,8 @@ export function PromptDeleteModal({
   isDeleting,
   onConfirmDelete,
 }: PromptDeleteModalProps) {
+  const { t } = useTranslation();
+
   if (!deletePromptId) return null;
 
   return (
@@ -25,10 +28,9 @@ export function PromptDeleteModal({
             <AlertCircle className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-foreground">Hapus Prompt Rekomendasi?</h3>
+            <h3 className="text-sm font-bold text-foreground">{t("ai.delete_prompt_title")}</h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Prompt ini akan dihapus permanen dari basis data dan tidak akan lagi muncul di Ask AI
-              Drawer pengguna.
+              {t("ai.delete_prompt_desc", { title: "" })}
             </p>
           </div>
         </div>
@@ -41,7 +43,7 @@ export function PromptDeleteModal({
             disabled={isDeleting}
             className="text-xs cursor-pointer"
           >
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -55,7 +57,7 @@ export function PromptDeleteModal({
             ) : (
               <Trash2 className="w-3.5 h-3.5" />
             )}
-            <span>Hapus Permanen</span>
+            <span>{t("common.delete")}</span>
           </Button>
         </div>
       </div>

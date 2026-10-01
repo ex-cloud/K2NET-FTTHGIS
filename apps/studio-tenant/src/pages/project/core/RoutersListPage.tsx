@@ -14,8 +14,10 @@ import {
   TableBody,
   TableCell,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 export function RoutersListPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
 
@@ -26,7 +28,7 @@ export function RoutersListPage() {
       ip: "10.200.0.1",
       role: "BGP Gateway & NAT",
       cpuUsage: "18%",
-      uptime: "142 Hari",
+      uptime: "142d",
       status: "ACTIVE",
     },
     {
@@ -35,7 +37,7 @@ export function RoutersListPage() {
       ip: "10.200.0.2",
       role: "10G Optical Switch",
       cpuUsage: "8%",
-      uptime: "98 Hari",
+      uptime: "98d",
       status: "ACTIVE",
     },
   ];
@@ -44,15 +46,15 @@ export function RoutersListPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: "Core Devices", href: `/project/${projectId}/core/olt` },
-          { label: "Router & Switch" },
+          { label: t("inventory.routers_title") },
         ]}
-        title="Router Core & Switch Agregasi"
+        title={t("inventory.routers_title")}
         actions={
           <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
             <Plus className="h-4 w-4" />
-            + Tambah Router
+            {t("inventory.add_router")}
           </Button>
         }
       />
@@ -62,12 +64,12 @@ export function RoutersListPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">NAMA PERANGKAT</TableHead>
-                <TableHead className="font-bold">IP ADDRESS</TableHead>
-                <TableHead className="font-bold">PERAN JARINGAN</TableHead>
-                <TableHead className="font-bold">CPU LOAD</TableHead>
+                <TableHead className="font-bold">{t("inventory.router_name").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.ip_address").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.interfaces").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("inventory.cpu_load").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">UPTIME</TableHead>
-                <TableHead className="font-bold">STATUS</TableHead>
+                <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -96,3 +98,4 @@ export function RoutersListPage() {
     </div>
   );
 }
+

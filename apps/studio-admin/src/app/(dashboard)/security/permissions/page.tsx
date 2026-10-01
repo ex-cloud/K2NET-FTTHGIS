@@ -12,6 +12,7 @@ import { PermissionsGroupList } from "@/components/security/permissions-group-li
 import { TraceabilityModal } from "@/components/security/permissions-traceability-modal";
 import { CreatePermissionDialog } from "@/components/security/permissions-create-dialog";
 import { DeleteConfirmDialog } from "@/components/security/permissions-delete-dialog";
+import { useTranslation } from "@k2net/i18n";
 
 function groupByModule(permissions: Permission[]) {
   return permissions.reduce<Record<string, Permission[]>>((acc, p) => {
@@ -22,6 +23,7 @@ function groupByModule(permissions: Permission[]) {
 }
 
 export default function PermissionsPage() {
+  const { t } = useTranslation();
   const { data: session } = useSession();
 
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -60,17 +62,17 @@ export default function PermissionsPage() {
         const res = await fetch("/api/v1/roles/permissions", {
           headers: { Authorization: `Bearer ${session.accessToken}` },
         });
-        if (!res.ok) throw new Error("Gagal memuat daftar permission");
+        if (!res.ok) throw new Error(t("security.failed_load_permissions"));
         const data: Permission[] = await res.json();
         setPermissions(data);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
+        toast.error(err instanceof Error ? err.message : t("common.error"));
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
       }
     },
-    [session?.accessToken]
+    [session?.accessToken, t]
   );
 
   useEffect(() => {
@@ -84,11 +86,11 @@ export default function PermissionsPage() {
       const res = await fetch(`/api/v1/security/permissions/${encodeURIComponent(code)}/usages`, {
         headers: { Authorization: `Bearer ${session?.accessToken}` },
       });
-      if (!res.ok) throw new Error("Gagal memuat jejak endpoint");
+      if (!res.ok) throw new Error(t("security.failed_load_endpoint_trace"));
       const data: PermissionUsageResponse = await res.json();
       setUsageData(data);
     } catch {
-      toast.error("Gagal memuat traceability endpoint");
+      toast.error(t("security.failed_load_endpoint_trace"));
     } finally {
       setLoadingUsage(false);
     }
@@ -96,7 +98,7 @@ export default function PermissionsPage() {
 
   async function handleCreate() {
     if (!form.code.trim() || !form.name.trim() || !form.module.trim()) {
-      toast.error("Code, Name, dan Module wajib diisi.");
+      toast.error(t("common.required"));
       return;
     }
     setIsSubmitting(true);
@@ -111,14 +113,14 @@ export default function PermissionsPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Gagal membuat permission");
+        throw new Error(err.message || t("security.failed_create_permission"));
       }
-      toast.success(`Permission "${form.code}" berhasil ditambahkan`);
+      toast.success(t("security.permission_created_success", { code: form.code }));
       setShowDialog(false);
       setForm({ code: "", name: "", description: "", module: "", scope: "TENANT" });
       await fetchPermissions(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
+      toast.error(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setIsSubmitting(false);
     }
@@ -132,12 +134,12 @@ export default function PermissionsPage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${session?.accessToken}` },
       });
-      if (!res.ok) throw new Error("Gagal menghapus permission");
-      toast.success(`Permission "${deleteTarget.code}" berhasil dihapus`);
+      if (!res.ok) throw new Error(t("security.failed_delete_permission"));
+      toast.success(t("security.permission_deleted_success", { code: deleteTarget.code }));
       setDeleteTarget(null);
       await fetchPermissions(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
+      toast.error(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setIsSubmitting(false);
     }

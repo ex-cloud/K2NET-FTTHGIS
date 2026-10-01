@@ -26,6 +26,7 @@ import {
 } from "@k2net/ui";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../../lib/api-client";
+import { useTranslation } from "@k2net/i18n";
 
 interface OltItem {
   id: string;
@@ -44,6 +45,7 @@ interface OltItem {
 }
 
 export function OltListPage() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -75,15 +77,15 @@ export function OltListPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <PageHeader
         breadcrumbs={[
-          { label: "Proyek", href: "/projects" },
+          { label: t("nav.projects"), href: "/projects" },
           { label: "Core Devices", href: `/project/${projectId}/core/olt` },
-          { label: "Perangkat OLT" },
+          { label: t("inventory.olt_title") },
         ]}
-        title="Daftar Perangkat OLT (Optical Line Terminal)"
+        title={t("inventory.olt_title")}
         actions={
           <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
             <Plus className="h-4 w-4" />
-            + Tambah OLT Baru
+            {t("inventory.add_olt")}
           </Button>
         }
       />
@@ -93,7 +95,7 @@ export function OltListPage() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Cari kode OLT, IP atau nama POP..."
+              placeholder={t("common.search")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs bg-muted/20"
@@ -110,11 +112,11 @@ export function OltListPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 text-[11px]">
-                  <TableHead className="font-bold">KODE & NAMA OLT</TableHead>
-                  <TableHead className="font-bold">MERK & TIPE</TableHead>
-                  <TableHead className="font-bold">IP MANAGEMENT</TableHead>
-                  <TableHead className="font-bold">PORT PON TERPAKAI</TableHead>
-                  <TableHead className="font-bold">STATUS TELEMETRI</TableHead>
+                  <TableHead className="font-bold">{t("inventory.olt_name").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("inventory.vendor").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("inventory.ip_address").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("inventory.pon_ports").toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
                   <TableHead className="w-12 text-right" />
                 </TableRow>
               </TableHeader>
@@ -132,7 +134,7 @@ export function OltListPage() {
                     </TableCell>
                     <TableCell className="font-mono text-muted-foreground">{olt.ipAddress || "-"}</TableCell>
                     <TableCell className="font-mono font-semibold">
-                      {olt.ponPortsUsed || 0} / {olt.ponPortsTotal || 16} Port
+                      {olt.ponPortsUsed || 0} / {olt.ponPortsTotal || 16} Ports
                     </TableCell>
                     <TableCell>
                       <span
@@ -153,9 +155,8 @@ export function OltListPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="text-xs">
-                          <DropdownMenuItem>Pindai Port PON</DropdownMenuItem>
-                          <DropdownMenuItem>Live Telemetry SNMP</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Parameter</DropdownMenuItem>
+                          <DropdownMenuItem>{t("common.edit")}</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">{t("common.delete")}</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -166,11 +167,9 @@ export function OltListPage() {
           ) : (
             <div className="p-8 text-center space-y-2">
               <Server className="h-8 w-8 text-muted-foreground mx-auto" />
-              <p className="text-xs font-semibold text-foreground">Belum Ada Perangkat OLT</p>
+              <p className="text-xs font-semibold text-foreground">{t("common.no_data")}</p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                {searchQuery
-                  ? "Tidak ada perangkat OLT yang cocok dengan pencarian Anda."
-                  : "Mulai dengan mendaftarkan perangkat OLT core Anda untuk memonitor port PON dan ONU."}
+                {t("inventory.olt_subtitle")}
               </p>
             </div>
           )}
@@ -179,3 +178,4 @@ export function OltListPage() {
     </div>
   );
 }
+

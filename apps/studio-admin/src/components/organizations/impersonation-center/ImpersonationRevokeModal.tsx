@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from "@k2net/ui";
 import type { ImpersonationSessionItem } from "@/hooks/useImpersonationCenter";
+import { useTranslation } from "@k2net/i18n";
 
 interface ImpersonationRevokeModalProps {
   revokeTarget: ImpersonationSessionItem | null;
@@ -21,6 +22,7 @@ export function ImpersonationRevokeModal({
   onClose,
   onConfirm,
 }: ImpersonationRevokeModalProps) {
+  const { t } = useTranslation();
   if (!revokeTarget) return null;
 
   return (
@@ -30,20 +32,20 @@ export function ImpersonationRevokeModal({
           <div className="flex items-center gap-2 text-destructive mb-1">
             <AlertTriangle className="h-5 w-5" />
             <span className="text-xs font-mono font-bold tracking-wider uppercase">
-              Emergency Revoke
+              {t("organizations.impersonation_emergency_revoke_badge")}
             </span>
           </div>
           <DialogTitle className="text-base font-bold">
-            Putus Akses Impersonasi Darurat?
+            {t("organizations.impersonation_revoke_title")}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Tindakan ini akan langsung mencabut token dan memutus akses sesi Super Admin ke portal <strong>{revokeTarget.targetOrgName}</strong>. Rekaman audit forensik <code className="font-mono text-destructive">IMPERSONATION_FORCE_REVOKED</code> akan dicatat.
+            {t("organizations.impersonation_revoke_desc", { orgName: revokeTarget.targetOrgName })}
           </DialogDescription>
         </DialogHeader>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button size="sm" variant="ghost" onClick={onClose} className="text-xs cursor-pointer">
-            Batal
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
@@ -51,7 +53,7 @@ export function ImpersonationRevokeModal({
             onClick={() => onConfirm(revokeTarget)}
             className="text-xs font-semibold cursor-pointer"
           >
-            Putus Akses Sekarang
+            {t("organizations.impersonation_revoke_confirm_btn")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -39,10 +39,10 @@ export interface ScopeItem {
 export const KNOWLEDGE_SCOPES: ScopeItem[] = [
   {
     id: "PLATFORM_INTERNAL",
-    label: "Platform Internal (Super Admin Khusus)",
+    label: "Platform Internal (Super Admin)",
     shortLabel: "Platform Super Admin",
     badge: "Super Admin Only",
-    description: "Dokumen rahasia internal K2NET (DRP, Arsitektur Server Kong/Traefik, Topology Host, Keycloak IAM). Terisolasi mutlak dari tenant.",
+    description: "Confidential internal K2NET documents (DRP, Kong/Traefik Server Architecture, Topology Host, Keycloak IAM). Strictly isolated from tenants.",
     icon: Lock,
     color: "text-rose-500 dark:text-rose-400",
     accentBorder: "border-rose-500/30",
@@ -50,10 +50,10 @@ export const KNOWLEDGE_SCOPES: ScopeItem[] = [
   },
   {
     id: "TENANT_INTERNAL",
-    label: "Mitra ISP / Tenant Internal (NOC & Teknisi)",
+    label: "ISP Partner / Tenant Internal (NOC & Technicians)",
     shortLabel: "Tenant NOC ISP",
-    badge: "Mitra ISP Scope",
-    description: "Dokumen teknis khusus teknisi NOC Tenant (SOP redaman OLT ZTE/Huawei, panduan splicing FO, troubleshooting LOS alarm).",
+    badge: "ISP Partner Scope",
+    description: "Technical documents specifically for Tenant NOC technicians (OLT ZTE/Huawei optical attenuation SOP, FO splicing guide, LOS alarm troubleshooting).",
     icon: Building2,
     color: "text-sky-500 dark:text-sky-400",
     accentBorder: "border-sky-500/30",
@@ -61,10 +61,10 @@ export const KNOWLEDGE_SCOPES: ScopeItem[] = [
   },
   {
     id: "GLOBAL",
-    label: "Publik / Global (Semua Pengguna)",
-    shortLabel: "Global / Umum",
+    label: "Public / Global (All Users)",
+    shortLabel: "Global / General",
     badge: "Global Knowledge",
-    description: "Pengetahuan umum yang dapat diakses oleh semua pengguna (User Manual GIS, Glosarium FTTH, Panduan Umum Aplikasi).",
+    description: "General knowledge accessible to all users (GIS User Manual, FTTH Glossary, General Application Guide).",
     icon: Globe2,
     color: "text-primary",
     accentBorder: "border-primary/30",
@@ -83,49 +83,49 @@ export interface StatusItem {
 export const STATUS_ITEMS: Record<KnowledgeStatus, StatusItem> = {
   INDEXED: {
     id: "INDEXED",
-    label: "Terindeks & Aktif",
+    label: "Indexed & Active",
     badge: "bg-primary/10 text-primary border-primary/20",
     icon: CheckCircle2,
     color: "text-primary",
   },
   PENDING_REVIEW: {
     id: "PENDING_REVIEW",
-    label: "Menunggu Review",
+    label: "Pending Review",
     badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     icon: Clock,
     color: "text-amber-500",
   },
   DRAFT: {
     id: "DRAFT",
-    label: "Draft Revisi",
+    label: "Draft Revision",
     badge: "bg-muted text-muted-foreground border-border",
     icon: FileEdit,
     color: "text-muted-foreground",
   },
   PROCESSING: {
     id: "PROCESSING",
-    label: "Memproses Vektor",
+    label: "Processing Vectors",
     badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
     icon: Loader2,
     color: "text-blue-500",
   },
   PENDING: {
     id: "PENDING",
-    label: "Antrian Indeks",
+    label: "Index Queue",
     badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     icon: Clock,
     color: "text-amber-500",
   },
   REJECTED: {
     id: "REJECTED",
-    label: "Ditolak / Draf",
+    label: "Rejected / Draft",
     badge: "bg-destructive/10 text-destructive border-destructive/20",
     icon: XCircle,
     color: "text-destructive",
   },
   FAILED: {
     id: "FAILED",
-    label: "Gagal Indeks",
+    label: "Index Failed",
     badge: "bg-destructive/10 text-destructive border-destructive/20",
     icon: AlertTriangle,
     color: "text-destructive",
@@ -139,11 +139,11 @@ export interface CategoryItem {
 }
 
 export const CATEGORIES: CategoryItem[] = [
-  { id: "ALL", label: "Semua Kategori" },
+  { id: "ALL", label: "All Categories" },
   { id: "TROUBLESHOOTING", label: "Troubleshooting OLT/Optical", color: "text-amber-500 dark:text-amber-400 border-amber-500/30 bg-amber-500/10" },
-  { id: "NETWORK_CONFIG", label: "Arsitektur & Jaringan", color: "text-sky-500 dark:text-sky-400 border-sky-500/30 bg-sky-500/10" },
-  { id: "GIS_MANUAL", label: "GIS & Survey Spasial", color: "text-primary border-primary/30 bg-primary/10" },
-  { id: "INFRASTRUCTURE", label: "DevOps & Server", color: "text-purple-500 dark:text-purple-400 border-purple-500/30 bg-purple-500/10" },
+  { id: "NETWORK_CONFIG", label: "Architecture & Networking", color: "text-sky-500 dark:text-sky-400 border-sky-500/30 bg-sky-500/10" },
+  { id: "GIS_MANUAL", label: "GIS & Spatial Survey", color: "text-primary border-primary/30 bg-primary/10" },
+  { id: "INFRASTRUCTURE", label: "DevOps & Infrastructure", color: "text-purple-500 dark:text-purple-400 border-purple-500/30 bg-purple-500/10" },
   { id: "PLANS", label: "Plans & Roadmap", color: "text-cyan-500 dark:text-cyan-400 border-cyan-500/30 bg-cyan-500/10" },
   { id: "GENERAL", label: "General & SOP", color: "text-foreground/80 border-border bg-muted/60" },
 ];
@@ -163,46 +163,46 @@ export const KNOWLEDGE_TEMPLATES: KnowledgeTemplateItem[] = [
     title: "SOP Troubleshooting OLT ZTE C320 (PON LOS)",
     category: "TROUBLESHOOTING",
     icon: Zap,
-    description: "Prosedur penanganan alarm LOS, verifikasi optical power SFP, dan diagnosa ONU offline.",
-    content: `# SOP Penanganan Alarm OLT ZTE C320 — Status PON LOS
+    description: "Procedures for handling LOS alarms, SFP optical power verification, and offline ONU diagnostics.",
+    content: `# SOP Alarm Handling for OLT ZTE C320 — PON LOS Status
 
-## 1. Identifikasi Awal
-- **Gejala**: Alarm LOS (Loss of Signal) menyala pada kartu GTGO/GTGH.
-- **Dampak**: Seluruh ONU pada port PON terkait offline.
+## 1. Initial Identification
+- **Symptom**: LOS (Loss of Signal) alarm illuminated on the GTGO/GTGH card.
+- **Impact**: All ONUs connected to the corresponding PON port are offline.
 
-## 2. Langkah Diagnosa CLI
+## 2. CLI Diagnostic Steps
 \`\`\`bash
-# Masuk ke mode privilege OLT
+# Enter OLT privilege mode
 enable
 show gpon onu state gpon-olt_1/1/1
 show pon power attenuation gpon-olt_1/1/1
 \`\`\`
 
-## 3. Ambang Batas Optical Power
-- Batas Minimum Sensitivitas: **-27.0 dBm**
-- Batas Ideal: **-15.0 s/d -22.0 dBm**
-- Batas Saturasi (Overload): **-8.0 dBm**
+## 3. Optical Power Thresholds
+- Minimum Sensitivity Threshold: **-27.0 dBm**
+- Ideal Operating Range: **-15.0 to -22.0 dBm**
+- Saturation (Overload) Threshold: **-8.0 dBm**
 
-## 4. Tindakan Korektif
-1. Lakukan pengukuran daya dengan Optical Power Meter (OPM) di port ODF.
-2. Jika daya di bawah -27 dBm, periksa kabel patchcord dan konektor SC/UPC (bersihkan dengan alcohol swab).
-3. Jika sinyal mati total (0 mW), lakukan OTDR tracing dari feeder ODC menuju OLT.`,
+## 4. Corrective Actions
+1. Perform power measurements using an Optical Power Meter (OPM) at the ODF port.
+2. If power is below -27 dBm, inspect patch cords and SC/UPC connectors (clean with alcohol swab).
+3. If signal is completely absent (0 mW), conduct OTDR tracing from feeder ODC toward the OLT.`,
   },
   {
     id: "link-budget-gpon",
-    title: "Standar Optical Link Budget & Redaman GPON 1:64",
+    title: "Optical Link Budget & GPON 1:64 Attenuation Standard",
     category: "NETWORK_CONFIG",
     icon: Layers,
-    description: "Kalkulasi batas redaman nominal splitter, redaman kabel/km, dan splicing loss.",
-    content: `# Standar Optical Link Budget FTTH GPON (Rasio 1:64)
+    description: "Calculations for nominal splitter attenuation, cable loss per km, and fusion splicing loss.",
+    content: `# Optical Link Budget Standards for FTTH GPON (1:64 Ratio)
 
-## 1. Parameter Redaman Pasif (Passive Loss)
-- **Kabel Fiber G.652.D (1310nm / 1490nm)**: 0.35 dB/km
-- **Sambungan Fusion Splicing**: Maks 0.05 dB per titik sambung
-- **Konektor Adaptor SC/APC**: Maks 0.3 dB per pasang
+## 1. Passive Attenuation Parameters (Passive Loss)
+- **Fiber Cable G.652.D (1310nm / 1490nm)**: 0.35 dB/km
+- **Fusion Splicing Joint**: Max 0.05 dB per splice point
+- **SC/APC Connector Adaptor**: Max 0.3 dB per mated pair
 
-## 2. Redaman Nominal Optical Splitter (PLC)
-| Rasio Splitter | Redaman Nominal | Redaman Toleransi Max |
+## 2. Nominal Optical Splitter Attenuation (PLC)
+| Splitter Ratio | Nominal Loss | Max Tolerance Loss |
 | :--- | :--- | :--- |
 | **Splitter 1:2** | 3.0 dB | 3.5 dB |
 | **Splitter 1:4** | 6.8 dB | 7.2 dB |
@@ -210,30 +210,30 @@ show pon power attenuation gpon-olt_1/1/1
 | **Splitter 1:16** | 13.5 dB | 14.0 dB |
 | **Splitter 1:64** | 20.1 dB | 20.5 dB |
 
-## 3. Rumus Link Budget Total
+## 3. Total Link Budget Formula
 \`\`\`
-Total Loss = (Panjang Kabel × 0.35) + (N Splicing × 0.05) + (N Konektor × 0.3) + Splitter Loss + Safety Margin (3 dB)
+Total Loss = (Cable Length × 0.35) + (Splice Count × 0.05) + (Connector Count × 0.3) + Splitter Loss + Safety Margin (3 dB)
 \`\`\``,
   },
   {
     id: "postgis-odp-guide",
-    title: "Panduan Spasial PostGIS EPSG:4326 & ODP Placement",
+    title: "PostGIS EPSG:4326 Spatial Guide & ODP Placement",
     category: "GIS_MANUAL",
     icon: Database,
-    description: "Aturan SRID spasial, toleransi radius survey 50m, dan integrasi Leaflet/MapLibre.",
-    content: `# Panduan Basis Data Spasial PostGIS & Penempatan ODP
+    description: "Spatial SRID rules, 150m service radius tolerance, and PostGIS distance queries.",
+    content: `# PostGIS Spatial Database Guide & ODP Placement
 
-## 1. Aturan Koordinat (Spatial Reference System)
-- **SRID Wajib**: \`EPSG:4326\` (WGS 84 Koordinat Bujur/Lintang derajat desimal).
-- **Tipe Data Titik**: \`GEOMETRY(Point, 4326)\` untuk Pole, ODP, ODC, dan Pelanggan.
-- **Tipe Data Jalur**: \`GEOMETRY(LineString, 4326)\` untuk Kabel Feeder dan Distribusi.
+## 1. Coordinate System Rules (Spatial Reference System)
+- **Mandatory SRID**: \`EPSG:4326\` (WGS 84 Longitude/Latitude decimal degrees).
+- **Point Data Types**: \`GEOMETRY(Point, 4326)\` for Pole, ODP, ODC, and Customer Premise.
+- **Line Data Types**: \`GEOMETRY(LineString, 4326)\` for Feeder and Distribution cables.
 
-## 2. Aturan Penempatan ODP (Optical Distribution Point)
-1. **Radius Layanan Maksimum**: Jarak kabel drop-core dari ODP ke rumah pelanggan tidak boleh melebihi **150 meter**.
-2. **Kapasitas Port**:
-   - ODP-8 (Splitter 1:8): Area pemukiman padat sedang.
-   - ODP-16 (Splitter 1:16): Area perumahan klaster / ruko.
-3. **Kueri PostGIS Radius Terdekat**:
+## 2. ODP (Optical Distribution Point) Placement Rules
+1. **Maximum Service Radius**: Drop-core cable distance from ODP to customer premise must not exceed **150 meters**.
+2. **Port Capacity Guidelines**:
+   - ODP-8 (Splitter 1:8): Medium-density residential clusters.
+   - ODP-16 (Splitter 1:16): High-density housing estates / commercial shophouses.
+3. **Nearest PostGIS Distance Query**:
 \`\`\`sql
 SELECT id, code, name, ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(106.8456, -6.2088), 4326)::geography) AS distance_meters
 FROM ftth_odp
@@ -246,22 +246,22 @@ ORDER BY distance_meters ASC;
     title: "Disaster Recovery 3-Layer Backup & Nextcloud WebDAV",
     category: "INFRASTRUCTURE",
     icon: ShieldCheck,
-    description: "Arsitektur 3 lapis backup database, MinIO S3, dan replikasi offsite Nextcloud.",
-    content: `# Standar Operasional Backup 3-Layer K2NET Enterprise
+    description: "3-Layer backup architecture for databases, MinIO S3, and offsite Nextcloud replication.",
+    content: `# K2NET Enterprise 3-Layer Backup Standard Operating Procedure
 
-## 1. Arsitektur 3 Lapis (Disaster Recovery)
-1. **Layer 1 (Local NVMe Storage)**: \`/opt/project5/backups/\` — Retensi 7 hari lokal untuk recovery instan (< 5 menit).
-2. **Layer 2 (On-Premise MinIO S3)**: Port \`9005\` Tailscale — Bucket \`db-backups\`, \`code-backups\`, \`docker-backups\`.
-3. **Layer 3 (Offsite Cloud Nextcloud WebDAV)**: Replikasi terenkripsi harian via rclone ke Nextcloud Server.
+## 1. 3-Layer Disaster Recovery Architecture
+1. **Layer 1 (Local NVMe Storage)**: \`/opt/project5/backups/\` — 7-day local retention for rapid restoration (< 5 min).
+2. **Layer 2 (On-Premise MinIO S3)**: Port \`9005\` Tailscale — Buckets \`db-backups\`, \`code-backups\`, \`docker-backups\`.
+3. **Layer 3 (Offsite Cloud Nextcloud WebDAV)**: Daily encrypted replication via rclone to Nextcloud Server.
 
-## 2. Jadwal Crontab Server
-- \`00:00\` — Dump PostgreSQL \`ftth_gis\` & \`keycloak_db\` (\`backup.sh\`)
-- \`01:00\` — Arsip MinIO S3 Snapshot (\`backup-minio.sh\`)
-- \`02:00\` — Backup Snapshot Source Code & Config (\`backup-code.sh\`)
-- \`04:00\` — Sinkronisasi Offsite Cloud Nextcloud (\`sync-nextcloud.sh\`)
+## 2. Server Crontab Schedule
+- \`00:00\` — PostgreSQL dump for \`ftth_gis\` & \`keycloak_db\` (\`backup.sh\`)
+- \`01:00\` — MinIO S3 snapshot archive (\`backup-minio.sh\`)
+- \`02:00\` — Source code & configuration snapshot (\`backup-code.sh\`)
+- \`04:00\` — Offsite Cloud Nextcloud synchronization (\`sync-nextcloud.sh\`)
 
-## 3. Verifikasi Integritas Backup
-Jalankan verifikasi status backup melalui endpoint:
+## 3. Backup Integrity Verification
+Verify backup snapshot status via the REST API endpoint:
 \`\`\`bash
 GET /api/v1/system/devops-stats
 \`\`\``,

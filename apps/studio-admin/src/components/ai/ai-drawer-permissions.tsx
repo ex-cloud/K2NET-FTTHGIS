@@ -1,7 +1,7 @@
-
-
+import React from "react";
 import { ChevronDown, Check, Loader2, Search, ShieldCheck, Cpu, Activity, MapPin, Database, GitPullRequest, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 import type { PermissionCatalogData } from "@/lib/actions/gateways";
 
 // ─── Domain icon map ─────────────────────────────────────────────────────────
@@ -40,6 +40,8 @@ export function AiPermissionsDomainList({
   onToggleDomain,
   onSearchChange,
 }: AiPermissionsDomainListProps) {
+  const { t } = useTranslation();
+
   const filteredDomains = catalog
     ? catalog.domains
         .map((d) => ({
@@ -59,23 +61,23 @@ export function AiPermissionsDomainList({
       {/* Tier tabs */}
       <div className="px-4 pt-3 pb-2 border-b border-border/60 shrink-0">
         <div className="flex gap-0.5 p-0.5 bg-muted/50 rounded-md border border-border/70 text-xs font-medium">
-          {(["FULL", "READ_ONLY", "CUSTOM"] as const).map((t) => (
+          {(["FULL", "READ_ONLY", "CUSTOM"] as const).map((ti) => (
             <button
-              key={t}
+              key={ti}
               type="button"
-              onClick={() => onSetTier(t)}
+              onClick={() => onSetTier(ti)}
               className={cn(
                 "flex-1 py-1 rounded text-xs font-medium transition-all cursor-pointer",
-                tier === t ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                tier === ti ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {t === "FULL" ? "Full access" : t === "READ_ONLY" ? "Read only" : "Custom"}
+              {ti === "FULL" ? t("ai.agent_tier_full") : ti === "READ_ONLY" ? t("ai.agent_tier_readonly") : t("ai.agent_tier_custom")}
             </button>
           ))}
         </div>
         {catalog && (
           <p className="text-[10px] text-muted-foreground mt-1.5">
-            {selected.size} permissions • read + write
+            {selected.size} {t("security.permissions_title")} • read + write
           </p>
         )}
       </div>
@@ -86,7 +88,7 @@ export function AiPermissionsDomainList({
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search permissions..."
+            placeholder={t("common.search")}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full h-8 pl-8 pr-3 text-xs rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
@@ -99,7 +101,7 @@ export function AiPermissionsDomainList({
         {loading ? (
           <div className="py-8 text-center text-xs text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1 text-primary" />
-            Loading permissions...
+            {t("common.loading")}
           </div>
         ) : (
           filteredDomains.map((domain) => {
@@ -171,6 +173,8 @@ interface AiDrawerPermissionsProps extends AiPermissionsDomainListProps {
 }
 
 export function AiDrawerPermissions({ saving, onCancel, onAuthorize, selected, ...rest }: AiDrawerPermissionsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <AiPermissionsDomainList selected={selected} {...rest} />
@@ -178,7 +182,7 @@ export function AiDrawerPermissions({ saving, onCancel, onAuthorize, selected, .
       {/* Footer */}
       <div className="px-4 py-3 border-t border-border/60 bg-background/95 shrink-0 space-y-2">
         <p className="text-[10px] text-center text-muted-foreground">
-          You can revoke anytime from the AI settings icon.
+          {t("ai.agent_onboarding_title")}
         </p>
         <div className="flex gap-2">
           <button
@@ -186,7 +190,7 @@ export function AiDrawerPermissions({ saving, onCancel, onAuthorize, selected, .
             onClick={onCancel}
             className="flex-none px-3 h-8 rounded-md text-xs font-medium border border-border text-foreground hover:bg-muted cursor-pointer"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -195,7 +199,7 @@ export function AiDrawerPermissions({ saving, onCancel, onAuthorize, selected, .
             className="flex-1 h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors cursor-pointer shadow-xs disabled:opacity-60 flex items-center justify-center gap-1.5"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-            Authorize K2 Agent ({selected.size})
+            {t("common.confirm")} ({selected.size})
           </button>
         </div>
       </div>
@@ -215,6 +219,8 @@ interface AiDrawerSettingsProps extends AiPermissionsDomainListProps {
 }
 
 export function AiDrawerSettings({ accessTier, saving, revoking, onSave, onRevoke, selected, ...rest }: AiDrawerSettingsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Account status card */}
@@ -243,7 +249,7 @@ export function AiDrawerSettings({ accessTier, saving, revoking, onSave, onRevok
           className="w-full h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 cursor-pointer shadow-xs disabled:opacity-60 flex items-center justify-center gap-1.5"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-          Save changes ({selected.size} permissions)
+          {t("common.save")} ({selected.size})
         </button>
         <button
           type="button"
@@ -252,7 +258,7 @@ export function AiDrawerSettings({ accessTier, saving, revoking, onSave, onRevok
           className="w-full h-8 rounded-md border border-border text-destructive hover:bg-destructive/10 text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
         >
           {revoking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "✕"}
-          Revoke K2 Agent Access
+          {t("security.revoke_impersonation")}
         </button>
       </div>
     </div>

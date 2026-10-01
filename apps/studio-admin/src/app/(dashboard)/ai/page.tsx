@@ -1,9 +1,8 @@
-
-
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Badge } from "@k2net/ui";
 import { useRouter } from "@/lib/navigation-compat";
+import { useTranslation } from "@k2net/i18n";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { useAiKnowledge } from "@/hooks/useAiKnowledge";
 import { type AiDocumentItem } from "@/lib/actions/gateways";
@@ -15,6 +14,7 @@ import { AiEditKnowledgeModal } from "@/components/ai/ai-edit-knowledge-modal";
 
 export default function AiKnowledgePage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const {
     documents,
     totalCount,
@@ -64,14 +64,14 @@ export default function AiKnowledgePage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                  Daftar Pengetahuan SOP & RAG
+                  {t("ai.list_title")}
                 </h1>
                 <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-primary/30 text-primary bg-primary/10">
-                  pgvector 1536 dim
+                  {t("ai.pgvector_dim")}
                 </Badge>
               </div>
               <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
-                Basis data pengetahuan teknis FTTH, manual hardware OLT/ONT, dan prosedur operasional jaringan K2NET.
+                {t("ai.list_subtitle")}
               </p>
             </div>
           </div>

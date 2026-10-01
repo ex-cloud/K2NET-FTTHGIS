@@ -10,6 +10,7 @@ import { type TenantDocument, type DocumentStatus } from "./types";
 import type { EnrichedOrganization } from "../../types";
 import { DocumentsTableToolbar } from "./DocumentsTableToolbar";
 import { DocumentsTableRowItem } from "./DocumentsTableRowItem";
+import { useTranslation } from "@k2net/i18n";
 
 interface DocumentsTableProps {
   org: EnrichedOrganization;
@@ -42,6 +43,7 @@ export function DocumentsTable({
   onDelete,
   onUpdateStatus,
 }: DocumentsTableProps) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs space-y-0">
       <DocumentsTableToolbar
@@ -58,20 +60,20 @@ export function DocumentsTable({
       <Table>
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">
-            <TableHead className="text-xs font-semibold text-foreground">Nama Berkas</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Kategori</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Ukuran</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Diupload Oleh</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Tanggal</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground">Status</TableHead>
-            <TableHead className="text-xs font-semibold text-foreground text-right">Aksi</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("common.name")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("common.category")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("common.size")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("organizations.doc_col_uploaded_by")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("common.date")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground">{t("common.status")}</TableHead>
+            <TableHead className="text-xs font-semibold text-foreground text-right">{t("common.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredDocs.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-8 text-xs text-muted-foreground">
-                Tidak ada dokumen yang ditemukan sesuai filter.
+                {t("organizations.no_docs_found")}
               </TableCell>
             </TableRow>
           ) : (

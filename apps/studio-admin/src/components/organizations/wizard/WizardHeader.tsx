@@ -1,35 +1,38 @@
 import * as React from "react";
 import { Check } from "lucide-react";
 import { Badge, DialogHeader, DialogTitle, DialogDescription } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 interface WizardHeaderProps {
   step: number;
 }
 
-const STEP_TITLES: Record<number, { title: string; desc: string }> = {
-  1: {
-    title: "Langkah 1: Paket Lisensi & Hardware Quota",
-    desc: "Pilih tier langganan untuk menentukan batas kapasitas hardware (OLT & ODP) serta fitur platform.",
-  },
-  2: {
-    title: "Langkah 2: Identitas & Subdomain Portal",
-    desc: "Daftarkan identitas ISP mitra dan alamat subdomain akses GIS portal.",
-  },
-  3: {
-    title: "Langkah 3: Integrasi Jaringan & VPN Mesh",
-    desc: "Konfigurasikan alokasi IP WireGuard VPN Tunnel dan Active Directory/LDAP.",
-  },
-  4: {
-    title: "Langkah 4: Admin PIC & Setup Realm Keycloak",
-    desc: "Buat akun penanggung jawab teknis dan generate realm Keycloak terisolasi.",
-  },
-  5: {
-    title: "Infrastructure Provisioned Successfully!",
-    desc: "Semua service telah siap. Harap simpan kredensial akses di bawah ini.",
-  },
-};
-
 export function WizardHeader({ step }: WizardHeaderProps) {
+  const { t } = useTranslation();
+
+  const STEP_TITLES: Record<number, { title: string; desc: string }> = {
+    1: {
+      title: t("organizations.wizard_step1_title"),
+      desc: t("organizations.wizard_step1_desc"),
+    },
+    2: {
+      title: t("organizations.wizard_step2_title"),
+      desc: t("organizations.wizard_step2_desc"),
+    },
+    3: {
+      title: t("organizations.wizard_step3_title"),
+      desc: t("organizations.wizard_step3_desc"),
+    },
+    4: {
+      title: t("organizations.wizard_step4_title"),
+      desc: t("organizations.wizard_step4_desc"),
+    },
+    5: {
+      title: "Infrastructure Provisioned Successfully!",
+      desc: t("organizations.wizard_step5_desc"),
+    },
+  };
+
   const currentStepInfo = STEP_TITLES[step] || STEP_TITLES[1];
 
   return (

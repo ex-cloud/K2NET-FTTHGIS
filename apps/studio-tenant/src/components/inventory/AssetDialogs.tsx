@@ -19,6 +19,7 @@ import {
 import { Layers, Radio, Network, UserCheck, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { networkApi } from "../../lib/api/network";
+import { useTranslation } from "@k2net/i18n";
 
 interface AssetDialogProps {
   type: "ODC" | "ODP" | "CABLE" | "CUSTOMER";
@@ -29,6 +30,7 @@ interface AssetDialogProps {
 }
 
 export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: AssetDialogProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = React.useState({
     code: "",
     name: "",
@@ -48,19 +50,19 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.code.trim()) {
-      toast.error("Kode aset wajib diisi");
+      toast.error(t("inventory.asset_code_required"));
       return;
     }
 
     setIsSubmitting(true);
     try {
       await networkApi.createAsset(type, formData, projectId);
-      toast.success(`Aset ${type} [${formData.code}] berhasil disimpan!`);
+      toast.success(t("inventory.asset_saved", { type, code: formData.code }));
       onOpenChange(false);
       onSuccess?.();
     } catch {
       // Optimistic fallback if offline/mock
-      toast.success(`Aset ${type} [${formData.code}] berhasil disimpan!`);
+      toast.success(t("inventory.asset_saved", { type, code: formData.code }));
       onOpenChange(false);
       onSuccess?.();
     } finally {
@@ -71,13 +73,13 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
   const getTitle = () => {
     switch (type) {
       case "ODC":
-        return "Tambah Kabinet ODC Baru";
+        return t("inventory.add_odc_title");
       case "ODP":
-        return "Tambah Kotak ODP FAT Baru";
+        return t("inventory.add_odp_title");
       case "CABLE":
-        return "Tambah Bentang Kabel Optik Baru";
+        return t("inventory.add_cable_title");
       case "CUSTOMER":
-        return "Registrasi Sambungan Pelanggan";
+        return t("inventory.add_customer_title");
     }
   };
 
@@ -107,7 +109,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
             <div>
               <DialogTitle className="text-base font-bold">{getTitle()}</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Daftarkan aset fisik ke basis data PostGIS dan topologi jaringan proyek.
+                {t("inventory.asset_desc")}
               </DialogDescription>
             </div>
           </div>
@@ -116,7 +118,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
         <form onSubmit={handleSubmit} className="space-y-3 py-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Kode Aset</Label>
+              <Label className="text-xs font-semibold">{t("inventory.asset_code")}</Label>
               <Input
                 placeholder={type === "ODC" ? "ODC-DGO-01" : type === "ODP" ? "ODP-DGO-04" : "CBL-FDR-01"}
                 value={formData.code}
@@ -127,7 +129,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Nama / Label</Label>
+              <Label className="text-xs font-semibold">{t("inventory.asset_label")}</Label>
               <Input
                 placeholder="misal: Cluster Dago Asri"
                 value={formData.name}
@@ -139,7 +141,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
 
           {type === "ODC" && (
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Kapasitas Splitter / Tray</Label>
+              <Label className="text-xs font-semibold">{t("inventory.odc_splitter_capacity")}</Label>
               <Select
                 value={formData.capacity}
                 onValueChange={(val) => setFormData({ ...formData, capacity: val })}
@@ -159,7 +161,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
 
           {type === "ODP" && (
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Jumlah Port Drop</Label>
+              <Label className="text-xs font-semibold">{t("inventory.odp_drop_ports")}</Label>
               <Select
                 value={formData.totalPort}
                 onValueChange={(val) => setFormData({ ...formData, totalPort: val })}
@@ -179,7 +181,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
           {type === "CABLE" && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Jumlah Core</Label>
+                <Label className="text-xs font-semibold">{t("inventory.cable_core_count")}</Label>
                 <Select
                   value={formData.coreCount}
                   onValueChange={(val) => setFormData({ ...formData, coreCount: val })}
@@ -197,7 +199,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Panjang (Meter)</Label>
+                <Label className="text-xs font-semibold">{t("inventory.cable_length_m")}</Label>
                 <Input
                   type="number"
                   value={formData.lengthMeters}
@@ -210,7 +212,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Longitude (Lng)</Label>
+              <Label className="text-xs font-semibold">{t("inventory.coordinates_lng")}</Label>
               <Input
                 value={formData.lng}
                 onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
@@ -218,7 +220,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Latitude (Lat)</Label>
+              <Label className="text-xs font-semibold">{t("inventory.coordinates_lat")}</Label>
               <Input
                 value={formData.lat}
                 onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
@@ -228,9 +230,9 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Catatan / Alamat Tiang</Label>
+            <Label className="text-xs font-semibold">{t("inventory.asset_notes_address")}</Label>
             <Textarea
-              placeholder="Depan tiang PLN No. 42 / dekat pos satpam..."
+              placeholder={t("inventory.asset_notes_placeholder")}
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               className="text-xs min-h-[50px] resize-none"
@@ -246,7 +248,7 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
               disabled={isSubmitting}
               className="text-xs"
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -257,12 +259,12 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Menyimpan...
+                  {t("inventory.saving")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Simpan Aset
+                  {t("inventory.save_asset")}
                 </>
               )}
             </Button>

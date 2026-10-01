@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Sparkles, CheckCircle2, AlertCircle, Eye, EyeOff, ExternalLink, RefreshCw, Loader2, Zap } from "lucide-react";
 import { Button, Input, Label, Badge } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { ModelCatalogItem } from "@/lib/actions/gateways";
 import type { ProviderTestState } from "./useAiConfigProviders";
 
@@ -29,6 +30,7 @@ export function ProviderGeminiCard({
   onTest,
   onRefreshModels,
 }: ProviderGeminiCardProps) {
+  const { t } = useTranslation();
   const [showKey, setShowKey] = useState(false);
   const isKeyConfigured = Boolean(config["GEMINI_API_KEY"] && config["GEMINI_API_KEY"].trim() !== "");
   const categories = Array.from(new Set(models.map((m) => m.category)));
@@ -132,7 +134,7 @@ export function ProviderGeminiCard({
                 onClick={onRefreshModels}
                 disabled={loadingModels}
                 className="text-[11px] text-primary/80 hover:text-primary flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                title="Scan model terbaru dari Google AI Studio"
+                title={t("ai.scan_gemini_models")}
               >
                 <RefreshCw className={`w-3 h-3 ${loadingModels ? "animate-spin" : ""}`} />
                 <span>Scan Model ({models.length})</span>
@@ -202,7 +204,7 @@ export function ProviderGeminiCard({
           ) : (
             <Zap className="w-3 h-3 text-blue-400" />
           )}
-          <span>Tes Koneksi</span>
+          <span>{t("common.test_connection")}</span>
         </Button>
 
         <Button
@@ -212,7 +214,7 @@ export function ProviderGeminiCard({
           onClick={() => setConfig({ ...config, DEFAULT_LLM_PROVIDER: "gemini" })}
           className="text-xs h-7 cursor-pointer"
         >
-          {defaultProvider === "gemini" ? "✓ Utama" : "Set Utama"}
+          {defaultProvider === "gemini" ? t("ai.primary_provider") : t("ai.set_as_primary")}
         </Button>
       </div>
     </div>

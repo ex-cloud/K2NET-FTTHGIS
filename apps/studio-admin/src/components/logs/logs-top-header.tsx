@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import type { Table, VisibilityState } from "@tanstack/react-table";
 import type { AuditStreamEntry } from "@/hooks/use-audit-log-stream";
+import { useTranslation } from "@k2net/i18n";
 // ─── Filter Fields available in builder ──────────────────────────────────────
 
 const FILTER_FIELDS: AdvancedFilterField[] = [
@@ -349,6 +350,7 @@ export function LogsTopHeader({
   columnVisibility: VisibilityState;
   setColumnVisibility: React.Dispatch<React.SetStateAction<VisibilityState>>;
 }) {
+  const { t } = useTranslation();
   const {
     searchQuery, setSearchQuery,
     selectedTypes, toggleType, setLogType,
@@ -410,7 +412,7 @@ export function LogsTopHeader({
   return (
     <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
       {/* Sidebar toggle */}
-      <ActionTooltip label="Toggle Filter Panel" shortcut="Alt+S">
+      <ActionTooltip label={t("observability.toggle_filter_panel")} shortcut="Alt+S">
         <button onClick={() => setIsSidebarCollapsed((prev) => !prev)}
           className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
           <PanelLeft className="w-4 h-4" />
@@ -444,10 +446,10 @@ export function LogsTopHeader({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setShowFilterBuilder(true)}
-              placeholder={hasActivePills ? "Add more filters..." : "Filter by Log Type, Level, Status..."}
+              placeholder={hasActivePills ? t("observability.add_more_filters") : t("observability.filter_placeholder")}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 text-xs font-mono"
             />
-            <ActionTooltip label="Filter Lanjutan" shortcut="Alt+F">
+            <ActionTooltip label={t("observability.advanced_filter")} shortcut="Alt+F">
               <button
                 onClick={(e) => { e.stopPropagation(); setShowFilterBuilder((prev) => !prev); }}
                 className={cn(
@@ -471,34 +473,34 @@ export function LogsTopHeader({
 
       {/* Action Buttons */}
       <div className="flex items-center gap-1.5 shrink-0 pl-2">
-        <ActionTooltip label="Segarkan Log" shortcut="R">
+        <ActionTooltip label={t("observability.refresh_logs")} shortcut="R">
           <Button variant="ghost" size="sm"
             onClick={() => { clearLogs(); toast.info("Refreshing real-time log feed..."); }}
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md">
             <RefreshCw className="w-3.5 h-3.5" />
           </Button>
         </ActionTooltip>
-        <ActionTooltip label="Toggle Histogram" shortcut="H">
+        <ActionTooltip label={t("observability.toggle_histogram")} shortcut="H">
           <Button variant="ghost" size="sm"
             onClick={() => setShowHistogram((prev) => !prev)}
             className={`h-7 w-7 p-0 border border-border/60 rounded-md ${showHistogram ? "bg-muted text-foreground" : "text-muted-foreground"}`}>
             <BarChart2 className="w-3.5 h-3.5" />
           </Button>
         </ActionTooltip>
-        <ActionTooltip label="Kolom Tampilan" shortcut="C">
+        <ActionTooltip label={t("observability.view_columns")} shortcut="C">
           <Button ref={columnBtnRef} variant="ghost" size="sm"
             onClick={() => setShowColumnPicker((prev) => !prev)}
             className={`h-7 w-7 p-0 border border-border/60 rounded-md ${showColumnPicker ? "bg-muted text-foreground" : "text-muted-foreground"}`}>
             <Columns3 className="w-3.5 h-3.5" />
           </Button>
         </ActionTooltip>
-        <ActionTooltip label="Ekspor JSON" shortcut="Alt+E">
+        <ActionTooltip label={t("observability.export_json")} shortcut="Alt+E">
           <Button variant="ghost" size="sm" onClick={handleExportJson}
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md">
             <Download className="w-3.5 h-3.5" />
           </Button>
         </ActionTooltip>
-        <ActionTooltip label={isLivePaused ? "Lanjutkan Stream" : "Jeda Stream"} shortcut="Space">
+        <ActionTooltip label={isLivePaused ? t("observability.resume_stream") : t("observability.pause_stream")} shortcut="Space">
           <Button variant="outline" size="sm"
             onClick={() => setIsLivePaused((prev) => !prev)}
             className={`h-7 text-xs font-mono gap-1.5 border-border/80 rounded-md px-2.5 ${
@@ -510,7 +512,7 @@ export function LogsTopHeader({
               ? <Play className="w-3 h-3 fill-current" />
               : <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             }
-            {isLivePaused ? "Paused" : "Live"}
+            {isLivePaused ? t("observability.stream_paused") : t("observability.stream_live")}
           </Button>
         </ActionTooltip>
       </div>

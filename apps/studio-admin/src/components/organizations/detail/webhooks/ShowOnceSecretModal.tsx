@@ -12,6 +12,7 @@ import {
 import { Key, Lock, Copy, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 
 interface ShowOnceSecretModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export function ShowOnceSecretModal({
   secretValue,
   orgSlug,
 }: ShowOnceSecretModalProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   if (!secretValue) return null;
@@ -39,8 +41,8 @@ export function ShowOnceSecretModal({
     setCopied(true);
     toast.success(
       type === "api-key"
-        ? "API Key berhasil disalin ke clipboard."
-        : "HMAC Secret berhasil disalin ke clipboard."
+        ? t("organizations.webhook_api_key_copied")
+        : t("organizations.webhook_hmac_copied")
     );
     setTimeout(() => setCopied(false), 3000);
   };
@@ -60,7 +62,7 @@ export function ShowOnceSecretModal({
                 {title}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                Organisasi: <strong className="text-foreground">{orgSlug}</strong>
+                Organization: <strong className="text-foreground">{orgSlug}</strong>
               </DialogDescription>
             </div>
           </div>
@@ -70,9 +72,7 @@ export function ShowOnceSecretModal({
         <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5">
           <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
           <div className="text-[11px] text-amber-600 dark:text-amber-400 leading-relaxed">
-            <strong>Penting:</strong> Kunci ini <u>hanya ditampilkan sekali</u>. Demi alasan
-            keamanan, sistem hanya menyimpan hash SHA-256 dan kunci tidak dapat dimunculkan kembali
-            setelah modal ini ditutup.
+            <strong>Important:</strong> This secret <u>is only displayed once</u>. {t("organizations.webhook_secret_security_notice")}
           </div>
         </div>
 
@@ -98,7 +98,7 @@ export function ShowOnceSecretModal({
               className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 cursor-pointer"
             >
               {copied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              <span>{copied ? "Tersalin" : "Salin"}</span>
+              <span>{copied ? t("common.copied") : t("common.copy")}</span>
             </Button>
           </div>
         </div>
@@ -109,7 +109,7 @@ export function ShowOnceSecretModal({
             onClick={onClose}
             className="w-full sm:w-auto h-8 px-4 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 cursor-pointer"
           >
-            Saya Sudah Menyimpan Kunci Ini
+            I have securely stored this key
           </Button>
         </DialogFooter>
       </DialogContent>

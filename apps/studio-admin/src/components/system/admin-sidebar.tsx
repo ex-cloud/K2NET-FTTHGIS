@@ -16,11 +16,9 @@ import {
   Trash2,
 } from "lucide-react";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+  ActionTooltip,
   PrimarySidebarShell,
+  TooltipProvider,
   useSidebarMode,
 } from "@k2net/ui";
 import { useTranslation, type TranslationKey } from "@k2net/i18n";
@@ -34,23 +32,24 @@ export type NavItem = {
   translationKey?: TranslationKey;
   icon: React.ElementType;
   href: string;
+  shortcut?: string;
   requiredPermission?: string | string[];
 };
 
 export const ADMIN_CORE_NAV_ITEMS: NavItem[] = [
-  { title: "Overview", translationKey: "nav.overview", icon: LayoutDashboard, href: "/overview" },
-  { title: "Organizations", translationKey: "nav.organizations", icon: Building2, href: "/organizations", requiredPermission: ["system.organizations.view", "orgs.view"] },
-  { title: "Global Users", translationKey: "nav.global_users", icon: Users, href: "/users", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
-  { title: "Projects & Issues", translationKey: "nav.projects_issues", icon: ClipboardList, href: "/tasks", requiredPermission: ["system.task.manage", "system.observability.view"] },
+  { title: "Overview", translationKey: "nav.overview", icon: LayoutDashboard, href: "/overview", shortcut: "G then O" },
+  { title: "Organizations", translationKey: "nav.organizations", icon: Building2, href: "/organizations", shortcut: "G then T", requiredPermission: ["system.organizations.view", "orgs.view"] },
+  { title: "Global Users", translationKey: "nav.global_users", icon: Users, href: "/users", shortcut: "G then U", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
+  { title: "Projects & Issues", translationKey: "nav.projects_issues", icon: ClipboardList, href: "/tasks", shortcut: "G then P", requiredPermission: ["system.task.manage", "system.observability.view"] },
 ];
 
 export const ADMIN_PLATFORM_NAV_ITEMS: NavItem[] = [
-  { title: "Observability", translationKey: "nav.observability", icon: ScanLine, href: "/observability", requiredPermission: "system.observability.view" },
-  { title: "Global Logs", translationKey: "nav.global_logs", icon: Terminal, href: "/logs", requiredPermission: "system.audit.view" },
-  { title: "Security", translationKey: "nav.security", icon: Lock, href: "/security/roles", requiredPermission: "system.security.manage" },
-  { title: "Gateways", translationKey: "nav.gateways", icon: Cpu, href: "/gateways/overview", requiredPermission: ["system.observability.view", "system.gateway.manage"] },
-  { title: "AI Assistant", translationKey: "nav.ai_assistant", icon: Sparkles, href: "/ai", requiredPermission: ["system.ai.manage", "system.settings.manage"] },
-  { title: "3D Assets", translationKey: "nav.three_d_assets", icon: Box, href: "/assets-3d", requiredPermission: "system.settings.manage" },
+  { title: "Observability", translationKey: "nav.observability", icon: ScanLine, href: "/observability", shortcut: "G then V", requiredPermission: "system.observability.view" },
+  { title: "Global Logs", translationKey: "nav.global_logs", icon: Terminal, href: "/logs", shortcut: "G then L", requiredPermission: "system.audit.view" },
+  { title: "Security", translationKey: "nav.security", icon: Lock, href: "/security/roles", shortcut: "G then S", requiredPermission: "system.security.manage" },
+  { title: "Gateways", translationKey: "nav.gateways", icon: Cpu, href: "/gateways/overview", shortcut: "G then G", requiredPermission: ["system.observability.view", "system.gateway.manage"] },
+  { title: "AI Assistant", translationKey: "nav.ai_assistant", icon: Sparkles, href: "/ai", shortcut: "G then A", requiredPermission: ["system.ai.manage", "system.settings.manage"] },
+  { title: "3D Assets", translationKey: "nav.three_d_assets", icon: Box, href: "/assets-3d", shortcut: "G then 3", requiredPermission: "system.settings.manage" },
 ];
 
 export const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -59,8 +58,8 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
 ];
 
 export const ADMIN_BOTTOM_NAV_ITEMS: NavItem[] = [
-  { title: "Recycle Bin", translationKey: "nav.recycle_bin", icon: Trash2, href: "/system/trash", requiredPermission: "system.trash.manage" },
-  { title: "Settings", translationKey: "nav.settings", icon: Settings, href: "/settings", requiredPermission: "system.settings.manage" },
+  { title: "Recycle Bin", translationKey: "nav.recycle_bin", icon: Trash2, href: "/system/trash", shortcut: "G then R", requiredPermission: "system.trash.manage" },
+  { title: "Settings", translationKey: "nav.settings", icon: Settings, href: "/settings", shortcut: "G then ,", requiredPermission: "system.settings.manage" },
 ];
 
 export const checkIsActive = (href: string, pathname: string) => {
@@ -107,6 +106,7 @@ export function AdminSidebar() {
     const Icon = item.icon;
     const isActive = checkIsActive(item.href, pathname);
     const label = item.translationKey ? t(item.translationKey) : item.title;
+    const tooltipLabel = t("nav.go_to_item", { name: label });
 
     const button = (
       <div
@@ -149,21 +149,16 @@ export function AdminSidebar() {
       </Link>
     );
 
-    if (!isExpanded) {
-      return (
-        <Tooltip key={item.title}>
-          <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
-          <TooltipContent side="right" className="text-xs">
-            {label}
-          </TooltipContent>
-        </Tooltip>
-      );
-    }
-
     return (
-      <React.Fragment key={item.title}>
+      <ActionTooltip
+        key={item.title}
+        label={tooltipLabel}
+        shortcut={item.shortcut}
+        side="right"
+        sideOffset={12}
+      >
         {wrapped}
-      </React.Fragment>
+      </ActionTooltip>
     );
   };
 

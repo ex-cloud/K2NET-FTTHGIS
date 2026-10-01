@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetClose,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type Task, type TaskComment } from "@/hooks/useTasksQuery";
 import { toast } from "sonner";
 import { ScopeBadge } from "./ScopeBadge";
@@ -33,55 +34,58 @@ interface SheetHeaderBarProps {
   isDirty: boolean;
 }
 
-const SheetHeaderBar: React.FC<SheetHeaderBarProps> = ({ task, saving, isDirty }) => (
-  <SheetHeader className="px-6 py-3.5 border-b border-border/60 bg-background/60 flex flex-row items-center justify-between space-y-0 shrink-0">
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-      <span className="font-mono bg-muted px-2 py-0.5 rounded text-[11px] font-semibold">{task.type}</span>
-      {task.obsidianRef && (
-        <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded text-[11px] font-semibold">{task.obsidianRef}</span>
-      )}
-      <ScopeBadge scope={task.scope} />
-      {saving && (
-        <span className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
-          <Loader2 className="h-3 w-3 animate-spin" /> Saving...
-        </span>
-      )}
-      {isDirty && !saving && (
-        <span className="text-amber-500 text-[10px]">● Unsaved</span>
-      )}
-    </div>
+const SheetHeaderBar: React.FC<SheetHeaderBarProps> = ({ task, saving, isDirty }) => {
+  const { t } = useTranslation();
+  return (
+    <SheetHeader className="px-6 py-3.5 border-b border-border/60 bg-background/60 flex flex-row items-center justify-between space-y-0 shrink-0">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="font-mono bg-muted px-2 py-0.5 rounded text-[11px] font-semibold">{task.type}</span>
+        {task.obsidianRef && (
+          <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded text-[11px] font-semibold">{task.obsidianRef}</span>
+        )}
+        <ScopeBadge scope={task.scope} />
+        {saving && (
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
+            <Loader2 className="h-3 w-3 animate-spin" /> {t("tasks.saving")}
+          </span>
+        )}
+        {isDirty && !saving && (
+          <span className="text-amber-500 text-[10px]">● {t("tasks.unsaved")}</span>
+        )}
+      </div>
 
-    <div className="flex items-center gap-2">
-      {task.obsidianRef && (
+      <div className="flex items-center gap-2">
+        {task.obsidianRef && (
+          <a
+            href={`obsidian://open?vault=K2NET_Engineering_Vault&file=${task.obsidianRef}`}
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted px-2 py-1 rounded-md transition-colors"
+            title={t("tasks.open_obsidian")}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Obsidian
+          </a>
+        )}
         <a
-          href={`obsidian://open?vault=K2NET_Engineering_Vault&file=${task.obsidianRef}`}
+          href={`/tasks/${task.id}`}
           className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted px-2 py-1 rounded-md transition-colors"
-          title="Buka di Obsidian Vault"
+          title={t("tasks.open_full_page")}
         >
-          <ExternalLink className="h-3.5 w-3.5" />
-          Obsidian
+          <ArrowUpRight className="h-3.5 w-3.5" />
+          {t("tasks.full_page")}
         </a>
-      )}
-      <a
-        href={`/tasks/${task.id}`}
-        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted px-2 py-1 rounded-md transition-colors"
-        title="Buka Halaman Penuh"
-      >
-        <ArrowUpRight className="h-3.5 w-3.5" />
-        Full Page
-      </a>
-      <SheetClose asChild>
-        <button
-          type="button"
-          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-          title="Tutup Sheet"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </SheetClose>
-    </div>
-  </SheetHeader>
-);
+        <SheetClose asChild>
+          <button
+            type="button"
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            title={t("tasks.close_sheet")}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </SheetClose>
+      </div>
+    </SheetHeader>
+  );
+};
 
 interface LeftEditorProps {
   title: string;
@@ -111,60 +115,63 @@ const LeftEditor: React.FC<LeftEditorProps> = ({
   task,
   comments,
   setComments,
-}) => (
-  <div className="flex-1 min-w-0 space-y-6">
-    <div className="relative">
-      <div className="flex items-start gap-2">
-        <div className="relative shrink-0 mt-0.5">
-          <button
-            type="button"
-            onClick={() => setShowEmojiPicker((v) => !v)}
-            className="text-xl hover:bg-muted/50 rounded-lg p-0.5 transition-colors"
-            title="Emoji"
-          >
-            {titleEmoji || "📋"}
-          </button>
-          {showEmojiPicker && (
-            <TaskEmojiPicker
-              onSelect={(e) => setTitleEmoji(e)}
-              onClose={() => setShowEmojiPicker(false)}
-            />
-          )}
-        </div>
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex-1 min-w-0 space-y-6">
+      <div className="relative">
+        <div className="flex items-start gap-2">
+          <div className="relative shrink-0 mt-0.5">
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((v) => !v)}
+              className="text-xl hover:bg-muted/50 rounded-lg p-0.5 transition-colors"
+              title="Emoji"
+            >
+              {titleEmoji || "📋"}
+            </button>
+            {showEmojiPicker && (
+              <TaskEmojiPicker
+                onSelect={(e) => setTitleEmoji(e)}
+                onClose={() => setShowEmojiPicker(false)}
+              />
+            )}
+          </div>
 
+          <textarea
+            value={title}
+            onChange={(e) => { setTitle(e.target.value); markDirty(); }}
+            rows={1}
+            style={{ height: "auto" }}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = el.scrollHeight + "px";
+            }}
+            className="flex-1 text-lg font-bold text-foreground bg-transparent border-none outline-none resize-none leading-snug placeholder:text-muted-foreground/40 focus:ring-0"
+            placeholder={t("tasks.issue_title_placeholder")}
+          />
+        </div>
+      </div>
+
+      <div>
         <textarea
-          value={title}
-          onChange={(e) => { setTitle(e.target.value); markDirty(); }}
-          rows={1}
-          style={{ height: "auto" }}
-          onInput={(e) => {
-            const el = e.currentTarget;
-            el.style.height = "auto";
-            el.style.height = el.scrollHeight + "px";
-          }}
-          className="flex-1 text-lg font-bold text-foreground bg-transparent border-none outline-none resize-none leading-snug placeholder:text-muted-foreground/40 focus:ring-0"
-          placeholder="Issue title..."
+          value={description}
+          onChange={(e) => { setDescription(e.target.value); markDirty(); }}
+          placeholder={t("tasks.add_description_placeholder")}
+          rows={4}
+          className="w-full text-xs text-foreground/85 bg-transparent border border-border/30 hover:border-border focus:border-primary/50 outline-none resize-none rounded-xl p-3.5 placeholder:text-muted-foreground/40 focus:ring-0 transition-colors leading-relaxed"
         />
       </div>
-    </div>
 
-    <div>
-      <textarea
-        value={description}
-        onChange={(e) => { setDescription(e.target.value); markDirty(); }}
-        placeholder="Add description... (supports markdown)"
-        rows={4}
-        className="w-full text-xs text-foreground/85 bg-transparent border border-border/30 hover:border-border focus:border-primary/50 outline-none resize-none rounded-xl p-3.5 placeholder:text-muted-foreground/40 focus:ring-0 transition-colors leading-relaxed"
+      <TaskCommentsSection
+        taskId={task.id}
+        comments={comments}
+        onCommentAdded={(c) => setComments((prev) => [...prev, c])}
       />
     </div>
-
-    <TaskCommentsSection
-      taskId={task.id}
-      comments={comments}
-      onCommentAdded={(c) => setComments((prev) => [...prev, c])}
-    />
-  </div>
-);
+  );
+};
 
 export function TaskDetailSheet({
   task,
@@ -174,6 +181,7 @@ export function TaskDetailSheet({
   onDelete: _onDelete,
   assigneesList = [],
 }: TaskDetailSheetProps) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("");
@@ -217,7 +225,7 @@ export function TaskDetailSheet({
           assigneeId: assigneeId ?? undefined,
           dueDate,
         });
-        toast.success("Saved", { duration: 1500 });
+        toast.success(t("tasks.saved"), { duration: 1500 });
         setIsDirty(false);
       } catch {
         // toast handled inside onSave
@@ -229,7 +237,7 @@ export function TaskDetailSheet({
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, description]);
+  }, [title, description, t]);
 
   const handlePropertyChange = async (field: Partial<Task>) => {
     if (!task) return;
@@ -248,7 +256,7 @@ export function TaskDetailSheet({
     if (field.dueDate !== undefined) setDueDate(field.dueDate);
     try {
       await onSave(task.id, merged);
-      toast.success("Updated", { duration: 1500 });
+      toast.success(t("tasks.updated"), { duration: 1500 });
     } catch { /* handled */ }
   };
 

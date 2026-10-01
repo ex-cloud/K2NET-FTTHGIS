@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { type TaskComment } from "@/hooks/useTasksQuery";
@@ -64,6 +65,7 @@ export function TaskCommentsSection({
   comments,
   onCommentAdded,
 }: TaskCommentsSectionProps) {
+  const { t } = useTranslation();
   const { data: session } = useSession();
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -88,9 +90,9 @@ export function TaskCommentsSection({
       if (onCommentAdded) onCommentAdded(saved);
       setNewComment("");
       setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-      toast.success("Komentar terkirim");
+      toast.success(t("tasks.comment_sent"));
     } catch {
-      toast.error("Gagal mengirim komentar");
+      toast.error(t("tasks.comment_send_failed"));
     } finally {
       setSubmitting(false);
     }
@@ -101,7 +103,7 @@ export function TaskCommentsSection({
     if (!files || files.length === 0) return;
     const file = files[0];
     setIsUploadingFile(true);
-    toast.info("Mengunggah berkas via MinIO storage-gateway...");
+    toast.info(t("tasks.uploading_file"));
     try {
       const { uploadTaskAttachment } = await import("@/lib/storage-client");
       const res = await uploadTaskAttachment(file, session?.accessToken ?? undefined);
@@ -109,10 +111,10 @@ export function TaskCommentsSection({
         const isImg = file.type.startsWith("image/");
         const markdown = isImg ? `\n\n![${file.name}](${res.url})` : `\n\n[📎 ${file.name}](${res.url})`;
         setNewComment((prev) => prev + markdown);
-        toast.success(`Berkas ${file.name} berhasil diunggah ke MinIO S3`);
+        toast.success(t("tasks.file_uploaded", { name: file.name }));
       }
     } catch (err: unknown) {
-      toast.error("Gagal mengunggah berkas: " + (err instanceof Error ? err.message : "Storage error"));
+      toast.error(t("tasks.file_upload_failed", { error: err instanceof Error ? err.message : "Storage error" }));
     } finally {
       setIsUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -124,15 +126,15 @@ export function TaskCommentsSection({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-primary" />
-          Activity & Comments
+          {t("tasks.activity_comments")}
         </h3>
-        <span className="text-[10px] text-muted-foreground">{comments.length} comments</span>
+        <span className="text-[10px] text-muted-foreground">{t("tasks.comments_count", { count: comments.length })}</span>
       </div>
 
       {/* Comments timeline */}
       {comments.length === 0 ? (
         <p className="text-xs text-muted-foreground/60 text-center py-3 bg-muted/20 border border-dashed border-border/60 rounded-xl">
-          Belum ada komentar. Tulis komentar atau lampirkan berkas di bawah.
+          {t("tasks.no_comments")}
         </p>
       ) : (
         <div className="space-y-3.5 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar-thin">
@@ -151,7 +153,7 @@ export function TaskCommentsSection({
           onKeyDown={(e) => {
             if (e.key === "Enter" && e.ctrlKey) handleAddComment();
           }}
-          placeholder="Leave a comment... (Ctrl+Enter to submit)"
+          placeholder={t("tasks.leave_comment_placeholder")}
           rows={3}
           className="w-full px-4 pt-3 text-sm text-foreground bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground/40 focus:ring-0 leading-relaxed"
         />
@@ -176,7 +178,7 @@ export function TaskCommentsSection({
               disabled={isUploadingFile}
               onClick={() => fileInputRef.current?.click()}
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-              title="Attach file (Upload via MinIO storage-gateway)"
+              title={t("tasks.attach_file")}
             >
               {isUploadingFile ? (
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -202,7 +204,7 @@ export function TaskCommentsSection({
             ) : (
               <Send className="h-3.5 w-3.5" />
             )}
-            Comment
+            {t("tasks.comment")}
           </button>
         </div>
       </div>

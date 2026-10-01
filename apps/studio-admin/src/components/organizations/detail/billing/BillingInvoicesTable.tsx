@@ -45,7 +45,7 @@ export function BillingInvoicesTable({
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} disalin ke clipboard`);
+    toast.success(t("organizations.copied_to_clipboard", { label }));
   };
 
   const handleResendReceipt = (inv: TenantInvoice) => {
@@ -148,7 +148,7 @@ export function BillingInvoicesTable({
                         className="cursor-pointer font-medium text-foreground focus:bg-accent gap-2"
                       >
                         <Mail className="w-3.5 h-3.5 text-blue-500" />
-                        <span>Kirim Ulang ke PIC</span>
+                        <span>{t("billing.resend_to_pic")}</span>
                       </ContextMenuItem>
 
                       <ContextMenuSeparator className="bg-border/40 my-1" />
@@ -158,7 +158,7 @@ export function BillingInvoicesTable({
                         className="cursor-pointer gap-2 focus:bg-muted"
                       >
                         <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Salin Nomor ({inv.invoiceNumber})</span>
+                        <span>{t("billing.copy_number", { number: inv.invoiceNumber })}</span>
                       </ContextMenuItem>
                     </ContextMenuContent>
                   </ContextMenu>

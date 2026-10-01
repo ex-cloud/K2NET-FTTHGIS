@@ -16,6 +16,7 @@ import {
   DialogFooter, 
   Badge 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type ServerFilePreview } from "@/lib/actions/gateways";
 import { formatBytes } from "./types";
 
@@ -34,6 +35,8 @@ export function AiServerFilePreviewModal({
   onReject,
   onIndexSingle,
 }: AiServerFilePreviewModalProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={!!previewData} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-4xl max-h-[90vh] bg-card border-border shadow-lg p-0 overflow-hidden rounded-xl flex flex-col">
@@ -45,7 +48,7 @@ export function AiServerFilePreviewModal({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <DialogTitle className="text-base font-bold text-foreground truncate">
-                  {previewData?.title || "Pratinjau Dokumen"}
+                  {previewData?.title || t("ai.doc_preview")}
                 </DialogTitle>
                 {previewData?.category && (
                   <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/40 text-foreground/80">
@@ -66,14 +69,14 @@ export function AiServerFilePreviewModal({
         {/* Metadata summary bar */}
         <div className="px-5 py-2 bg-muted/40 border-b border-border/60 flex items-center justify-between text-[11px] text-foreground/80 flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <span>Karakter: <strong className="font-mono text-foreground">{previewData?.char_count.toLocaleString() || 0}</strong></span>
+            <span>{t("ai.characters")}: <strong className="font-mono text-foreground">{previewData?.char_count.toLocaleString() || 0}</strong></span>
             <span>•</span>
-            <span>Kata: <strong className="font-mono text-foreground">{previewData?.word_count.toLocaleString() || 0}</strong></span>
+            <span>{t("ai.words")}: <strong className="font-mono text-foreground">{previewData?.word_count.toLocaleString() || 0}</strong></span>
             <span>•</span>
-            <span>Baris: <strong className="font-mono text-foreground">{previewData?.line_count.toLocaleString() || 0}</strong></span>
+            <span>{t("ai.lines")}: <strong className="font-mono text-foreground">{previewData?.line_count.toLocaleString() || 0}</strong></span>
           </div>
           <div className="text-foreground/75 dark:text-muted-foreground font-mono">
-            Ukuran: {formatBytes(previewData?.size_bytes || 0)}
+            {t("common.size")}: {formatBytes(previewData?.size_bytes || 0)}
           </div>
         </div>
 
@@ -86,7 +89,7 @@ export function AiServerFilePreviewModal({
 
         <DialogFooter className="p-4 border-t border-border/80 bg-muted/20 flex flex-row items-center justify-between gap-2">
           <span className="text-[11px] text-foreground/75 dark:text-muted-foreground hidden sm:inline">
-            Status: <span className="text-amber-500 font-semibold">Belum Terindeks</span>
+            {t("common.status")}: <span className="text-amber-500 font-semibold">{t("ai.unindexed_status")}</span>
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -95,7 +98,7 @@ export function AiServerFilePreviewModal({
               onClick={onClose}
               className="text-xs h-8 cursor-pointer"
             >
-              Tutup
+              {t("common.close")}
             </Button>
             <Button
               variant="outline"
@@ -113,7 +116,7 @@ export function AiServerFilePreviewModal({
               className="text-xs h-8 gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 cursor-pointer"
             >
               <XCircle className="w-3.5 h-3.5" />
-              Tolak Berkas
+              {t("ai.reject_file")}
             </Button>
             <Button
               size="sm"
@@ -134,7 +137,7 @@ export function AiServerFilePreviewModal({
               ) : (
                 <Sparkles className="w-3.5 h-3.5" />
               )}
-              Indeks Berkas Ini
+              {t("ai.index_this_file")}
             </Button>
           </div>
         </DialogFooter>

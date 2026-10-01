@@ -1,5 +1,3 @@
-
-
 import React, { useState } from "react";
 import { 
   FileCode, 
@@ -16,6 +14,7 @@ import {
   Button, 
   Badge 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { KNOWLEDGE_TEMPLATES, type KnowledgeTemplateItem } from "./types";
 
@@ -24,12 +23,13 @@ interface AiTemplatesTabProps {
 }
 
 export function AiTemplatesTab({ onUseTemplate }: AiTemplatesTabProps) {
+  const { t } = useTranslation();
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopyMarkdown = (template: KnowledgeTemplateItem) => {
     navigator.clipboard.writeText(template.content);
     setCopiedId(template.id);
-    toast.success(`Template '${template.title}' berhasil disalin ke clipboard!`);
+    toast.success(t("ai.template_copied_clipboard", { title: template.title }));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -43,13 +43,13 @@ export function AiTemplatesTab({ onUseTemplate }: AiTemplatesTabProps) {
             </div>
             <div>
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                Pustaka Contoh & Template Standar SOP
+                {t("ai.templates_title")}
                 <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10">
                   4 Templates
                 </Badge>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground mt-0.5">
-                Gunakan template dokumen teknis siap pakai untuk langsung diindeks ke dalam memori RAG pgvector sistem.
+                {t("ai.templates_subtitle")}
               </CardDescription>
             </div>
           </div>
@@ -71,7 +71,7 @@ export function AiTemplatesTab({ onUseTemplate }: AiTemplatesTabProps) {
                       <div>
                         <h4 className="text-xs font-bold text-foreground leading-tight">{tmpl.title}</h4>
                         <span className="text-[10px] text-muted-foreground font-mono">
-                          Kategori: {tmpl.category}
+                          {t("ai.category_label", { category: tmpl.category })}
                         </span>
                       </div>
                     </div>
@@ -94,7 +94,7 @@ export function AiTemplatesTab({ onUseTemplate }: AiTemplatesTabProps) {
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}
-                    {copiedId === tmpl.id ? "Tersalin!" : "Salin MD"}
+                    {copiedId === tmpl.id ? t("common.copied") : t("common.copy")}
                   </Button>
 
                   <Button
@@ -102,7 +102,7 @@ export function AiTemplatesTab({ onUseTemplate }: AiTemplatesTabProps) {
                     onClick={() => onUseTemplate(tmpl)}
                     className="text-xs h-8 gap-1.5"
                   >
-                    <span>Gunakan Template Ini</span>
+                    <span>{t("common.apply")}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Button>
                 </div>

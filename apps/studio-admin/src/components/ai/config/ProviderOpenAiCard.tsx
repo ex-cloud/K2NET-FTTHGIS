@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Bot, CheckCircle2, AlertCircle, Eye, EyeOff, Loader2, Zap } from "lucide-react";
 import { Button, Input, Label, Badge } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { ModelCatalogItem } from "@/lib/actions/gateways";
 import type { ProviderTestState } from "./useAiConfigProviders";
 
@@ -23,6 +24,7 @@ export function ProviderOpenAiCard({
   fallbackProvider,
   onTest,
 }: ProviderOpenAiCardProps) {
+  const { t } = useTranslation();
   const [showKey, setShowKey] = useState(false);
   const isKeyConfigured = Boolean(config["OPENAI_API_KEY"] && config["OPENAI_API_KEY"].trim() !== "");
 
@@ -142,7 +144,7 @@ export function ProviderOpenAiCard({
           ) : (
             <Zap className="w-3 h-3 text-primary" />
           )}
-          <span>Tes Koneksi</span>
+          <span>{t("common.test_connection")}</span>
         </Button>
 
         <Button
@@ -152,7 +154,7 @@ export function ProviderOpenAiCard({
           onClick={() => setConfig({ ...config, DEFAULT_LLM_PROVIDER: "openai" })}
           className="text-xs h-7 cursor-pointer"
         >
-          {defaultProvider === "openai" ? "✓ Utama" : "Set Utama"}
+          {defaultProvider === "openai" ? t("ai.primary_provider") : t("ai.set_as_primary")}
         </Button>
       </div>
     </div>

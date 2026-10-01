@@ -1,6 +1,7 @@
 import React from "react";
 import { Check, Layers } from "lucide-react";
 import { Badge } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import type { Role, Permission } from "./types";
 
@@ -23,6 +24,7 @@ export function RolesMatrixTable({
   togglePermission,
   canEdit,
 }: RolesMatrixTableProps) {
+  const { t } = useTranslation();
   const moduleEntries = Object.entries(filteredGroupedPermissions);
 
   return (
@@ -33,7 +35,7 @@ export function RolesMatrixTable({
             <tr>
               {/* Sticky Top-Left Corner (Intersection) - Solid Opaque */}
               <th className="sticky left-0 top-0 z-40 bg-muted px-4 py-3 font-semibold text-muted-foreground uppercase text-[10px] tracking-wider border-b border-r border-border min-w-[300px] max-w-[380px]">
-                Modul &amp; Hak Akses
+                {t("security.roles_matrix")}
               </th>
 
               {/* Sticky Top Column Headers (Roles) - Solid Opaque */}
@@ -57,7 +59,7 @@ export function RolesMatrixTable({
                     {isRoleModified(role.id) && (
                       <span
                         className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"
-                        title="Ada perubahan belum disimpan"
+                        title={t("security.unsaved_changes")}
                       />
                     )}
                   </div>
@@ -70,7 +72,7 @@ export function RolesMatrixTable({
             {moduleEntries.length === 0 ? (
               <tr>
                 <td colSpan={roles.length + 1} className="p-12 text-center text-xs text-muted-foreground">
-                  Tidak ditemukan hak akses yang sesuai filter.
+                  {t("common.no_data")}
                 </td>
               </tr>
             ) : (

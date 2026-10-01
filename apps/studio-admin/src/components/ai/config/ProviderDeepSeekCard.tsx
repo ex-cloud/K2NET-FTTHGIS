@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Flame, CheckCircle2, AlertCircle, Eye, EyeOff, Loader2, Zap } from "lucide-react";
 import { Button, Input, Label, Badge } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { ProviderTestState } from "./useAiConfigProviders";
 
 interface ProviderDeepSeekCardProps {
@@ -18,6 +19,7 @@ export function ProviderDeepSeekCard({
   defaultProvider,
   onTest,
 }: ProviderDeepSeekCardProps) {
+  const { t } = useTranslation();
   const [showKey, setShowKey] = useState(false);
   const isKeyConfigured = Boolean(config["DEEPSEEK_API_KEY"] && config["DEEPSEEK_API_KEY"].trim() !== "");
 
@@ -136,7 +138,7 @@ export function ProviderDeepSeekCard({
           ) : (
             <Zap className="w-3 h-3 text-cyan-400" />
           )}
-          <span>Tes Koneksi</span>
+          <span>{t("common.test_connection")}</span>
         </Button>
 
         <Button
@@ -146,7 +148,7 @@ export function ProviderDeepSeekCard({
           onClick={() => setConfig({ ...config, DEFAULT_LLM_PROVIDER: "deepseek" })}
           className="text-xs h-7 cursor-pointer"
         >
-          {defaultProvider === "deepseek" ? "✓ Utama" : "Set Utama"}
+          {defaultProvider === "deepseek" ? t("ai.primary_provider") : t("ai.set_as_primary")}
         </Button>
       </div>
     </div>

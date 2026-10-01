@@ -33,6 +33,7 @@ export function getProjectNavItems(projectId: string): NavItem[] {
       translationKey: "nav.project_overview",
       href: `/project/${projectId}/overview`,
       icon: LayoutDashboard,
+      shortcut: "G then O",
     },
     {
       id: "infrastructure",
@@ -40,6 +41,7 @@ export function getProjectNavItems(projectId: string): NavItem[] {
       translationKey: "nav.project_infrastructure",
       href: `/project/${projectId}/infrastructure/topology`,
       icon: Map,
+      shortcut: "G then I",
       hasSecondarySidebar: true,
     },
     {
@@ -48,6 +50,7 @@ export function getProjectNavItems(projectId: string): NavItem[] {
       translationKey: "nav.project_inventory",
       href: `/project/${projectId}/inventory/odc`,
       icon: Layers,
+      shortcut: "G then N",
       hasSecondarySidebar: true,
     },
     {
@@ -56,6 +59,7 @@ export function getProjectNavItems(projectId: string): NavItem[] {
       translationKey: "nav.project_core",
       href: `/project/${projectId}/core/olt`,
       icon: Server,
+      shortcut: "G then C",
       hasSecondarySidebar: true,
     },
     {
@@ -64,6 +68,7 @@ export function getProjectNavItems(projectId: string): NavItem[] {
       translationKey: "nav.project_subscribers",
       href: `/project/${projectId}/users/subscribers`,
       icon: UserCheck,
+      shortcut: "G then S",
       hasSecondarySidebar: true,
     },
     {
@@ -72,6 +77,7 @@ export function getProjectNavItems(projectId: string): NavItem[] {
       translationKey: "nav.project_issues",
       href: `/project/${projectId}/issues/tickets`,
       icon: AlertTriangle,
+      shortcut: "G then T",
       hasSecondarySidebar: true,
     },
     {
@@ -80,6 +86,7 @@ export function getProjectNavItems(projectId: string): NavItem[] {
       translationKey: "nav.project_settings",
       href: `/project/${projectId}/settings/general`,
       icon: Settings,
+      shortcut: "G then ,",
       hasSecondarySidebar: true,
     },
   ];
@@ -101,6 +108,7 @@ function getInfrastructureConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/infrastructure/topology`,
             icon: Network,
             description: "Peta MapLibre & MVT Vector Tiles",
+            shortcut: "S then T",
           },
           {
             id: "heatmap",
@@ -109,6 +117,7 @@ function getInfrastructureConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/infrastructure/heatmap`,
             icon: Flame,
             description: "Distribusi dBm & optical attenuation",
+            shortcut: "S then H",
           },
           {
             id: "canvas",
@@ -117,6 +126,7 @@ function getInfrastructureConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/infrastructure/canvas`,
             icon: PenTool,
             description: "Editor CAD & perancangan jalur kabel",
+            shortcut: "S then C",
           },
         ],
       },
@@ -140,6 +150,7 @@ function getInventoryConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/inventory/odc`,
             icon: Layers,
             description: "Optical Distribution Cabinet & splitters",
+            shortcut: "S then 1",
           },
           {
             id: "odp",
@@ -148,6 +159,7 @@ function getInventoryConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/inventory/odp`,
             icon: Radio,
             description: "Optical Distribution Point & port drop",
+            shortcut: "S then 2",
           },
           {
             id: "cable",
@@ -156,6 +168,7 @@ function getInventoryConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/inventory/cable`,
             icon: Network,
             description: "Feeder, distribusi, drop & span meter",
+            shortcut: "S then 3",
           },
           {
             id: "customers",
@@ -164,6 +177,7 @@ function getInventoryConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/inventory/customers`,
             icon: UserCheck,
             description: "Homepass, sambungan ODP & signal dBm",
+            shortcut: "S then 4",
           },
           {
             id: "boq",
@@ -172,6 +186,7 @@ function getInventoryConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/inventory/boq`,
             icon: FileSpreadsheet,
             description: "Bill of Quantities & estimasi material",
+            shortcut: "S then 5",
           },
         ],
       },
@@ -195,6 +210,7 @@ function getCoreConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/core/olt`,
             icon: HardDrive,
             description: "GPON/EPON OLT, uplink & SNMP",
+            shortcut: "S then O",
           },
           {
             id: "routers",
@@ -203,6 +219,7 @@ function getCoreConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/core/routers`,
             icon: Router,
             description: "Core routers, BGP & aggregation",
+            shortcut: "S then R",
           },
           {
             id: "servers",
@@ -211,6 +228,7 @@ function getCoreConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/core/servers`,
             icon: Cpu,
             description: "Poller engine & radius telemetry",
+            shortcut: "S then S",
           },
         ],
       },
@@ -234,6 +252,7 @@ function getUsersConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/users/subscribers`,
             icon: UserCheck,
             description: "Status ONT, PPPoE & rx signal gauge",
+            shortcut: "S then C",
           },
           {
             id: "roles",
@@ -242,6 +261,7 @@ function getUsersConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/users/roles`,
             icon: ShieldCheck,
             description: "Izin operator, teknisi & surveyor",
+            shortcut: "S then R",
           },
         ],
       },
@@ -265,6 +285,7 @@ function getIssuesConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/issues/tickets`,
             icon: AlertTriangle,
             description: "Tiket putus kabel & redaman tinggi",
+            shortcut: "S then T",
           },
           {
             id: "dispatcher",
@@ -273,6 +294,7 @@ function getIssuesConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/issues/dispatcher`,
             icon: UserPlus,
             description: "Penugasan teknisi JIT & geo-fencing",
+            shortcut: "S then D",
           },
         ],
       },
@@ -296,6 +318,7 @@ function getSettingsConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/settings/general`,
             icon: Settings,
             description: "Nama, deskripsi, polygon batas area",
+            shortcut: "S then G",
           },
           {
             id: "members",
@@ -304,6 +327,7 @@ function getSettingsConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/settings/members`,
             icon: Users,
             description: "Penetapan hak akses ABAC spasial",
+            shortcut: "S then M",
           },
           {
             id: "import",
@@ -312,6 +336,7 @@ function getSettingsConfig(projectId: string): SecondarySidebarConfig {
             href: `/project/${projectId}/settings/import`,
             icon: UploadCloud,
             description: "Upload GeoJSON, KML & Shapefile",
+            shortcut: "S then I",
           },
         ],
       },

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import { 
   ShieldCheck, 
@@ -23,6 +21,7 @@ import {
   Input, 
   Badge 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { 
   fetchAgentPermissionsCatalog, 
@@ -60,6 +59,8 @@ interface TierTabsProps {
 }
 
 function AgentTierTabs({ accessTier, onTierChange }: TierTabsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="grid grid-cols-4 gap-0.5 p-0.5 bg-muted/50 rounded-md border border-border/70 text-xs font-medium text-center">
       {(["FULL", "ROLE_PRESET", "READ_ONLY", "CUSTOM"] as const).map((tier) => (
@@ -74,10 +75,10 @@ function AgentTierTabs({ accessTier, onTierChange }: TierTabsProps) {
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          {tier === "FULL" && "Full access"}
-          {tier === "ROLE_PRESET" && "Role Preset"}
-          {tier === "READ_ONLY" && "Read only"}
-          {tier === "CUSTOM" && "Custom"}
+          {tier === "FULL" && t("ai.agent_tier_full")}
+          {tier === "ROLE_PRESET" && t("ai.agent_tier_role")}
+          {tier === "READ_ONLY" && t("ai.agent_tier_readonly")}
+          {tier === "CUSTOM" && t("ai.agent_tier_custom")}
         </button>
       ))}
     </div>
@@ -201,6 +202,8 @@ function AgentPanelFooter({
   onSave,
   onRevoke,
 }: PanelFooterProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="p-4 border-t border-border/80 bg-muted/20 space-y-2 shrink-0">
       <Button
@@ -213,7 +216,7 @@ function AgentPanelFooter({
         ) : (
           <Save className="w-3.5 h-3.5" />
         )}
-        <span>Save changes ({totalGranted} permissions)</span>
+        <span>{t("common.save")} ({totalGranted})</span>
       </Button>
 
       <Button
@@ -239,6 +242,8 @@ function AgentPanelHeader({
   agentName: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="p-4 border-b border-border/80 bg-muted/20 flex items-center justify-between shrink-0">
       <div className="flex items-center gap-2.5">
@@ -246,12 +251,12 @@ function AgentPanelHeader({
           type="button"
           onClick={onClose}
           className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-          title="Tutup Pengaturan"
+          title={t("common.close")}
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h3 className="text-sm font-bold text-foreground">K2 Agent Settings</h3>
+          <h3 className="text-sm font-bold text-foreground">{t("ai.agent_onboarding_title")}</h3>
           <p className="text-[10px] font-mono text-muted-foreground">
             Scope: {scope} • {agentName}
           </p>
@@ -270,11 +275,13 @@ function AgentPanelHeader({
 }
 
 function AgentStatusCard({ scope }: { scope: string }) {
+  const { t } = useTranslation();
+
   return (
     <div className="p-3 rounded-lg bg-background border border-border flex items-center justify-between shadow-xs">
       <div>
         <p className="text-xs font-bold text-foreground">
-          {scope === "PLATFORM_INTERNAL" ? "K2NET Core Platform (Root HQ)" : "Tenant Regional Workspace"}
+          {scope === "PLATFORM_INTERNAL" ? t("ai.agent_scope_platform") : t("ai.agent_scope_tenant")}
         </p>
         <p className="text-[10px] text-primary flex items-center gap-1 font-mono mt-0.5">
           <ShieldCheck className="w-3.5 h-3.5" /> API Token Active
@@ -296,10 +303,11 @@ function AgentRolePresetPills({
   selectedPreset: string | null;
   onSelectPreset: (presetId: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-1.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
       <div className="text-[10px] font-bold tracking-wider text-primary uppercase">
-        PILIH PRESET SESUAI PERAN ANDA:
+        {t("ai.select_preset_role")}
       </div>
       <div className="flex flex-wrap gap-1.5 pt-1">
         {presets.map((preset) => (
@@ -331,6 +339,7 @@ export function AgentSettingsPanel({
   onAuthRevoked,
   scope = "PLATFORM_INTERNAL",
 }: AgentSettingsPanelProps) {
+  const { t } = useTranslation();
   const [catalog, setCatalog] = useState<PermissionCatalogData | null>(null);
   const [presets, setPresets] = useState<RolePresetData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -365,7 +374,7 @@ export function AgentSettingsPanel({
         setSelectedPreset(currentAuth.role_preset || "SUPER_ADMIN");
         setSelectedPermissions(new Set(currentAuth.granted_permissions || []));
       } catch (err) {
-        console.error("Gagal memuat katalog settings:", err);
+        console.error("Failed to load settings catalog:", err);
       } finally {
         setLoading(false);
       }
@@ -424,26 +433,26 @@ export function AgentSettingsPanel({
         granted_permissions: Array.from(selectedPermissions),
       };
       const res = await saveAgentAuthorization(payload);
-      toast.success("Pengaturan izin K2 Agent berhasil diperbarui!");
+      toast.success(t("common.success"));
       onAuthUpdated(res);
       onClose();
     } catch {
-      toast.error("Gagal menyimpan perubahan izin.");
+      toast.error(t("common.error"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleRevoke = async () => {
-    if (!confirm("Apakah Anda yakin ingin mencabut seluruh akses K2 Agent?")) return;
+    if (!confirm("Are you sure you want to revoke all K2 Agent access?")) return;
     try {
       setRevoking(true);
       await revokeAgentAuthorization();
-      toast.success("Otorisasi K2 Agent berhasil dicabut.");
+      toast.success(t("common.success"));
       onAuthRevoked();
       onClose();
     } catch {
-      toast.error("Gagal mencabut otorisasi.");
+      toast.error(t("common.error"));
     } finally {
       setRevoking(false);
     }
@@ -492,7 +501,7 @@ export function AgentSettingsPanel({
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Cari permission..."
+              placeholder={t("common.search")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="text-xs h-8 pl-8 font-mono bg-background border-border"
@@ -503,7 +512,7 @@ export function AgentSettingsPanel({
             {loading ? (
               <div className="py-8 text-center text-xs text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1 text-primary" />
-                Memuat katalog izin...
+                {t("common.loading")}
               </div>
             ) : (
               filteredDomains.map((domain) => (

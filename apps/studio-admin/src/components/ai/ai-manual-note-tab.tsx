@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import { 
   FileText, 
@@ -15,6 +13,7 @@ import {
   Input, 
   Label 
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { CATEGORIES } from "./types";
 
 interface AiManualNoteTabProps {
@@ -40,6 +39,8 @@ export function AiManualNoteTab({
   onManualSubmit,
   onCancel,
 }: AiManualNoteTabProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="border-border bg-card max-w-3xl mx-auto shadow-xs">
       <CardHeader className="border-b border-border pb-4">
@@ -49,7 +50,7 @@ export function AiManualNoteTab({
           </div>
           <div>
             <CardTitle className="text-base font-bold text-foreground">
-              Tulis Catatan Teknis / SOP Manual
+              {t("ai.tab_manual")}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
               Tulis langsung pedoman lapangan, catatan konfigurasi, atau aturan teknis. Mendukung format Markdown untuk tabel, bullet points, dan blok kode.
@@ -62,7 +63,7 @@ export function AiManualNoteTab({
         <form onSubmit={onManualSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="manualTitle" className="text-xs">Judul SOP / Catatan Teknis</Label>
+              <Label htmlFor="manualTitle" className="text-xs">{t("ai.doc_title")}</Label>
               <Input
                 id="manualTitle"
                 type="text"
@@ -74,7 +75,7 @@ export function AiManualNoteTab({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="manualCategory" className="text-xs">Kategori</Label>
+              <Label htmlFor="manualCategory" className="text-xs">{t("ai.doc_category")}</Label>
               <select
                 id="manualCategory"
                 value={manualCategory}
@@ -91,7 +92,7 @@ export function AiManualNoteTab({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="manualContent" className="text-xs">Konten Markdown</Label>
+            <Label htmlFor="manualContent" className="text-xs">{t("ai.doc_content")}</Label>
             <textarea
               id="manualContent"
               rows={12}
@@ -110,7 +111,7 @@ export function AiManualNoteTab({
               size="sm"
               onClick={onCancel}
             >
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -119,7 +120,7 @@ export function AiManualNoteTab({
               className="gap-1.5"
             >
               {manualSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {manualSubmitting ? "Menyimpan ke Memori..." : "Simpan Pengetahuan"}
+              {manualSubmitting ? t("common.processing") : t("common.save")}
             </Button>
           </div>
         </form>
