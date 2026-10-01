@@ -45,6 +45,10 @@ class TenantApiAdvancedServiceTest {
 
     private SecretEncryptionUtil encryptionUtil;
     private ObjectMapper objectMapper;
+
+    private com.company.ftthgis.service.tenantapi.TenantTokenService tokenService;
+    private com.company.ftthgis.service.tenantapi.TenantWebhookConfigService webhookConfigService;
+    private com.company.ftthgis.service.tenantapi.TenantWebhookDispatcherService webhookDispatcherService;
     private TenantApiAdvancedService service;
 
     private Organization testOrg;
@@ -53,7 +57,21 @@ class TenantApiAdvancedServiceTest {
     void setUp() {
         encryptionUtil = new SecretEncryptionUtil("test-encryption-secret-key-32-chars!");
         objectMapper = new ObjectMapper();
-        service = new TenantApiAdvancedService(
+
+        tokenService = new com.company.ftthgis.service.tenantapi.TenantTokenService(
+                organizationRepository,
+                tokenRepository,
+                encryptionUtil,
+                objectMapper
+        );
+        webhookConfigService = new com.company.ftthgis.service.tenantapi.TenantWebhookConfigService(
+                organizationRepository,
+                endpointRepository,
+                securityValidator,
+                encryptionUtil,
+                objectMapper
+        );
+        webhookDispatcherService = new com.company.ftthgis.service.tenantapi.TenantWebhookDispatcherService(
                 organizationRepository,
                 tokenRepository,
                 endpointRepository,
@@ -62,6 +80,12 @@ class TenantApiAdvancedServiceTest {
                 encryptionUtil,
                 objectMapper,
                 ssrfSafeHttpClient
+        );
+
+        service = new TenantApiAdvancedService(
+                tokenService,
+                webhookConfigService,
+                webhookDispatcherService
         );
 
         testOrg = Organization.builder()
