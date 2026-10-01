@@ -82,6 +82,10 @@ export function LogsContainer() {
     isLivePaused,
     selectedTypes,
     selectedLevels,
+    selectedSeverities,
+    impersonationOnly,
+    scopeFilter,
+    projectFilter,
     setLogTypeCounts,
     tenantFilter,
     timeRange,
@@ -110,9 +114,16 @@ export function LogsContainer() {
   }, [logTypeCounts, setLogTypeCounts]);
 
   const filteredLogs = useMemo(
-    () => filterAuditLogs(logs, searchQuery, tenantFilter, selectedLevels, advancedFilters),
-    [logs, searchQuery, tenantFilter, selectedLevels, advancedFilters]
+    () =>
+      filterAuditLogs(logs, searchQuery, tenantFilter, selectedLevels, advancedFilters, {
+        selectedSeverities,
+        impersonationOnly,
+        scopeFilter,
+        projectFilter,
+      }),
+    [logs, searchQuery, tenantFilter, selectedLevels, advancedFilters, selectedSeverities, impersonationOnly, scopeFilter, projectFilter]
   );
+
 
   const histogramData = useMemo(() => buildHistogramData(rawLogs), [rawLogs]);
 

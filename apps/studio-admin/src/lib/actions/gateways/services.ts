@@ -80,20 +80,55 @@ export type AuditEvent = {
   id: string;
   tenantSlug: string;
   action: string;
-  target: string;
+  resourceType?: string;
+  resourceId?: string;
+  target?: string;
   status: string;
-  userId: string;
-  username: string;
-  clientIp: string;
-  userAgent: string;
-  errorMessage: string;
+  actorId?: string;
+  actorIp?: string;
+  userId?: string;
+  username?: string;
+  clientIp?: string;
+  userAgent?: string;
+  serviceSource?: string;
+  errorMessage?: string;
+  oldValue?: Record<string, unknown> | null;
+  newValue?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown>;
+  occurredAt?: string;
   createdAt: string;
 };
 
-export async function getAuditEvents(): Promise<AuditEvent[]> {
+export type AuditQueryParams = {
+  logGroup?: string;
+  severity?: string;
+  search?: string;
+  tenantSlug?: string;
+  projectId?: string;
+  scope?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export async function getAuditEvents(params?: AuditQueryParams): Promise<AuditEvent[]> {
   await verifySuperAdmin();
 
-  const res = await fetch(`/api/v1/audit/events`, {
+  let url = `/api/v1/audit/events`;
+  if (params) {
+    const q = new URLSearchParams();
+    if (params.logGroup) q.set("logGroup", params.logGroup);
+    if (params.severity) q.set("severity", params.severity);
+    if (params.search) q.set("search", params.search);
+    if (params.tenantSlug) q.set("tenantSlug", params.tenantSlug);
+    if (params.projectId) q.set("projectId", params.projectId);
+    if (params.scope) q.set("scope", params.scope);
+    if (params.page !== undefined) q.set("page", String(params.page));
+    if (params.pageSize !== undefined) q.set("pageSize", String(params.pageSize));
+    const qs = q.toString();
+    if (qs) url += `?${qs}`;
+  }
+
+  const res = await fetch(url, {
     headers: getAuthHeaders(),
     cache: "no-store",
   });
@@ -105,6 +140,7 @@ export async function getAuditEvents(): Promise<AuditEvent[]> {
   const payload = await res.json();
   return payload.data || [];
 }
+
 
 // ─────────────────────────────────────────────
 // OLT Gateway: GET /api/v1/olt

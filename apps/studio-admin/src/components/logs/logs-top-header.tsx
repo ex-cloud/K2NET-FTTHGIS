@@ -14,12 +14,14 @@ import {
   RefreshCw,
   BarChart2,
   Download,
+  FileSpreadsheet,
   Play,
   SlidersHorizontal,
   Columns3,
   ChevronRight,
   Check,
 } from "lucide-react";
+
 import {
   useLogsFilter,
   LOG_TYPES_LABELS,
@@ -34,10 +36,12 @@ import { createPortal } from "react-dom";
 import type { Table, VisibilityState } from "@tanstack/react-table";
 import type { AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { useTranslation } from "@k2net/i18n";
+import { exportLogsToCsv } from "./logs-utils";
+
 // ─── Filter Fields available in builder ──────────────────────────────────────
 
 const FILTER_FIELDS: AdvancedFilterField[] = [
-  "logType", "status", "method", "pathname", "actor", "message", "tenantSlug", "serviceSource", "level",
+  "logType", "severity", "status", "method", "pathname", "actor", "message", "tenantSlug", "serviceSource", "level",
 ];
 
 const FILTER_OPERATORS: AdvancedFilterOperator[] = [
@@ -46,6 +50,7 @@ const FILTER_OPERATORS: AdvancedFilterOperator[] = [
 
 const FIELD_SUGGESTIONS: Partial<Record<AdvancedFilterField, string[]>> = {
   logType:       ["edge", "auth", "postgres", "audit", "notification", "scheduler", "storage", "export", "payment", "olt", "poller", "map", "whatsapp"],
+  severity:      ["CRITICAL", "ERROR", "WARN", "INFO"],
   method:        ["GET", "POST", "PUT", "PATCH", "DELETE"],
   status:        ["200", "201", "204", "400", "401", "403", "404", "500"],
   serviceSource: ["kong-gateway", "keycloak", "backend", "gateway-audit", "gateway-notification"],
@@ -77,9 +82,6 @@ function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPic
         right: window.innerWidth - rect.right + window.scrollX,
       });
     }
-  // columnVisibility intentionally excluded: prop change causes parent re-render
-  // which re-renders ColumnPicker; only recompute coords on mount / anchor change
-   
   }, [anchorRef]);
 
   React.useEffect(() => {
@@ -128,8 +130,6 @@ function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPic
       <div className="px-1.5 py-1.5 max-h-[280px] overflow-y-auto custom-scrollbar-thin">
         {filtered.map((col) => {
           const label = (col.columnDef.meta as { label?: string })?.label ?? col.id;
-          // Derive visibility directly from the passed columnVisibility prop to avoid
-          // stale closure issues with col.getIsVisible(). undefined key = visible.
           const isVisible = (columnVisibility as Record<string, boolean>)?.[col.id] !== false;
           return (
             <label
@@ -355,6 +355,10 @@ export function LogsTopHeader({
     searchQuery, setSearchQuery,
     selectedTypes, toggleType, setLogType,
     selectedLevels, toggleLevel,
+    selectedSeverities, toggleSeverity,
+    impersonationOnly, setImpersonationOnly,
+    scopeFilter, setScopeFilter,
+    projectFilter, setProjectFilter,
     isLivePaused, setIsLivePaused,
     showHistogram, setShowHistogram,
     setIsSidebarCollapsed,
@@ -381,6 +385,32 @@ export function LogsTopHeader({
     [selectedLevels]
   );
 
+  const activeSeverityPills = React.useMemo(
+    () => {
+      const allActive = Object.values(selectedSeverities).every(Boolean);
+      if (allActive) return [];
+      return Object.entries(selectedSeverities)
+        .filter(([, active]) => active)
+        .map(([key]) => ({ id: key, label: `Severity = ${key}`, kind: "severity" as const }));
+    },
+    [selectedSeverities]
+  );
+
+  const impersonationPills = React.useMemo(
+    () => impersonationOnly ? [{ id: "impersonated", label: "🎭 Only Impersonated", kind: "impersonated" as const }] : [],
+    [impersonationOnly]
+  );
+
+  const scopePills = React.useMemo(
+    () => scopeFilter && scopeFilter !== "ALL" ? [{ id: "scope", label: `Scope = ${scopeFilter}`, kind: "scope" as const }] : [],
+    [scopeFilter]
+  );
+
+  const projectPills = React.useMemo(
+    () => projectFilter.trim() ? [{ id: "project", label: `Project = ${projectFilter}`, kind: "project" as const }] : [],
+    [projectFilter]
+  );
+
   const advancedPills = React.useMemo(() =>
     advancedFilters.map((f) => ({
       id: f.id,
@@ -390,12 +420,24 @@ export function LogsTopHeader({
     [advancedFilters]
   );
 
-  const allPills = [...activeTypePills, ...activeLevelPills, ...advancedPills];
+  const allPills = [
+    ...activeTypePills,
+    ...activeLevelPills,
+    ...activeSeverityPills,
+    ...impersonationPills,
+    ...scopePills,
+    ...projectPills,
+    ...advancedPills,
+  ];
   const hasActivePills = allPills.length > 0;
 
-  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "advanced" }) => {
+  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "impersonated" | "scope" | "project" | "advanced" }) => {
     if (pill.kind === "type") toggleType(pill.id);
     else if (pill.kind === "level") toggleLevel(pill.id);
+    else if (pill.kind === "severity") toggleSeverity(pill.id);
+    else if (pill.kind === "impersonated") setImpersonationOnly(false);
+    else if (pill.kind === "scope") setScopeFilter("ALL");
+    else if (pill.kind === "project") setProjectFilter("");
     else removeAdvancedFilter(pill.id);
   };
 
@@ -407,6 +449,11 @@ export function LogsTopHeader({
     a.setAttribute("download", `k2net-logs-${Date.now()}.json`);
     document.body.appendChild(a); a.click(); a.remove();
     toast.success(`Exported ${filteredLogs.length} log events to JSON.`);
+  };
+
+  const handleExportCsv = () => {
+    exportLogsToCsv(filteredLogs);
+    toast.success(`Exported ${filteredLogs.length} audit events to RFC-4180 CSV.`);
   };
 
   return (
@@ -494,6 +541,12 @@ export function LogsTopHeader({
             <Columns3 className="w-3.5 h-3.5" />
           </Button>
         </ActionTooltip>
+        <ActionTooltip label="Export RFC-4180 CSV" shortcut="Alt+S">
+          <Button variant="ghost" size="sm" onClick={handleExportCsv}
+            className="h-7 w-7 p-0 text-primary hover:text-primary-foreground hover:bg-primary/20 border border-primary/30 rounded-md">
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+          </Button>
+        </ActionTooltip>
         <ActionTooltip label={t("observability.export_json")} shortcut="Alt+E">
           <Button variant="ghost" size="sm" onClick={handleExportJson}
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md">
@@ -530,6 +583,9 @@ export function LogsTopHeader({
                 setLogType(f.value, false);
                 toast.success(`Deactivated filter: Log Type != ${LOG_TYPES_LABELS[f.value] ?? f.value}`);
               }
+            } else if (f.field === "severity") {
+              toggleSeverity(f.value.toUpperCase());
+              toast.success(`Filter updated: Severity = ${f.value.toUpperCase()}`);
             } else {
               addAdvancedFilter(f);
             }
@@ -547,3 +603,4 @@ export function LogsTopHeader({
     </div>
   );
 }
+

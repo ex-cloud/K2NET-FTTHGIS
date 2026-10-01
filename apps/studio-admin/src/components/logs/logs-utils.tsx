@@ -117,6 +117,16 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
     meta: { label: "Source" },
     enableHiding: true,
   }),
+  columnHelper.accessor("severity", {
+    id: "severity",
+    meta: { label: "Severity" },
+    enableHiding: true,
+  }),
+  columnHelper.accessor("logGroup", {
+    id: "group",
+    meta: { label: "Log Group" },
+    enableHiding: true,
+  }),
   columnHelper.accessor("status", {
     id: "status",
     meta: { label: "Status" },
@@ -125,6 +135,16 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
   columnHelper.accessor("tenantSlug", {
     id: "tenant",
     meta: { label: "Tenant" },
+    enableHiding: true,
+  }),
+  columnHelper.accessor("scope", {
+    id: "scope",
+    meta: { label: "Scope" },
+    enableHiding: true,
+  }),
+  columnHelper.accessor("projectId", {
+    id: "project",
+    meta: { label: "Project" },
     enableHiding: true,
   }),
   columnHelper.accessor("method", {
@@ -155,6 +175,14 @@ function checkAdvancedFilter(
     raw = log.logType;
   } else if (field === "level") {
     raw = getLevel(log);
+  } else if (field === "severity") {
+    raw = log.severity;
+  } else if (field === "logGroup") {
+    raw = log.logGroup;
+  } else if (field === "scope") {
+    raw = log.scope ?? "";
+  } else if (field === "projectId") {
+    raw = log.projectId ?? "";
   } else {
     raw = String(log[field as keyof AuditStreamEntry] ?? "");
   }
@@ -172,18 +200,63 @@ function checkAdvancedFilter(
   }
 }
 
+export interface FilterAuditLogsOptions {
+  searchQuery?: string;
+  tenantFilter?: string;
+  selectedLevels?: Record<string, boolean>;
+  selectedSeverities?: Record<string, boolean>;
+  impersonationOnly?: boolean;
+  scopeFilter?: string;
+  projectFilter?: string;
+  advancedFilters?: Array<{ field: string; operator: string; value: string }>;
+}
+
 export function filterAuditLogs(
   logs: AuditStreamEntry[],
   searchQuery: string,
   tenantFilter: string,
   selectedLevels: Record<string, boolean>,
-  advancedFilters: Array<{ field: string; operator: string; value: string }>
+  advancedFilters: Array<{ field: string; operator: string; value: string }>,
+  options?: {
+    selectedSeverities?: Record<string, boolean>;
+    impersonationOnly?: boolean;
+    scopeFilter?: string;
+    projectFilter?: string;
+  }
 ): AuditStreamEntry[] {
   let result = logs;
 
   if (tenantFilter.trim()) {
     const tf = tenantFilter.toLowerCase().trim();
     result = result.filter((log) => (log.tenantSlug ?? "").toLowerCase().includes(tf));
+  }
+
+  if (options?.scopeFilter && options.scopeFilter !== "ALL") {
+    const targetScope = options.scopeFilter.toUpperCase();
+    result = result.filter((log) => (log.scope ?? "").toUpperCase() === targetScope);
+  }
+
+  if (options?.projectFilter && options.projectFilter.trim()) {
+    const pf = options.projectFilter.toLowerCase().trim();
+    result = result.filter(
+      (log) =>
+        (log.projectId ?? "").toLowerCase().includes(pf) ||
+        (log.projectName ?? "").toLowerCase().includes(pf)
+    );
+  }
+
+  if (options?.impersonationOnly) {
+    result = result.filter((log) => Boolean(log.isImpersonated || log.realActorId));
+  }
+
+  if (options?.selectedSeverities) {
+    const allSeveritiesActive = Object.values(options.selectedSeverities).every(Boolean);
+    if (!allSeveritiesActive) {
+      result = result.filter((log) => {
+        const sev = (log.severity || "INFO").toUpperCase();
+        return Boolean(options.selectedSeverities?.[sev]);
+      });
+    }
   }
 
   if (searchQuery.trim()) {
@@ -195,7 +268,10 @@ export function filterAuditLogs(
         log.actor?.toLowerCase().includes(q) ||
         log.timestamp?.toLowerCase().includes(q) ||
         log.tenantSlug?.toLowerCase().includes(q) ||
-        log.serviceSource?.toLowerCase().includes(q)
+        log.serviceSource?.toLowerCase().includes(q) ||
+        log.realActorId?.toLowerCase().includes(q) ||
+        log.projectId?.toLowerCase().includes(q) ||
+        log.projectName?.toLowerCase().includes(q)
     );
   }
 
@@ -213,3 +289,72 @@ export function filterAuditLogs(
 
   return result;
 }
+
+/**
+ * RFC-4180 Compliant CSV Export Streamer
+ * Properly handles quotes, commas, CRLF newlines and multi-tenant audit properties
+ */
+export function exportLogsToCsv(logs: AuditStreamEntry[], filename?: string): void {
+  const escapeCsv = (val: unknown): string => {
+    if (val === null || val === undefined) return "";
+    const str = String(val);
+    if (str.includes(",") || str.includes("\n") || str.includes("\r") || str.includes('"')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const headers = [
+    "Timestamp",
+    "Severity",
+    "LogGroup",
+    "Source",
+    "Tenant",
+    "Scope",
+    "ProjectId",
+    "ProjectName",
+    "Actor",
+    "IsImpersonated",
+    "RealActorId",
+    "SessionId",
+    "Action",
+    "Status",
+    "Method",
+    "Pathname",
+    "IP",
+    "Message",
+  ];
+
+  const rows = logs.map((log) => [
+    escapeCsv(log.timestamp),
+    escapeCsv(log.severity),
+    escapeCsv(log.logGroup),
+    escapeCsv(log.serviceSource),
+    escapeCsv(log.tenantSlug ?? ""),
+    escapeCsv(log.scope ?? ""),
+    escapeCsv(log.projectId ?? ""),
+    escapeCsv(log.projectName ?? ""),
+    escapeCsv(log.actor),
+    escapeCsv(log.isImpersonated ? "YES" : "NO"),
+    escapeCsv(log.realActorId ?? ""),
+    escapeCsv(log.impersonationSessionId ?? ""),
+    escapeCsv(log.action),
+    escapeCsv(log.status ?? ""),
+    escapeCsv(log.method ?? ""),
+    escapeCsv(log.pathname ?? ""),
+    escapeCsv(log.ip ?? ""),
+    escapeCsv(log.message),
+  ]);
+
+  const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename || `k2net-audit-logs-${Date.now()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+

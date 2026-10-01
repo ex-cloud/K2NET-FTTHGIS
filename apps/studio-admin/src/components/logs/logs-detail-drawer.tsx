@@ -1,14 +1,142 @@
 import React from "react";
-import { FileCode, X, Copy, Building2 } from "lucide-react";
+import { FileCode, X, Copy, Building2, FolderKanban, Layers, History } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { type AuditStreamEntry, LOG_GROUPS } from "@/hooks/use-audit-log-stream";
 import { getSourceIcon, getLevel } from "./logs-utils";
 import { useTranslation } from "@k2net/i18n";
 
+
 interface LogsDetailDrawerProps {
   selectedLog: AuditStreamEntry;
   onClose: () => void;
   onCopyLog: (log: AuditStreamEntry, e: React.MouseEvent) => void;
+}
+
+function ImpersonationBanner({ log }: { log: AuditStreamEntry }) {
+  if (!log.isImpersonated && !log.realActorId) return null;
+
+  return (
+    <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 space-y-2 font-mono">
+      <div className="flex items-center gap-1.5 text-purple-400 font-bold text-xs">
+        <span>🎭</span>
+        <span>Dual-Identity Impersonation Session</span>
+      </div>
+      <div className="space-y-1 text-[11px]">
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground">Real Actor:</span>
+          <span className="text-foreground font-semibold">{log.realActorId || log.actor}</span>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground">Impersonated Org:</span>
+          <span className="text-foreground font-semibold">{log.impersonatedTenantId || log.tenantSlug || "N/A"}</span>
+        </div>
+        {log.impersonationSessionId && (
+          <div className="flex justify-between gap-2 pt-1 border-t border-purple-500/20 text-[10px]">
+            <span className="text-muted-foreground">Session ID:</span>
+            <span className="text-purple-300 font-mono break-all">{log.impersonationSessionId}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ScopeAndProjectSection({ log }: { log: AuditStreamEntry }) {
+  if (!log.scope && !log.projectId && !log.projectName) return null;
+
+  return (
+    <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 space-y-1.5 font-mono text-[11px]">
+      <div className="flex items-center gap-1.5 text-primary font-bold text-[10px] uppercase tracking-wider">
+        <FolderKanban className="w-3.5 h-3.5" />
+        <span>Scope & Topology Context</span>
+      </div>
+      <div className="space-y-1">
+        {log.scope && (
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Scope:</span>
+            <span className="text-foreground font-semibold">{log.scope}</span>
+          </div>
+        )}
+        {log.projectName && (
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Project Name:</span>
+            <span className="text-foreground font-semibold">{log.projectName}</span>
+          </div>
+        )}
+        {log.projectId && (
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Project ID:</span>
+            <span className="text-foreground font-mono text-[10px] break-all">{log.projectId}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function JsonDiffViewer({ oldValue, newValue }: { oldValue?: Record<string, unknown> | null; newValue?: Record<string, unknown> | null }) {
+  if (!oldValue && !newValue) return null;
+
+  return (
+    <div className="space-y-2">
+      <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider flex items-center gap-1.5">
+        <History className="w-3.5 h-3.5 text-primary" />
+        <span>Data Mutation Diff (Old vs New)</span>
+      </label>
+      <div className="grid grid-cols-1 gap-2 font-mono text-[10px]">
+        {oldValue && (
+          <div className="bg-rose-500/10 border border-rose-500/25 rounded p-2.5 space-y-1">
+            <div className="text-rose-400 font-bold text-[9px] uppercase tracking-wider">
+              - Old Value (Before Change)
+            </div>
+            <pre className="text-rose-300 overflow-x-auto whitespace-pre-wrap">
+              {JSON.stringify(oldValue, null, 2)}
+            </pre>
+          </div>
+        )}
+        {newValue && (
+          <div className="bg-primary/10 border border-primary/25 rounded p-2.5 space-y-1">
+            <div className="text-primary font-bold text-[9px] uppercase tracking-wider">
+              + New Value (After Change)
+            </div>
+            <pre className="text-foreground overflow-x-auto whitespace-pre-wrap">
+              {JSON.stringify(newValue, null, 2)}
+            </pre>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MetadataInspector({ metadata }: { metadata?: Record<string, unknown> }) {
+  if (!metadata || Object.keys(metadata).length === 0) return null;
+
+  // Filter out internal duplicate keys already shown elsewhere
+  const displayEntries = Object.entries(metadata).filter(
+    ([k]) => !["oldValue", "newValue", "isImpersonated", "realActorId", "impersonationSessionId", "impersonatedTenantId", "scope", "projectId", "projectName", "severity", "logGroup"].includes(k)
+  );
+
+  if (displayEntries.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider flex items-center gap-1.5">
+        <Layers className="w-3.5 h-3.5 text-primary" />
+        <span>Extended Metadata</span>
+      </label>
+      <div className="bg-muted/30 p-2.5 rounded border border-border/50 space-y-1 font-mono text-[10px]">
+        {displayEntries.map(([key, val]) => (
+          <div key={key} className="flex items-start justify-between gap-2 py-0.5 border-b border-border/30 last:border-0">
+            <span className="text-muted-foreground font-semibold shrink-0">{key}:</span>
+            <span className="text-foreground text-right break-all">
+              {typeof val === "object" && val !== null ? JSON.stringify(val) : String(val)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function HttpRequestSection({ log }: { log: AuditStreamEntry }) {
@@ -62,9 +190,10 @@ function HttpRequestSection({ log }: { log: AuditStreamEntry }) {
 export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetailDrawerProps) {
   const { t } = useTranslation();
   const level = getLevel(selectedLog);
+  const isCritical = (selectedLog.severity || "").toUpperCase() === "CRITICAL";
 
   return (
-    <div className="absolute right-0 top-0 h-full w-96 bg-card border-l border-border flex flex-col z-20 shadow-lg animate-in slide-in-from-right duration-250">
+    <div className="absolute right-0 top-0 h-full w-[420px] max-w-full bg-card border-l border-border flex flex-col z-20 shadow-xl animate-in slide-in-from-right duration-250">
       <div className="p-3 border-b border-border flex items-center justify-between bg-muted/40 shrink-0">
         <div className="flex items-center gap-2">
           <FileCode className="w-4 h-4 text-primary" />
@@ -81,6 +210,10 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+        <ImpersonationBanner log={selectedLog} />
+
+        <ScopeAndProjectSection log={selectedLog} />
+
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.event_id")}</label>
           <p className="text-foreground bg-muted/40 p-2 rounded border border-border/50 text-[10px] break-all font-mono">
@@ -89,14 +222,16 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.level")}</label>
+          <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Severity & Level</label>
           <div className="flex items-center gap-2">
             <span
-              className={`w-2 h-2 rounded-full ${
-                level === "error" ? "bg-rose-500" : level === "warning" ? "bg-amber-500" : "bg-primary/70"
+              className={`w-2.5 h-2.5 rounded-full ${
+                isCritical ? "bg-rose-500 animate-pulse" : level === "error" ? "bg-rose-500" : level === "warning" ? "bg-amber-500" : "bg-primary/70"
               }`}
             />
-            <span className="text-foreground capitalize text-xs font-mono">{level}</span>
+            <span className="text-foreground font-bold text-xs font-mono">
+              {selectedLog.severity || level.toUpperCase()}
+            </span>
           </div>
         </div>
 
@@ -153,9 +288,13 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
 
         <HttpRequestSection log={selectedLog} />
 
+        <JsonDiffViewer oldValue={selectedLog.oldValue} newValue={selectedLog.newValue} />
+
+        <MetadataInspector metadata={selectedLog.metadata} />
+
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.raw_json_payload")}</label>
-          <pre className="bg-background p-3 rounded border border-border text-[10px] text-foreground/80 overflow-x-auto whitespace-pre-wrap font-mono">
+          <pre className="bg-background p-3 rounded border border-border text-[10px] text-foreground/80 overflow-x-auto whitespace-pre-wrap font-mono max-h-60 custom-scrollbar-thin">
             {JSON.stringify(selectedLog, null, 2)}
           </pre>
         </div>
@@ -174,3 +313,4 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
     </div>
   );
 }
+

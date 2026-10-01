@@ -81,6 +81,20 @@ export interface AuditStreamEntry {
   serviceSource: string;
   /** Tenant slug for multi-tenant visibility in Super Admin view */
   tenantSlug?: string;
+  /** Scope: SYSTEM, ORGANIZATION, or PROJECT */
+  scope?: "SYSTEM" | "ORGANIZATION" | "PROJECT" | string;
+  /** Project ID for technical project-scoped logs */
+  projectId?: string;
+  /** Human-readable Project Name */
+  projectName?: string;
+  /** Impersonation flag */
+  isImpersonated?: boolean;
+  /** Real Super Admin Actor ID when impersonating */
+  realActorId?: string;
+  /** Impersonation session ID */
+  impersonationSessionId?: string;
+  /** Target tenant ID being impersonated */
+  impersonatedTenantId?: string;
   /** Legacy category kept for backwards compat */
   category?: string;
   severity: "INFO" | "WARN" | "ERROR" | "CRITICAL";
@@ -88,6 +102,10 @@ export interface AuditStreamEntry {
   action: string;
   message: string;
   _resourceType?: string;
+  resourceId?: string;
+  oldValue?: Record<string, unknown> | null;
+  newValue?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown>;
   traceId?: string;
   requestId?: string;
   method?: string;
@@ -111,9 +129,21 @@ export interface UseAuditLogStreamOptions {
   selectedGroups?: Record<LogGroupKey, boolean>;
   /** Optional time range filter (relative e.g. "15m", "1h", "24h" or custom "custom:start_end") */
   timeRange?: string;
+  /** Optional severity filter */
+  selectedSeverities?: Record<string, boolean>;
+  /** Optional tenant slug filter */
+  tenantSlug?: string;
+  /** Optional project ID filter */
+  projectId?: string;
+  /** Optional scope filter */
+  scope?: string;
+  /** Optional search query */
+  search?: string;
+  /** Impersonation only filter */
+  impersonationOnly?: boolean;
 }
 
-// ─── Entry Mappers ────────────────────────────────────────────────────────────
+// ─── Entry Mappers ────────────────────────────────────────────────────
 
 function resolveHttpMethod(metadataMethod?: string, actionStr?: string): string | undefined {
   if (metadataMethod) return metadataMethod;
@@ -151,10 +181,77 @@ function resolveAuditPathname(e: Record<string, unknown>, metadata: Record<strin
   return undefined;
 }
 
+function resolveEntrySeverity(
+  metadata: Record<string, unknown>,
+  e: Record<string, unknown>,
+  status?: number
+): "INFO" | "WARN" | "ERROR" | "CRITICAL" {
+  const rawSeverity = typeof metadata.severity === "string"
+    ? metadata.severity.toUpperCase()
+    : typeof e.severity === "string"
+    ? e.severity.toUpperCase()
+    : undefined;
+
+  if (rawSeverity === "CRITICAL" || rawSeverity === "ERROR" || rawSeverity === "WARN" || rawSeverity === "INFO") {
+    return rawSeverity;
+  }
+  if (e.status === "FAILED" || (typeof status === "number" && status >= 500)) {
+    return "ERROR";
+  }
+  if (typeof status === "number" && status >= 400) {
+    return "WARN";
+  }
+  return "INFO";
+}
+
+function resolveEntryImpersonation(metadata: Record<string, unknown>, e: Record<string, unknown>) {
+  const isImpersonated = Boolean(
+    metadata.isImpersonated ||
+    metadata.impersonatedBy ||
+    metadata.realActorId ||
+    (typeof e.actorId === "string" && e.actorId.startsWith("impersonated:"))
+  );
+  const realActorId = typeof metadata.realActorId === "string"
+    ? metadata.realActorId
+    : typeof metadata.impersonatedBy === "string"
+    ? metadata.impersonatedBy
+    : undefined;
+  const impersonationSessionId = typeof metadata.impersonationSessionId === "string"
+    ? metadata.impersonationSessionId
+    : typeof metadata.sessionId === "string"
+    ? metadata.sessionId
+    : undefined;
+  const impersonatedTenantId = typeof metadata.impersonatedTenantId === "string"
+    ? metadata.impersonatedTenantId
+    : undefined;
+
+  return { isImpersonated, realActorId, impersonationSessionId, impersonatedTenantId };
+}
+
+function resolveEntryScope(metadata: Record<string, unknown>, tenantSlug?: string) {
+  const scope = typeof metadata.scope === "string"
+    ? metadata.scope.toUpperCase()
+    : metadata.projectId
+    ? "PROJECT"
+    : tenantSlug
+    ? "ORGANIZATION"
+    : "SYSTEM";
+  const projectId = typeof metadata.projectId === "string" ? metadata.projectId : undefined;
+  const projectName = typeof metadata.projectName === "string" ? metadata.projectName : undefined;
+
+  return { scope, projectId, projectName };
+}
+
+function resolveEntryDiff(metadata: Record<string, unknown>, e: Record<string, unknown>) {
+  const oldValue = (e.oldValue as Record<string, unknown>) ?? (metadata.oldValue as Record<string, unknown>) ?? null;
+  const newValue = (e.newValue as Record<string, unknown>) ?? (metadata.newValue as Record<string, unknown>) ?? null;
+  return { oldValue, newValue };
+}
+
 function mapAuditEventToEntry(e: Record<string, unknown>): AuditStreamEntry {
   const metadata = (e.metadata as Record<string, unknown>) ?? {};
   const rawSource = String(metadata.serviceSource ?? e.serviceSource ?? "backend");
-  const resourceType = typeof e._resourceType === "string" ? e._resourceType : undefined;
+  const resourceType = typeof e.resourceType === "string" ? e.resourceType : typeof e._resourceType === "string" ? e._resourceType : undefined;
   const logType = String(metadata.logType ?? resolveLogTypeFromSource(rawSource, resourceType));
   const logGroup = resolveLogGroup(logType, resourceType, metadata);
   const actionStr = typeof e.action === "string" ? e.action : undefined;
@@ -163,9 +260,14 @@ function mapAuditEventToEntry(e: Record<string, unknown>): AuditStreamEntry {
   const errorMessage = typeof e.errorMessage === "string" ? e.errorMessage : undefined;
   const status = resolveAuditStatus(metadata, errorMessage);
   const pathname = resolveAuditPathname(e, metadata, actionStr);
-  const ip = typeof e.actorIp === "string" ? e.actorIp : typeof metadata.ip === "string" ? metadata.ip : undefined;
+  const ip = typeof e.actorIp === "string" ? e.actorIp : typeof e.clientIp === "string" ? e.clientIp : typeof metadata.ip === "string" ? metadata.ip : undefined;
   const resourceId = typeof e.resourceId === "string" ? e.resourceId : undefined;
   const tenantSlug = typeof e.tenantSlug === "string" ? e.tenantSlug : typeof metadata.tenantSlug === "string" ? metadata.tenantSlug : undefined;
+
+  const severity = resolveEntrySeverity(metadata, e, status);
+  const impersonation = resolveEntryImpersonation(metadata, e);
+  const scopeInfo = resolveEntryScope(metadata, tenantSlug);
+  const diffInfo = resolveEntryDiff(metadata, e);
 
   return {
     id: String(e.id || `audit-${Date.now()}-${Math.random()}`),
@@ -174,10 +276,21 @@ function mapAuditEventToEntry(e: Record<string, unknown>): AuditStreamEntry {
     logGroup,
     serviceSource: rawSource,
     tenantSlug,
-    severity: e.status === "FAILED" ? "ERROR" : "INFO",
+    scope: scopeInfo.scope,
+    projectId: scopeInfo.projectId,
+    projectName: scopeInfo.projectName,
+    isImpersonated: impersonation.isImpersonated,
+    realActorId: impersonation.realActorId,
+    impersonationSessionId: impersonation.impersonationSessionId,
+    impersonatedTenantId: impersonation.impersonatedTenantId,
+    severity,
     actor: String(e.actorId || e.username || e.actor || "system"),
     action: actionStr || "UNKNOWN",
     _resourceType: resourceType,
+    resourceId,
+    oldValue: diffInfo.oldValue,
+    newValue: diffInfo.newValue,
+    metadata,
     message: formatAuditMessage(actionStr, resourceType, resourceId, errorMessage),
     method,
     status,
@@ -185,6 +298,8 @@ function mapAuditEventToEntry(e: Record<string, unknown>): AuditStreamEntry {
     ip,
   };
 }
+
+
 
 function mapSecurityAlertToEntry(e: Record<string, unknown>): AuditStreamEntry {
   const rawSev = typeof e.severity === "string" ? e.severity : "INFO";

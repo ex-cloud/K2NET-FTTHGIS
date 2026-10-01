@@ -300,6 +300,164 @@ function LogGroupRowItem({
   );
 }
 
+const SEVERITY_OPTIONS = [
+  { key: "CRITICAL", label: "Critical", badge: "CRIT", color: "text-rose-400", bg: "bg-rose-500/15 border-rose-500/30" },
+  { key: "ERROR",    label: "Error",    badge: "ERR",  color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
+  { key: "WARN",     label: "Warning",  badge: "WARN", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  { key: "INFO",     label: "Info",     badge: "INFO", color: "text-sky-400",   bg: "bg-sky-500/10 border-sky-500/20" },
+];
+
+const SCOPE_OPTIONS = [
+  { key: "ALL",          label: "All Scopes" },
+  { key: "SYSTEM",       label: "System Core" },
+  { key: "ORGANIZATION", label: "Tenant Org" },
+  { key: "PROJECT",      label: "Project Tech" },
+];
+
+function ScopeFilterSection({
+  scopeFilter,
+  setScopeFilter,
+  projectFilter,
+  setProjectFilter,
+}: {
+  scopeFilter: string;
+  setScopeFilter: (v: string) => void;
+  projectFilter: string;
+  setProjectFilter: (v: string) => void;
+}) {
+  return (
+    <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
+        <span className="flex items-center gap-1.5">
+          <Layers className="w-3 h-3 text-primary" /> Scope & Project
+        </span>
+        <div className="flex items-center gap-1.5">
+          {scopeFilter !== "ALL" && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-mono font-semibold">
+              {scopeFilter}
+            </span>
+          )}
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-1 space-y-2 font-mono text-[11px]">
+        <div className="grid grid-cols-2 gap-1">
+          {SCOPE_OPTIONS.map((s) => {
+            const isSelected = scopeFilter === s.key;
+            return (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setScopeFilter(s.key)}
+                className={`px-2 py-1 rounded text-[10px] border transition-colors text-left truncate ${
+                  isSelected
+                    ? "bg-primary/15 border-primary/40 text-primary font-semibold"
+                    : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                }`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="space-y-1">
+          <Input
+            type="text"
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+            placeholder="Filter Project ID / Name..."
+            className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-primary"
+          />
+          {projectFilter && (
+            <button
+              type="button"
+              onClick={() => setProjectFilter("")}
+              className="text-[10px] text-muted-foreground hover:text-rose-400 transition-colors font-mono"
+            >
+              Clear project filter
+            </button>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function SeverityFilterSection({
+  selectedSeverities,
+  toggleSeverity,
+}: {
+  selectedSeverities: Record<string, boolean>;
+  toggleSeverity: (sev: string) => void;
+}) {
+  return (
+    <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
+        <span className="flex items-center gap-1.5">
+          <Shield className="w-3 h-3 text-primary" /> Severity Badging
+        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-mono text-muted-foreground/60">
+            × {Object.values(selectedSeverities).filter(Boolean).length}
+          </span>
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-0.5 mt-1 font-mono text-[11px]">
+        {SEVERITY_OPTIONS.map((sev) => (
+          <label
+            key={sev.key}
+            className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/40 cursor-pointer transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={!!selectedSeverities[sev.key]}
+                onChange={() => toggleSeverity(sev.key)}
+                className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
+              />
+              <span className="text-muted-foreground">{sev.label}</span>
+            </div>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold border ${sev.color} ${sev.bg}`}>
+              {sev.badge}
+            </span>
+          </label>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function ImpersonationFilterSection({
+  impersonationOnly,
+  setImpersonationOnly,
+}: {
+  impersonationOnly: boolean;
+  setImpersonationOnly: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  return (
+    <div className="pt-2 border-t border-border/40">
+      <label className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-purple-500/10 cursor-pointer transition-colors group">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={impersonationOnly}
+            onChange={(e) => setImpersonationOnly(e.target.checked)}
+            className="w-3.5 h-3.5 rounded border-border text-purple-400 focus:ring-purple-400 accent-purple-500 cursor-pointer"
+          />
+          <span className="text-[11px] font-mono text-muted-foreground group-hover:text-purple-400 transition-colors">
+            🎭 Only Impersonated
+          </span>
+        </div>
+        <span className="text-[9px] font-mono text-purple-400/80 px-1 rounded bg-purple-500/15 border border-purple-500/20">
+          MFA
+        </span>
+      </label>
+    </div>
+  );
+}
+
 export interface LogsFilterSidebarProps {
   onCollapse?: () => void;
 }
@@ -311,6 +469,10 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
     selectedTypes, toggleType,
     selectedGroups, toggleGroup,
     selectedLevels, toggleLevel,
+    selectedSeverities, toggleSeverity,
+    impersonationOnly, setImpersonationOnly,
+    scopeFilter, setScopeFilter,
+    projectFilter, setProjectFilter,
     edgeSubFilters, toggleEdgeSubFilter,
     resetAllFilters,
     logTypeCounts,
@@ -324,6 +486,10 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
       (k) => selectedTypes[k] !== DEFAULT_SELECTED_TYPES[k]
     ) ||
     Object.values(selectedLevels).some((v) => !v) ||
+    Object.values(selectedSeverities).some((v) => !v) ||
+    impersonationOnly ||
+    scopeFilter !== "ALL" ||
+    projectFilter.trim().length > 0 ||
     tenantFilter.trim().length > 0;
 
   return (
@@ -359,6 +525,23 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
         </div>
 
         <TenantFilterSection tenantFilter={tenantFilter} setTenantFilter={setTenantFilter} />
+
+        <ScopeFilterSection
+          scopeFilter={scopeFilter}
+          setScopeFilter={setScopeFilter}
+          projectFilter={projectFilter}
+          setProjectFilter={setProjectFilter}
+        />
+
+        <SeverityFilterSection
+          selectedSeverities={selectedSeverities}
+          toggleSeverity={toggleSeverity}
+        />
+
+        <ImpersonationFilterSection
+          impersonationOnly={impersonationOnly}
+          setImpersonationOnly={setImpersonationOnly}
+        />
 
         <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
           <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
@@ -436,3 +619,4 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
     </div>
   );
 }
+
