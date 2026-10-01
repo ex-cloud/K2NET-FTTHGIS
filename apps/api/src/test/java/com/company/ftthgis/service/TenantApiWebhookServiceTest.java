@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,9 @@ class TenantApiWebhookServiceTest {
     @Mock
     private com.company.ftthgis.config.security.SSRFSafeHttpClient ssrfSafeHttpClient;
 
+    @Mock
+    private RestTemplate restTemplate;
+
     private SecretEncryptionUtil encryptionUtil;
     private ObjectMapper objectMapper;
     private TenantApiWebhookService service;
@@ -64,7 +68,8 @@ class TenantApiWebhookServiceTest {
                 securityValidator,
                 encryptionUtil,
                 objectMapper,
-                ssrfSafeHttpClient
+                ssrfSafeHttpClient,
+                restTemplate
         );
 
         testOrg = Organization.builder()

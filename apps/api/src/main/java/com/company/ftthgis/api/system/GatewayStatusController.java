@@ -21,9 +21,12 @@ import java.util.Map;
  *  - Compliant with architecture rule: "GATEWAY_TOKEN hanya pernah hidup di dalam
  *    gateway mesh, tidak pernah menyentuh browser di frontend manapun."
  */
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1/system/gateway-status")
 @Slf4j
+@RequiredArgsConstructor
 @PreAuthorize("hasAuthority('system.observability.view')")
 public class GatewayStatusController {
 
@@ -33,7 +36,7 @@ public class GatewayStatusController {
     @Value("${app.gateway.notification-url:http://ftth-notification-gateway:5001}")
     private String notificationGatewayUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     /**
      * Returns the status of all gateway services.

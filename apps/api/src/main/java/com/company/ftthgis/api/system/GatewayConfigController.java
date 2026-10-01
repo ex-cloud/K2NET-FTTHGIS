@@ -26,9 +26,12 @@ import java.util.Map;
  *
  * Valid gatewayKey values: notification, payment, map, storage, whatsapp, scheduler, export, olt, audit
  */
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1/system/gateway-config")
 @Slf4j
+@RequiredArgsConstructor
 @PreAuthorize("hasAuthority('system.gateway.manage')")
 public class GatewayConfigController {
 
@@ -63,7 +66,7 @@ public class GatewayConfigController {
     @Value("${app.gateway.audit-url:http://ftth-audit-gateway:5009}")
     private String auditUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     /**
      * Maps a public-facing gateway key to its internal Docker service URL.

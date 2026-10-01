@@ -40,6 +40,7 @@ import java.util.UUID;
 public class AuditLoggingService {
 
     private final AuditLogRepository auditLogRepository;
+    private final RestTemplate restTemplate;
 
     /**
      * Log an authorization failure event (async, non-blocking)
@@ -289,8 +290,7 @@ public class AuditLoggingService {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
             String url = auditGatewayUrl + "/api/v1/audit/events";
 
-            RestTemplate rt = new RestTemplate();
-            rt.postForEntity(url, entity, Map.class);
+            restTemplate.postForEntity(url, entity, Map.class);
             log.info("[AuditGateway] Event dikirim: action={}, resource={}/{}", action, resourceType, resourceId);
         } catch (Exception e) {
             log.warn("[AuditGateway] Gagal mengirim audit event (non-critical): {}", e.getMessage());

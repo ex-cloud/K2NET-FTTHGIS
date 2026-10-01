@@ -52,6 +52,7 @@ public class ImpersonationService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final AuditLoggingService auditLoggingService;
     private final ObjectMapper objectMapper;
+    private final RestTemplate restTemplate;
 
     @Value("${keycloak.internal-url:http://localhost:8081}")
     private String keycloakInternalUrl;
@@ -328,7 +329,6 @@ public class ImpersonationService {
             body.add("refresh_token", sessionCache.getRefreshToken());
 
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-            RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

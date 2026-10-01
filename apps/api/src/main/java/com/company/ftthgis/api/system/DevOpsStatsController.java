@@ -41,7 +41,7 @@ public class DevOpsStatsController {
     @Value("${app.gateway.token:}")
     private String gatewayToken;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     private BucketStats fetchBucketStats(String bucketName) {
         try {

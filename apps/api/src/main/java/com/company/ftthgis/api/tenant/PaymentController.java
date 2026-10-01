@@ -38,7 +38,7 @@ public class PaymentController {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     @Value("${app.gateway.token}")
     private String gatewayToken;

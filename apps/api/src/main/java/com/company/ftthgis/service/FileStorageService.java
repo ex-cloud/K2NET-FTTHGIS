@@ -12,12 +12,14 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import lombok.RequiredArgsConstructor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FileStorageService {
 
     private final String uploadDir = "./uploads";
@@ -28,7 +30,7 @@ public class FileStorageService {
     @Value("${app.gateway.token:}")
     private String gatewayToken;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     /**
      * Initializes the tenant folder hierarchy in MinIO S3 via storage-gateway:

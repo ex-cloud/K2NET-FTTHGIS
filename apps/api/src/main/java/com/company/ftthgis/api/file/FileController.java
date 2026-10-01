@@ -16,9 +16,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1/files")
 @Slf4j
+@RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 @PreAuthorize("hasAnyAuthority('network.manage', 'system.contracts.upload', 'system.settings.manage', 'organizations.update', 'system.tenants.approve', 'system.tenants.create', 'system.documents.manage', 'ROLE_super_admin', 'ROLE_admin', 'super_admin', 'admin')")
 public class FileController {
@@ -29,7 +32,7 @@ public class FileController {
     @Value("${app.gateway.token}")
     private String gatewayToken;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     @PostMapping("/upload")
     @PreAuthorize("hasAnyAuthority('network.manage', 'system.contracts.upload', 'system.settings.manage', 'organizations.update', 'system.tenants.approve', 'system.tenants.create', 'system.documents.manage', 'ROLE_super_admin', 'ROLE_admin', 'super_admin', 'admin')")

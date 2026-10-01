@@ -47,6 +47,7 @@ public class TenantApiWebhookService {
     private final ObjectMapper objectMapper;
 
     private final SSRFSafeHttpClient ssrfSafeHttpClient;
+    private final RestTemplate restTemplate;
 
     @Value("${app.kong.admin-url:http://kong:8001}")
     private String kongAdminUrl;
@@ -407,10 +408,6 @@ public class TenantApiWebhookService {
 
     private void syncKongKeyAuth(String slug, String apiKey) {
         try {
-            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(2000);
-            factory.setReadTimeout(2000);
-            RestTemplate restTemplate = new RestTemplate(factory);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
