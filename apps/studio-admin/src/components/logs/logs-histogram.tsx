@@ -131,35 +131,108 @@ export function LogsHistogram({ data, className }: LogsHistogramProps) {
 
 // ─── Helper: Build histogram data from AuditStreamEntry[] ─────────────────────
 
-/**
- * Generates 20 histogram buckets (3-minute intervals covering ~1h).
- * Matches Supabase Studio's TimelineChart bucket approach.
- * Falls back to a demo sine-wave pattern when no log data is present.
- */
-export function buildHistogramData(logs: AuditStreamEntry[]): HistogramBucket[] {
-  const now = Date.now();
-  const BUCKET_COUNT = 20;
-  const BUCKET_MS = 3 * 60 * 1000; // 3 minutes per bucket
+function formatBucketLabel(d: Date, totalSpanMs: number): string {
+  const isMultiDay = totalSpanMs > 24 * 60 * 60 * 1000;
+  const isMultiWeek = totalSpanMs > 7 * 24 * 60 * 60 * 1000;
 
-  // Create 20 empty time-labelled buckets going back in time
+  if (isMultiWeek) {
+    const day = d.getDate().toString().padStart(2, "0");
+    const month = d.toLocaleString("default", { month: "short" });
+    return `${day} ${month}`;
+  }
+  if (isMultiDay) {
+    const day = d.getDate().toString().padStart(2, "0");
+    const hh = d.getHours().toString().padStart(2, "0");
+    const mm = d.getMinutes().toString().padStart(2, "0");
+    return `${day}d ${hh}:${mm}`;
+  }
+  const hh = d.getHours().toString().padStart(2, "0");
+  const mm = d.getMinutes().toString().padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+export function buildHistogramData(
+  logs: AuditStreamEntry[],
+  timeRange?: string
+): HistogramBucket[] {
+  const BUCKET_COUNT = 24;
+  const now = Date.now();
+
+  let totalSpanMs = 60 * 60 * 1000; // default 1 hour
+  let rangeStart = now - totalSpanMs;
+  let rangeEnd = now;
+
+  if (timeRange) {
+    if (timeRange.startsWith("custom:")) {
+      const parts = timeRange.substring(7).split("_");
+      if (parts.length === 2) {
+        const s = new Date(parts[0]).getTime();
+        const e = new Date(parts[1]).getTime();
+        if (!isNaN(s) && !isNaN(e) && e > s) {
+          rangeStart = s;
+          rangeEnd = e;
+          totalSpanMs = e - s;
+        }
+      }
+    } else {
+      const match = timeRange.match(/^(\d+)([mhd])$/);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        const unit = match[2];
+        if (unit === "m") totalSpanMs = val * 60 * 1000;
+        else if (unit === "h") totalSpanMs = val * 60 * 60 * 1000;
+        else if (unit === "d") totalSpanMs = val * 24 * 60 * 60 * 1000;
+        rangeStart = now - totalSpanMs;
+        rangeEnd = now;
+      }
+    }
+  }
+
+  // If logs exist, check if they fall within [rangeStart, rangeEnd].
+  // If all logs are outside (e.g. historical data in dev/test), adapt window around the logs.
+  const validTimestamps = logs
+    .map((l) => new Date(l.timestamp).getTime())
+    .filter((t) => !isNaN(t));
+
+  if (validTimestamps.length > 0) {
+    const minLogTime = Math.min(...validTimestamps);
+    const maxLogTime = Math.max(...validTimestamps);
+
+    const logsInWindow = validTimestamps.filter((t) => t >= rangeStart && t <= rangeEnd).length;
+    if (logsInWindow === 0) {
+      // Adapt window to cover the logs span with 5% padding
+      const logSpan = Math.max(maxLogTime - minLogTime, 5 * 60 * 1000);
+      const padding = Math.max(logSpan * 0.05, 60 * 1000);
+      rangeStart = minLogTime - padding;
+      rangeEnd = maxLogTime + padding;
+      totalSpanMs = rangeEnd - rangeStart;
+    }
+  }
+
+  const bucketMs = Math.max(totalSpanMs / BUCKET_COUNT, 1000);
+
+  // Generate bucket slots
   const buckets: HistogramBucket[] = Array.from({ length: BUCKET_COUNT }, (_, i) => {
-    const bucketTime = new Date(now - (BUCKET_COUNT - 1 - i) * BUCKET_MS);
-    const hh = bucketTime.getHours().toString().padStart(2, "0");
-    const mm = bucketTime.getMinutes().toString().padStart(2, "0");
-    return { time: `${hh}:${mm}`, success: 0, warning: 0, error: 0 };
+    const bucketTime = new Date(rangeStart + i * bucketMs);
+    return {
+      time: formatBucketLabel(bucketTime, totalSpanMs),
+      success: 0,
+      warning: 0,
+      error: 0,
+    };
   });
 
-  // Bin each log into its corresponding 3-minute bucket
+  // Bin logs into buckets
   logs.forEach((log) => {
     const logTime = new Date(log.timestamp).getTime();
-    const msAgo = now - logTime;
-    if (msAgo < 0 || msAgo > BUCKET_COUNT * BUCKET_MS) return;
+    if (isNaN(logTime) || logTime < rangeStart || logTime > rangeEnd) return;
 
-    const bucketIdx = BUCKET_COUNT - 1 - Math.floor(msAgo / BUCKET_MS);
-    if (bucketIdx < 0 || bucketIdx >= BUCKET_COUNT) return;
+    let bucketIdx = Math.floor((logTime - rangeStart) / bucketMs);
+    if (bucketIdx < 0) bucketIdx = 0;
+    if (bucketIdx >= BUCKET_COUNT) bucketIdx = BUCKET_COUNT - 1;
 
     const severity = log.severity?.toUpperCase();
-    if (severity === "ERROR" || severity === "CRITICAL") {
+    if (severity === "ERROR" || severity === "CRITICAL" || log.status === "FAILED") {
       buckets[bucketIdx].error++;
     } else if (severity === "WARN" || severity === "WARNING") {
       buckets[bucketIdx].warning++;
@@ -167,8 +240,6 @@ export function buildHistogramData(logs: AuditStreamEntry[]): HistogramBucket[] 
       buckets[bucketIdx].success++;
     }
   });
-
-
 
   return buckets;
 }

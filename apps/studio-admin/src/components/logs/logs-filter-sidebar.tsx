@@ -5,6 +5,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
   SecondarySidebarHeader,
+  ActionTooltip,
 } from "@k2net/ui";
 import {
   Search,
@@ -33,7 +34,14 @@ import {
   FileOutput,
   Wifi,
 } from "lucide-react";
-import { useLogsFilter, DEFAULT_SELECTED_TYPES, LOG_GROUPS, type LogGroupKey } from "./logs-filter-context";
+import {
+  useLogsFilter,
+  DEFAULT_SELECTED_TYPES,
+  DEFAULT_EDGE_SUB_FILTERS,
+  LOG_GROUPS,
+  LOG_TYPES_LABELS,
+  type LogGroupKey,
+} from "./logs-filter-context";
 import { LogsDateRangePicker } from "./logs-date-range-picker";
 import { useTranslation } from "@k2net/i18n";
 
@@ -72,24 +80,7 @@ const EDGE_SUB_FILTERS = [
   { key: "edge_proxy",   label: "Go Gateway Proxy" },
 ];
 
-function getLogTypeLabel(typeKey: string): string {
-  const labels: Record<string, string> = {
-    edge: "API Gateway (Kong)",
-    auth: "Auth & Security",
-    postgres: "Postgres (Envers)",
-    audit: "Audit Trail",
-    notification: "Notification",
-    scheduler: "Scheduler",
-    storage: "Storage",
-    export: "Export",
-    payment: "Payment",
-    olt: "OLT Gateway",
-    poller: "OLT Poller",
-    map: "Map Gateway",
-    whatsapp: "WhatsApp",
-  };
-  return labels[typeKey] || typeKey;
-}
+const getLogTypeLabel = (typeKey: string): string => LOG_TYPES_LABELS[typeKey] || typeKey;
 
 function TenantFilterSection({
   tenantFilter,
@@ -450,8 +441,11 @@ function ImpersonationFilterSection({
             🎭 Only Impersonated
           </span>
         </div>
-        <span className="text-[9px] font-mono text-purple-400/80 px-1 rounded bg-purple-500/15 border border-purple-500/20">
-          MFA
+        <span
+          className="text-[9px] font-mono text-purple-400/80 px-1.5 py-0.5 rounded bg-purple-500/15 border border-purple-500/20"
+          title="Filter Step-Up MFA Dual-Identity Impersonation Sessions"
+        >
+          Step-Up MFA
         </span>
       </label>
     </div>
@@ -462,7 +456,7 @@ export interface LogsFilterSidebarProps {
   onCollapse?: () => void;
 }
 
-export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
+export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
   const { t } = useTranslation();
   const {
     timeRange, setTimeRange,
@@ -477,6 +471,8 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
     resetAllFilters,
     logTypeCounts,
     tenantFilter, setTenantFilter,
+    searchQuery,
+    advancedFilters,
   } = useLogsFilter();
 
   const [typeSearch, setTypeSearch] = React.useState("");
@@ -490,29 +486,32 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
     impersonationOnly ||
     scopeFilter !== "ALL" ||
     projectFilter.trim().length > 0 ||
-    tenantFilter.trim().length > 0;
+    tenantFilter.trim().length > 0 ||
+    searchQuery.trim().length > 0 ||
+    (advancedFilters && advancedFilters.length > 0) ||
+    Object.keys(DEFAULT_EDGE_SUB_FILTERS).some(
+      (k) => edgeSubFilters[k] !== DEFAULT_EDGE_SUB_FILTERS[k]
+    );
 
   return (
     <div className="flex flex-col h-full w-[240px] font-sans text-xs bg-sidebar select-none border-r border-border/60 shrink-0">
-      {onCollapse !== undefined && (
-        <SecondarySidebarHeader
-          title={t("observability.logs_explorer")}
-          onCollapse={onCollapse}
-          actions={
-            hasActiveFilters ? (
+      <SecondarySidebarHeader
+        title={t("observability.logs_explorer")}
+        actions={
+          hasActiveFilters ? (
+            <ActionTooltip label={t("observability.reset_filter") || "Reset filter"}>
               <button
                 type="button"
                 onClick={resetAllFilters}
-                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 cursor-pointer"
-                title={t("observability.reset_filter")}
+                className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 cursor-pointer"
               >
-                <RotateCcw className="w-3 h-3" />
-                <span>{t("observability.reset_filter")}</span>
+                <RotateCcw className="w-3.5 h-3.5 text-primary" />
+                <span>{t("common.reset") || "Reset"}</span>
               </button>
-            ) : null
-          }
-        />
-      )}
+            </ActionTooltip>
+          ) : null
+        }
+      />
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-thin p-3 space-y-4">
         <div className="w-full space-y-1">

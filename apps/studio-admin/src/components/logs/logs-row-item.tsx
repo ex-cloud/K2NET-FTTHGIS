@@ -195,15 +195,45 @@ function StatusCell({
   onCopyLog: (log: AuditStreamEntry, e: React.MouseEvent) => void;
 }) {
   const statusNum = typeof status === "number" ? status : status ? parseInt(String(status)) : undefined;
+  const isHttpEdge = log.serviceSource.toLowerCase().includes("kong") || log.serviceSource.toLowerCase().includes("edge");
+  const isFailed = log.severity === "CRITICAL" || log.severity === "ERROR" || log.status === "FAILED";
+
+  const renderBadge = () => {
+    if (statusNum && (isHttpEdge || statusNum >= 400)) {
+      return (
+        <span className={`font-mono text-[11px] font-semibold ${getStatusColor(statusNum)}`}>
+          {statusNum}
+        </span>
+      );
+    }
+    if (isFailed) {
+      return (
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/20">
+          FAIL
+        </span>
+      );
+    }
+    if (log.severity === "WARN") {
+      return (
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          WARN
+        </span>
+      );
+    }
+    if (statusNum === 200 || log.action) {
+      return (
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-primary/10 text-primary/80 border border-primary/20">
+          OK
+        </span>
+      );
+    }
+    return <span className="text-muted-foreground/20">—</span>;
+  };
 
   return (
     <React.Fragment>
-      <div className="w-[52px] shrink-0">
-        {statusNum ? (
-          <span className={`font-mono text-[11px] font-semibold ${getStatusColor(statusNum)}`}>{statusNum}</span>
-        ) : (
-          <span className="text-muted-foreground/20">—</span>
-        )}
+      <div className="w-[52px] shrink-0 flex items-center">
+        {renderBadge()}
       </div>
       <button
         type="button"
@@ -364,13 +394,24 @@ function MessageCell({
     ? "text-amber-400"
     : "text-foreground/90";
 
+  const actorLabel = log.actor !== "system" ? log.actor : null;
+
   return (
-    <div className="flex-1 min-w-0 truncate font-mono text-[11px] flex items-center gap-1">
-      {(log.isImpersonated || log.realActorId) && <ImpersonationPill log={log} />}
-      {showProjectPill && <ProjectPill log={log} />}
-      <span className={colorClass}>
-        {getEventMessageDisplay(log)}
-      </span>
+    <div className="flex-1 min-w-0 font-mono text-[11px] flex items-center justify-between gap-3">
+      <div className="flex items-center gap-1.5 min-w-0 truncate">
+        {(log.isImpersonated || log.realActorId) && <ImpersonationPill log={log} />}
+        {showProjectPill && <ProjectPill log={log} />}
+        <span className={`truncate ${colorClass}`} title={log.message || log.action}>
+          {getEventMessageDisplay(log)}
+        </span>
+      </div>
+      {actorLabel && (
+        <span className="text-muted-foreground/60 text-[10px] shrink-0 font-mono hidden md:inline-flex items-center gap-1">
+          <span>by</span>
+          <span className="text-muted-foreground/90 font-medium">{actorLabel}</span>
+          {log.ip && <span className="text-muted-foreground/40 text-[9px]">({log.ip})</span>}
+        </span>
+      )}
     </div>
   );
 }

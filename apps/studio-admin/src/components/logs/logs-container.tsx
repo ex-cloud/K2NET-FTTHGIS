@@ -12,13 +12,17 @@ import { LogsDetailDrawer } from "./logs-detail-drawer";
 
 function LogsTableHeader({ columnVisibility }: { columnVisibility: VisibilityState }) {
   const columns = [
-    { id: "date", label: "Date", width: "w-[148px]" },
-    { id: "source", label: "", width: "w-[28px]" },
-    { id: "status", label: "", width: "w-[52px]", withSpacer: true },
+    { id: "date", label: "Timestamp", width: "w-[148px]" },
+    { id: "source", label: "Src", width: "w-[28px]" },
+    { id: "severity", label: "Severity", width: "w-[72px]" },
+    { id: "group", label: "Group", width: "w-[88px]" },
+    { id: "status", label: "Status", width: "w-[52px]", withSpacer: true },
     { id: "tenant", label: "Tenant", width: "w-[88px]" },
+    { id: "scope", label: "Scope", width: "w-[72px]" },
+    { id: "project", label: "Project", width: "w-[96px]" },
     { id: "method", label: "Method", width: "w-[56px]" },
-    { id: "pathname", label: "Pathname", width: "w-[140px]" },
-    { id: "message", label: "Event Message", width: "flex-1 min-w-0" },
+    { id: "pathname", label: "Target / Resource", width: "w-[140px]" },
+    { id: "message", label: "Event Details & Actor", width: "flex-1 min-w-0" },
   ];
 
   return (
@@ -125,7 +129,10 @@ export function LogsContainer() {
   );
 
 
-  const histogramData = useMemo(() => buildHistogramData(rawLogs), [rawLogs]);
+  const histogramData = useMemo(
+    () => buildHistogramData(filteredLogs.length > 0 ? filteredLogs : rawLogs, timeRange),
+    [filteredLogs, rawLogs, timeRange]
+  );
 
   const table = useReactTable({
     data: filteredLogs,

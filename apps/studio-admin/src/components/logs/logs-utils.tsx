@@ -24,12 +24,13 @@ export function getSourceIcon(source: string) {
 }
 
 export function getEventMessageDisplay(log: AuditStreamEntry): string {
-  const parts: (string | undefined | null)[] = [
-    log.actor !== "system" ? log.actor : null,
-    log.ip ? `IP:${log.ip}` : null,
-    log.message ?? null,
-  ];
-  return parts.filter(Boolean).join(" | ");
+  if (log.message && log.message.trim()) {
+    return log.message;
+  }
+  if (log.action && log.action.trim()) {
+    return log.action.replace(/_/g, " ");
+  }
+  return "Audit Event Recorded";
 }
 
 export function getLevel(log: AuditStreamEntry): "error" | "warning" | "success" {
@@ -109,12 +110,12 @@ const columnHelper = createColumnHelper<AuditStreamEntry>();
 export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
   columnHelper.accessor("timestamp", {
     id: "date",
-    meta: { label: "Date" },
+    meta: { label: "Timestamp" },
     enableHiding: true,
   }),
   columnHelper.accessor("serviceSource", {
     id: "source",
-    meta: { label: "Source" },
+    meta: { label: "Src" },
     enableHiding: true,
   }),
   columnHelper.accessor("severity", {
@@ -124,7 +125,7 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
   }),
   columnHelper.accessor("logGroup", {
     id: "group",
-    meta: { label: "Log Group" },
+    meta: { label: "Group" },
     enableHiding: true,
   }),
   columnHelper.accessor("status", {
@@ -154,12 +155,12 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
   }),
   columnHelper.accessor("pathname", {
     id: "pathname",
-    meta: { label: "Pathname" },
+    meta: { label: "Target / Resource" },
     enableHiding: true,
   }),
   columnHelper.accessor("message", {
     id: "message",
-    meta: { label: "Event Message" },
+    meta: { label: "Event Details & Actor" },
     enableHiding: true,
   }),
 ];

@@ -25,6 +25,7 @@ import {
 import {
   useLogsFilter,
   LOG_TYPES_LABELS,
+  DEFAULT_SELECTED_TYPES,
   type AdvancedFilter,
   type AdvancedFilterField,
   type AdvancedFilterOperator,
@@ -359,6 +360,7 @@ export function LogsTopHeader({
     impersonationOnly, setImpersonationOnly,
     scopeFilter, setScopeFilter,
     projectFilter, setProjectFilter,
+    tenantFilter, setTenantFilter,
     isLivePaused, setIsLivePaused,
     showHistogram, setShowHistogram,
     setIsSidebarCollapsed,
@@ -371,30 +373,36 @@ export function LogsTopHeader({
   const columnBtnRef = React.useRef<HTMLButtonElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const activeTypePills = React.useMemo(
-    () => Object.entries(selectedTypes)
-      .filter(([, active]) => active)
-      .map(([key]) => ({ id: key, label: `Log Type = ${LOG_TYPES_LABELS[key] ?? key}`, kind: "type" as const })),
-    [selectedTypes]
-  );
+  const activeTypePills = React.useMemo(() => {
+    const isTypesDefault = Object.keys(DEFAULT_SELECTED_TYPES).every(
+      (k) => selectedTypes[k] === DEFAULT_SELECTED_TYPES[k]
+    );
+    if (isTypesDefault) return [];
 
-  const activeLevelPills = React.useMemo(
-    () => Object.entries(selectedLevels)
-      .filter(([, active]) => active)
-      .map(([key]) => ({ id: key, label: `Level = ${key}`, kind: "level" as const })),
-    [selectedLevels]
-  );
+    const allActive = Object.values(selectedTypes).every(Boolean);
+    if (allActive) return [];
 
-  const activeSeverityPills = React.useMemo(
-    () => {
-      const allActive = Object.values(selectedSeverities).every(Boolean);
-      if (allActive) return [];
-      return Object.entries(selectedSeverities)
-        .filter(([, active]) => active)
-        .map(([key]) => ({ id: key, label: `Severity = ${key}`, kind: "severity" as const }));
-    },
-    [selectedSeverities]
-  );
+    return Object.entries(selectedTypes)
+      .filter(([, active]) => active)
+      .map(([key]) => ({ id: key, label: `Log Type = ${LOG_TYPES_LABELS[key] ?? key}`, kind: "type" as const }));
+  }, [selectedTypes]);
+
+  const activeLevelPills = React.useMemo(() => {
+    const allLevelsActive = Object.values(selectedLevels).every(Boolean);
+    if (allLevelsActive) return [];
+
+    return Object.entries(selectedLevels)
+      .filter(([, active]) => active)
+      .map(([key]) => ({ id: key, label: `Level = ${key}`, kind: "level" as const }));
+  }, [selectedLevels]);
+
+  const activeSeverityPills = React.useMemo(() => {
+    const allActive = Object.values(selectedSeverities).every(Boolean);
+    if (allActive) return [];
+    return Object.entries(selectedSeverities)
+      .filter(([, active]) => active)
+      .map(([key]) => ({ id: key, label: `Severity = ${key}`, kind: "severity" as const }));
+  }, [selectedSeverities]);
 
   const impersonationPills = React.useMemo(
     () => impersonationOnly ? [{ id: "impersonated", label: "🎭 Only Impersonated", kind: "impersonated" as const }] : [],
@@ -409,6 +417,11 @@ export function LogsTopHeader({
   const projectPills = React.useMemo(
     () => projectFilter.trim() ? [{ id: "project", label: `Project = ${projectFilter}`, kind: "project" as const }] : [],
     [projectFilter]
+  );
+
+  const tenantPills = React.useMemo(
+    () => tenantFilter.trim() ? [{ id: "tenant", label: `Tenant = ${tenantFilter}`, kind: "tenant" as const }] : [],
+    [tenantFilter]
   );
 
   const advancedPills = React.useMemo(() =>
@@ -427,17 +440,19 @@ export function LogsTopHeader({
     ...impersonationPills,
     ...scopePills,
     ...projectPills,
+    ...tenantPills,
     ...advancedPills,
   ];
   const hasActivePills = allPills.length > 0;
 
-  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "impersonated" | "scope" | "project" | "advanced" }) => {
+  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "impersonated" | "scope" | "project" | "tenant" | "advanced" }) => {
     if (pill.kind === "type") toggleType(pill.id);
     else if (pill.kind === "level") toggleLevel(pill.id);
     else if (pill.kind === "severity") toggleSeverity(pill.id);
     else if (pill.kind === "impersonated") setImpersonationOnly(false);
     else if (pill.kind === "scope") setScopeFilter("ALL");
     else if (pill.kind === "project") setProjectFilter("");
+    else if (pill.kind === "tenant") setTenantFilter("");
     else removeAdvancedFilter(pill.id);
   };
 

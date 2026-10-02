@@ -157,21 +157,52 @@ function resolveHttpMethod(metadataMethod?: string, actionStr?: string): string 
   return "GET";
 }
 
+function humanizeAction(actionStr?: string): string {
+  if (!actionStr) return "Action";
+  const act = actionStr.toUpperCase();
+  if (act === "IMPERSONATION_STARTED") return "Step-Up MFA Impersonation Initiated";
+  if (act === "IMPERSONATION_ENDED") return "Impersonation Session Terminated";
+  if (act === "GLOBAL_SETTINGS_UPDATED") return "Global System Setting Updated";
+  if (act === "TENANT_API_KEY_REGENERATED") return "Tenant API Key Regenerated";
+  if (act === "ODP_PROVISIONED") return "ODP Asset Provisioned";
+  if (act === "OLT_HEALTH_DEGRADED") return "OLT Health Degraded (Telemetry Alert)";
+  return actionStr.replace(/_/g, " ");
+}
+
 function formatAuditMessage(
   actionStr?: string,
   resourceType?: string,
   resourceId?: string,
-  errorMessage?: string
+  errorMessage?: string,
+  metadata?: Record<string, unknown>
 ): string {
+  if (typeof metadata?.description === "string" && metadata.description.trim()) {
+    return metadata.description;
+  }
+  if (typeof metadata?.reason === "string" && metadata.reason.trim()) {
+    return `${humanizeAction(actionStr)}: ${metadata.reason}`;
+  }
+  if (typeof metadata?.errorReason === "string" && metadata.errorReason.trim()) {
+    return `${humanizeAction(actionStr)}: ${metadata.errorReason}`;
+  }
   if (errorMessage) return `Error: ${errorMessage}`;
-  if (resourceType) return `${actionStr ?? "Action"} on ${resourceType}${resourceId ? ` [${resourceId}]` : ""}`;
-  return `${actionStr ?? "Action"} completed`;
+  if (resourceType) return `${humanizeAction(actionStr)} on ${resourceType}${resourceId ? ` [${resourceId}]` : ""}`;
+  return `${humanizeAction(actionStr)} completed`;
 }
 
-function resolveAuditStatus(metadata: Record<string, unknown>, errorMessage?: string): number {
+function resolveAuditStatus(
+  metadata: Record<string, unknown>,
+  errorMessage?: string,
+  serviceSource?: string
+): number | undefined {
   if (typeof metadata.status === "number") return metadata.status;
   if (typeof metadata.statusCode === "number") return metadata.statusCode;
-  return errorMessage ? 500 : 200;
+  if (typeof metadata.httpStatus === "number") return metadata.httpStatus;
+  if (errorMessage) return 500;
+  if (serviceSource && (serviceSource.toLowerCase().includes("kong") || serviceSource.toLowerCase().includes("edge"))) {
+    return 200;
+  }
+  return undefined;
 }
 
 function resolveAuditPathname(e: Record<string, unknown>, metadata: Record<string, unknown>, actionStr?: string): string | undefined {
@@ -186,16 +217,25 @@ function resolveEntrySeverity(
   e: Record<string, unknown>,
   status?: number
 ): "INFO" | "WARN" | "ERROR" | "CRITICAL" {
+  const actionStr = String(e.action ?? metadata.action ?? "").toUpperCase();
   const rawSeverity = typeof metadata.severity === "string"
     ? metadata.severity.toUpperCase()
     : typeof e.severity === "string"
     ? e.severity.toUpperCase()
     : undefined;
 
-  if (rawSeverity === "CRITICAL" || rawSeverity === "ERROR" || rawSeverity === "WARN" || rawSeverity === "INFO") {
-    return rawSeverity;
+  // Enforce taxonomy floor for critical security operations
+  if (actionStr.includes("IMPERSONATION") || actionStr.includes("UNAUTHORIZED") || actionStr.includes("TAMPER") || actionStr.includes("BREACH")) {
+    return "CRITICAL";
   }
-  if (e.status === "FAILED" || (typeof status === "number" && status >= 500)) {
+  if (actionStr.includes("GLOBAL_SETTING") || actionStr.includes("API_KEY") || actionStr.includes("PASSWORD") || actionStr.includes("SECURITY_POLICY")) {
+    return "WARN";
+  }
+
+  if (rawSeverity === "CRITICAL" || rawSeverity === "ERROR" || rawSeverity === "WARN" || rawSeverity === "INFO") {
+    return rawSeverity as "INFO" | "WARN" | "ERROR" | "CRITICAL";
+  }
+  if (e.status === "FAILED" || (typeof status === "number" && status >= 500) || actionStr.includes("DEGRADED") || actionStr.includes("FAIL")) {
     return "ERROR";
   }
   if (typeof status === "number" && status >= 400) {
@@ -258,7 +298,7 @@ function mapAuditEventToEntry(e: Record<string, unknown>): AuditStreamEntry {
   const method = resolveHttpMethod(typeof metadata.method === "string" ? metadata.method : undefined, actionStr);
 
   const errorMessage = typeof e.errorMessage === "string" ? e.errorMessage : undefined;
-  const status = resolveAuditStatus(metadata, errorMessage);
+  const status = resolveAuditStatus(metadata, errorMessage, rawSource);
   const pathname = resolveAuditPathname(e, metadata, actionStr);
   const ip = typeof e.actorIp === "string" ? e.actorIp : typeof e.clientIp === "string" ? e.clientIp : typeof metadata.ip === "string" ? metadata.ip : undefined;
   const resourceId = typeof e.resourceId === "string" ? e.resourceId : undefined;
@@ -291,7 +331,7 @@ function mapAuditEventToEntry(e: Record<string, unknown>): AuditStreamEntry {
     oldValue: diffInfo.oldValue,
     newValue: diffInfo.newValue,
     metadata,
-    message: formatAuditMessage(actionStr, resourceType, resourceId, errorMessage),
+    message: formatAuditMessage(actionStr, resourceType, resourceId, errorMessage, metadata),
     method,
     status,
     pathname,
