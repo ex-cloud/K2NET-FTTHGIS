@@ -251,8 +251,8 @@ export function filterAuditLogs(
   }
 
   if (options?.selectedSeverities) {
-    const allSeveritiesActive = Object.values(options.selectedSeverities).every(Boolean);
-    if (!allSeveritiesActive) {
+    const anySeverityActive = Object.values(options.selectedSeverities).some(Boolean);
+    if (anySeverityActive) {
       result = result.filter((log) => {
         const sev = (log.severity || "INFO").toUpperCase();
         return Boolean(options.selectedSeverities?.[sev]);
@@ -276,12 +276,14 @@ export function filterAuditLogs(
     );
   }
 
-  const allLevelsActive = Object.values(selectedLevels).every(Boolean);
-  if (!allLevelsActive) {
-    result = result.filter((log) => {
-      const level = getLevel(log);
-      return Boolean(selectedLevels[level]);
-    });
+  if (selectedLevels) {
+    const anyLevelActive = Object.values(selectedLevels).some(Boolean);
+    if (anyLevelActive) {
+      result = result.filter((log) => {
+        const level = getLevel(log);
+        return Boolean(selectedLevels[level]);
+      });
+    }
   }
 
   for (const f of advancedFilters) {

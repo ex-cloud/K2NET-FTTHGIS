@@ -87,46 +87,14 @@ export const LOG_TYPES_LABELS: Record<string, string> = {
   whatsapp:     "WhatsApp Gateway",
 };
 
-export const DEFAULT_SELECTED_TYPES: Record<string, boolean> = {
-  // CORE — on by default
-  edge:         true,
-  auth:         true,
-  postgres:     false,
-  // OPERATIONS — audit on by default
-  audit:        true,
-  notification: false,
-  scheduler:    false,
-  storage:      false,
-  export:       false,
-  payment:      false,
-  // NETWORK — off by default
-  olt:          false,
-  poller:       false,
-  map:          false,
-  // MESSAGING — off by default
-  whatsapp:     false,
-};
+export const DEFAULT_SELECTED_TYPES: Record<string, boolean> = {};
 
-export const DEFAULT_SELECTED_GROUPS: Record<LogGroupKey, boolean> = {
-  CORE:       true,
-  OPERATIONS: true,
-  NETWORK:    false,
-  MESSAGING:  false,
-};
+export const DEFAULT_SELECTED_GROUPS: Record<LogGroupKey, boolean> = {} as Record<LogGroupKey, boolean>;
 
-export const DEFAULT_SELECTED_SEVERITIES: Record<string, boolean> = {
-  CRITICAL: true,
-  ERROR: true,
-  WARN: true,
-  INFO: true,
-};
+export const DEFAULT_SELECTED_SEVERITIES: Record<string, boolean> = {};
 
 // Kong API Gateway sub-filters
-export const DEFAULT_EDGE_SUB_FILTERS: Record<string, boolean> = {
-  edge_api:     true,
-  edge_webhook: true,
-  edge_proxy:   true,
-};
+export const DEFAULT_EDGE_SUB_FILTERS: Record<string, boolean> = {};
 
 // ─── Context Type ─────────────────────────────────────────────────────────────
 
@@ -204,37 +172,27 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   // Parse filters from URL on mount
   const parseFiltersFromUrl = () => {
     const filterParams = searchParams.getAll("filter");
-    const types = { ...DEFAULT_SELECTED_TYPES };
-    const levels = { success: true, warning: true, error: true };
-    const groups = { ...DEFAULT_SELECTED_GROUPS };
-    const severities = { ...DEFAULT_SELECTED_SEVERITIES };
-
-    const hasTypeFilters = filterParams.some((f) => f.startsWith("log_type:eq:"));
-    const hasLevelFilters = filterParams.some((f) => f.startsWith("level:eq:"));
-    const hasGroupFilters = filterParams.some((f) => f.startsWith("group:eq:"));
-    const hasSeverityFilters = filterParams.some((f) => f.startsWith("severity:eq:"));
-
-    if (hasTypeFilters) Object.keys(types).forEach((k) => (types[k] = false));
-    if (hasLevelFilters) Object.keys(levels).forEach((k) => ((levels as Record<string, boolean>)[k] = false));
-    if (hasGroupFilters) Object.keys(groups).forEach((k) => ((groups as Record<string, boolean>)[k] = false));
-    if (hasSeverityFilters) Object.keys(severities).forEach((k) => (severities[k] = false));
+    const types: Record<string, boolean> = {};
+    const levels: Record<string, boolean> = {};
+    const groups: Record<LogGroupKey, boolean> = {} as Record<LogGroupKey, boolean>;
+    const severities: Record<string, boolean> = {};
 
     filterParams.forEach((f) => {
       if (f.startsWith("log_type:eq:")) {
         const key = f.replace("log_type:eq:", "");
-        if (key in types) types[key] = true;
+        if (key && key !== "none") types[key] = true;
       }
       if (f.startsWith("level:eq:")) {
         const key = f.replace("level:eq:", "");
-        if (key in levels) (levels as Record<string, boolean>)[key] = true;
+        if (key && key !== "none") (levels as Record<string, boolean>)[key] = true;
       }
       if (f.startsWith("group:eq:")) {
-        const key = f.replace("group:eq:", "");
-        if (key in groups) (groups as Record<string, boolean>)[key] = true;
+        const key = f.replace("group:eq:", "") as LogGroupKey;
+        if (key) (groups as Record<string, boolean>)[key] = true;
       }
       if (f.startsWith("severity:eq:")) {
         const key = f.replace("severity:eq:", "").toUpperCase();
-        if (key in severities) severities[key] = true;
+        if (key && key !== "NONE") severities[key] = true;
       }
     });
 
@@ -246,7 +204,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   const [selectedLevels, setSelectedLevels] = useState<Record<string, boolean>>(initialLevels);
   const [selectedGroups, setSelectedGroups] = useState<Record<LogGroupKey, boolean>>(initialGroups as Record<LogGroupKey, boolean>);
   const [selectedSeverities, setSelectedSeverities] = useState<Record<string, boolean>>(initialSeverities);
-  const [edgeSubFilters, setEdgeSubFilters] = useState<Record<string, boolean>>(DEFAULT_EDGE_SUB_FILTERS);
+  const [edgeSubFilters, setEdgeSubFilters] = useState<Record<string, boolean>>({});
   const [logTypeCounts, setLogTypeCounts] = useState<Record<string, number>>({});
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilter[]>([]);
 
@@ -266,17 +224,10 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const { types, levels, groups, severities } = parseFiltersFromUrl();
 
-    const typesChanged = Object.keys(types).some((k) => types[k] !== selectedTypes[k]);
-    if (typesChanged) setSelectedTypes(types);
-
-    const levelsChanged = Object.keys(levels).some((k) => (levels as Record<string, boolean>)[k] !== (selectedLevels as Record<string, boolean>)[k]);
-    if (levelsChanged) setSelectedLevels(levels);
-
-    const groupsChanged = Object.keys(groups).some((k) => (groups as Record<string, boolean>)[k] !== (selectedGroups as Record<string, boolean>)[k]);
-    if (groupsChanged) setSelectedGroups(groups as Record<LogGroupKey, boolean>);
-
-    const severitiesChanged = Object.keys(severities).some((k) => severities[k] !== selectedSeverities[k]);
-    if (severitiesChanged) setSelectedSeverities(severities);
+    setSelectedTypes(types);
+    setSelectedLevels(levels);
+    setSelectedGroups(groups as Record<LogGroupKey, boolean>);
+    setSelectedSeverities(severities);
 
     const search = searchParams.get("search") || "";
     if (search !== searchQuery) setSearchQuery(search);
@@ -308,45 +259,19 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     const params = new URLSearchParams();
 
     // Log type filters
-    const isTypesDefault = Object.keys(DEFAULT_SELECTED_TYPES).every(
-      (k) => selectedTypes[k] === DEFAULT_SELECTED_TYPES[k]
-    );
-    if (!isTypesDefault) {
-      const hasAnyTypeActive = Object.values(selectedTypes).some(Boolean);
-      if (!hasAnyTypeActive) {
-        params.append("filter", "log_type:eq:none");
-      } else {
-        Object.entries(selectedTypes)
-          .filter(([, active]) => active)
-          .forEach(([key]) => params.append("filter", `log_type:eq:${key}`));
-      }
-    }
+    Object.entries(selectedTypes)
+      .filter(([, active]) => active)
+      .forEach(([key]) => params.append("filter", `log_type:eq:${key}`));
 
     // Level filters
-    const allLevelsActive = Object.values(selectedLevels).every(Boolean);
-    if (!allLevelsActive) {
-      const hasAnyLevelActive = Object.values(selectedLevels).some(Boolean);
-      if (!hasAnyLevelActive) {
-        params.append("filter", "level:eq:none");
-      } else {
-        Object.entries(selectedLevels)
-          .filter(([, active]) => active)
-          .forEach(([key]) => params.append("filter", `level:eq:${key}`));
-      }
-    }
+    Object.entries(selectedLevels)
+      .filter(([, active]) => active)
+      .forEach(([key]) => params.append("filter", `level:eq:${key}`));
 
     // Severity filters
-    const allSeveritiesActive = Object.values(selectedSeverities).every(Boolean);
-    if (!allSeveritiesActive) {
-      const hasAnySeverityActive = Object.values(selectedSeverities).some(Boolean);
-      if (!hasAnySeverityActive) {
-        params.append("filter", "severity:eq:none");
-      } else {
-        Object.entries(selectedSeverities)
-          .filter(([, active]) => active)
-          .forEach(([key]) => params.append("filter", `severity:eq:${key}`));
-      }
-    }
+    Object.entries(selectedSeverities)
+      .filter(([, active]) => active)
+      .forEach(([key]) => params.append("filter", `severity:eq:${key}`));
 
     // Impersonation filter
     if (impersonationOnly) params.set("impersonated", "true");
@@ -416,16 +341,15 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   const resetAllFilters = () => {
     setSearchQuery("");
     setTimeRange("1h");
-    setSelectedTypes({ ...DEFAULT_SELECTED_TYPES });
-    setSelectedGroups({ ...DEFAULT_SELECTED_GROUPS });
-    setSelectedLevels({ success: true, warning: true, error: true });
-    setSelectedSeverities({ ...DEFAULT_SELECTED_SEVERITIES });
+    setSelectedTypes({});
+    setSelectedGroups({} as Record<LogGroupKey, boolean>);
+    setSelectedLevels({});
+    setSelectedSeverities({});
     setImpersonationOnly(false);
     setScopeFilter("ALL");
     setProjectFilter("");
-    setEdgeSubFilters({ ...DEFAULT_EDGE_SUB_FILTERS });
+    setEdgeSubFilters({});
     setSelectedLog(null);
-    setIsLivePaused(true);
     setTenantFilter("");
     setAdvancedFilters([]);
     router.replace("/logs", { scroll: false });

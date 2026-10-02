@@ -25,7 +25,6 @@ import {
 import {
   useLogsFilter,
   LOG_TYPES_LABELS,
-  DEFAULT_SELECTED_TYPES,
   type AdvancedFilter,
   type AdvancedFilterField,
   type AdvancedFilterOperator,
@@ -374,31 +373,18 @@ export function LogsTopHeader({
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const activeTypePills = React.useMemo(() => {
-    const isTypesDefault = Object.keys(DEFAULT_SELECTED_TYPES).every(
-      (k) => selectedTypes[k] === DEFAULT_SELECTED_TYPES[k]
-    );
-    if (isTypesDefault) return [];
-
-    const allActive = Object.values(selectedTypes).every(Boolean);
-    if (allActive) return [];
-
     return Object.entries(selectedTypes)
       .filter(([, active]) => active)
       .map(([key]) => ({ id: key, label: `Log Type = ${LOG_TYPES_LABELS[key] ?? key}`, kind: "type" as const }));
   }, [selectedTypes]);
 
   const activeLevelPills = React.useMemo(() => {
-    const allLevelsActive = Object.values(selectedLevels).every(Boolean);
-    if (allLevelsActive) return [];
-
     return Object.entries(selectedLevels)
       .filter(([, active]) => active)
       .map(([key]) => ({ id: key, label: `Level = ${key}`, kind: "level" as const }));
   }, [selectedLevels]);
 
   const activeSeverityPills = React.useMemo(() => {
-    const allActive = Object.values(selectedSeverities).every(Boolean);
-    if (allActive) return [];
     return Object.entries(selectedSeverities)
       .filter(([, active]) => active)
       .map(([key]) => ({ id: key, label: `Severity = ${key}`, kind: "severity" as const }));

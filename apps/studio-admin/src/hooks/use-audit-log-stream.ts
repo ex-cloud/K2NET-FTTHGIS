@@ -518,17 +518,18 @@ export function useAuditLogStream(
   const selectedTypes = options?.selectedTypes ?? {};
   const selectedGroups = options?.selectedGroups;
 
-  const hasAnyTypeSelected =
-    Object.keys(selectedTypes).length === 0 ||
-    Object.values(selectedTypes).some(Boolean);
+  const anyTypeActive = Object.values(selectedTypes).some(Boolean);
+  const anyGroupActive = selectedGroups ? Object.values(selectedGroups).some(Boolean) : false;
 
   const filteredLogs = logs.filter((log) => {
-    if (!hasAnyTypeSelected) return false;
-    if (Object.keys(selectedTypes).length > 0 && selectedTypes[log.logType] === false) return false;
+    // If user explicitly checked any logTypes, only show checked types
+    if (anyTypeActive && !selectedTypes[log.logType]) {
+      return false;
+    }
 
-    if (selectedGroups && Object.keys(selectedGroups).length > 0) {
-      const hasAnyGroup = Object.values(selectedGroups).some(Boolean);
-      if (hasAnyGroup && selectedGroups[log.logGroup] === false) return false;
+    // If user explicitly checked any logGroups, only show checked groups
+    if (anyGroupActive && selectedGroups && !selectedGroups[log.logGroup]) {
+      return false;
     }
 
     if (timeRange && !checkTimeRangeMatch(log.timestamp, timeRange, nowRef.current)) {
@@ -544,7 +545,7 @@ export function useAuditLogStream(
     logs: filteredLogs,
     rawLogs: logs,
     totalCount: logs.length,
-    hasAnyTypeSelected,
+    hasAnyTypeSelected: true,
     status,
     clearLogs,
   };

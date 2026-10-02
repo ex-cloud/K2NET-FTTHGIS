@@ -194,40 +194,29 @@ function StatusCell({
   copiedId: string | null;
   onCopyLog: (log: AuditStreamEntry, e: React.MouseEvent) => void;
 }) {
-  const statusNum = typeof status === "number" ? status : status ? parseInt(String(status)) : undefined;
-  const isHttpEdge = log.serviceSource.toLowerCase().includes("kong") || log.serviceSource.toLowerCase().includes("edge");
-  const isFailed = log.severity === "CRITICAL" || log.severity === "ERROR" || log.status === "FAILED";
+  const statusNum =
+    typeof status === "number"
+      ? status
+      : status && !isNaN(Number(status))
+      ? parseInt(String(status), 10)
+      : undefined;
 
   const renderBadge = () => {
-    if (statusNum && (isHttpEdge || statusNum >= 400)) {
+    if (statusNum) {
       return (
-        <span className={`font-mono text-[11px] font-semibold ${getStatusColor(statusNum)}`}>
+        <span className={`font-mono text-[11px] font-semibold tracking-tight ${getStatusColor(statusNum)}`}>
           {statusNum}
         </span>
       );
     }
-    if (isFailed) {
+    if (typeof status === "string" && status.trim() && status !== "OK" && status !== "FAIL" && status !== "WARN") {
       return (
-        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/20">
-          FAIL
+        <span className="font-mono text-[10px] text-muted-foreground truncate max-w-[48px]">
+          {status}
         </span>
       );
     }
-    if (log.severity === "WARN") {
-      return (
-        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-          WARN
-        </span>
-      );
-    }
-    if (statusNum === 200 || log.action) {
-      return (
-        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-primary/10 text-primary/80 border border-primary/20">
-          OK
-        </span>
-      );
-    }
-    return <span className="text-muted-foreground/20">—</span>;
+    return <span className="text-muted-foreground/30 font-mono text-[11px] select-none">—</span>;
   };
 
   return (

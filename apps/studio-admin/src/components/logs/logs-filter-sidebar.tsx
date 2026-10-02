@@ -36,8 +36,6 @@ import {
 } from "lucide-react";
 import {
   useLogsFilter,
-  DEFAULT_SELECTED_TYPES,
-  DEFAULT_EDGE_SUB_FILTERS,
   LOG_GROUPS,
   LOG_TYPES_LABELS,
   type LogGroupKey,
@@ -46,38 +44,38 @@ import { LogsDateRangePicker } from "./logs-date-range-picker";
 import { useTranslation } from "@k2net/i18n";
 
 const LOG_TYPE_CONFIG: Record<string, { icon: React.ElementType; description: string }> = {
-  edge:         { icon: Network,      description: "HTTP logs routed via Kong" },
-  auth:         { icon: Shield,       description: "Keycloak, access denials, rate limits" },
-  postgres:     { icon: Database,     description: "PostGIS spatial audit via Hibernate Envers" },
-  audit:        { icon: Layers,       description: "Tenant resource changes via gateway-audit" },
-  notification: { icon: Bell,         description: "SMS & email send logs" },
-  scheduler:    { icon: CalendarClock,description: "Scheduled job execution history" },
-  storage:      { icon: HardDrive,    description: "MinIO upload/presigned URL operations" },
-  export:       { icon: FileOutput,   description: "GIS data export jobs" },
-  payment:      { icon: CreditCard,   description: "Xendit payment & webhook events" },
-  olt:          { icon: Wifi,         description: "OLT device ops, ONT provisioning" },
-  poller:       { icon: Radio,        description: "SNMP device health checks" },
-  map:          { icon: Map,          description: "Geocoding & vector tile requests" },
-  whatsapp:     { icon: MessageSquare,description: "WhatsApp Business API messages" },
+  edge: { icon: Network, description: "HTTP logs routed via Kong" },
+  auth: { icon: Shield, description: "Keycloak, access denials, rate limits" },
+  postgres: { icon: Database, description: "PostGIS spatial audit via Hibernate Envers" },
+  audit: { icon: Layers, description: "Tenant resource changes via gateway-audit" },
+  notification: { icon: Bell, description: "SMS & email send logs" },
+  scheduler: { icon: CalendarClock, description: "Scheduled job execution history" },
+  storage: { icon: HardDrive, description: "MinIO upload/presigned URL operations" },
+  export: { icon: FileOutput, description: "GIS data export jobs" },
+  payment: { icon: CreditCard, description: "Xendit payment & webhook events" },
+  olt: { icon: Wifi, description: "OLT device ops, ONT provisioning" },
+  poller: { icon: Radio, description: "SNMP device health checks" },
+  map: { icon: Map, description: "Geocoding & vector tile requests" },
+  whatsapp: { icon: MessageSquare, description: "WhatsApp Business API messages" },
 };
 
 const GROUP_ICONS: Record<LogGroupKey, React.ElementType> = {
-  CORE:       Server,
+  CORE: Server,
   OPERATIONS: Briefcase,
-  NETWORK:    Network,
-  MESSAGING:  MessageSquare,
+  NETWORK: Network,
+  MESSAGING: MessageSquare,
 };
 
 const LEVEL_OPTIONS = [
   { key: "success", label: "Success", badge: "2xx", color: "text-primary/80", bg: "bg-primary/10" },
-  { key: "warning", label: "Warning", badge: "4xx", color: "text-amber-400",   bg: "bg-amber-500/10" },
-  { key: "error",   label: "Error",   badge: "5xx", color: "text-rose-400",    bg: "bg-rose-500/10"  },
+  { key: "warning", label: "Warning", badge: "4xx", color: "text-amber-400", bg: "bg-amber-500/10" },
+  { key: "error", label: "Error", badge: "5xx", color: "text-rose-400", bg: "bg-rose-500/10" },
 ];
 
 const EDGE_SUB_FILTERS = [
-  { key: "edge_api",     label: "REST API" },
+  { key: "edge_api", label: "REST API" },
   { key: "edge_webhook", label: "Webhooks" },
-  { key: "edge_proxy",   label: "Go Gateway Proxy" },
+  { key: "edge_proxy", label: "Go Gateway Proxy" },
 ];
 
 const getLogTypeLabel = (typeKey: string): string => LOG_TYPES_LABELS[typeKey] || typeKey;
@@ -137,14 +135,22 @@ function LevelFilterSection({
   selectedLevels: Record<string, boolean>;
   toggleLevel: (lvl: string) => void;
 }) {
-  const { t } = useTranslation();
+  const activeCount = Object.values(selectedLevels).filter(Boolean).length;
+
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
       <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
         <span className="flex items-center gap-1.5">
-          <Filter className="w-3 h-3 text-primary" /> {t("observability.level")}
+          <Filter className="w-3 h-3 text-primary" /> HTTP Status / Level
         </span>
-        <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        <div className="flex items-center gap-1.5">
+          {activeCount > 0 && (
+            <span className="text-[9px] font-mono text-primary font-semibold">
+              × {activeCount}
+            </span>
+          )}
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-0.5 mt-1 font-mono text-[11px]">
         {LEVEL_OPTIONS.map((lvl) => (
@@ -160,10 +166,10 @@ function LevelFilterSection({
                 className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
               />
               <span className="text-muted-foreground">{lvl.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${lvl.color} ${lvl.bg}`}>
-                {lvl.badge}
-              </span>
             </div>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${lvl.color} ${lvl.bg}`}>
+              {lvl.badge}
+            </span>
           </label>
         ))}
       </CollapsibleContent>
@@ -293,16 +299,16 @@ function LogGroupRowItem({
 
 const SEVERITY_OPTIONS = [
   { key: "CRITICAL", label: "Critical", badge: "CRIT", color: "text-rose-400", bg: "bg-rose-500/15 border-rose-500/30" },
-  { key: "ERROR",    label: "Error",    badge: "ERR",  color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
-  { key: "WARN",     label: "Warning",  badge: "WARN", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-  { key: "INFO",     label: "Info",     badge: "INFO", color: "text-sky-400",   bg: "bg-sky-500/10 border-sky-500/20" },
+  { key: "ERROR", label: "Error", badge: "ERR", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
+  { key: "WARN", label: "Warning", badge: "WARN", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  { key: "INFO", label: "Info", badge: "INFO", color: "text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
 ];
 
 const SCOPE_OPTIONS = [
-  { key: "ALL",          label: "All Scopes" },
-  { key: "SYSTEM",       label: "System Core" },
+  { key: "ALL", label: "All Scopes" },
+  { key: "SYSTEM", label: "System Core" },
   { key: "ORGANIZATION", label: "Tenant Org" },
-  { key: "PROJECT",      label: "Project Tech" },
+  { key: "PROJECT", label: "Project Tech" },
 ];
 
 function ScopeFilterSection({
@@ -340,11 +346,10 @@ function ScopeFilterSection({
                 key={s.key}
                 type="button"
                 onClick={() => setScopeFilter(s.key)}
-                className={`px-2 py-1 rounded text-[10px] border transition-colors text-left truncate ${
-                  isSelected
-                    ? "bg-primary/15 border-primary/40 text-primary font-semibold"
-                    : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                }`}
+                className={`px-2 py-1 rounded text-[10px] border transition-colors text-left truncate ${isSelected
+                  ? "bg-primary/15 border-primary/40 text-primary font-semibold"
+                  : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  }`}
               >
                 {s.label}
               </button>
@@ -382,16 +387,20 @@ function SeverityFilterSection({
   selectedSeverities: Record<string, boolean>;
   toggleSeverity: (sev: string) => void;
 }) {
+  const activeCount = Object.values(selectedSeverities).filter(Boolean).length;
+
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
       <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
         <span className="flex items-center gap-1.5">
-          <Shield className="w-3 h-3 text-primary" /> Severity Badging
+          <Shield className="w-3 h-3 text-primary" /> Severity
         </span>
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-mono text-muted-foreground/60">
-            × {Object.values(selectedSeverities).filter(Boolean).length}
-          </span>
+          {activeCount > 0 && (
+            <span className="text-[9px] font-mono text-primary font-semibold">
+              × {activeCount}
+            </span>
+          )}
           <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </div>
       </CollapsibleTrigger>
@@ -441,12 +450,6 @@ function ImpersonationFilterSection({
             🎭 Only Impersonated
           </span>
         </div>
-        <span
-          className="text-[9px] font-mono text-purple-400/80 px-1.5 py-0.5 rounded bg-purple-500/15 border border-purple-500/20"
-          title="Filter Step-Up MFA Dual-Identity Impersonation Sessions"
-        >
-          Step-Up MFA
-        </span>
       </label>
     </div>
   );
@@ -478,20 +481,19 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
   const [typeSearch, setTypeSearch] = React.useState("");
 
   const hasActiveFilters =
-    Object.keys(DEFAULT_SELECTED_TYPES).some(
-      (k) => selectedTypes[k] !== DEFAULT_SELECTED_TYPES[k]
-    ) ||
-    Object.values(selectedLevels).some((v) => !v) ||
-    Object.values(selectedSeverities).some((v) => !v) ||
+    Object.values(selectedTypes).some(Boolean) ||
+    Object.values(selectedLevels).some(Boolean) ||
+    Object.values(selectedGroups).some(Boolean) ||
+    Object.values(selectedSeverities).some(Boolean) ||
+    Object.values(edgeSubFilters).some(Boolean) ||
     impersonationOnly ||
     scopeFilter !== "ALL" ||
     projectFilter.trim().length > 0 ||
     tenantFilter.trim().length > 0 ||
     searchQuery.trim().length > 0 ||
-    (advancedFilters && advancedFilters.length > 0) ||
-    Object.keys(DEFAULT_EDGE_SUB_FILTERS).some(
-      (k) => edgeSubFilters[k] !== DEFAULT_EDGE_SUB_FILTERS[k]
-    );
+    (advancedFilters && advancedFilters.length > 0);
+
+  const selectedTypeCount = Object.values(selectedTypes).filter(Boolean).length;
 
   return (
     <div className="flex flex-col h-full w-[240px] font-sans text-xs bg-sidebar select-none border-r border-border/60 shrink-0">
@@ -548,9 +550,11 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
               <Layers className="w-3 h-3 text-primary" /> {t("observability.log_type")}
             </span>
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono text-muted-foreground/60">
-                × {Object.values(selectedTypes).filter(Boolean).length}
-              </span>
+              {selectedTypeCount > 0 && (
+                <span className="text-[9px] font-mono text-primary font-semibold">
+                  × {selectedTypeCount}
+                </span>
+              )}
               <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
             </div>
           </CollapsibleTrigger>
