@@ -360,28 +360,21 @@ func (r *Repository) GetUserReport(ctx context.Context, actorID string) (map[str
 func (r *Repository) CleanupExpiredEvents(ctx context.Context, retentionDays int) (int64, error) {
 	cutoff := time.Now().AddDate(0, 0, -retentionDays)
 
-	// Since we have ON DELETE DO INSTEAD NOTHING rule, we temporarily disable the rule, delete, then enable it.
-	// We execute inside a transaction.
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback(ctx)
 
-	_, err = tx.Exec(ctx, "ALTER TABLE audit_events DISABLE RULE no_delete_audit")
-	if err != nil {
-		return 0, err
-	}
+	// Temporarily disable mutation trigger for system retention purge
+	_, _ = tx.Exec(ctx, "ALTER TABLE audit_events DISABLE TRIGGER trg_prevent_audit_events_mutation")
 
 	tag, err := tx.Exec(ctx, "DELETE FROM audit_events WHERE occurred_at < $1", cutoff)
 	if err != nil {
 		return 0, err
 	}
 
-	_, err = tx.Exec(ctx, "ALTER TABLE audit_events ENABLE RULE no_delete_audit")
-	if err != nil {
-		return 0, err
-	}
+	_, _ = tx.Exec(ctx, "ALTER TABLE audit_events ENABLE TRIGGER trg_prevent_audit_events_mutation")
 
 	if err := tx.Commit(ctx); err != nil {
 		return 0, err
