@@ -1,13 +1,13 @@
-import React, { useState, useMemo, useEffect, Component, type ErrorInfo, type ReactNode } from "react";
+import React, { useState, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
 import { Terminal, RefreshCcw, AlertTriangle } from "lucide-react";
 import { useReactTable, getCoreRowModel, type VisibilityState } from "@tanstack/react-table";
-import { useAuditLogStream, type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
+import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { LogsTopHeader } from "@/components/logs/logs-top-header";
 import { LogsHistogram, buildHistogramData, useAuditAnalyticsSummary } from "@/components/logs/logs-histogram";
 import { toast } from "sonner";
 import { Button } from "@k2net/ui";
-import { LOG_COLUMNS, filterAuditLogs } from "./logs-utils";
+import { LOG_COLUMNS } from "./logs-utils";
 import { LogsRowItem } from "./logs-row-item";
 import { LogsDetailDrawer } from "./logs-detail-drawer";
 
@@ -184,76 +184,23 @@ function LogsStatusBar({
 
 function LogsContainerContent() {
   const {
-    searchQuery,
-    showHistogram,
+    filteredLogs,
+    rawLogs,
+    totalCount,
+    clearLogs,
     selectedLog,
     setSelectedLog,
     isLivePaused,
-    selectedTypes,
-    selectedLevels,
-    selectedSeverities,
-    scopeFilter,
-    projectFilter,
-    setLogTypeCounts,
-    setLevelCounts,
-    setSeverityCounts,
+    showHistogram,
     tenantFilter,
     timeRange,
-    advancedFilters,
   } = useLogsFilter();
-
-  const { logs = [], rawLogs = [], timeFilteredLogs = [], totalCount = 0, clearLogs } = useAuditLogStream("all", {
-    isPaused: isLivePaused,
-    selectedTypes,
-    timeRange,
-  });
 
   const { summaryBuckets } = useAuditAnalyticsSummary(timeRange, tenantFilter);
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
-
-  const scopedSourceLogs = useMemo(() => {
-    return (timeFilteredLogs && timeFilteredLogs.length > 0 ? timeFilteredLogs : rawLogs) || [];
-  }, [timeFilteredLogs, rawLogs]);
-
-  const { logTypeCounts, levelCounts, severityCounts } = useMemo(() => {
-    const typeCounts: Record<string, number> = {};
-    const lvlCounts: Record<string, number> = { success: 0, warning: 0, error: 0 };
-    const sevCounts: Record<string, number> = { CRITICAL: 0, ERROR: 0, WARN: 0, INFO: 0 };
-
-    for (const log of scopedSourceLogs) {
-      if (!log) continue;
-      const lt = log.logType || "backend";
-      typeCounts[lt] = (typeCounts[lt] ?? 0) + 1;
-      const lvl = (log.severity === "ERROR" || log.severity === "CRITICAL" || log.status === 500)
-        ? "error"
-        : (log.severity === "WARN" || (typeof log.status === "number" && log.status >= 400 && log.status < 500))
-        ? "warning"
-        : "success";
-      lvlCounts[lvl] = (lvlCounts[lvl] ?? 0) + 1;
-      const sev = (log.severity || "INFO").toUpperCase();
-      sevCounts[sev] = (sevCounts[sev] ?? 0) + 1;
-    }
-    return { logTypeCounts: typeCounts, levelCounts: lvlCounts, severityCounts: sevCounts };
-  }, [scopedSourceLogs]);
-
-  useEffect(() => {
-    setLogTypeCounts(logTypeCounts);
-    setLevelCounts(levelCounts);
-    setSeverityCounts(severityCounts);
-  }, [logTypeCounts, levelCounts, severityCounts, setLogTypeCounts, setLevelCounts, setSeverityCounts]);
-
-  const filteredLogs = useMemo(
-    () =>
-      filterAuditLogs(logs, searchQuery, tenantFilter, selectedLevels, advancedFilters, {
-        selectedSeverities,
-        scopeFilter,
-        projectFilter,
-      }),
-    [logs, searchQuery, tenantFilter, selectedLevels, advancedFilters, selectedSeverities, scopeFilter, projectFilter]
-  );
 
   const isAllSelected = filteredLogs.length > 0 && filteredLogs.every((l) => selectedRowIds.has(l.id));
   const isSomeSelected = filteredLogs.some((l) => selectedRowIds.has(l.id)) && !isAllSelected;

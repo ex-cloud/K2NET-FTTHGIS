@@ -1,5 +1,3 @@
-
-
 import * as React from "react";
 import {
   Badge,
@@ -49,12 +47,12 @@ const FILTER_OPERATORS: AdvancedFilterOperator[] = [
 ];
 
 const FIELD_SUGGESTIONS: Partial<Record<AdvancedFilterField, string[]>> = {
-  logType:       ["edge", "auth", "postgres", "audit", "notification", "scheduler", "storage", "export", "payment", "olt", "poller", "map", "whatsapp"],
-  severity:      ["CRITICAL", "ERROR", "WARN", "INFO"],
-  method:        ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  status:        ["200", "201", "204", "400", "401", "403", "404", "500"],
+  logType: ["edge", "auth", "postgres", "audit", "notification", "scheduler", "storage", "export", "payment", "olt", "poller", "map", "whatsapp"],
+  severity: ["CRITICAL", "ERROR", "WARN", "INFO"],
+  method: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  status: ["200", "201", "204", "400", "401", "403", "404", "500"],
   serviceSource: ["kong-gateway", "keycloak", "backend", "gateway-audit", "gateway-notification"],
-  level:         ["success", "warning", "error"],
+  level: ["success", "warning", "error"],
 };
 
 // ─── Column Toggle Popover ────────────────────────────────────────────────────
@@ -101,10 +99,10 @@ function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPic
   );
   const filtered = search.trim()
     ? allColumns.filter((col) =>
-        ((col.columnDef.meta as { label?: string })?.label ?? col.id)
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      )
+      ((col.columnDef.meta as { label?: string })?.label ?? col.id)
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    )
     : allColumns;
 
   if (!mounted) return null;
@@ -356,7 +354,6 @@ export function LogsTopHeader({
     selectedTypes, toggleType, setLogType,
     selectedLevels, toggleLevel,
     selectedSeverities, toggleSeverity,
-    impersonationOnly, setImpersonationOnly,
     scopeFilter, setScopeFilter,
     projectFilter, setProjectFilter,
     tenantFilter, setTenantFilter,
@@ -390,11 +387,6 @@ export function LogsTopHeader({
       .map(([key]) => ({ id: key, label: `Severity = ${key}`, kind: "severity" as const }));
   }, [selectedSeverities]);
 
-  const impersonationPills = React.useMemo(
-    () => impersonationOnly ? [{ id: "impersonated", label: "🎭 Only Impersonated", kind: "impersonated" as const }] : [],
-    [impersonationOnly]
-  );
-
   const scopePills = React.useMemo(
     () => scopeFilter && scopeFilter !== "ALL" ? [{ id: "scope", label: `Scope = ${scopeFilter}`, kind: "scope" as const }] : [],
     [scopeFilter]
@@ -423,7 +415,6 @@ export function LogsTopHeader({
     ...activeTypePills,
     ...activeLevelPills,
     ...activeSeverityPills,
-    ...impersonationPills,
     ...scopePills,
     ...projectPills,
     ...tenantPills,
@@ -431,11 +422,10 @@ export function LogsTopHeader({
   ];
   const hasActivePills = allPills.length > 0;
 
-  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "impersonated" | "scope" | "project" | "tenant" | "advanced" }) => {
+  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "scope" | "project" | "tenant" | "advanced" }) => {
     if (pill.kind === "type") toggleType(pill.id);
     else if (pill.kind === "level") toggleLevel(pill.id);
     else if (pill.kind === "severity") toggleSeverity(pill.id);
-    else if (pill.kind === "impersonated") setImpersonationOnly(false);
     else if (pill.kind === "scope") setScopeFilter("ALL");
     else if (pill.kind === "project") setProjectFilter("");
     else if (pill.kind === "tenant") setTenantFilter("");
@@ -557,11 +547,10 @@ export function LogsTopHeader({
         <ActionTooltip label={isLivePaused ? t("observability.resume_stream") : t("observability.pause_stream")} shortcut="Space">
           <Button variant="outline" size="sm"
             onClick={() => setIsLivePaused((prev) => !prev)}
-            className={`h-7 text-xs font-mono gap-1.5 border-border/80 rounded-md px-2.5 ${
-              isLivePaused
+            className={`h-7 text-xs font-mono gap-1.5 border-border/80 rounded-md px-2.5 ${isLivePaused
                 ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                 : "bg-primary/10 text-primary/80 border-primary/20"
-            }`}>
+              }`}>
             {isLivePaused
               ? <Play className="w-3 h-3 fill-current" />
               : <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />

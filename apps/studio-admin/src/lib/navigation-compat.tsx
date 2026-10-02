@@ -70,9 +70,17 @@ export function useRouter() {
       if (url.includes("?")) {
         const [path, queryString] = url.split("?");
         const sp = new URLSearchParams(queryString);
-        const search: Record<string, string> = {};
+        const search: Record<string, string | string[]> = {};
         sp.forEach((value, key) => {
-          search[key] = value;
+          if (search[key]) {
+            if (Array.isArray(search[key])) {
+              (search[key] as string[]).push(value);
+            } else {
+              search[key] = [search[key] as string, value];
+            }
+          } else {
+            search[key] = value;
+          }
         });
         return navigate({ to: path, search });
       }
@@ -82,9 +90,17 @@ export function useRouter() {
       if (url.includes("?")) {
         const [path, queryString] = url.split("?");
         const sp = new URLSearchParams(queryString);
-        const search: Record<string, string> = {};
+        const search: Record<string, string | string[]> = {};
         sp.forEach((value, key) => {
-          search[key] = value;
+          if (search[key]) {
+            if (Array.isArray(search[key])) {
+              (search[key] as string[]).push(value);
+            } else {
+              search[key] = [search[key] as string, value];
+            }
+          } else {
+            search[key] = value;
+          }
         });
         return navigate({ to: path, search, replace: true });
       }
@@ -106,7 +122,6 @@ export function usePathname(): string {
 }
 
 export function useSearchParams(): URLSearchParams {
-  // Hooks HARUS dipanggil tanpa kondisi — di luar try/catch
   const location = useLocation();
   const searchObj = location.search;
   const locWithSearchStr = location as { searchStr?: string };
@@ -118,7 +133,11 @@ export function useSearchParams(): URLSearchParams {
     if (searchObj && typeof searchObj === "object" && Object.keys(searchObj).length > 0) {
       const sp = new URLSearchParams();
       for (const [k, v] of Object.entries(searchObj)) {
-        if (v !== undefined && v !== null) {
+        if (Array.isArray(v)) {
+          for (const item of v) {
+            sp.append(k, String(item));
+          }
+        } else if (v !== undefined && v !== null) {
           sp.set(k, String(v));
         }
       }

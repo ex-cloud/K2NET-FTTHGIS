@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSession } from "@/lib/auth-compat";
 import { getAuditEvents } from "@/lib/actions/gateways";
 import {
@@ -179,36 +179,43 @@ export function useAuditLogStream(
     setLogs([]);
   }, []);
 
-  const selectedTypes = options?.selectedTypes ?? {};
+  const selectedTypes = useMemo(() => options?.selectedTypes ?? {}, [options?.selectedTypes]);
   const selectedGroups = options?.selectedGroups;
 
-  const anyTypeActive = Object.values(selectedTypes).some(Boolean);
-  const anyGroupActive = selectedGroups ? Object.values(selectedGroups).some(Boolean) : false;
+  const anyTypeActive = useMemo(() => Object.values(selectedTypes).some(Boolean), [selectedTypes]);
+  const anyGroupActive = useMemo(
+    () => (selectedGroups ? Object.values(selectedGroups).some(Boolean) : false),
+    [selectedGroups]
+  );
 
-  const timeFilteredLogs = logs.filter((log) => {
-    if (timeRange && !checkTimeRangeMatch(log.timestamp, timeRange, nowRef.current)) {
-      return false;
-    }
-    return true;
-  });
+  const timeFilteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      if (timeRange && !checkTimeRangeMatch(log.timestamp, timeRange, nowRef.current)) {
+        return false;
+      }
+      return true;
+    });
+  }, [logs, timeRange]);
 
-  const filteredLogs = logs.filter((log) => {
-    if (anyTypeActive && !selectedTypes[log.logType]) {
-      return false;
-    }
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      if (anyTypeActive && !selectedTypes[log.logType]) {
+        return false;
+      }
 
-    if (anyGroupActive && selectedGroups && !selectedGroups[log.logGroup]) {
-      return false;
-    }
+      if (anyGroupActive && selectedGroups && !selectedGroups[log.logGroup]) {
+        return false;
+      }
 
-    if (timeRange && !checkTimeRangeMatch(log.timestamp, timeRange, nowRef.current)) {
-      return false;
-    }
+      if (timeRange && !checkTimeRangeMatch(log.timestamp, timeRange, nowRef.current)) {
+        return false;
+      }
 
-    if (filterCategory !== "all" && log.category && log.category !== filterCategory) return false;
+      if (filterCategory !== "all" && log.category && log.category !== filterCategory) return false;
 
-    return true;
-  });
+      return true;
+    });
+  }, [logs, anyTypeActive, selectedTypes, anyGroupActive, selectedGroups, timeRange, filterCategory]);
 
   return {
     logs: filteredLogs,
