@@ -14,11 +14,12 @@ import (
 )
 
 type HTTPHandler struct {
-	repo *audit.Repository
+	repo   *audit.Repository
+	engine *audit.BatchIngestionEngine
 }
 
-func NewHTTPHandler(repo *audit.Repository) *HTTPHandler {
-	return &HTTPHandler{repo: repo}
+func NewHTTPHandler(repo *audit.Repository, engine *audit.BatchIngestionEngine) *HTTPHandler {
+	return &HTTPHandler{repo: repo, engine: engine}
 }
 
 // POST /audit/events
@@ -30,18 +31,26 @@ func (h *HTTPHandler) CreateAuditEvent(c *gin.Context) {
 		return
 	}
 
-	ev, err := h.repo.CreateEvent(ctx, &req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+	if c.Query("sync") == "true" {
+		ev, err := h.repo.CreateEvent(ctx, &req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+			return
+		}
+		c.JSON(http.StatusCreated, gin.H{"success": true, "data": ev})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"success": true, "data": ev})
+	if err := h.engine.Ingest(&req); err != nil {
+		c.JSON(http.StatusAccepted, gin.H{"success": true, "status": "spooled_dlq", "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"success": true, "status": "queued"})
 }
 
 // POST /audit/events/kong
 func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
-	ctx := c.Request.Context()
 	var payload struct {
 		ClientIP  string `json:"client_ip"`
 		Request   struct {
@@ -62,15 +71,15 @@ func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 		return
 	}
 
-	// Filter out read operations to keep audit logs clean
-	if payload.Request.Method == "GET" || payload.Request.Method == "HEAD" || payload.Request.Method == "OPTIONS" {
+	// Route Tagging & Explicit Header Filter (P.7.4.1):
+	// Allow GET only if marked with explicit X-Audit-Required header
+	isSensitiveGet := payload.Request.Headers["x-audit-required"] == "true" || payload.Request.Headers["X-Audit-Required"] == "true"
+	if (payload.Request.Method == "GET" || payload.Request.Method == "HEAD" || payload.Request.Method == "OPTIONS") && !isSensitiveGet {
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Ignored read-only request"})
 		return
 	}
 
-	// Filter out GitHub webhook calls — these are GitHub Actions deploy notifications.
-	// The actual request is handled by Spring Boot (HMAC-SHA256 validated).
-	// Will be re-enabled when tenant GitHub integration goes live.
+	// Filter out GitHub webhook noise
 	if payload.Request.URI == "/api/github/webhook" {
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Ignored github webhook noise"})
 		return
@@ -126,13 +135,12 @@ func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 		},
 	}
 
-	ev, err := h.repo.CreateEvent(ctx, &req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+	if err := h.engine.Ingest(&req); err != nil {
+		c.JSON(http.StatusAccepted, gin.H{"success": true, "status": "spooled_dlq", "message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"success": true, "data": ev})
+	c.JSON(http.StatusAccepted, gin.H{"success": true, "status": "queued"})
 }
 
 // GET /audit/events
@@ -147,6 +155,8 @@ func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
 	projectID := c.Query("projectId")
 	scope := c.Query("scope")
 	category := c.Query("category")
+	logType := c.Query("logType")
+	serviceSource := c.Query("serviceSource")
 	search := c.Query("search")
 	startStr := c.Query("startDate")
 	endStr := c.Query("endDate")
@@ -174,20 +184,22 @@ func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
 	}
 
 	resp, err := h.repo.QueryEventsWithFilter(ctx, audit.QueryAuditEventsFilter{
-		TenantSlug:   tenant,
-		ActorID:      actor,
-		Action:       action,
-		ResourceType: resource,
-		LogGroup:     logGroup,
-		Severity:     severity,
-		ProjectID:    projectID,
-		Scope:        scope,
-		Category:     category,
-		Search:       search,
-		StartDate:    start,
-		EndDate:      end,
-		Page:         page,
-		PageSize:     pageSize,
+		TenantSlug:    tenant,
+		ActorID:       actor,
+		Action:        action,
+		ResourceType:  resource,
+		LogGroup:      logGroup,
+		Severity:      severity,
+		ProjectID:     projectID,
+		Scope:         scope,
+		Category:      category,
+		LogType:       logType,
+		ServiceSource: serviceSource,
+		Search:        search,
+		StartDate:     start,
+		EndDate:       end,
+		Page:          page,
+		PageSize:      pageSize,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
@@ -263,6 +275,35 @@ func (h *HTTPHandler) GetUserAuditReport(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": report})
+}
+
+// GET /audit/analytics/summary
+func (h *HTTPHandler) GetAnalyticsSummary(c *gin.Context) {
+	ctx := c.Request.Context()
+	tenantSlug := c.Query("tenantSlug")
+	hours, _ := strconv.Atoi(c.DefaultQuery("hours", "24"))
+
+	summary, err := h.repo.GetMaterializedSummary(ctx, tenantSlug, hours)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    summary,
+		"hours":   hours,
+	})
+}
+
+// POST /audit/analytics/refresh
+func (h *HTTPHandler) RefreshSummary(c *gin.Context) {
+	ctx := c.Request.Context()
+	if err := h.repo.RefreshMaterializedView(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Summary materialized view refreshed"})
 }
 
 // POST /audit/export

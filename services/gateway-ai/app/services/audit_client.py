@@ -42,15 +42,26 @@ class AuditClient:
         if self.disabled:
             return
 
+        tenant_slug = str(tenant_id) if tenant_id else "system"
+        if tenant_slug in ("default", "00000000-0000-0000-0000-000000000001", "none", ""):
+            tenant_slug = "system"
+
+        meta = dict(metadata or {})
+        scope = meta.get("scope")
+        if not scope:
+            scope = "SYSTEM" if tenant_slug == "system" else "ORGANIZATION"
+
         payload = {
-            "tenantSlug": str(tenant_id),
+            "tenantSlug": tenant_slug,
             "actorId": actor_id or "system",
             "action": action,
             "resourceType": resource_type,
             "resourceId": resource_id or "",
             "metadata": {
-                **(metadata or {}),
+                **meta,
                 "logGroup": log_group,
+                "logType": "ai",
+                "scope": scope,
                 "serviceSource": self.service_source,
                 "emittedAt": datetime.now(timezone.utc).isoformat(),
             },

@@ -136,8 +136,15 @@ func (w *ObsidianWorker) processTaskWithRetry(ctx context.Context, payload templ
 }
 
 func (w *ObsidianWorker) logSyncSuccess(ctx context.Context, payload template.TaskPayload, filePath string) {
+	tenantSlug := payload.TenantSlug
+	scope := "ORGANIZATION"
+	if payload.Scope == "PLATFORM_INTERNAL" || tenantSlug == "default" || tenantSlug == "" || tenantSlug == "system" {
+		tenantSlug = "system"
+		scope = "SYSTEM"
+	}
+
 	w.audit.LogSuccess(ctx,
-		payload.TenantSlug,
+		tenantSlug,
 		"gateway-task",
 		"OBSIDIAN_FILE_SYNCED",
 		"TASK",
@@ -147,13 +154,22 @@ func (w *ObsidianWorker) logSyncSuccess(ctx context.Context, payload template.Ta
 		map[string]any{
 			"vaultPath": filePath,
 			"taskType":  payload.TaskType,
+			"scope":     scope,
+			"status":    "SUCCESS",
 		},
 	)
 }
 
 func (w *ObsidianWorker) logSyncError(ctx context.Context, payload template.TaskPayload, err error) {
+	tenantSlug := payload.TenantSlug
+	scope := "ORGANIZATION"
+	if payload.Scope == "PLATFORM_INTERNAL" || tenantSlug == "default" || tenantSlug == "" || tenantSlug == "system" {
+		tenantSlug = "system"
+		scope = "SYSTEM"
+	}
+
 	w.audit.LogError(ctx,
-		payload.TenantSlug,
+		tenantSlug,
 		"gateway-task",
 		"OBSIDIAN_SYNC_FAILED",
 		"TASK",
@@ -161,6 +177,9 @@ func (w *ObsidianWorker) logSyncError(ctx context.Context, payload template.Task
 		auditclient.GroupOperations,
 		"gateway-task",
 		err.Error(),
-		nil,
+		map[string]any{
+			"taskType": payload.TaskType,
+			"scope":    scope,
+		},
 	)
 }

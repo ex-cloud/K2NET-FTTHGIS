@@ -40,6 +40,8 @@ type QueryAuditEventsFilter struct {
 	ProjectID    string     `json:"projectId"`
 	Scope        string     `json:"scope"`
 	Category     string     `json:"category"`
+	LogType      string     `json:"logType"`
+	ServiceSource string    `json:"serviceSource"`
 	Search       string     `json:"search"`
 	StartDate    *time.Time `json:"startDate"`
 	EndDate      *time.Time `json:"endDate"`

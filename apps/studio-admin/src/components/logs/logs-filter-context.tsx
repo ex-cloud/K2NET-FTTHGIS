@@ -70,19 +70,24 @@ export const FILTER_OPERATOR_LABELS: Record<AdvancedFilterOperator, string> = {
 export const LOG_TYPES_LABELS: Record<string, string> = {
   // CORE GROUP
   edge:         "API Gateway (Kong)",
-  auth:         "Auth & Security",
-  postgres:     "Postgres (Envers)",
+  auth:         "Auth & IAM (Keycloak)",
+  postgres:     "Postgres & PostGIS",
+  redis:        "Redis Queue & Cache",
+  traefik:      "Traefik Edge Proxy",
   // OPERATIONS GROUP
+  ai:           "AI Copilot (RAG)",
+  task:         "Task & Project Sync",
   audit:        "Audit Trail",
-  notification: "Notification",
-  scheduler:    "Scheduler",
-  storage:      "Storage Gateway",
+  notification: "Notification Gateway",
+  scheduler:    "Scheduler & Backup",
+  storage:      "Storage Gateway (S3)",
   export:       "Export Gateway",
   payment:      "Payment Gateway",
   // NETWORK GROUP
   olt:          "OLT Gateway",
-  poller:       "OLT Poller",
+  poller:       "OLT Poller (SNMP)",
   map:          "Map Gateway",
+  martin:       "Martin Tile Server",
   // MESSAGING GROUP
   whatsapp:     "WhatsApp Gateway",
 };
@@ -137,6 +142,10 @@ export type LogFilterState = {
   setIsSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   logTypeCounts: Record<string, number>;
   setLogTypeCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  levelCounts: Record<string, number>;
+  setLevelCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  severityCounts: Record<string, number>;
+  setSeverityCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   /** Advanced filter rules (field + operator + value) */
   advancedFilters: AdvancedFilter[];
   addAdvancedFilter: (f: AdvancedFilter) => void;
@@ -157,7 +166,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-  const [timeRange, setTimeRange] = useState(searchParams.get("date") || "1h");
+  const [timeRange, setTimeRange] = useState(searchParams.get("date") || "60m");
   const [isLivePaused, setIsLivePaused] = useState(
     searchParams.get("live") === "true" ? false : true
   );
@@ -169,7 +178,9 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   const [scopeFilter, setScopeFilter] = useState(searchParams.get("scope") || "ALL");
   const [projectFilter, setProjectFilter] = useState(searchParams.get("project") || "");
 
-  // Parse filters from URL on mount
+  const isInternalUpdateRef = useRef(false);
+
+  // Parse filters from URL on mount / external change
   const parseFiltersFromUrl = () => {
     const filterParams = searchParams.getAll("filter");
     const types: Record<string, boolean> = {};
@@ -206,6 +217,8 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   const [selectedSeverities, setSelectedSeverities] = useState<Record<string, boolean>>(initialSeverities);
   const [edgeSubFilters, setEdgeSubFilters] = useState<Record<string, boolean>>({});
   const [logTypeCounts, setLogTypeCounts] = useState<Record<string, number>>({});
+  const [levelCounts, setLevelCounts] = useState<Record<string, number>>({});
+  const [severityCounts, setSeverityCounts] = useState<Record<string, number>>({});
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilter[]>([]);
 
   const addAdvancedFilter = (f: AdvancedFilter) => {
@@ -220,8 +233,13 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     setAdvancedFilters([]);
   };
 
-  // Sync URL → state
+  // Sync URL → state (only when URL changed externally, not from internal state update)
   useEffect(() => {
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
+
     const { types, levels, groups, severities } = parseFiltersFromUrl();
 
     setSelectedTypes(types);
@@ -232,7 +250,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     const search = searchParams.get("search") || "";
     if (search !== searchQuery) setSearchQuery(search);
 
-    const date = searchParams.get("date") || "1h";
+    const date = searchParams.get("date") || "60m";
     if (date !== timeRange) setTimeRange(date);
 
     const isLive = searchParams.get("live") === "true";
@@ -283,13 +301,14 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     // Tenant & Search filter
     if (tenantFilter.trim()) params.set("tenant", tenantFilter);
     if (searchQuery.trim()) params.set("search", searchQuery);
-    if (timeRange && timeRange !== "1h") params.set("date", timeRange);
+    if (timeRange) params.set("date", timeRange);
     if (!isLivePaused) params.set("live", "true");
 
     const newUrl = params.size > 0 ? `/logs?${params.toString()}` : "/logs";
 
     if (newUrl === prevUrlRef.current) return;
     prevUrlRef.current = newUrl;
+    isInternalUpdateRef.current = true;
     router.replace(newUrl, { scroll: false });
   }, [
     searchQuery,
@@ -308,39 +327,95 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   ]);
 
   const toggleType = (key: string) => {
-    setSelectedTypes((prev) => ({ ...prev, [key]: !prev[key] }));
+    isInternalUpdateRef.current = true;
+    setSelectedTypes((prev) => {
+      const next = { ...prev };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = true;
+      }
+      return next;
+    });
   };
 
   const setLogType = (key: string, enabled: boolean) => {
-    setSelectedTypes((prev) => ({ ...prev, [key]: enabled }));
+    isInternalUpdateRef.current = true;
+    setSelectedTypes((prev) => {
+      const next = { ...prev };
+      if (enabled) {
+        next[key] = true;
+      } else {
+        delete next[key];
+      }
+      return next;
+    });
   };
 
   const toggleGroup = (key: LogGroupKey) => {
+    isInternalUpdateRef.current = true;
     const group = LOG_GROUPS[key];
-    const currentlyOn = selectedGroups[key];
-    setSelectedGroups((prev) => ({ ...prev, [key]: !currentlyOn }));
+    const allCurrentlyChecked = group.types.length > 0 && group.types.every((t) => !!selectedTypes[t]);
+    const shouldCheckAll = !allCurrentlyChecked;
+
+    setSelectedGroups((prev) => ({ ...prev, [key]: shouldCheckAll }));
     setSelectedTypes((prev) => {
       const next = { ...prev };
-      group.types.forEach((t) => { next[t] = !currentlyOn; });
+      group.types.forEach((t) => {
+        if (shouldCheckAll) {
+          next[t] = true;
+        } else {
+          delete next[t];
+        }
+      });
       return next;
     });
   };
 
   const toggleLevel = (key: string) => {
-    setSelectedLevels((prev) => ({ ...prev, [key]: !prev[key] }));
+    isInternalUpdateRef.current = true;
+    setSelectedLevels((prev) => {
+      const next = { ...prev };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = true;
+      }
+      return next;
+    });
   };
 
   const toggleSeverity = (key: string) => {
-    setSelectedSeverities((prev) => ({ ...prev, [key]: !prev[key] }));
+    isInternalUpdateRef.current = true;
+    setSelectedSeverities((prev) => {
+      const next = { ...prev };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = true;
+      }
+      return next;
+    });
   };
 
   const toggleEdgeSubFilter = (key: string) => {
-    setEdgeSubFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+    isInternalUpdateRef.current = true;
+    setEdgeSubFilters((prev) => {
+      const next = { ...prev };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = true;
+      }
+      return next;
+    });
   };
 
   const resetAllFilters = () => {
+    isInternalUpdateRef.current = true;
+    prevUrlRef.current = "/logs?date=60m";
     setSearchQuery("");
-    setTimeRange("1h");
+    setTimeRange("60m");
     setSelectedTypes({});
     setSelectedGroups({} as Record<LogGroupKey, boolean>);
     setSelectedLevels({});
@@ -352,7 +427,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     setSelectedLog(null);
     setTenantFilter("");
     setAdvancedFilters([]);
-    router.replace("/logs", { scroll: false });
+    router.replace("/logs?date=60m", { scroll: false });
   };
 
   return (
@@ -374,6 +449,8 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
         resetAllFilters,
         isSidebarCollapsed, setIsSidebarCollapsed,
         logTypeCounts, setLogTypeCounts,
+        levelCounts, setLevelCounts,
+        severityCounts, setSeverityCounts,
         tenantFilter, setTenantFilter,
         advancedFilters, addAdvancedFilter, removeAdvancedFilter, clearAdvancedFilters,
       }}
@@ -393,7 +470,7 @@ export function LogsFilterProvider({ children }: { children: React.ReactNode }) 
 
 const DEFAULT_CONTEXT: LogFilterState = {
   searchQuery: "", setSearchQuery: () => {},
-  timeRange: "1h", setTimeRange: () => {},
+  timeRange: "60m", setTimeRange: () => {},
   isLivePaused: true, setIsLivePaused: () => {},
   showHistogram: true, setShowHistogram: () => {},
   selectedTypes: { ...DEFAULT_SELECTED_TYPES }, toggleType: () => {}, setLogType: () => {},
@@ -408,6 +485,8 @@ const DEFAULT_CONTEXT: LogFilterState = {
   resetAllFilters: () => {},
   isSidebarCollapsed: false, setIsSidebarCollapsed: () => {},
   logTypeCounts: {}, setLogTypeCounts: () => {},
+  levelCounts: {}, setLevelCounts: () => {},
+  severityCounts: {}, setSeverityCounts: () => {},
   tenantFilter: "", setTenantFilter: () => {},
   advancedFilters: [], addAdvancedFilter: () => {}, removeAdvancedFilter: () => {}, clearAdvancedFilters: () => {},
 };

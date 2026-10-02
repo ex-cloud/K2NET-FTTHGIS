@@ -43,3 +43,20 @@ func TestGenerateBillingExcel(t *testing.T) {
 		t.Errorf("Generated Excel is too small (%d bytes), might be empty", len(excelBytes))
 	}
 }
+
+func TestSignExportPayload(t *testing.T) {
+	content := []byte("id,actor_id,action,occurred_at\n1,admin,LOGIN,2026-10-02T00:00:00Z\n")
+	checksum, sig, signedAt := SignExportPayload(content, "garut", "admin@k2.net", "secret-key")
+
+	if len(checksum) != 64 {
+		t.Errorf("Expected SHA-256 checksum 64 chars, got: %s", checksum)
+	}
+	if len(sig) != 64 {
+		t.Errorf("Expected HMAC-SHA256 signature 64 chars, got: %s", sig)
+	}
+
+	trailer := GenerateSignedCSVTrailer(checksum, sig, "garut", "admin@k2.net", signedAt)
+	if len(trailer) == 0 {
+		t.Errorf("Expected signed CSV trailer")
+	}
+}

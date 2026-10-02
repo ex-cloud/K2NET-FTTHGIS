@@ -232,7 +232,8 @@ export function buildHistogramData(
     if (bucketIdx >= BUCKET_COUNT) bucketIdx = BUCKET_COUNT - 1;
 
     const severity = log.severity?.toUpperCase();
-    if (severity === "ERROR" || severity === "CRITICAL" || log.status === "FAILED") {
+    const isErrorStatus = typeof log.status === "number" ? log.status >= 500 : String(log.status) === "FAILED";
+    if (severity === "ERROR" || severity === "CRITICAL" || isErrorStatus) {
       buckets[bucketIdx].error++;
     } else if (severity === "WARN" || severity === "WARNING") {
       buckets[bucketIdx].warning++;

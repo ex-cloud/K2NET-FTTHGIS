@@ -88,13 +88,22 @@ func main() {
 		}
 	}()
 
+	// Init batch ingestion engine
+	batchEngine := audit.NewBatchIngestionEngine(dbPool, audit.BatchConfig{
+		BufferSize:    5000,
+		BatchSize:     100,
+		FlushInterval: 500 * time.Millisecond,
+		DLQDir:        "/opt/project5/backups/dlq/audit_events",
+	})
+	defer batchEngine.Close()
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CorrelationIDMiddleware())
 	router.Use(telemetry.TelemetryMiddleware())
 
-	handler := delivery.NewHTTPHandler(repo)
+	handler := delivery.NewHTTPHandler(repo, batchEngine)
 
 	// Metrics
 	router.GET("/metrics", telemetry.GetMetricsHandler())
@@ -123,6 +132,8 @@ func main() {
 		api.GET("/audit/report/tenant/:slug", handler.GetTenantAuditReport)
 		api.GET("/audit/report/tenant/:slug/project/:projectId", handler.GetProjectAuditReport)
 		api.GET("/audit/report/user/:userId", handler.GetUserAuditReport)
+		api.GET("/audit/analytics/summary", handler.GetAnalyticsSummary)
+		api.POST("/audit/analytics/refresh", handler.RefreshSummary)
 		api.POST("/audit/export", handler.ExportAuditEvents)
 	}
 

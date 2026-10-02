@@ -279,9 +279,9 @@ public class AuditLoggingService {
             payload.put("action", action);
             payload.put("resourceType", resourceType);
             payload.put("resourceId", resourceId != null ? resourceId : "");
-            payload.put("oldValue", oldValue != null ? oldValue : new HashMap<>());
-            payload.put("newValue", newValue != null ? newValue : new HashMap<>());
-            payload.put("metadata", metadata != null ? metadata : new HashMap<>());
+            payload.put("oldValue", sanitizeMap(oldValue != null ? oldValue : new HashMap<>()));
+            payload.put("newValue", sanitizeMap(newValue != null ? newValue : new HashMap<>()));
+            payload.put("metadata", sanitizeMap(metadata != null ? metadata : new HashMap<>()));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -295,5 +295,25 @@ public class AuditLoggingService {
         } catch (Exception e) {
             log.warn("[AuditGateway] Gagal mengirim audit event (non-critical): {}", e.getMessage());
         }
+    }
+
+    private Map<String, Object> sanitizeMap(Map<String, Object> input) {
+        if (input == null) return new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
+        for (Map.Entry<String, Object> entry : input.entrySet()) {
+            String key = entry.getKey();
+            String cleanKey = key.toLowerCase().replace("-", "").replace("_", "");
+            if (cleanKey.contains("password") || cleanKey.contains("secret") || cleanKey.contains("token") 
+                    || cleanKey.contains("authorization") || cleanKey.contains("apikey") || cleanKey.contains("creditcard")) {
+                result.put(key, "[REDACTED]");
+            } else if (entry.getValue() instanceof Map<?, ?> nestedMap) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> typedNested = (Map<String, Object>) nestedMap;
+                result.put(key, sanitizeMap(typedNested));
+            } else {
+                result.put(key, entry.getValue());
+            }
+        }
+        return result;
     }
 }

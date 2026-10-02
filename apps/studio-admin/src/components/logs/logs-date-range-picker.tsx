@@ -9,7 +9,7 @@ import { useTranslation } from "@k2net/i18n";
 const PRESET_VALUES = [
   { key: "preset_last_10m", value: "10m", fallback: "Last 10 minutes" },
   { key: "preset_last_30m", value: "30m", fallback: "Last 30 minutes" },
-  { key: "preset_last_60m", value: "1h", fallback: "Last 60 minutes" },
+  { key: "preset_last_60m", value: "60m", fallback: "Last 60 minutes" },
   { key: "preset_last_3h", value: "3h", fallback: "Last 3 hours" },
   { key: "preset_last_24h", value: "24h", fallback: "Last 24 hours" },
   { key: "preset_last_7d", value: "7d", fallback: "Last 7 days" },
@@ -31,7 +31,8 @@ function parseValue(value: string): { preset: string | null; range: DateRange | 
       return { preset: null, range: { from, to } };
     }
   }
-  return { preset: value, range: undefined };
+  const normVal = value === "1h" ? "60m" : value;
+  return { preset: normVal, range: undefined };
 }
 
 function getDisplayLabel(value: string, t: ReturnType<typeof useTranslation>["t"]): string {
@@ -43,13 +44,15 @@ function getDisplayLabel(value: string, t: ReturnType<typeof useTranslation>["t"
       return `${format(from, "MMM d, HH:mm")} → ${format(to, "MMM d, HH:mm")}`;
     }
   }
-  const preset = PRESET_VALUES.find((p) => p.value === value);
-  return preset ? t(`observability.${preset.key}`) : value;
+  const normVal = value === "1h" ? "60m" : value;
+  const preset = PRESET_VALUES.find((p) => p.value === value || p.value === normVal);
+  return preset ? (t(`observability.${preset.key}`) || preset.fallback) : value;
 }
 
 function getPresetRange(preset: string): { from: Date; to: Date } {
   const to = new Date();
-  const match = preset.match(/^(\d+)([mhd])$/i);
+  const norm = preset === "1h" ? "60m" : preset;
+  const match = norm.match(/^(\d+)([mhd])$/i);
   if (match) {
     const amount = parseInt(match[1]);
     const unit = match[2].toLowerCase();
@@ -92,14 +95,18 @@ function PresetsSidebar({
       />
       <div className="flex flex-col gap-px">
         {PRESET_VALUES.map((p) => {
-          const isActive = activePreset === p.value;
-          const label = t(`observability.${p.key}`);
+          const isActive =
+            activePreset === p.value ||
+            (activePreset === "60m" && (p.value === "1h" || p.value === "60m")) ||
+            (activePreset === "1h" && (p.value === "60m" || p.value === "1h"));
+          const label = t(`observability.${p.key}`) || p.fallback;
           return (
-            <label
+            <button
+              type="button"
               key={p.value}
               onClick={() => onPresetSelect(p.value)}
               className={cn(
-                "px-4 py-1.5 flex items-center justify-between text-xs w-full cursor-pointer transition-all rounded-sm",
+                "px-4 py-1.5 flex items-center justify-between text-xs w-full cursor-pointer transition-all rounded-sm text-left",
                 isActive
                   ? "bg-muted text-foreground font-semibold"
                   : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
@@ -109,7 +116,7 @@ function PresetsSidebar({
                 {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
                 {label}
               </span>
-            </label>
+            </button>
           );
         })}
       </div>
@@ -459,7 +466,22 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                 toTime={toTime}
                 setFromTime={setFromTime}
                 setToTime={setToTime}
-                onResetTime={() => { onChange("1h"); setCustomRelativeInput(""); }}
+                onResetTime={() => {
+                  const now = new Date();
+                  const from = new Date(now.getTime() - 60 * 60 * 1000);
+                  const fh = String(from.getHours()).padStart(2, "0");
+                  const fm = String(from.getMinutes()).padStart(2, "0");
+                  const fs = String(from.getSeconds()).padStart(2, "0");
+                  const th = String(now.getHours()).padStart(2, "0");
+                  const tm = String(now.getMinutes()).padStart(2, "0");
+                  const ts = String(now.getSeconds()).padStart(2, "0");
+                  setFromTime(`${fh}:${fm}:${fs}`);
+                  setToTime(`${th}:${tm}:${ts}`);
+                  setLocalRange(undefined);
+                  setCustomRelativeInput("");
+                  onChange("60m");
+                  setOpen(false);
+                }}
               />
 
               <div className="border-t border-border/40 flex justify-center py-1 px-[2px]">

@@ -71,8 +71,8 @@ public class AuditAspect {
             Method method = sig.getMethod();
             Object[] args = pjp.getArgs();
 
-            // Build SpEL context for expression evaluation
-            EvaluationContext ctx = buildSpelContext(method, args);
+            // Build SpEL context for expression evaluation with method arguments and return value (#result)
+            EvaluationContext ctx = buildSpelContext(method, args, returnValue);
 
             // Resolve tenantSlug
             String tenantSlug = resolveSpel(ann.tenantSlugExpression(), ctx, String.class);
@@ -98,7 +98,7 @@ public class AuditAspect {
             if ("AUTO".equalsIgnoreCase(scope)) {
                 if (projectId != null && !projectId.isBlank()) {
                     scope = "PROJECT";
-                } else if ("system".equalsIgnoreCase(tenantSlug)) {
+                } else if ("system".equalsIgnoreCase(tenantSlug) || tenantSlug == null || tenantSlug.isBlank()) {
                     scope = "SYSTEM";
                 } else {
                     scope = "ORGANIZATION";
@@ -154,13 +154,18 @@ public class AuditAspect {
     }
 
     /**
-     * Build a SpEL evaluation context mapping parameter names to their argument values.
+     * Build a SpEL evaluation context mapping parameter names to their argument values
+     * and binding {@code result} / {@code return} to the method's return value.
      */
-    private EvaluationContext buildSpelContext(Method method, Object[] args) {
+    private EvaluationContext buildSpelContext(Method method, Object[] args, Object returnValue) {
         StandardEvaluationContext ctx = new StandardEvaluationContext();
         Parameter[] params = method.getParameters();
         for (int i = 0; i < params.length; i++) {
             ctx.setVariable(params[i].getName(), args[i]);
+        }
+        if (returnValue != null) {
+            ctx.setVariable("result", returnValue);
+            ctx.setVariable("return", returnValue);
         }
         return ctx;
     }
@@ -179,20 +184,16 @@ public class AuditAspect {
     }
 
     /**
-     * Extract tenant slug from the current Keycloak JWT claim "org_slug" or "preferred_username".
-     * Falls back to "system" if no JWT present (e.g., scheduled jobs).
+     * Extract tenant slug from the current Keycloak JWT claim "org_slug".
+     * Falls back to "system" for Super Admin or non-tenant platform callers.
      */
     private String resolveTenantFromJwt() {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
-                // Try org_slug claim first (set by Kong X-Tenant-ID)
+                // Genuine tenant caller token injected with org_slug
                 String orgSlug = jwt.getClaimAsString("org_slug");
                 if (orgSlug != null && !orgSlug.isBlank()) return orgSlug;
-
-                // Fall back to preferred_username
-                String username = jwt.getClaimAsString("preferred_username");
-                if (username != null && !username.isBlank()) return username;
             }
         } catch (Exception ignored) {}
         return "system";

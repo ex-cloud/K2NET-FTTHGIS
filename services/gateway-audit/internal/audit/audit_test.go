@@ -6,7 +6,6 @@ import (
 )
 
 func TestQueryEventsSQLConstruction(t *testing.T) {
-	// Stub to verify filter inputs
 	tenant := "garut"
 	actor := "user-123"
 	action := "LOGIN"
@@ -14,7 +13,6 @@ func TestQueryEventsSQLConstruction(t *testing.T) {
 	start := time.Now().Add(-1 * time.Hour)
 	end := time.Now()
 
-	// Direct structure check
 	req := &CreateAuditEventRequest{
 		TenantSlug:   tenant,
 		ActorID:      actor,
@@ -85,3 +83,91 @@ func TestQueryEventsFilterValidation(t *testing.T) {
 	}
 }
 
+func TestSanitizeMapPIIRedaction(t *testing.T) {
+	input := map[string]any{
+		"username":    "admin@k2.net",
+		"password":    "super_secret_123!",
+		"api_key":     "k2_live_9988776655",
+		"credit_card": "4111-2222-3333-4444",
+		"nested": map[string]any{
+			"private_key": "-----BEGIN RSA PRIVATE KEY-----",
+			"normal_info": "public data",
+		},
+		"token_list": []any{
+			"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+			"plain_string",
+		},
+	}
+
+	sanitized := SanitizeMap(input)
+
+	if sanitized["password"] != "[REDACTED]" {
+		t.Errorf("Password was not redacted: %v", sanitized["password"])
+	}
+	if sanitized["api_key"] != "[REDACTED]" {
+		t.Errorf("API key was not redacted: %v", sanitized["api_key"])
+	}
+	if sanitized["credit_card"] != "[REDACTED]" {
+		t.Errorf("Credit card was not redacted: %v", sanitized["credit_card"])
+	}
+
+	nested, ok := sanitized["nested"].(map[string]any)
+	if !ok || nested["private_key"] != "[REDACTED]" {
+		t.Errorf("Nested private key was not redacted")
+	}
+	if nested["normal_info"] != "public data" {
+		t.Errorf("Normal info was mistakenly modified")
+	}
+
+	tokens := sanitized["token_list"].([]any)
+	if tokens[0] != "[REDACTED]" {
+		t.Errorf("Bearer token string was not redacted")
+	}
+	if tokens[1] != "plain_string" {
+		t.Errorf("Plain string was modified")
+	}
+}
+
+func TestCryptographicHashAndMerkleRoot(t *testing.T) {
+	now := time.Now()
+	hash1, prev1 := ComputeEventHash("", "tenant-a", "user-1", "LOGIN", "AUTH", "auth-session-1", now, nil, nil, map[string]any{"ip": "1.2.3.4"})
+	if hash1 == "" || prev1 != "GENESIS_ROOT_tenant-a" {
+		t.Errorf("Hash generation failed for genesis block: %s, %s", hash1, prev1)
+	}
+
+	hash2, prev2 := ComputeEventHash(hash1, "tenant-a", "user-1", "ODP_CREATED", "ODP", "odp-101", now.Add(time.Second), nil, map[string]any{"name": "ODP-101"}, nil)
+	if hash2 == "" || prev2 != hash1 {
+		t.Errorf("Hash chain broken: prev2 %s != hash1 %s", prev2, hash1)
+	}
+
+	merkleRoot := ComputeBatchMerkleRoot([]string{hash1, hash2})
+	if merkleRoot == "" || len(merkleRoot) != 64 {
+		t.Errorf("Merkle root invalid: %s", merkleRoot)
+	}
+}
+
+func TestSlidingWindowDeduplicator(t *testing.T) {
+	dedup := NewSlidingWindowDeduplicator(500*time.Millisecond, 5)
+
+	// First 5 events should be recorded
+	for i := 1; i <= 5; i++ {
+		recorded, count := dedup.ShouldSample("tenant-a", "PING_FAILED", "OLT", "poller", "olt-01")
+		if !recorded || count != i {
+			t.Errorf("Event %d should be recorded (count: %d)", i, count)
+		}
+	}
+
+	// 6th to 9th events should be throttled
+	for i := 6; i <= 9; i++ {
+		recorded, count := dedup.ShouldSample("tenant-a", "PING_FAILED", "OLT", "poller", "olt-01")
+		if recorded {
+			t.Errorf("Event %d should have been throttled (count: %d)", i, count)
+		}
+	}
+
+	// 10th event (milestone) should be recorded
+	recorded, count := dedup.ShouldSample("tenant-a", "PING_FAILED", "OLT", "poller", "olt-01")
+	if !recorded || count != 10 {
+		t.Errorf("10th milestone event should be sampled (count: %d)", count)
+	}
+}

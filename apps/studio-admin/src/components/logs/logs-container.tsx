@@ -10,7 +10,17 @@ import { LOG_COLUMNS, filterAuditLogs } from "./logs-utils";
 import { LogsRowItem } from "./logs-row-item";
 import { LogsDetailDrawer } from "./logs-detail-drawer";
 
-function LogsTableHeader({ columnVisibility }: { columnVisibility: VisibilityState }) {
+function LogsTableHeader({
+  columnVisibility,
+  isAllSelected,
+  isSomeSelected,
+  onToggleSelectAll,
+}: {
+  columnVisibility: VisibilityState;
+  isAllSelected?: boolean;
+  isSomeSelected?: boolean;
+  onToggleSelectAll?: () => void;
+}) {
   const columns = [
     { id: "date", label: "Timestamp", width: "w-[148px]" },
     { id: "source", label: "Src", width: "w-[28px]" },
@@ -28,7 +38,18 @@ function LogsTableHeader({ columnVisibility }: { columnVisibility: VisibilitySta
   return (
     <div className="flex items-center px-4 py-2 bg-muted/50 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-mono">
       <div className="w-[42px] shrink-0 flex items-center">
-        <input type="checkbox" className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer" />
+        <input
+          type="checkbox"
+          checked={!!isAllSelected}
+          ref={(el) => {
+            if (el) {
+              el.indeterminate = !!isSomeSelected;
+            }
+          }}
+          onChange={onToggleSelectAll}
+          className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
+          title="Toggle select all"
+        />
       </div>
       <div className="w-[16px] mr-2 shrink-0" />
       {columns.map((col) => {
@@ -48,18 +69,47 @@ function LogsStatusBar({
   isLivePaused,
   filteredCount,
   totalCount,
+  selectedCount,
+  onClearSelection,
+  onCopySelected,
 }: {
   isLivePaused: boolean;
   filteredCount: number;
   totalCount: number;
+  selectedCount: number;
+  onClearSelection?: () => void;
+  onCopySelected?: () => void;
 }) {
   return (
     <div className="px-6 py-2 border-t border-border bg-muted/20 flex items-center justify-between text-[10px] text-muted-foreground font-mono shrink-0">
-      <span>
-        {isLivePaused
-          ? `⏸ Paused — ${filteredCount} of ${totalCount} events buffered`
-          : `● Live — ${filteredCount} of ${totalCount} events matching`}
-      </span>
+      <div className="flex items-center gap-3">
+        <span>
+          {isLivePaused
+            ? `⏸ Paused — ${filteredCount} of ${totalCount} events buffered`
+            : `● Live — ${filteredCount} of ${totalCount} events matching`}
+        </span>
+        {selectedCount > 0 && (
+          <div className="flex items-center gap-2 pl-3 border-l border-border/60">
+            <span className="px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold">
+              {selectedCount} selected
+            </span>
+            <button
+              type="button"
+              onClick={onCopySelected}
+              className="text-foreground hover:text-primary transition-colors underline cursor-pointer"
+            >
+              Copy Selected JSON
+            </button>
+            <button
+              type="button"
+              onClick={onClearSelection}
+              className="text-muted-foreground hover:text-rose-400 transition-colors cursor-pointer"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
       <div className="flex items-center gap-2">
         {isLivePaused ? (
           <>
@@ -91,12 +141,14 @@ export function LogsContainer() {
     scopeFilter,
     projectFilter,
     setLogTypeCounts,
+    setLevelCounts,
+    setSeverityCounts,
     tenantFilter,
     timeRange,
     advancedFilters,
   } = useLogsFilter();
 
-  const { logs, rawLogs, totalCount, hasAnyTypeSelected, clearLogs } = useAuditLogStream("all", {
+  const { logs, rawLogs, timeFilteredLogs, totalCount, clearLogs } = useAuditLogStream("all", {
     isPaused: isLivePaused,
     selectedTypes,
     timeRange,
@@ -104,18 +156,34 @@ export function LogsContainer() {
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
 
-  const logTypeCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const log of rawLogs) {
-      counts[log.logType] = (counts[log.logType] ?? 0) + 1;
+  const scopedSourceLogs = timeFilteredLogs || rawLogs;
+
+  const { logTypeCounts, levelCounts, severityCounts } = useMemo(() => {
+    const typeCounts: Record<string, number> = {};
+    const lvlCounts: Record<string, number> = { success: 0, warning: 0, error: 0 };
+    const sevCounts: Record<string, number> = { CRITICAL: 0, ERROR: 0, WARN: 0, INFO: 0 };
+
+    for (const log of scopedSourceLogs) {
+      typeCounts[log.logType] = (typeCounts[log.logType] ?? 0) + 1;
+      const lvl = (log.severity === "ERROR" || log.severity === "CRITICAL" || log.status === 500)
+        ? "error"
+        : (log.severity === "WARN" || (typeof log.status === "number" && log.status >= 400 && log.status < 500))
+        ? "warning"
+        : "success";
+      lvlCounts[lvl] = (lvlCounts[lvl] ?? 0) + 1;
+      const sev = (log.severity || "INFO").toUpperCase();
+      sevCounts[sev] = (sevCounts[sev] ?? 0) + 1;
     }
-    return counts;
-  }, [rawLogs]);
+    return { logTypeCounts: typeCounts, levelCounts: lvlCounts, severityCounts: sevCounts };
+  }, [scopedSourceLogs]);
 
   useEffect(() => {
     setLogTypeCounts(logTypeCounts);
-  }, [logTypeCounts, setLogTypeCounts]);
+    setLevelCounts(levelCounts);
+    setSeverityCounts(severityCounts);
+  }, [logTypeCounts, levelCounts, severityCounts, setLogTypeCounts, setLevelCounts, setSeverityCounts]);
 
   const filteredLogs = useMemo(
     () =>
@@ -128,6 +196,35 @@ export function LogsContainer() {
     [logs, searchQuery, tenantFilter, selectedLevels, advancedFilters, selectedSeverities, impersonationOnly, scopeFilter, projectFilter]
   );
 
+  const isAllSelected = filteredLogs.length > 0 && filteredLogs.every((l) => selectedRowIds.has(l.id));
+  const isSomeSelected = filteredLogs.some((l) => selectedRowIds.has(l.id)) && !isAllSelected;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedRowIds(new Set());
+    } else {
+      setSelectedRowIds(new Set(filteredLogs.map((l) => l.id)));
+    }
+  };
+
+  const handleToggleSelectRow = (id: string) => {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleCopySelected = () => {
+    const selectedLogs = filteredLogs.filter((l) => selectedRowIds.has(l.id));
+    if (selectedLogs.length === 0) return;
+    navigator.clipboard.writeText(JSON.stringify(selectedLogs, null, 2));
+    toast.success(`Copied ${selectedLogs.length} selected log events to clipboard.`);
+  };
 
   const histogramData = useMemo(
     () => buildHistogramData(filteredLogs.length > 0 ? filteredLogs : rawLogs, timeRange),
@@ -171,18 +268,15 @@ export function LogsContainer() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <LogsTableHeader columnVisibility={columnVisibility} />
+        <LogsTableHeader
+          columnVisibility={columnVisibility}
+          isAllSelected={isAllSelected}
+          isSomeSelected={isSomeSelected}
+          onToggleSelectAll={handleToggleSelectAll}
+        />
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden divide-y divide-border/30 custom-scrollbar-thin">
-          {!hasAnyTypeSelected ? (
-            <div className="h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
-              <Terminal className="w-10 h-10 opacity-20 text-primary" />
-              <p className="font-semibold text-foreground text-xs font-sans">No log type selected</p>
-              <p className="text-[11px] text-muted-foreground/60 font-sans">
-                Select at least one Log Type from the left filter panel.
-              </p>
-            </div>
-          ) : filteredLogs.length === 0 ? (
+          {filteredLogs.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
               <Terminal className="w-10 h-10 opacity-20 text-primary" />
               <p className="font-semibold text-foreground text-xs font-sans">No matching events</p>
@@ -198,6 +292,8 @@ export function LogsContainer() {
                 key={log.id}
                 log={log}
                 isSelected={selectedLog?.id === log.id}
+                isRowSelected={selectedRowIds.has(log.id)}
+                onToggleSelectRow={handleToggleSelectRow}
                 visibleCols={visibleCols}
                 copiedId={copiedId}
                 onSelect={() => setSelectedLog(selectedLog?.id === log.id ? null : log)}
@@ -211,6 +307,9 @@ export function LogsContainer() {
           isLivePaused={isLivePaused}
           filteredCount={filteredLogs.length}
           totalCount={totalCount}
+          selectedCount={selectedRowIds.size}
+          onClearSelection={() => setSelectedRowIds(new Set())}
+          onCopySelected={handleCopySelected}
         />
 
         {selectedLog && (

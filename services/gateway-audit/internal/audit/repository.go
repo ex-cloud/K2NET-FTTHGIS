@@ -20,7 +20,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 func (r *Repository) RunMigrations(ctx context.Context) error {
 	_, err := r.db.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS audit_events (
-			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			id UUID NOT NULL DEFAULT gen_random_uuid(),
 			tenant_slug VARCHAR(100) NOT NULL,
 			actor_id VARCHAR(255) NOT NULL,
 			actor_role VARCHAR(100),
@@ -31,22 +31,42 @@ func (r *Repository) RunMigrations(ctx context.Context) error {
 			old_value JSONB,
 			new_value JSONB,
 			metadata JSONB,
-			occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-		);
+			occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			PRIMARY KEY (id, occurred_at)
+		) PARTITION BY RANGE (occurred_at);
+		CREATE TABLE IF NOT EXISTS audit_events_default PARTITION OF audit_events DEFAULT;
 		CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_events(tenant_slug, occurred_at DESC);
 		CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_events(actor_id, occurred_at DESC);
 		CREATE INDEX IF NOT EXISTS idx_audit_events_occurred_at ON audit_events(occurred_at DESC);
 		CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_project ON audit_events(tenant_slug, (metadata->>'projectId'), occurred_at DESC);
 		CREATE INDEX IF NOT EXISTS idx_audit_events_group_occurred ON audit_events(((metadata->>'logGroup')), occurred_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_audit_events_type_occurred ON audit_events(((metadata->>'logType')), occurred_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_audit_events_severity_occurred ON audit_events(((metadata->>'severity')), occurred_at DESC);
 		CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_resource ON audit_events(tenant_slug, resource_type, occurred_at DESC);
 		CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_action ON audit_events(tenant_slug, action, occurred_at DESC);
-		CREATE OR REPLACE RULE no_update_audit AS ON UPDATE TO audit_events DO INSTEAD NOTHING;
-		CREATE OR REPLACE RULE no_delete_audit AS ON DELETE TO audit_events DO INSTEAD NOTHING;
 	`)
 	return err
 }
 
 func (r *Repository) CreateEvent(ctx context.Context, req *CreateAuditEventRequest) (*AuditEvent, error) {
+	// 1. Strict PII Sanitization
+	req.OldValue = SanitizeMap(req.OldValue)
+	req.NewValue = SanitizeMap(req.NewValue)
+	req.Metadata = SanitizeMap(req.Metadata)
+
+	if req.Metadata == nil {
+		req.Metadata = make(map[string]any)
+	}
+
+	// 2. Cryptographic Hash-Chaining
+	occurredAt := time.Now()
+	hash, prev := ComputeEventHash(
+		"", req.TenantSlug, req.ActorID, req.Action, req.ResourceType, req.ResourceID,
+		occurredAt, req.OldValue, req.NewValue, req.Metadata,
+	)
+	req.Metadata["hash"] = hash
+	req.Metadata["prevHash"] = prev
+
 	oldJSON, _ := json.Marshal(req.OldValue)
 	newJSON, _ := json.Marshal(req.NewValue)
 	metaJSON, _ := json.Marshal(req.Metadata)
@@ -55,12 +75,12 @@ func (r *Repository) CreateEvent(ctx context.Context, req *CreateAuditEventReque
 	var oldB, newB, metaB []byte
 	err := r.db.QueryRow(ctx, `
 		INSERT INTO audit_events 
-		  (tenant_slug, actor_id, actor_role, actor_ip, action, resource_type, resource_id, old_value, new_value, metadata)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		  (tenant_slug, actor_id, actor_role, actor_ip, action, resource_type, resource_id, old_value, new_value, metadata, occurred_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, tenant_slug, actor_id, actor_role, actor_ip, action, resource_type, resource_id, 
 		          old_value, new_value, metadata, occurred_at
 	`, req.TenantSlug, req.ActorID, req.ActorRole, req.ActorIP, req.Action, req.ResourceType, req.ResourceID, 
-		oldJSON, newJSON, metaJSON).Scan(
+		oldJSON, newJSON, metaJSON, occurredAt).Scan(
 		&ev.ID, &ev.TenantSlug, &ev.ActorID, &ev.ActorRole, &ev.ActorIP, &ev.Action, &ev.ResourceType, &ev.ResourceID,
 		&oldB, &newB, &metaB, &ev.OccurredAt,
 	)
@@ -164,6 +184,16 @@ func (r *Repository) QueryEventsWithFilter(ctx context.Context, filter QueryAudi
 	if filter.Category != "" {
 		whereClause += fmt.Sprintf(" AND (metadata->>'category') = $%d", argCount)
 		args = append(args, filter.Category)
+		argCount++
+	}
+	if filter.LogType != "" {
+		whereClause += fmt.Sprintf(" AND (metadata->>'logType') = $%d", argCount)
+		args = append(args, filter.LogType)
+		argCount++
+	}
+	if filter.ServiceSource != "" {
+		whereClause += fmt.Sprintf(" AND (metadata->>'serviceSource') = $%d", argCount)
+		args = append(args, filter.ServiceSource)
 		argCount++
 	}
 	if filter.Search != "" {
@@ -358,4 +388,60 @@ func (r *Repository) CleanupExpiredEvents(ctx context.Context, retentionDays int
 	}
 
 	return tag.RowsAffected(), nil
+}
+
+func (r *Repository) GetMaterializedSummary(ctx context.Context, tenantSlug string, hours int) ([]map[string]any, error) {
+	if hours <= 0 {
+		hours = 24
+	}
+	cutoff := time.Now().Add(-time.Duration(hours) * time.Hour)
+
+	query := `
+		SELECT log_group, log_type, severity, event_hour, total_count, error_count, last_event_at
+		FROM mv_audit_events_hourly_summary
+		WHERE event_hour >= $1
+	`
+	args := []any{cutoff}
+
+	if tenantSlug != "" && tenantSlug != "all" {
+		query += " AND tenant_slug = $2"
+		args = append(args, tenantSlug)
+	}
+
+	query += " ORDER BY event_hour DESC, total_count DESC"
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		// Fallback gracefully if view is not yet created
+		return []map[string]any{}, nil
+	}
+	defer rows.Close()
+
+	var result []map[string]any
+	for rows.Next() {
+		var logGroup, logType, severity string
+		var eventHour time.Time
+		var totalCount, errorCount int64
+		var lastEventAt *time.Time
+
+		if err := rows.Scan(&logGroup, &logType, &severity, &eventHour, &totalCount, &errorCount, &lastEventAt); err != nil {
+			return nil, err
+		}
+
+		result = append(result, map[string]any{
+			"logGroup":    logGroup,
+			"logType":     logType,
+			"severity":    severity,
+			"eventHour":   eventHour,
+			"totalCount":  totalCount,
+			"errorCount":  errorCount,
+			"lastEventAt": lastEventAt,
+		})
+	}
+	return result, nil
+}
+
+func (r *Repository) RefreshMaterializedView(ctx context.Context) error {
+	_, err := r.db.Exec(ctx, "SELECT refresh_audit_events_summary()")
+	return err
 }

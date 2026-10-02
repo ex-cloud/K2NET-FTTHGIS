@@ -197,4 +197,58 @@ class AuditAspectTest {
         assertThat(metadata.get("impersonationSessionId")).isEqualTo(sessionId.toString());
         assertThat(metadata.get("realActorId")).isEqualTo(realActorId.toString());
     }
+
+    public static class DummyTaskResult {
+        private final String obsidianRef;
+        public DummyTaskResult(String obsidianRef) { this.obsidianRef = obsidianRef; }
+        public String getObsidianRef() { return obsidianRef; }
+    }
+
+    public DummyTaskResult dummyCreateTask() { return new DummyTaskResult("PRJ-2026-10-001"); }
+
+    @Test
+    @DisplayName("Should resolve scope to SYSTEM and evaluate #result when no org_slug is present")
+    void testSystemScopeAndResultBinding() throws Throwable {
+        Method method = getClass().getMethod("dummyCreateTask");
+        Object[] args = new Object[]{};
+        DummyTaskResult mockResult = new DummyTaskResult("PRJ-2026-10-001");
+
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(methodSignature.getDeclaringType()).thenReturn((Class) getClass());
+        when(joinPoint.getArgs()).thenReturn(args);
+        when(joinPoint.proceed()).thenReturn(mockResult);
+
+        AuditRequired annotation = mock(AuditRequired.class);
+        when(annotation.action()).thenReturn("TASK_CREATED");
+        when(annotation.resourceType()).thenReturn("TASK");
+        when(annotation.logGroup()).thenReturn("OPERATIONS");
+        when(annotation.severity()).thenReturn("INFO");
+        when(annotation.scope()).thenReturn("AUTO");
+        when(annotation.category()).thenReturn("TASK");
+        when(annotation.tenantSlugExpression()).thenReturn("");
+        when(annotation.resourceIdExpression()).thenReturn("#result.obsidianRef");
+        when(annotation.projectIdExpression()).thenReturn("");
+
+        Object result = auditAspect.audit(joinPoint, annotation);
+        assertThat(result).isEqualTo(mockResult);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> metaCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(auditLoggingService).logEvent(
+                eq("system"),
+                eq("TASK_CREATED"),
+                eq("TASK"),
+                eq("PRJ-2026-10-001"),
+                isNull(),
+                isNull(),
+                metaCaptor.capture()
+        );
+
+        Map<String, Object> metadata = metaCaptor.getValue();
+        assertThat(metadata.get("scope")).isEqualTo("SYSTEM");
+        assertThat(metadata.get("logGroup")).isEqualTo("OPERATIONS");
+        assertThat(metadata.get("status")).isEqualTo("SUCCESS");
+    }
 }

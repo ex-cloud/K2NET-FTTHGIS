@@ -128,7 +128,7 @@ public class TaskService {
             resourceType = "TASK",
             logGroup = "OPERATIONS",
             category = "TASK",
-            resourceIdExpression = "#result.id.toString()"
+            resourceIdExpression = "#result != null && #result.obsidianRef != null && !#result.obsidianRef.isBlank() ? #result.obsidianRef : (#result != null && #result.id != null ? #result.id.toString() : '')"
     )
     public Task create(CreateTaskRequest request, String reporterId, UUID organizationId, boolean isSuperAdmin) {
         Organization org = organizationRepository.findById(organizationId)
@@ -381,8 +381,17 @@ public class TaskService {
         payload.put("scope", task.getScope() != null ? task.getScope().name() : TaskScope.PLATFORM_INTERNAL.name());
 
         Organization org = task.getOrganization();
-        payload.put("tenantName", org != null ? org.getName() : "");
-        payload.put("tenantSlug", org != null ? org.getSlug() : "");
+        String tenantName = "K2NET Platform";
+        String tenantSlug = "system";
+        if (task.getScope() == TaskScope.TENANT_INTERNAL || task.getScope() == TaskScope.TENANT_TO_PLATFORM) {
+            if (org != null) {
+                tenantName = org.getName() != null ? org.getName() : "";
+                tenantSlug = (org.getSlug() != null && !org.getSlug().isBlank() && !"default".equalsIgnoreCase(org.getSlug()))
+                        ? org.getSlug() : "system";
+            }
+        }
+        payload.put("tenantName", tenantName);
+        payload.put("tenantSlug", tenantSlug);
 
         String reporterName = "Belum diketahui";
         if (task.getReporterId() != null) {

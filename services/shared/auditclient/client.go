@@ -102,6 +102,49 @@ func (c *Client) Log(ctx context.Context, event Event, logGroup, serviceSource s
 	if serviceSource != "" {
 		event.Metadata["serviceSource"] = serviceSource
 	}
+
+	// Auto-derive logType from serviceSource if not explicitly provided
+	if _, hasType := event.Metadata["logType"]; !hasType && serviceSource != "" {
+		switch serviceSource {
+		case "notification-gateway":
+			event.Metadata["logType"] = "notification"
+		case "payment-gateway":
+			event.Metadata["logType"] = "payment"
+		case "storage-gateway":
+			event.Metadata["logType"] = "storage"
+		case "map-gateway":
+			event.Metadata["logType"] = "map"
+		case "gateway-olt":
+			event.Metadata["logType"] = "olt"
+		case "poller", "ftth-poller":
+			event.Metadata["logType"] = "poller"
+		case "gateway-export":
+			event.Metadata["logType"] = "export"
+		case "gateway-scheduler":
+			event.Metadata["logType"] = "scheduler"
+		case "gateway-whatsapp":
+			event.Metadata["logType"] = "whatsapp"
+		case "gateway-task":
+			event.Metadata["logType"] = "task"
+		case "gateway-ai":
+			event.Metadata["logType"] = "ai"
+		case "martin":
+			event.Metadata["logType"] = "martin"
+		}
+	}
+
+	// Normalize tenantSlug and auto-derive scope if missing
+	if event.TenantSlug == "" || event.TenantSlug == "default" || event.TenantSlug == "none" {
+		event.TenantSlug = "system"
+	}
+	if _, hasScope := event.Metadata["scope"]; !hasScope {
+		if event.TenantSlug == "system" {
+			event.Metadata["scope"] = "SYSTEM"
+		} else {
+			event.Metadata["scope"] = "ORGANIZATION"
+		}
+	}
+
 	event.Metadata["emittedAt"] = time.Now().UTC().Format(time.RFC3339)
 
 	// Snapshot values before goroutine to avoid race on caller's stack

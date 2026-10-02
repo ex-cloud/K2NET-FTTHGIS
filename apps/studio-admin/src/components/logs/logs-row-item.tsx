@@ -22,6 +22,8 @@ import {
 interface LogsRowItemProps {
   log: AuditStreamEntry;
   isSelected: boolean;
+  isRowSelected?: boolean;
+  onToggleSelectRow?: (id: string) => void;
   visibleCols: Set<string>;
   copiedId: string | null;
   onSelect: () => void;
@@ -408,6 +410,8 @@ function MessageCell({
 export function LogsRowItem({
   log,
   isSelected,
+  isRowSelected,
+  onToggleSelectRow,
   visibleCols,
   copiedId,
   onSelect,
@@ -434,13 +438,17 @@ export function LogsRowItem({
         className={`flex items-center px-4 py-1.5 font-mono text-[11px] transition-colors cursor-pointer group ${
           isSelected
             ? "bg-primary/10 text-foreground border-l-2 border-primary"
+            : isRowSelected
+            ? "bg-primary/5 text-foreground"
             : "hover:bg-muted/30 text-muted-foreground hover:text-foreground"
         }`}
       >
         <div className="w-[42px] shrink-0 flex items-center">
           <input
             type="checkbox"
+            checked={!!isRowSelected}
             onClick={(e) => e.stopPropagation()}
+            onChange={() => onToggleSelectRow?.(log.id)}
             className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
           />
         </div>
