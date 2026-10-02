@@ -239,11 +239,11 @@ export interface FilterAuditLogsOptions {
 }
 
 export function filterAuditLogs(
-  logs: AuditStreamEntry[],
-  searchQuery: string,
-  tenantFilter: string,
-  selectedLevels: Record<string, boolean>,
-  advancedFilters: Array<{ field: string; operator: string; value: string }>,
+  logs: AuditStreamEntry[] = [],
+  searchQuery: string = "",
+  tenantFilter: string = "",
+  selectedLevels: Record<string, boolean> = {},
+  advancedFilters: Array<{ field: string; operator: string; value: string }> = [],
   options?: {
     selectedSeverities?: Record<string, boolean>;
     impersonationOnly?: boolean;
@@ -251,29 +251,29 @@ export function filterAuditLogs(
     projectFilter?: string;
   }
 ): AuditStreamEntry[] {
-  let result = logs;
+  let result = Array.isArray(logs) ? logs : [];
 
-  if (tenantFilter.trim()) {
+  if (tenantFilter && tenantFilter.trim()) {
     const tf = tenantFilter.toLowerCase().trim();
-    result = result.filter((log) => (log.tenantSlug ?? "").toLowerCase().includes(tf));
+    result = result.filter((log) => (log?.tenantSlug ?? "").toLowerCase().includes(tf));
   }
 
   if (options?.scopeFilter && options.scopeFilter !== "ALL") {
     const targetScope = options.scopeFilter.toUpperCase();
-    result = result.filter((log) => (log.scope ?? "").toUpperCase() === targetScope);
+    result = result.filter((log) => (log?.scope ?? "").toUpperCase() === targetScope);
   }
 
   if (options?.projectFilter && options.projectFilter.trim()) {
     const pf = options.projectFilter.toLowerCase().trim();
     result = result.filter(
       (log) =>
-        (log.projectId ?? "").toLowerCase().includes(pf) ||
-        (log.projectName ?? "").toLowerCase().includes(pf)
+        (log?.projectId ?? "").toLowerCase().includes(pf) ||
+        (log?.projectName ?? "").toLowerCase().includes(pf)
     );
   }
 
   if (options?.impersonationOnly) {
-    result = result.filter((log) => Boolean(log.isImpersonated || log.realActorId));
+    result = result.filter((log) => Boolean(log?.isImpersonated || log?.realActorId));
   }
 
   if (options?.selectedSeverities) {

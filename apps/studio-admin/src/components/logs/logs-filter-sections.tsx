@@ -270,35 +270,3 @@ export function SeverityFilterSection({
     </Collapsible>
   );
 }
-
-export function ImpersonationFilterSection({
-  impersonationOnly,
-  setImpersonationOnly,
-}: {
-  impersonationOnly: boolean;
-  setImpersonationOnly: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
-  return (
-    <div className="pt-2 border-t border-border/40">
-      <label className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-purple-500/10 cursor-pointer transition-colors group">
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={impersonationOnly}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setImpersonationOnly(e.target.checked)}
-            className="w-3.5 h-3.5 rounded border-border text-purple-400 focus:ring-purple-400 accent-purple-500 cursor-pointer"
-          />
-          <span className="text-[11px] font-mono text-muted-foreground group-hover:text-purple-400 transition-colors">
-            🎭 Impersonation Only
-          </span>
-        </div>
-        {impersonationOnly && (
-          <span className="text-[9px] font-mono font-semibold text-purple-400 bg-purple-500/15 border border-purple-500/30 px-1 rounded">
-            ACTIVE
-          </span>
-        )}
-      </label>
-    </div>
-  );
-}

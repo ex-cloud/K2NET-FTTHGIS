@@ -81,7 +81,6 @@ import {
   LevelFilterSection,
   ScopeFilterSection,
   SeverityFilterSection,
-  ImpersonationFilterSection,
 } from "./logs-filter-sections";
 
 const EDGE_SUB_FILTERS = [
@@ -240,7 +239,6 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     selectedGroups, toggleGroup,
     selectedLevels, toggleLevel,
     selectedSeverities, toggleSeverity,
-    impersonationOnly, setImpersonationOnly,
     scopeFilter, setScopeFilter,
     projectFilter, setProjectFilter,
     edgeSubFilters, toggleEdgeSubFilter,
@@ -261,7 +259,6 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     Object.values(selectedGroups).some(Boolean) ||
     Object.values(selectedSeverities).some(Boolean) ||
     Object.values(edgeSubFilters).some(Boolean) ||
-    impersonationOnly ||
     scopeFilter !== "ALL" ||
     projectFilter.trim().length > 0 ||
     tenantFilter.trim().length > 0 ||
@@ -309,17 +306,6 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
           setProjectFilter={setProjectFilter}
         />
 
-        <SeverityFilterSection
-          selectedSeverities={selectedSeverities}
-          toggleSeverity={toggleSeverity}
-          severityCounts={severityCounts}
-        />
-
-        <ImpersonationFilterSection
-          impersonationOnly={impersonationOnly}
-          setImpersonationOnly={setImpersonationOnly}
-        />
-
         <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
           <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
             <span className="flex items-center gap-1.5">
@@ -364,6 +350,12 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
             </div>
           </CollapsibleContent>
         </Collapsible>
+
+        <SeverityFilterSection
+          selectedSeverities={selectedSeverities}
+          toggleSeverity={toggleSeverity}
+          severityCounts={severityCounts}
+        />
 
         <LevelFilterSection
           selectedLevels={selectedLevels}

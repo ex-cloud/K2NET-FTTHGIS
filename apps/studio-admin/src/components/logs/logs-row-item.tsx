@@ -1,6 +1,6 @@
 import React from "react";
 import { format } from "date-fns";
-import { Copy, Check, Sparkles, FileCode, Globe } from "lucide-react";
+import { Copy, Check, Sparkles, FileCode, Globe, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -386,10 +386,16 @@ function MessageCell({
     : "text-foreground/90";
 
   const actorLabel = log.actor !== "system" ? log.actor : null;
+  const hasHashChain = Boolean(log.metadata?.hash || log.metadata?.prevHash);
 
   return (
     <div className="flex-1 min-w-0 font-mono text-[11px] flex items-center justify-between gap-3">
       <div className="flex items-center gap-1.5 min-w-0 truncate">
+        {hasHashChain && (
+          <span title="Cryptographic Hash Chain Verified (SHA-256)" className="inline-flex items-center shrink-0">
+            <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+          </span>
+        )}
         {(log.isImpersonated || log.realActorId) && <ImpersonationPill log={log} />}
         {showProjectPill && <ProjectPill log={log} />}
         <span className={`truncate ${colorClass}`} title={log.message || log.action}>

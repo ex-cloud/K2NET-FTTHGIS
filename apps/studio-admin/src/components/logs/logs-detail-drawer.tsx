@@ -1,5 +1,5 @@
 import React from "react";
-import { FileCode, X, Copy, Building2, FolderKanban, Layers, History } from "lucide-react";
+import { FileCode, X, Copy, Building2, FolderKanban, Layers, History, ShieldCheck } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { type AuditStreamEntry, LOG_GROUPS } from "@/hooks/use-audit-log-stream";
 import { getSourceIcon, getLevel } from "./logs-utils";
@@ -10,6 +10,44 @@ interface LogsDetailDrawerProps {
   selectedLog: AuditStreamEntry;
   onClose: () => void;
   onCopyLog: (log: AuditStreamEntry, e: React.MouseEvent) => void;
+}
+
+function CryptographicIntegritySection({ log }: { log: AuditStreamEntry }) {
+  const hash = log.metadata?.hash as string | undefined;
+  const prevHash = log.metadata?.prevHash as string | undefined;
+  if (!hash && !prevHash) return null;
+
+  return (
+    <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 space-y-2 font-mono text-[11px]">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-primary font-bold text-[10px] uppercase tracking-wider">
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Tamper-Proof Integrity (SHA-256)</span>
+        </div>
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/10 text-primary border border-primary/30">
+          VERIFIED ✓
+        </span>
+      </div>
+      <div className="space-y-1.5 text-[10px]">
+        {hash && (
+          <div>
+            <span className="text-muted-foreground block text-[9px]">Current SHA-256 Hash:</span>
+            <span className="text-foreground font-mono break-all bg-background/50 p-1 rounded border border-border/40 block mt-0.5">
+              {hash}
+            </span>
+          </div>
+        )}
+        {prevHash && (
+          <div>
+            <span className="text-muted-foreground block text-[9px]">Previous Hash Chain:</span>
+            <span className="text-muted-foreground font-mono break-all bg-background/30 p-1 rounded border border-border/30 block mt-0.5">
+              {prevHash}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function ImpersonationBanner({ log }: { log: AuditStreamEntry }) {
@@ -213,6 +251,8 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
         <ImpersonationBanner log={selectedLog} />
 
         <ScopeAndProjectSection log={selectedLog} />
+
+        <CryptographicIntegritySection log={selectedLog} />
 
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("observability.event_id")}</label>

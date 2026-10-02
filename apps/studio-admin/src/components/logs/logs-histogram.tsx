@@ -1,5 +1,4 @@
-
-
+import { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -8,6 +7,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
+import { getAuthHeaders } from "@/lib/actions/gateways/common";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -16,6 +16,16 @@ export interface HistogramBucket {
   success: number; // count of success logs in this bucket
   warning: number; // count of warning logs
   error: number;   // count of error logs
+}
+
+export interface HourlySummaryItem {
+  logGroup: string;
+  logType: string;
+  severity: string;
+  eventHour: string;
+  totalCount: number;
+  errorCount: number;
+  lastEventAt?: string;
 }
 
 interface LogsHistogramProps {
@@ -76,9 +86,13 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export function LogsHistogram({ data, className }: LogsHistogramProps) {
+export function LogsHistogram({ data = [], className }: LogsHistogramProps) {
+  if (!data || data.length === 0) {
+    return null;
+  }
+
   return (
-    <div className={`px-4 pt-2 pb-0 ${className ?? ""}`}>
+    <div className={`px-4 pt-2 pb-0 min-h-[52px] ${className ?? ""}`}>
       <ResponsiveContainer width="100%" height={52}>
         <BarChart
           data={data}
@@ -129,6 +143,123 @@ export function LogsHistogram({ data, className }: LogsHistogramProps) {
   );
 }
 
+// ─── Helper: Build histogram data from CQRS Materialized Summary ─────────────
+
+export function mapAnalyticsSummaryToBuckets(
+  summaryList: HourlySummaryItem[],
+  hours: number = 24
+): HistogramBucket[] {
+  const now = Date.now();
+  const bucketCount = Math.min(hours, 24);
+  const hourMs = 60 * 60 * 1000;
+
+  // Initialize hourly slots
+  const bucketMap = new Map<string, HistogramBucket>();
+  const orderedKeys: string[] = [];
+
+  for (let i = bucketCount - 1; i >= 0; i--) {
+    const slotTime = new Date(now - i * hourMs);
+    const label = `${slotTime.getHours().toString().padStart(2, "0")}:00`;
+    const dateKey = `${slotTime.toISOString().substring(0, 13)}:00`;
+    orderedKeys.push(dateKey);
+    bucketMap.set(dateKey, {
+      time: label,
+      success: 0,
+      warning: 0,
+      error: 0,
+    });
+  }
+
+  // Aggregate items into hourly slots
+  if (Array.isArray(summaryList)) {
+    for (const item of summaryList) {
+      if (!item.eventHour) continue;
+      const hourKey = `${new Date(item.eventHour).toISOString().substring(0, 13)}:00`;
+      const bucket = bucketMap.get(hourKey);
+      if (bucket) {
+        const errors = Number(item.errorCount) || 0;
+        const total = Number(item.totalCount) || 0;
+        const success = Math.max(0, total - errors);
+
+        const sev = (item.severity || "").toUpperCase();
+        if (sev === "WARN" || sev === "WARNING") {
+          bucket.warning += total;
+        } else if (sev === "ERROR" || sev === "CRITICAL" || errors > 0) {
+          bucket.error += errors > 0 ? errors : total;
+          bucket.success += Math.max(0, total - errors);
+        } else {
+          bucket.success += success;
+        }
+      }
+    }
+  }
+
+  return orderedKeys.map((k) => bucketMap.get(k)!);
+}
+
+// ─── Hook: Fast Analytics Summary CQRS Stream (< 10ms) ───────────────────────
+
+export function useAuditAnalyticsSummary(
+  timeRange: string = "24h",
+  tenantSlug?: string
+): {
+  summaryBuckets: HistogramBucket[] | null;
+  loading: boolean;
+} {
+  const [summaryBuckets, setSummaryBuckets] = useState<HistogramBucket[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchSummary() {
+      let hours = 24;
+      if (timeRange.endsWith("h")) {
+        hours = parseInt(timeRange.replace("h", ""), 10) || 24;
+      } else if (timeRange.endsWith("d")) {
+        hours = (parseInt(timeRange.replace("d", ""), 10) || 1) * 24;
+      } else if (timeRange.endsWith("m")) {
+        hours = 1;
+      }
+
+      try {
+        setLoading(true);
+        const q = new URLSearchParams();
+        q.set("hours", String(hours));
+        if (tenantSlug && tenantSlug.trim() && tenantSlug !== "all") {
+          q.set("tenantSlug", tenantSlug.trim());
+        }
+
+        const res = await fetch(`/api/v1/audit/analytics/summary?${q.toString()}`, {
+          headers: getAuthHeaders(),
+          cache: "no-store",
+        });
+
+        if (!res.ok) throw new Error("Summary API unavailable");
+        const json = await res.json();
+        if (active && json?.success && Array.isArray(json.data) && json.data.length > 0) {
+          setSummaryBuckets(mapAnalyticsSummaryToBuckets(json.data, hours));
+        } else if (active) {
+          setSummaryBuckets(null);
+        }
+      } catch {
+        if (active) setSummaryBuckets(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    fetchSummary();
+    const timer = setInterval(fetchSummary, 30000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [timeRange, tenantSlug]);
+
+  return { summaryBuckets, loading };
+}
+
 // ─── Helper: Build histogram data from AuditStreamEntry[] ─────────────────────
 
 function formatBucketLabel(d: Date, totalSpanMs: number): string {
@@ -152,9 +283,10 @@ function formatBucketLabel(d: Date, totalSpanMs: number): string {
 }
 
 export function buildHistogramData(
-  logs: AuditStreamEntry[],
+  logs: AuditStreamEntry[] = [],
   timeRange?: string
 ): HistogramBucket[] {
+  const safeLogs = Array.isArray(logs) ? logs : [];
   const BUCKET_COUNT = 24;
   const now = Date.now();
 
@@ -188,19 +320,17 @@ export function buildHistogramData(
     }
   }
 
-  // If logs exist, check if they fall within [rangeStart, rangeEnd].
-  // If all logs are outside (e.g. historical data in dev/test), adapt window around the logs.
-  const validTimestamps = logs
-    .map((l) => new Date(l.timestamp).getTime())
+  // Safe min/max using reduce without stack-overflow risk
+  const validTimestamps = safeLogs
+    .map((l) => (l?.timestamp ? new Date(l.timestamp).getTime() : NaN))
     .filter((t) => !isNaN(t));
 
   if (validTimestamps.length > 0) {
-    const minLogTime = Math.min(...validTimestamps);
-    const maxLogTime = Math.max(...validTimestamps);
+    const minLogTime = validTimestamps.reduce((min, t) => Math.min(min, t), Infinity);
+    const maxLogTime = validTimestamps.reduce((max, t) => Math.max(max, t), -Infinity);
 
     const logsInWindow = validTimestamps.filter((t) => t >= rangeStart && t <= rangeEnd).length;
-    if (logsInWindow === 0) {
-      // Adapt window to cover the logs span with 5% padding
+    if (logsInWindow === 0 && isFinite(minLogTime) && isFinite(maxLogTime)) {
       const logSpan = Math.max(maxLogTime - minLogTime, 5 * 60 * 1000);
       const padding = Math.max(logSpan * 0.05, 60 * 1000);
       rangeStart = minLogTime - padding;
@@ -222,8 +352,9 @@ export function buildHistogramData(
     };
   });
 
-  // Bin logs into buckets
-  logs.forEach((log) => {
+  // Bin logs into buckets safely
+  safeLogs.forEach((log) => {
+    if (!log?.timestamp) return;
     const logTime = new Date(log.timestamp).getTime();
     if (isNaN(logTime) || logTime < rangeStart || logTime > rangeEnd) return;
 

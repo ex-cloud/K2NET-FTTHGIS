@@ -1,14 +1,69 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Terminal } from "lucide-react";
+import React, { useState, useMemo, useEffect, Component, type ErrorInfo, type ReactNode } from "react";
+import { Terminal, RefreshCcw, AlertTriangle } from "lucide-react";
 import { useReactTable, getCoreRowModel, type VisibilityState } from "@tanstack/react-table";
 import { useAuditLogStream, type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { LogsTopHeader } from "@/components/logs/logs-top-header";
-import { LogsHistogram, buildHistogramData } from "@/components/logs/logs-histogram";
+import { LogsHistogram, buildHistogramData, useAuditAnalyticsSummary } from "@/components/logs/logs-histogram";
 import { toast } from "sonner";
+import { Button } from "@k2net/ui";
 import { LOG_COLUMNS, filterAuditLogs } from "./logs-utils";
 import { LogsRowItem } from "./logs-row-item";
 import { LogsDetailDrawer } from "./logs-detail-drawer";
+
+interface LogsErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface LogsErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class LogsErrorBoundary extends Component<LogsErrorBoundaryProps, LogsErrorBoundaryState> {
+  constructor(props: LogsErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): LogsErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("[LogsContainer] Unhandled React error caught by boundary:", error, errorInfo);
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  override render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center bg-background font-sans">
+          <div className="rounded-2xl border border-border bg-card/70 p-6 shadow-lg backdrop-blur max-w-md w-full space-y-4">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h2 className="text-base font-bold text-foreground">Log Stream Issue</h2>
+            <p className="text-xs text-muted-foreground">
+              {this.state.error?.message || "An unexpected error occurred while processing log entries."}
+            </p>
+            <Button
+              onClick={this.handleReset}
+              className="w-full text-xs font-semibold gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <RefreshCcw className="w-3.5 h-3.5" />
+              Reset & Retry Stream
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function LogsTableHeader({
   columnVisibility,
@@ -127,7 +182,7 @@ function LogsStatusBar({
   );
 }
 
-export function LogsContainer() {
+function LogsContainerContent() {
   const {
     searchQuery,
     showHistogram,
@@ -137,7 +192,6 @@ export function LogsContainer() {
     selectedTypes,
     selectedLevels,
     selectedSeverities,
-    impersonationOnly,
     scopeFilter,
     projectFilter,
     setLogTypeCounts,
@@ -148,17 +202,21 @@ export function LogsContainer() {
     advancedFilters,
   } = useLogsFilter();
 
-  const { logs, rawLogs, timeFilteredLogs, totalCount, clearLogs } = useAuditLogStream("all", {
+  const { logs = [], rawLogs = [], timeFilteredLogs = [], totalCount = 0, clearLogs } = useAuditLogStream("all", {
     isPaused: isLivePaused,
     selectedTypes,
     timeRange,
   });
 
+  const { summaryBuckets } = useAuditAnalyticsSummary(timeRange, tenantFilter);
+
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
 
-  const scopedSourceLogs = timeFilteredLogs || rawLogs;
+  const scopedSourceLogs = useMemo(() => {
+    return (timeFilteredLogs && timeFilteredLogs.length > 0 ? timeFilteredLogs : rawLogs) || [];
+  }, [timeFilteredLogs, rawLogs]);
 
   const { logTypeCounts, levelCounts, severityCounts } = useMemo(() => {
     const typeCounts: Record<string, number> = {};
@@ -166,7 +224,9 @@ export function LogsContainer() {
     const sevCounts: Record<string, number> = { CRITICAL: 0, ERROR: 0, WARN: 0, INFO: 0 };
 
     for (const log of scopedSourceLogs) {
-      typeCounts[log.logType] = (typeCounts[log.logType] ?? 0) + 1;
+      if (!log) continue;
+      const lt = log.logType || "backend";
+      typeCounts[lt] = (typeCounts[lt] ?? 0) + 1;
       const lvl = (log.severity === "ERROR" || log.severity === "CRITICAL" || log.status === 500)
         ? "error"
         : (log.severity === "WARN" || (typeof log.status === "number" && log.status >= 400 && log.status < 500))
@@ -189,11 +249,10 @@ export function LogsContainer() {
     () =>
       filterAuditLogs(logs, searchQuery, tenantFilter, selectedLevels, advancedFilters, {
         selectedSeverities,
-        impersonationOnly,
         scopeFilter,
         projectFilter,
       }),
-    [logs, searchQuery, tenantFilter, selectedLevels, advancedFilters, selectedSeverities, impersonationOnly, scopeFilter, projectFilter]
+    [logs, searchQuery, tenantFilter, selectedLevels, advancedFilters, selectedSeverities, scopeFilter, projectFilter]
   );
 
   const isAllSelected = filteredLogs.length > 0 && filteredLogs.every((l) => selectedRowIds.has(l.id));
@@ -226,10 +285,12 @@ export function LogsContainer() {
     toast.success(`Copied ${selectedLogs.length} selected log events to clipboard.`);
   };
 
-  const histogramData = useMemo(
-    () => buildHistogramData(filteredLogs.length > 0 ? filteredLogs : rawLogs, timeRange),
-    [filteredLogs, rawLogs, timeRange]
-  );
+  const histogramData = useMemo(() => {
+    if (summaryBuckets && summaryBuckets.length > 0) {
+      return summaryBuckets;
+    }
+    return buildHistogramData(filteredLogs.length > 0 ? filteredLogs : rawLogs, timeRange);
+  }, [summaryBuckets, filteredLogs, rawLogs, timeRange]);
 
   const table = useReactTable({
     data: filteredLogs,
@@ -321,5 +382,13 @@ export function LogsContainer() {
         )}
       </div>
     </div>
+  );
+}
+
+export function LogsContainer() {
+  return (
+    <LogsErrorBoundary>
+      <LogsContainerContent />
+    </LogsErrorBoundary>
   );
 }
