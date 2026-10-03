@@ -134,12 +134,12 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const coordX = clientX !== undefined ? clientX - rect.left : rect.width / 2;
-      const popoverWidth = 230;
+      const popoverWidth = 240;
       const left = Math.max(8, Math.min(coordX - popoverWidth / 2, rect.width - popoverWidth - 8));
       setSelectedBucket({
         bucket,
         x: left,
-        y: 4,
+        y: 56,
       });
     }
   };
@@ -224,16 +224,16 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
         </BarChart>
       </ResponsiveContainer>
 
-      {/* Interactive Click Popover Modal (matching Supabase drill-down UX) */}
+      {/* Interactive Click Popover Modal (positioned cleanly below the histogram bar) */}
       {selectedBucket && (
         <div
           ref={popoverRef}
           style={{ left: `${selectedBucket.x}px`, top: `${selectedBucket.y}px` }}
-          className="absolute z-50 rounded-lg border border-border bg-card text-card-foreground shadow-2xl p-2 min-w-[220px] text-xs font-mono animate-in fade-in zoom-in-95 duration-100"
+          className="absolute z-50 rounded-xl border border-border bg-card text-card-foreground shadow-2xl p-2.5 min-w-[240px] text-xs font-mono animate-in fade-in zoom-in-95 duration-100"
         >
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground pb-1.5 mb-1.5 border-b border-border/50">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground pb-1.5 mb-2 border-b border-border/50">
             <span className="font-semibold text-foreground truncate pr-2">
-              {selectedBucket.bucket.rangeLabel || selectedBucket.bucket.time}
+              {selectedBucket.bucket.fullDateLabel || selectedBucket.bucket.rangeLabel || selectedBucket.bucket.time}
             </span>
             <button
               type="button"
@@ -243,6 +243,22 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
             >
               <X className="w-3 h-3" />
             </button>
+          </div>
+
+          {/* Quick counts summary */}
+          <div className="flex items-center justify-between text-[10px] pb-2 mb-2 border-b border-border/40 px-0.5">
+            <span className="flex items-center gap-1 text-rose-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+              {selectedBucket.bucket.error} Err
+            </span>
+            <span className="flex items-center gap-1 text-amber-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              {selectedBucket.bucket.warning} Warn
+            </span>
+            <span className="flex items-center gap-1 text-primary">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              {selectedBucket.bucket.success} OK
+            </span>
           </div>
 
           <button
@@ -255,9 +271,9 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
               }
               setSelectedBucket(null);
             }}
-            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-foreground hover:bg-muted/80 hover:text-primary transition-colors cursor-pointer font-sans"
+            className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-xs"
           >
-            <Search className="w-3.5 h-3.5 text-primary shrink-0" />
+            <Search className="w-3.5 h-3.5 shrink-0" />
             <span>Filter logs to selected range</span>
           </button>
         </div>

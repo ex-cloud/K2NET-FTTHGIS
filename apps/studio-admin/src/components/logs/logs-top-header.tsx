@@ -18,6 +18,7 @@ import { ColumnPicker } from "./logs-column-picker";
 import { SupabaseFilterPalette } from "./logs-supabase-filter-palette";
 import { LogsHeaderActions } from "./logs-header-actions";
 import { LogsTimeRangeInlinePill } from "./logs-time-range-inline-pill";
+import { LogsIntegrityVerifierModal } from "./logs-integrity-verifier-modal";
 import {
   type FilterFieldConfig,
   type SmartParseResult,
@@ -66,6 +67,7 @@ export function LogsTopHeader({
   const [showTopTimePicker, setShowTopTimePicker] = React.useState(false);
   const timeRangePillRef = React.useRef<HTMLDivElement>(null);
   const [showColumnPicker, setShowColumnPicker] = React.useState(false);
+  const [showIntegrityModal, setShowIntegrityModal] = React.useState(false);
   const columnBtnRef = React.useRef<HTMLButtonElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -281,6 +283,7 @@ export function LogsTopHeader({
         columnBtnRef={columnBtnRef}
         isLivePaused={isLivePaused}
         setIsLivePaused={setIsLivePaused}
+        onOpenIntegrityModal={() => setShowIntegrityModal(true)}
       />
 
       {showPalette && (
@@ -324,6 +327,13 @@ export function LogsTopHeader({
           onClose={() => setShowColumnPicker(false)}
         />
       )}
+
+      <LogsIntegrityVerifierModal
+        open={showIntegrityModal}
+        onOpenChange={setShowIntegrityModal}
+        logs={filteredLogs}
+        tenantSlug={tenantFilter}
+      />
     </div>
   );
 }

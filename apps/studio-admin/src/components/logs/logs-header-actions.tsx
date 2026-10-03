@@ -7,6 +7,7 @@ import {
   FileSpreadsheet,
   Play,
   Columns3,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
@@ -23,6 +24,7 @@ export interface LogsHeaderActionsProps {
   columnBtnRef: React.RefObject<HTMLButtonElement | null>;
   isLivePaused: boolean;
   setIsLivePaused: React.Dispatch<React.SetStateAction<boolean>>;
+  onOpenIntegrityModal: () => void;
 }
 
 export function LogsHeaderActions({
@@ -35,6 +37,7 @@ export function LogsHeaderActions({
   columnBtnRef,
   isLivePaused,
   setIsLivePaused,
+  onOpenIntegrityModal,
 }: LogsHeaderActionsProps) {
   const { t } = useTranslation();
 
@@ -95,12 +98,23 @@ export function LogsHeaderActions({
         </Button>
       </ActionTooltip>
 
+      <ActionTooltip label="Audit Forensic Integrity" shortcut="Alt+I">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onOpenIntegrityModal}
+          className="h-7 w-7 p-0 text-primary hover:text-primary-foreground hover:bg-primary/20 border border-primary/30 rounded-md"
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+        </Button>
+      </ActionTooltip>
+
       <ActionTooltip label="Export RFC-4180 CSV" shortcut="Alt+S">
         <Button
           variant="ghost"
           size="sm"
           onClick={handleExportCsv}
-          className="h-7 w-7 p-0 text-primary hover:text-primary-foreground hover:bg-primary/20 border border-primary/30 rounded-md"
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md"
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
         </Button>
