@@ -174,5 +174,19 @@
   "reset_zoom": "Reset Zoom (100%)",
   "reset_view_nodes": "Reset View & Node Positions",
   "apply": "Apply",
-  "path_copied": "Path {{path}} copied!"
+  "path_copied": "Path {{path}} copied!",
+  "quick_rolling_presets": "Quick Rolling Presets",
+  "custom_historical_range": "Custom Historical Range",
+  "rolling_desc": "Rolling window relative to current time (Live)",
+  "historical_desc": "Fixed time period for audit & forensics",
+  "yesterday": "Yesterday",
+  "this_week": "This Week",
+  "last_week": "Last Week",
+  "this_month": "This Month",
+  "prev_month": "Previous Month",
+  "full_day": "Full Day (24h)",
+  "working_hours": "Work Hours (08-17)",
+  "apply_range": "Apply Range",
+  "cancel": "Cancel",
+  "staged_preview": "Staged Range Preview:"
 }

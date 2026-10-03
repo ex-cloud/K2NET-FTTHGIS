@@ -174,5 +174,19 @@
   "reset_zoom": "Reset Zoom (100%)",
   "reset_view_nodes": "Reset View & Posisi Node",
   "apply": "Terapkan",
-  "path_copied": "Path {{path}} disalin!"
+  "path_copied": "Path {{path}} disalin!",
+  "quick_rolling_presets": "Preset Waktu Rolling",
+  "custom_historical_range": "Rentang Forensik Kustom",
+  "rolling_desc": "Jendela waktu bergulir dari sekarang (Live)",
+  "historical_desc": "Rentang waktu terkunci untuk audit & forensik",
+  "yesterday": "Kemarin",
+  "this_week": "Minggu Ini",
+  "last_week": "Minggu Lalu",
+  "this_month": "Bulan Ini",
+  "prev_month": "Bulan Lalu",
+  "full_day": "Sehari Penuh (24j)",
+  "working_hours": "Jam Kerja (08-17)",
+  "apply_range": "Terapkan Rentang",
+  "cancel": "Batal",
+  "staged_preview": "Pratinjau Rentang Terpilih:"
 }

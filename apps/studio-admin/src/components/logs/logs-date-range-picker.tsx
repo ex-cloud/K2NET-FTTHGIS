@@ -1,315 +1,146 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
-import { ChevronDown, Clock, History, CalendarRange } from "lucide-react";
-import { Calendar, cn } from "@k2net/ui";
+import {
+  ChevronDown,
+  Clock,
+  CalendarRange,
+  Lock,
+  Copy,
+  Check,
+  Calendar as CalendarIcon,
+} from "lucide-react";
+import { cn } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
 import { useTranslation } from "@k2net/i18n";
+import {
+  parseValue,
+  getDisplayLabel,
+  getPresetRange,
+  getHistoricalShortcutRange,
+  parseTimeStr,
+  type HistoricalShortcutId,
+} from "./logs-date-range-types";
+import { PresetsTabContent } from "./logs-date-range-presets-tab";
+import { CustomHistoricalTabContent } from "./logs-date-range-custom-tab";
 
-export const PRESET_VALUES = [
-  { key: "preset_last_15m", value: "15m", fallback: "Last 15 minutes" },
-  { key: "preset_last_30m", value: "30m", fallback: "Last 30 minutes" },
-  { key: "preset_last_60m", value: "60m", fallback: "Last 1 hour" },
-  { key: "preset_last_3h", value: "3h", fallback: "Last 3 hours" },
-  { key: "preset_last_24h", value: "24h", fallback: "Last 24 hours" },
-  { key: "preset_last_7d", value: "7d", fallback: "Last 7 days" },
-  { key: "preset_last_14d", value: "14d", fallback: "Last 14 days" },
-  { key: "preset_last_30d", value: "30d", fallback: "Last 30 days (1 mo)" },
-  { key: "preset_last_60d", value: "60d", fallback: "Last 60 days (2 mo)" },
-  { key: "preset_last_90d", value: "90d", fallback: "Last 90 days (Quarter)" },
-];
+export { PRESET_VALUES, HISTORICAL_SHORTCUTS } from "./logs-date-range-types";
 
 interface LogsDateRangePickerProps {
   value: string;
   onChange: (value: string) => void;
 }
 
-function parseValue(value: string): { preset: string | null; range: DateRange | undefined } {
-  if (value.startsWith("custom:")) {
-    const parts = value.substring(7).split("_");
-    if (parts.length === 2) {
-      const from = new Date(parts[0]);
-      const to = new Date(parts[1]);
-      return { preset: null, range: { from, to } };
-    }
-  }
-  const normVal = value === "1h" ? "60m" : value;
-  return { preset: normVal, range: undefined };
-}
-
-function getDisplayLabel(value: string, t: ReturnType<typeof useTranslation>["t"]): string {
-  if (value.startsWith("custom:")) {
-    const parts = value.substring(7).split("_");
-    if (parts.length === 2) {
-      try {
-        const from = new Date(parts[0]);
-        const to = new Date(parts[1]);
-        const sameYear = from.getFullYear() === to.getFullYear();
-        const fromFmt = sameYear ? format(from, "MMM d, HH:mm") : format(from, "yy/MM/dd HH:mm");
-        const toFmt = sameYear ? format(to, "MMM d, HH:mm") : format(to, "yy/MM/dd HH:mm");
-        return `${fromFmt} → ${toFmt}`;
-      } catch {
-        return value;
-      }
-    }
-  }
-  const normVal = value === "1h" ? "60m" : value;
-  const preset = PRESET_VALUES.find((p) => p.value === value || p.value === normVal);
-  if (!preset) return value;
-  const transKey = `observability.${preset.key}`;
-  const translated = t(transKey);
-  if (!translated || translated === transKey || translated.startsWith("observability.preset_")) {
-    return preset.fallback;
-  }
-  return translated;
-}
-
-function getPresetRange(preset: string): { from: Date; to: Date } {
-  const to = new Date();
-  const norm = preset === "1h" ? "60m" : preset;
-  const match = norm.match(/^(\d+)([mhd])$/i);
-  if (match) {
-    const amount = parseInt(match[1], 10);
-    const unit = match[2].toLowerCase();
-    let multiplier = 60 * 1000;
-    if (unit === "h") multiplier = 60 * 60 * 1000;
-    if (unit === "d") multiplier = 24 * 60 * 60 * 1000;
-    return { from: new Date(to.getTime() - amount * multiplier), to };
-  }
-  return { from: new Date(to.getTime() - 60 * 60 * 1000), to };
-}
-
-function parseTimeStr(t: string): { h: number; m: number; s: number } {
-  const [h = 0, m = 0, s = 0] = t.split(":").map(Number);
-  return { h, m, s };
-}
-
-function PresetsSidebar({
-  activePreset,
-  customRelativeInput,
-  setCustomRelativeInput,
-  onCustomSubmit,
-  onPresetSelect,
+function TabButtons({
+  activeTab,
+  setActiveTab,
 }: {
-  activePreset: string | null;
-  customRelativeInput: string;
-  setCustomRelativeInput: (v: string) => void;
-  onCustomSubmit: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  onPresetSelect: (val: string) => void;
+  activeTab: "presets" | "custom";
+  setActiveTab: (t: "presets" | "custom") => void;
 }) {
   const { t } = useTranslation();
   return (
-    <div className="w-[210px] shrink-0 border-r border-border/40 flex flex-col p-2.5 gap-1 bg-muted/10">
-      <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-medium text-muted-foreground">
-        <Clock className="w-3 h-3 text-primary" />
-        <span>Quick Presets</span>
-      </div>
-
-      <input
-        type="text"
-        placeholder="e.g. 2h, 45m, 60d"
-        value={customRelativeInput}
-        onChange={(e) => setCustomRelativeInput(e.target.value)}
-        onKeyDown={onCustomSubmit}
-        className="flex w-full border border-border bg-background placeholder:text-muted-foreground/50 px-2.5 py-1.5 mb-1.5 text-xs h-7 rounded-md focus:outline-none focus:border-primary/80 transition-colors font-mono"
-      />
-
-      <div className="flex flex-col gap-0.5 overflow-y-auto max-h-[280px] pr-0.5 custom-scrollbar">
-        {PRESET_VALUES.map((p) => {
-          const isActive =
-            activePreset === p.value ||
-            (activePreset === "60m" && (p.value === "1h" || p.value === "60m")) ||
-            (activePreset === "1h" && (p.value === "60m" || p.value === "1h"));
-          const transKey = `observability.${p.key}`;
-          const trans = t(transKey);
-          const label = !trans || trans === transKey || trans.startsWith("observability.preset_") ? p.fallback : trans;
-          return (
-            <button
-              type="button"
-              key={p.value}
-              onClick={() => onPresetSelect(p.value)}
-              className={cn(
-                "px-2.5 py-1.5 flex items-center justify-between text-xs w-full cursor-pointer transition-all rounded-md text-left font-sans",
-                isActive
-                  ? "bg-primary/15 text-primary font-semibold"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              )}
-            >
-              <span className="flex items-center gap-2 truncate">
-                {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                {label}
-              </span>
-              <span className="text-[10px] font-mono text-muted-foreground/60 shrink-0">{p.value}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TimePickerInputs({
-  fromTime,
-  toTime,
-  setFromTime,
-  setToTime,
-  onResetTime,
-}: {
-  fromTime: string;
-  toTime: string;
-  setFromTime: (t: string) => void;
-  setToTime: (t: string) => void;
-  onResetTime: () => void;
-}) {
-  const { t } = useTranslation();
-  const { h: fh, m: fm, s: fs } = parseTimeStr(fromTime);
-  const { h: th, m: tm, s: ts } = parseTimeStr(toTime);
-
-  const fromH = String(fh).padStart(2, "0");
-  const fromM = String(fm).padStart(2, "0");
-  const fromS = String(fs).padStart(2, "0");
-  const toH = String(th).padStart(2, "0");
-  const toM = String(tm).padStart(2, "0");
-  const toS = String(ts).padStart(2, "0");
-
-  return (
-    <div className="w-full flex px-3 py-2 gap-2 items-center justify-between border-b border-border/40 bg-muted/5">
-      <div className="flex-1 flex gap-2 font-mono items-center">
-        <span className="text-[11px] text-muted-foreground font-sans">Start:</span>
-        <div className="flex-1 flex h-7 items-center justify-center gap-0.5 rounded-md border border-border bg-background text-xs px-1.5 hover:border-border/80 transition-colors">
-          <input
-            type="text"
-            pattern="[0-23]*"
-            placeholder="00"
-            value={fromH}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setFromTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromM}:${fromS}`);
-            }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
-          />
-          <span className="text-muted-foreground/40">:</span>
-          <input
-            type="text"
-            pattern="[0-59]*"
-            placeholder="00"
-            value={fromM}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setFromTime(`${fromH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromS}`);
-            }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
-          />
-          <span className="text-muted-foreground/40">:</span>
-          <input
-            type="text"
-            pattern="[0-59]*"
-            placeholder="00"
-            value={fromS}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setFromTime(`${fromH}:${fromM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
-            }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
-          />
-        </div>
-
-        <span className="text-[11px] text-muted-foreground font-sans ml-1">End:</span>
-        <div className="flex-1 flex h-7 items-center justify-center gap-0.5 rounded-md border border-border bg-background text-xs px-1.5 hover:border-border/80 transition-colors">
-          <input
-            type="text"
-            pattern="[0-23]*"
-            placeholder="00"
-            value={toH}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setToTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${toM}:${toS}`);
-            }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
-          />
-          <span className="text-muted-foreground/40">:</span>
-          <input
-            type="text"
-            pattern="[0-59]*"
-            placeholder="00"
-            value={toM}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setToTime(`${toH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${toS}`);
-            }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
-          />
-          <span className="text-muted-foreground/40">:</span>
-          <input
-            type="text"
-            pattern="[0-59]*"
-            placeholder="00"
-            value={toS}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setToTime(`${toH}:${toM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
-            }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
-          />
-        </div>
-      </div>
+    <div className="flex border-b border-border/50 bg-muted/20 p-1.5 gap-1.5">
+      <button
+        type="button"
+        onClick={() => setActiveTab("presets")}
+        className={cn(
+          "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer",
+          activeTab === "presets"
+            ? "bg-card text-foreground shadow-sm border border-border/80 font-semibold"
+            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+        )}
+      >
+        <Clock className="w-3.5 h-3.5 text-primary" />
+        <span>{t("observability.quick_rolling_presets") || "Quick Rolling Presets"}</span>
+        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary font-mono ml-auto">
+          Live
+        </span>
+      </button>
 
       <button
         type="button"
-        onClick={onResetTime}
-        title={t("observability.reset_times") || "Reset times"}
-        className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors shrink-0"
+        onClick={() => setActiveTab("custom")}
+        className={cn(
+          "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer",
+          activeTab === "custom"
+            ? "bg-card text-foreground shadow-sm border border-border/80 font-semibold"
+            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+        )}
       >
-        <History className="w-3.5 h-3.5" />
+        <CalendarRange className="w-3.5 h-3.5 text-primary" />
+        <span>{t("observability.custom_historical_range") || "Custom Historical Range"}</span>
+        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-muted text-muted-foreground font-mono ml-auto">
+          Forensic
+        </span>
       </button>
     </div>
   );
 }
 
-function CalendarFooterActions({
-  hasRange,
+function FooterActions({
+  previewText,
+  isLiveRolling,
+  copied,
   onCopy,
-  onToday,
+  onCancel,
   onApply,
+  canApply,
 }: {
-  hasRange: boolean;
+  previewText: string;
+  isLiveRolling: boolean;
+  copied: boolean;
   onCopy: () => void;
-  onToday: () => void;
+  onCancel: () => void;
   onApply: () => void;
+  canApply: boolean;
 }) {
   const { t } = useTranslation();
+
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border/40 bg-muted/5">
-      <div className="flex items-center gap-1.5">
+    <div className="flex items-center justify-between gap-3 px-3 py-2.5 border-t border-border/50 bg-muted/20">
+      <div className="flex items-center gap-1.5 min-w-0">
+        {isLiveRolling ? (
+          <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+        ) : (
+          <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
+        )}
+        <span className="text-[11px] font-mono text-muted-foreground truncate" title={previewText}>
+          {previewText}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
         <button
           type="button"
           onClick={onCopy}
-          className="inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors hover:bg-muted text-xs h-7 px-2.5 text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1 justify-center text-center font-normal rounded-md transition-colors hover:bg-muted text-xs h-7 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
+          title="Copy range string to clipboard"
         >
-          <span className="truncate">{t("observability.copy_range") || "Copy Range"}</span>
+          {copied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+          <span>{copied ? "Copied" : (t("observability.copy") || "Copy")}</span>
         </button>
-      </div>
 
-      <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={onToday}
-          className="inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors border border-border bg-background hover:bg-muted text-xs h-7 px-2.5 text-foreground"
+          onClick={onCancel}
+          className="inline-flex items-center justify-center text-center font-normal rounded-md transition-colors border border-border bg-background hover:bg-muted text-xs h-7 px-2.5 text-foreground cursor-pointer"
         >
-          <span className="truncate">{t("observability.today") || "Today"}</span>
+          {t("observability.cancel") || "Cancel"}
         </button>
+
         <button
           type="button"
           onClick={onApply}
-          disabled={!hasRange}
+          disabled={!canApply}
           className={cn(
-            "inline-flex items-center justify-center cursor-pointer text-center font-medium rounded-md transition-colors text-xs h-7 px-3",
-            hasRange
+            "inline-flex items-center justify-center text-center font-medium rounded-md transition-colors text-xs h-7 px-3.5 cursor-pointer",
+            canApply
               ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-              : "bg-muted/40 text-muted-foreground/50 cursor-not-allowed border border-border/40"
+              : "bg-muted text-muted-foreground/50 cursor-not-allowed border border-border/40"
           )}
         >
-          <span className="truncate">{t("observability.apply") || "Apply Range"}</span>
+          {t("observability.apply_range") || "Apply Range"}
         </button>
       </div>
     </div>
@@ -320,14 +151,20 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
 
-  const { preset: activePreset, range: customRange } = parseValue(value);
+  const initialParsed = React.useMemo(() => parseValue(value), [value]);
   const today = React.useMemo(() => new Date(), []);
-  const [localRange, setLocalRange] = React.useState<DateRange | undefined>(customRange);
+
+  const [activeTab, setActiveTab] = React.useState<"presets" | "custom">(
+    value.startsWith("custom:") ? "custom" : "presets"
+  );
+  const [stagedPreset, setStagedPreset] = React.useState<string | null>(initialParsed.preset);
+  const [localRange, setLocalRange] = React.useState<DateRange | undefined>(initialParsed.range);
   const [displayMonth, setDisplayMonth] = React.useState<Date>(() => {
-    if (customRange?.from) return customRange.from;
+    if (initialParsed.range?.from) return initialParsed.range.from;
     return today;
   });
   const [fromTime, setFromTime] = React.useState("00:00:00");
@@ -335,56 +172,46 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const [customRelativeInput, setCustomRelativeInput] = React.useState("");
   const [coords, setCoords] = React.useState({ top: 0, left: 0 });
 
-  const handleCustomRelativeSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const val = customRelativeInput.trim();
-      const match = val.match(/^(\d+)([mhd])$/i);
-      if (match) {
-        const amount = parseInt(match[1], 10);
-        const unit = match[2].toLowerCase();
-        let mult = 60 * 1000;
-        if (unit === "h") mult = 60 * 60 * 1000;
-        if (unit === "d") mult = 24 * 60 * 60 * 1000;
-
-        const to = new Date();
-        const from = new Date(to.getTime() - amount * mult);
-        onChange(`custom:${from.toISOString()}_${to.toISOString()}`);
-        setOpen(false);
-      }
-    }
-  };
-
+  // Sync staging state whenever modal opens or value changes
   React.useEffect(() => {
     if (open) {
-      const { preset, range } = parseValue(value);
-      const active = preset ? getPresetRange(preset) : range;
-      if (active?.from) {
-        const h = String(active.from.getHours()).padStart(2, "0");
-        const m = String(active.from.getMinutes()).padStart(2, "0");
-        const s = String(active.from.getSeconds()).padStart(2, "0");
-        setFromTime(`${h}:${m}:${s}`);
-        setDisplayMonth(active.from);
+      const parsed = parseValue(value);
+      if (value.startsWith("custom:")) {
+        setActiveTab("custom");
+        setStagedPreset(null);
+        setLocalRange(parsed.range);
+        if (parsed.range?.from) {
+          setDisplayMonth(parsed.range.from);
+          const fh = String(parsed.range.from.getHours()).padStart(2, "0");
+          const fm = String(parsed.range.from.getMinutes()).padStart(2, "0");
+          const fs = String(parsed.range.from.getSeconds()).padStart(2, "0");
+          setFromTime(`${fh}:${fm}:${fs}`);
+        }
+        if (parsed.range?.to) {
+          const th = String(parsed.range.to.getHours()).padStart(2, "0");
+          const tm = String(parsed.range.to.getMinutes()).padStart(2, "0");
+          const ts = String(parsed.range.to.getSeconds()).padStart(2, "0");
+          setToTime(`${th}:${tm}:${ts}`);
+        }
       } else {
-        setDisplayMonth(new Date());
+        setActiveTab("presets");
+        setStagedPreset(parsed.preset || "24h");
+        const presetRange = getPresetRange(parsed.preset || "24h");
+        setLocalRange(presetRange);
+        setDisplayMonth(presetRange.from);
       }
-      if (active?.to) {
-        const h = String(active.to.getHours()).padStart(2, "0");
-        const m = String(active.to.getMinutes()).padStart(2, "0");
-        const s = String(active.to.getSeconds()).padStart(2, "0");
-        setToTime(`${h}:${m}:${s}`);
-      }
-      setLocalRange(range);
     }
   }, [open, value]);
 
-  React.useEffect(() => { setMounted(true); }, []);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const updateCoords = React.useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const popupWidth = 510;
-      const popupHeight = 380;
+      const popupWidth = 530;
+      const popupHeight = 440;
       const margin = 8;
       const isOnRightHalf = rect.left + rect.width / 2 > window.innerWidth / 2;
       const rawLeft = isOnRightHalf
@@ -417,8 +244,10 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
     function handleOutside(e: MouseEvent) {
       const target = e.target as Node;
       if (
-        triggerRef.current && !triggerRef.current.contains(target) &&
-        contentRef.current && !contentRef.current.contains(target)
+        triggerRef.current &&
+        !triggerRef.current.contains(target) &&
+        contentRef.current &&
+        !contentRef.current.contains(target)
       ) {
         setOpen(false);
       }
@@ -427,8 +256,36 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [open]);
 
+  const handleRelativeSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const val = customRelativeInput.trim();
+      const match = val.match(/^(\d+)([mhd])$/i);
+      if (match) {
+        setStagedPreset(val.toLowerCase());
+      }
+    }
+  };
+
+  const handleShortcutSelect = (id: HistoricalShortcutId) => {
+    const range = getHistoricalShortcutRange(id);
+    setLocalRange(range);
+    setDisplayMonth(range.from);
+    const fh = String(range.from.getHours()).padStart(2, "0");
+    const fm = String(range.from.getMinutes()).padStart(2, "0");
+    const fs = String(range.from.getSeconds()).padStart(2, "0");
+    const th = String(range.to.getHours()).padStart(2, "0");
+    const tm = String(range.to.getMinutes()).padStart(2, "0");
+    const ts = String(range.to.getSeconds()).padStart(2, "0");
+    setFromTime(`${fh}:${fm}:${fs}`);
+    setToTime(`${th}:${tm}:${ts}`);
+  };
+
   const handleApply = () => {
-    if (localRange?.from) {
+    if (activeTab === "presets" && stagedPreset) {
+      onChange(stagedPreset);
+      setOpen(false);
+    } else if (activeTab === "custom" && localRange?.from) {
       const from = new Date(localRange.from);
       const { h: fh, m: fm, s: fs } = parseTimeStr(fromTime);
       from.setHours(fh, fm, fs, 0);
@@ -442,20 +299,13 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
     }
   };
 
-  const handleToday = () => {
-    const now = new Date();
-    const start = new Date(now);
-    start.setHours(0, 0, 0, 0);
-    setLocalRange({ from: start, to: now });
-    setDisplayMonth(now);
-    setFromTime("00:00:00");
-    const h = String(now.getHours()).padStart(2, "0");
-    const m = String(now.getMinutes()).padStart(2, "0");
-    const s = String(now.getSeconds()).padStart(2, "0");
-    setToTime(`${h}:${m}:${s}`);
-  };
-
-  const handleCopyRange = () => {
+  // Build dynamic preview string
+  const previewText = React.useMemo(() => {
+    if (activeTab === "presets" && stagedPreset) {
+      const { from, to } = getPresetRange(stagedPreset);
+      const label = getDisplayLabel(stagedPreset, t);
+      return `⚡ ${label} (${format(from, "MMM d, HH:mm")} → ${format(to, "HH:mm")})`;
+    }
     if (localRange?.from) {
       const from = new Date(localRange.from);
       const { h: fh, m: fm, s: fs } = parseTimeStr(fromTime);
@@ -463,9 +313,18 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
       const to = new Date(localRange.to || localRange.from);
       const { h: th, m: tm, s: ts } = parseTimeStr(toTime);
       to.setHours(th, tm, ts);
-      navigator.clipboard.writeText(`${format(from, "yyyy-MM-dd HH:mm:ss")} → ${format(to, "yyyy-MM-dd HH:mm:ss")}`);
+      return `🔒 ${format(from, "MMM d, HH:mm:ss")} → ${format(to, "MMM d, HH:mm:ss")}`;
     }
+    return "Select date range";
+  }, [activeTab, stagedPreset, localRange, fromTime, toTime, t]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(previewText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
+
+  const canApply = activeTab === "presets" ? Boolean(stagedPreset) : Boolean(localRange?.from);
 
   return (
     <div className="w-full">
@@ -480,87 +339,69 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         )}
       >
         <span className="flex items-center gap-1.5 truncate">
-          <CalendarRange className="w-3.5 h-3.5 text-primary shrink-0" />
+          {value.startsWith("custom:") ? (
+            <CalendarIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+          ) : (
+            <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+          )}
           {mounted ? getDisplayLabel(value, t) : (t("observability.loading") || "Loading...")}
         </span>
-        <ChevronDown className={cn("w-3 h-3 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
+        <ChevronDown
+          className={cn("w-3 h-3 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+        />
       </button>
 
-      {open && mounted && createPortal(
-        <div
-          ref={contentRef}
-          style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-          className="z-[9999] w-[510px] rounded-xl border border-border bg-card shadow-xl overflow-hidden text-foreground font-sans text-xs"
-        >
-          <div className="flex bg-card">
-            <PresetsSidebar
-              activePreset={activePreset}
-              customRelativeInput={customRelativeInput}
-              setCustomRelativeInput={setCustomRelativeInput}
-              onCustomSubmit={handleCustomRelativeSubmit}
-              onPresetSelect={(val) => { onChange(val); setLocalRange(undefined); setOpen(false); }}
-            />
+      {open &&
+        mounted &&
+        createPortal(
+          <div
+            ref={contentRef}
+            style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
+            className="z-[9999] w-[530px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs flex flex-col"
+          >
+            {/* Dedicated Tabs Header */}
+            <TabButtons activeTab={activeTab} setActiveTab={setActiveTab} />
 
-            <div className="flex-1 flex flex-col min-w-0">
-              <TimePickerInputs
+            {/* Tab 1 Content: Quick Rolling Presets */}
+            {activeTab === "presets" && (
+              <PresetsTabContent
+                stagedPreset={stagedPreset}
+                setStagedPreset={setStagedPreset}
+                customRelativeInput={customRelativeInput}
+                setCustomRelativeInput={setCustomRelativeInput}
+                onRelativeSubmit={handleRelativeSubmit}
+              />
+            )}
+
+            {/* Tab 2 Content: Custom Historical Range */}
+            {activeTab === "custom" && (
+              <CustomHistoricalTabContent
+                localRange={localRange}
+                setLocalRange={setLocalRange}
+                displayMonth={displayMonth}
+                setDisplayMonth={setDisplayMonth}
                 fromTime={fromTime}
                 toTime={toTime}
                 setFromTime={setFromTime}
                 setToTime={setToTime}
-                onResetTime={() => {
-                  const now = new Date();
-                  const from = new Date(now.getTime() - 60 * 60 * 1000);
-                  const fh = String(from.getHours()).padStart(2, "0");
-                  const fm = String(from.getMinutes()).padStart(2, "0");
-                  const fs = String(from.getSeconds()).padStart(2, "0");
-                  const th = String(now.getHours()).padStart(2, "0");
-                  const tm = String(now.getMinutes()).padStart(2, "0");
-                  const ts = String(now.getSeconds()).padStart(2, "0");
-                  setFromTime(`${fh}:${fm}:${fs}`);
-                  setToTime(`${th}:${tm}:${ts}`);
-                  setLocalRange(undefined);
-                  setCustomRelativeInput("");
-                  onChange("60m");
-                  setOpen(false);
-                }}
+                onShortcutSelect={handleShortcutSelect}
+                today={today}
               />
+            )}
 
-              <div className="border-t border-border/40 flex justify-center py-2 px-1">
-                <Calendar
-                  mode="range"
-                  month={displayMonth}
-                  onMonthChange={setDisplayMonth}
-                  startMonth={new Date(2024, 0, 1)}
-                  endMonth={today}
-                  selected={localRange}
-                  onSelect={setLocalRange}
-                  numberOfMonths={1}
-                  disabled={{ after: today }}
-                  className="text-xs relative p-0"
-                  classNames={{
-                    month: "relative flex flex-col gap-2",
-                    nav: "absolute top-1 inset-x-0 flex items-center justify-between w-full z-10 pointer-events-none px-1",
-                    button_previous: "!pointer-events-auto !cursor-pointer absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
-                    button_next: "!pointer-events-auto !cursor-pointer absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
-                    day_button: "h-8 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary !cursor-pointer",
-                    weekday: "text-muted-foreground rounded-md w-8 font-normal text-[11px] pb-1 text-center",
-                    day: "h-8 w-8 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
-                    week: "flex w-full mt-1.5",
-                  }}
-                />
-              </div>
-
-              <CalendarFooterActions
-                hasRange={Boolean(localRange?.from)}
-                onCopy={handleCopyRange}
-                onToday={handleToday}
-                onApply={handleApply}
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+            {/* Unified Footer Preview and Action Buttons */}
+            <FooterActions
+              previewText={previewText}
+              isLiveRolling={activeTab === "presets"}
+              copied={copied}
+              onCopy={handleCopy}
+              onCancel={() => setOpen(false)}
+              onApply={handleApply}
+              canApply={canApply}
+            />
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
