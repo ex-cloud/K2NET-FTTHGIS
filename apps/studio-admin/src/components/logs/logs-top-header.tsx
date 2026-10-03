@@ -20,6 +20,7 @@ import { LogsHeaderActions } from "./logs-header-actions";
 import { LogsTimeRangeInlinePill } from "./logs-time-range-inline-pill";
 import { LogsIntegrityVerifierModal } from "./logs-integrity-verifier-modal";
 import { LogsColdArchiveModal } from "./logs-cold-archive-modal";
+import { LogsAlertConfigModal } from "./logs-alert-config-modal";
 import {
   type FilterFieldConfig,
   type SmartParseResult,
@@ -70,6 +71,7 @@ export function LogsTopHeader({
   const [showColumnPicker, setShowColumnPicker] = React.useState(false);
   const [showIntegrityModal, setShowIntegrityModal] = React.useState(false);
   const [showColdArchiveModal, setShowColdArchiveModal] = React.useState(false);
+  const [showAlertConfigModal, setShowAlertConfigModal] = React.useState(false);
   const columnBtnRef = React.useRef<HTMLButtonElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -287,6 +289,7 @@ export function LogsTopHeader({
         setIsLivePaused={setIsLivePaused}
         onOpenIntegrityModal={() => setShowIntegrityModal(true)}
         onOpenColdArchiveModal={() => setShowColdArchiveModal(true)}
+        onOpenAlertConfigModal={() => setShowAlertConfigModal(true)}
       />
 
       {showPalette && (
@@ -341,6 +344,11 @@ export function LogsTopHeader({
       <LogsColdArchiveModal
         open={showColdArchiveModal}
         onOpenChange={setShowColdArchiveModal}
+      />
+
+      <LogsAlertConfigModal
+        open={showAlertConfigModal}
+        onOpenChange={setShowAlertConfigModal}
       />
     </div>
   );

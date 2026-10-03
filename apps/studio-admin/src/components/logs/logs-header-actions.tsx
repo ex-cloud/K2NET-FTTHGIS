@@ -9,6 +9,7 @@ import {
   Columns3,
   ShieldCheck,
   Archive,
+  BellRing,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
@@ -27,6 +28,7 @@ export interface LogsHeaderActionsProps {
   setIsLivePaused: React.Dispatch<React.SetStateAction<boolean>>;
   onOpenIntegrityModal: () => void;
   onOpenColdArchiveModal: () => void;
+  onOpenAlertConfigModal: () => void;
 }
 
 export function LogsHeaderActions({
@@ -41,6 +43,7 @@ export function LogsHeaderActions({
   setIsLivePaused,
   onOpenIntegrityModal,
   onOpenColdArchiveModal,
+  onOpenAlertConfigModal,
 }: LogsHeaderActionsProps) {
   const { t } = useTranslation();
 
@@ -109,6 +112,17 @@ export function LogsHeaderActions({
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md"
         >
           <Archive className="w-3.5 h-3.5 text-primary" />
+        </Button>
+      </ActionTooltip>
+
+      <ActionTooltip label="Incident Alerting & Webhooks" shortcut="Alt+W">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onOpenAlertConfigModal}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md"
+        >
+          <BellRing className="w-3.5 h-3.5 text-destructive" />
         </Button>
       </ActionTooltip>
 

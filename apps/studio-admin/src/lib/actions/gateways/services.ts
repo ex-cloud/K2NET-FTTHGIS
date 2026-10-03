@@ -261,6 +261,81 @@ export async function getAuditArchives(params?: {
 }
 
 // ─────────────────────────────────────────────
+// Incident Alerting & Webhooks (P.11)
+// ─────────────────────────────────────────────
+
+export type AlertConfig = {
+  enabled: boolean;
+  webhookUrl: string;
+  webhookType: "generic" | "slack" | "discord" | "telegram";
+  secretKey: string;
+  notificationGatewayUrl: string;
+  enableEmail: boolean;
+  alertEmail: string;
+  enableWhatsApp: boolean;
+  alertPhone: string;
+  cooldownSeconds: number;
+  minSeverity: "CRITICAL" | "ERROR";
+  highRiskActions: string[];
+};
+
+export type AlertTestResult = {
+  success: boolean;
+  channel: string;
+  target: string;
+  responseCode: number;
+  responseStatus: string;
+  latencyMs: number;
+  error?: string;
+};
+
+export async function getAlertConfig(): Promise<AlertConfig | null> {
+  await verifySuperAdmin();
+  const res = await fetch("/api/v1/audit/alerts/config", {
+    headers: getAuthHeaders(),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    return null;
+  }
+  const payload = await res.json();
+  return payload.data || null;
+}
+
+export async function updateAlertConfig(
+  cfg: Partial<AlertConfig>
+): Promise<{ success: boolean; data?: AlertConfig; message?: string }> {
+  await verifySuperAdmin();
+  const res = await fetch("/api/v1/audit/alerts/config", {
+    method: "PUT",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(cfg),
+  });
+  return res.json();
+}
+
+export async function testAlertWebhook(payload: {
+  targetType: string;
+  targetUrl: string;
+  secretKey?: string;
+}): Promise<AlertTestResult> {
+  await verifySuperAdmin();
+  const res = await fetch("/api/v1/audit/alerts/test", {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  return data.data || data;
+}
+
+// ─────────────────────────────────────────────
 // OLT Gateway: GET /api/v1/olt
 // ─────────────────────────────────────────────
 

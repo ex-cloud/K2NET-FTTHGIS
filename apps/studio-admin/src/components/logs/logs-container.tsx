@@ -10,6 +10,7 @@ import { Button } from "@k2net/ui";
 import { LOG_COLUMNS } from "./logs-utils";
 import { LogsRowItem } from "./logs-row-item";
 import { LogsDetailDrawer } from "./logs-detail-drawer";
+import { LogsEmergencyAlertBanner } from "./logs-emergency-alert-banner";
 
 interface LogsErrorBoundaryProps {
   children: ReactNode;
@@ -232,8 +233,20 @@ function LogsContainerContent() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [dismissedWideRange, setDismissedWideRange] = useState(false);
+  const [dismissedIncidentIds, setDismissedIncidentIds] = useState<Set<string>>(new Set());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
+
+  // Active Critical Incident Tracker (P.11)
+  const activeIncident = useMemo(() => {
+    const list = rawLogs.length > 0 ? rawLogs : filteredLogs;
+    for (const log of list) {
+      if (log.severity === "CRITICAL" && !dismissedIncidentIds.has(log.id)) {
+        return log;
+      }
+    }
+    return null;
+  }, [rawLogs, filteredLogs, dismissedIncidentIds]);
 
   // Identify Historical Mode (> 24 hours or custom date range)
   const isHistoricalMode = useMemo(() => {
@@ -383,6 +396,12 @@ function LogsContainerContent() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <LogsEmergencyAlertBanner
+          incident={activeIncident}
+          onInvestigate={(inc) => setSelectedLog(inc)}
+          onDismiss={(id) => setDismissedIncidentIds((prev) => new Set(prev).add(id))}
+        />
+
         {showBreadthAdvisory && (
           <div className="flex items-center justify-between px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-500 text-[11px] font-mono shrink-0 select-none">
             <div className="flex items-center gap-2 min-w-0">

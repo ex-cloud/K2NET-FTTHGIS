@@ -88,13 +88,17 @@ func main() {
 		}
 	}()
 
+	// Init incident alert dispatcher (P.11)
+	alertDispatcher := audit.NewAlertDispatcher("/opt/project5/backups/config")
+	defer alertDispatcher.Close()
+
 	// Init batch ingestion engine
 	batchEngine := audit.NewBatchIngestionEngine(dbPool, audit.BatchConfig{
 		BufferSize:    5000,
 		BatchSize:     100,
 		FlushInterval: 500 * time.Millisecond,
 		DLQDir:        "/opt/project5/backups/dlq/audit_events",
-	})
+	}, alertDispatcher)
 	defer batchEngine.Close()
 
 	// Init cold storage S3 archive reader
@@ -106,7 +110,7 @@ func main() {
 	router.Use(middleware.CorrelationIDMiddleware())
 	router.Use(telemetry.TelemetryMiddleware())
 
-	handler := delivery.NewHTTPHandler(repo, batchEngine, archiveReader)
+	handler := delivery.NewHTTPHandler(repo, batchEngine, archiveReader, alertDispatcher)
 
 	// Metrics
 	router.GET("/metrics", telemetry.GetMetricsHandler())
@@ -133,6 +137,9 @@ func main() {
 		api.GET("/audit/events", handler.GetAuditEvents)
 		api.GET("/audit/events/:id", handler.GetAuditEvent)
 		api.GET("/audit/archives", handler.GetAuditArchives)
+		api.GET("/audit/alerts/config", handler.GetAlertConfig)
+		api.PUT("/audit/alerts/config", handler.UpdateAlertConfig)
+		api.POST("/audit/alerts/test", handler.TestAlert)
 		api.GET("/audit/report/tenant/:slug", handler.GetTenantAuditReport)
 		api.GET("/audit/report/tenant/:slug/project/:projectId", handler.GetProjectAuditReport)
 		api.GET("/audit/report/user/:userId", handler.GetUserAuditReport)

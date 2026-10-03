@@ -181,7 +181,7 @@
   "path_copied": "Path {{path}} copied!",
   "quick_presets": "Quick Presets",
   "historical": "Historical",
-  "reset_to_default": "Reset to default (24h)",
+  "reset_to_default": "Reset to default (1h)",
   "quick_rolling_presets": "Quick Presets",
   "custom_historical_range": "Historical",
   "rolling_desc": "Rolling window relative to current time (Live)",

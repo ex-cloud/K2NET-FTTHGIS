@@ -236,3 +236,78 @@ func TestArchiveReaderAndPartitionParser(t *testing.T) {
 	}
 }
 
+func TestAlertDispatcherEvaluationAndCooldown(t *testing.T) {
+	dispatcher := NewAlertDispatcher(t.TempDir())
+	defer dispatcher.Close()
+
+	// 1. Critical event should alert
+	critReq := &CreateAuditEventRequest{
+		TenantSlug:   "garut",
+		ActorID:      "bad_actor@attacker.io",
+		Action:       "auth.mfa_bypass_attempt",
+		ResourceType: "AUTHENTICATION",
+		Metadata: map[string]any{
+			"severity": "CRITICAL",
+		},
+	}
+
+	shouldAlert, reason := dispatcher.ShouldAlert(critReq)
+	if !shouldAlert {
+		t.Errorf("Expected CRITICAL event to trigger alert")
+	}
+	if reason == "" {
+		t.Errorf("Expected non-empty reason for critical alert")
+	}
+
+	// 2. High-risk security action should alert even if severity is WARN
+	highRiskReq := &CreateAuditEventRequest{
+		TenantSlug:   "system",
+		ActorID:      "super_admin@k2net.id",
+		Action:       "impersonation.start",
+		ResourceType: "SESSION",
+		Metadata: map[string]any{
+			"severity": "INFO",
+		},
+	}
+
+	shouldAlert, _ = dispatcher.ShouldAlert(highRiskReq)
+	if !shouldAlert {
+		t.Errorf("Expected high-risk action impersonation.start to trigger alert")
+	}
+
+	// 3. Normal INFO event should NOT alert
+	infoReq := &CreateAuditEventRequest{
+		TenantSlug:   "garut",
+		ActorID:      "user@garut.net",
+		Action:       "customer.read",
+		ResourceType: "CUSTOMER",
+		Metadata: map[string]any{
+			"severity": "INFO",
+		},
+	}
+
+	shouldAlert, _ = dispatcher.ShouldAlert(infoReq)
+	if shouldAlert {
+		t.Errorf("Expected normal customer.read INFO event NOT to trigger alert")
+	}
+
+	// 4. Test Config Save and Load
+	newCfg := AlertConfig{
+		Enabled:         true,
+		WebhookURL:      "https://hooks.slack.com/services/test",
+		WebhookType:     "slack",
+		CooldownSeconds: 60,
+		MinSeverity:     "CRITICAL",
+	}
+
+	if err := dispatcher.SaveConfig(newCfg); err != nil {
+		t.Errorf("Failed to save alert config: %v", err)
+	}
+
+	loadedCfg := dispatcher.GetConfig()
+	if loadedCfg.WebhookType != "slack" || loadedCfg.CooldownSeconds != 60 {
+		t.Errorf("Loaded config mismatch: %+v", loadedCfg)
+	}
+}
+
+

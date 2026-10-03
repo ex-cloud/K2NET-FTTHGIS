@@ -26,6 +26,7 @@ type BatchIngestionEngine struct {
 	cfg          BatchConfig
 	ringBuffer   chan *CreateAuditEventRequest
 	dedup        *SlidingWindowDeduplicator
+	dispatcher   *AlertDispatcher
 	drainLock    sync.RWMutex
 	isReplaying  atomic.Bool
 	stopChan     chan struct{}
@@ -33,7 +34,7 @@ type BatchIngestionEngine struct {
 	droppedCount atomic.Int64
 }
 
-func NewBatchIngestionEngine(db *pgxpool.Pool, cfg BatchConfig) *BatchIngestionEngine {
+func NewBatchIngestionEngine(db *pgxpool.Pool, cfg BatchConfig, dispatcher *AlertDispatcher) *BatchIngestionEngine {
 	if cfg.BufferSize <= 0 {
 		cfg.BufferSize = 5000
 	}
@@ -54,6 +55,7 @@ func NewBatchIngestionEngine(db *pgxpool.Pool, cfg BatchConfig) *BatchIngestionE
 		cfg:        cfg,
 		ringBuffer: make(chan *CreateAuditEventRequest, cfg.BufferSize),
 		dedup:      NewSlidingWindowDeduplicator(10*time.Second, 50),
+		dispatcher: dispatcher,
 		stopChan:   make(chan struct{}),
 	}
 
@@ -93,7 +95,12 @@ func (e *BatchIngestionEngine) Ingest(req *CreateAuditEventRequest) error {
 		req.Metadata["isSampled"] = true
 	}
 
-	// 4. Ingest to non-blocking Ring Buffer with Backpressure
+	// 4. Incident Alert Dispatcher Hook (P.11)
+	if e.dispatcher != nil {
+		e.dispatcher.Dispatch(req, time.Now())
+	}
+
+	// 5. Ingest to non-blocking Ring Buffer with Backpressure
 	select {
 	case e.ringBuffer <- req:
 		return nil

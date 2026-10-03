@@ -17,10 +17,11 @@ type HTTPHandler struct {
 	repo          *audit.Repository
 	engine        *audit.BatchIngestionEngine
 	archiveReader *audit.ArchiveReader
+	dispatcher    *audit.AlertDispatcher
 }
 
-func NewHTTPHandler(repo *audit.Repository, engine *audit.BatchIngestionEngine, archiveReader *audit.ArchiveReader) *HTTPHandler {
-	return &HTTPHandler{repo: repo, engine: engine, archiveReader: archiveReader}
+func NewHTTPHandler(repo *audit.Repository, engine *audit.BatchIngestionEngine, archiveReader *audit.ArchiveReader, dispatcher *audit.AlertDispatcher) *HTTPHandler {
+	return &HTTPHandler{repo: repo, engine: engine, archiveReader: archiveReader, dispatcher: dispatcher}
 }
 
 // POST /audit/events
@@ -439,6 +440,113 @@ func (h *HTTPHandler) GetAuditArchives(c *gin.Context) {
 		"success": true,
 		"data":    archives,
 		"summary": summary,
+	})
+}
+
+// GET /api/v1/audit/alerts/config
+func (h *HTTPHandler) GetAlertConfig(c *gin.Context) {
+	if h.dispatcher == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    audit.DefaultAlertConfig(),
+		})
+		return
+	}
+
+	cfg := h.dispatcher.GetConfig()
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    cfg,
+	})
+}
+
+// PUT /api/v1/audit/alerts/config
+func (h *HTTPHandler) UpdateAlertConfig(c *gin.Context) {
+	if h.dispatcher == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error": gin.H{
+				"code":    "DISPATCHER_UNAVAILABLE",
+				"message": "Alert dispatcher is not initialized",
+			},
+		})
+		return
+	}
+
+	var req audit.AlertConfig
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error": gin.H{
+				"code":    "BAD_REQUEST",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	if err := h.dispatcher.SaveConfig(req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error": gin.H{
+				"code":    "SAVE_ERROR",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Alert configuration saved successfully",
+		"data":    h.dispatcher.GetConfig(),
+	})
+}
+
+// POST /api/v1/audit/alerts/test
+func (h *HTTPHandler) TestAlert(c *gin.Context) {
+	if h.dispatcher == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error": gin.H{
+				"code":    "DISPATCHER_UNAVAILABLE",
+				"message": "Alert dispatcher is not initialized",
+			},
+		})
+		return
+	}
+
+	var req struct {
+		TargetType string `json:"targetType"` // "generic", "slack", "discord", "telegram"
+		TargetURL  string `json:"targetUrl" binding:"required"`
+		SecretKey  string `json:"secretKey"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error": gin.H{
+				"code":    "BAD_REQUEST",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	if req.TargetType == "" {
+		req.TargetType = "generic"
+	}
+
+	result := h.dispatcher.TestAlert(c.Request.Context(), req.TargetType, req.TargetURL, req.SecretKey)
+
+	status := http.StatusOK
+	if !result.Success {
+		status = http.StatusBadRequest
+	}
+
+	c.JSON(status, gin.H{
+		"success": result.Success,
+		"data":    result,
 	})
 }
 
