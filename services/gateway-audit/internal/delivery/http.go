@@ -160,6 +160,8 @@ func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
 	search := c.Query("search")
 	startStr := c.Query("startDate")
 	endStr := c.Query("endDate")
+	cursorStr := c.Query("cursor")
+	includeBenchmark := c.DefaultQuery("includeBenchmark", "false") == "true"
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "50"))
@@ -183,23 +185,49 @@ func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
 		}
 	}
 
+	var beforeOccurredAt *time.Time
+	var beforeID string
+	if cursorStr != "" {
+		var decodedBytes []byte
+		var decodeErr error
+		decodedBytes, decodeErr = base64.URLEncoding.DecodeString(cursorStr)
+		if decodeErr != nil {
+			decodedBytes, decodeErr = base64.StdEncoding.DecodeString(cursorStr)
+		}
+		if decodeErr == nil {
+			parts := strings.Split(string(decodedBytes), "|")
+			if len(parts) == 2 {
+				if t, err := time.Parse(time.RFC3339Nano, parts[0]); err == nil {
+					beforeOccurredAt = &t
+					beforeID = parts[1]
+				} else if t, err := time.Parse(time.RFC3339, parts[0]); err == nil {
+					beforeOccurredAt = &t
+					beforeID = parts[1]
+				}
+			}
+		}
+	}
+
 	resp, err := h.repo.QueryEventsWithFilter(ctx, audit.QueryAuditEventsFilter{
-		TenantSlug:    tenant,
-		ActorID:       actor,
-		Action:        action,
-		ResourceType:  resource,
-		LogGroup:      logGroup,
-		Severity:      severity,
-		ProjectID:     projectID,
-		Scope:         scope,
-		Category:      category,
-		LogType:       logType,
-		ServiceSource: serviceSource,
-		Search:        search,
-		StartDate:     start,
-		EndDate:       end,
-		Page:          page,
-		PageSize:      pageSize,
+		TenantSlug:       tenant,
+		ActorID:          actor,
+		Action:           action,
+		ResourceType:     resource,
+		LogGroup:         logGroup,
+		Severity:         severity,
+		ProjectID:        projectID,
+		Scope:            scope,
+		Category:         category,
+		LogType:          logType,
+		ServiceSource:    serviceSource,
+		Search:           search,
+		StartDate:        start,
+		EndDate:          end,
+		BeforeOccurredAt: beforeOccurredAt,
+		BeforeID:         beforeID,
+		IncludeBenchmark: includeBenchmark,
+		Page:             page,
+		PageSize:         pageSize,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
@@ -213,6 +241,8 @@ func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
 		"page":       resp.Page,
 		"pageSize":   resp.PageSize,
 		"totalPages": resp.TotalPages,
+		"hasMore":    resp.HasMore,
+		"nextCursor": resp.NextCursor,
 	})
 }
 

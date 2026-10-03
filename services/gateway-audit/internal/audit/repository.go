@@ -2,6 +2,7 @@ package audit
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -213,6 +214,20 @@ func (r *Repository) QueryEventsWithFilter(ctx context.Context, filter QueryAudi
 		args = append(args, *filter.EndDate)
 		argCount++
 	}
+	if !filter.IncludeBenchmark {
+		whereClause += " AND actor_id NOT LIKE 'worker-benchmark-%' AND COALESCE(metadata->>'category', '') != 'BENCHMARK'"
+	}
+	if filter.BeforeOccurredAt != nil {
+		if filter.BeforeID != "" {
+			whereClause += fmt.Sprintf(" AND (occurred_at < $%d OR (occurred_at = $%d AND id < $%d::uuid))", argCount, argCount+1, argCount+2)
+			args = append(args, *filter.BeforeOccurredAt, *filter.BeforeOccurredAt, filter.BeforeID)
+			argCount += 3
+		} else {
+			whereClause += fmt.Sprintf(" AND occurred_at < $%d", argCount)
+			args = append(args, *filter.BeforeOccurredAt)
+			argCount++
+		}
+	}
 
 	// 1. Total Count Query
 	countQuery := "SELECT COUNT(*) FROM audit_events " + whereClause
@@ -234,11 +249,20 @@ func (r *Repository) QueryEventsWithFilter(ctx context.Context, filter QueryAudi
 	if pageSize > 500 {
 		pageSize = 500
 	}
+	
+	// When using cursor-based pagination (BeforeOccurredAt is set), offset is always 0
 	offset := (page - 1) * pageSize
+	if filter.BeforeOccurredAt != nil {
+		offset = 0
+	}
+
 	totalPages := int((totalCount + int64(pageSize) - 1) / int64(pageSize))
 	if totalPages == 0 {
 		totalPages = 1
 	}
+
+	// Fetch pageSize + 1 to reliably determine if more records exist for cursor pagination
+	queryLimit := pageSize + 1
 
 	// 3. Data Query
 	dataQuery := fmt.Sprintf(`
@@ -246,11 +270,11 @@ func (r *Repository) QueryEventsWithFilter(ctx context.Context, filter QueryAudi
 		       old_value, new_value, metadata, occurred_at
 		FROM audit_events
 		%s
-		ORDER BY occurred_at DESC
+		ORDER BY occurred_at DESC, id DESC
 		LIMIT $%d OFFSET $%d
 	`, whereClause, argCount, argCount+1)
 
-	dataArgs := append(args, pageSize, offset)
+	dataArgs := append(args, queryLimit, offset)
 
 	rows, err := r.db.Query(ctx, dataQuery, dataArgs...)
 	if err != nil {
@@ -274,12 +298,30 @@ func (r *Repository) QueryEventsWithFilter(ctx context.Context, filter QueryAudi
 		list = append(list, &ev)
 	}
 
+	hasMore := false
+	if len(list) > pageSize {
+		hasMore = true
+		list = list[:pageSize]
+	} else if (int64(offset) + int64(len(list))) < totalCount {
+		hasMore = true
+	}
+
+	var nextCursor *string
+	if hasMore && len(list) > 0 {
+		lastItem := list[len(list)-1]
+		rawCursor := fmt.Sprintf("%s|%s", lastItem.OccurredAt.Format(time.RFC3339Nano), lastItem.ID)
+		encoded := base64.URLEncoding.EncodeToString([]byte(rawCursor))
+		nextCursor = &encoded
+	}
+
 	return &PaginatedAuditEventsResponse{
 		Data:       list,
 		TotalCount: totalCount,
 		Page:       page,
 		PageSize:   pageSize,
 		TotalPages: totalPages,
+		HasMore:    hasMore,
+		NextCursor: nextCursor,
 	}, nil
 }
 

@@ -81,6 +81,7 @@ import {
   LevelFilterSection,
   ScopeFilterSection,
   SeverityFilterSection,
+  BenchmarkFilterSection,
 } from "./logs-filter-sections";
 
 const EDGE_SUB_FILTERS = [
@@ -247,6 +248,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     levelCounts,
     severityCounts,
     tenantFilter, setTenantFilter,
+    includeBenchmark, setIncludeBenchmark,
     searchQuery,
     advancedFilters,
   } = useLogsFilter();
@@ -262,6 +264,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     scopeFilter !== "ALL" ||
     projectFilter.trim().length > 0 ||
     tenantFilter.trim().length > 0 ||
+    includeBenchmark ||
     searchQuery.trim().length > 0 ||
     (advancedFilters && advancedFilters.length > 0);
 
@@ -361,6 +364,11 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
           selectedLevels={selectedLevels}
           toggleLevel={toggleLevel}
           levelCounts={levelCounts}
+        />
+
+        <BenchmarkFilterSection
+          includeBenchmark={includeBenchmark}
+          setIncludeBenchmark={setIncludeBenchmark}
         />
 
         <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">

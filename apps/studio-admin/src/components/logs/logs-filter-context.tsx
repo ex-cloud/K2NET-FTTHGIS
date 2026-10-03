@@ -149,8 +149,11 @@ export type LogFilterState = {
   /** tenantSlug filter — empty string = all tenants */
   tenantFilter: string;
   setTenantFilter: (slug: string) => void;
+  /** includeBenchmark filter — false = filter out synthetic load-test data */
+  includeBenchmark: boolean;
+  setIncludeBenchmark: React.Dispatch<React.SetStateAction<boolean>>;
 
-  // Real-Time Log Stream Access
+  // Real-Time Log Stream Access & Keyset Cursor Pagination
   logs: AuditStreamEntry[];
   filteredLogs: AuditStreamEntry[];
   rawLogs: AuditStreamEntry[];
@@ -158,6 +161,11 @@ export type LogFilterState = {
   totalCount: number;
   clearLogs: () => void;
   streamStatus: "connecting" | "live" | "paused";
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  loadMore: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const LogsFilterContext = createContext<LogFilterState | undefined>(undefined);
@@ -176,6 +184,7 @@ function parseInitialFiltersFromLocation() {
       tenant: "",
       scope: "ALL",
       project: "",
+      benchmark: false,
     };
   }
 
@@ -216,6 +225,7 @@ function parseInitialFiltersFromLocation() {
     tenant: sp.get("tenant") || "",
     scope: sp.get("scope") || "ALL",
     project: sp.get("project") || "",
+    benchmark: sp.get("benchmark") === "true",
   };
 }
 
@@ -234,6 +244,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   const [tenantFilter, setTenantFilter] = useState(initial.tenant);
   const [scopeFilter, setScopeFilter] = useState(initial.scope);
   const [projectFilter, setProjectFilter] = useState(initial.project);
+  const [includeBenchmark, setIncludeBenchmark] = useState<boolean>(Boolean(initial.benchmark));
 
   const [selectedTypes, setSelectedTypes] = useState<Record<string, boolean>>(initial.types);
   const [selectedLevels, setSelectedLevels] = useState<Record<string, boolean>>(initial.levels);
@@ -251,10 +262,20 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     totalCount = 0,
     clearLogs,
     status: streamStatus,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    refresh,
   } = useAuditLogStream("all", {
     isPaused: isLivePaused || !isLogsRoute,
     selectedTypes,
     timeRange,
+    tenantSlug: tenantFilter,
+    projectId: projectFilter,
+    scope: scopeFilter,
+    search: searchQuery,
+    includeBenchmark,
   });
 
   // Calculate live counts safely via pure useMemo
@@ -336,6 +357,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     if (searchQuery.trim()) params.set("search", searchQuery);
     if (timeRange) params.set("date", timeRange);
     if (!isLivePaused) params.set("live", "true");
+    if (includeBenchmark) params.set("benchmark", "true");
 
     const newSearch = params.size > 0 ? `?${params.toString()}` : "";
     const newUrl = `/logs${newSearch}`;
@@ -353,6 +375,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     scopeFilter,
     projectFilter,
     tenantFilter,
+    includeBenchmark,
     isLivePaused,
     pathname,
   ]);
@@ -372,6 +395,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
       setTenantFilter(parsed.tenant);
       setScopeFilter(parsed.scope);
       setProjectFilter(parsed.project);
+      setIncludeBenchmark(Boolean(parsed.benchmark));
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -470,6 +494,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     setEdgeSubFilters({});
     setSelectedLog(null);
     setTenantFilter("");
+    setIncludeBenchmark(false);
     setAdvancedFilters([]);
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", "/logs?date=60m");
@@ -500,9 +525,10 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
         levelCounts, setLevelCounts: dummySetCounts as React.Dispatch<React.SetStateAction<Record<string, number>>>,
         severityCounts, setSeverityCounts: dummySetCounts as React.Dispatch<React.SetStateAction<Record<string, number>>>,
         tenantFilter, setTenantFilter,
+        includeBenchmark, setIncludeBenchmark,
         advancedFilters, addAdvancedFilter, removeAdvancedFilter, clearAdvancedFilters,
 
-        // Real-Time Log Stream
+        // Real-Time Log Stream & Keyset Cursor Pagination
         logs,
         filteredLogs,
         rawLogs,
@@ -510,6 +536,11 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
         totalCount,
         clearLogs,
         streamStatus,
+        isLoading,
+        isLoadingMore,
+        hasMore,
+        loadMore,
+        refresh,
       }}
     >
       {children}
@@ -544,6 +575,7 @@ const DEFAULT_CONTEXT: LogFilterState = {
   levelCounts: {}, setLevelCounts: () => {},
   severityCounts: {}, setSeverityCounts: () => {},
   tenantFilter: "", setTenantFilter: () => {},
+  includeBenchmark: false, setIncludeBenchmark: () => {},
   advancedFilters: [], addAdvancedFilter: () => {}, removeAdvancedFilter: () => {}, clearAdvancedFilters: () => {},
 
   logs: [],
@@ -553,6 +585,11 @@ const DEFAULT_CONTEXT: LogFilterState = {
   totalCount: 0,
   clearLogs: () => {},
   streamStatus: "paused",
+  isLoading: false,
+  isLoadingMore: false,
+  hasMore: false,
+  loadMore: async () => {},
+  refresh: async () => {},
 };
 
 export function useLogsFilter() {

@@ -190,22 +190,20 @@ function HttpRequestSection({ log }: { log: AuditStreamEntry }) {
         {log.method && (
           <div className="flex items-center gap-2">
             <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">{t("observability.method")}</span>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${
-              log.method === "POST" ? "text-sky-400 bg-sky-500/10 border-sky-500/20"
-              : log.method === "DELETE" ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
-              : log.method === "PUT" || log.method === "PATCH" ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
-              : "text-primary/80 bg-primary/10 border-primary/20"
-            }`}>{log.method}</span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${log.method === "POST" ? "text-sky-400 bg-sky-500/10 border-sky-500/20"
+                : log.method === "DELETE" ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                  : log.method === "PUT" || log.method === "PATCH" ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                    : "text-primary/80 bg-primary/10 border-primary/20"
+              }`}>{log.method}</span>
           </div>
         )}
         {log.status && (
           <div className="flex items-center gap-2">
             <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">{t("observability.http_status")}</span>
-            <span className={`font-mono text-[11px] font-semibold ${
-              Number(log.status) >= 500 ? "text-rose-400"
-              : Number(log.status) >= 400 ? "text-amber-400"
-              : "text-primary/80"
-            }`}>{log.status}</span>
+            <span className={`font-mono text-[11px] font-semibold ${Number(log.status) >= 500 ? "text-rose-400"
+                : Number(log.status) >= 400 ? "text-amber-400"
+                  : "text-primary/80"
+              }`}>{log.status}</span>
           </div>
         )}
         {log.pathname && (
@@ -231,7 +229,7 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
   const isCritical = (selectedLog.severity || "").toUpperCase() === "CRITICAL";
 
   return (
-    <div className="absolute right-0 top-0 h-full w-[420px] max-w-full bg-card border-l border-border flex flex-col z-20 shadow-xl animate-in slide-in-from-right duration-250">
+    <div className="absolute right-0 top-0 h-full w-[450px] max-w-full bg-card border-l border-border flex flex-col z-20 shadow-xl animate-in slide-in-from-right duration-250">
       <div className="p-3 border-b border-border flex items-center justify-between bg-muted/40 shrink-0">
         <div className="flex items-center gap-2">
           <FileCode className="w-4 h-4 text-primary" />
@@ -265,9 +263,8 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
           <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Severity & Level</label>
           <div className="flex items-center gap-2">
             <span
-              className={`w-2.5 h-2.5 rounded-full ${
-                isCritical ? "bg-rose-500 animate-pulse" : level === "error" ? "bg-rose-500" : level === "warning" ? "bg-amber-500" : "bg-primary/70"
-              }`}
+              className={`w-2.5 h-2.5 rounded-full ${isCritical ? "bg-rose-500 animate-pulse" : level === "error" ? "bg-rose-500" : level === "warning" ? "bg-amber-500" : "bg-primary/70"
+                }`}
             />
             <span className="text-foreground font-bold text-xs font-mono">
               {selectedLog.severity || level.toUpperCase()}

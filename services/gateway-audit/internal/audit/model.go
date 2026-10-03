@@ -31,22 +31,25 @@ type CreateAuditEventRequest struct {
 }
 
 type QueryAuditEventsFilter struct {
-	TenantSlug   string     `json:"tenantSlug"`
-	ActorID      string     `json:"actorId"`
-	Action       string     `json:"action"`
-	ResourceType string     `json:"resourceType"`
-	LogGroup     string     `json:"logGroup"`
-	Severity     string     `json:"severity"`
-	ProjectID    string     `json:"projectId"`
-	Scope        string     `json:"scope"`
-	Category     string     `json:"category"`
-	LogType      string     `json:"logType"`
-	ServiceSource string    `json:"serviceSource"`
-	Search       string     `json:"search"`
-	StartDate    *time.Time `json:"startDate"`
-	EndDate      *time.Time `json:"endDate"`
-	Page         int        `json:"page"`
-	PageSize     int        `json:"pageSize"`
+	TenantSlug       string     `json:"tenantSlug"`
+	ActorID          string     `json:"actorId"`
+	Action           string     `json:"action"`
+	ResourceType     string     `json:"resourceType"`
+	LogGroup         string     `json:"logGroup"`
+	Severity         string     `json:"severity"`
+	ProjectID        string     `json:"projectId"`
+	Scope            string     `json:"scope"`
+	Category         string     `json:"category"`
+	LogType          string     `json:"logType"`
+	ServiceSource    string     `json:"serviceSource"`
+	Search           string     `json:"search"`
+	StartDate        *time.Time `json:"startDate"`
+	EndDate          *time.Time `json:"endDate"`
+	BeforeOccurredAt *time.Time `json:"beforeOccurredAt"`
+	BeforeID         string     `json:"beforeId"`
+	IncludeBenchmark bool       `json:"includeBenchmark"`
+	Page             int        `json:"page"`
+	PageSize         int        `json:"pageSize"`
 }
 
 type PaginatedAuditEventsResponse struct {
@@ -55,4 +58,6 @@ type PaginatedAuditEventsResponse struct {
 	Page       int           `json:"page"`
 	PageSize   int           `json:"pageSize"`
 	TotalPages int           `json:"totalPages"`
+	HasMore    bool          `json:"hasMore"`
+	NextCursor *string       `json:"nextCursor,omitempty"`
 }

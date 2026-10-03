@@ -106,28 +106,66 @@ export type AuditQueryParams = {
   tenantSlug?: string;
   projectId?: string;
   scope?: string;
+  category?: string;
+  logType?: string;
+  serviceSource?: string;
+  startDate?: string;
+  endDate?: string;
+  cursor?: string;
+  includeBenchmark?: boolean;
   page?: number;
   pageSize?: number;
 };
 
-export async function getAuditEvents(params?: AuditQueryParams): Promise<AuditEvent[]> {
-  await verifySuperAdmin();
+export type PaginatedAuditEventsResponse = {
+  data: AuditEvent[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasMore?: boolean;
+  nextCursor?: string | null;
+};
 
-  let url = `/api/v1/audit/events`;
-  if (params) {
-    const q = new URLSearchParams();
-    if (params.logGroup) q.set("logGroup", params.logGroup);
-    if (params.severity) q.set("severity", params.severity);
-    if (params.search) q.set("search", params.search);
-    if (params.tenantSlug) q.set("tenantSlug", params.tenantSlug);
-    if (params.projectId) q.set("projectId", params.projectId);
-    if (params.scope) q.set("scope", params.scope);
-    if (params.page !== undefined) q.set("page", String(params.page));
-    if (params.pageSize !== undefined) q.set("pageSize", String(params.pageSize));
-    const qs = q.toString();
-    if (qs) url += `?${qs}`;
+function buildAuditSearchParams(params?: AuditQueryParams): string {
+  if (!params) return "";
+  const q = new URLSearchParams();
+  const stringFields: Array<[string, string | undefined]> = [
+    ["logGroup", params.logGroup],
+    ["severity", params.severity],
+    ["search", params.search],
+    ["tenantSlug", params.tenantSlug],
+    ["projectId", params.projectId],
+    ["scope", params.scope],
+    ["category", params.category],
+    ["logType", params.logType],
+    ["serviceSource", params.serviceSource],
+    ["startDate", params.startDate],
+    ["endDate", params.endDate],
+    ["cursor", params.cursor],
+  ];
+
+  for (const [key, val] of stringFields) {
+    if (val) q.set(key, val);
   }
 
+  if (params.includeBenchmark !== undefined) q.set("includeBenchmark", String(params.includeBenchmark));
+  if (params.page !== undefined) q.set("page", String(params.page));
+  if (params.pageSize !== undefined) q.set("pageSize", String(params.pageSize));
+
+  const qs = q.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export async function getAuditEvents(params?: AuditQueryParams): Promise<AuditEvent[]> {
+  const result = await getAuditEventsPaginated(params);
+  return result.data || [];
+}
+
+export async function getAuditEventsPaginated(params?: AuditQueryParams): Promise<PaginatedAuditEventsResponse> {
+  await verifySuperAdmin();
+
+  const url = `/api/v1/audit/events${buildAuditSearchParams(params)}`;
   const res = await fetch(url, {
     headers: getAuthHeaders(),
     cache: "no-store",
@@ -138,7 +176,15 @@ export async function getAuditEvents(params?: AuditQueryParams): Promise<AuditEv
   }
 
   const payload = await res.json();
-  return payload.data || [];
+  return {
+    data: payload.data || [],
+    totalCount: payload.totalCount ?? (payload.data?.length || 0),
+    page: payload.page ?? 1,
+    pageSize: payload.pageSize ?? 50,
+    totalPages: payload.totalPages ?? 1,
+    hasMore: Boolean(payload.hasMore),
+    nextCursor: payload.nextCursor || null,
+  };
 }
 
 

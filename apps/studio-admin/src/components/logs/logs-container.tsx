@@ -1,5 +1,5 @@
-import React, { useState, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
-import { Terminal, RefreshCcw, AlertTriangle } from "lucide-react";
+import React, { useState, useMemo, Component, useEffect, useRef, useCallback, type ErrorInfo, type ReactNode } from "react";
+import { Terminal, RefreshCcw, AlertTriangle, Loader2 } from "lucide-react";
 import { useReactTable, getCoreRowModel, type VisibilityState } from "@tanstack/react-table";
 import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
@@ -122,16 +122,22 @@ function LogsTableHeader({
 
 function LogsStatusBar({
   isLivePaused,
+  isHistoricalMode,
   filteredCount,
   totalCount,
   selectedCount,
+  hasMore,
+  isLoadingMore,
   onClearSelection,
   onCopySelected,
 }: {
   isLivePaused: boolean;
+  isHistoricalMode: boolean;
   filteredCount: number;
   totalCount: number;
   selectedCount: number;
+  hasMore: boolean;
+  isLoadingMore: boolean;
   onClearSelection?: () => void;
   onCopySelected?: () => void;
 }) {
@@ -139,9 +145,11 @@ function LogsStatusBar({
     <div className="px-6 py-2 border-t border-border bg-muted/20 flex items-center justify-between text-[10px] text-muted-foreground font-mono shrink-0">
       <div className="flex items-center gap-3">
         <span>
-          {isLivePaused
+          {isHistoricalMode
+            ? `🔬 Forensic Range: ${filteredCount} of ${totalCount} events loaded ${hasMore ? "(Scroll for more)" : "(All loaded)"}`
+            : isLivePaused
             ? `⏸ Paused — ${filteredCount} of ${totalCount} events buffered`
-            : `● Live — ${filteredCount} of ${totalCount} events matching`}
+            : `● Live Tail — ${filteredCount} of ${totalCount} events matching`}
         </span>
         {selectedCount > 0 && (
           <div className="flex items-center gap-2 pl-3 border-l border-border/60">
@@ -165,17 +173,29 @@ function LogsStatusBar({
           </div>
         )}
       </div>
+
       <div className="flex items-center gap-2">
-        {isLivePaused ? (
-          <>
+        {isLoadingMore && (
+          <span className="flex items-center gap-1.5 text-primary text-[10px]">
+            <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+            <span>Loading older logs...</span>
+          </span>
+        )}
+        {isHistoricalMode ? (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 font-sans font-medium text-[10px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+            <span>Forensic Mode</span>
+          </span>
+        ) : isLivePaused ? (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-sans font-medium text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span>Stream Paused</span>
-          </>
+            <span>Live Stream Paused</span>
+          </span>
         ) : (
-          <>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary font-sans font-medium text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <span>Kong API Gateway Ingestion Active</span>
-          </>
+            <span>Live Tail Active</span>
+          </span>
         )}
       </div>
     </div>
@@ -191,9 +211,18 @@ function LogsContainerContent() {
     selectedLog,
     setSelectedLog,
     isLivePaused,
+    setIsLivePaused,
     showHistogram,
     tenantFilter,
+    projectFilter,
+    scopeFilter,
+    selectedSeverities,
+    searchQuery,
     timeRange,
+    hasMore,
+    isLoading,
+    isLoadingMore,
+    loadMore,
   } = useLogsFilter();
 
   const { summaryBuckets } = useAuditAnalyticsSummary(timeRange, tenantFilter);
@@ -201,19 +230,90 @@ function LogsContainerContent() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [dismissedWideRange, setDismissedWideRange] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+
+  // Identify Historical Mode (> 24 hours or custom date range)
+  const isHistoricalMode = useMemo(() => {
+    if (timeRange.startsWith("custom:")) return true;
+    if (timeRange === "7d" || timeRange === "14d" || timeRange === "30d" || timeRange === "60d" || timeRange === "90d") {
+      return true;
+    }
+    return false;
+  }, [timeRange]);
+
+  // Check if active time range is wide (> 30 days)
+  const isWideRange = useMemo(() => {
+    if (timeRange === "30d" || timeRange === "60d" || timeRange === "90d") return true;
+    if (timeRange.startsWith("custom:")) {
+      const parts = timeRange.replace("custom:", "").split("..");
+      if (parts.length === 2) {
+        const start = new Date(parts[0]).getTime();
+        const end = new Date(parts[1]).getTime();
+        if (!isNaN(start) && !isNaN(end) && end - start > 30 * 24 * 60 * 60 * 1000) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [timeRange]);
+
+  // Reset advisory dismissal when timeRange changes
+  useEffect(() => {
+    setDismissedWideRange(false);
+  }, [timeRange]);
+
+  // Is query broad (no specific narrowing filter applied)?
+  const isQueryBroad = useMemo(() => {
+    return (
+      !tenantFilter &&
+      !projectFilter &&
+      scopeFilter === "ALL" &&
+      Object.values(selectedSeverities).filter(Boolean).length === 0 &&
+      !searchQuery.trim()
+    );
+  }, [tenantFilter, projectFilter, scopeFilter, selectedSeverities, searchQuery]);
+
+  const showBreadthAdvisory = isWideRange && isQueryBroad && !dismissedWideRange;
+
+  // Auto-pause live ingestion when entering Historical Mode to avoid viewport disruption
+  useEffect(() => {
+    if (isHistoricalMode && !isLivePaused) {
+      setIsLivePaused(true);
+    }
+  }, [isHistoricalMode, isLivePaused, setIsLivePaused]);
+
+  // Infinite Scroll Trigger using IntersectionObserver
+  useEffect(() => {
+    const sentinel = bottomSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isLoading) {
+          loadMore();
+        }
+      },
+      { root: scrollContainerRef.current, threshold: 0.1, rootMargin: "200px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, isLoading, loadMore]);
 
   const isAllSelected = filteredLogs.length > 0 && filteredLogs.every((l) => selectedRowIds.has(l.id));
   const isSomeSelected = filteredLogs.some((l) => selectedRowIds.has(l.id)) && !isAllSelected;
 
-  const handleToggleSelectAll = () => {
+  const handleToggleSelectAll = useCallback(() => {
     if (isAllSelected) {
       setSelectedRowIds(new Set());
     } else {
       setSelectedRowIds(new Set(filteredLogs.map((l) => l.id)));
     }
-  };
+  }, [isAllSelected, filteredLogs]);
 
-  const handleToggleSelectRow = (id: string) => {
+  const handleToggleSelectRow = useCallback((id: string) => {
     setSelectedRowIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -223,14 +323,14 @@ function LogsContainerContent() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const handleCopySelected = () => {
+  const handleCopySelected = useCallback(() => {
     const selectedLogs = filteredLogs.filter((l) => selectedRowIds.has(l.id));
     if (selectedLogs.length === 0) return;
     navigator.clipboard.writeText(JSON.stringify(selectedLogs, null, 2));
     toast.success(`Copied ${selectedLogs.length} selected log events to clipboard.`);
-  };
+  }, [filteredLogs, selectedRowIds]);
 
   const histogramData = useMemo(() => {
     if (summaryBuckets && summaryBuckets.length > 0) {
@@ -247,13 +347,13 @@ function LogsContainerContent() {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const handleCopyLog = (log: AuditStreamEntry, e: React.MouseEvent) => {
+  const handleCopyLog = useCallback((log: AuditStreamEntry, e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(JSON.stringify(log, null, 2));
     setCopiedId(log.id);
     toast.success("Log JSON copied to clipboard");
     setTimeout(() => setCopiedId(null), 2000);
-  };
+  }, []);
 
   const visibleCols = useMemo(() => {
     return new Set(table.getAllLeafColumns().filter((c) => c.getIsVisible()).map((c) => c.id));
@@ -276,6 +376,25 @@ function LogsContainerContent() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {showBreadthAdvisory && (
+          <div className="flex items-center justify-between px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-500 text-[11px] font-mono shrink-0 select-none">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+              <span className="truncate">
+                <strong className="font-semibold text-amber-500">Wide Historical Range Active (&gt; 30d):</strong> Querying large time boundaries without filters may scan multiple database partitions. Consider filtering by Tenant, Project, or Severity for faster forensic investigation.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDismissedWideRange(true)}
+              className="text-amber-500/70 hover:text-amber-500 px-2 py-0.5 text-[10px] rounded hover:bg-amber-500/20 transition-colors ml-2 shrink-0 cursor-pointer"
+              title="Dismiss advisory"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         <LogsTableHeader
           columnVisibility={columnVisibility}
           isAllSelected={isAllSelected}
@@ -283,39 +402,81 @@ function LogsContainerContent() {
           onToggleSelectAll={handleToggleSelectAll}
         />
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden divide-y divide-border/30 custom-scrollbar-thin">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden divide-y divide-border/30 custom-scrollbar-thin"
+        >
           {filteredLogs.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
-              <Terminal className="w-10 h-10 opacity-20 text-primary" />
-              <p className="font-semibold text-foreground text-xs font-sans">No matching events</p>
-              <p className="text-[11px] text-muted-foreground/60 font-sans text-center max-w-[260px]">
-                {totalCount > 0
-                  ? `${totalCount} raw event${totalCount !== 1 ? "s" : ""} exist — try adjusting the type, level, or time-range filter.`
-                  : "No events received yet. Check your log sources or wait for new events."}
-              </p>
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-8 h-8 text-primary animate-spin opacity-80" />
+                  <p className="font-semibold text-foreground text-xs font-sans">Loading audit partition records...</p>
+                  <p className="text-[11px] text-muted-foreground/60 font-sans text-center max-w-[280px]">
+                    Executing partitioned range query against PostgreSQL 17...
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Terminal className="w-10 h-10 opacity-20 text-primary" />
+                  <p className="font-semibold text-foreground text-xs font-sans">No matching events</p>
+                  <p className="text-[11px] text-muted-foreground/60 font-sans text-center max-w-[260px]">
+                    {totalCount > 0
+                      ? `${totalCount} raw event${totalCount !== 1 ? "s" : ""} exist — try adjusting the type, level, or time-range filter.`
+                      : "No events received yet. Check your log sources or wait for new events."}
+                  </p>
+                </>
+              )}
             </div>
           ) : (
-            filteredLogs.map((log: AuditStreamEntry) => (
-              <LogsRowItem
-                key={log.id}
-                log={log}
-                isSelected={selectedLog?.id === log.id}
-                isRowSelected={selectedRowIds.has(log.id)}
-                onToggleSelectRow={handleToggleSelectRow}
-                visibleCols={visibleCols}
-                copiedId={copiedId}
-                onSelect={() => setSelectedLog(selectedLog?.id === log.id ? null : log)}
-                onCopyLog={handleCopyLog}
-              />
-            ))
+            <>
+              {filteredLogs.map((log: AuditStreamEntry) => (
+                <LogsRowItem
+                  key={log.id}
+                  log={log}
+                  isSelected={selectedLog?.id === log.id}
+                  isRowSelected={selectedRowIds.has(log.id)}
+                  onToggleSelectRow={handleToggleSelectRow}
+                  visibleCols={visibleCols}
+                  copiedId={copiedId}
+                  onSelect={() => setSelectedLog(selectedLog?.id === log.id ? null : log)}
+                  onCopyLog={handleCopyLog}
+                />
+              ))}
+
+              {/* Bottom Sentinel for Infinite Scroll */}
+              <div ref={bottomSentinelRef} className="py-3 flex items-center justify-center text-center">
+                {isLoadingMore ? (
+                  <div className="flex items-center gap-2 text-primary text-xs font-sans py-2">
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                    <span>Loading next page batch...</span>
+                  </div>
+                ) : hasMore ? (
+                  <button
+                    type="button"
+                    onClick={() => loadMore()}
+                    className="text-xs text-muted-foreground hover:text-foreground underline font-sans py-1 cursor-pointer"
+                  >
+                    Scroll or click to load more older events...
+                  </button>
+                ) : filteredLogs.length > 50 ? (
+                  <p className="text-[11px] text-muted-foreground/50 font-sans">
+                    — End of active audit records ({filteredLogs.length} events loaded) —
+                  </p>
+                ) : null}
+              </div>
+            </>
           )}
         </div>
 
         <LogsStatusBar
           isLivePaused={isLivePaused}
+          isHistoricalMode={isHistoricalMode}
           filteredCount={filteredLogs.length}
           totalCount={totalCount}
           selectedCount={selectedRowIds.size}
+          hasMore={hasMore}
+          isLoadingMore={isLoadingMore}
           onClearSelection={() => setSelectedRowIds(new Set())}
           onCopySelected={handleCopySelected}
         />

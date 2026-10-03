@@ -303,6 +303,31 @@ function ImpersonationPill({ log }: { log: AuditStreamEntry }) {
   );
 }
 
+function BenchmarkPill() {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 font-mono text-[9px] font-semibold border border-amber-500/30 mr-1.5 shrink-0 cursor-help select-none">
+            <span>⚡</span>
+            <span>BENCHMARK</span>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="z-50 p-2.5 bg-popover border border-border text-foreground font-mono text-[10px] rounded-lg shadow-xl max-w-[280px] select-none [&_svg]:!hidden">
+          <div className="space-y-1">
+            <div className="font-bold text-amber-500 flex items-center gap-1">
+              <span>⚡ Synthetic Test Data</span>
+            </div>
+            <div className="text-muted-foreground text-[9px] leading-tight">
+              This event was generated during a system stress-test or synthetic benchmark run (worker-benchmark).
+            </div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 function ProjectPill({ log }: { log: AuditStreamEntry }) {
   const label = log.projectName || log.projectId;
   if (!label) return null;
@@ -364,6 +389,21 @@ function MethodCell({ method }: { method?: string }) {
   );
 }
 
+function isBenchmarkEvent(log: AuditStreamEntry): boolean {
+  if (log.actor && log.actor.startsWith("worker-benchmark-")) return true;
+  if (log.category === "BENCHMARK") return true;
+  if (log.metadata?.category === "BENCHMARK" || log.metadata?.benchmark === true) return true;
+  if (log.action && log.action.includes("STRESS")) return true;
+  if (log.message && log.message.includes("STRESS EVENT")) return true;
+  return false;
+}
+
+function getMessageColorClass(isCritical: boolean, isError: boolean, isWarn: boolean): string {
+  if (isCritical || isError) return "text-rose-400";
+  if (isWarn) return "text-amber-400";
+  return "text-foreground/90";
+}
+
 function MessageCell({
   log,
   isCritical,
@@ -377,16 +417,10 @@ function MessageCell({
   isWarn: boolean;
   showProjectPill: boolean;
 }) {
-  const colorClass = isCritical
-    ? "text-rose-400 font-semibold"
-    : isError
-    ? "text-rose-400"
-    : isWarn
-    ? "text-amber-400"
-    : "text-foreground/90";
-
+  const colorClass = getMessageColorClass(isCritical, isError, isWarn);
   const actorLabel = log.actor !== "system" ? log.actor : null;
   const hasHashChain = Boolean(log.metadata?.hash || log.metadata?.prevHash);
+  const isBenchmark = isBenchmarkEvent(log);
 
   return (
     <div className="flex-1 min-w-0 font-mono text-[11px] flex items-center justify-between gap-3">
@@ -396,6 +430,7 @@ function MessageCell({
             <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
           </span>
         )}
+        {isBenchmark && <BenchmarkPill />}
         {(log.isImpersonated || log.realActorId) && <ImpersonationPill log={log} />}
         {showProjectPill && <ProjectPill log={log} />}
         <span className={`truncate ${colorClass}`} title={log.message || log.action}>

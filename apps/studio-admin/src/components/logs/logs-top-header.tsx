@@ -357,6 +357,7 @@ export function LogsTopHeader({
     scopeFilter, setScopeFilter,
     projectFilter, setProjectFilter,
     tenantFilter, setTenantFilter,
+    includeBenchmark, setIncludeBenchmark,
     isLivePaused, setIsLivePaused,
     showHistogram, setShowHistogram,
     setIsSidebarCollapsed,
@@ -402,6 +403,11 @@ export function LogsTopHeader({
     [tenantFilter]
   );
 
+  const benchmarkPills = React.useMemo(
+    () => includeBenchmark ? [{ id: "benchmark", label: "⚡ Benchmarks Included", kind: "benchmark" as const }] : [],
+    [includeBenchmark]
+  );
+
   const advancedPills = React.useMemo(() =>
     advancedFilters.map((f) => ({
       id: f.id,
@@ -418,17 +424,19 @@ export function LogsTopHeader({
     ...scopePills,
     ...projectPills,
     ...tenantPills,
+    ...benchmarkPills,
     ...advancedPills,
   ];
   const hasActivePills = allPills.length > 0;
 
-  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "scope" | "project" | "tenant" | "advanced" }) => {
+  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "scope" | "project" | "tenant" | "benchmark" | "advanced" }) => {
     if (pill.kind === "type") toggleType(pill.id);
     else if (pill.kind === "level") toggleLevel(pill.id);
     else if (pill.kind === "severity") toggleSeverity(pill.id);
     else if (pill.kind === "scope") setScopeFilter("ALL");
     else if (pill.kind === "project") setProjectFilter("");
     else if (pill.kind === "tenant") setTenantFilter("");
+    else if (pill.kind === "benchmark") setIncludeBenchmark(false);
     else removeAdvancedFilter(pill.id);
   };
 

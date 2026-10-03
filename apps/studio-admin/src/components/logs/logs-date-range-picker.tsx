@@ -1,20 +1,22 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, ChevronDown, History } from "lucide-react";
+import { ChevronDown, Clock, History, CalendarRange } from "lucide-react";
 import { Calendar, cn } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
 import { useTranslation } from "@k2net/i18n";
 
-const PRESET_VALUES = [
-  { key: "preset_last_10m", value: "10m", fallback: "Last 10 minutes" },
+export const PRESET_VALUES = [
+  { key: "preset_last_15m", value: "15m", fallback: "Last 15 minutes" },
   { key: "preset_last_30m", value: "30m", fallback: "Last 30 minutes" },
-  { key: "preset_last_60m", value: "60m", fallback: "Last 60 minutes" },
+  { key: "preset_last_60m", value: "60m", fallback: "Last 1 hour" },
   { key: "preset_last_3h", value: "3h", fallback: "Last 3 hours" },
   { key: "preset_last_24h", value: "24h", fallback: "Last 24 hours" },
   { key: "preset_last_7d", value: "7d", fallback: "Last 7 days" },
   { key: "preset_last_14d", value: "14d", fallback: "Last 14 days" },
-  { key: "preset_last_28d", value: "28d", fallback: "Last 28 days" },
+  { key: "preset_last_30d", value: "30d", fallback: "Last 30 days (1 mo)" },
+  { key: "preset_last_60d", value: "60d", fallback: "Last 60 days (2 mo)" },
+  { key: "preset_last_90d", value: "90d", fallback: "Last 90 days (Quarter)" },
 ];
 
 interface LogsDateRangePickerProps {
@@ -39,9 +41,16 @@ function getDisplayLabel(value: string, t: ReturnType<typeof useTranslation>["t"
   if (value.startsWith("custom:")) {
     const parts = value.substring(7).split("_");
     if (parts.length === 2) {
-      const from = new Date(parts[0]);
-      const to = new Date(parts[1]);
-      return `${format(from, "MMM d, HH:mm")} → ${format(to, "MMM d, HH:mm")}`;
+      try {
+        const from = new Date(parts[0]);
+        const to = new Date(parts[1]);
+        const sameYear = from.getFullYear() === to.getFullYear();
+        const fromFmt = sameYear ? format(from, "MMM d, HH:mm") : format(from, "yy/MM/dd HH:mm");
+        const toFmt = sameYear ? format(to, "MMM d, HH:mm") : format(to, "yy/MM/dd HH:mm");
+        return `${fromFmt} → ${toFmt}`;
+      } catch {
+        return value;
+      }
     }
   }
   const normVal = value === "1h" ? "60m" : value;
@@ -54,7 +63,7 @@ function getPresetRange(preset: string): { from: Date; to: Date } {
   const norm = preset === "1h" ? "60m" : preset;
   const match = norm.match(/^(\d+)([mhd])$/i);
   if (match) {
-    const amount = parseInt(match[1]);
+    const amount = parseInt(match[1], 10);
     const unit = match[2].toLowerCase();
     let multiplier = 60 * 1000;
     if (unit === "h") multiplier = 60 * 60 * 1000;
@@ -84,16 +93,22 @@ function PresetsSidebar({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="w-[200px] shrink-0 border-r border-border/40 flex flex-col p-2 gap-px">
+    <div className="w-[210px] shrink-0 border-r border-border/40 flex flex-col p-2.5 gap-1 bg-muted/10">
+      <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-medium text-muted-foreground">
+        <Clock className="w-3 h-3 text-primary" />
+        <span>Quick Presets</span>
+      </div>
+
       <input
         type="text"
-        placeholder="e.g. 2h, 30m, 7d"
+        placeholder="e.g. 2h, 45m, 60d"
         value={customRelativeInput}
         onChange={(e) => setCustomRelativeInput(e.target.value)}
         onKeyDown={onCustomSubmit}
-        className="flex w-full border border-border bg-foreground/[.026] placeholder:text-muted-foreground/40 px-3 py-2 mb-2 text-xs h-7 rounded-sm focus:outline-none focus:border-border/80 transition-colors font-sans"
+        className="flex w-full border border-border bg-background placeholder:text-muted-foreground/50 px-2.5 py-1.5 mb-1.5 text-xs h-7 rounded-md focus:outline-none focus:border-primary/80 transition-colors font-mono"
       />
-      <div className="flex flex-col gap-px">
+
+      <div className="flex flex-col gap-0.5 overflow-y-auto max-h-[280px] pr-0.5 custom-scrollbar">
         {PRESET_VALUES.map((p) => {
           const isActive =
             activePreset === p.value ||
@@ -106,16 +121,17 @@ function PresetsSidebar({
               key={p.value}
               onClick={() => onPresetSelect(p.value)}
               className={cn(
-                "px-4 py-1.5 flex items-center justify-between text-xs w-full cursor-pointer transition-all rounded-sm text-left",
+                "px-2.5 py-1.5 flex items-center justify-between text-xs w-full cursor-pointer transition-all rounded-md text-left font-sans",
                 isActive
-                  ? "bg-muted text-foreground font-semibold"
+                  ? "bg-primary/15 text-primary font-semibold"
                   : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               )}
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 truncate">
                 {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
                 {label}
               </span>
+              <span className="text-[10px] font-mono text-muted-foreground/60 shrink-0">{p.value}</span>
             </button>
           );
         })}
@@ -149,9 +165,10 @@ function TimePickerInputs({
   const toS = String(ts).padStart(2, "0");
 
   return (
-    <div className="w-full flex px-[14px] py-2 gap-2 items-center justify-between">
-      <div className="flex-1 flex gap-2 font-mono">
-        <div className="flex-1 flex h-7 items-center justify-center gap-0.5 rounded-sm border border-border bg-muted/20 text-xs px-2 hover:border-border/80 transition-colors">
+    <div className="w-full flex px-3 py-2 gap-2 items-center justify-between border-b border-border/40 bg-muted/5">
+      <div className="flex-1 flex gap-2 font-mono items-center">
+        <span className="text-[11px] text-muted-foreground font-sans">Start:</span>
+        <div className="flex-1 flex h-7 items-center justify-center gap-0.5 rounded-md border border-border bg-background text-xs px-1.5 hover:border-border/80 transition-colors">
           <input
             type="text"
             pattern="[0-23]*"
@@ -159,7 +176,7 @@ function TimePickerInputs({
             value={fromH}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setFromTime(`${String(Math.min(23, parseInt(val) || 0)).padStart(2, "0")}:${fromM}:${fromS}`);
+              setFromTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromM}:${fromS}`);
             }}
             className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
           />
@@ -171,7 +188,7 @@ function TimePickerInputs({
             value={fromM}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setFromTime(`${fromH}:${String(Math.min(59, parseInt(val) || 0)).padStart(2, "0")}:${fromS}`);
+              setFromTime(`${fromH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromS}`);
             }}
             className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
           />
@@ -183,13 +200,14 @@ function TimePickerInputs({
             value={fromS}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setFromTime(`${fromH}:${fromM}:${String(Math.min(59, parseInt(val) || 0)).padStart(2, "0")}`);
+              setFromTime(`${fromH}:${fromM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
             }}
             className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
           />
         </div>
 
-        <div className="flex-1 flex h-7 items-center justify-center gap-0.5 rounded-sm border border-border bg-muted/20 text-xs px-2 hover:border-border/80 transition-colors">
+        <span className="text-[11px] text-muted-foreground font-sans ml-1">End:</span>
+        <div className="flex-1 flex h-7 items-center justify-center gap-0.5 rounded-md border border-border bg-background text-xs px-1.5 hover:border-border/80 transition-colors">
           <input
             type="text"
             pattern="[0-23]*"
@@ -197,7 +215,7 @@ function TimePickerInputs({
             value={toH}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setToTime(`${String(Math.min(23, parseInt(val) || 0)).padStart(2, "0")}:${toM}:${toS}`);
+              setToTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${toM}:${toS}`);
             }}
             className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
           />
@@ -209,7 +227,7 @@ function TimePickerInputs({
             value={toM}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setToTime(`${toH}:${String(Math.min(59, parseInt(val) || 0)).padStart(2, "0")}:${toS}`);
+              setToTime(`${toH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${toS}`);
             }}
             className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
           />
@@ -221,7 +239,7 @@ function TimePickerInputs({
             value={toS}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-              setToTime(`${toH}:${toM}:${String(Math.min(59, parseInt(val) || 0)).padStart(2, "0")}`);
+              setToTime(`${toH}:${toM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
             }}
             className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0"
           />
@@ -231,8 +249,8 @@ function TimePickerInputs({
       <button
         type="button"
         onClick={onResetTime}
-        title={t("observability.reset_times")}
-        className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-transparent text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors shrink-0"
+        title={t("observability.reset_times") || "Reset times"}
+        className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors shrink-0"
       >
         <History className="w-3.5 h-3.5" />
       </button>
@@ -253,34 +271,39 @@ function CalendarFooterActions({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center justify-end gap-2 px-[14px] py-2 border-t border-border/40">
-      <button
-        type="button"
-        onClick={onCopy}
-        className="relative inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors hover:bg-muted text-xs h-[26px] px-2.5 text-muted-foreground hover:text-foreground"
-      >
-        <span className="truncate">{t("observability.copy_range")}</span>
-      </button>
-      <button
-        type="button"
-        onClick={onToday}
-        className="relative inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors border border-border bg-muted/40 hover:bg-muted text-xs h-[26px] px-2.5 text-foreground"
-      >
-        <span className="truncate">{t("observability.today")}</span>
-      </button>
-      <button
-        type="button"
-        onClick={onApply}
-        disabled={!hasRange}
-        className={cn(
-          "relative inline-flex items-center justify-center cursor-pointer text-center font-medium rounded-md transition-colors text-xs h-[26px] px-2.5",
-          hasRange
-            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-            : "bg-muted/40 text-muted-foreground/50 cursor-not-allowed border border-border/40"
-        )}
-      >
-        <span className="truncate">{t("observability.apply")}</span>
-      </button>
+    <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border/40 bg-muted/5">
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onCopy}
+          className="inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors hover:bg-muted text-xs h-7 px-2.5 text-muted-foreground hover:text-foreground"
+        >
+          <span className="truncate">{t("observability.copy_range") || "Copy Range"}</span>
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onToday}
+          className="inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors border border-border bg-background hover:bg-muted text-xs h-7 px-2.5 text-foreground"
+        >
+          <span className="truncate">{t("observability.today") || "Today"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={onApply}
+          disabled={!hasRange}
+          className={cn(
+            "inline-flex items-center justify-center cursor-pointer text-center font-medium rounded-md transition-colors text-xs h-7 px-3",
+            hasRange
+              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+              : "bg-muted/40 text-muted-foreground/50 cursor-not-allowed border border-border/40"
+          )}
+        >
+          <span className="truncate">{t("observability.apply") || "Apply Range"}</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -306,7 +329,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
       const val = customRelativeInput.trim();
       const match = val.match(/^(\d+)([mhd])$/i);
       if (match) {
-        const amount = parseInt(match[1]);
+        const amount = parseInt(match[1], 10);
         const unit = match[2].toLowerCase();
         let mult = 60 * 1000;
         if (unit === "h") mult = 60 * 60 * 1000;
@@ -345,8 +368,8 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const updateCoords = React.useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const popupWidth = 480;
-      const popupHeight = 360;
+      const popupWidth = 510;
+      const popupHeight = 380;
       const margin = 8;
       const isOnRightHalf = rect.left + rect.width / 2 > window.innerWidth / 2;
       const rawLeft = isOnRightHalf
@@ -381,7 +404,9 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
       if (
         triggerRef.current && !triggerRef.current.contains(target) &&
         contentRef.current && !contentRef.current.contains(target)
-      ) setOpen(false);
+      ) {
+        setOpen(false);
+      }
     }
     if (open) document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
@@ -439,8 +464,8 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         )}
       >
         <span className="flex items-center gap-1.5 truncate">
-          <CalendarIcon className="w-3 h-3 text-primary shrink-0" />
-          {mounted ? getDisplayLabel(value, t) : t("observability.loading")}
+          <CalendarRange className="w-3.5 h-3.5 text-primary shrink-0" />
+          {mounted ? getDisplayLabel(value, t) : (t("observability.loading") || "Loading...")}
         </span>
         <ChevronDown className={cn("w-3 h-3 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
@@ -449,7 +474,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         <div
           ref={contentRef}
           style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-          className="z-[9999] w-[480px] rounded-xl border border-border bg-card shadow-lg overflow-hidden text-foreground font-sans text-xs"
+          className="z-[9999] w-[510px] rounded-xl border border-border bg-card shadow-xl overflow-hidden text-foreground font-sans text-xs"
         >
           <div className="flex bg-card">
             <PresetsSidebar
@@ -460,7 +485,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               onPresetSelect={(val) => { onChange(val); setLocalRange(undefined); setOpen(false); }}
             />
 
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
               <TimePickerInputs
                 fromTime={fromTime}
                 toTime={toTime}
@@ -484,7 +509,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                 }}
               />
 
-              <div className="border-t border-border/40 flex justify-center py-1 px-[2px]">
+              <div className="border-t border-border/40 flex justify-center py-2 px-1">
                 <Calendar
                   mode="range"
                   selected={localRange}
@@ -493,13 +518,13 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                   disabled={{ after: today }}
                   className="text-xs relative p-0"
                   classNames={{
-                    month: "relative flex flex-col gap-2.5",
-                    button_previous: "absolute left-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-                    button_next: "absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-                    day_button: "h-9 w-9 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                    weekday: "text-muted-foreground rounded-md w-9 font-normal text-[11px] pb-1 text-center",
-                    day: "h-9 w-9 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
-                    week: "flex w-full mt-2",
+                    month: "relative flex flex-col gap-2",
+                    button_previous: "absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+                    button_next: "absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+                    day_button: "h-8 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    weekday: "text-muted-foreground rounded-md w-8 font-normal text-[11px] pb-1 text-center",
+                    day: "h-8 w-8 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
+                    week: "flex w-full mt-1.5",
                   }}
                 />
               </div>

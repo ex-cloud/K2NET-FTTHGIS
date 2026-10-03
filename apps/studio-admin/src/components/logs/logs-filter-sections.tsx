@@ -11,6 +11,7 @@ import {
   ChevronDown,
   User,
   Shield,
+  Zap,
 } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
 
@@ -270,3 +271,38 @@ export function SeverityFilterSection({
     </Collapsible>
   );
 }
+
+export function BenchmarkFilterSection({
+  includeBenchmark,
+  setIncludeBenchmark,
+}: {
+  includeBenchmark: boolean;
+  setIncludeBenchmark: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  return (
+    <div className="pt-2 border-t border-border/40 font-mono text-[11px]">
+      <label className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/40 cursor-pointer transition-colors group">
+        <div className="flex items-center gap-2 min-w-0">
+          <input
+            type="checkbox"
+            checked={includeBenchmark}
+            onChange={(e) => setIncludeBenchmark(e.target.checked)}
+            className="w-3.5 h-3.5 rounded border-border text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0"
+          />
+          <span className="flex items-center gap-1.5 text-muted-foreground group-hover:text-foreground transition-colors truncate">
+            <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+            <span>Include Benchmarks</span>
+          </span>
+        </div>
+        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0">
+          ⚡ TEST
+        </span>
+      </label>
+      <p className="px-2 pt-0.5 text-[9px] text-muted-foreground/50 font-sans leading-tight">
+        Load-test &amp; synthetic worker events (worker-benchmark-*)
+      </p>
+    </div>
+  );
+}
+
+

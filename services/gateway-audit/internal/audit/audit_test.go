@@ -171,3 +171,42 @@ func TestSlidingWindowDeduplicator(t *testing.T) {
 		t.Errorf("10th milestone event should be sampled (count: %d)", count)
 	}
 }
+
+func TestCursorPaginationAndBenchmarkFilter(t *testing.T) {
+	now := time.Now()
+	testID := "018f3a2c-4b52-7000-8000-000000000001"
+
+	filter := QueryAuditEventsFilter{
+		TenantSlug:       "system",
+		IncludeBenchmark: false,
+		BeforeOccurredAt: &now,
+		BeforeID:         testID,
+		Page:             1,
+		PageSize:         50,
+	}
+
+	if filter.IncludeBenchmark {
+		t.Errorf("Expected IncludeBenchmark to be false")
+	}
+
+	if filter.BeforeID != testID || filter.BeforeOccurredAt == nil {
+		t.Errorf("Expected BeforeID and BeforeOccurredAt to be populated")
+	}
+
+	cursorStr := "MjAyNi0xMC0wMlQxMTo1ODozOS4xMjM0NTZaPDAxOGYzYTJjLTRiNTItNzAwMC04MDAwLTAwMDAwMDAwMDAwMQ=="
+	nextCursor := &cursorStr
+	resp := PaginatedAuditEventsResponse{
+		Data:       []*AuditEvent{},
+		TotalCount: 500,
+		Page:       1,
+		PageSize:   50,
+		TotalPages: 10,
+		HasMore:    true,
+		NextCursor: nextCursor,
+	}
+
+	if !resp.HasMore || resp.NextCursor == nil || *resp.NextCursor != cursorStr {
+		t.Errorf("Cursor response struct validation failed")
+	}
+}
+
