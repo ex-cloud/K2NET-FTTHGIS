@@ -439,22 +439,22 @@ export function LogsAlertConfigModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto bg-card text-card-foreground border-border shadow-2xl p-0 custom-scrollbar-thin font-sans">
-        <div className="p-6 border-b border-border bg-muted/30">
-          <DialogHeader className="gap-1.5">
+      <DialogContent className="max-w-2xl max-h-[82vh] overflow-y-auto bg-card text-card-foreground border-border shadow-2xl p-0 custom-scrollbar-thin font-sans rounded-xl">
+        <div className="px-5 py-3.5 border-b border-border bg-muted/30">
+          <DialogHeader className="gap-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-destructive/10 text-destructive border border-destructive/20">
-                  <BellRing className="w-5 h-5" />
+                <div className="p-1.5 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 shrink-0">
+                  <BellRing className="w-4 h-4" />
                 </div>
                 <div>
-                  <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                     <span>Incident Alerting & Webhook Engine</span>
-                    <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
-                      P.11 Active
+                    <Badge variant="outline" className="text-[9px] font-mono border-primary/30 text-primary py-0 px-1.5 h-4">
+                      Active
                     </Badge>
                   </DialogTitle>
-                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  <DialogDescription className="text-[11px] text-muted-foreground mt-0.5">
                     Real-time incident dispatching with anti-storm cooldown and multi-channel alerting.
                   </DialogDescription>
                 </div>
@@ -466,9 +466,9 @@ export function LogsAlertConfigModal({
                     type="checkbox"
                     checked={config.enabled}
                     onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
-                    className="w-4 h-4 rounded border-border text-primary accent-primary cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
                   />
-                  <span className={cn(config.enabled ? "text-primary" : "text-muted-foreground")}>
+                  <span className={cn("text-[11px]", config.enabled ? "text-primary" : "text-muted-foreground")}>
                     {config.enabled ? "Engine Active" : "Engine Paused"}
                   </span>
                 </label>
@@ -477,10 +477,10 @@ export function LogsAlertConfigModal({
           </DialogHeader>
         </div>
 
-        <div className="p-6 space-y-6 text-xs">
+        <div className="p-4 space-y-3.5 text-xs">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-              <Loader2 className="w-7 h-7 animate-spin text-primary" />
+            <div className="flex flex-col items-center justify-center py-12 gap-2.5 text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
               <p className="font-mono text-xs">Loading incident alerting configuration...</p>
             </div>
           ) : (
@@ -499,20 +499,20 @@ export function LogsAlertConfigModal({
 
               <NotificationGatewaySection config={config} setConfig={setConfig} />
 
-              <div className="p-4 rounded-xl border border-border bg-muted/10 space-y-3">
+              <div className="p-3 rounded-lg border border-border bg-muted/10 space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 font-semibold text-foreground">
-                    <ShieldAlert className="w-4 h-4 text-destructive" />
+                  <div className="flex items-center gap-1.5 font-semibold text-foreground text-[11px]">
+                    <ShieldAlert className="w-3.5 h-3.5 text-destructive" />
                     <span>Protected High-Risk Security Actions ({config.highRiskActions.length})</span>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {config.highRiskActions.map((action) => (
                     <Badge
                       key={action}
                       variant="outline"
-                      className="px-2 py-0.5 text-[10px] font-mono border-border bg-background text-foreground"
+                      className="px-1.5 py-0 text-[9px] font-mono border-border bg-background text-foreground h-4"
                     >
                       {action}
                     </Badge>

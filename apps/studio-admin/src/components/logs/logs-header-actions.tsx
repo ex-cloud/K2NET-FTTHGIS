@@ -109,11 +109,10 @@ export function LogsHeaderActions({
             variant="ghost"
             size="sm"
             onClick={() => setShowHistogram((prev) => !prev)}
-            className={`h-7 w-7 p-0 border rounded-md transition-colors ${
-              showHistogram
+            className={`h-7 w-7 p-0 border rounded-md transition-colors ${showHistogram
                 ? "bg-primary/15 text-primary border-primary/40 shadow-xs"
                 : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/60"
-            }`}
+              }`}
           >
             <BarChart2 className="w-3.5 h-3.5" />
           </Button>
@@ -125,11 +124,10 @@ export function LogsHeaderActions({
             variant="ghost"
             size="sm"
             onClick={() => setShowColumnPicker((prev) => !prev)}
-            className={`h-7 w-7 p-0 border rounded-md transition-colors ${
-              showColumnPicker
+            className={`h-7 w-7 p-0 border rounded-md transition-colors ${showColumnPicker
                 ? "bg-muted text-foreground border-border"
                 : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/60"
-            }`}
+              }`}
           >
             <Columns3 className="w-3.5 h-3.5" />
           </Button>
@@ -139,52 +137,90 @@ export function LogsHeaderActions({
       {/* Visual Separator */}
       <div className="h-4 w-px bg-border/60 shrink-0" />
 
-      {/* Group 2: Security, Governance & Investigation Tools */}
-      <div className="flex items-center gap-1">
-        <ActionTooltip label="Audit Forensic Integrity" shortcut="Alt+I">
+      {/* Group 2: Security & Investigation Suite Dropdown Menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
+            className="h-7 text-xs font-mono gap-1.5 border-border/80 rounded-md px-2.5 bg-background hover:bg-muted/70 text-foreground transition-all cursor-pointer"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+            <span className="font-medium text-xs">Investigate</span>
+            <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64 font-mono text-xs p-1 shadow-xl border border-border bg-popover">
+          <DropdownMenuLabel className="text-[9px] font-semibold tracking-wider text-muted-foreground uppercase px-2 py-0.5">
+            Security & Governance Tools
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator className="my-1" />
+
+          <DropdownMenuItem
             onClick={onOpenIntegrityModal}
-            className="h-7 w-7 p-0 text-primary hover:text-primary-foreground hover:bg-primary/20 border border-primary/30 rounded-md transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors"
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
-          </Button>
-        </ActionTooltip>
+            <div className="w-6 h-6 rounded bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-3 h-3" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium text-[11px] text-foreground block leading-none mb-0.5">Audit Forensic Integrity</span>
+              <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                Client-side SHA-256 Merkle root inspector
+              </p>
+            </div>
+            <DropdownMenuShortcut className="text-[9px] opacity-70">Alt+I</DropdownMenuShortcut>
+          </DropdownMenuItem>
 
-        <ActionTooltip label="Incident Alerting & Webhooks" shortcut="Alt+W">
-          <Button
-            variant="ghost"
-            size="sm"
+          <DropdownMenuItem
             onClick={onOpenAlertConfigModal}
-            className="h-7 w-7 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive/20 border border-destructive/30 rounded-md transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors"
           >
-            <BellRing className="w-3.5 h-3.5" />
-          </Button>
-        </ActionTooltip>
+            <div className="w-6 h-6 rounded bg-destructive/10 text-destructive border border-destructive/20 flex items-center justify-center shrink-0">
+              <BellRing className="w-3 h-3" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium text-[11px] text-foreground block leading-none mb-0.5">Incident Alerts & Webhooks</span>
+              <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                Dispatcher & anti-storm rate limiter
+              </p>
+            </div>
+            <DropdownMenuShortcut className="text-[9px] opacity-70">Alt+W</DropdownMenuShortcut>
+          </DropdownMenuItem>
 
-        <ActionTooltip label="Save Filter as Investigation Preset" shortcut="Alt+B">
-          <Button
-            variant="ghost"
-            size="sm"
+          <DropdownMenuItem
             onClick={onOpenSavePresetModal}
-            className="h-7 w-7 p-0 text-amber-500 hover:text-amber-400 hover:bg-amber-500/15 border border-amber-500/30 rounded-md transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors"
           >
-            <Bookmark className="w-3.5 h-3.5" />
-          </Button>
-        </ActionTooltip>
+            <div className="w-6 h-6 rounded bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+              <Bookmark className="w-3 h-3" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium text-[11px] text-foreground block leading-none mb-0.5">Bookmark Search Preset</span>
+              <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                Save current filters as 1-click preset
+              </p>
+            </div>
+            <DropdownMenuShortcut className="text-[9px] opacity-70">Alt+B</DropdownMenuShortcut>
+          </DropdownMenuItem>
 
-        <ActionTooltip label="Cold Storage S3 Archives (WORM)" shortcut="Alt+A">
-          <Button
-            variant="ghost"
-            size="sm"
+          <DropdownMenuItem
             onClick={onOpenColdArchiveModal}
-            className="h-7 w-7 p-0 text-sky-500 hover:text-sky-400 hover:bg-sky-500/15 border border-sky-500/30 rounded-md transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors"
           >
-            <Archive className="w-3.5 h-3.5" />
-          </Button>
-        </ActionTooltip>
-      </div>
+            <div className="w-6 h-6 rounded bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+              <Archive className="w-3 h-3" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium text-[11px] text-foreground block leading-none mb-0.5">Cold Storage S3 Archives</span>
+              <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                Query WORM-locked MinIO partitions (&gt;90d)
+              </p>
+            </div>
+            <DropdownMenuShortcut className="text-[9px] opacity-70">Alt+A</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Visual Separator */}
       <div className="h-4 w-px bg-border/60 shrink-0" />
@@ -203,64 +239,64 @@ export function LogsHeaderActions({
             ) : (
               <Download className="w-3.5 h-3.5 text-primary" />
             )}
-            <span className="font-medium">Export</span>
+            <span className="font-medium text-xs">Export</span>
             <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-72 font-mono text-xs p-1.5 shadow-xl border border-border bg-popover">
-          <DropdownMenuLabel className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase px-2 py-1">
-            Data & Forensic Exporters ({filteredLogs.length} events)
+        <DropdownMenuContent align="end" className="w-64 font-mono text-xs p-1 shadow-xl border border-border bg-popover">
+          <DropdownMenuLabel className="text-[9px] font-semibold tracking-wider text-muted-foreground uppercase px-2 py-0.5">
+            Exporters ({filteredLogs.length} events)
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="my-1" />
           <DropdownMenuItem
             onClick={onExportZipBundle}
-            className="flex items-center gap-2.5 px-2 py-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors"
           >
-            <div className="p-1 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
-              <FileArchive className="w-3.5 h-3.5" />
+            <div className="w-6 h-6 rounded bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+              <FileArchive className="w-3 h-3" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-foreground flex items-center justify-between">
+              <div className="font-medium text-[11px] text-foreground flex items-center justify-between leading-none mb-0.5">
                 <span>Forensic Evidence ZIP</span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-primary/15 text-primary border border-primary/30">ISO 27037</span>
+                <span className="text-[8px] px-1 py-0.1 rounded bg-primary/15 text-primary border border-primary/30">ISO 27037</span>
               </div>
-              <p className="text-[10px] text-muted-foreground truncate">
-                5 artifacts: JSON, CSV, Merkle Root & PEM Cert
+              <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                JSON, CSV, Merkle Root & PEM Cert
               </p>
             </div>
-            <DropdownMenuShortcut className="text-[10px]">Alt+Z</DropdownMenuShortcut>
+            <DropdownMenuShortcut className="text-[9px] opacity-70">Alt+Z</DropdownMenuShortcut>
           </DropdownMenuItem>
 
           <DropdownMenuItem
             onClick={handleExportCsv}
-            className="flex items-center gap-2.5 px-2 py-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors"
           >
-            <div className="p-1 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
-              <FileSpreadsheet className="w-3.5 h-3.5" />
+            <div className="w-6 h-6 rounded bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+              <FileSpreadsheet className="w-3 h-3" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="font-semibold text-foreground block">RFC-4180 CSV Dataset</span>
-              <p className="text-[10px] text-muted-foreground truncate">
-                Universal spreadsheet table formatted
+              <span className="font-medium text-[11px] text-foreground block leading-none mb-0.5">RFC-4180 CSV Dataset</span>
+              <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                Universal spreadsheet table format
               </p>
             </div>
-            <DropdownMenuShortcut className="text-[10px]">Alt+S</DropdownMenuShortcut>
+            <DropdownMenuShortcut className="text-[9px] opacity-70">Alt+S</DropdownMenuShortcut>
           </DropdownMenuItem>
 
           <DropdownMenuItem
             onClick={handleExportJson}
-            className="flex items-center gap-2.5 px-2 py-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors"
           >
-            <div className="p-1 rounded bg-muted text-foreground border border-border/80 shrink-0">
-              <FileCode className="w-3.5 h-3.5" />
+            <div className="w-6 h-6 rounded bg-muted text-foreground border border-border/80 flex items-center justify-center shrink-0">
+              <FileCode className="w-3 h-3" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="font-semibold text-foreground block">Raw JSON Telemetry</span>
-              <p className="text-[10px] text-muted-foreground truncate">
-                Indented JSON payloads with metadata diffs
+              <span className="font-medium text-[11px] text-foreground block leading-none mb-0.5">Raw JSON Telemetry</span>
+              <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                Indented JSON payloads with diffs
               </p>
             </div>
-            <DropdownMenuShortcut className="text-[10px]">Alt+E</DropdownMenuShortcut>
+            <DropdownMenuShortcut className="text-[9px] opacity-70">Alt+E</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -277,11 +313,10 @@ export function LogsHeaderActions({
           variant="outline"
           size="sm"
           onClick={() => setIsLivePaused((prev) => !prev)}
-          className={`h-7 text-xs font-mono gap-1.5 border-border/80 rounded-md px-2.5 transition-all cursor-pointer ${
-            isLivePaused
+          className={`h-7 text-xs font-mono gap-1.5 border-border/80 rounded-md px-2.5 transition-all cursor-pointer ${isLivePaused
               ? "bg-amber-500/10 text-amber-400 border-amber-500/25 hover:bg-amber-500/20"
               : "bg-primary/10 text-primary border-primary/25 hover:bg-primary/20"
-          }`}
+            }`}
         >
           {isLivePaused ? (
             <Play className="w-3 h-3 fill-current" />

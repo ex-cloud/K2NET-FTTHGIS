@@ -23,24 +23,24 @@ export function LogsIntegrityOverviewTab({
   const isHealthy = report.overallStatus === "COMPLIANT_UNALTERED";
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-150">
+    <div className="space-y-3 animate-in fade-in duration-150">
       {/* Big Status Banner */}
       <div
         className={cn(
-          "p-4 rounded-xl border flex items-start justify-between gap-4",
+          "p-3 rounded-xl border flex items-start justify-between gap-3",
           isHealthy
             ? "bg-primary/10 border-primary/30 text-foreground"
             : "bg-destructive/10 border-destructive/30 text-foreground"
         )}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2.5">
           {isHealthy ? (
-            <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           ) : (
-            <ShieldAlert className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
+            <ShieldAlert className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
           )}
           <div>
-            <div className="text-sm font-bold flex items-center gap-2">
+            <div className="text-xs font-bold flex items-center gap-2">
               <span>
                 {isHealthy
                   ? "100% Cryptographically Intact & Tamper-Proof"
@@ -49,7 +49,7 @@ export function LogsIntegrityOverviewTab({
               <Badge
                 variant="outline"
                 className={cn(
-                  "text-[10px] font-mono",
+                  "text-[9px] font-mono py-0 px-1.5 h-4",
                   isHealthy
                     ? "border-primary/40 bg-primary/15 text-primary"
                     : "border-destructive/40 bg-destructive/15 text-destructive"
@@ -58,7 +58,7 @@ export function LogsIntegrityOverviewTab({
                 {report.overallStatus}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+            <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xl leading-relaxed">
               {isHealthy
                 ? "Every scanned event matches its deterministic SHA-256 signature and maintains unbroken cryptographic hash chain continuity back to the Genesis root."
                 : "One or more events exhibit broken hash chaining or modified payload checksums. Immediate security review recommended."}
@@ -66,19 +66,19 @@ export function LogsIntegrityOverviewTab({
           </div>
         </div>
         <div className="text-right shrink-0">
-          <div className="text-2xl font-bold text-foreground">
+          <div className="text-lg font-bold text-foreground font-mono">
             {report.verifiedCount} / {report.totalEvents}
           </div>
-          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+          <div className="text-[9px] text-muted-foreground uppercase tracking-wider">
             Events Verified
           </div>
         </div>
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-        <div className="p-3 rounded-lg border border-border bg-card flex flex-col gap-1">
-          <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="p-2 rounded-lg border border-border bg-card flex flex-col gap-0.5">
+          <span className="text-[9px] uppercase text-muted-foreground font-semibold tracking-wider">
             Merkle Tree Root
           </span>
           <div className="flex items-center justify-between gap-1">
@@ -88,15 +88,15 @@ export function LogsIntegrityOverviewTab({
             <button
               type="button"
               onClick={() => onCopy(report.merkleTree.root, "Merkle Root")}
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <Copy className="w-3 h-3" />
             </button>
           </div>
         </div>
 
-        <div className="p-3 rounded-lg border border-border bg-card flex flex-col gap-1">
-          <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">
+        <div className="p-2 rounded-lg border border-border bg-card flex flex-col gap-0.5">
+          <span className="text-[9px] uppercase text-muted-foreground font-semibold tracking-wider">
             Genesis Root Anchor
           </span>
           <div className="flex items-center justify-between gap-1">
@@ -106,40 +106,40 @@ export function LogsIntegrityOverviewTab({
             <button
               type="button"
               onClick={() => onCopy(report.genesisHash, "Genesis Hash")}
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <Copy className="w-3 h-3" />
             </button>
           </div>
         </div>
 
-        <div className="p-3 rounded-lg border border-border bg-card flex flex-col gap-1">
-          <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">
+        <div className="p-2 rounded-lg border border-border bg-card flex flex-col gap-0.5">
+          <span className="text-[9px] uppercase text-muted-foreground font-semibold tracking-wider">
             Tampered Breaches
           </span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 mt-0.5">
             {report.tamperedCount === 0 ? (
-              <span className="text-xs font-bold text-primary">0 (Zero Violations)</span>
+              <span className="text-xs font-bold text-primary font-mono">0 (Zero Violations)</span>
             ) : (
-              <span className="text-xs font-bold text-destructive">
+              <span className="text-xs font-bold text-destructive font-mono">
                 {report.tamperedCount} Corrupted
               </span>
             )}
           </div>
         </div>
 
-        <div className="p-3 rounded-lg border border-border bg-card flex flex-col gap-1">
-          <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">
+        <div className="p-2 rounded-lg border border-border bg-card flex flex-col gap-0.5">
+          <span className="text-[9px] uppercase text-muted-foreground font-semibold tracking-wider">
             Verification Speed
           </span>
-          <div className="text-xs font-bold text-foreground">
-            {report.computationDurationMs} ms (Client-Side)
+          <div className="text-xs font-bold text-foreground font-mono mt-0.5">
+            {report.computationDurationMs} ms (Client)
           </div>
         </div>
       </div>
 
       {/* Forensic Topology Breakdown */}
-      <div className="p-3.5 rounded-xl border border-border bg-card/60 space-y-2">
+      <div className="p-3 rounded-xl border border-border bg-card/60 space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
             <Layers className="w-3.5 h-3.5 text-primary" />
@@ -149,13 +149,13 @@ export function LogsIntegrityOverviewTab({
             variant="ghost"
             size="sm"
             onClick={onViewTree}
-            className="text-xs h-6 px-2 text-primary hover:text-primary cursor-pointer font-mono"
+            className="text-[10px] h-5 px-1.5 text-primary hover:text-primary cursor-pointer font-mono"
           >
             <span>Explore Tree Details</span>
-            <ChevronRight className="w-3 h-3" />
+            <ChevronRight className="w-3 h-3 ml-0.5" />
           </Button>
         </div>
-        <div className="p-3 rounded-lg bg-muted/20 border border-border/50 text-[11px] leading-relaxed text-muted-foreground space-y-1.5">
+        <div className="p-2.5 rounded-lg bg-muted/20 border border-border/50 text-[10px] leading-relaxed text-muted-foreground space-y-1">
           <div>
             • <strong className="text-foreground">Formula:</strong>{" "}
             <code className="text-primary font-mono">

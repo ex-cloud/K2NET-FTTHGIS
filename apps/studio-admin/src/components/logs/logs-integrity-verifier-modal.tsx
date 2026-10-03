@@ -112,70 +112,70 @@ export function LogsIntegrityVerifierModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden font-mono border-border bg-card shadow-2xl">
+      <DialogContent className="max-w-3xl max-h-[82vh] flex flex-col p-0 gap-0 overflow-hidden font-mono border-border bg-card shadow-2xl rounded-xl">
         {/* Header */}
-        <DialogHeader className="p-4 border-b border-border/60 bg-muted/20 shrink-0">
+        <DialogHeader className="px-5 py-3.5 border-b border-border/60 bg-muted/20 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 text-primary">
-                <ShieldCheck className="w-5 h-5" />
+              <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary shrink-0">
+                <ShieldCheck className="w-4 h-4" />
               </div>
               <div>
-                <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                <DialogTitle className="text-xs font-bold text-foreground flex items-center gap-2">
                   <span>Tamper-Proof Audit Integrity & Merkle Inspector</span>
                   <Badge
                     variant="outline"
-                    className="text-[10px] font-mono border-primary/40 text-primary bg-primary/10"
+                    className="text-[9px] font-mono border-primary/40 text-primary bg-primary/10 px-1 py-0 h-4"
                   >
                     FIPS 180-4 SHA-256
                   </Badge>
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                <DialogDescription className="text-[11px] text-muted-foreground mt-0.5">
                   Client-side zero-trust mathematical verification of event payloads, hash chaining, and Merkle tree roots.
                 </DialogDescription>
               </div>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex items-center gap-1.5 mt-3 pt-2 border-t border-border/40">
+          {/* Navigation Tabs (Segmented Control Style) */}
+          <div className="flex items-center gap-1 mt-2.5 p-0.5 bg-muted/50 rounded-lg border border-border/50 w-fit">
             <button
               type="button"
               onClick={() => setActiveTab("overview")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer",
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer select-none",
                 activeTab === "overview"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Fingerprint className="w-3.5 h-3.5" />
+              <Fingerprint className="w-3 h-3 text-primary" />
               <span>Overview & Health</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("tree")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer",
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer select-none",
                 activeTab === "tree"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Layers className="w-3.5 h-3.5" />
+              <Layers className="w-3 h-3 text-primary" />
               <span>Merkle Tree & Hash Chain ({report?.totalEvents ?? logs.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("certificate")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer",
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer select-none",
                 activeTab === "certificate"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <FileCheck2 className="w-3.5 h-3.5" />
+              <FileCheck2 className="w-3 h-3 text-primary" />
               <span>Compliance Certificate</span>
             </button>
           </div>
