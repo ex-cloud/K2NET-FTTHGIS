@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ShieldAlert, Eye, X, Volume2, VolumeX, Bell } from "lucide-react";
 import { Button, cn } from "@k2net/ui";

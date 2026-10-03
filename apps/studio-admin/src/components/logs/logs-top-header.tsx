@@ -21,6 +21,8 @@ import { LogsTimeRangeInlinePill } from "./logs-time-range-inline-pill";
 import { LogsIntegrityVerifierModal } from "./logs-integrity-verifier-modal";
 import { LogsColdArchiveModal } from "./logs-cold-archive-modal";
 import { LogsAlertConfigModal } from "./logs-alert-config-modal";
+import { LogsSavePresetModal } from "./logs-save-preset-modal";
+import { generateForensicEvidenceZip } from "./logs-zip-exporter";
 import {
   type FilterFieldConfig,
   type SmartParseResult,
@@ -72,8 +74,46 @@ export function LogsTopHeader({
   const [showIntegrityModal, setShowIntegrityModal] = React.useState(false);
   const [showColdArchiveModal, setShowColdArchiveModal] = React.useState(false);
   const [showAlertConfigModal, setShowAlertConfigModal] = React.useState(false);
+  const [showSavePresetModal, setShowSavePresetModal] = React.useState(false);
+  const [isExportingZip, setIsExportingZip] = React.useState(false);
   const columnBtnRef = React.useRef<HTMLButtonElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleExportZipBundle = React.useCallback(async () => {
+    if (filteredLogs.length === 0) {
+      toast.error("No log events match the current filter to package as evidence.");
+      return;
+    }
+    setIsExportingZip(true);
+    try {
+      await generateForensicEvidenceZip(filteredLogs, {
+        tenantSlug: tenantFilter,
+        scopeFilter,
+        timeRange,
+        investigator: "Super Admin (SecOps)",
+      });
+      toast.success(`Forensic Evidence ZIP successfully generated (${filteredLogs.length} events).`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to generate forensic ZIP bundle";
+      toast.error(message);
+    } finally {
+      setIsExportingZip(false);
+    }
+  }, [filteredLogs, tenantFilter, scopeFilter, timeRange]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && (e.key === "b" || e.key === "B")) {
+        e.preventDefault();
+        setShowSavePresetModal((prev) => !prev);
+      } else if (e.altKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        handleExportZipBundle();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleExportZipBundle]);
 
   const activePills = React.useMemo(() => {
     const list: Array<{ id: string; label: string; kind: "type" | "level" | "severity" | "scope" | "project" | "tenant" | "benchmark" | "advanced" }> = [];
@@ -290,6 +330,9 @@ export function LogsTopHeader({
         onOpenIntegrityModal={() => setShowIntegrityModal(true)}
         onOpenColdArchiveModal={() => setShowColdArchiveModal(true)}
         onOpenAlertConfigModal={() => setShowAlertConfigModal(true)}
+        onOpenSavePresetModal={() => setShowSavePresetModal(true)}
+        onExportZipBundle={handleExportZipBundle}
+        isExportingZip={isExportingZip}
       />
 
       {showPalette && (
@@ -349,6 +392,11 @@ export function LogsTopHeader({
       <LogsAlertConfigModal
         open={showAlertConfigModal}
         onOpenChange={setShowAlertConfigModal}
+      />
+
+      <LogsSavePresetModal
+        open={showSavePresetModal}
+        onOpenChange={setShowSavePresetModal}
       />
     </div>
   );

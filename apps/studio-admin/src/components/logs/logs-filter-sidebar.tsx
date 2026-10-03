@@ -82,6 +82,7 @@ import {
   SeverityFilterSection,
   BenchmarkFilterSection,
 } from "./logs-filter-sections";
+import { PresetsFilterSection } from "./logs-presets-section";
 
 const EDGE_SUB_FILTERS = [
   { key: "edge_auth", label: "Auth (/auth)" },
@@ -299,6 +300,8 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
           </div>
           <LogsDateRangePicker value={timeRange} onChange={setTimeRange} />
         </div>
+
+        <PresetsFilterSection />
 
         <TenantScopeFilterSection
           scopeFilter={scopeFilter}

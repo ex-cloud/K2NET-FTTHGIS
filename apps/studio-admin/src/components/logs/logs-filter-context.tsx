@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useMemo, Suspense } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react";
 import { usePathname } from "@/lib/navigation-compat";
 import {
   useAuditLogStream,
@@ -7,10 +7,11 @@ import {
   type LogGroupKey,
 } from "@/hooks/use-audit-log-stream";
 import { filterAuditLogs } from "./logs-utils";
+import type { InvestigationPreset } from "./logs-presets-types";
 
 // Re-export so consumers can import from one place
 export { LOG_GROUPS };
-export type { LogGroupKey };
+export type { LogGroupKey, InvestigationPreset };
 
 // ─── Advanced Filter Types ─────────────────────────────────────────────────────
 
@@ -190,6 +191,9 @@ export type LogFilterState = {
   /** includeBenchmark filter — false = filter out synthetic load-test data */
   includeBenchmark: boolean;
   setIncludeBenchmark: React.Dispatch<React.SetStateAction<boolean>>;
+
+  /** Apply saved investigation preset */
+  applyPreset: (preset: InvestigationPreset) => void;
 
   // Real-Time Log Stream Access & Keyset Cursor Pagination
   logs: AuditStreamEntry[];
@@ -539,6 +543,19 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     }
   };
 
+  const applyPreset = useCallback((preset: InvestigationPreset) => {
+    setTimeRange(preset.filters.timeRange || "60m");
+    setSelectedTypes(preset.filters.selectedTypes ? { ...preset.filters.selectedTypes } : {});
+    setSelectedLevels(preset.filters.selectedLevels ? { ...preset.filters.selectedLevels } : {});
+    setSelectedSeverities(preset.filters.selectedSeverities ? { ...preset.filters.selectedSeverities } : {});
+    setScopeFilter(preset.filters.scopeFilter || "ALL");
+    setProjectFilter(preset.filters.projectFilter || "");
+    setTenantFilter(preset.filters.tenantFilter || "");
+    setSearchQuery(preset.filters.searchQuery || "");
+    setIncludeBenchmark(preset.filters.includeBenchmark || false);
+    setAdvancedFilters(preset.filters.advancedFilters ? [...preset.filters.advancedFilters] : []);
+  }, []);
+
   // Setter shims for compatibility
   const dummySetCounts = () => {};
 
@@ -558,6 +575,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
         edgeSubFilters, toggleEdgeSubFilter,
         selectedLog, setSelectedLog,
         resetAllFilters,
+        applyPreset,
         isSidebarCollapsed, setIsSidebarCollapsed,
         logTypeCounts, setLogTypeCounts: dummySetCounts as React.Dispatch<React.SetStateAction<Record<string, number>>>,
         levelCounts, setLevelCounts: dummySetCounts as React.Dispatch<React.SetStateAction<Record<string, number>>>,
@@ -608,6 +626,7 @@ const DEFAULT_CONTEXT: LogFilterState = {
   edgeSubFilters: { ...DEFAULT_EDGE_SUB_FILTERS }, toggleEdgeSubFilter: () => {},
   selectedLog: null, setSelectedLog: () => {},
   resetAllFilters: () => {},
+  applyPreset: () => {},
   isSidebarCollapsed: false, setIsSidebarCollapsed: () => {},
   logTypeCounts: {}, setLogTypeCounts: () => {},
   levelCounts: {}, setLevelCounts: () => {},

@@ -10,6 +10,9 @@ import {
   ShieldCheck,
   Archive,
   BellRing,
+  Bookmark,
+  FileArchive,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
@@ -29,6 +32,9 @@ export interface LogsHeaderActionsProps {
   onOpenIntegrityModal: () => void;
   onOpenColdArchiveModal: () => void;
   onOpenAlertConfigModal: () => void;
+  onOpenSavePresetModal: () => void;
+  onExportZipBundle: () => void;
+  isExportingZip?: boolean;
 }
 
 export function LogsHeaderActions({
@@ -44,6 +50,9 @@ export function LogsHeaderActions({
   onOpenIntegrityModal,
   onOpenColdArchiveModal,
   onOpenAlertConfigModal,
+  onOpenSavePresetModal,
+  onExportZipBundle,
+  isExportingZip = false,
 }: LogsHeaderActionsProps) {
   const { t } = useTranslation();
 
@@ -126,6 +135,17 @@ export function LogsHeaderActions({
         </Button>
       </ActionTooltip>
 
+      <ActionTooltip label="Save Filter as Investigation Preset" shortcut="Alt+B">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onOpenSavePresetModal}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md"
+        >
+          <Bookmark className="w-3.5 h-3.5 text-amber-500" />
+        </Button>
+      </ActionTooltip>
+
       <ActionTooltip label="Audit Forensic Integrity" shortcut="Alt+I">
         <Button
           variant="ghost"
@@ -134,6 +154,22 @@ export function LogsHeaderActions({
           className="h-7 w-7 p-0 text-primary hover:text-primary-foreground hover:bg-primary/20 border border-primary/30 rounded-md"
         >
           <ShieldCheck className="w-3.5 h-3.5" />
+        </Button>
+      </ActionTooltip>
+
+      <ActionTooltip label="Export Forensic ZIP Bundle" shortcut="Alt+Z">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={isExportingZip}
+          onClick={onExportZipBundle}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md"
+        >
+          {isExportingZip ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+          ) : (
+            <FileArchive className="w-3.5 h-3.5 text-primary" />
+          )}
         </Button>
       </ActionTooltip>
 
