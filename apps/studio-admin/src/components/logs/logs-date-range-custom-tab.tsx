@@ -64,9 +64,9 @@ function MonthPickerView({
           type="button"
           onClick={handlePrevYear}
           disabled={currentYear <= 2020}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
+          className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-card hover:bg-muted text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
         </button>
 
         <button
@@ -82,9 +82,9 @@ function MonthPickerView({
           type="button"
           onClick={handleNextYear}
           disabled={currentYear >= maxYear}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
+          className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-card hover:bg-muted text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3.5 h-3.5 text-foreground" />
         </button>
       </div>
 
@@ -141,9 +141,9 @@ function YearPickerView({
           type="button"
           onClick={() => setDecadeStart((d) => Math.max(2010, d - 12))}
           disabled={decadeStart <= 2010}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
+          className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-card hover:bg-muted text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
         </button>
 
         <span className="text-xs font-semibold text-foreground px-2.5 py-1">
@@ -154,9 +154,9 @@ function YearPickerView({
           type="button"
           onClick={() => setDecadeStart((d) => d + 12)}
           disabled={decadeStart + 11 >= maxYear}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
+          className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-card hover:bg-muted text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3.5 h-3.5 text-foreground" />
         </button>
       </div>
 
@@ -387,14 +387,20 @@ export function CustomHistoricalTabContent({
                     </button>
                   </div>
                 ),
+                Chevron: ({ orientation }) =>
+                  orientation === "left" ? (
+                    <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 text-foreground" />
+                  ),
               }}
               classNames={{
                 months: "w-full flex justify-center",
                 month: "relative flex flex-col gap-2 w-full max-w-[270px] items-center",
                 month_caption: "flex justify-center items-center w-full h-8 relative",
                 nav: "absolute top-0 inset-x-0 flex items-center justify-between w-full h-8 z-10 pointer-events-none px-0.5",
-                button_previous: "!pointer-events-auto !cursor-pointer flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground shadow-xs transition-colors z-20",
-                button_next: "!pointer-events-auto !cursor-pointer flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground shadow-xs transition-colors z-20",
+                button_previous: "!pointer-events-auto !cursor-pointer flex h-6 w-6 items-center justify-center rounded-md border border-border bg-card hover:bg-muted text-foreground shadow-xs transition-colors z-20",
+                button_next: "!pointer-events-auto !cursor-pointer flex h-6 w-6 items-center justify-center rounded-md border border-border bg-card hover:bg-muted text-foreground shadow-xs transition-colors z-20",
                 month_grid: "w-full border-collapse mt-2",
                 weekdays: "flex w-full justify-between mb-1",
                 weekday: "text-muted-foreground/70 rounded w-8 font-medium text-[10px] pb-1 text-center shrink-0",

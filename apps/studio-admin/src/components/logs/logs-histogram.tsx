@@ -109,7 +109,12 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node) &&
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setSelectedBucket(null);
       }
     }
@@ -125,21 +130,35 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
     return null;
   }
 
+  const openPopoverForBucket = (bucket: HistogramBucket, clientX?: number) => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const coordX = clientX !== undefined ? clientX - rect.left : rect.width / 2;
+      const popoverWidth = 230;
+      const left = Math.max(8, Math.min(coordX - popoverWidth / 2, rect.width - popoverWidth - 8));
+      setSelectedBucket({
+        bucket,
+        x: left,
+        y: 4,
+      });
+    }
+  };
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleBarClick = (state: any) => {
+  const handleBarClick = (state: any, e?: any) => {
     if (state?.activePayload && state.activePayload.length > 0) {
       const bucket = state.activePayload[0].payload as HistogramBucket;
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const coordX = state.activeCoordinate?.x ?? 50;
-        const popoverWidth = 230;
-        const left = Math.max(8, Math.min(coordX - popoverWidth / 2, rect.width - popoverWidth - 8));
-        setSelectedBucket({
-          bucket,
-          x: left,
-          y: 4,
-        });
-      }
+      const clientX = e?.clientX ?? (state.activeCoordinate?.x ? (containerRef.current?.getBoundingClientRect().left ?? 0) + state.activeCoordinate.x : undefined);
+      openPopoverForBucket(bucket, clientX);
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleDirectBarClick = (data: any, _index: number, e: React.MouseEvent) => {
+    e?.stopPropagation?.();
+    const bucket = (data?.payload || data) as HistogramBucket;
+    if (bucket && (bucket.startTime !== undefined || bucket.time)) {
+      openPopoverForBucket(bucket, e?.clientX);
     }
   };
 
@@ -174,7 +193,7 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
           <Tooltip
             content={<CustomTooltip />}
             cursor={{ fill: "hsl(var(--muted) / 0.4)", className: "cursor-pointer" }}
-            wrapperStyle={{ zIndex: 40 }}
+            wrapperStyle={{ zIndex: 40, pointerEvents: "none" }}
           />
           <Bar
             dataKey="success"
@@ -183,6 +202,7 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
             name="Success"
             radius={[0, 0, 0, 0]}
             className="cursor-pointer"
+            onClick={handleDirectBarClick}
           />
           <Bar
             dataKey="warning"
@@ -190,6 +210,7 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
             fill="hsl(38 92% 50%)"
             name="Warning"
             className="cursor-pointer"
+            onClick={handleDirectBarClick}
           />
           <Bar
             dataKey="error"
@@ -198,6 +219,7 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
             name="Error"
             radius={[2, 2, 0, 0]}
             className="cursor-pointer"
+            onClick={handleDirectBarClick}
           />
         </BarChart>
       </ResponsiveContainer>

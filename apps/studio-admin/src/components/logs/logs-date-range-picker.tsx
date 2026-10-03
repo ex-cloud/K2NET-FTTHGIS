@@ -303,10 +303,7 @@ export function LogsDateRangePicker({
       const popupWidth = 440;
       const popupHeight = 380;
       const margin = 8;
-      const isOnRightHalf = rect.left + rect.width / 2 > window.innerWidth / 2;
-      const rawLeft = isOnRightHalf
-        ? rect.right + window.scrollX - popupWidth
-        : rect.left + window.scrollX;
+      const rawLeft = rect.left + window.scrollX;
       const maxLeft = window.innerWidth - popupWidth - margin;
       const spaceBelow = window.innerHeight - rect.bottom;
       const openUpwards = spaceBelow < popupHeight && rect.top > popupHeight;
@@ -449,7 +446,7 @@ export function LogsDateRangePicker({
 
   const handleCopy = () => {
     // Strip leading decorative icons (⚡, 🔒) so copied text is clean & shareable
-    const cleanText = previewText.replace(/^[⚡🔒]\s*/, "");
+    const cleanText = previewText.replace(/^[⚡🔒]\s*/u, "");
     navigator.clipboard.writeText(cleanText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

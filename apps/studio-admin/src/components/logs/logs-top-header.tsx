@@ -1,364 +1,47 @@
 import * as React from "react";
-import {
-  Badge,
-  Button,
-  ActionTooltip,
-  cn,
-} from "@k2net/ui";
-import {
-  Search,
-  X,
-  PanelLeft,
-  RefreshCw,
-  BarChart2,
-  Download,
-  FileSpreadsheet,
-  Play,
-  SlidersHorizontal,
-  Columns3,
-  ChevronRight,
-  Check,
-} from "lucide-react";
+import { Badge, ActionTooltip, cn } from "@k2net/ui";
+import { Search, X, PanelLeft, SlidersHorizontal } from "lucide-react";
 
 import {
   useLogsFilter,
   LOG_TYPES_LABELS,
   type AdvancedFilter,
-  type AdvancedFilterField,
-  type AdvancedFilterOperator,
   FILTER_FIELD_LABELS,
-  FILTER_OPERATOR_LABELS,
+  OPERATOR_SYMBOLS,
 } from "./logs-filter-context";
-import { LogsDateRangePicker } from "./logs-date-range-picker";
-import { getDisplayLabel } from "./logs-date-range-types";
+import { parseAnyTimeInput } from "./logs-date-range-types";
 import { toast } from "sonner";
-import { createPortal } from "react-dom";
 import type { Table, VisibilityState } from "@tanstack/react-table";
 import type { AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { useTranslation } from "@k2net/i18n";
-import { exportLogsToCsv } from "./logs-utils";
+import { ColumnPicker } from "./logs-column-picker";
+import { SupabaseFilterPalette } from "./logs-supabase-filter-palette";
+import { LogsHeaderActions } from "./logs-header-actions";
+import { LogsTimeRangeInlinePill } from "./logs-time-range-inline-pill";
+import {
+  type FilterFieldConfig,
+  type SmartParseResult,
+  parseSmartFilter,
+} from "./logs-filter-palette-config";
 
-// ─── Filter Fields available in builder ──────────────────────────────────────
+// Re-export config types if needed by other components
+export type { FilterFieldConfig, SmartParseResult } from "./logs-filter-palette-config";
+export { FILTER_FIELD_CONFIGS, parseSmartFilter } from "./logs-filter-palette-config";
 
-const FILTER_FIELDS: AdvancedFilterField[] = [
-  "timeRange", "logType", "severity", "status", "method", "pathname", "actor", "message", "tenantSlug", "serviceSource", "level",
-];
-
-const FILTER_OPERATORS: AdvancedFilterOperator[] = [
-  "eq", "neq", "contains", "not_contains", "starts_with", "ends_with",
-];
-
-const FIELD_SUGGESTIONS: Partial<Record<AdvancedFilterField, string[]>> = {
-  logType: ["edge", "auth", "postgres", "audit", "notification", "scheduler", "storage", "export", "payment", "olt", "poller", "map", "whatsapp"],
-  severity: ["CRITICAL", "ERROR", "WARN", "INFO"],
-  method: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  status: ["200", "201", "204", "400", "401", "403", "404", "500"],
-  serviceSource: ["kong-gateway", "keycloak", "backend", "gateway-audit", "gateway-notification"],
-  level: ["success", "warning", "error"],
-};
-
-// ─── Column Toggle Popover ────────────────────────────────────────────────────
-
-interface ColumnPickerProps {
+export interface LogsTopHeaderProps {
+  filteredLogs: AuditStreamEntry[];
+  clearLogs: () => void;
   table: Table<AuditStreamEntry>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  columnVisibility: any; // passed only to trigger re-render when visibility changes
-  anchorRef: React.RefObject<HTMLButtonElement | null>;
-  onClose: () => void;
+  columnVisibility: VisibilityState;
+  setColumnVisibility: React.Dispatch<React.SetStateAction<VisibilityState>>;
 }
-
-function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPickerProps) {
-  const [mounted, setMounted] = React.useState(false);
-  const [search, setSearch] = React.useState("");
-  const [coords, setCoords] = React.useState({ top: 0, right: 0 });
-  const panelRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    setMounted(true);
-    if (anchorRef.current) {
-      const rect = anchorRef.current.getBoundingClientRect();
-      setCoords({
-        top: rect.bottom + window.scrollY + 4,
-        right: window.innerWidth - rect.right + window.scrollX,
-      });
-    }
-  }, [anchorRef]);
-
-  React.useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      const target = e.target as Node;
-      if (
-        panelRef.current && !panelRef.current.contains(target) &&
-        anchorRef.current && !anchorRef.current.contains(target)
-      ) { onClose(); }
-    }
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [onClose, anchorRef]);
-
-  const allColumns = table.getAllLeafColumns().filter(
-    (col) => col.id !== "select" && col.id !== "level"
-  );
-  const filtered = search.trim()
-    ? allColumns.filter((col) =>
-      ((col.columnDef.meta as { label?: string })?.label ?? col.id)
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    )
-    : allColumns;
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <div
-      ref={panelRef}
-      style={{ position: "absolute", top: `${coords.top}px`, right: `${coords.right}px` }}
-      className="z-[9999] w-[220px] rounded-xl border border-border bg-card shadow-lg overflow-hidden font-mono text-xs text-foreground"
-    >
-      <div className="px-3 pt-3 pb-2 border-b border-border/50">
-        <div className="relative">
-          <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-          <input
-            autoFocus
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search columns..."
-            className="w-full pl-6 pr-2 py-1.5 text-[11px] bg-muted/30 border border-border/60 rounded-md text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-border"
-          />
-        </div>
-      </div>
-      <div className="px-1.5 py-1.5 max-h-[280px] overflow-y-auto custom-scrollbar-thin">
-        {filtered.map((col) => {
-          const label = (col.columnDef.meta as { label?: string })?.label ?? col.id;
-          const isVisible = (columnVisibility as Record<string, boolean>)?.[col.id] !== false;
-          return (
-            <label
-              key={col.id}
-              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={isVisible}
-                onChange={(e) => col.toggleVisibility(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
-              />
-              <span className="text-[11px] text-foreground/80">{label}</span>
-              {isVisible && <Check className="w-3 h-3 text-primary ml-auto shrink-0" />}
-            </label>
-          );
-        })}
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-// ─── Filter Builder Popover ───────────────────────────────────────────────────
-
-type BuilderStep = "field" | "operator" | "value";
-
-interface FilterBuilderProps {
-  anchorRef: React.RefObject<HTMLDivElement | null>;
-  onClose: () => void;
-  onAdd: (f: AdvancedFilter) => void;
-  onSelectTimeRange: () => void;
-}
-
-function FilterBuilder({ anchorRef, onClose, onAdd, onSelectTimeRange }: FilterBuilderProps) {
-  const [mounted, setMounted] = React.useState(false);
-  const [coords, setCoords] = React.useState({ top: 0, left: 0 });
-  const [step, setStep] = React.useState<BuilderStep>("field");
-  const [field, setField] = React.useState<AdvancedFilterField | null>(null);
-  const [operator, setOperator] = React.useState<AdvancedFilterOperator | null>(null);
-  const [value, setValue] = React.useState("");
-  const panelRef = React.useRef<HTMLDivElement>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    setMounted(true);
-    if (anchorRef.current) {
-      const rect = anchorRef.current.getBoundingClientRect();
-      setCoords({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-      });
-    }
-  }, [anchorRef]);
-
-  React.useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      const target = e.target as Node;
-      if (
-        panelRef.current && !panelRef.current.contains(target) &&
-        anchorRef.current && !anchorRef.current.contains(target)
-      ) { onClose(); }
-    }
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [onClose, anchorRef]);
-
-  React.useEffect(() => {
-    if (step === "value") {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [step]);
-
-  const handleSelectField = (f: AdvancedFilterField) => {
-    if (f === "timeRange") {
-      onSelectTimeRange();
-      onClose();
-      return;
-    }
-    setField(f);
-    setStep("operator");
-  };
-  const handleSelectOperator = (op: AdvancedFilterOperator) => { setOperator(op); setStep("value"); };
-
-  const handleApply = () => {
-    if (field && operator && value.trim()) {
-      onAdd({ id: crypto.randomUUID(), field, operator, value: value.trim() });
-      onClose();
-    }
-  };
-
-  const handleSuggestion = (s: string) => {
-    if (field && operator) {
-      onAdd({ id: crypto.randomUUID(), field, operator, value: s });
-      onClose();
-    } else {
-      setValue(s);
-    }
-  };
-
-  if (!mounted) return null;
-  const suggestions = field ? (FIELD_SUGGESTIONS[field] ?? []) : [];
-
-  return createPortal(
-    <div
-      ref={panelRef}
-      style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-      className="z-[9999] w-[240px] rounded-xl border border-border bg-card shadow-lg overflow-hidden font-mono text-xs text-foreground"
-    >
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-border/50 text-[10px] text-muted-foreground/70 flex-wrap">
-        <span className={cn("transition-colors", step === "field" ? "text-foreground font-semibold" : "text-muted-foreground/50")}>
-          Field
-        </span>
-        {field && (
-          <>
-            <ChevronRight className="w-2.5 h-2.5 shrink-0" />
-            <span className={cn("transition-colors", step === "operator" ? "text-foreground font-semibold" : "text-muted-foreground/50")}>
-              {FILTER_FIELD_LABELS[field]}
-            </span>
-          </>
-        )}
-        {operator && (
-          <>
-            <ChevronRight className="w-2.5 h-2.5 shrink-0" />
-            <span className={cn("transition-colors", step === "value" ? "text-foreground font-semibold" : "text-muted-foreground/50")}>
-              {FILTER_OPERATOR_LABELS[operator]}
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* Step: Field */}
-      {step === "field" && (
-        <div className="max-h-[280px] overflow-y-auto custom-scrollbar-thin py-1">
-          {FILTER_FIELDS.map((f) => (
-            <button key={f} onClick={() => handleSelectField(f)}
-              className="w-full text-left px-3 py-2 text-[11px] hover:bg-muted/50 text-foreground/80 hover:text-foreground transition-colors flex items-center justify-between">
-              <span>{FILTER_FIELD_LABELS[f]}</span>
-              <ChevronRight className="w-3 h-3 text-muted-foreground/40" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Step: Operator */}
-      {step === "operator" && field && (
-        <div className="max-h-[280px] overflow-y-auto custom-scrollbar-thin py-1">
-          {FILTER_OPERATORS.map((op) => (
-            <button key={op} onClick={() => handleSelectOperator(op)}
-              className="w-full text-left px-3 py-2 text-[11px] hover:bg-muted/50 text-foreground/80 hover:text-foreground transition-colors flex items-center justify-between">
-              <span>{FILTER_OPERATOR_LABELS[op]}</span>
-              <ChevronRight className="w-3 h-3 text-muted-foreground/40" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Step: Value */}
-      {step === "value" && field && operator && (
-        <div className="p-3 space-y-3">
-          <div className="text-[10px] text-muted-foreground">
-            <span className="text-foreground font-semibold">{FILTER_FIELD_LABELS[field]}</span>{" "}
-            <span className="text-primary/80">{FILTER_OPERATOR_LABELS[operator]}</span>
-          </div>
-          <input
-            ref={inputRef}
-            type={field === "status" ? "number" : "text"}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleApply();
-              if (e.key === "Escape") onClose();
-            }}
-            placeholder={`Enter ${FILTER_FIELD_LABELS[field].toLowerCase()}...`}
-            className="w-full bg-muted/30 border border-border/60 rounded-md px-2.5 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-border"
-          />
-          {suggestions.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {suggestions.map((s) => (
-                <button key={s} onClick={() => handleSuggestion(s)}
-                  className={cn(
-                    "px-1.5 py-0.5 rounded text-[10px] border transition-colors font-mono",
-                    value === s
-                      ? "bg-primary/15 border-primary/40 text-primary"
-                      : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                  )}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center gap-1.5">
-            <button onClick={onClose}
-              className="flex-1 px-2 py-1 rounded border border-border/60 text-[11px] text-muted-foreground hover:bg-muted/60 transition-colors">
-              Cancel
-            </button>
-            <button onClick={handleApply} disabled={!value.trim()}
-              className={cn(
-                "flex-1 px-2 py-1 rounded text-[11px] font-medium transition-colors",
-                value.trim()
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-muted/40 text-muted-foreground/50 cursor-not-allowed"
-              )}>
-              Apply
-            </button>
-          </div>
-        </div>
-      )}
-    </div>,
-    document.body
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function LogsTopHeader({
   filteredLogs,
   clearLogs,
   table,
   columnVisibility,
-  setColumnVisibility: _setColumnVisibility,
-}: {
-  filteredLogs: AuditStreamEntry[];
-  clearLogs: () => void;
-  table: Table<AuditStreamEntry>;
-  columnVisibility: VisibilityState;
-  setColumnVisibility: React.Dispatch<React.SetStateAction<VisibilityState>>;
-}) {
+}: LogsTopHeaderProps) {
   const { t } = useTranslation();
   const {
     searchQuery, setSearchQuery,
@@ -376,73 +59,31 @@ export function LogsTopHeader({
     advancedFilters, addAdvancedFilter, removeAdvancedFilter,
   } = useLogsFilter();
 
-  const [showFilterBuilder, setShowFilterBuilder] = React.useState(false);
+  const [showPalette, setShowPalette] = React.useState(false);
+  const [inProgressField, setInProgressField] = React.useState<FilterFieldConfig | null>(null);
   const filterAnchorRef = React.useRef<HTMLDivElement>(null);
+  const inProgressPillRef = React.useRef<HTMLDivElement>(null);
   const [showTopTimePicker, setShowTopTimePicker] = React.useState(false);
   const timeRangePillRef = React.useRef<HTMLDivElement>(null);
   const [showColumnPicker, setShowColumnPicker] = React.useState(false);
   const columnBtnRef = React.useRef<HTMLButtonElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const activeTypePills = React.useMemo(() => {
-    return Object.entries(selectedTypes)
-      .filter(([, active]) => active)
-      .map(([key]) => ({ id: key, label: `Log Type = ${LOG_TYPES_LABELS[key] ?? key}`, kind: "type" as const }));
-  }, [selectedTypes]);
+  const activePills = React.useMemo(() => {
+    const list: Array<{ id: string; label: string; kind: "type" | "level" | "severity" | "scope" | "project" | "tenant" | "benchmark" | "advanced" }> = [];
+    Object.entries(selectedTypes).filter(([, a]) => a).forEach(([k]) => list.push({ id: k, label: `Log Type = ${LOG_TYPES_LABELS[k] ?? k}`, kind: "type" }));
+    Object.entries(selectedLevels).filter(([, a]) => a).forEach(([k]) => list.push({ id: k, label: `Level = ${k}`, kind: "level" }));
+    Object.entries(selectedSeverities).filter(([, a]) => a).forEach(([k]) => list.push({ id: k, label: `Severity = ${k}`, kind: "severity" }));
+    if (scopeFilter && scopeFilter !== "ALL") list.push({ id: "scope", label: `Scope = ${scopeFilter}`, kind: "scope" });
+    if (projectFilter.trim()) list.push({ id: "project", label: `Project = ${projectFilter}`, kind: "project" });
+    if (tenantFilter.trim()) list.push({ id: "tenant", label: `Tenant = ${tenantFilter}`, kind: "tenant" });
+    if (includeBenchmark) list.push({ id: "benchmark", label: "⚡ Benchmarks Included", kind: "benchmark" });
+    advancedFilters.forEach((f) => list.push({ id: f.id, label: `${FILTER_FIELD_LABELS[f.field]} ${OPERATOR_SYMBOLS[f.operator] || f.operator} ${f.value}`, kind: "advanced" }));
+    return list;
+  }, [selectedTypes, selectedLevels, selectedSeverities, scopeFilter, projectFilter, tenantFilter, includeBenchmark, advancedFilters]);
 
-  const activeLevelPills = React.useMemo(() => {
-    return Object.entries(selectedLevels)
-      .filter(([, active]) => active)
-      .map(([key]) => ({ id: key, label: `Level = ${key}`, kind: "level" as const }));
-  }, [selectedLevels]);
-
-  const activeSeverityPills = React.useMemo(() => {
-    return Object.entries(selectedSeverities)
-      .filter(([, active]) => active)
-      .map(([key]) => ({ id: key, label: `Severity = ${key}`, kind: "severity" as const }));
-  }, [selectedSeverities]);
-
-  const scopePills = React.useMemo(
-    () => scopeFilter && scopeFilter !== "ALL" ? [{ id: "scope", label: `Scope = ${scopeFilter}`, kind: "scope" as const }] : [],
-    [scopeFilter]
-  );
-
-  const projectPills = React.useMemo(
-    () => projectFilter.trim() ? [{ id: "project", label: `Project = ${projectFilter}`, kind: "project" as const }] : [],
-    [projectFilter]
-  );
-
-  const tenantPills = React.useMemo(
-    () => tenantFilter.trim() ? [{ id: "tenant", label: `Tenant = ${tenantFilter}`, kind: "tenant" as const }] : [],
-    [tenantFilter]
-  );
-
-  const benchmarkPills = React.useMemo(
-    () => includeBenchmark ? [{ id: "benchmark", label: "⚡ Benchmarks Included", kind: "benchmark" as const }] : [],
-    [includeBenchmark]
-  );
-
-  const advancedPills = React.useMemo(() =>
-    advancedFilters.map((f) => ({
-      id: f.id,
-      label: `${FILTER_FIELD_LABELS[f.field]} ${FILTER_OPERATOR_LABELS[f.operator]} ${f.value}`,
-      kind: "advanced" as const,
-    })),
-    [advancedFilters]
-  );
-
-  const allPills = [
-    ...activeTypePills,
-    ...activeLevelPills,
-    ...activeSeverityPills,
-    ...scopePills,
-    ...projectPills,
-    ...tenantPills,
-    ...benchmarkPills,
-    ...advancedPills,
-  ];
   const isTimeRangeActive = timeRange !== "60m" && timeRange !== "1h";
-  const hasActivePills = allPills.length > 0 || isTimeRangeActive;
+  const hasActivePills = activePills.length > 0 || isTimeRangeActive || inProgressField !== null;
 
   const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "scope" | "project" | "tenant" | "benchmark" | "advanced" }) => {
     if (pill.kind === "type") toggleType(pill.id);
@@ -455,204 +96,226 @@ export function LogsTopHeader({
     else removeAdvancedFilter(pill.id);
   };
 
-  const handleExportJson = () => {
-    const dataStr = "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(filteredLogs, null, 2));
-    const a = document.createElement("a");
-    a.setAttribute("href", dataStr);
-    a.setAttribute("download", `k2net-logs-${Date.now()}.json`);
-    document.body.appendChild(a); a.click(); a.remove();
-    toast.success(`Exported ${filteredLogs.length} log events to JSON.`);
+  const handleApplyFilter = (f: AdvancedFilter) => {
+    if (f.field === "logType") {
+      setLogType(f.value, f.operator === "eq");
+      toast.success(`Filter: Log Type ${f.operator === "eq" ? "=" : "!="} ${LOG_TYPES_LABELS[f.value] ?? f.value}`);
+    } else if (f.field === "level" && f.operator === "eq") {
+      toggleLevel(f.value.toLowerCase());
+      toast.success(`Filter: Level = ${f.value}`);
+    } else if (f.field === "severity" && f.operator === "eq") {
+      toggleSeverity(f.value.toUpperCase());
+      toast.success(`Filter: Severity = ${f.value.toUpperCase()}`);
+    } else if (f.field === "scope" && f.operator === "eq") {
+      setScopeFilter(f.value.toUpperCase());
+      toast.success(`Filter: Scope = ${f.value.toUpperCase()}`);
+    } else if (f.field === "tenantSlug" && f.operator === "eq") {
+      setTenantFilter(f.value);
+      toast.success(`Filter: Tenant = ${f.value}`);
+    } else if (f.field === "projectId" && f.operator === "eq") {
+      setProjectFilter(f.value);
+      toast.success(`Filter: Project = ${f.value}`);
+    } else {
+      addAdvancedFilter(f);
+      toast.success(`Filter: ${FILTER_FIELD_LABELS[f.field]} ${OPERATOR_SYMBOLS[f.operator] || f.operator} ${f.value}`);
+    }
+    setSearchQuery("");
+    setInProgressField(null);
   };
 
-  const handleExportCsv = () => {
-    exportLogsToCsv(filteredLogs);
-    toast.success(`Exported ${filteredLogs.length} audit events to RFC-4180 CSV.`);
+  const handleApplySmartParse = (parsed: SmartParseResult) => {
+    if (!parsed.isValid) return;
+    if (parsed.isTimeRange && parsed.value) {
+      const p = parseAnyTimeInput(parsed.value);
+      if (p?.type === "preset") setTimeRange(p.preset);
+      else if (p?.type === "custom" && p.range.from) {
+        const to = p.range.to || p.range.from;
+        setTimeRange(`custom:${p.range.from.toISOString()}_${to.toISOString()}`);
+      } else {
+        setTimeRange(parsed.value);
+      }
+      toast.success(`Time range set: ${parsed.value}`);
+      setSearchQuery("");
+      return;
+    }
+    if (parsed.field && parsed.operator && parsed.value) {
+      handleApplyFilter({ id: crypto.randomUUID(), field: parsed.field, operator: parsed.operator, value: parsed.value });
+      return;
+    }
+    if (parsed.isSearchQuery && parsed.value) {
+      addAdvancedFilter({ id: crypto.randomUUID(), field: "message", operator: "ilike", value: parsed.value });
+      toast.success(`Filter: Event message ILike "${parsed.value}"`);
+      setSearchQuery("");
+    }
   };
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
-      {/* Sidebar toggle */}
       <ActionTooltip label={t("observability.toggle_filter_panel")} shortcut="Alt+S">
-        <button onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-          className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+        <button
+          onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+          className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        >
           <PanelLeft className="w-4 h-4" />
         </button>
       </ActionTooltip>
 
-      {/* Search + Filter pills */}
       <div
+        ref={filterAnchorRef}
         className="flex-1 flex items-center gap-1.5 bg-background border border-border/80 rounded-lg px-3 py-1 text-xs transition-colors overflow-hidden min-w-0 cursor-text"
-        onClick={() => { if (!showFilterBuilder && !showTopTimePicker) inputRef.current?.focus(); }}
+        onClick={() => {
+          if (!showTopTimePicker) {
+            inputRef.current?.focus();
+            setShowPalette(true);
+          }
+        }}
       >
         <Search className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
         <div className="flex items-center gap-1.5 flex-wrap flex-1 overflow-hidden min-w-0">
-          {/* Time range picker pill & popover integration */}
-          <LogsDateRangePicker
-            value={timeRange}
-            onChange={(val) => {
-              setTimeRange(val);
-              setShowTopTimePicker(false);
-            }}
-            open={showTopTimePicker}
-            onOpenChange={setShowTopTimePicker}
-            anchorRef={isTimeRangeActive && timeRangePillRef.current ? timeRangePillRef : filterAnchorRef}
-            customTrigger={
-              isTimeRangeActive
-                ? (isOpen, setIsOpen) => (
-                    <div ref={timeRangePillRef} className="inline-flex shrink-0">
-                      <Badge
-                        className={cn(
-                          "text-[10px] font-mono bg-muted text-foreground border border-border/60 gap-1 px-2 py-0.5 shrink-0 whitespace-nowrap cursor-pointer hover:bg-muted/80 transition-colors",
-                          isOpen && "border-primary/60 bg-muted/80"
-                        )}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsOpen(!isOpen);
-                        }}
-                      >
-                        <span>{`Time range = ${getDisplayLabel(timeRange, t)}`}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setTimeRange("60m");
-                            setIsOpen(false);
-                          }}
-                          className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          aria-label="Reset time range to default"
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      </Badge>
-                    </div>
-                  )
-                : () => null
-            }
+          <LogsTimeRangeInlinePill
+            timeRange={timeRange}
+            setTimeRange={setTimeRange}
+            showTopTimePicker={showTopTimePicker}
+            setShowTopTimePicker={setShowTopTimePicker}
+            filterAnchorRef={filterAnchorRef}
+            timeRangePillRef={timeRangePillRef}
           />
 
-          {allPills.map((pill) => (
-            <Badge key={`${pill.kind}-${pill.id}`}
-              className="text-[10px] font-mono bg-muted text-foreground border border-border/60 gap-1 px-2 py-0.5 shrink-0 whitespace-nowrap">
+          {activePills.map((pill) => (
+            <Badge
+              key={`${pill.kind}-${pill.id}`}
+              className="text-[10px] font-mono bg-muted text-foreground border border-border/60 gap-1 px-2 py-0.5 shrink-0 whitespace-nowrap"
+            >
               <span>{pill.label}</span>
               <button
-                onClick={(e) => { e.stopPropagation(); handleRemovePill(pill); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemovePill(pill);
+                }}
                 className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                aria-label={`Remove filter ${pill.label}`}>
+              >
                 <X className="w-2.5 h-2.5" />
               </button>
             </Badge>
           ))}
 
-          <div ref={filterAnchorRef} className="flex-1 flex items-center gap-1 min-w-[120px]">
+          {inProgressField && (
+            <div
+              ref={inProgressPillRef}
+              className="inline-flex items-center text-[10px] font-mono bg-muted text-foreground border border-primary/50 ring-1 ring-primary/30 rounded-md gap-1 px-2 py-0.5 shrink-0 animate-in fade-in"
+            >
+              <span className="text-foreground font-semibold">{inProgressField.label}</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setInProgressField(null);
+                }}
+                className="text-muted-foreground hover:text-foreground transition-colors ml-0.5 cursor-pointer"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex-1 flex items-center gap-1 min-w-[140px]">
             <input
               ref={inputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setShowFilterBuilder(true)}
+              onFocus={() => setShowPalette(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  e.preventDefault();
+                  handleApplySmartParse(parseSmartFilter(searchQuery));
+                  setShowPalette(false);
+                } else if (e.key === "Escape") {
+                  setShowPalette(false);
+                  setInProgressField(null);
+                }
+              }}
               placeholder={hasActivePills ? t("observability.add_more_filters") : t("observability.filter_placeholder")}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 text-xs font-mono"
             />
             <ActionTooltip label={t("observability.advanced_filter")} shortcut="Alt+F">
               <button
-                onClick={(e) => { e.stopPropagation(); setShowFilterBuilder((prev) => !prev); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPalette((prev) => !prev);
+                  inputRef.current?.focus();
+                }}
                 className={cn(
-                  "shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] border transition-colors",
-                  showFilterBuilder
+                  "shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] border transition-colors cursor-pointer",
+                  showPalette
                     ? "bg-primary/15 border-primary/40 text-primary"
                     : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-muted/40"
-                )}>
+                )}
+              >
                 <SlidersHorizontal className="w-3 h-3" />
               </button>
             </ActionTooltip>
           </div>
         </div>
+
         {searchQuery && (
-          <button onClick={() => setSearchQuery("")}
-            className="shrink-0 text-muted-foreground/60 hover:text-foreground transition-colors">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSearchQuery("");
+            }}
+            className="shrink-0 text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
+          >
             <X className="w-3 h-3" />
           </button>
         )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-1.5 shrink-0 pl-2">
-        <ActionTooltip label={t("observability.refresh_logs")} shortcut="R">
-          <Button variant="ghost" size="sm"
-            onClick={() => { clearLogs(); toast.info("Refreshing real-time log feed..."); }}
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md">
-            <RefreshCw className="w-3.5 h-3.5" />
-          </Button>
-        </ActionTooltip>
-        <ActionTooltip label={t("observability.toggle_histogram")} shortcut="H">
-          <Button variant="ghost" size="sm"
-            onClick={() => setShowHistogram((prev) => !prev)}
-            className={`h-7 w-7 p-0 border border-border/60 rounded-md ${showHistogram ? "bg-muted text-foreground" : "text-muted-foreground"}`}>
-            <BarChart2 className="w-3.5 h-3.5" />
-          </Button>
-        </ActionTooltip>
-        <ActionTooltip label={t("observability.view_columns")} shortcut="C">
-          <Button ref={columnBtnRef} variant="ghost" size="sm"
-            onClick={() => setShowColumnPicker((prev) => !prev)}
-            className={`h-7 w-7 p-0 border border-border/60 rounded-md ${showColumnPicker ? "bg-muted text-foreground" : "text-muted-foreground"}`}>
-            <Columns3 className="w-3.5 h-3.5" />
-          </Button>
-        </ActionTooltip>
-        <ActionTooltip label="Export RFC-4180 CSV" shortcut="Alt+S">
-          <Button variant="ghost" size="sm" onClick={handleExportCsv}
-            className="h-7 w-7 p-0 text-primary hover:text-primary-foreground hover:bg-primary/20 border border-primary/30 rounded-md">
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-          </Button>
-        </ActionTooltip>
-        <ActionTooltip label={t("observability.export_json")} shortcut="Alt+E">
-          <Button variant="ghost" size="sm" onClick={handleExportJson}
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md">
-            <Download className="w-3.5 h-3.5" />
-          </Button>
-        </ActionTooltip>
-        <ActionTooltip label={isLivePaused ? t("observability.resume_stream") : t("observability.pause_stream")} shortcut="Space">
-          <Button variant="outline" size="sm"
-            onClick={() => setIsLivePaused((prev) => !prev)}
-            className={`h-7 text-xs font-mono gap-1.5 border-border/80 rounded-md px-2.5 ${isLivePaused
-                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                : "bg-primary/10 text-primary/80 border-primary/20"
-              }`}>
-            {isLivePaused
-              ? <Play className="w-3 h-3 fill-current" />
-              : <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            }
-            {isLivePaused ? t("observability.stream_paused") : t("observability.stream_live")}
-          </Button>
-        </ActionTooltip>
-      </div>
+      <LogsHeaderActions
+        filteredLogs={filteredLogs}
+        clearLogs={clearLogs}
+        showHistogram={showHistogram}
+        setShowHistogram={setShowHistogram}
+        showColumnPicker={showColumnPicker}
+        setShowColumnPicker={setShowColumnPicker}
+        columnBtnRef={columnBtnRef}
+        isLivePaused={isLivePaused}
+        setIsLivePaused={setIsLivePaused}
+      />
 
-      {showFilterBuilder && (
-        <FilterBuilder
-          anchorRef={filterAnchorRef}
-          onClose={() => setShowFilterBuilder(false)}
-          onSelectTimeRange={() => {
-            setShowFilterBuilder(false);
-            setShowTopTimePicker(true);
+      {showPalette && (
+        <SupabaseFilterPalette
+          anchorRef={inProgressField && inProgressPillRef.current ? inProgressPillRef : filterAnchorRef}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          onClose={() => {
+            setShowPalette(false);
+            setInProgressField(null);
           }}
-          onAdd={(f) => {
-            if (f.field === "logType") {
-              if (f.operator === "eq") {
-                setLogType(f.value, true);
-                toast.success(`Active filter: Log Type = ${LOG_TYPES_LABELS[f.value] ?? f.value}`);
-              } else if (f.operator === "neq") {
-                setLogType(f.value, false);
-                toast.success(`Deactivated filter: Log Type != ${LOG_TYPES_LABELS[f.value] ?? f.value}`);
+          onApplyFilter={handleApplyFilter}
+          onSelectTimeRange={(val) => {
+            if (val) {
+              const p = parseAnyTimeInput(val);
+              if (p?.type === "preset") setTimeRange(p.preset);
+              else if (p?.type === "custom" && p.range.from) {
+                const to = p.range.to || p.range.from;
+                setTimeRange(`custom:${p.range.from.toISOString()}_${to.toISOString()}`);
+              } else {
+                setTimeRange(val);
               }
-            } else if (f.field === "severity") {
-              toggleSeverity(f.value.toUpperCase());
-              toast.success(`Filter updated: Severity = ${f.value.toUpperCase()}`);
-            } else {
-              addAdvancedFilter(f);
             }
+            setInProgressField(null);
           }}
+          onOpenCustomCalendar={() => {
+            setShowTopTimePicker(true);
+            setInProgressField(null);
+          }}
+          onApplySmartParse={handleApplySmartParse}
+          initialField={inProgressField}
+          onFieldSelectedChange={setInProgressField}
         />
       )}
+
       {showColumnPicker && (
         <ColumnPicker
           table={table}
@@ -664,4 +327,3 @@ export function LogsTopHeader({
     </div>
   );
 }
-

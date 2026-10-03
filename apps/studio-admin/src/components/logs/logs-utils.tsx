@@ -18,7 +18,10 @@ import {
   Map,
 } from "lucide-react";
 import { createColumnHelper, type ColumnDef } from "@tanstack/react-table";
-import type { AuditStreamEntry } from "@/hooks/use-audit-log-stream";
+import {
+  type AuditStreamEntry,
+  resolveLogTypeFromSource,
+} from "@/hooks/use-audit-log-stream";
 
 interface SourceIconMatcher {
   match: (src: string) => boolean;
@@ -191,40 +194,98 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
   }),
 ];
 
-function checkAdvancedFilter(
+const FIELD_EXTRACTORS: Record<string, (log: AuditStreamEntry) => string> = {
+  logType: (log) => log.logType || resolveLogTypeFromSource(log.serviceSource || "", log.targetResource),
+  level: (log) => getLevel(log),
+  severity: (log) => (log.severity || "INFO").toUpperCase(),
+  logGroup: (log) => log.logGroup || "",
+  scope: (log) => (log.scope || "ALL").toUpperCase(),
+  projectId: (log) => log.projectId || log.projectName || "",
+  tenantSlug: (log) => log.tenantSlug || log.tenantName || log.impersonatedTenantId || "",
+  pathname: (log) =>
+    log.pathname ||
+    log.targetResource ||
+    String(log.metadata?.pathname || log.metadata?.path || log.metadata?.uri || log.metadata?.url || ""),
+  message: (log) => `${log.message || ""} ${log.action || ""}`.trim(),
+  actor: (log) => log.actor || log.realActorId || String(log.metadata?.actor || log.metadata?.user || ""),
+  serviceSource: (log) => log.serviceSource || String(log.metadata?.source || ""),
+  method: (log) => (log.method || String(log.metadata?.method || "")).toUpperCase(),
+  status: (log) => {
+    if (log.status !== undefined && log.status !== null) return String(log.status);
+    if (log.metadata?.status !== undefined) return String(log.metadata.status);
+    if (log.metadata?.statusCode !== undefined) return String(log.metadata.statusCode);
+    return "";
+  },
+  ip: (log) => log.ip || String(log.metadata?.ip || log.metadata?.client_ip || ""),
+};
+
+export function extractFieldValue(log: AuditStreamEntry, field: string): string {
+  if (!log) return "";
+  const extractor = FIELD_EXTRACTORS[field];
+  if (extractor) return extractor(log);
+  return String((log as unknown as Record<string, unknown>)[field] ?? "");
+}
+
+function compareNumeric(numVal: number, numTarget: number, op: string): boolean {
+  if (op === "eq") return numVal === numTarget;
+  if (op === "neq") return numVal !== numTarget;
+  if (op === "gte") return numVal >= numTarget;
+  if (op === "lte") return numVal <= numTarget;
+  if (op === "gt") return numVal > numTarget;
+  if (op === "lt") return numVal < numTarget;
+  return false;
+}
+
+function comparePattern(raw: string, val: string, target: string, op: string): boolean {
+  if (op === "ilike" || op === "contains") return val.includes(target);
+  if (op === "not_ilike" || op === "not_contains") return !val.includes(target);
+  if (op === "starts_with") return val.startsWith(target);
+  if (op === "ends_with") return val.endsWith(target);
+  if (op === "regex") {
+    try {
+      return new RegExp(target, "i").test(raw);
+    } catch {
+      return val.includes(target);
+    }
+  }
+  return true;
+}
+
+function compareSet(val: string, target: string, isNumeric: boolean, numVal: number, op: string): boolean {
+  const list = target
+    .split(/[,|\s]+/)
+    .map((s) => s.trim().replace(/^['"(]|['")]$/g, "").toLowerCase())
+    .filter(Boolean);
+  const found = list.includes(val) || (isNumeric && list.some((item) => parseFloat(item) === numVal));
+  return op === "in" ? found : !found;
+}
+
+export function checkAdvancedFilter(
   log: AuditStreamEntry,
   field: string,
   operator: string,
   filterValue: string
 ): boolean {
-  let raw = "";
-  if (field === "logType") {
-    raw = log.logType;
-  } else if (field === "level") {
-    raw = getLevel(log);
-  } else if (field === "severity") {
-    raw = log.severity;
-  } else if (field === "logGroup") {
-    raw = log.logGroup;
-  } else if (field === "scope") {
-    raw = log.scope ?? "";
-  } else if (field === "projectId") {
-    raw = log.projectId ?? "";
-  } else {
-    raw = String(log[field as keyof AuditStreamEntry] ?? "");
-  }
-  const val = raw.toLowerCase();
-  const target = filterValue.toLowerCase();
+  const raw = extractFieldValue(log, field);
+  const val = raw.toLowerCase().trim();
+  const target = filterValue.toLowerCase().trim();
 
-  switch (operator) {
-    case "eq": return val === target;
-    case "neq": return val !== target;
-    case "contains": return val.includes(target);
-    case "not_contains": return !val.includes(target);
-    case "starts_with": return val.startsWith(target);
-    case "ends_with": return val.endsWith(target);
-    default: return true;
+  const numVal = parseFloat(val);
+  const numTarget = parseFloat(target);
+  const isBothNumeric = !isNaN(numVal) && !isNaN(numTarget) && !val.includes(" ") && !target.includes(" ");
+
+  if (operator === "in" || operator === "not_in") {
+    return compareSet(val, target, isBothNumeric, numVal, operator);
   }
+
+  if (isBothNumeric && ["eq", "neq", "gte", "lte", "gt", "lt"].includes(operator)) {
+    return compareNumeric(numVal, numTarget, operator);
+  }
+
+  if (operator === "eq") return val === target;
+  if (operator === "neq") return val !== target;
+
+  return comparePattern(raw, val, target, operator);
 }
 
 export interface FilterAuditLogsOptions {

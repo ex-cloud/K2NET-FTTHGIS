@@ -32,10 +32,19 @@ export type AdvancedFilterField =
 export type AdvancedFilterOperator =
   | "eq"
   | "neq"
+  | "ilike"
+  | "not_ilike"
   | "contains"
   | "not_contains"
   | "starts_with"
-  | "ends_with";
+  | "ends_with"
+  | "regex"
+  | "gte"
+  | "lte"
+  | "gt"
+  | "lt"
+  | "in"
+  | "not_in";
 
 export type AdvancedFilter = {
   id: string;
@@ -63,10 +72,37 @@ export const FILTER_FIELD_LABELS: Record<AdvancedFilterField, string> = {
 export const FILTER_OPERATOR_LABELS: Record<AdvancedFilterOperator, string> = {
   eq:           "Equals",
   neq:          "Not equal",
+  ilike:        "ILike",
+  not_ilike:    "Not ILike",
   contains:     "Contains",
   not_contains: "Not contains",
   starts_with:  "Starts with",
   ends_with:    "Ends with",
+  regex:        "Matches Regex",
+  gte:          "Greater than or equal",
+  lte:          "Less than or equal",
+  gt:           "Greater than",
+  lt:           "Less than",
+  in:           "In list",
+  not_in:       "Not in list",
+};
+
+export const OPERATOR_SYMBOLS: Record<AdvancedFilterOperator, string> = {
+  eq:           "=",
+  neq:          "<>",
+  ilike:        "~*",
+  not_ilike:    "!~*",
+  contains:     "~",
+  not_contains: "!~",
+  starts_with:  "^=",
+  ends_with:    "$=",
+  regex:        "~",
+  gte:          ">=",
+  lte:          "<=",
+  gt:           ">",
+  lt:           "<",
+  in:           "IN",
+  not_in:       "NOT IN",
 };
 
 // ─── Log Type Definitions ─────────────────────────────────────────────────────
