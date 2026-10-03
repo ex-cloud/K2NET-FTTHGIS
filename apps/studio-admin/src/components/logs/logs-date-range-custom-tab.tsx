@@ -1,6 +1,7 @@
 import * as React from "react";
-import { History, RotateCcw } from "lucide-react";
-import { Calendar } from "@k2net/ui";
+import { History, ChevronLeft, ChevronRight } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar, cn } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
 import { useTranslation } from "@k2net/i18n";
 import {
@@ -22,6 +23,173 @@ export interface CustomHistoricalTabContentProps {
   today: Date;
 }
 
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+];
+
+function MonthPickerView({
+  displayMonth,
+  onSelectMonth,
+  onSwitchToYears,
+  today,
+}: {
+  displayMonth: Date;
+  onSelectMonth: (d: Date) => void;
+  onSwitchToYears: () => void;
+  today: Date;
+}) {
+  const currentYear = displayMonth.getFullYear();
+  const selectedMonthIndex = displayMonth.getMonth();
+  const maxYear = today.getFullYear();
+  const maxMonth = today.getMonth();
+
+  const handlePrevYear = () => {
+    if (currentYear > 2020) {
+      onSelectMonth(new Date(currentYear - 1, selectedMonthIndex, 1));
+    }
+  };
+
+  const handleNextYear = () => {
+    if (currentYear < maxYear) {
+      onSelectMonth(new Date(currentYear + 1, selectedMonthIndex, 1));
+    }
+  };
+
+  return (
+    <div className="flex flex-col p-2 w-full justify-center">
+      {/* Header */}
+      <div className="flex items-center justify-between h-7 px-1 mb-1.5">
+        <button
+          type="button"
+          onClick={handlePrevYear}
+          disabled={currentYear <= 2020}
+          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onSwitchToYears}
+          title="Click to select year"
+          className="text-xs font-semibold text-foreground hover:bg-muted/80 px-2 py-0.5 rounded transition-colors cursor-pointer"
+        >
+          {currentYear}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleNextYear}
+          disabled={currentYear >= maxYear}
+          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* 12 Months Grid */}
+      <div className="grid grid-cols-3 gap-1.5">
+        {MONTH_NAMES.map((name, idx) => {
+          const isSelected = selectedMonthIndex === idx && currentYear === displayMonth.getFullYear();
+          const isDisabled = currentYear === maxYear && idx > maxMonth;
+
+          return (
+            <button
+              type="button"
+              key={name}
+              disabled={isDisabled}
+              onClick={() => onSelectMonth(new Date(currentYear, idx, 1))}
+              className={cn(
+                "h-7 text-xs rounded-md transition-colors font-medium flex items-center justify-center cursor-pointer",
+                isSelected
+                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                  : isDisabled
+                  ? "opacity-30 cursor-not-allowed text-muted-foreground"
+                  : "hover:bg-muted text-foreground"
+              )}
+            >
+              {name}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function YearPickerView({
+  displayMonth,
+  onSelectYear,
+  today,
+}: {
+  displayMonth: Date;
+  onSelectYear: (year: number) => void;
+  today: Date;
+}) {
+  const currentYear = displayMonth.getFullYear();
+  const [decadeStart, setDecadeStart] = React.useState(() => Math.floor(currentYear / 12) * 12);
+  const maxYear = today.getFullYear();
+
+  const years = Array.from({ length: 12 }, (_, i) => decadeStart + i);
+
+  return (
+    <div className="flex flex-col p-2 w-full justify-center">
+      {/* Header */}
+      <div className="flex items-center justify-between h-7 px-1 mb-1.5">
+        <button
+          type="button"
+          onClick={() => setDecadeStart((d) => Math.max(2010, d - 12))}
+          disabled={decadeStart <= 2010}
+          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+
+        <span className="text-xs font-semibold text-foreground px-2 py-0.5">
+          {decadeStart} - {decadeStart + 11}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => setDecadeStart((d) => d + 12)}
+          disabled={decadeStart + 11 >= maxYear}
+          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* 12 Years Grid */}
+      <div className="grid grid-cols-3 gap-1.5">
+        {years.map((y) => {
+          const isSelected = y === currentYear;
+          const isDisabled = y > maxYear;
+
+          return (
+            <button
+              type="button"
+              key={y}
+              disabled={isDisabled}
+              onClick={() => onSelectYear(y)}
+              className={cn(
+                "h-7 text-xs rounded-md transition-colors font-medium flex items-center justify-center cursor-pointer",
+                isSelected
+                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                  : isDisabled
+                  ? "opacity-30 cursor-not-allowed text-muted-foreground"
+                  : "hover:bg-muted text-foreground"
+              )}
+            >
+              {y}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function TimePickerInputs({
   fromTime,
   toTime,
@@ -29,7 +197,6 @@ export function TimePickerInputs({
   setToTime,
   onSetFullDay,
   onSetWorkHours,
-  onResetTime,
 }: {
   fromTime: string;
   toTime: string;
@@ -37,7 +204,6 @@ export function TimePickerInputs({
   setToTime: (t: string) => void;
   onSetFullDay: () => void;
   onSetWorkHours: () => void;
-  onResetTime: () => void;
 }) {
   const { t } = useTranslation();
   const { h: fh, m: fm, s: fs } = parseTimeStr(fromTime);
@@ -51,11 +217,11 @@ export function TimePickerInputs({
   const toS = String(ts).padStart(2, "0");
 
   return (
-    <div className="flex flex-col gap-2 p-2.5 border-b border-border/40 bg-muted/10 rounded-t-lg">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground font-sans font-medium">Start:</span>
-          <div className="flex h-7 items-center justify-center gap-0.5 rounded-md border border-border bg-background text-xs px-1.5 font-mono">
+    <div className="flex flex-col gap-1.5 p-2 border-b border-border/40 bg-muted/10 rounded-t-lg">
+      <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-muted-foreground font-sans font-medium">Start:</span>
+          <div className="flex h-6.5 items-center justify-center gap-0.5 rounded border border-border bg-background text-[11px] px-1 font-mono">
             <input
               type="text"
               pattern="[0-23]*"
@@ -64,7 +230,7 @@ export function TimePickerInputs({
                 const val = e.target.value.replace(/\D/g, "").slice(0, 2);
                 setFromTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromM}:${fromS}`);
               }}
-              className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none"
+              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
             />
             <span className="text-muted-foreground/40">:</span>
             <input
@@ -75,7 +241,7 @@ export function TimePickerInputs({
                 const val = e.target.value.replace(/\D/g, "").slice(0, 2);
                 setFromTime(`${fromH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromS}`);
               }}
-              className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none"
+              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
             />
             <span className="text-muted-foreground/40">:</span>
             <input
@@ -86,14 +252,14 @@ export function TimePickerInputs({
                 const val = e.target.value.replace(/\D/g, "").slice(0, 2);
                 setFromTime(`${fromH}:${fromM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
               }}
-              className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none"
+              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground font-sans font-medium">End:</span>
-          <div className="flex h-7 items-center justify-center gap-0.5 rounded-md border border-border bg-background text-xs px-1.5 font-mono">
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-muted-foreground font-sans font-medium">End:</span>
+          <div className="flex h-6.5 items-center justify-center gap-0.5 rounded border border-border bg-background text-[11px] px-1 font-mono">
             <input
               type="text"
               pattern="[0-23]*"
@@ -102,7 +268,7 @@ export function TimePickerInputs({
                 const val = e.target.value.replace(/\D/g, "").slice(0, 2);
                 setToTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${toM}:${toS}`);
               }}
-              className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none"
+              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
             />
             <span className="text-muted-foreground/40">:</span>
             <input
@@ -113,7 +279,7 @@ export function TimePickerInputs({
                 const val = e.target.value.replace(/\D/g, "").slice(0, 2);
                 setToTime(`${toH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${toS}`);
               }}
-              className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none"
+              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
             />
             <span className="text-muted-foreground/40">:</span>
             <input
@@ -124,7 +290,7 @@ export function TimePickerInputs({
                 const val = e.target.value.replace(/\D/g, "").slice(0, 2);
                 setToTime(`${toH}:${toM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
               }}
-              className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none"
+              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
             />
           </div>
         </div>
@@ -134,24 +300,16 @@ export function TimePickerInputs({
         <button
           type="button"
           onClick={onSetFullDay}
-          className="px-2 py-0.5 rounded border border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className="px-2 py-0.5 rounded border border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-[10px]"
         >
           {t("observability.full_day") || "Full Day (24h)"}
         </button>
         <button
           type="button"
           onClick={onSetWorkHours}
-          className="px-2 py-0.5 rounded border border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className="px-2 py-0.5 rounded border border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-[10px]"
         >
           {t("observability.working_hours") || "Work Hours (08-17)"}
-        </button>
-        <button
-          type="button"
-          onClick={onResetTime}
-          title={t("observability.reset_times") || "Reset times"}
-          className="p-1 rounded border border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        >
-          <RotateCcw className="w-3 h-3" />
         </button>
       </div>
     </div>
@@ -171,12 +329,18 @@ export function CustomHistoricalTabContent({
   today,
 }: CustomHistoricalTabContentProps) {
   const { t } = useTranslation();
+  const [viewMode, setViewMode] = React.useState<"days" | "months" | "years">("days");
+
+  const handleShortcutClick = (id: HistoricalShortcutId) => {
+    setViewMode("days");
+    onShortcutSelect(id);
+  };
 
   return (
-    <div className="flex min-h-[310px]">
+    <div className="flex min-h-[290px]">
       {/* Historical Shortcuts Sidebar */}
-      <div className="w-[145px] shrink-0 border-r border-border/40 p-2.5 flex flex-col gap-1 bg-muted/10">
-        <span className="text-[11px] font-medium text-muted-foreground px-1 pb-1 flex items-center gap-1.5">
+      <div className="w-[115px] shrink-0 border-r border-border/40 p-2 flex flex-col gap-0.5 bg-muted/10">
+        <span className="text-[10px] font-medium text-muted-foreground px-1 pb-1 flex items-center gap-1">
           <History className="w-3 h-3 text-primary" />
           <span>Shortcuts</span>
         </span>
@@ -188,8 +352,8 @@ export function CustomHistoricalTabContent({
             <button
               type="button"
               key={s.id}
-              onClick={() => onShortcutSelect(s.id)}
-              className="w-full text-left px-2 py-1.5 text-xs rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer"
+              onClick={() => handleShortcutClick(s.id)}
+              className="w-full text-left px-2 py-1 text-[11px] rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer truncate"
             >
               {label}
             </button>
@@ -212,39 +376,64 @@ export function CustomHistoricalTabContent({
             setFromTime("08:00:00");
             setToTime("17:00:00");
           }}
-          onResetTime={() => {
-            setFromTime("00:00:00");
-            const now = new Date();
-            const h = String(now.getHours()).padStart(2, "0");
-            const m = String(now.getMinutes()).padStart(2, "0");
-            const s = String(now.getSeconds()).padStart(2, "0");
-            setToTime(`${h}:${m}:${s}`);
-          }}
         />
 
-        <div className="flex justify-center p-2">
-          <Calendar
-            mode="range"
-            month={displayMonth}
-            onMonthChange={setDisplayMonth}
-            startMonth={new Date(2024, 0, 1)}
-            endMonth={today}
-            selected={localRange}
-            onSelect={setLocalRange}
-            numberOfMonths={1}
-            disabled={{ after: today }}
-            className="text-xs relative p-0"
-            classNames={{
-              month: "relative flex flex-col gap-2",
-              nav: "absolute top-1 inset-x-0 flex items-center justify-between w-full z-10 pointer-events-none px-1",
-              button_previous: "!pointer-events-auto !cursor-pointer absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
-              button_next: "!pointer-events-auto !cursor-pointer absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
-              day_button: "h-8 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary !cursor-pointer",
-              weekday: "text-muted-foreground rounded-md w-8 font-normal text-[11px] pb-1 text-center",
-              day: "h-8 w-8 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
-              week: "flex w-full mt-1.5",
-            }}
-          />
+        <div className="flex justify-center p-1.5 flex-1 items-center">
+          {viewMode === "years" ? (
+            <YearPickerView
+              displayMonth={displayMonth}
+              onSelectYear={(y) => {
+                setDisplayMonth(new Date(y, displayMonth.getMonth(), 1));
+                setViewMode("months");
+              }}
+              today={today}
+            />
+          ) : viewMode === "months" ? (
+            <MonthPickerView
+              displayMonth={displayMonth}
+              onSelectMonth={(m) => {
+                setDisplayMonth(m);
+                setViewMode("days");
+              }}
+              onSwitchToYears={() => setViewMode("years")}
+              today={today}
+            />
+          ) : (
+            <Calendar
+              mode="range"
+              month={displayMonth}
+              onMonthChange={setDisplayMonth}
+              startMonth={new Date(2024, 0, 1)}
+              endMonth={today}
+              selected={localRange}
+              onSelect={setLocalRange}
+              numberOfMonths={1}
+              disabled={{ after: today }}
+              className="text-xs relative p-0"
+              components={{
+                MonthCaption: () => (
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("months")}
+                    title="Click to choose month and year"
+                    className="text-xs font-semibold text-foreground hover:bg-muted/80 px-2 py-0.5 rounded transition-colors cursor-pointer"
+                  >
+                    {format(displayMonth, "MMMM yyyy")}
+                  </button>
+                ),
+              }}
+              classNames={{
+                month: "relative flex flex-col gap-1.5",
+                nav: "absolute top-1 inset-x-0 flex items-center justify-between w-full z-10 pointer-events-none px-1",
+                button_previous: "!pointer-events-auto !cursor-pointer absolute left-1 top-1 flex h-6.5 w-6.5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
+                button_next: "!pointer-events-auto !cursor-pointer absolute right-1 top-1 flex h-6.5 w-6.5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
+                day_button: "h-7.5 w-7.5 rounded font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary !cursor-pointer",
+                weekday: "text-muted-foreground rounded w-7.5 font-normal text-[10px] pb-1 text-center",
+                day: "h-7.5 w-7.5 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l last:[&:has([aria-selected])]:rounded-r",
+                week: "flex w-full mt-1",
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

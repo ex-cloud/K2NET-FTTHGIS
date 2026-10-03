@@ -22,13 +22,13 @@ export function PresetsTabContent({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col p-4 gap-3">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+    <div className="flex flex-col p-3 gap-2">
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground px-0.5">
         <span className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span>{t("observability.rolling_desc") || "Rolling window relative to current time (Live)"}</span>
+          <Sparkles className="w-3 h-3 text-primary" />
+          <span>{t("observability.rolling_desc") || "Rolling window from now (Live)"}</span>
         </span>
-        <span className="text-[11px] font-mono text-muted-foreground/70">e.g. 45m, 2h, 30d</span>
+        <span className="text-[10px] font-mono text-muted-foreground/70">e.g. 45m, 2h, 30d</span>
       </div>
 
       <div className="relative">
@@ -38,11 +38,11 @@ export function PresetsTabContent({
           value={customRelativeInput}
           onChange={(e) => setCustomRelativeInput(e.target.value)}
           onKeyDown={onRelativeSubmit}
-          className="w-full border border-border bg-background placeholder:text-muted-foreground/50 px-3 py-2 text-xs rounded-lg focus:outline-none focus:border-primary transition-colors font-mono"
+          className="w-full h-7.5 border border-border bg-background placeholder:text-muted-foreground/50 px-2.5 py-1 text-xs rounded-md focus:outline-none focus:border-primary transition-colors font-mono"
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mt-1">
+      <div className="grid grid-cols-2 gap-1.5 mt-0.5">
         {PRESET_VALUES.map((p) => {
           const isSelected =
             stagedPreset === p.value ||
@@ -58,22 +58,22 @@ export function PresetsTabContent({
               key={p.value}
               onClick={() => setStagedPreset(p.value)}
               className={cn(
-                "flex items-center justify-between px-3 py-2.5 rounded-lg border text-xs text-left transition-all cursor-pointer",
+                "flex items-center justify-between h-8 px-2.5 rounded-md border text-xs text-left transition-all cursor-pointer",
                 isSelected
                   ? "border-primary bg-primary/10 text-foreground font-semibold shadow-xs"
                   : "border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/60 hover:text-foreground hover:border-border"
               )}
             >
-              <div className="flex items-center gap-2 truncate">
+              <div className="flex items-center gap-1.5 truncate">
                 <div
                   className={cn(
-                    "w-2 h-2 rounded-full shrink-0 transition-colors",
+                    "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
                     isSelected ? "bg-primary" : "bg-muted-foreground/30"
                   )}
                 />
-                <span className="truncate">{label}</span>
+                <span className="truncate text-xs">{label}</span>
               </div>
-              <span className="text-[11px] font-mono text-muted-foreground shrink-0 ml-2">
+              <span className="text-[10px] font-mono text-muted-foreground shrink-0 ml-1.5">
                 {p.value}
               </span>
             </button>

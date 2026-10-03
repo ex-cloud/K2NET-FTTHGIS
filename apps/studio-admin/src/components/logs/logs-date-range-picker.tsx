@@ -8,6 +8,7 @@ import {
   Lock,
   Copy,
   Check,
+  RotateCcw,
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { cn } from "@k2net/ui";
@@ -34,45 +35,53 @@ interface LogsDateRangePickerProps {
 function TabButtons({
   activeTab,
   setActiveTab,
+  onReset,
 }: {
   activeTab: "presets" | "custom";
   setActiveTab: (t: "presets" | "custom") => void;
+  onReset: () => void;
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex border-b border-border/50 bg-muted/20 p-1.5 gap-1.5">
-      <button
-        type="button"
-        onClick={() => setActiveTab("presets")}
-        className={cn(
-          "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer",
-          activeTab === "presets"
-            ? "bg-card text-foreground shadow-sm border border-border/80 font-semibold"
-            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-        )}
-      >
-        <Clock className="w-3.5 h-3.5 text-primary" />
-        <span>{t("observability.quick_rolling_presets") || "Quick Rolling Presets"}</span>
-        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary font-mono ml-auto">
-          Live
-        </span>
-      </button>
+    <div className="flex items-center justify-between border-b border-border/50 bg-muted/20 p-1.5 gap-1.5">
+      <div className="flex items-center gap-1 flex-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab("presets")}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium transition-all cursor-pointer",
+            activeTab === "presets"
+              ? "bg-card text-foreground shadow-xs border border-border font-semibold"
+              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          )}
+        >
+          <Clock className="w-3 h-3 text-primary" />
+          <span>{t("observability.quick_rolling_presets") || "Quick Presets"}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("custom")}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium transition-all cursor-pointer",
+            activeTab === "custom"
+              ? "bg-card text-foreground shadow-xs border border-border font-semibold"
+              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          )}
+        >
+          <CalendarRange className="w-3 h-3 text-primary" />
+          <span>{t("observability.custom_historical_range") || "Custom Range"}</span>
+        </button>
+      </div>
 
       <button
         type="button"
-        onClick={() => setActiveTab("custom")}
-        className={cn(
-          "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer",
-          activeTab === "custom"
-            ? "bg-card text-foreground shadow-sm border border-border/80 font-semibold"
-            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-        )}
+        onClick={onReset}
+        title={t("observability.reset_times") || "Reset to default 24h"}
+        className="flex items-center gap-1 px-2 py-1 rounded-md border border-border/70 bg-background hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors cursor-pointer shrink-0"
       >
-        <CalendarRange className="w-3.5 h-3.5 text-primary" />
-        <span>{t("observability.custom_historical_range") || "Custom Historical Range"}</span>
-        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-muted text-muted-foreground font-mono ml-auto">
-          Forensic
-        </span>
+        <RotateCcw className="w-3 h-3 text-primary" />
+        <span>{t("observability.reset_filter") || "Reset"}</span>
       </button>
     </div>
   );
@@ -98,23 +107,23 @@ function FooterActions({
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center justify-between gap-3 px-3 py-2.5 border-t border-border/50 bg-muted/20">
-      <div className="flex items-center gap-1.5 min-w-0">
+    <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border/50 bg-muted/20">
+      <div className="flex items-center gap-1 min-w-0">
         {isLiveRolling ? (
-          <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+          <Clock className="w-3 h-3 text-primary shrink-0" />
         ) : (
-          <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
+          <Lock className="w-3 h-3 text-primary shrink-0" />
         )}
-        <span className="text-[11px] font-mono text-muted-foreground truncate" title={previewText}>
+        <span className="text-[10px] font-mono text-muted-foreground truncate" title={previewText}>
           {previewText}
         </span>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0">
         <button
           type="button"
           onClick={onCopy}
-          className="inline-flex items-center gap-1 justify-center text-center font-normal rounded-md transition-colors hover:bg-muted text-xs h-7 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
+          className="inline-flex items-center gap-1 justify-center text-center font-normal rounded-md transition-colors hover:bg-muted text-xs h-6.5 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
           title="Copy range string to clipboard"
         >
           {copied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
@@ -124,7 +133,7 @@ function FooterActions({
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex items-center justify-center text-center font-normal rounded-md transition-colors border border-border bg-background hover:bg-muted text-xs h-7 px-2.5 text-foreground cursor-pointer"
+          className="inline-flex items-center justify-center text-center font-normal rounded-md transition-colors border border-border bg-background hover:bg-muted text-xs h-6.5 px-2 text-foreground cursor-pointer"
         >
           {t("observability.cancel") || "Cancel"}
         </button>
@@ -134,13 +143,13 @@ function FooterActions({
           onClick={onApply}
           disabled={!canApply}
           className={cn(
-            "inline-flex items-center justify-center text-center font-medium rounded-md transition-colors text-xs h-7 px-3.5 cursor-pointer",
+            "inline-flex items-center justify-center text-center font-medium rounded-md transition-colors text-xs h-6.5 px-3 cursor-pointer",
             canApply
-              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
               : "bg-muted text-muted-foreground/50 cursor-not-allowed border border-border/40"
           )}
         >
-          {t("observability.apply_range") || "Apply Range"}
+          {t("observability.apply_range") || "Apply"}
         </button>
       </div>
     </div>
@@ -210,8 +219,8 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const updateCoords = React.useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const popupWidth = 530;
-      const popupHeight = 440;
+      const popupWidth = 420;
+      const popupHeight = 390;
       const margin = 8;
       const isOnRightHalf = rect.left + rect.width / 2 > window.innerWidth / 2;
       const rawLeft = isOnRightHalf
@@ -255,6 +264,21 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
     if (open) document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [open]);
+
+  const handleGlobalReset = () => {
+    setActiveTab("presets");
+    setStagedPreset("24h");
+    setCustomRelativeInput("");
+    const presetRange = getPresetRange("24h");
+    setLocalRange(presetRange);
+    setDisplayMonth(presetRange.from);
+    setFromTime("00:00:00");
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, "0");
+    const m = String(now.getMinutes()).padStart(2, "0");
+    const s = String(now.getSeconds()).padStart(2, "0");
+    setToTime(`${h}:${m}:${s}`);
+  };
 
   const handleRelativeSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -357,10 +381,14 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
           <div
             ref={contentRef}
             style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-            className="z-[9999] w-[530px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs flex flex-col"
+            className="z-[9999] w-[420px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs flex flex-col"
           >
-            {/* Dedicated Tabs Header */}
-            <TabButtons activeTab={activeTab} setActiveTab={setActiveTab} />
+            {/* Dedicated Tabs Header with Global Reset Button */}
+            <TabButtons
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              onReset={handleGlobalReset}
+            />
 
             {/* Tab 1 Content: Quick Rolling Presets */}
             {activeTab === "presets" && (
