@@ -83,19 +83,22 @@ export function PresetsFilterSection() {
                 <div
                   key={p.id}
                   onClick={() => handleApply(p)}
-                  title={p.description}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted/60 transition-colors cursor-pointer group text-xs text-foreground"
+                  title={`${p.name}\n${p.description || "Click to apply this investigation filter preset"}`}
+                  className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted/70 transition-colors cursor-pointer group text-xs text-foreground"
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0 flex-1 pr-1.5">
                     <span className={cn("w-2 h-2 rounded-full shrink-0", accent.dot)} />
-                    <span className="truncate font-medium text-[11px] group-hover:text-primary transition-colors">
+                    <span
+                      title={p.name}
+                      className="truncate font-medium text-[11px] group-hover:text-primary transition-colors select-none"
+                    >
                       {p.name}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
                     {p.isSystem ? (
-                      <span className="text-[9px] font-mono font-semibold px-1 rounded bg-muted text-muted-foreground">
+                      <span className="text-[9px] font-mono font-semibold px-1 py-0.5 rounded bg-muted/90 text-muted-foreground border border-border/40">
                         SYS
                       </span>
                     ) : (
