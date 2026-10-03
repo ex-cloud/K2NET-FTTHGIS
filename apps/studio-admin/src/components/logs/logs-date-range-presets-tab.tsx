@@ -36,9 +36,17 @@ export function PresetsTabContent({
           type="text"
           placeholder="Custom relative duration (e.g. 2h, 45m, 60d) — press Enter"
           value={customRelativeInput}
-          onChange={(e) => setCustomRelativeInput(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setCustomRelativeInput(val);
+            const trimmed = val.trim();
+            const match = trimmed.match(/^(\d+)([mhd])$/i);
+            if (match) {
+              setStagedPreset(trimmed.toLowerCase());
+            }
+          }}
           onKeyDown={onRelativeSubmit}
-          className="w-full h-7.5 border border-border bg-background placeholder:text-muted-foreground/50 px-2.5 py-1 text-xs rounded-md focus:outline-none focus:border-primary transition-colors font-mono"
+          className="w-full h-7.5 border border-border/70 bg-card placeholder:text-muted-foreground/50 px-2.5 py-1 text-xs rounded-md focus:outline-none focus:border-primary transition-colors font-mono shadow-xs"
         />
       </div>
 
@@ -56,7 +64,10 @@ export function PresetsTabContent({
             <button
               type="button"
               key={p.value}
-              onClick={() => setStagedPreset(p.value)}
+              onClick={() => {
+                setStagedPreset(p.value);
+                setCustomRelativeInput(p.value);
+              }}
               className={cn(
                 "flex items-center justify-between h-8 px-2.5 rounded-md border text-xs text-left transition-all cursor-pointer",
                 isSelected

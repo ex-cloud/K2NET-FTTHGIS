@@ -74,7 +74,7 @@ function TabButtons({
         </button>
       </div>
 
-      <ActionTooltip label={t("observability.reset_to_default") || "Reset to default (24h)"} side="bottom">
+      <ActionTooltip label={t("observability.reset_to_default") || "Reset to default (24h)"} side="top" align="end">
         <button
           type="button"
           onClick={onReset}
@@ -134,7 +134,7 @@ function FooterActions({
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex items-center justify-center text-center font-normal rounded-md transition-colors border border-border bg-background hover:bg-muted text-xs h-6.5 px-2 text-foreground cursor-pointer"
+          className="inline-flex items-center justify-center text-center font-normal rounded-md transition-colors border border-border/70 bg-card hover:bg-muted text-xs h-6.5 px-2.5 text-muted-foreground hover:text-foreground cursor-pointer shadow-xs"
         >
           {t("observability.cancel") || "Cancel"}
         </button>
@@ -287,7 +287,10 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
       const val = customRelativeInput.trim();
       const match = val.match(/^(\d+)([mhd])$/i);
       if (match) {
-        setStagedPreset(val.toLowerCase());
+        const target = val.toLowerCase();
+        setStagedPreset(target);
+        onChange(target);
+        setOpen(false);
       }
     }
   };
@@ -307,9 +310,14 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   };
 
   const handleApply = () => {
-    if (activeTab === "presets" && stagedPreset) {
-      onChange(stagedPreset);
-      setOpen(false);
+    if (activeTab === "presets") {
+      const customVal = customRelativeInput.trim();
+      const match = customVal.match(/^(\d+)([mhd])$/i);
+      const targetPreset = match ? customVal.toLowerCase() : stagedPreset;
+      if (targetPreset) {
+        onChange(targetPreset);
+        setOpen(false);
+      }
     } else if (activeTab === "custom" && localRange?.from) {
       const from = new Date(localRange.from);
       const { h: fh, m: fm, s: fs } = parseTimeStr(fromTime);
@@ -326,10 +334,15 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
 
   // Build dynamic preview string
   const previewText = React.useMemo(() => {
-    if (activeTab === "presets" && stagedPreset) {
-      const { from, to } = getPresetRange(stagedPreset);
-      const label = getDisplayLabel(stagedPreset, t);
-      return `⚡ ${label} (${format(from, "MMM d, HH:mm")} → ${format(to, "HH:mm")})`;
+    if (activeTab === "presets") {
+      const customVal = customRelativeInput.trim();
+      const match = customVal.match(/^(\d+)([mhd])$/i);
+      const targetPreset = match ? customVal.toLowerCase() : stagedPreset;
+      if (targetPreset) {
+        const { from, to } = getPresetRange(targetPreset);
+        const label = getDisplayLabel(targetPreset, t);
+        return `⚡ ${label} (${format(from, "MMM d, HH:mm")} → ${format(to, "HH:mm")})`;
+      }
     }
     if (localRange?.from) {
       const from = new Date(localRange.from);
@@ -341,7 +354,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
       return `🔒 ${format(from, "MMM d, HH:mm:ss")} → ${format(to, "MMM d, HH:mm:ss")}`;
     }
     return "Select date range";
-  }, [activeTab, stagedPreset, localRange, fromTime, toTime, t]);
+  }, [activeTab, stagedPreset, customRelativeInput, localRange, fromTime, toTime, t]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(previewText);
@@ -349,7 +362,8 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const canApply = activeTab === "presets" ? Boolean(stagedPreset) : Boolean(localRange?.from);
+  const customMatch = customRelativeInput.trim().match(/^(\d+)([mhd])$/i);
+  const canApply = activeTab === "presets" ? Boolean(stagedPreset || customMatch) : Boolean(localRange?.from);
 
   return (
     <div className="w-full">
@@ -382,7 +396,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
           <div
             ref={contentRef}
             style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-            className="z-[9999] w-[390px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs flex flex-col"
+            className="z-[9999] w-[440px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs flex flex-col"
           >
             {/* Dedicated Tabs Header with Global Icon-Only Reset Button */}
             <TabButtons

@@ -59,7 +59,21 @@ export function getDisplayLabel(value: string, t: ReturnType<typeof useTranslati
   }
   const normVal = value === "1h" ? "60m" : value;
   const preset = PRESET_VALUES.find((p) => p.value === value || p.value === normVal);
-  if (!preset) return value;
+  if (!preset) {
+    const match = value.match(/^(\d+)([mhd])$/i);
+    if (match) {
+      const amount = parseInt(match[1], 10);
+      const unit = match[2].toLowerCase();
+      const unitName =
+        unit === "m"
+          ? (amount === 1 ? "minute" : "minutes")
+          : unit === "h"
+          ? (amount === 1 ? "hour" : "hours")
+          : (amount === 1 ? "day" : "days");
+      return `Last ${amount} ${unitName}`;
+    }
+    return value;
+  }
   const transKey = `observability.${preset.key}`;
   const translated = t(transKey);
   if (!translated || translated === transKey || translated.startsWith("observability.preset_")) {
