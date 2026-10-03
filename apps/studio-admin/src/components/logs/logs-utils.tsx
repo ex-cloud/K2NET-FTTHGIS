@@ -255,7 +255,14 @@ export function filterAuditLogs(
 
   if (tenantFilter && tenantFilter.trim()) {
     const tf = tenantFilter.toLowerCase().trim();
-    result = result.filter((log) => (log?.tenantSlug ?? "").toLowerCase().includes(tf));
+    result = result.filter(
+      (log) =>
+        (log?.tenantSlug ?? "").toLowerCase().includes(tf) ||
+        (log?.tenantName ?? "").toLowerCase().includes(tf) ||
+        (log?.projectId ?? "").toLowerCase().includes(tf) ||
+        (log?.projectName ?? "").toLowerCase().includes(tf) ||
+        (log?.targetResource ?? "").toLowerCase().includes(tf)
+    );
   }
 
   if (options?.scopeFilter && options.scopeFilter !== "ALL") {

@@ -7,9 +7,11 @@ export interface AuditStreamEntry {
   logGroup: LogGroupKey;
   serviceSource: string;
   tenantSlug?: string;
+  tenantName?: string;
   scope?: string;
   projectId?: string;
   projectName?: string;
+  targetResource?: string;
   isImpersonated?: boolean;
   realActorId?: string;
   impersonationSessionId?: string;

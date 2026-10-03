@@ -77,9 +77,8 @@ const GROUP_ICONS: Record<LogGroupKey, React.ElementType> = {
 };
 
 import {
-  TenantFilterSection,
+  TenantScopeFilterSection,
   LevelFilterSection,
-  ScopeFilterSection,
   SeverityFilterSection,
   BenchmarkFilterSection,
 } from "./logs-filter-sections";
@@ -241,7 +240,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     selectedLevels, toggleLevel,
     selectedSeverities, toggleSeverity,
     scopeFilter, setScopeFilter,
-    projectFilter, setProjectFilter,
+    projectFilter,
     edgeSubFilters, toggleEdgeSubFilter,
     resetAllFilters,
     logTypeCounts,
@@ -300,13 +299,11 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
           <LogsDateRangePicker value={timeRange} onChange={setTimeRange} />
         </div>
 
-        <TenantFilterSection tenantFilter={tenantFilter} setTenantFilter={setTenantFilter} />
-
-        <ScopeFilterSection
+        <TenantScopeFilterSection
           scopeFilter={scopeFilter}
           setScopeFilter={setScopeFilter}
-          projectFilter={projectFilter}
-          setProjectFilter={setProjectFilter}
+          tenantFilter={tenantFilter}
+          setTenantFilter={setTenantFilter}
         />
 
         <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">

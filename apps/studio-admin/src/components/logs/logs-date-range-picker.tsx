@@ -11,7 +11,7 @@ import {
   RotateCcw,
   Calendar as CalendarIcon,
 } from "lucide-react";
-import { cn } from "@k2net/ui";
+import { cn, ActionTooltip } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
 import { useTranslation } from "@k2net/i18n";
 import {
@@ -56,7 +56,7 @@ function TabButtons({
           )}
         >
           <Clock className="w-3 h-3 text-primary" />
-          <span>{t("observability.quick_rolling_presets") || "Quick Presets"}</span>
+          <span>{t("observability.quick_presets") || "Quick Presets"}</span>
         </button>
 
         <button
@@ -70,19 +70,20 @@ function TabButtons({
           )}
         >
           <CalendarRange className="w-3 h-3 text-primary" />
-          <span>{t("observability.custom_historical_range") || "Custom Range"}</span>
+          <span>{t("observability.historical") || "Historical"}</span>
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={onReset}
-        title={t("observability.reset_times") || "Reset to default 24h"}
-        className="flex items-center gap-1 px-2 py-1 rounded-md border border-border/70 bg-background hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors cursor-pointer shrink-0"
-      >
-        <RotateCcw className="w-3 h-3 text-primary" />
-        <span>{t("observability.reset_filter") || "Reset"}</span>
-      </button>
+      <ActionTooltip label={t("observability.reset_to_default") || "Reset to default (24h)"} side="bottom">
+        <button
+          type="button"
+          onClick={onReset}
+          aria-label="Reset to default (24h)"
+          className="flex items-center justify-center h-6.5 w-6.5 rounded-md bg-transparent hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+        >
+          <RotateCcw className="w-3.5 h-3.5 text-primary" />
+        </button>
+      </ActionTooltip>
     </div>
   );
 }
@@ -110,11 +111,11 @@ function FooterActions({
     <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border/50 bg-muted/20">
       <div className="flex items-center gap-1 min-w-0">
         {isLiveRolling ? (
-          <Clock className="w-3 h-3 text-primary shrink-0" />
+          <Clock className="w-2.5 h-2.5 text-primary shrink-0" />
         ) : (
-          <Lock className="w-3 h-3 text-primary shrink-0" />
+          <Lock className="w-2.5 h-2.5 text-primary shrink-0" />
         )}
-        <span className="text-[10px] font-mono text-muted-foreground truncate" title={previewText}>
+        <span className="text-[9px] font-mono text-muted-foreground truncate" title={previewText}>
           {previewText}
         </span>
       </div>
@@ -219,8 +220,8 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const updateCoords = React.useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const popupWidth = 420;
-      const popupHeight = 390;
+      const popupWidth = 390;
+      const popupHeight = 380;
       const margin = 8;
       const isOnRightHalf = rect.left + rect.width / 2 > window.innerWidth / 2;
       const rawLeft = isOnRightHalf
@@ -381,16 +382,16 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
           <div
             ref={contentRef}
             style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-            className="z-[9999] w-[420px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs flex flex-col"
+            className="z-[9999] w-[390px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs flex flex-col"
           >
-            {/* Dedicated Tabs Header with Global Reset Button */}
+            {/* Dedicated Tabs Header with Global Icon-Only Reset Button */}
             <TabButtons
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               onReset={handleGlobalReset}
             />
 
-            {/* Tab 1 Content: Quick Rolling Presets */}
+            {/* Tab 1 Content: Quick Presets */}
             {activeTab === "presets" && (
               <PresetsTabContent
                 stagedPreset={stagedPreset}
@@ -401,7 +402,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               />
             )}
 
-            {/* Tab 2 Content: Custom Historical Range */}
+            {/* Tab 2 Content: Historical */}
             {activeTab === "custom" && (
               <CustomHistoricalTabContent
                 localRange={localRange}

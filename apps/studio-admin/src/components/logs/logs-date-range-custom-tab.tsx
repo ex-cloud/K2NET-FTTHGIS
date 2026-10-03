@@ -72,7 +72,7 @@ function MonthPickerView({
         <button
           type="button"
           onClick={onSwitchToYears}
-          title="Click to select year"
+          title="Click to choose year"
           className="text-xs font-semibold text-foreground hover:bg-muted/80 px-2 py-0.5 rounded transition-colors cursor-pointer"
         >
           {currentYear}
@@ -221,7 +221,7 @@ export function TimePickerInputs({
       <div className="flex items-center justify-between gap-1.5">
         <div className="flex items-center gap-1">
           <span className="text-[10px] text-muted-foreground font-sans font-medium">Start:</span>
-          <div className="flex h-6.5 items-center justify-center gap-0.5 rounded border border-border bg-background text-[11px] px-1 font-mono">
+          <div className="flex h-6 items-center justify-center gap-0.5 rounded border border-border bg-background text-[11px] px-1 font-mono">
             <input
               type="text"
               pattern="[0-23]*"
@@ -259,7 +259,7 @@ export function TimePickerInputs({
 
         <div className="flex items-center gap-1">
           <span className="text-[10px] text-muted-foreground font-sans font-medium">End:</span>
-          <div className="flex h-6.5 items-center justify-center gap-0.5 rounded border border-border bg-background text-[11px] px-1 font-mono">
+          <div className="flex h-6 items-center justify-center gap-0.5 rounded border border-border bg-background text-[11px] px-1 font-mono">
             <input
               type="text"
               pattern="[0-23]*"
@@ -337,9 +337,9 @@ export function CustomHistoricalTabContent({
   };
 
   return (
-    <div className="flex min-h-[290px]">
+    <div className="flex min-h-[285px]">
       {/* Historical Shortcuts Sidebar */}
-      <div className="w-[115px] shrink-0 border-r border-border/40 p-2 flex flex-col gap-0.5 bg-muted/10">
+      <div className="w-[100px] shrink-0 border-r border-border/40 p-1.5 flex flex-col gap-0.5 bg-muted/10">
         <span className="text-[10px] font-medium text-muted-foreground px-1 pb-1 flex items-center gap-1">
           <History className="w-3 h-3 text-primary" />
           <span>Shortcuts</span>
@@ -353,7 +353,7 @@ export function CustomHistoricalTabContent({
               type="button"
               key={s.id}
               onClick={() => handleShortcutClick(s.id)}
-              className="w-full text-left px-2 py-1 text-[11px] rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer truncate"
+              className="w-full text-left px-1.5 py-1 text-[11px] rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer truncate"
             >
               {label}
             </button>
@@ -378,7 +378,7 @@ export function CustomHistoricalTabContent({
           }}
         />
 
-        <div className="flex justify-center p-1.5 flex-1 items-center">
+        <div className="flex justify-center p-1 flex-1 items-center w-full">
           {viewMode === "years" ? (
             <YearPickerView
               displayMonth={displayMonth}
@@ -409,7 +409,7 @@ export function CustomHistoricalTabContent({
               onSelect={setLocalRange}
               numberOfMonths={1}
               disabled={{ after: today }}
-              className="text-xs relative p-0"
+              className="text-xs relative p-0 w-full flex justify-center"
               components={{
                 MonthCaption: () => (
                   <button
@@ -423,14 +423,18 @@ export function CustomHistoricalTabContent({
                 ),
               }}
               classNames={{
-                month: "relative flex flex-col gap-1.5",
-                nav: "absolute top-1 inset-x-0 flex items-center justify-between w-full z-10 pointer-events-none px-1",
-                button_previous: "!pointer-events-auto !cursor-pointer absolute left-1 top-1 flex h-6.5 w-6.5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
-                button_next: "!pointer-events-auto !cursor-pointer absolute right-1 top-1 flex h-6.5 w-6.5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
-                day_button: "h-7.5 w-7.5 rounded font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary !cursor-pointer",
-                weekday: "text-muted-foreground rounded w-7.5 font-normal text-[10px] pb-1 text-center",
-                day: "h-7.5 w-7.5 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l last:[&:has([aria-selected])]:rounded-r",
-                week: "flex w-full mt-1",
+                months: "w-full flex justify-center",
+                month: "relative flex flex-col gap-1 w-full max-w-[270px] items-center",
+                month_caption: "flex justify-center pt-0.5 relative items-center w-full h-7",
+                nav: "absolute top-0.5 inset-x-0 flex items-center justify-between w-full z-10 pointer-events-none px-0.5",
+                button_previous: "!pointer-events-auto !cursor-pointer absolute left-0.5 top-0.5 flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
+                button_next: "!pointer-events-auto !cursor-pointer absolute right-0.5 top-0.5 flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
+                month_grid: "w-full border-collapse mt-0.5",
+                weekdays: "flex w-full justify-between",
+                weekday: "text-muted-foreground rounded w-8 font-normal text-[10px] pb-1 text-center shrink-0",
+                week: "flex w-full justify-between mt-0.5",
+                day: "h-7.5 w-8 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l last:[&:has([aria-selected])]:rounded-r shrink-0",
+                day_button: "h-7.5 w-8 rounded font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary !cursor-pointer",
               }}
             />
           )}

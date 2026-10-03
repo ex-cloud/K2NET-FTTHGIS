@@ -35,6 +35,85 @@ export const SCOPE_OPTIONS = [
   { key: "PROJECT", label: "Project Tech" },
 ];
 
+export function TenantScopeFilterSection({
+  scopeFilter,
+  setScopeFilter,
+  tenantFilter,
+  setTenantFilter,
+}: {
+  scopeFilter: string;
+  setScopeFilter: (v: string) => void;
+  tenantFilter: string;
+  setTenantFilter: (v: string) => void;
+}) {
+  const { t } = useTranslation();
+  const hasActive = scopeFilter !== "ALL" || Boolean(tenantFilter.trim());
+
+  return (
+    <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
+        <span className="flex items-center gap-1.5">
+          <User className="w-3 h-3 text-primary" /> {t("observability.tenant_and_scope") || "Tenant & Scope"}
+        </span>
+        <div className="flex items-center gap-1.5">
+          {hasActive && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-mono font-semibold max-w-[100px] truncate">
+              {tenantFilter.trim() || scopeFilter}
+            </span>
+          )}
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-1 space-y-2 font-mono text-[11px]">
+        <div className="grid grid-cols-2 gap-1">
+          {SCOPE_OPTIONS.map((s) => {
+            const isSelected = scopeFilter === s.key;
+            return (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setScopeFilter(s.key)}
+                className={`px-2 py-1 rounded text-[10px] border transition-colors text-left truncate ${
+                  isSelected
+                    ? "bg-primary/15 border-primary/40 text-primary font-semibold"
+                    : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                }`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="space-y-1">
+          <div className="relative flex items-center">
+            <Input
+              type="text"
+              value={tenantFilter}
+              onChange={(e) => setTenantFilter(e.target.value)}
+              placeholder={t("observability.filter_tenant_or_project") || "Filter tenant (slug/name), project..."}
+              className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-primary pr-6"
+            />
+            {tenantFilter && (
+              <button
+                type="button"
+                onClick={() => setTenantFilter("")}
+                className="absolute right-2 text-muted-foreground hover:text-rose-400 transition-colors text-xs font-mono"
+                title={t("observability.clear_filter") || "Clear filter"}
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <p className="text-[9px] text-muted-foreground/50 italic font-sans leading-tight">
+            {t("observability.smart_tenant_search_hint") || "Matches tenant slug, display name, and project ID"}
+          </p>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export function TenantFilterSection({
   tenantFilter,
   setTenantFilter,
