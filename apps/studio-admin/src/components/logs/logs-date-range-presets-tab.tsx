@@ -2,7 +2,7 @@ import * as React from "react";
 import { Sparkles } from "lucide-react";
 import { cn } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
-import { PRESET_VALUES } from "./logs-date-range-types";
+import { PRESET_VALUES, parseAnyTimeInput } from "./logs-date-range-types";
 
 export interface PresetsTabContentProps {
   stagedPreset: string | null;
@@ -39,10 +39,9 @@ export function PresetsTabContent({
           onChange={(e) => {
             const val = e.target.value;
             setCustomRelativeInput(val);
-            const trimmed = val.trim();
-            const match = trimmed.match(/^(\d+)([mhd])$/i);
-            if (match) {
-              setStagedPreset(trimmed.toLowerCase());
+            const parsed = parseAnyTimeInput(val);
+            if (parsed && parsed.type === "preset") {
+              setStagedPreset(parsed.preset);
             }
           }}
           onKeyDown={onRelativeSubmit}

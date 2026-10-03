@@ -59,21 +59,21 @@ function MonthPickerView({
   return (
     <div className="flex flex-col p-2 w-full justify-center">
       {/* Header */}
-      <div className="flex items-center justify-between h-7 px-1 mb-1.5">
+      <div className="flex items-center justify-between h-8 px-1 mb-2">
         <button
           type="button"
           onClick={handlePrevYear}
           disabled={currentYear <= 2020}
-          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
         >
-          <ChevronLeft className="w-3.5 h-3.5" />
+          <ChevronLeft className="w-4 h-4" />
         </button>
 
         <button
           type="button"
           onClick={onSwitchToYears}
           title="Click to choose year"
-          className="text-xs font-semibold text-foreground hover:bg-muted/80 px-2 py-0.5 rounded transition-colors cursor-pointer"
+          className="text-xs font-semibold text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors cursor-pointer"
         >
           {currentYear}
         </button>
@@ -82,9 +82,9 @@ function MonthPickerView({
           type="button"
           onClick={handleNextYear}
           disabled={currentYear >= maxYear}
-          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
         >
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
@@ -136,17 +136,17 @@ function YearPickerView({
   return (
     <div className="flex flex-col p-2 w-full justify-center">
       {/* Header */}
-      <div className="flex items-center justify-between h-7 px-1 mb-1.5">
+      <div className="flex items-center justify-between h-8 px-1 mb-2">
         <button
           type="button"
           onClick={() => setDecadeStart((d) => Math.max(2010, d - 12))}
           disabled={decadeStart <= 2010}
-          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
         >
-          <ChevronLeft className="w-3.5 h-3.5" />
+          <ChevronLeft className="w-4 h-4" />
         </button>
 
-        <span className="text-xs font-semibold text-foreground px-2 py-0.5">
+        <span className="text-xs font-semibold text-foreground px-2.5 py-1">
           {decadeStart} - {decadeStart + 11}
         </span>
 
@@ -154,9 +154,9 @@ function YearPickerView({
           type="button"
           onClick={() => setDecadeStart((d) => d + 12)}
           disabled={decadeStart + 11 >= maxYear}
-          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
         >
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
@@ -195,17 +195,12 @@ export function TimePickerInputs({
   toTime,
   setFromTime,
   setToTime,
-  onSetFullDay,
-  onSetWorkHours,
 }: {
   fromTime: string;
   toTime: string;
   setFromTime: (t: string) => void;
   setToTime: (t: string) => void;
-  onSetFullDay: () => void;
-  onSetWorkHours: () => void;
 }) {
-  const { t } = useTranslation();
   const { h: fh, m: fm, s: fs } = parseTimeStr(fromTime);
   const { h: th, m: tm, s: ts } = parseTimeStr(toTime);
 
@@ -217,100 +212,77 @@ export function TimePickerInputs({
   const toS = String(ts).padStart(2, "0");
 
   return (
-    <div className="flex flex-col gap-1.5 p-2 border-b border-border/40 bg-muted/20 rounded-t-lg">
-      <div className="flex items-center justify-between gap-1.5">
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-muted-foreground font-sans font-medium">Start:</span>
-          <div className="flex h-6 items-center justify-center gap-0.5 rounded border border-border/80 bg-card text-[11px] px-1 font-mono shadow-xs">
-            <input
-              type="text"
-              pattern="[0-23]*"
-              value={fromH}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-                setFromTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromM}:${fromS}`);
-              }}
-              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
-            />
-            <span className="text-muted-foreground/40">:</span>
-            <input
-              type="text"
-              pattern="[0-59]*"
-              value={fromM}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-                setFromTime(`${fromH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromS}`);
-              }}
-              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
-            />
-            <span className="text-muted-foreground/40">:</span>
-            <input
-              type="text"
-              pattern="[0-59]*"
-              value={fromS}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-                setFromTime(`${fromH}:${fromM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
-              }}
-              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-muted-foreground font-sans font-medium">End:</span>
-          <div className="flex h-6 items-center justify-center gap-0.5 rounded border border-border/80 bg-card text-[11px] px-1 font-mono shadow-xs">
-            <input
-              type="text"
-              pattern="[0-23]*"
-              value={toH}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-                setToTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${toM}:${toS}`);
-              }}
-              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
-            />
-            <span className="text-muted-foreground/40">:</span>
-            <input
-              type="text"
-              pattern="[0-59]*"
-              value={toM}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-                setToTime(`${toH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${toS}`);
-              }}
-              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
-            />
-            <span className="text-muted-foreground/40">:</span>
-            <input
-              type="text"
-              pattern="[0-59]*"
-              value={toS}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-                setToTime(`${toH}:${toM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
-              }}
-              className="w-3.5 p-0 text-center text-[11px] text-foreground bg-transparent border-none outline-none"
-            />
-          </div>
-        </div>
+    <div className="flex items-center justify-center gap-2 p-2 border-b border-border/40 bg-muted/10">
+      <div className="flex h-7 items-center justify-center gap-1 rounded-md border border-border/80 bg-card text-xs px-2 font-mono shadow-xs">
+        <input
+          type="text"
+          pattern="[0-23]*"
+          value={fromH}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setFromTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromM}:${fromS}`);
+          }}
+          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+        />
+        <span className="text-muted-foreground/50">:</span>
+        <input
+          type="text"
+          pattern="[0-59]*"
+          value={fromM}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setFromTime(`${fromH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromS}`);
+          }}
+          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+        />
+        <span className="text-muted-foreground/50">:</span>
+        <input
+          type="text"
+          pattern="[0-59]*"
+          value={fromS}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setFromTime(`${fromH}:${fromM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
+          }}
+          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+        />
       </div>
 
-      <div className="flex items-center justify-end gap-1 text-[10px]">
-        <button
-          type="button"
-          onClick={onSetFullDay}
-          className="px-2 py-0.5 rounded border border-border/70 bg-card/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-[10px]"
-        >
-          {t("observability.full_day") || "Full Day (24h)"}
-        </button>
-        <button
-          type="button"
-          onClick={onSetWorkHours}
-          className="px-2 py-0.5 rounded border border-border/70 bg-card/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-[10px]"
-        >
-          {t("observability.working_hours") || "Work Hours (08-17)"}
-        </button>
+      <span className="text-muted-foreground/50 text-xs font-mono">—</span>
+
+      <div className="flex h-7 items-center justify-center gap-1 rounded-md border border-border/80 bg-card text-xs px-2 font-mono shadow-xs">
+        <input
+          type="text"
+          pattern="[0-23]*"
+          value={toH}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setToTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${toM}:${toS}`);
+          }}
+          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+        />
+        <span className="text-muted-foreground/50">:</span>
+        <input
+          type="text"
+          pattern="[0-59]*"
+          value={toM}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setToTime(`${toH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${toS}`);
+          }}
+          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+        />
+        <span className="text-muted-foreground/50">:</span>
+        <input
+          type="text"
+          pattern="[0-59]*"
+          value={toS}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setToTime(`${toH}:${toM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
+          }}
+          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+        />
       </div>
     </div>
   );
@@ -368,14 +340,6 @@ export function CustomHistoricalTabContent({
           toTime={toTime}
           setFromTime={setFromTime}
           setToTime={setToTime}
-          onSetFullDay={() => {
-            setFromTime("00:00:00");
-            setToTime("23:59:59");
-          }}
-          onSetWorkHours={() => {
-            setFromTime("08:00:00");
-            setToTime("17:00:00");
-          }}
         />
 
         <div className="flex justify-center p-2 flex-1 items-center w-full">
@@ -412,23 +376,25 @@ export function CustomHistoricalTabContent({
               className="text-xs relative p-0 w-full flex justify-center"
               components={{
                 MonthCaption: () => (
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("months")}
-                    title="Click to choose month and year"
-                    className="text-xs font-semibold text-foreground hover:bg-muted/80 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
-                  >
-                    {format(displayMonth, "MMMM yyyy")}
-                  </button>
+                  <div className="flex items-center justify-center h-8">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("months")}
+                      title="Click to choose month and year"
+                      className="text-xs font-semibold text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                    >
+                      {format(displayMonth, "MMMM yyyy")}
+                    </button>
+                  </div>
                 ),
               }}
               classNames={{
                 months: "w-full flex justify-center",
                 month: "relative flex flex-col gap-2 w-full max-w-[270px] items-center",
-                month_caption: "flex justify-center pt-0.5 pb-1 relative items-center w-full h-8",
-                nav: "absolute top-0.5 inset-x-0 flex items-center justify-between w-full z-10 pointer-events-none px-1",
-                button_previous: "!pointer-events-auto !cursor-pointer absolute left-1 top-1 flex h-6.5 w-6.5 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
-                button_next: "!pointer-events-auto !cursor-pointer absolute right-1 top-1 flex h-6.5 w-6.5 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
+                month_caption: "flex justify-center items-center w-full h-8 relative",
+                nav: "absolute top-0 inset-x-0 flex items-center justify-between w-full h-8 z-10 pointer-events-none px-0.5",
+                button_previous: "!pointer-events-auto !cursor-pointer flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground shadow-xs transition-colors z-20",
+                button_next: "!pointer-events-auto !cursor-pointer flex h-7 w-7 items-center justify-center rounded-md border border-border/80 bg-muted/20 hover:bg-muted text-muted-foreground hover:text-foreground shadow-xs transition-colors z-20",
                 month_grid: "w-full border-collapse mt-2",
                 weekdays: "flex w-full justify-between mb-1",
                 weekday: "text-muted-foreground/70 rounded w-8 font-medium text-[10px] pb-1 text-center shrink-0",

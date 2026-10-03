@@ -15,6 +15,7 @@ export type { LogGroupKey };
 // ─── Advanced Filter Types ─────────────────────────────────────────────────────
 
 export type AdvancedFilterField =
+  | "timeRange"
   | "status"
   | "method"
   | "pathname"
@@ -44,6 +45,7 @@ export type AdvancedFilter = {
 };
 
 export const FILTER_FIELD_LABELS: Record<AdvancedFilterField, string> = {
+  timeRange:     "Time Range",
   status:        "Status",
   method:        "Method",
   pathname:      "Pathname",

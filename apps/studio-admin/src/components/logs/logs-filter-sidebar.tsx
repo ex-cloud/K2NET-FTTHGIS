@@ -255,6 +255,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
   const [typeSearch, setTypeSearch] = React.useState("");
 
   const hasActiveFilters =
+    timeRange !== "60m" ||
     Object.values(selectedTypes).some(Boolean) ||
     Object.values(selectedLevels).some(Boolean) ||
     Object.values(selectedGroups).some(Boolean) ||

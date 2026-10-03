@@ -29,6 +29,8 @@ import {
   FILTER_FIELD_LABELS,
   FILTER_OPERATOR_LABELS,
 } from "./logs-filter-context";
+import { LogsDateRangePicker } from "./logs-date-range-picker";
+import { getDisplayLabel } from "./logs-date-range-types";
 import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import type { Table, VisibilityState } from "@tanstack/react-table";
@@ -39,7 +41,7 @@ import { exportLogsToCsv } from "./logs-utils";
 // ─── Filter Fields available in builder ──────────────────────────────────────
 
 const FILTER_FIELDS: AdvancedFilterField[] = [
-  "logType", "severity", "status", "method", "pathname", "actor", "message", "tenantSlug", "serviceSource", "level",
+  "timeRange", "logType", "severity", "status", "method", "pathname", "actor", "message", "tenantSlug", "serviceSource", "level",
 ];
 
 const FILTER_OPERATORS: AdvancedFilterOperator[] = [
@@ -159,9 +161,10 @@ interface FilterBuilderProps {
   anchorRef: React.RefObject<HTMLDivElement | null>;
   onClose: () => void;
   onAdd: (f: AdvancedFilter) => void;
+  onSelectTimeRange: () => void;
 }
 
-function FilterBuilder({ anchorRef, onClose, onAdd }: FilterBuilderProps) {
+function FilterBuilder({ anchorRef, onClose, onAdd, onSelectTimeRange }: FilterBuilderProps) {
   const [mounted, setMounted] = React.useState(false);
   const [coords, setCoords] = React.useState({ top: 0, left: 0 });
   const [step, setStep] = React.useState<BuilderStep>("field");
@@ -200,7 +203,15 @@ function FilterBuilder({ anchorRef, onClose, onAdd }: FilterBuilderProps) {
     }
   }, [step]);
 
-  const handleSelectField = (f: AdvancedFilterField) => { setField(f); setStep("operator"); };
+  const handleSelectField = (f: AdvancedFilterField) => {
+    if (f === "timeRange") {
+      onSelectTimeRange();
+      onClose();
+      return;
+    }
+    setField(f);
+    setStep("operator");
+  };
   const handleSelectOperator = (op: AdvancedFilterOperator) => { setOperator(op); setStep("value"); };
 
   const handleApply = () => {
@@ -351,6 +362,7 @@ export function LogsTopHeader({
   const { t } = useTranslation();
   const {
     searchQuery, setSearchQuery,
+    timeRange, setTimeRange,
     selectedTypes, toggleType, setLogType,
     selectedLevels, toggleLevel,
     selectedSeverities, toggleSeverity,
@@ -366,6 +378,8 @@ export function LogsTopHeader({
 
   const [showFilterBuilder, setShowFilterBuilder] = React.useState(false);
   const filterAnchorRef = React.useRef<HTMLDivElement>(null);
+  const [showTopTimePicker, setShowTopTimePicker] = React.useState(false);
+  const timeRangePillRef = React.useRef<HTMLDivElement>(null);
   const [showColumnPicker, setShowColumnPicker] = React.useState(false);
   const columnBtnRef = React.useRef<HTMLButtonElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -427,7 +441,8 @@ export function LogsTopHeader({
     ...benchmarkPills,
     ...advancedPills,
   ];
-  const hasActivePills = allPills.length > 0;
+  const isTimeRangeActive = timeRange !== "60m" && timeRange !== "1h";
+  const hasActivePills = allPills.length > 0 || isTimeRangeActive;
 
   const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "scope" | "project" | "tenant" | "benchmark" | "advanced" }) => {
     if (pill.kind === "type") toggleType(pill.id);
@@ -468,10 +483,54 @@ export function LogsTopHeader({
       {/* Search + Filter pills */}
       <div
         className="flex-1 flex items-center gap-1.5 bg-background border border-border/80 rounded-lg px-3 py-1 text-xs focus-within:border-primary transition-colors overflow-hidden min-w-0 cursor-text"
-        onClick={() => { if (!showFilterBuilder) inputRef.current?.focus(); }}
+        onClick={() => { if (!showFilterBuilder && !showTopTimePicker) inputRef.current?.focus(); }}
       >
         <Search className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
         <div className="flex items-center gap-1.5 flex-wrap flex-1 overflow-hidden min-w-0">
+          {/* Time range picker pill & popover integration */}
+          <LogsDateRangePicker
+            value={timeRange}
+            onChange={(val) => {
+              setTimeRange(val);
+              setShowTopTimePicker(false);
+            }}
+            open={showTopTimePicker}
+            onOpenChange={setShowTopTimePicker}
+            anchorRef={isTimeRangeActive && timeRangePillRef.current ? timeRangePillRef : filterAnchorRef}
+            customTrigger={
+              isTimeRangeActive
+                ? (isOpen, setIsOpen) => (
+                    <div ref={timeRangePillRef} className="inline-flex shrink-0">
+                      <Badge
+                        className={cn(
+                          "text-[10px] font-mono bg-muted text-foreground border border-border/60 gap-1 px-2 py-0.5 shrink-0 whitespace-nowrap cursor-pointer hover:bg-muted/80 transition-colors",
+                          isOpen && "border-primary/60 bg-muted/80"
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsOpen(!isOpen);
+                        }}
+                      >
+                        <span>{`Time range = ${getDisplayLabel(timeRange, t)}`}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTimeRange("60m");
+                            setIsOpen(false);
+                          }}
+                          className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                          aria-label="Reset time range to default"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </Badge>
+                    </div>
+                  )
+                : () => null
+            }
+          />
+
           {allPills.map((pill) => (
             <Badge key={`${pill.kind}-${pill.id}`}
               className="text-[10px] font-mono bg-muted text-foreground border border-border/60 gap-1 px-2 py-0.5 shrink-0 whitespace-nowrap">
@@ -572,6 +631,10 @@ export function LogsTopHeader({
         <FilterBuilder
           anchorRef={filterAnchorRef}
           onClose={() => setShowFilterBuilder(false)}
+          onSelectTimeRange={() => {
+            setShowFilterBuilder(false);
+            setShowTopTimePicker(true);
+          }}
           onAdd={(f) => {
             if (f.field === "logType") {
               if (f.operator === "eq") {

@@ -148,3 +148,85 @@ export function parseTimeStr(t: string): { h: number; m: number; s: number } {
   const [h = 0, m = 0, s = 0] = t.split(":").map(Number);
   return { h, m, s };
 }
+
+export type ParsedInputResult =
+  | { type: "preset"; preset: string }
+  | { type: "custom"; range: DateRange; fromTime?: string; toTime?: string }
+  | null;
+
+export function parseAnyTimeInput(raw: string): ParsedInputResult {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+
+  // 1. Exact relative regex: e.g. 45m, 2h, 30d, 15m, 1h, 60m
+  const simpleMatch = trimmed.match(/^(\d+)\s*([mhd])$/i);
+  if (simpleMatch) {
+    const num = simpleMatch[1];
+    const unit = simpleMatch[2].toLowerCase();
+    const preset = num === "1" && unit === "h" ? "60m" : `${num}${unit}`;
+    return { type: "preset", preset };
+  }
+
+  // 2. Preset names or phrases: "Last 24 hours", "Last 1 hour", "24 hours", "30 minutes", "15m", etc.
+  const phraseMatch = trimmed.match(/(?:last\s+)?(\d+)\s*(minute|min|hour|hr|day)s?/i);
+  if (phraseMatch) {
+    const num = phraseMatch[1];
+    const unitRaw = phraseMatch[2].toLowerCase();
+    const unit = unitRaw.startsWith("m") ? "m" : unitRaw.startsWith("h") ? "h" : "d";
+    const preset = num === "1" && unit === "h" ? "60m" : `${num}${unit}`;
+    return { type: "preset", preset };
+  }
+
+  // 3. Shortcuts: today, yesterday, this week, last week, this month, prev month
+  const lower = trimmed.toLowerCase();
+  if (lower.includes("today")) {
+    const range = getHistoricalShortcutRange("today");
+    return { type: "custom", range, fromTime: "00:00:00", toTime: "23:59:59" };
+  }
+  if (lower.includes("yesterday")) {
+    const range = getHistoricalShortcutRange("yesterday");
+    return { type: "custom", range, fromTime: "00:00:00", toTime: "23:59:59" };
+  }
+  if (lower.includes("last week")) {
+    const range = getHistoricalShortcutRange("last_week");
+    return { type: "custom", range, fromTime: "00:00:00", toTime: "23:59:59" };
+  }
+  if (lower.includes("this week")) {
+    const range = getHistoricalShortcutRange("this_week");
+    return { type: "custom", range, fromTime: "00:00:00", toTime: "23:59:59" };
+  }
+  if (lower.includes("this month")) {
+    const range = getHistoricalShortcutRange("this_month");
+    return { type: "custom", range, fromTime: "00:00:00", toTime: "23:59:59" };
+  }
+  if (lower.includes("prev month") || lower.includes("previous month")) {
+    const range = getHistoricalShortcutRange("prev_month");
+    return { type: "custom", range, fromTime: "00:00:00", toTime: "23:59:59" };
+  }
+
+  // 4. ISO / custom format: custom:2026-10-02T..._2026-10-03T... or 2026-10-02T... - 2026-10-03T...
+  if (trimmed.includes("custom:")) {
+    const parsed = parseValue(trimmed);
+    if (parsed.range) return { type: "custom", range: parsed.range };
+  }
+
+  // 5. Match dates separated by arrow or dash: e.g. "2026-10-02 13:08:00 → 2026-10-03 13:08:00"
+  const sepMatch = trimmed.split(/\s*(?:→|->|\bto\b|\s-\s|_)\s*/i);
+  if (sepMatch.length === 2) {
+    const cleanPart1 = sepMatch[0].replace(/^[^\d\w]*/, "").replace(/^.*?\((.*)$/, "$1");
+    const cleanPart2 = sepMatch[1].replace(/[^\d\w]*$/, "").replace(/\).*$/, "");
+    const d1 = new Date(cleanPart1);
+    const d2 = new Date(cleanPart2);
+    if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+      return {
+        type: "custom",
+        range: { from: d1, to: d2 },
+        fromTime: `${String(d1.getHours()).padStart(2, "0")}:${String(d1.getMinutes()).padStart(2, "0")}:${String(d1.getSeconds()).padStart(2, "0")}`,
+        toTime: `${String(d2.getHours()).padStart(2, "0")}:${String(d2.getMinutes()).padStart(2, "0")}:${String(d2.getSeconds()).padStart(2, "0")}`,
+      };
+    }
+  }
+
+  return null;
+}
+
