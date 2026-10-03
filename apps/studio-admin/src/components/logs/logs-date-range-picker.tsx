@@ -55,7 +55,13 @@ function getDisplayLabel(value: string, t: ReturnType<typeof useTranslation>["t"
   }
   const normVal = value === "1h" ? "60m" : value;
   const preset = PRESET_VALUES.find((p) => p.value === value || p.value === normVal);
-  return preset ? (t(`observability.${preset.key}`) || preset.fallback) : value;
+  if (!preset) return value;
+  const transKey = `observability.${preset.key}`;
+  const translated = t(transKey);
+  if (!translated || translated === transKey || translated.startsWith("observability.preset_")) {
+    return preset.fallback;
+  }
+  return translated;
 }
 
 function getPresetRange(preset: string): { from: Date; to: Date } {
@@ -114,7 +120,9 @@ function PresetsSidebar({
             activePreset === p.value ||
             (activePreset === "60m" && (p.value === "1h" || p.value === "60m")) ||
             (activePreset === "1h" && (p.value === "60m" || p.value === "1h"));
-          const label = t(`observability.${p.key}`) || p.fallback;
+          const transKey = `observability.${p.key}`;
+          const trans = t(transKey);
+          const label = !trans || trans === transKey || trans.startsWith("observability.preset_") ? p.fallback : trans;
           return (
             <button
               type="button"
@@ -318,6 +326,10 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const { preset: activePreset, range: customRange } = parseValue(value);
   const today = React.useMemo(() => new Date(), []);
   const [localRange, setLocalRange] = React.useState<DateRange | undefined>(customRange);
+  const [displayMonth, setDisplayMonth] = React.useState<Date>(() => {
+    if (customRange?.from) return customRange.from;
+    return today;
+  });
   const [fromTime, setFromTime] = React.useState("00:00:00");
   const [toTime, setToTime] = React.useState("23:59:59");
   const [customRelativeInput, setCustomRelativeInput] = React.useState("");
@@ -352,6 +364,9 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         const m = String(active.from.getMinutes()).padStart(2, "0");
         const s = String(active.from.getSeconds()).padStart(2, "0");
         setFromTime(`${h}:${m}:${s}`);
+        setDisplayMonth(active.from);
+      } else {
+        setDisplayMonth(new Date());
       }
       if (active?.to) {
         const h = String(active.to.getHours()).padStart(2, "0");
@@ -432,6 +447,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
     setLocalRange({ from: start, to: now });
+    setDisplayMonth(now);
     setFromTime("00:00:00");
     const h = String(now.getHours()).padStart(2, "0");
     const m = String(now.getMinutes()).padStart(2, "0");
@@ -512,6 +528,10 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               <div className="border-t border-border/40 flex justify-center py-2 px-1">
                 <Calendar
                   mode="range"
+                  month={displayMonth}
+                  onMonthChange={setDisplayMonth}
+                  startMonth={new Date(2024, 0, 1)}
+                  endMonth={today}
                   selected={localRange}
                   onSelect={setLocalRange}
                   numberOfMonths={1}
@@ -519,9 +539,10 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                   className="text-xs relative p-0"
                   classNames={{
                     month: "relative flex flex-col gap-2",
-                    button_previous: "absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-                    button_next: "absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-                    day_button: "h-8 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    nav: "absolute top-1 inset-x-0 flex items-center justify-between w-full z-10 pointer-events-none px-1",
+                    button_previous: "!pointer-events-auto !cursor-pointer absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
+                    button_next: "!pointer-events-auto !cursor-pointer absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors z-20",
+                    day_button: "h-8 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary !cursor-pointer",
                     weekday: "text-muted-foreground rounded-md w-8 font-normal text-[11px] pb-1 text-center",
                     day: "h-8 w-8 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
                     week: "flex w-full mt-1.5",

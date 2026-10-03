@@ -247,7 +247,8 @@ function LogsContainerContent() {
   const isWideRange = useMemo(() => {
     if (timeRange === "30d" || timeRange === "60d" || timeRange === "90d") return true;
     if (timeRange.startsWith("custom:")) {
-      const parts = timeRange.replace("custom:", "").split("..");
+      const raw = timeRange.replace("custom:", "");
+      const parts = raw.includes("_") ? raw.split("_") : raw.split("..");
       if (parts.length === 2) {
         const start = new Date(parts[0]).getTime();
         const end = new Date(parts[1]).getTime();
