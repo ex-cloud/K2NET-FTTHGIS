@@ -328,7 +328,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
                 value={typeSearch}
                 onChange={(e) => setTypeSearch(e.target.value)}
                 placeholder={t("observability.search")}
-                className="bg-background border-border/60 text-foreground text-xs h-7 pl-7 font-mono focus:border-primary"
+                className="bg-background border-border/60 text-foreground text-xs h-7 pl-7 font-mono focus:border-border focus-visible:ring-0"
               />
               <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
             </div>

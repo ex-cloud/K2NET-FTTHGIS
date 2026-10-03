@@ -92,7 +92,7 @@ export function TenantScopeFilterSection({
               value={tenantFilter}
               onChange={(e) => setTenantFilter(e.target.value)}
               placeholder={t("observability.filter_tenant_or_project") || "Filter tenant (slug/name), project..."}
-              className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-primary pr-6"
+              className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-border focus-visible:ring-0 pr-6"
             />
             {tenantFilter && (
               <button
@@ -143,7 +143,7 @@ export function TenantFilterSection({
           value={tenantFilter}
           onChange={(e) => setTenantFilter(e.target.value)}
           placeholder={t("observability.filter_by_tenant_slug")}
-          className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-primary"
+          className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-border focus-visible:ring-0"
         />
         {tenantFilter && (
           <button
@@ -274,7 +274,7 @@ export function ScopeFilterSection({
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
             placeholder="Filter Project ID / Name..."
-            className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-primary"
+            className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-border focus-visible:ring-0"
           />
           {projectFilter && (
             <button

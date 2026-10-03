@@ -123,7 +123,7 @@ function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPic
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search columns..."
-            className="w-full pl-6 pr-2 py-1.5 text-[11px] bg-muted/30 border border-border/60 rounded-md text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/60"
+            className="w-full pl-6 pr-2 py-1.5 text-[11px] bg-muted/30 border border-border/60 rounded-md text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-border"
           />
         </div>
       </div>
@@ -305,7 +305,7 @@ function FilterBuilder({ anchorRef, onClose, onAdd, onSelectTimeRange }: FilterB
               if (e.key === "Escape") onClose();
             }}
             placeholder={`Enter ${FILTER_FIELD_LABELS[field].toLowerCase()}...`}
-            className="w-full bg-muted/30 border border-border/60 rounded-md px-2.5 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/60"
+            className="w-full bg-muted/30 border border-border/60 rounded-md px-2.5 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-border"
           />
           {suggestions.length > 0 && (
             <div className="flex flex-wrap gap-1">
@@ -482,7 +482,7 @@ export function LogsTopHeader({
 
       {/* Search + Filter pills */}
       <div
-        className="flex-1 flex items-center gap-1.5 bg-background border border-border/80 rounded-lg px-3 py-1 text-xs focus-within:border-primary transition-colors overflow-hidden min-w-0 cursor-text"
+        className="flex-1 flex items-center gap-1.5 bg-background border border-border/80 rounded-lg px-3 py-1 text-xs transition-colors overflow-hidden min-w-0 cursor-text"
         onClick={() => { if (!showFilterBuilder && !showTopTimePicker) inputRef.current?.focus(); }}
       >
         <Search className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />

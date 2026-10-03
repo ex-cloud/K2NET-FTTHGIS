@@ -219,6 +219,7 @@ function LogsContainerContent() {
     selectedSeverities,
     searchQuery,
     timeRange,
+    setTimeRange,
     hasMore,
     isLoading,
     isLoadingMore,
@@ -372,7 +373,12 @@ function LogsContainerContent() {
 
       {showHistogram && (
         <div className="bg-muted/20 border-b border-border/60 shrink-0">
-          <LogsHistogram data={histogramData} />
+          <LogsHistogram
+            data={histogramData}
+            onSelectRange={(startIso, endIso) => {
+              setTimeRange(`custom:${startIso}_${endIso}`);
+            }}
+          />
         </div>
       )}
 

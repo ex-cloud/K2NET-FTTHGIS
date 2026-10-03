@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -6,16 +6,22 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { format } from "date-fns";
+import { Search, X } from "lucide-react";
 import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { getAuthHeaders } from "@/lib/actions/gateways/common";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface HistogramBucket {
-  time: string;    // '13:45' — XAxis label
-  success: number; // count of success logs in this bucket
-  warning: number; // count of warning logs
-  error: number;   // count of error logs
+  time: string;           // '12:43' — XAxis label
+  fullDateLabel?: string; // 'Oct 03, 2026 12:43'
+  rangeLabel?: string;    // 'Oct 3, 12:43 → Oct 3, 12:44'
+  startTime: number;      // timestamp ms
+  endTime: number;        // timestamp ms
+  success: number;        // count of success logs in this bucket
+  warning: number;        // count of warning logs
+  error: number;          // count of error logs
 }
 
 export interface HourlySummaryItem {
@@ -31,68 +37,114 @@ export interface HourlySummaryItem {
 interface LogsHistogramProps {
   data: HistogramBucket[];
   className?: string;
+  onSelectRange?: (startIso: string, endIso: string) => void;
 }
 
-// Custom tooltip props — compatible with recharts v3 (avoids TooltipProps<> generic issues)
+// Custom tooltip props — compatible with recharts v3
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: Array<{ dataKey: string; value: number; name: string }>;
+  payload?: Array<{ dataKey: string; value: number; name: string; payload: HistogramBucket }>;
   label?: string;
 }
 
-// ─── Custom Tooltip ────────────────────────────────────────────────────────────
+// ─── Custom Tooltip (100% Solid & High-Contrast, matching Supabase) ───────────
 
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
 
+  const bucketData = payload[0]?.payload as HistogramBucket | undefined;
   const success = payload.find((p) => p.dataKey === "success")?.value ?? 0;
   const warning = payload.find((p) => p.dataKey === "warning")?.value ?? 0;
   const error   = payload.find((p) => p.dataKey === "error")?.value   ?? 0;
-  const total   = success + warning + error;
+
+  const headerLabel = bucketData?.fullDateLabel || label;
 
   return (
-    <div className="rounded-md border border-border bg-card/95 backdrop-blur p-2 text-[10px] font-mono shadow-lg space-y-1">
-      <p className="text-muted-foreground font-semibold">{label}</p>
-      <div className="space-y-0.5">
-        {success > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary/80 shrink-0" />
-            <span className="text-primary/80">Success</span>
-            <span className="text-foreground font-bold ml-auto">{success}</span>
+    <div className="rounded-lg border border-border bg-card text-card-foreground shadow-2xl p-2.5 text-xs font-mono select-none min-w-[170px] space-y-2 z-50 pointer-events-none">
+      <div className="text-[11px] font-semibold text-foreground border-b border-border/40 pb-1.5">
+        {headerLabel}
+      </div>
+      <div className="space-y-1 text-[10px]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-[2px] bg-rose-500 shrink-0" />
+            <span className="text-foreground">Error</span>
+            <span className="text-muted-foreground/60 text-[9px]">5xx</span>
           </div>
-        )}
-        {warning > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-            <span className="text-amber-400">Warning</span>
-            <span className="text-foreground font-bold ml-auto">{warning}</span>
+          <span className="font-bold text-foreground font-mono">{error}</span>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-[2px] bg-amber-500 shrink-0" />
+            <span className="text-foreground">Warning</span>
+            <span className="text-muted-foreground/60 text-[9px]">4xx</span>
           </div>
-        )}
-        {error > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-            <span className="text-rose-400">Error</span>
-            <span className="text-foreground font-bold ml-auto">{error}</span>
+          <span className="font-bold text-foreground font-mono">{warning}</span>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-[2px] bg-primary shrink-0" />
+            <span className="text-foreground">Success</span>
+            <span className="text-muted-foreground/60 text-[9px]">2xx</span>
           </div>
-        )}
-        <div className="border-t border-border/50 pt-0.5 flex justify-between text-muted-foreground">
-          <span>Total</span>
-          <span className="font-bold text-foreground">{total}</span>
+          <span className="font-bold text-foreground font-mono">{success}</span>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main Component with Interactive Bar Drill-Down ───────────────────────────
 
-export function LogsHistogram({ data = [], className }: LogsHistogramProps) {
+export function LogsHistogram({ data = [], className, onSelectRange }: LogsHistogramProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [selectedBucket, setSelectedBucket] = useState<{
+    bucket: HistogramBucket;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setSelectedBucket(null);
+      }
+    }
+    if (selectedBucket) {
+      document.addEventListener("mousedown", handleOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+    };
+  }, [selectedBucket]);
+
   if (!data || data.length === 0) {
     return null;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleBarClick = (state: any) => {
+    if (state?.activePayload && state.activePayload.length > 0) {
+      const bucket = state.activePayload[0].payload as HistogramBucket;
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const coordX = state.activeCoordinate?.x ?? 50;
+        const popoverWidth = 230;
+        const left = Math.max(8, Math.min(coordX - popoverWidth / 2, rect.width - popoverWidth - 8));
+        setSelectedBucket({
+          bucket,
+          x: left,
+          y: 4,
+        });
+      }
+    }
+  };
+
   return (
-    <div className={`px-4 pt-2 pb-0 min-h-[52px] ${className ?? ""}`}>
+    <div ref={containerRef} className={`relative px-4 pt-2 pb-0 min-h-[52px] select-none ${className ?? ""}`}>
       <ResponsiveContainer width="100%" height={52}>
         <BarChart
           data={data}
@@ -100,35 +152,44 @@ export function LogsHistogram({ data = [], className }: LogsHistogramProps) {
           barGap={1}
           barCategoryGap={3}
           margin={{ top: 2, right: 0, left: 0, bottom: 0 }}
+          onClick={handleBarClick}
         >
           <XAxis
             dataKey="time"
-            tick={{
-              fontSize: 9,
-              fill: "hsl(var(--muted-foreground) / 0.6)",
-              fontFamily: "monospace",
-            }}
+            tick={({ x, y, payload }) => (
+              <text
+                x={x}
+                y={y}
+                dy={10}
+                textAnchor="middle"
+                className="fill-muted-foreground text-[9px] font-mono select-none"
+              >
+                {payload?.value}
+              </text>
+            )}
             axisLine={false}
             tickLine={false}
             interval="preserveStartEnd"
           />
           <Tooltip
             content={<CustomTooltip />}
-            cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+            cursor={{ fill: "hsl(var(--muted) / 0.4)", className: "cursor-pointer" }}
+            wrapperStyle={{ zIndex: 40 }}
           />
-          {/* Stacked bars: success (bottom) → warning → error (top) */}
           <Bar
             dataKey="success"
             stackId="a"
             fill="hsl(142 71% 45%)"
             name="Success"
             radius={[0, 0, 0, 0]}
+            className="cursor-pointer"
           />
           <Bar
             dataKey="warning"
             stackId="a"
             fill="hsl(38 92% 50%)"
             name="Warning"
+            className="cursor-pointer"
           />
           <Bar
             dataKey="error"
@@ -136,9 +197,49 @@ export function LogsHistogram({ data = [], className }: LogsHistogramProps) {
             fill="hsl(0 84% 60%)"
             name="Error"
             radius={[2, 2, 0, 0]}
+            className="cursor-pointer"
           />
         </BarChart>
       </ResponsiveContainer>
+
+      {/* Interactive Click Popover Modal (matching Supabase drill-down UX) */}
+      {selectedBucket && (
+        <div
+          ref={popoverRef}
+          style={{ left: `${selectedBucket.x}px`, top: `${selectedBucket.y}px` }}
+          className="absolute z-50 rounded-lg border border-border bg-card text-card-foreground shadow-2xl p-2 min-w-[220px] text-xs font-mono animate-in fade-in zoom-in-95 duration-100"
+        >
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground pb-1.5 mb-1.5 border-b border-border/50">
+            <span className="font-semibold text-foreground truncate pr-2">
+              {selectedBucket.bucket.rangeLabel || selectedBucket.bucket.time}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedBucket(null)}
+              className="text-muted-foreground hover:text-foreground p-0.5 rounded transition-colors cursor-pointer shrink-0"
+              title="Close"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (onSelectRange) {
+                const startIso = new Date(selectedBucket.bucket.startTime).toISOString();
+                const endIso = new Date(selectedBucket.bucket.endTime).toISOString();
+                onSelectRange(startIso, endIso);
+              }
+              setSelectedBucket(null);
+            }}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-foreground hover:bg-muted/80 hover:text-primary transition-colors cursor-pointer font-sans"
+          >
+            <Search className="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>Filter logs to selected range</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -158,12 +259,18 @@ export function mapAnalyticsSummaryToBuckets(
   const orderedKeys: string[] = [];
 
   for (let i = bucketCount - 1; i >= 0; i--) {
-    const slotTime = new Date(now - i * hourMs);
+    const slotStart = now - (i + 1) * hourMs;
+    const slotEnd = now - i * hourMs;
+    const slotTime = new Date(slotStart);
     const label = `${slotTime.getHours().toString().padStart(2, "0")}:00`;
     const dateKey = `${slotTime.toISOString().substring(0, 13)}:00`;
     orderedKeys.push(dateKey);
     bucketMap.set(dateKey, {
       time: label,
+      fullDateLabel: format(slotTime, "MMM dd, yyyy HH:00"),
+      rangeLabel: `${format(slotTime, "MMM d, HH:00")} → ${format(new Date(slotEnd), "MMM d, HH:00")}`,
+      startTime: slotStart,
+      endTime: slotEnd,
       success: 0,
       warning: 0,
       error: 0,
@@ -194,7 +301,7 @@ export function mapAnalyticsSummaryToBuckets(
     }
   }
 
-  return orderedKeys.map((k) => bucketMap.get(k)!);
+  return orderedKeys.map((key) => bucketMap.get(key)!);
 }
 
 // ─── Hook: Fast Analytics Summary CQRS Stream (< 10ms) ───────────────────────
@@ -341,11 +448,19 @@ export function buildHistogramData(
 
   const bucketMs = Math.max(totalSpanMs / BUCKET_COUNT, 1000);
 
-  // Generate bucket slots
+  // Generate bucket slots with fullDateLabel, rangeLabel, startTime, and endTime
   const buckets: HistogramBucket[] = Array.from({ length: BUCKET_COUNT }, (_, i) => {
-    const bucketTime = new Date(rangeStart + i * bucketMs);
+    const bucketStart = rangeStart + i * bucketMs;
+    const bucketEnd = bucketStart + bucketMs;
+    const bucketStartTime = new Date(bucketStart);
+    const bucketEndTime = new Date(bucketEnd);
+
     return {
-      time: formatBucketLabel(bucketTime, totalSpanMs),
+      time: formatBucketLabel(bucketStartTime, totalSpanMs),
+      fullDateLabel: format(bucketStartTime, "MMM dd, yyyy HH:mm"),
+      rangeLabel: `${format(bucketStartTime, "MMM d, HH:mm")} → ${format(bucketEndTime, "MMM d, HH:mm")}`,
+      startTime: bucketStart,
+      endTime: bucketEnd,
       success: 0,
       warning: 0,
       error: 0,

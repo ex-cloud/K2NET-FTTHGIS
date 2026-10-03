@@ -45,7 +45,7 @@ export function PresetsTabContent({
             }
           }}
           onKeyDown={onRelativeSubmit}
-          className="w-full h-7.5 border border-border/70 bg-card placeholder:text-muted-foreground/50 px-2.5 py-1 text-xs rounded-md focus:outline-none focus:border-primary transition-colors font-mono shadow-xs"
+          className="w-full h-7.5 border border-border/70 bg-card placeholder:text-muted-foreground/50 px-2.5 py-1 text-xs rounded-md focus:outline-none focus:border-border transition-colors font-mono shadow-xs"
         />
       </div>
 
