@@ -19,6 +19,7 @@ import { SupabaseFilterPalette } from "./logs-supabase-filter-palette";
 import { LogsHeaderActions } from "./logs-header-actions";
 import { LogsTimeRangeInlinePill } from "./logs-time-range-inline-pill";
 import { LogsIntegrityVerifierModal } from "./logs-integrity-verifier-modal";
+import { LogsColdArchiveModal } from "./logs-cold-archive-modal";
 import {
   type FilterFieldConfig,
   type SmartParseResult,
@@ -68,6 +69,7 @@ export function LogsTopHeader({
   const timeRangePillRef = React.useRef<HTMLDivElement>(null);
   const [showColumnPicker, setShowColumnPicker] = React.useState(false);
   const [showIntegrityModal, setShowIntegrityModal] = React.useState(false);
+  const [showColdArchiveModal, setShowColdArchiveModal] = React.useState(false);
   const columnBtnRef = React.useRef<HTMLButtonElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -284,6 +286,7 @@ export function LogsTopHeader({
         isLivePaused={isLivePaused}
         setIsLivePaused={setIsLivePaused}
         onOpenIntegrityModal={() => setShowIntegrityModal(true)}
+        onOpenColdArchiveModal={() => setShowColdArchiveModal(true)}
       />
 
       {showPalette && (
@@ -333,6 +336,11 @@ export function LogsTopHeader({
         onOpenChange={setShowIntegrityModal}
         logs={filteredLogs}
         tenantSlug={tenantFilter}
+      />
+
+      <LogsColdArchiveModal
+        open={showColdArchiveModal}
+        onOpenChange={setShowColdArchiveModal}
       />
     </div>
   );

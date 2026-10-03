@@ -9,6 +9,9 @@ type Config struct {
 	GatewayToken  string
 	DatabaseUrl   string
 	RetentionDays string
+	ArchiveDir    string
+	ArchiveBucket string
+	MinIOHost     string
 }
 
 func LoadConfig() Config {
@@ -29,10 +32,28 @@ func LoadConfig() Config {
 		retentionDays = "365"
 	}
 
+	archiveDir := os.Getenv("ARCHIVE_DIR")
+	if archiveDir == "" {
+		archiveDir = "/opt/project5/backups/archive/audit_events"
+	}
+
+	archiveBucket := os.Getenv("ARCHIVE_BUCKET")
+	if archiveBucket == "" {
+		archiveBucket = "audit-archives"
+	}
+
+	minIOHost := os.Getenv("MINIO_HOST")
+	if minIOHost == "" {
+		minIOHost = "http://100.110.205.109:9005"
+	}
+
 	return Config{
 		Port:          port,
 		GatewayToken:  gatewayToken,
 		DatabaseUrl:   databaseUrl,
 		RetentionDays: retentionDays,
+		ArchiveDir:    archiveDir,
+		ArchiveBucket: archiveBucket,
+		MinIOHost:     minIOHost,
 	}
 }

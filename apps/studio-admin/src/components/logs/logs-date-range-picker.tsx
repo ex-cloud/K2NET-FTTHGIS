@@ -14,6 +14,7 @@ import {
 import { cn, ActionTooltip } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
 import { useTranslation } from "@k2net/i18n";
+import { toast } from "sonner";
 import {
   parseValue,
   getDisplayLabel,
@@ -79,11 +80,15 @@ function TabButtons({
         </button>
       </div>
 
-      <ActionTooltip label={t("observability.reset_to_default") || "Reset to default (60m)"} side="top" align="end">
+      <ActionTooltip
+        label={t("observability.reset_to_default") || "Reset time range to default (60m)"}
+        side="top"
+        align="end"
+      >
         <button
           type="button"
           onClick={onReset}
-          aria-label="Reset to default (60m)"
+          aria-label="Reset time range to default (60m)"
           className="flex items-center justify-center h-6.5 w-6.5 rounded-md bg-transparent hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
         >
           <RotateCcw className="w-3.5 h-3.5 text-primary" />
@@ -359,6 +364,9 @@ export function LogsDateRangePicker({
     const tm = String(presetRange.to.getMinutes()).padStart(2, "0");
     const ts = String(presetRange.to.getSeconds()).padStart(2, "0");
     setToTime(`${th}:${tm}:${ts}`);
+    onChange("60m");
+    setOpen(false);
+    toast.success("Time range filter reset to default (Last 1 hour)");
   };
 
   const handleRelativeSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { History, ChevronLeft, ChevronRight } from "lucide-react";
+import { History, ChevronLeft, ChevronRight, Archive } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar, cn } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
@@ -8,6 +8,7 @@ import {
   HISTORICAL_SHORTCUTS,
   type HistoricalShortcutId,
   parseTimeStr,
+  isColdStorageRange,
 } from "./logs-date-range-types";
 
 export interface CustomHistoricalTabContentProps {
@@ -191,11 +192,13 @@ function YearPickerView({
 }
 
 export function TimePickerInputs({
+  localRange,
   fromTime,
   toTime,
   setFromTime,
   setToTime,
 }: {
+  localRange?: DateRange;
   fromTime: string;
   toTime: string;
   setFromTime: (t: string) => void;
@@ -211,79 +214,123 @@ export function TimePickerInputs({
   const toM = String(tm).padStart(2, "0");
   const toS = String(ts).padStart(2, "0");
 
+  const fromDateLabel = localRange?.from ? format(localRange.from, "MMM d") : "Start";
+  const toDateLabel = localRange?.to
+    ? format(localRange.to, "MMM d")
+    : localRange?.from
+    ? format(localRange.from, "MMM d")
+    : "End";
+
+  // Calculate duration label
+  const durationLabel = React.useMemo(() => {
+    if (!localRange?.from) return null;
+    const fromD = new Date(localRange.from);
+    fromD.setHours(fh, fm, fs, 0);
+    const toD = new Date(localRange.to || localRange.from);
+    toD.setHours(th, tm, ts, 999);
+    const diffMs = toD.getTime() - fromD.getTime();
+    if (diffMs <= 0) return null;
+    const diffHrs = Math.round(diffMs / (3600 * 1000));
+    if (diffHrs >= 24) {
+      const days = Math.round(diffHrs / 24);
+      return days === 1 ? "24h" : `${days}d`;
+    }
+    if (diffHrs >= 1) return `${diffHrs}h`;
+    const diffMins = Math.round(diffMs / (60 * 1000));
+    return `${diffMins}m`;
+  }, [localRange, fh, fm, fs, th, tm, ts]);
+
   return (
-    <div className="flex items-center justify-center gap-2 p-2 border-b border-border/40 bg-muted/10">
-      <div className="flex h-7 items-center justify-center gap-1 rounded-md border border-border/80 bg-card text-xs px-2 font-mono shadow-xs">
-        <input
-          type="text"
-          pattern="[0-23]*"
-          value={fromH}
-          onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-            setFromTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromM}:${fromS}`);
-          }}
-          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
-        />
-        <span className="text-muted-foreground/50">:</span>
-        <input
-          type="text"
-          pattern="[0-59]*"
-          value={fromM}
-          onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-            setFromTime(`${fromH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromS}`);
-          }}
-          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
-        />
-        <span className="text-muted-foreground/50">:</span>
-        <input
-          type="text"
-          pattern="[0-59]*"
-          value={fromS}
-          onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-            setFromTime(`${fromH}:${fromM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
-          }}
-          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
-        />
+    <div className="flex items-center justify-between gap-1.5 p-2 border-b border-border/40 bg-muted/10">
+      {/* Start DateTime Group */}
+      <div className="flex items-center gap-1 min-w-0">
+        <span className="text-[10px] font-semibold text-primary px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 shrink-0 font-mono">
+          {fromDateLabel}
+        </span>
+        <div className="flex h-7 items-center justify-center gap-0.5 rounded-md border border-border/80 bg-card text-xs px-1 font-mono shadow-xs">
+          <input
+            type="text"
+            pattern="[0-23]*"
+            value={fromH}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+              setFromTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromM}:${fromS}`);
+            }}
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+          />
+          <span className="text-muted-foreground/50">:</span>
+          <input
+            type="text"
+            pattern="[0-59]*"
+            value={fromM}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+              setFromTime(`${fromH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromS}`);
+            }}
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+          />
+          <span className="text-muted-foreground/50">:</span>
+          <input
+            type="text"
+            pattern="[0-59]*"
+            value={fromS}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+              setFromTime(`${fromH}:${fromM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
+            }}
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+          />
+        </div>
       </div>
 
-      <span className="text-muted-foreground/50 text-xs font-mono">—</span>
+      <span className="text-muted-foreground/50 text-xs font-mono shrink-0">→</span>
 
-      <div className="flex h-7 items-center justify-center gap-1 rounded-md border border-border/80 bg-card text-xs px-2 font-mono shadow-xs">
-        <input
-          type="text"
-          pattern="[0-23]*"
-          value={toH}
-          onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-            setToTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${toM}:${toS}`);
-          }}
-          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
-        />
-        <span className="text-muted-foreground/50">:</span>
-        <input
-          type="text"
-          pattern="[0-59]*"
-          value={toM}
-          onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-            setToTime(`${toH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${toS}`);
-          }}
-          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
-        />
-        <span className="text-muted-foreground/50">:</span>
-        <input
-          type="text"
-          pattern="[0-59]*"
-          value={toS}
-          onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-            setToTime(`${toH}:${toM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
-          }}
-          className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
-        />
+      {/* End DateTime Group */}
+      <div className="flex items-center gap-1 min-w-0">
+        <span className="text-[10px] font-semibold text-primary px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 shrink-0 font-mono">
+          {toDateLabel}
+        </span>
+        <div className="flex h-7 items-center justify-center gap-0.5 rounded-md border border-border/80 bg-card text-xs px-1 font-mono shadow-xs">
+          <input
+            type="text"
+            pattern="[0-23]*"
+            value={toH}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+              setToTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${toM}:${toS}`);
+            }}
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+          />
+          <span className="text-muted-foreground/50">:</span>
+          <input
+            type="text"
+            pattern="[0-59]*"
+            value={toM}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+              setToTime(`${toH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${toS}`);
+            }}
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+          />
+          <span className="text-muted-foreground/50">:</span>
+          <input
+            type="text"
+            pattern="[0-59]*"
+            value={toS}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+              setToTime(`${toH}:${toM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
+            }}
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+          />
+        </div>
       </div>
+
+      {durationLabel && (
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30 shrink-0 font-semibold">
+          {durationLabel}
+        </span>
+      )}
     </div>
   );
 }
@@ -303,6 +350,12 @@ export function CustomHistoricalTabContent({
   const { t } = useTranslation();
   const [viewMode, setViewMode] = React.useState<"days" | "months" | "years">("days");
 
+  const isCold = React.useMemo(() => {
+    if (!localRange?.from) return false;
+    const to = localRange.to || localRange.from;
+    return isColdStorageRange(`custom:${localRange.from.toISOString()}_${to.toISOString()}`);
+  }, [localRange]);
+
   const handleShortcutClick = (id: HistoricalShortcutId) => {
     setViewMode("days");
     onShortcutSelect(id);
@@ -320,14 +373,21 @@ export function CustomHistoricalTabContent({
           const transKey = `observability.${s.key}`;
           const trans = t(transKey);
           const label = !trans || trans === transKey ? s.fallback : trans;
+          const isColdShortcut = s.id === "last_90d" || s.id === "last_180d" || s.id === "last_1y";
           return (
             <button
               type="button"
               key={s.id}
               onClick={() => handleShortcutClick(s.id)}
-              className="w-full text-left px-2 py-1.5 text-xs rounded-md text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors cursor-pointer truncate font-normal"
+              className={cn(
+                "w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors cursor-pointer truncate font-normal flex items-center justify-between",
+                isColdShortcut
+                  ? "text-primary hover:bg-primary/10 hover:text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              )}
             >
-              {label}
+              <span className="truncate">{label}</span>
+              {isColdShortcut && <Archive className="w-2.5 h-2.5 text-primary shrink-0 ml-1" />}
             </button>
           );
         })}
@@ -336,11 +396,22 @@ export function CustomHistoricalTabContent({
       {/* Calendar and Time Inputs */}
       <div className="flex-1 flex flex-col min-w-0">
         <TimePickerInputs
+          localRange={localRange}
           fromTime={fromTime}
           toTime={toTime}
           setFromTime={setFromTime}
           setToTime={setToTime}
         />
+
+        {isCold && (
+          <div className="px-2.5 py-1 bg-primary/10 border-b border-primary/20 flex items-center justify-between text-[10px] text-primary">
+            <div className="flex items-center gap-1.5 font-medium">
+              <Archive className="w-3 h-3 text-primary shrink-0" />
+              <span>Cold Storage Archive (&gt;90d) • S3 WORM Lock</span>
+            </div>
+            <span className="font-mono text-[9px] text-muted-foreground">MinIO S3</span>
+          </div>
+        )}
 
         <div className="flex justify-center p-2 flex-1 items-center w-full">
           {viewMode === "years" ? (

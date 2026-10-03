@@ -8,6 +8,7 @@ import {
   Play,
   Columns3,
   ShieldCheck,
+  Archive,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
@@ -25,6 +26,7 @@ export interface LogsHeaderActionsProps {
   isLivePaused: boolean;
   setIsLivePaused: React.Dispatch<React.SetStateAction<boolean>>;
   onOpenIntegrityModal: () => void;
+  onOpenColdArchiveModal: () => void;
 }
 
 export function LogsHeaderActions({
@@ -38,6 +40,7 @@ export function LogsHeaderActions({
   isLivePaused,
   setIsLivePaused,
   onOpenIntegrityModal,
+  onOpenColdArchiveModal,
 }: LogsHeaderActionsProps) {
   const { t } = useTranslation();
 
@@ -95,6 +98,17 @@ export function LogsHeaderActions({
           className={`h-7 w-7 p-0 border border-border/60 rounded-md ${showColumnPicker ? "bg-muted text-foreground" : "text-muted-foreground"}`}
         >
           <Columns3 className="w-3.5 h-3.5" />
+        </Button>
+      </ActionTooltip>
+
+      <ActionTooltip label="Cold Storage S3 Archives (WORM)" shortcut="Alt+A">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onOpenColdArchiveModal}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md"
+        >
+          <Archive className="w-3.5 h-3.5 text-primary" />
         </Button>
       </ActionTooltip>
 

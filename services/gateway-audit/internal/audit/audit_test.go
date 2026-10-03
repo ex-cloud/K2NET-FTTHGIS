@@ -210,3 +210,29 @@ func TestCursorPaginationAndBenchmarkFilter(t *testing.T) {
 	}
 }
 
+func TestArchiveReaderAndPartitionParser(t *testing.T) {
+	// Test Partition Date Parser
+	start1, end1 := ParsePartitionDateRange("audit_events_y2026_m06")
+	if start1 != "2026-06-01T00:00:00Z" || end1 != "2026-06-30T23:59:59Z" {
+		t.Errorf("Unexpected date range parsed: start=%s end=%s", start1, end1)
+	}
+
+	start2, end2 := ParsePartitionDateRange("audit_events_y2026m02")
+	if start2 != "2026-02-01T00:00:00Z" || end2 != "2026-02-28T23:59:59Z" {
+		t.Errorf("Unexpected leap year / month date range parsed: start=%s end=%s", start2, end2)
+	}
+
+	invalidStart, invalidEnd := ParsePartitionDateRange("audit_events_default")
+	if invalidStart != "" || invalidEnd != "" {
+		t.Errorf("Default partition should return empty dates")
+	}
+
+	// Test FormatBytes
+	if fb := FormatBytes(1024); fb != "1.00 KB" {
+		t.Errorf("Expected 1.00 KB, got %s", fb)
+	}
+	if fb := FormatBytes(10485760); fb != "10.00 MB" {
+		t.Errorf("Expected 10.00 MB, got %s", fb)
+	}
+}
+

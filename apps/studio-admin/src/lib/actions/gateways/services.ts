@@ -187,6 +187,78 @@ export async function getAuditEventsPaginated(params?: AuditQueryParams): Promis
   };
 }
 
+export type AuditArchiveMeta = {
+  partition: string;
+  parentTable: string;
+  archivedAt: string;
+  totalRows: number;
+  fileSizeBytes: number;
+  sha256Checksum: string;
+  archiveFileName: string;
+  s3Path: string;
+  wormRetentionDays: number;
+  status: string;
+  startDate?: string;
+  endDate?: string;
+};
+
+export type ArchiveSummary = {
+  totalArchives: number;
+  totalArchivedRows: number;
+  totalSizeBytes: number;
+  totalSizeFormatted: string;
+  oldestArchive: string;
+  newestArchive: string;
+  wormComplianceStatus: string;
+  retentionPolicy: string;
+};
+
+export type AuditArchivesResponse = {
+  data: AuditArchiveMeta[];
+  summary: ArchiveSummary;
+};
+
+export async function getAuditArchives(params?: {
+  table?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+}): Promise<AuditArchivesResponse> {
+  await verifySuperAdmin();
+
+  const q = new URLSearchParams();
+  if (params?.table) q.set("table", params.table);
+  if (params?.startDate) q.set("startDate", params.startDate);
+  if (params?.endDate) q.set("endDate", params.endDate);
+  if (params?.search) q.set("search", params.search);
+
+  const qs = q.toString();
+  const url = `/api/v1/audit/archives${qs ? `?${qs}` : ""}`;
+
+  const res = await fetch(url, {
+    headers: getAuthHeaders(),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch audit archives: ${res.statusText}`);
+  }
+
+  const payload = await res.json();
+  return {
+    data: payload.data || [],
+    summary: payload.summary || {
+      totalArchives: 0,
+      totalArchivedRows: 0,
+      totalSizeBytes: 0,
+      totalSizeFormatted: "0 B",
+      oldestArchive: "-",
+      newestArchive: "-",
+      wormComplianceStatus: "COMPLIANT_LOCKED",
+      retentionPolicy: "1095 Days (3 Years)",
+    },
+  };
+}
 
 // ─────────────────────────────────────────────
 // OLT Gateway: GET /api/v1/olt

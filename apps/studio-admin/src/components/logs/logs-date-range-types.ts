@@ -22,9 +22,23 @@ export const HISTORICAL_SHORTCUTS = [
   { id: "last_week", key: "last_week", fallback: "Last Week" },
   { id: "this_month", key: "this_month", fallback: "This Month" },
   { id: "prev_month", key: "prev_month", fallback: "Previous Month" },
+  { id: "last_90d", key: "last_90d", fallback: "Last 90 Days (Quarter)" },
+  { id: "last_180d", key: "last_180d", fallback: "Last 180 Days (Cold S3)" },
+  { id: "last_1y", key: "last_1y", fallback: "Last 1 Year (Cold WORM)" },
 ] as const;
 
 export type HistoricalShortcutId = (typeof HISTORICAL_SHORTCUTS)[number]["id"];
+
+export function isColdStorageRange(value: string): boolean {
+  if (!value) return false;
+  if (value === "90d" || value === "180d" || value === "1y" || value === "365d") return true;
+  const parsed = parseValue(value);
+  if (parsed.range?.from) {
+    const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    return parsed.range.from.getTime() < ninetyDaysAgo;
+  }
+  return false;
+}
 
 export function parseValue(value: string): { preset: string | null; range: DateRange | undefined } {
   if (value.startsWith("custom:")) {
@@ -140,6 +154,18 @@ export function getHistoricalShortcutRange(shortcut: HistoricalShortcutId): { fr
       const from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
       const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
       return { from, to };
+    }
+    case "last_90d": {
+      const from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      return { from, to: now };
+    }
+    case "last_180d": {
+      const from = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+      return { from, to: now };
+    }
+    case "last_1y": {
+      const from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      return { from, to: now };
     }
   }
 }

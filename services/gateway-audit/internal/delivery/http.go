@@ -14,12 +14,13 @@ import (
 )
 
 type HTTPHandler struct {
-	repo   *audit.Repository
-	engine *audit.BatchIngestionEngine
+	repo          *audit.Repository
+	engine        *audit.BatchIngestionEngine
+	archiveReader *audit.ArchiveReader
 }
 
-func NewHTTPHandler(repo *audit.Repository, engine *audit.BatchIngestionEngine) *HTTPHandler {
-	return &HTTPHandler{repo: repo, engine: engine}
+func NewHTTPHandler(repo *audit.Repository, engine *audit.BatchIngestionEngine, archiveReader *audit.ArchiveReader) *HTTPHandler {
+	return &HTTPHandler{repo: repo, engine: engine, archiveReader: archiveReader}
 }
 
 // POST /audit/events
@@ -395,5 +396,49 @@ func extractActorFromJWT(authHeader string) string {
 		return sub
 	}
 	return ""
+}
+
+// GET /api/v1/audit/archives
+func (h *HTTPHandler) GetAuditArchives(c *gin.Context) {
+	ctx := c.Request.Context()
+	table := c.Query("table")
+	search := c.Query("search")
+
+	var startDate, endDate *time.Time
+	if startStr := c.Query("startDate"); startStr != "" {
+		if t, err := time.Parse(time.RFC3339, startStr); err == nil {
+			startDate = &t
+		}
+	}
+	if endStr := c.Query("endDate"); endStr != "" {
+		if t, err := time.Parse(time.RFC3339, endStr); err == nil {
+			endDate = &t
+		}
+	}
+
+	query := audit.AuditArchiveQuery{
+		Table:     table,
+		StartDate: startDate,
+		EndDate:   endDate,
+		Search:    search,
+	}
+
+	archives, summary, err := h.archiveReader.ListArchives(ctx, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error": gin.H{
+				"code":    "ARCHIVE_READ_ERROR",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    archives,
+		"summary": summary,
+	})
 }
 

@@ -97,13 +97,16 @@ func main() {
 	})
 	defer batchEngine.Close()
 
+	// Init cold storage S3 archive reader
+	archiveReader := audit.NewArchiveReader(cfg.ArchiveDir, cfg.ArchiveBucket, cfg.MinIOHost)
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CorrelationIDMiddleware())
 	router.Use(telemetry.TelemetryMiddleware())
 
-	handler := delivery.NewHTTPHandler(repo, batchEngine)
+	handler := delivery.NewHTTPHandler(repo, batchEngine, archiveReader)
 
 	// Metrics
 	router.GET("/metrics", telemetry.GetMetricsHandler())
@@ -129,6 +132,7 @@ func main() {
 		api.POST("/audit/events/kong", handler.CreateKongLog)
 		api.GET("/audit/events", handler.GetAuditEvents)
 		api.GET("/audit/events/:id", handler.GetAuditEvent)
+		api.GET("/audit/archives", handler.GetAuditArchives)
 		api.GET("/audit/report/tenant/:slug", handler.GetTenantAuditReport)
 		api.GET("/audit/report/tenant/:slug/project/:projectId", handler.GetProjectAuditReport)
 		api.GET("/audit/report/user/:userId", handler.GetUserAuditReport)
