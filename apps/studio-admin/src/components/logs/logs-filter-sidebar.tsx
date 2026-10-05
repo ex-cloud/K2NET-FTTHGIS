@@ -221,7 +221,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-thin p-3 space-y-4">
         <div className="w-full space-y-1">
           <div className="flex items-center justify-between px-1 py-1">
-            <span className="text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest">
+            <span className="text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/20 uppercase tracking-widest">
               {t("observability.time_range")}
             </span>
           </div>
@@ -245,7 +245,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
 
         {/* LOG TYPE FILTER WITH SUPABASE-STYLE TABLE BORDER & WORKTREE */}
         <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/20 uppercase tracking-widest hover:text-foreground group select-none">
             <span>{t("observability.log_type")}</span>
             <div className="flex items-center gap-1.5">
               {selectedTypeCount > 0 && (
@@ -368,14 +368,14 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
         />
 
         <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2.5 border-groove-t">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/20 uppercase tracking-widest hover:text-foreground group select-none">
             <span>{t("observability.method")}</span>
             <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
           </CollapsibleTrigger>
         </Collapsible>
 
         <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2.5 border-groove-t">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/20 uppercase tracking-widest hover:text-foreground group select-none">
             <span>{t("observability.pathname")}</span>
             <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
           </CollapsibleTrigger>

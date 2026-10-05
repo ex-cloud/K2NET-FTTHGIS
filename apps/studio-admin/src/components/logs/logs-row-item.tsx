@@ -534,6 +534,10 @@ function RowOptionalCells({
         </div>
       )}
 
+      {visibleCols.has("status") && (
+        <StatusCell status={log.status} log={log} copiedId={copiedId} onCopyLog={onCopyLog} />
+      )}
+
       {visibleCols.has("severity") && (
         <div className="w-[68px] shrink-0">
           <SeverityBadge severity={log.severity || "INFO"} />
@@ -544,10 +548,6 @@ function RowOptionalCells({
         <div className="w-[80px] shrink-0 font-mono text-[10px] truncate">
           <GroupCell logGroup={log.logGroup} />
         </div>
-      )}
-
-      {visibleCols.has("status") && (
-        <StatusCell status={log.status} log={log} copiedId={copiedId} onCopyLog={onCopyLog} />
       )}
 
       {visibleCols.has("tenant") && (

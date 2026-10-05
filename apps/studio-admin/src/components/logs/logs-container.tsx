@@ -94,9 +94,9 @@ function LogsTableHeader({
   const columns = [
     { id: "date", label: "Timestamp", width: "w-[140px]" },
     { id: "source", label: "", width: "w-[20px]" },
+    { id: "status", label: "", width: "w-[44px]", withSpacer: true },
     { id: "severity", label: "Severity", width: "w-[68px]" },
     { id: "group", label: "Group", width: "w-[80px]" },
-    { id: "status", label: "", width: "w-[44px]", withSpacer: true },
     { id: "tenant", label: "Tenant", width: "w-[80px]" },
     { id: "scope", label: "Scope", width: "w-[64px]" },
     { id: "project", label: "Project", width: "w-[88px]" },

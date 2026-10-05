@@ -46,7 +46,7 @@ export function TenantScopeFilterSection({
 
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/20 uppercase tracking-widest hover:text-foreground group select-none">
         <span>{t("observability.tenant_and_scope") || "Tenant & Scope"}</span>
         <div className="flex items-center gap-1.5">
           {hasActive && (
@@ -117,7 +117,7 @@ export function TenantFilterSection({
   const { t } = useTranslation();
   return (
     <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2.5 border-groove-t">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/20 uppercase tracking-widest hover:text-foreground group select-none">
         <span>{t("observability.tenant")}</span>
         <div className="flex items-center gap-1.5">
           {tenantFilter && (
@@ -166,7 +166,7 @@ export function LevelFilterSection({
 
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/20 uppercase tracking-widest hover:text-foreground group select-none">
         <span>Level</span>
         <div className="flex items-center gap-1.5">
           {activeCount > 0 && (
@@ -228,7 +228,7 @@ export function ScopeFilterSection({
 
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/20 uppercase tracking-widest hover:text-foreground group select-none">
         <span>Scope & Project</span>
         <div className="flex items-center gap-1.5">
           {normalizedScope !== "ALL" && (
@@ -296,7 +296,7 @@ export function SeverityFilterSection({
 
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/20 uppercase tracking-widest hover:text-foreground group select-none">
         <span>Severity</span>
         <div className="flex items-center gap-1.5">
           {activeCount > 0 && (

@@ -153,6 +153,11 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
     meta: { label: "Src" },
     enableHiding: true,
   }),
+  columnHelper.accessor("status", {
+    id: "status",
+    meta: { label: "Status" },
+    enableHiding: true,
+  }),
   columnHelper.accessor("severity", {
     id: "severity",
     meta: { label: "Severity" },
@@ -161,11 +166,6 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
   columnHelper.accessor("logGroup", {
     id: "group",
     meta: { label: "Group" },
-    enableHiding: true,
-  }),
-  columnHelper.accessor("status", {
-    id: "status",
-    meta: { label: "Status" },
     enableHiding: true,
   }),
   columnHelper.accessor("tenantSlug", {
