@@ -340,6 +340,149 @@ export function SeverityFilterSection({
   );
 }
 
+export const METHOD_OPTIONS = [
+  { key: "GET", label: "GET", badge: "text-sky-400 bg-sky-500/10 border-sky-500/30" },
+  { key: "POST", label: "POST", badge: "text-primary bg-primary/10 border-primary/30" },
+  { key: "PUT", label: "PUT", badge: "text-amber-400 bg-amber-500/10 border-amber-500/30" },
+  { key: "DELETE", label: "DELETE", badge: "text-rose-400 bg-rose-500/10 border-rose-500/30" },
+  { key: "PATCH", label: "PATCH", badge: "text-purple-400 bg-purple-500/10 border-purple-500/30" },
+  { key: "RPC", label: "RPC", badge: "text-teal-400 bg-teal-500/10 border-teal-500/30" },
+];
+
+export function MethodFilterSection({
+  selectedMethods,
+  toggleMethod,
+  methodCounts,
+}: {
+  selectedMethods: Record<string, boolean>;
+  toggleMethod: (method: string) => void;
+  methodCounts: Record<string, number>;
+}) {
+  const activeCount = Object.values(selectedMethods).filter(Boolean).length;
+
+  return (
+    <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2.5 border-groove-t">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/80 uppercase tracking-widest hover:text-foreground group select-none">
+        <span>Method</span>
+        <div className="flex items-center gap-1.5">
+          {activeCount > 0 && (
+            <span className="text-[9px] font-mono text-muted-foreground font-semibold">
+              × {activeCount}
+            </span>
+          )}
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-1">
+        <div className="rounded-md border border-border/70 bg-card/40 overflow-hidden divide-y divide-border/40 font-mono text-[11px] shadow-2xs">
+          {METHOD_OPTIONS.map((m) => {
+            const count = methodCounts[m.key] ?? 0;
+            const isChecked = !!selectedMethods[m.key];
+            return (
+              <label
+                key={m.key}
+                className="flex items-center justify-between px-2.5 py-1.5 hover:bg-muted/40 cursor-pointer transition-colors select-none group/m"
+              >
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={isChecked}
+                    onCheckedChange={() => toggleMethod(m.key)}
+                    className="size-3.5 rounded-[3px]"
+                  />
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold border ${m.badge}`}>
+                    {m.label}
+                  </span>
+                </div>
+                <span className={`text-[10px] font-mono min-w-[14px] text-right ${count > 0 ? "text-foreground font-semibold" : "text-muted-foreground/40"}`}>
+                  {count}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+const PATH_PRESETS = [
+  "/api/v1/auth",
+  "/api/v1/customers",
+  "/api/v1/network",
+  "/api/v1/invoices",
+  "/api/v1/system",
+  "/actuator/health",
+];
+
+export function PathnameFilterSection({
+  pathnameFilter,
+  setPathnameFilter,
+}: {
+  pathnameFilter: string;
+  setPathnameFilter: (path: string) => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2.5 border-groove-t">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/80 uppercase tracking-widest hover:text-foreground group select-none">
+        <span>{t("observability.pathname") || "Pathname"}</span>
+        <div className="flex items-center gap-1.5">
+          {pathnameFilter.trim() && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono font-semibold max-w-[90px] truncate border border-border/40">
+              {pathnameFilter}
+            </span>
+          )}
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-1 space-y-2 font-mono text-[11px]">
+        <div className="relative flex items-center">
+          <Input
+            type="text"
+            value={pathnameFilter}
+            onChange={(e) => setPathnameFilter(e.target.value)}
+            placeholder="Search path, e.g. /api/v1/auth..."
+            className="bg-background border-border/60 text-foreground text-xs h-7 font-mono focus:border-border focus-visible:ring-0 pr-6"
+          />
+          {pathnameFilter && (
+            <button
+              type="button"
+              onClick={() => setPathnameFilter("")}
+              className="absolute right-2 text-muted-foreground hover:text-rose-400 transition-colors text-xs font-mono"
+              title="Clear path filter"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <div className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-wider">
+            Quick Endpoints
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {PATH_PRESETS.map((path) => (
+              <button
+                key={path}
+                type="button"
+                onClick={() => setPathnameFilter(pathnameFilter === path ? "" : path)}
+                className={`px-1.5 py-0.5 rounded text-[10px] border transition-colors truncate max-w-full font-mono cursor-pointer ${
+                  pathnameFilter === path
+                    ? "bg-primary/15 border-primary/40 text-primary font-semibold"
+                    : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                }`}
+              >
+                {path}
+              </button>
+            ))}
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export function BenchmarkFilterSection({
   includeBenchmark,
   setIncludeBenchmark,

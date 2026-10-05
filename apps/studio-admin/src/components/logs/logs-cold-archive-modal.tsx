@@ -105,7 +105,7 @@ export function LogsColdArchiveModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden bg-card border-border text-foreground font-sans max-h-[80vh] flex flex-col rounded-xl shadow-2xl">
+      <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden bg-card border-border text-foreground font-sans max-h-[80vh] flex flex-col rounded-xl shadow-xl">
         {/* Header */}
         <DialogHeader className="px-5 py-3.5 border-groove-b bg-muted/20 shrink-0">
           <div className="flex items-center justify-between gap-3">

@@ -370,7 +370,7 @@ export function LogsDetailDrawer({
     <div
       style={{ width: isMaximized ? "min(1100px, 92vw)" : `${drawerWidth}px` }}
       className={cn(
-        "absolute right-0 top-0 h-full max-w-full bg-card border-groove-l flex flex-col z-30 shadow-2xl transition-all duration-200",
+        "absolute right-0 top-0 h-full max-w-full bg-card border-groove-l flex flex-col z-30 shadow-xl transition-all duration-200",
         isDragging && "select-none transition-none"
       )}
     >

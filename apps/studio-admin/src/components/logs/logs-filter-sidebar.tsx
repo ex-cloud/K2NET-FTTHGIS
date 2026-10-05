@@ -22,6 +22,8 @@ import {
   TenantScopeFilterSection,
   LevelFilterSection,
   SeverityFilterSection,
+  MethodFilterSection,
+  PathnameFilterSection,
   BenchmarkFilterSection,
 } from "./logs-filter-sections";
 import { PresetsFilterSection } from "./logs-presets-section";
@@ -145,6 +147,8 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     selectedTypes, toggleType,
     selectedLevels, toggleLevel,
     selectedSeverities, toggleSeverity,
+    selectedMethods, toggleMethod,
+    pathnameFilter, setPathnameFilter,
     scopeFilter, setScopeFilter,
     projectFilter,
     edgeSubFilters, toggleEdgeSubFilter,
@@ -152,6 +156,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     logTypeCounts,
     levelCounts,
     severityCounts,
+    methodCounts,
     tenantFilter, setTenantFilter,
     includeBenchmark, setIncludeBenchmark,
     searchQuery,
@@ -175,6 +180,8 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     Object.values(selectedTypes).some(Boolean) ||
     Object.values(selectedLevels).some(Boolean) ||
     Object.values(selectedSeverities).some(Boolean) ||
+    Object.values(selectedMethods).some(Boolean) ||
+    pathnameFilter.trim().length > 0 ||
     Object.values(edgeSubFilters).some(Boolean) ||
     scopeFilter !== "ALL" ||
     projectFilter.trim().length > 0 ||
@@ -202,6 +209,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     <div className="flex flex-col h-full w-[240px] font-sans text-xs bg-sidebar select-none border-groove-r shrink-0">
       <SecondarySidebarHeader
         title={t("observability.logs_explorer")}
+        onCollapse={_props.onCollapse}
         actions={
           hasActiveFilters ? (
             <ActionTooltip label={t("observability.reset_filter") || "Reset filter"}>
@@ -367,19 +375,16 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
           levelCounts={levelCounts}
         />
 
-        <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2.5 border-groove-t">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/80 uppercase tracking-widest hover:text-foreground group select-none">
-            <span>{t("observability.method")}</span>
-            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
-          </CollapsibleTrigger>
-        </Collapsible>
+        <MethodFilterSection
+          selectedMethods={selectedMethods}
+          toggleMethod={toggleMethod}
+          methodCounts={methodCounts}
+        />
 
-        <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2.5 border-groove-t">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/80 uppercase tracking-widest hover:text-foreground group select-none">
-            <span>{t("observability.pathname")}</span>
-            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
-          </CollapsibleTrigger>
-        </Collapsible>
+        <PathnameFilterSection
+          pathnameFilter={pathnameFilter}
+          setPathnameFilter={setPathnameFilter}
+        />
 
         <BenchmarkFilterSection
           includeBenchmark={includeBenchmark}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, Component, useEffect, useRef, useCallback, type ErrorInfo, type ReactNode } from "react";
-import { Terminal, RefreshCcw, AlertTriangle, Loader2 } from "lucide-react";
+import { Terminal, RefreshCcw, AlertTriangle, Loader2, RotateCcw, Clock, Calendar } from "lucide-react";
 import { useReactTable, getCoreRowModel, type VisibilityState } from "@tanstack/react-table";
 import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
@@ -228,6 +228,7 @@ function LogsContainerContent() {
     searchQuery,
     timeRange,
     setTimeRange,
+    resetAllFilters,
     hasMore,
     isLoading,
     isLoadingMore,
@@ -480,13 +481,47 @@ function LogsContainerContent() {
                 </>
               ) : (
                 <>
-                  <Terminal className="w-10 h-10 opacity-20 text-primary" />
-                  <p className="font-semibold text-foreground text-xs font-sans">No matching events</p>
-                  <p className="text-[11px] text-muted-foreground/60 font-sans text-center max-w-[260px]">
-                    {totalCount > 0
-                      ? `${totalCount} raw event${totalCount !== 1 ? "s" : ""} exist — try adjusting the type, level, or time-range filter.`
-                      : "No events received yet. Check your log sources or wait for new events."}
-                  </p>
+                  <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center shadow-xs">
+                    <Terminal className="w-6 h-6 text-muted-foreground/60" />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="font-semibold text-foreground text-sm font-sans">No matching events</p>
+                    <p className="text-[11px] text-muted-foreground/70 font-sans max-w-[320px] leading-relaxed">
+                      {totalCount > 0
+                        ? `${totalCount} raw event${totalCount !== 1 ? "s" : ""} exist in this buffer — try clearing active filters or widening the time range.`
+                        : "No events recorded in this time range. Adjust your query or await live streams."}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetAllFilters}
+                      className="h-8 px-3 text-xs font-mono gap-1.5 border-border/80 bg-card hover:bg-muted text-foreground cursor-pointer shadow-xs"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Clear Active Filters</span>
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setTimeRange("24h")}
+                      className="h-8 px-3 text-xs font-mono gap-1.5 bg-muted/80 hover:bg-muted text-foreground cursor-pointer"
+                    >
+                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      <span>Reset to 24h</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTimeRange("7d")}
+                      className="h-8 px-3 text-xs font-mono gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Expand to 7d</span>
+                    </Button>
+                  </div>
                 </>
               )}
             </div>

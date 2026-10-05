@@ -60,7 +60,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   const headerLabel = bucketData?.fullDateLabel || label;
 
   return (
-    <div className="rounded-lg border border-border bg-card text-card-foreground shadow-2xl p-2.5 text-xs font-mono select-none min-w-[170px] space-y-2 z-50 pointer-events-none">
+    <div className="rounded-lg border border-border bg-card text-card-foreground shadow-xl p-2.5 text-xs font-mono select-none min-w-[170px] space-y-2 z-50 pointer-events-none">
       <div className="text-[11px] font-semibold text-foreground border-b border-border/40 pb-1.5">
         {headerLabel}
       </div>
@@ -229,7 +229,7 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
         <div
           ref={popoverRef}
           style={{ left: `${selectedBucket.x}px`, top: `${selectedBucket.y}px` }}
-          className="absolute z-50 rounded-xl border border-border bg-card text-card-foreground shadow-2xl p-2.5 min-w-[240px] text-xs font-mono animate-in fade-in zoom-in-95 duration-100"
+          className="absolute z-50 rounded-xl border border-border bg-card text-card-foreground shadow-xl p-2.5 min-w-[240px] text-xs font-mono animate-in fade-in zoom-in-95 duration-100"
         >
           <div className="flex items-center justify-between text-[11px] text-muted-foreground pb-1.5 mb-2 border-b border-border/50">
             <span className="font-semibold text-foreground truncate pr-2">

@@ -54,6 +54,8 @@ export function LogsTopHeader({
     selectedTypes, toggleType, setLogType,
     selectedLevels, toggleLevel,
     selectedSeverities, toggleSeverity,
+    selectedMethods, toggleMethod,
+    pathnameFilter, setPathnameFilter,
     scopeFilter, setScopeFilter,
     projectFilter, setProjectFilter,
     tenantFilter, setTenantFilter,
@@ -116,25 +118,29 @@ export function LogsTopHeader({
   }, [handleExportZipBundle]);
 
   const activePills = React.useMemo(() => {
-    const list: Array<{ id: string; label: string; kind: "type" | "level" | "severity" | "scope" | "project" | "tenant" | "benchmark" | "advanced" }> = [];
+    const list: Array<{ id: string; label: string; kind: "type" | "level" | "severity" | "method" | "pathname" | "scope" | "project" | "tenant" | "benchmark" | "advanced" }> = [];
     Object.entries(selectedTypes).filter(([, a]) => a).forEach(([k]) => list.push({ id: k, label: `Log Type = ${LOG_TYPES_LABELS[k] ?? k}`, kind: "type" }));
     Object.entries(selectedLevels).filter(([, a]) => a).forEach(([k]) => list.push({ id: k, label: `Level = ${k}`, kind: "level" }));
     Object.entries(selectedSeverities).filter(([, a]) => a).forEach(([k]) => list.push({ id: k, label: `Severity = ${k}`, kind: "severity" }));
+    Object.entries(selectedMethods).filter(([, a]) => a).forEach(([k]) => list.push({ id: k, label: `Method = ${k}`, kind: "method" }));
+    if (pathnameFilter.trim()) list.push({ id: "pathname", label: `Path = ${pathnameFilter}`, kind: "pathname" });
     if (scopeFilter && scopeFilter !== "ALL") list.push({ id: "scope", label: `Scope = ${scopeFilter}`, kind: "scope" });
     if (projectFilter.trim()) list.push({ id: "project", label: `Project = ${projectFilter}`, kind: "project" });
     if (tenantFilter.trim()) list.push({ id: "tenant", label: `Tenant = ${tenantFilter}`, kind: "tenant" });
     if (includeBenchmark) list.push({ id: "benchmark", label: "⚡ Benchmarks Included", kind: "benchmark" });
     advancedFilters.forEach((f) => list.push({ id: f.id, label: `${FILTER_FIELD_LABELS[f.field]} ${OPERATOR_SYMBOLS[f.operator] || f.operator} ${f.value}`, kind: "advanced" }));
     return list;
-  }, [selectedTypes, selectedLevels, selectedSeverities, scopeFilter, projectFilter, tenantFilter, includeBenchmark, advancedFilters]);
+  }, [selectedTypes, selectedLevels, selectedSeverities, selectedMethods, pathnameFilter, scopeFilter, projectFilter, tenantFilter, includeBenchmark, advancedFilters]);
 
   const isTimeRangeActive = timeRange !== "60m" && timeRange !== "1h";
   const hasActivePills = activePills.length > 0 || isTimeRangeActive || inProgressField !== null;
 
-  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "scope" | "project" | "tenant" | "benchmark" | "advanced" }) => {
+  const handleRemovePill = (pill: { id: string; kind: "type" | "level" | "severity" | "method" | "pathname" | "scope" | "project" | "tenant" | "benchmark" | "advanced" }) => {
     if (pill.kind === "type") toggleType(pill.id);
     else if (pill.kind === "level") toggleLevel(pill.id);
     else if (pill.kind === "severity") toggleSeverity(pill.id);
+    else if (pill.kind === "method") toggleMethod(pill.id);
+    else if (pill.kind === "pathname") setPathnameFilter("");
     else if (pill.kind === "scope") setScopeFilter("ALL");
     else if (pill.kind === "project") setProjectFilter("");
     else if (pill.kind === "tenant") setTenantFilter("");
@@ -152,6 +158,12 @@ export function LogsTopHeader({
     } else if (f.field === "severity" && f.operator === "eq") {
       toggleSeverity(f.value.toUpperCase());
       toast.success(`Filter: Severity = ${f.value.toUpperCase()}`);
+    } else if (f.field === "method" && f.operator === "eq") {
+      toggleMethod(f.value.toUpperCase());
+      toast.success(`Filter: Method = ${f.value.toUpperCase()}`);
+    } else if (f.field === "pathname" && (f.operator === "eq" || f.operator === "ilike")) {
+      setPathnameFilter(f.value);
+      toast.success(`Filter: Pathname ~ "${f.value}"`);
     } else if (f.field === "scope" && f.operator === "eq") {
       setScopeFilter(f.value.toUpperCase());
       toast.success(`Filter: Scope = ${f.value.toUpperCase()}`);

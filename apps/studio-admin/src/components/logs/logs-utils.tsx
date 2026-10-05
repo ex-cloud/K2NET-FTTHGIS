@@ -299,10 +299,96 @@ export interface FilterAuditLogsOptions {
   tenantFilter?: string;
   selectedLevels?: Record<string, boolean>;
   selectedSeverities?: Record<string, boolean>;
+  selectedMethods?: Record<string, boolean>;
+  pathnameFilter?: string;
   impersonationOnly?: boolean;
   scopeFilter?: string;
   projectFilter?: string;
   advancedFilters?: Array<{ field: string; operator: string; value: string }>;
+}
+
+function matchesTenant(log: AuditStreamEntry, tenantFilter?: string): boolean {
+  if (!tenantFilter || !tenantFilter.trim()) return true;
+  const tf = tenantFilter.toLowerCase().trim();
+  const values = [
+    log?.tenantSlug,
+    log?.tenantName,
+    log?.projectId,
+    log?.projectName,
+    log?.targetResource,
+  ];
+  return values.some((v) => typeof v === "string" && v.toLowerCase().includes(tf));
+}
+
+function matchesScope(log: AuditStreamEntry, scopeFilter?: string): boolean {
+  if (!scopeFilter || scopeFilter === "ALL") return true;
+  return (log?.scope ?? "").toUpperCase() === scopeFilter.toUpperCase();
+}
+
+function matchesProject(log: AuditStreamEntry, projectFilter?: string): boolean {
+  if (!projectFilter || !projectFilter.trim()) return true;
+  const pf = projectFilter.toLowerCase().trim();
+  return (
+    (log?.projectId ?? "").toLowerCase().includes(pf) ||
+    (log?.projectName ?? "").toLowerCase().includes(pf)
+  );
+}
+
+function matchesImpersonation(log: AuditStreamEntry, impersonationOnly?: boolean): boolean {
+  if (!impersonationOnly) return true;
+  return Boolean(log?.isImpersonated || log?.realActorId);
+}
+
+function matchesSeverity(log: AuditStreamEntry, selectedSeverities?: Record<string, boolean>): boolean {
+  if (!selectedSeverities) return true;
+  const anySeverityActive = Object.values(selectedSeverities).some(Boolean);
+  if (!anySeverityActive) return true;
+  const sev = (log.severity || "INFO").toUpperCase();
+  return Boolean(selectedSeverities[sev]);
+}
+
+function matchesMethod(log: AuditStreamEntry, selectedMethods?: Record<string, boolean>): boolean {
+  if (!selectedMethods) return true;
+  const anyMethodActive = Object.values(selectedMethods).some(Boolean);
+  if (!anyMethodActive) return true;
+  const m = (log.method || String(log.metadata?.method || "")).toUpperCase();
+  return Boolean(selectedMethods[m]);
+}
+
+function matchesPathname(log: AuditStreamEntry, pathnameFilter?: string): boolean {
+  if (!pathnameFilter || !pathnameFilter.trim()) return true;
+  const pf = pathnameFilter.toLowerCase().trim();
+  const p = (
+    log.pathname ||
+    log.targetResource ||
+    String(log.metadata?.pathname || log.metadata?.path || log.metadata?.uri || log.metadata?.url || "")
+  ).toLowerCase();
+  return p.includes(pf);
+}
+
+function matchesSearch(log: AuditStreamEntry, searchQuery?: string): boolean {
+  if (!searchQuery || !searchQuery.trim()) return true;
+  const q = searchQuery.toLowerCase().trim();
+  const values = [
+    log?.message,
+    log?.action,
+    log?.actor,
+    log?.timestamp,
+    log?.tenantSlug,
+    log?.serviceSource,
+    log?.realActorId,
+    log?.projectId,
+    log?.projectName,
+  ];
+  return values.some((v) => typeof v === "string" && v.toLowerCase().includes(q));
+}
+
+function matchesLevel(log: AuditStreamEntry, selectedLevels?: Record<string, boolean>): boolean {
+  if (!selectedLevels) return true;
+  const anyLevelActive = Object.values(selectedLevels).some(Boolean);
+  if (!anyLevelActive) return true;
+  const level = getLevel(log);
+  return Boolean(selectedLevels[level]);
 }
 
 export function filterAuditLogs(
@@ -313,84 +399,35 @@ export function filterAuditLogs(
   advancedFilters: Array<{ field: string; operator: string; value: string }> = [],
   options?: {
     selectedSeverities?: Record<string, boolean>;
+    selectedMethods?: Record<string, boolean>;
+    pathnameFilter?: string;
     impersonationOnly?: boolean;
     scopeFilter?: string;
     projectFilter?: string;
   }
 ): AuditStreamEntry[] {
-  let result = Array.isArray(logs) ? logs : [];
+  const baseLogs = Array.isArray(logs) ? logs : [];
+  if (baseLogs.length === 0) return [];
 
-  if (tenantFilter && tenantFilter.trim()) {
-    const tf = tenantFilter.toLowerCase().trim();
-    result = result.filter(
-      (log) =>
-        (log?.tenantSlug ?? "").toLowerCase().includes(tf) ||
-        (log?.tenantName ?? "").toLowerCase().includes(tf) ||
-        (log?.projectId ?? "").toLowerCase().includes(tf) ||
-        (log?.projectName ?? "").toLowerCase().includes(tf) ||
-        (log?.targetResource ?? "").toLowerCase().includes(tf)
-    );
-  }
+  return baseLogs.filter((log) => {
+    if (!matchesTenant(log, tenantFilter)) return false;
+    if (!matchesScope(log, options?.scopeFilter)) return false;
+    if (!matchesProject(log, options?.projectFilter)) return false;
+    if (!matchesImpersonation(log, options?.impersonationOnly)) return false;
+    if (!matchesSeverity(log, options?.selectedSeverities)) return false;
+    if (!matchesMethod(log, options?.selectedMethods)) return false;
+    if (!matchesPathname(log, options?.pathnameFilter)) return false;
+    if (!matchesSearch(log, searchQuery)) return false;
+    if (!matchesLevel(log, selectedLevels)) return false;
 
-  if (options?.scopeFilter && options.scopeFilter !== "ALL") {
-    const targetScope = options.scopeFilter.toUpperCase();
-    result = result.filter((log) => (log?.scope ?? "").toUpperCase() === targetScope);
-  }
-
-  if (options?.projectFilter && options.projectFilter.trim()) {
-    const pf = options.projectFilter.toLowerCase().trim();
-    result = result.filter(
-      (log) =>
-        (log?.projectId ?? "").toLowerCase().includes(pf) ||
-        (log?.projectName ?? "").toLowerCase().includes(pf)
-    );
-  }
-
-  if (options?.impersonationOnly) {
-    result = result.filter((log) => Boolean(log?.isImpersonated || log?.realActorId));
-  }
-
-  if (options?.selectedSeverities) {
-    const anySeverityActive = Object.values(options.selectedSeverities).some(Boolean);
-    if (anySeverityActive) {
-      result = result.filter((log) => {
-        const sev = (log.severity || "INFO").toUpperCase();
-        return Boolean(options.selectedSeverities?.[sev]);
-      });
+    for (const f of advancedFilters) {
+      if (!checkAdvancedFilter(log, f.field, f.operator, f.value)) {
+        return false;
+      }
     }
-  }
 
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase();
-    result = result.filter(
-      (log) =>
-        log.message?.toLowerCase().includes(q) ||
-        log.action?.toLowerCase().includes(q) ||
-        log.actor?.toLowerCase().includes(q) ||
-        log.timestamp?.toLowerCase().includes(q) ||
-        log.tenantSlug?.toLowerCase().includes(q) ||
-        log.serviceSource?.toLowerCase().includes(q) ||
-        log.realActorId?.toLowerCase().includes(q) ||
-        log.projectId?.toLowerCase().includes(q) ||
-        log.projectName?.toLowerCase().includes(q)
-    );
-  }
-
-  if (selectedLevels) {
-    const anyLevelActive = Object.values(selectedLevels).some(Boolean);
-    if (anyLevelActive) {
-      result = result.filter((log) => {
-        const level = getLevel(log);
-        return Boolean(selectedLevels[level]);
-      });
-    }
-  }
-
-  for (const f of advancedFilters) {
-    result = result.filter((log) => checkAdvancedFilter(log, f.field, f.operator, f.value));
-  }
-
-  return result;
+    return true;
+  });
 }
 
 /**

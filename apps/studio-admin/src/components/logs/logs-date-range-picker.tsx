@@ -479,7 +479,7 @@ export function LogsDateRangePicker({
           <div
             ref={contentRef}
             style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-            className="z-[9999] w-[440px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs flex flex-col"
+            className="z-[9999] w-[440px] rounded-xl border border-border bg-card shadow-xl overflow-hidden text-foreground font-sans text-xs flex flex-col"
           >
             {/* Dedicated Tabs Header with Global Icon-Only Reset Button */}
             <TabButtons

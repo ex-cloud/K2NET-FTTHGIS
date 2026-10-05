@@ -112,7 +112,7 @@ export function LogsIntegrityVerifierModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[82vh] flex flex-col p-0 gap-0 overflow-hidden font-mono border-border bg-card shadow-2xl rounded-xl">
+      <DialogContent className="max-w-3xl max-h-[82vh] flex flex-col p-0 gap-0 overflow-hidden font-mono border-border bg-card shadow-xl rounded-xl">
         {/* Header */}
         <DialogHeader className="px-5 py-3.5 border-groove-b bg-muted/20 shrink-0">
           <div className="flex items-center justify-between">

@@ -116,7 +116,7 @@ export function LogsSavePresetModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card text-card-foreground border-border shadow-2xl p-0 font-sans rounded-xl overflow-hidden">
+      <DialogContent className="max-w-md bg-card text-card-foreground border-border shadow-xl p-0 font-sans rounded-xl overflow-hidden">
         <div className="px-5 py-3.5 border-groove-b bg-muted/20">
           <DialogHeader className="gap-1">
             <div className="flex items-center gap-2.5">
