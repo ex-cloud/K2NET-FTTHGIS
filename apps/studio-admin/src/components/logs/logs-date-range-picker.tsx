@@ -100,7 +100,6 @@ function TabButtons({
 
 function FooterActions({
   previewText,
-  isLiveRolling,
   copied,
   onCopy,
   onToday,
@@ -109,7 +108,6 @@ function FooterActions({
   canApply,
 }: {
   previewText: string;
-  isLiveRolling: boolean;
   copied: boolean;
   onCopy: () => void;
   onToday: () => void;
@@ -120,13 +118,9 @@ function FooterActions({
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border/50 bg-muted/20">
-      <div className="flex items-center gap-1 min-w-0">
-        {isLiveRolling ? (
-          <Clock className="w-2.5 h-2.5 text-primary shrink-0" />
-        ) : (
-          <Lock className="w-2.5 h-2.5 text-primary shrink-0" />
-        )}
+    <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border/50 bg-muted/20 select-none">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <Lock className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
         <span className="text-[9px] font-mono text-muted-foreground truncate" title={previewText}>
           {previewText}
         </span>
@@ -166,7 +160,7 @@ function FooterActions({
           className={cn(
             "inline-flex items-center justify-center text-center font-medium rounded-md transition-colors text-xs h-6.5 px-3 cursor-pointer",
             canApply
-              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs font-semibold"
               : "bg-muted text-muted-foreground/50 cursor-not-allowed border border-border/40"
           )}
         >
@@ -282,21 +276,6 @@ export function LogsDateRangePicker({
     }
   };
 
-  const handleStagedPresetChange = (p: string) => {
-    setStagedPreset(p);
-    const presetRange = getPresetRange(p);
-    setLocalRange(presetRange);
-    setDisplayMonth(presetRange.from);
-    const fh = String(presetRange.from.getHours()).padStart(2, "0");
-    const fm = String(presetRange.from.getMinutes()).padStart(2, "0");
-    const fs = String(presetRange.from.getSeconds()).padStart(2, "0");
-    setFromTime(`${fh}:${fm}:${fs}`);
-    const th = String(presetRange.to.getHours()).padStart(2, "0");
-    const tm = String(presetRange.to.getMinutes()).padStart(2, "0");
-    const ts = String(presetRange.to.getSeconds()).padStart(2, "0");
-    setToTime(`${th}:${tm}:${ts}`);
-  };
-
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -306,7 +285,7 @@ export function LogsDateRangePicker({
     if (el) {
       const rect = el.getBoundingClientRect();
       const popupWidth = 440;
-      const popupHeight = 380;
+      const popupHeight = activeTab === "presets" ? 250 : 380;
       const margin = 8;
       const rawLeft = rect.left + window.scrollX;
       const maxLeft = window.innerWidth - popupWidth - margin;
@@ -318,7 +297,7 @@ export function LogsDateRangePicker({
         left: Math.max(margin, Math.min(rawLeft, maxLeft)),
       });
     }
-  }, [anchorRef]);
+  }, [anchorRef, activeTab]);
 
   React.useEffect(() => {
     if (open) {
@@ -512,8 +491,11 @@ export function LogsDateRangePicker({
             {/* Tab 1 Content: Quick Presets */}
             {activeTab === "presets" && (
               <PresetsTabContent
-                stagedPreset={stagedPreset}
-                setStagedPreset={handleStagedPresetChange}
+                stagedPreset={value.startsWith("custom:") ? null : value}
+                onSelectPreset={(p) => {
+                  onChange(p);
+                  setOpen(false);
+                }}
                 customRelativeInput={customRelativeInput}
                 setCustomRelativeInput={setCustomRelativeInput}
                 onRelativeSubmit={handleRelativeSubmit}
@@ -522,31 +504,30 @@ export function LogsDateRangePicker({
 
             {/* Tab 2 Content: Historical */}
             {activeTab === "custom" && (
-              <CustomHistoricalTabContent
-                localRange={localRange}
-                setLocalRange={setLocalRange}
-                displayMonth={displayMonth}
-                setDisplayMonth={setDisplayMonth}
-                fromTime={fromTime}
-                toTime={toTime}
-                setFromTime={setFromTime}
-                setToTime={setToTime}
-                onShortcutSelect={handleShortcutSelect}
-                today={today}
-              />
+              <>
+                <CustomHistoricalTabContent
+                  localRange={localRange}
+                  setLocalRange={setLocalRange}
+                  displayMonth={displayMonth}
+                  setDisplayMonth={setDisplayMonth}
+                  fromTime={fromTime}
+                  toTime={toTime}
+                  setFromTime={setFromTime}
+                  setToTime={setToTime}
+                  onShortcutSelect={handleShortcutSelect}
+                  today={today}
+                />
+                <FooterActions
+                  previewText={previewText}
+                  copied={copied}
+                  onCopy={handleCopy}
+                  onToday={() => handleShortcutSelect("today")}
+                  onCancel={() => setOpen(false)}
+                  onApply={handleApply}
+                  canApply={canApply}
+                />
+              </>
             )}
-
-            {/* Unified Footer Preview and Action Buttons */}
-            <FooterActions
-              previewText={previewText}
-              isLiveRolling={activeTab === "presets"}
-              copied={copied}
-              onCopy={handleCopy}
-              onToday={() => handleShortcutSelect("today")}
-              onCancel={() => setOpen(false)}
-              onApply={handleApply}
-              canApply={canApply}
-            />
           </div>,
           document.body
         )}

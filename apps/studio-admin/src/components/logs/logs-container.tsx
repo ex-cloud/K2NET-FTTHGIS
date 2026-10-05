@@ -382,6 +382,26 @@ function LogsContainerContent() {
     setTimeout(() => setCopiedId(null), 2000);
   }, []);
 
+  const currentLogIndex = useMemo(() => {
+    if (!selectedLog) return -1;
+    return filteredLogs.findIndex((l) => l.id === selectedLog.id);
+  }, [selectedLog, filteredLogs]);
+
+  const hasPrevLog = currentLogIndex > 0;
+  const hasNextLog = currentLogIndex >= 0 && currentLogIndex < filteredLogs.length - 1;
+
+  const handlePrevLog = useCallback(() => {
+    if (currentLogIndex > 0) {
+      setSelectedLog(filteredLogs[currentLogIndex - 1]);
+    }
+  }, [currentLogIndex, filteredLogs, setSelectedLog]);
+
+  const handleNextLog = useCallback(() => {
+    if (currentLogIndex >= 0 && currentLogIndex < filteredLogs.length - 1) {
+      setSelectedLog(filteredLogs[currentLogIndex + 1]);
+    }
+  }, [currentLogIndex, filteredLogs, setSelectedLog]);
+
   const visibleCols = useMemo(() => {
     return new Set(
       Object.entries(columnVisibility)
@@ -528,6 +548,12 @@ function LogsContainerContent() {
             selectedLog={selectedLog}
             onClose={() => setSelectedLog(null)}
             onCopyLog={handleCopyLog}
+            onPrevLog={handlePrevLog}
+            onNextLog={handleNextLog}
+            hasPrevLog={hasPrevLog}
+            hasNextLog={hasNextLog}
+            currentIndex={currentLogIndex}
+            totalLogsCount={filteredLogs.length}
           />
         )}
       </div>

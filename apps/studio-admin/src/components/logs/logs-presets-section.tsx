@@ -4,7 +4,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
   Badge,
-  cn,
 } from "@k2net/ui";
 import {
   Bookmark,

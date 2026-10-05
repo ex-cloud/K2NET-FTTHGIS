@@ -244,7 +244,7 @@ export function TimePickerInputs({
     <div className="flex items-center justify-between gap-1.5 p-2 border-b border-border/40 bg-muted/10">
       {/* Start DateTime Group */}
       <div className="flex items-center gap-1 min-w-0">
-        <span className="text-[10px] font-semibold text-primary px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 shrink-0 font-mono">
+        <span className="text-[10px] font-semibold text-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/60 shrink-0 font-mono">
           {fromDateLabel}
         </span>
         <div className="flex h-7 items-center justify-center gap-0.5 rounded-md border border-border/80 bg-card text-xs px-1 font-mono shadow-xs">
@@ -287,7 +287,7 @@ export function TimePickerInputs({
 
       {/* End DateTime Group */}
       <div className="flex items-center gap-1 min-w-0">
-        <span className="text-[10px] font-semibold text-primary px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 shrink-0 font-mono">
+        <span className="text-[10px] font-semibold text-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/60 shrink-0 font-mono">
           {toDateLabel}
         </span>
         <div className="flex h-7 items-center justify-center gap-0.5 rounded-md border border-border/80 bg-card text-xs px-1 font-mono shadow-xs">
@@ -327,7 +327,7 @@ export function TimePickerInputs({
       </div>
 
       {durationLabel && (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30 shrink-0 font-semibold">
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/60 shrink-0 font-semibold">
           {durationLabel}
         </span>
       )}
@@ -364,30 +364,23 @@ export function CustomHistoricalTabContent({
   return (
     <div className="flex min-h-[300px]">
       {/* Historical Shortcuts Sidebar */}
-      <div className="w-[150px] shrink-0 border-r border-border/40 p-2 flex flex-col gap-1 bg-muted/10">
-        <span className="text-[10px] font-semibold text-muted-foreground px-1 pb-1 flex items-center gap-1.5 uppercase tracking-wider">
-          <History className="w-3 h-3 text-primary" />
+      <div className="w-[140px] shrink-0 border-r border-border/40 p-2 flex flex-col gap-1 bg-muted/10 select-none">
+        <span className="text-[10px] font-bold text-muted-foreground px-1 pb-1 flex items-center gap-1.5 uppercase tracking-wider">
+          <History className="w-3 h-3 text-muted-foreground" />
           <span>Shortcuts</span>
         </span>
         {HISTORICAL_SHORTCUTS.map((s) => {
           const transKey = `observability.${s.key}`;
           const trans = t(transKey);
           const label = !trans || trans === transKey ? s.fallback : trans;
-          const isColdShortcut = s.id === "last_90d" || s.id === "last_180d" || s.id === "last_1y";
           return (
             <button
               type="button"
               key={s.id}
               onClick={() => handleShortcutClick(s.id)}
-              className={cn(
-                "w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors cursor-pointer truncate font-normal flex items-center justify-between",
-                isColdShortcut
-                  ? "text-primary hover:bg-primary/10 hover:text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-              )}
+              className="w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors cursor-pointer truncate font-normal text-muted-foreground hover:bg-muted/80 hover:text-foreground"
             >
               <span className="truncate">{label}</span>
-              {isColdShortcut && <Archive className="w-2.5 h-2.5 text-primary shrink-0 ml-1" />}
             </button>
           );
         })}

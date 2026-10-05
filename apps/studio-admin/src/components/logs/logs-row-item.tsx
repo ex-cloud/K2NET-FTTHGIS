@@ -455,6 +455,132 @@ function MessageCell({
   );
 }
 
+function PathnameCell({ pathname, targetResource }: { pathname?: string; targetResource?: string }) {
+  const path = pathname || targetResource;
+  return (
+    <div className="w-[200px] max-w-[200px] shrink-0 font-mono text-[11px] overflow-hidden truncate text-muted-foreground/80 pr-3">
+      {path ? (
+        <span className="truncate block" title={path}>
+          {path}
+        </span>
+      ) : (
+        <span className="text-muted-foreground/20 select-none">—</span>
+      )}
+    </div>
+  );
+}
+
+function RowLeadingSlot({
+  isRowSelected,
+  logId,
+  onToggleSelectRow,
+  isCritical,
+  isError,
+  isWarn,
+}: {
+  isRowSelected?: boolean;
+  logId: string;
+  onToggleSelectRow?: (id: string) => void;
+  isCritical: boolean;
+  isError: boolean;
+  isWarn: boolean;
+}) {
+  const dotColorClass = isCritical
+    ? "bg-rose-500 animate-ping"
+    : isError
+    ? "bg-rose-500"
+    : isWarn
+    ? "bg-amber-500"
+    : "bg-muted-foreground/40";
+
+  return (
+    <div
+      className="w-[20px] mr-2.5 shrink-0 flex items-center justify-center"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className={isRowSelected ? "block" : "hidden group-hover:block"}>
+        <Checkbox
+          checked={!!isRowSelected}
+          onCheckedChange={() => onToggleSelectRow?.(logId)}
+          className="size-3.5 rounded-[3px]"
+          aria-label="Select row"
+        />
+      </div>
+      {!isRowSelected && (
+        <span className={`w-1.5 h-1.5 rounded-full block group-hover:hidden transition-colors ${dotColorClass}`} />
+      )}
+    </div>
+  );
+}
+
+function RowOptionalCells({
+  log,
+  visibleCols,
+  copiedId,
+  onCopyLog,
+}: {
+  log: AuditStreamEntry;
+  visibleCols: Set<string>;
+  copiedId: string | null;
+  onCopyLog: (log: AuditStreamEntry, e: React.MouseEvent) => void;
+}) {
+  return (
+    <>
+      {visibleCols.has("date") && <DateCell timestamp={log.timestamp} />}
+
+      {visibleCols.has("source") && (
+        <div className="w-[20px] shrink-0 flex items-center justify-center">
+          <SourceCell source={log.serviceSource} logGroup={log.logGroup} />
+        </div>
+      )}
+
+      {visibleCols.has("severity") && (
+        <div className="w-[68px] shrink-0">
+          <SeverityBadge severity={log.severity || "INFO"} />
+        </div>
+      )}
+
+      {visibleCols.has("group") && (
+        <div className="w-[80px] shrink-0 font-mono text-[10px] truncate">
+          <GroupCell logGroup={log.logGroup} />
+        </div>
+      )}
+
+      {visibleCols.has("status") && (
+        <StatusCell status={log.status} log={log} copiedId={copiedId} onCopyLog={onCopyLog} />
+      )}
+
+      {visibleCols.has("tenant") && (
+        <div className="w-[80px] shrink-0 font-mono text-[10px] truncate">
+          <TenantCell tenantSlug={log.tenantSlug} />
+        </div>
+      )}
+
+      {visibleCols.has("scope") && (
+        <div className="w-[64px] shrink-0 font-mono text-[10px] truncate">
+          <ScopeCell scope={log.scope} />
+        </div>
+      )}
+
+      {visibleCols.has("project") && (
+        <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
+          <ProjectCell projectId={log.projectId} projectName={log.projectName} />
+        </div>
+      )}
+
+      {visibleCols.has("method") && (
+        <div className="w-[48px] shrink-0">
+          <MethodCell method={log.method} />
+        </div>
+      )}
+
+      {visibleCols.has("pathname") && (
+        <PathnameCell pathname={log.pathname} targetResource={log.targetResource} />
+      )}
+    </>
+  );
+}
+
 export function LogsRowItem({
   log,
   isSelected,
@@ -471,113 +597,33 @@ export function LogsRowItem({
   const isError = level === "error" || isCritical;
   const isWarn = level === "warning";
 
-  const dotColorClass = isCritical
-    ? "bg-rose-500 animate-ping"
-    : isError
-    ? "bg-rose-500"
-    : isWarn
-    ? "bg-amber-500"
-    : "bg-muted-foreground/30";
+  const rowBgClass = isSelected
+    ? "bg-primary/10 text-foreground border-l-2 border-primary"
+    : isRowSelected
+    ? "bg-primary/5 text-foreground"
+    : "hover:bg-muted/30 text-muted-foreground hover:text-foreground";
 
   return (
     <UniversalContextMenu groups={buildContextMenuGroups(log, isSelected, onSelect, t)}>
       <div
         onClick={onSelect}
-        className={`flex items-center px-4 py-1.5 font-mono text-[11px] transition-colors cursor-pointer group ${
-          isSelected
-            ? "bg-primary/10 text-foreground border-l-2 border-primary"
-            : isRowSelected
-            ? "bg-primary/5 text-foreground"
-            : "hover:bg-muted/30 text-muted-foreground hover:text-foreground"
-        }`}
+        className={`flex items-center px-4 py-1.5 font-mono text-[11px] transition-colors cursor-pointer group ${rowBgClass}`}
       >
-        {/* Leading Slot: Monochrome Dot by default, Checkbox on Hover/Selected */}
-        <div
-          className="w-[20px] mr-2.5 shrink-0 flex items-center justify-center"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className={isRowSelected ? "block" : "hidden group-hover:block"}>
-            <Checkbox
-              checked={!!isRowSelected}
-              onCheckedChange={() => onToggleSelectRow?.(log.id)}
-              className="size-3.5 rounded-[3px]"
-              aria-label="Select row"
-            />
-          </div>
-          {!isRowSelected && (
-            <span
-              className={`w-1.5 h-1.5 rounded-full block group-hover:hidden transition-colors ${
-                isCritical
-                  ? "bg-rose-500 animate-ping"
-                  : isError
-                  ? "bg-rose-500"
-                  : isWarn
-                  ? "bg-amber-500"
-                  : "bg-muted-foreground/40"
-              }`}
-            />
-          )}
-        </div>
+        <RowLeadingSlot
+          isRowSelected={isRowSelected}
+          logId={log.id}
+          onToggleSelectRow={onToggleSelectRow}
+          isCritical={isCritical}
+          isError={isError}
+          isWarn={isWarn}
+        />
 
-        {visibleCols.has("date") && <DateCell timestamp={log.timestamp} />}
-
-        {visibleCols.has("source") && (
-          <div className="w-[20px] shrink-0 flex items-center justify-center">
-            <SourceCell source={log.serviceSource} logGroup={log.logGroup} />
-          </div>
-        )}
-
-        {visibleCols.has("severity") && (
-          <div className="w-[68px] shrink-0">
-            <SeverityBadge severity={log.severity || "INFO"} />
-          </div>
-        )}
-
-        {visibleCols.has("group") && (
-          <div className="w-[80px] shrink-0 font-mono text-[10px] truncate">
-            <GroupCell logGroup={log.logGroup} />
-          </div>
-        )}
-
-        {visibleCols.has("status") && (
-          <StatusCell status={log.status} log={log} copiedId={copiedId} onCopyLog={onCopyLog} />
-        )}
-
-        {visibleCols.has("tenant") && (
-          <div className="w-[80px] shrink-0 font-mono text-[10px] truncate">
-            <TenantCell tenantSlug={log.tenantSlug} />
-          </div>
-        )}
-
-        {visibleCols.has("scope") && (
-          <div className="w-[64px] shrink-0 font-mono text-[10px] truncate">
-            <ScopeCell scope={log.scope} />
-          </div>
-        )}
-
-        {visibleCols.has("project") && (
-          <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
-            <ProjectCell projectId={log.projectId} projectName={log.projectName} />
-          </div>
-        )}
-
-        {visibleCols.has("method") && (
-          <div className="w-[48px] shrink-0">
-            <MethodCell method={log.method} />
-          </div>
-        )}
-
-        {visibleCols.has("pathname") && (
-          <div className="w-[200px] max-w-[200px] shrink-0 font-mono text-[11px] overflow-hidden truncate text-muted-foreground/80 pr-3">
-            {log.pathname || log.targetResource ? (
-              <span className="truncate block" title={log.pathname || log.targetResource}>
-                {log.pathname || log.targetResource}
-              </span>
-            ) : (
-              <span className="text-muted-foreground/20 select-none">—</span>
-            )}
-          </div>
-        )}
+        <RowOptionalCells
+          log={log}
+          visibleCols={visibleCols}
+          copiedId={copiedId}
+          onCopyLog={onCopyLog}
+        />
 
         {visibleCols.has("message") && (
           <MessageCell
@@ -589,3 +635,4 @@ export function LogsRowItem({
     </UniversalContextMenu>
   );
 }
+

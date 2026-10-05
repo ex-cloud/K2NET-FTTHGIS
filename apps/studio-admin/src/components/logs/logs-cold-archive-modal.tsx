@@ -107,16 +107,16 @@ export function LogsColdArchiveModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden bg-card border-border text-foreground font-sans max-h-[80vh] flex flex-col rounded-xl shadow-2xl">
         {/* Header */}
-        <DialogHeader className="px-5 py-3.5 border-b border-border/80 bg-muted/20 shrink-0">
+        <DialogHeader className="px-5 py-3.5 border-b border-border bg-muted/20 shrink-0">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <div className="p-1.5 rounded-lg bg-muted/40 border border-border/60 flex items-center justify-center text-muted-foreground shrink-0">
                 <Archive className="w-4 h-4" />
               </div>
               <div>
-                <DialogTitle className="text-sm font-bold flex items-center gap-2">
+                <DialogTitle className="text-xs font-bold text-foreground flex items-center gap-2">
                   <span>Cold Storage S3 Archive Explorer</span>
-                  <Badge variant="outline" className="text-[9px] font-mono bg-primary/10 text-primary border-primary/30 gap-1 py-0 px-1.5 h-4">
+                  <Badge variant="outline" className="text-[9px] font-mono bg-muted/40 text-muted-foreground border-border gap-1 py-0 px-1.5 h-4">
                     <Lock className="w-2.5 h-2.5" />
                     <span>WORM Compliance</span>
                   </Badge>
@@ -132,18 +132,18 @@ export function LogsColdArchiveModal({
               size="sm"
               onClick={loadData}
               disabled={loading}
-              className="h-7 text-xs gap-1.5 border-border text-foreground hover:bg-muted cursor-pointer font-mono"
+              className="h-7 text-xs gap-1.5 border-border bg-card text-foreground hover:bg-muted cursor-pointer font-mono"
             >
-              <RefreshCw className={cn("w-3 h-3 text-primary", loading && "animate-spin")} />
+              <RefreshCw className={cn("w-3 h-3 text-muted-foreground", loading && "animate-spin")} />
               <span>Refresh</span>
             </Button>
           </div>
 
           {/* Metric KPI Cards */}
           <div className="grid grid-cols-4 gap-2 mt-3">
-            <div className="p-2 rounded-lg border border-border/80 bg-background/80 shadow-2xs">
+            <div className="p-2 rounded-lg border border-border/60 bg-card shadow-2xs">
               <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">
-                <Layers className="w-3 h-3 text-primary" />
+                <Layers className="w-3 h-3 text-muted-foreground" />
                 <span>Total Archives</span>
               </div>
               <div className="text-sm font-bold font-mono mt-0.5 text-foreground">
@@ -152,9 +152,9 @@ export function LogsColdArchiveModal({
               </div>
             </div>
 
-            <div className="p-2 rounded-lg border border-border/80 bg-background/80 shadow-2xs">
+            <div className="p-2 rounded-lg border border-border/60 bg-card shadow-2xs">
               <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">
-                <Database className="w-3 h-3 text-primary" />
+                <Database className="w-3 h-3 text-muted-foreground" />
                 <span>Archived Records</span>
               </div>
               <div className="text-sm font-bold font-mono mt-0.5 text-foreground">
@@ -163,9 +163,9 @@ export function LogsColdArchiveModal({
               </div>
             </div>
 
-            <div className="p-2 rounded-lg border border-border/80 bg-background/80 shadow-2xs">
+            <div className="p-2 rounded-lg border border-border/60 bg-card shadow-2xs">
               <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">
-                <HardDrive className="w-3 h-3 text-primary" />
+                <HardDrive className="w-3 h-3 text-muted-foreground" />
                 <span>Storage Preserved</span>
               </div>
               <div className="text-sm font-bold font-mono mt-0.5 text-foreground">
@@ -174,13 +174,13 @@ export function LogsColdArchiveModal({
               </div>
             </div>
 
-            <div className="p-2 rounded-lg border border-border/80 bg-background/80 shadow-2xs">
+            <div className="p-2 rounded-lg border border-border/60 bg-card shadow-2xs">
               <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">
-                <FileCheck2 className="w-3 h-3 text-primary" />
+                <FileCheck2 className="w-3 h-3 text-muted-foreground" />
                 <span>WORM Retention</span>
               </div>
               <div className="text-xs font-bold font-mono mt-0.5 text-foreground flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span className="w-1.5 h-1.5 rounded-full bg-foreground" />
                 <span>1095d (3 Years)</span>
               </div>
             </div>
@@ -197,7 +197,7 @@ export function LogsColdArchiveModal({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search partition name, file, or SHA-256..."
-                className="w-full pl-8 pr-3 py-1 bg-background border border-border/80 rounded-md text-xs font-mono text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary"
+                className="w-full pl-8 pr-3 py-1 bg-card border border-border rounded-md text-xs font-mono text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-border"
               />
             </div>
           </div>
@@ -210,10 +210,10 @@ export function LogsColdArchiveModal({
                 type="button"
                 onClick={() => setTableFilter(tbl)}
                 className={cn(
-                  "px-2 py-0.5 text-xs rounded-md transition-colors font-mono cursor-pointer border",
+                  "px-2 py-0.5 text-xs rounded-md transition-colors font-mono cursor-pointer border select-none",
                   tableFilter === tbl
-                    ? "bg-primary text-primary-foreground border-primary font-semibold shadow-2xs"
-                    : "bg-background text-muted-foreground border-border/80 hover:bg-muted hover:text-foreground"
+                    ? "bg-foreground text-background border-foreground font-semibold shadow-xs"
+                    : "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground"
                 )}
               >
                 {tbl}
@@ -229,11 +229,11 @@ export function LogsColdArchiveModal({
               <Archive className="w-7 h-7 mb-2 text-muted-foreground/40 stroke-1" />
               <p className="text-xs font-semibold text-foreground">No cold storage archives found</p>
               <p className="text-[11px] text-muted-foreground mt-0.5 max-w-sm">
-                Partitions older than 90 days are automatically archived on the 1st of each month via <code className="font-mono text-primary">archive-audit-logs.sh</code>.
+                Partitions older than 90 days are automatically archived on the 1st of each month via <code className="font-mono text-foreground bg-muted/50 px-1 py-0.5 rounded border border-border/60">archive-audit-logs.sh</code>.
               </p>
             </div>
           ) : (
-            <div className="rounded-lg border border-border overflow-hidden bg-background">
+            <div className="rounded-lg border border-border overflow-hidden bg-card">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-border/80 bg-muted/40 text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
@@ -255,14 +255,14 @@ export function LogsColdArchiveModal({
                         </div>
                         {item.startDate && item.endDate && (
                           <div className="text-[10px] text-muted-foreground font-sans flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-2.5 h-2.5 text-primary shrink-0" />
+                            <Calendar className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
                             <span>{item.startDate.slice(0, 10)} → {item.endDate.slice(0, 10)}</span>
                           </div>
                         )}
                       </td>
 
                       <td className="py-2 px-2.5">
-                        <Badge variant="outline" className="text-[10px] font-mono bg-muted/50 text-foreground border-border">
+                        <Badge variant="outline" className="text-[10px] font-mono bg-muted/40 text-foreground border-border">
                           {item.parentTable}
                         </Badge>
                       </td>
@@ -287,7 +287,7 @@ export function LogsColdArchiveModal({
                             title="Copy SHA-256 Checksum"
                           >
                             {copiedKey === item.partition ? (
-                              <Check className="w-3 h-3 text-primary" />
+                              <Check className="w-3 h-3 text-foreground" />
                             ) : (
                               <Copy className="w-3 h-3" />
                             )}
@@ -296,7 +296,7 @@ export function LogsColdArchiveModal({
                       </td>
 
                       <td className="py-2 px-2.5">
-                        <Badge variant="outline" className="text-[9px] font-mono bg-primary/10 text-primary border-primary/30 gap-1 py-0 px-1.5">
+                        <Badge variant="outline" className="text-[9px] font-mono bg-muted/40 text-muted-foreground border-border gap-1 py-0 px-1.5">
                           <Lock className="w-2.5 h-2.5" />
                           <span>{item.wormRetentionDays}d WORM</span>
                         </Badge>
@@ -304,13 +304,13 @@ export function LogsColdArchiveModal({
 
                       <td className="py-2 px-2.5 text-right">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleExplorePartition(item)}
-                          className="h-6 text-[10px] gap-1 px-2 text-primary hover:text-primary-foreground hover:bg-primary/20 border border-primary/30 rounded-md font-sans cursor-pointer"
+                          className="h-6 text-[10px] gap-1 px-2 border-border text-foreground hover:bg-muted hover:text-foreground rounded-md font-sans cursor-pointer"
                         >
                           <span>Explore Range</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
+                          <ExternalLink className="w-2.5 h-2.5 text-muted-foreground" />
                         </Button>
                       </td>
                     </tr>
@@ -322,9 +322,9 @@ export function LogsColdArchiveModal({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-border/80 bg-muted/20 flex items-center justify-between text-[11px] text-muted-foreground shrink-0">
+        <div className="px-4 py-2.5 border-t border-border bg-muted/20 flex items-center justify-between text-[11px] text-muted-foreground shrink-0 select-none">
           <div className="flex items-center gap-2">
-            <Lock className="w-3.5 h-3.5 text-primary" />
+            <Lock className="w-3.5 h-3.5 text-muted-foreground" />
             <span>Object Storage Engine: MinIO S3 WORM Compliance Mode</span>
           </div>
           <Button
@@ -340,3 +340,4 @@ export function LogsColdArchiveModal({
     </Dialog>
   );
 }
+

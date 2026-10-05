@@ -64,7 +64,7 @@ export function LogsIntegrityTreeTab({
                       #{idx + 1}
                     </span>
                     {item.isValid ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                     ) : (
                       <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />
                     )}
@@ -97,7 +97,7 @@ export function LogsIntegrityTreeTab({
                         <div className="text-[9px] uppercase text-muted-foreground font-bold">
                           Calculated SHA-256 Hash
                         </div>
-                        <div className="flex items-center justify-between gap-1 text-primary break-all">
+                        <div className="flex items-center justify-between gap-1 text-foreground break-all">
                           <span>{item.calculatedHash}</span>
                           <button
                             type="button"

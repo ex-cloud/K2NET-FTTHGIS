@@ -2,18 +2,30 @@ import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import type { useTranslation } from "@k2net/i18n";
 
-export const PRESET_VALUES = [
-  { key: "preset_last_15m", value: "15m", fallback: "Last 15 minutes" },
-  { key: "preset_last_30m", value: "30m", fallback: "Last 30 minutes" },
+export interface PresetItem {
+  key: string;
+  value: string;
+  fallback: string;
+}
+
+export const PRESETS_RECENT: PresetItem[] = [
+  { key: "preset_last_15m", value: "15m", fallback: "Last 15 mins" },
+  { key: "preset_last_30m", value: "30m", fallback: "Last 30 mins" },
   { key: "preset_last_60m", value: "60m", fallback: "Last 1 hour" },
   { key: "preset_last_3h", value: "3h", fallback: "Last 3 hours" },
+  { key: "preset_last_12h", value: "12h", fallback: "Last 12 hours" },
   { key: "preset_last_24h", value: "24h", fallback: "Last 24 hours" },
+];
+
+export const PRESETS_OLDER: PresetItem[] = [
   { key: "preset_last_7d", value: "7d", fallback: "Last 7 days" },
   { key: "preset_last_14d", value: "14d", fallback: "Last 14 days" },
-  { key: "preset_last_30d", value: "30d", fallback: "Last 30 days (1 mo)" },
-  { key: "preset_last_60d", value: "60d", fallback: "Last 60 days (2 mo)" },
-  { key: "preset_last_90d", value: "90d", fallback: "Last 90 days (Quarter)" },
+  { key: "preset_last_30d", value: "30d", fallback: "Last 30 days" },
+  { key: "preset_last_60d", value: "60d", fallback: "Last 60 days" },
+  { key: "preset_last_90d", value: "90d", fallback: "Last 90 days" },
 ];
+
+export const PRESET_VALUES: PresetItem[] = [...PRESETS_RECENT, ...PRESETS_OLDER];
 
 export const HISTORICAL_SHORTCUTS = [
   { id: "today", key: "today", fallback: "Today" },
@@ -22,9 +34,6 @@ export const HISTORICAL_SHORTCUTS = [
   { id: "last_week", key: "last_week", fallback: "Last Week" },
   { id: "this_month", key: "this_month", fallback: "This Month" },
   { id: "prev_month", key: "prev_month", fallback: "Previous Month" },
-  { id: "last_90d", key: "last_90d", fallback: "Last 90 Days (Quarter)" },
-  { id: "last_180d", key: "last_180d", fallback: "Last 180 Days (Cold S3)" },
-  { id: "last_1y", key: "last_1y", fallback: "Last 1 Year (Cold WORM)" },
 ] as const;
 
 export type HistoricalShortcutId = (typeof HISTORICAL_SHORTCUTS)[number]["id"];
@@ -154,18 +163,6 @@ export function getHistoricalShortcutRange(shortcut: HistoricalShortcutId): { fr
       const from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
       const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
       return { from, to };
-    }
-    case "last_90d": {
-      const from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-      return { from, to: now };
-    }
-    case "last_180d": {
-      const from = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
-      return { from, to: now };
-    }
-    case "last_1y": {
-      const from = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-      return { from, to: now };
     }
   }
 }
