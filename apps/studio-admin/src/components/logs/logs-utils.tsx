@@ -52,7 +52,7 @@ export function getSourceIcon(source: string, className?: string) {
   const IconComp = matched ? matched.IconComponent : Cpu;
   return (
     <IconComp
-      className={className || "w-2.5 h-2.5 text-muted-foreground/60 shrink-0"}
+      className={className || "w-3.5 h-3.5 text-muted-foreground/80 shrink-0"}
       strokeWidth={1.5}
     />
   );

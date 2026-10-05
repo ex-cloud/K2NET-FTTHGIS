@@ -175,7 +175,7 @@ function DateCell({ timestamp }: { timestamp?: string }) {
 }
 
 function SourceCell({ source, logGroup }: { source?: string; logGroup?: string }) {
-  if (!source) return <span className="text-muted-foreground/20 select-none text-[10px]">—</span>;
+  if (!source) return <span className="text-muted-foreground/20 select-none text-xs">—</span>;
 
   const groupInfo = logGroup ? LOG_GROUPS[logGroup as keyof typeof LOG_GROUPS] : null;
   const colorClass = groupInfo ? `${groupInfo.color} ${groupInfo.accentBg} border-current/20` : "text-muted-foreground/60 bg-muted/20 border-border/30";
@@ -185,13 +185,13 @@ function SourceCell({ source, logGroup }: { source?: string; logGroup?: string }
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="flex items-center justify-center cursor-default outline-none select-none">
-            {getSourceIcon(source)}
+            {getSourceIcon(source, "w-4 h-4 text-muted-foreground/80 hover:text-foreground transition-colors shrink-0")}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-[11px] font-mono px-2 py-1.5 bg-popover border border-border text-foreground [&_svg]:!hidden">
+        <TooltipContent side="top" className="text-xs font-mono px-2 py-1.5 bg-popover border border-border text-foreground [&_svg]:!hidden">
           <span className="flex items-center gap-1.5">
-            {getSourceIcon(source, "w-3 h-3 text-muted-foreground/80 shrink-0")}
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${colorClass}`}>
+            {getSourceIcon(source, "w-3.5 h-3.5 text-muted-foreground/80 shrink-0")}
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${colorClass}`}>
               {source}
             </span>
           </span>
@@ -222,19 +222,19 @@ function StatusCell({
   const renderBadge = () => {
     if (statusNum) {
       return (
-        <span className={`font-mono text-[11px] tracking-tight ${getStatusColor(statusNum)}`}>
+        <span className={`font-mono text-xs tracking-tight ${getStatusColor(statusNum)}`}>
           {statusNum}
         </span>
       );
     }
     if (typeof status === "string" && status.trim() && status !== "OK" && status !== "FAIL" && status !== "WARN") {
       return (
-        <span className="font-mono text-[10px] text-muted-foreground truncate max-w-[48px]">
+        <span className="font-mono text-xs text-muted-foreground truncate max-w-[48px]">
           {status}
         </span>
       );
     }
-    return <span className="text-muted-foreground/30 font-mono text-[11px] select-none">—</span>;
+    return <span className="text-muted-foreground/30 font-mono text-xs select-none">—</span>;
   };
 
   return (
@@ -529,7 +529,7 @@ function RowOptionalCells({
       {visibleCols.has("date") && <DateCell timestamp={log.timestamp} />}
 
       {visibleCols.has("source") && (
-        <div className="w-[20px] shrink-0 flex items-center justify-center">
+        <div className="w-[24px] shrink-0 flex items-center justify-center">
           <SourceCell source={log.serviceSource} logGroup={log.logGroup} />
         </div>
       )}
