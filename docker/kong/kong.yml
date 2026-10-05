@@ -5,8 +5,8 @@ _transform: true
 # Consumers
 # ====================================================
 consumers:
-  # Keycloak JWT consumer — maps to authenticated users
-  - username: keycloak-users
+  # Keycloak consumer for realm: ftth-realm
+  - username: keycloak-ftth-realm
     jwt_secrets:
       - key: "https://auth-gis.kdua.net/realms/ftth-realm"
         algorithm: RS256
@@ -19,6 +19,86 @@ consumers:
           wh8X5FyNPhN+xNPe1XVoHZWz0J15rmKOewQpvzXbS4+nOtjFAYt/3ovJl0/vEE7o
           VCU5os2t27UgRpbX39JKtKb0lWswX7fyAyfPmcrsmJUXnXkgE+8kCaqQ7Gid6aVu
           ZQIDAQAB
+          -----END PUBLIC KEY-----
+
+  # Keycloak consumer for realm: default
+  - username: keycloak-default
+    jwt_secrets:
+      - key: "https://auth-gis.kdua.net/realms/default"
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArsCfzP6dsrkARifdv7at
+          gCvcb1WnJE4QM2IFtkLl6108O6SNzPpAZwHwc95X6r+DNyTHYRqKvwYp/M4EUS3J
+          vGo5OJnb23OWuEPfUrZzmnoRMsCiS1pDMDwEcTMrTB/eqLxtvR7V/qjvphW/HSnF
+          PCTzD/L8yv7MhnTroTBoTo/KSLt/d4/jxzzyhQEV2z9MWWACqbYTZXrXiJoQV+OO
+          wxLbdXUIfxrQ5TQJi4fWXJACD1nb/NSbFEC9dMKptMabsOT3CU01dEBVZzgpUUcM
+          Dg5yzAv3Jhov5vUHprj4MEUqO0zMusGLgru289z5zPXEzXK7IvM5vVD+AhDryb55
+          cQIDAQAB
+          -----END PUBLIC KEY-----
+
+  # Keycloak consumer for realm: fiber-nusantara
+  - username: keycloak-fiber-nusantara
+    jwt_secrets:
+      - key: "https://auth-gis.kdua.net/realms/fiber-nusantara"
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAws6unwoG/WgAr7YO/l44
+          BERKnOw51aPGfDfp19+95DlB2KUlenkCupbQmg/mSU/14frNFYgpXBRRSSsSR626
+          B7tsM9Lk3Lprd8X7lKI1jmyrmBc/w/YVxTiT1BLQtZxeXyb8B5nlUbJ9+en5pg3O
+          vWxeIngYK+zj+ylhw5feWyBBoL9TUCOP1zPtHzHutwsdw3+wBGYAleQyOFCU5HmJ
+          aaKagZMZsNJAEVtZKDrTeXHoCkZYSPT/egBrrypHA1xcNvs5PWAHFBSE20gBG/fr
+          iZTv+DZCT9U3dy477J3R/oj30l0uoJ35eslDIHI6tRWair9o3USXNAX9Szx6xXs4
+          oQIDAQAB
+          -----END PUBLIC KEY-----
+
+  # Keycloak consumer for realm: hshqwvnwzsdbeqqifkpu
+  - username: keycloak-hshqwvnwzsdbeqqifkpu
+    jwt_secrets:
+      - key: "https://auth-gis.kdua.net/realms/hshqwvnwzsdbeqqifkpu"
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqGbiyvINLNOoMiHQeYcL
+          BCzjtd1KNNhtQD+9ZTbSk9m64zNL5x2qrbg4ba+11hzdc9lRZc9W5h7IrxqSmCrP
+          bli41A88IE0ftIjsEMDYmIToqgQG6GZvmiY4xklDOID1V8mWsfghoztQYV3RyxPU
+          0TOMszRFdeqBucNggab02sCIHAjGKbVHemePRdORrNnXrsYkli4/2xuEPHYaPIuX
+          4EH0jOBS4L6jtqqMaFGNnwMvYW447iwgE6q1mgleMHnF1cjpt4PPghxldwy2AEdk
+          Lxd3C+5fkBb7fCgWdiUy0XZgFGRIjqsAQ5YEvs8/4lC3xGnBBwswWm+kEBNSbMks
+          bwIDAQAB
+          -----END PUBLIC KEY-----
+
+  # Keycloak consumer for realm: mjrbxnoozcbjahhahqna
+  - username: keycloak-mjrbxnoozcbjahhahqna
+    jwt_secrets:
+      - key: "https://auth-gis.kdua.net/realms/mjrbxnoozcbjahhahqna"
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxZArgTQmrM8nYluzO3n1
+          i3u1gEJiwK+SF31Abi4f7KjIERrjTdiGGdtnLUey36Gmmm8DlkBTTZ3IYi3OYVJ1
+          xu7H0lZamybkUOAi1bVOqpf3SjA4GoC7hvcLzLmFtwiOlvl/g+neZAE4t+a1LHm8
+          QGtwhyLzrat3Oqx+vbD52BydXgW5BxCSBX2ffJ3OXp4m/bgiVPCOWWExeLonO5YB
+          +3SIGx3Sork95db3YFMdVlnflSbN/Okp4+Bz+lpenrwm8YcVOzPAPZB3ZOMmwZld
+          +HSRi3SIm/HFvcChudMFwTP+umod1qji9q0TLDJmAGw49JGhsJ90m+TIu1NMKWR9
+          lwIDAQAB
+          -----END PUBLIC KEY-----
+
+  # Keycloak consumer for realm: hrwdjkorvtwmakjkdfxd
+  - username: keycloak-hrwdjkorvtwmakjkdfxd
+    jwt_secrets:
+      - key: "https://auth-gis.kdua.net/realms/hrwdjkorvtwmakjkdfxd"
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsWvX+C8Du2yhanxJarEn
+          e9aTHzvFPxb6t+QCN5A2OFc48ooqBZPM5Z0CqT8XV7gZGIezXGMXwQR7XhZ6JsqB
+          llAcjMnISIgwyVzdQI2KJNDr4L/aSuJbZzsTBYwaw9CgH+6sjKx61fPJ7iaj755D
+          mXCizXKrkPpdu8rQurjHZjb0/2zZ4iTO067v2npDccxfI6L4TE4RFhjzABEIXM9v
+          E/EcPd1k9jSZN1od+6odasUBO8migKRrES3ltK5dur6Ig0qPhleQBu6GoWo6Z5OU
+          Bs/P/KwLZOLPszjDRV9GMcwQ9ERZEqfAVX+2oF4/DjWXtDwgwgsjNjqT6neYtuPX
+          qQIDAQAB
           -----END PUBLIC KEY-----
 
   # Anonymous consumer — allows requests without a valid JWT to pass through
