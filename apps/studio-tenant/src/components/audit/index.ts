@@ -1,4 +1,5 @@
 export * from "./TenantAuditExplorer";
-export * from "./TenantAuditStatsCards";
-export * from "./TenantAuditRow";
+export * from "./TenantLogsFilterSidebar";
+export * from "./TenantLogsTopHeader";
+export * from "./TenantLogsRowItem";
 export * from "./TenantAuditDetailDrawer";

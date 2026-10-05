@@ -16,21 +16,24 @@ import {
 import {
   Button,
   Badge,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
   ScrollArea,
   LogsDetailDrawerShell,
+  type LogsDetailDrawerTabItem,
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
 import type { TenantAuditEvent } from "../../types/tenant-audit";
 
-interface TenantAuditDetailDrawerProps {
+export interface TenantAuditDetailDrawerProps {
   event: TenantAuditEvent | null;
   open: boolean;
   onClose: () => void;
+  currentIndex?: number;
+  totalLogsCount?: number;
+  onPrevLog?: () => void;
+  onNextLog?: () => void;
+  hasPrevLog?: boolean;
+  hasNextLog?: boolean;
 }
 
 function DrawerHeader({
@@ -83,7 +86,7 @@ function DrawerHeader({
               variant="outline"
               size="sm"
               onClick={onNavigateToGis}
-              className="h-7.5 px-2.5 text-xs font-semibold gap-1.5 bg-primary/5 hover:bg-primary/10 text-primary border-primary/30"
+              className="h-7.5 px-2.5 text-xs font-semibold gap-1.5 bg-primary/5 hover:bg-primary/10 text-primary border-primary/30 cursor-pointer"
             >
               <MapPin className="h-3.5 w-3.5" />
               {t("gis.view_on_map")}
@@ -94,7 +97,7 @@ function DrawerHeader({
             variant="ghost"
             size="sm"
             onClick={onCopyJson}
-            className="h-7.5 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+            className="h-7.5 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 cursor-pointer"
           >
             {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? t("common.copied") : t("security.audit_raw_payload")}
@@ -123,7 +126,7 @@ function DrawerHeader({
 function OverviewTab({ event }: { event: TenantAuditEvent }) {
   const { t, formatDate } = useTranslation();
   return (
-    <TabsContent value="overview" className="mt-0 space-y-4">
+    <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <div className="p-3 rounded-lg bg-muted/20 border border-border/40 space-y-1">
           <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
@@ -186,14 +189,14 @@ function OverviewTab({ event }: { event: TenantAuditEvent }) {
           </pre>
         </div>
       )}
-    </TabsContent>
+    </div>
   );
 }
 
 function DiffTab({ event }: { event: TenantAuditEvent }) {
   const { t } = useTranslation();
   return (
-    <TabsContent value="diff" className="mt-0 space-y-3">
+    <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
@@ -227,17 +230,17 @@ function DiffTab({ event }: { event: TenantAuditEvent }) {
           </pre>
         </div>
       </div>
-    </TabsContent>
+    </div>
   );
 }
 
 function RawJsonTab({ event }: { event: TenantAuditEvent }) {
   return (
-    <TabsContent value="raw" className="mt-0 space-y-2">
+    <div className="space-y-2">
       <pre className="p-3 rounded-lg bg-muted/40 border border-border/60 text-[11px] font-mono text-foreground overflow-x-auto">
         {JSON.stringify(event, null, 2)}
       </pre>
-    </TabsContent>
+    </div>
   );
 }
 
@@ -245,11 +248,23 @@ export function TenantAuditDetailDrawer({
   event,
   open,
   onClose,
+  currentIndex,
+  totalLogsCount,
+  onPrevLog,
+  onNextLog,
+  hasPrevLog,
+  hasNextLog,
 }: TenantAuditDetailDrawerProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = React.useState<"overview" | "diff" | "raw">("overview");
+  const [activeTab, setActiveTab] = React.useState<string>("overview");
   const [copied, setCopied] = React.useState(false);
+
+  const tabs: LogsDetailDrawerTabItem[] = React.useMemo(() => [
+    { key: "overview", label: t("common.overview"), icon: <FileText className="w-3.5 h-3.5" /> },
+    { key: "diff", label: t("security.audit_changes_diff"), icon: <GitCompare className="w-3.5 h-3.5" />, badge: Boolean(event?.oldValue || event?.newValue) },
+    { key: "raw", label: t("security.audit_raw_payload"), icon: <Code2 className="w-3.5 h-3.5" /> },
+  ], [t, event]);
 
   if (!open || !event) return null;
 
@@ -273,52 +288,29 @@ export function TenantAuditDetailDrawer({
     <LogsDetailDrawerShell
       onClose={onClose}
       title={`${event.action} • ${event.resourceType}`}
-      className="w-full sm:max-w-xl md:max-w-2xl bg-card border-l border-border/80 shadow-2xl p-0 flex flex-col h-full"
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      currentIndex={currentIndex}
+      totalLogsCount={totalLogsCount}
+      onPrevLog={onPrevLog}
+      onNextLog={onNextLog}
+      hasPrevLog={hasPrevLog}
+      hasNextLog={hasNextLog}
+      statusBarSlot={
+        <DrawerHeader
+          event={event}
+          copied={copied}
+          onCopyJson={handleCopyJson}
+          onNavigateToGis={handleNavigateToGis}
+        />
+      }
     >
-      <DrawerHeader
-        event={event}
-        copied={copied}
-        onCopyJson={handleCopyJson}
-        onNavigateToGis={handleNavigateToGis}
-      />
-
-      <Tabs
-        value={activeTab}
-        onValueChange={(val) => setActiveTab(val as "overview" | "diff" | "raw")}
-        className="flex-1 flex flex-col overflow-hidden"
-      >
-        <div className="px-4 border-b border-border/40 bg-muted/10">
-          <TabsList className="bg-transparent h-10 p-0 gap-4">
-            <TabsTrigger
-              value="overview"
-              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none px-2 text-xs font-semibold gap-1.5"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              {t("common.overview")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="diff"
-              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none px-2 text-xs font-semibold gap-1.5"
-            >
-              <GitCompare className="h-3.5 w-3.5" />
-              {t("security.audit_changes_diff")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="raw"
-              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none px-2 text-xs font-semibold gap-1.5"
-            >
-              <Code2 className="h-3.5 w-3.5" />
-              {t("security.audit_raw_payload")}
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <ScrollArea className="flex-1 p-4 custom-scrollbar">
-          <OverviewTab event={event} />
-          <DiffTab event={event} />
-          <RawJsonTab event={event} />
-        </ScrollArea>
-      </Tabs>
+      <ScrollArea className="flex-1 p-4 custom-scrollbar">
+        {activeTab === "overview" && <OverviewTab event={event} />}
+        {activeTab === "diff" && <DiffTab event={event} />}
+        {activeTab === "raw" && <RawJsonTab event={event} />}
+      </ScrollArea>
     </LogsDetailDrawerShell>
   );
 }
