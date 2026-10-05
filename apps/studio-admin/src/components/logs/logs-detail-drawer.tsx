@@ -143,7 +143,7 @@ function DrawerHeader({
   t: ReturnType<typeof useTranslation>["t"];
 }) {
   return (
-    <div className="p-2.5 px-3.5 border-b border-border flex items-center justify-between bg-muted/20 shrink-0">
+    <div className="p-2.5 px-3.5 border-groove-b flex items-center justify-between bg-muted/20 shrink-0">
       <div className="flex items-center gap-2 min-w-0">
         <FileCode className="w-4 h-4 text-muted-foreground shrink-0" />
         <span className="font-semibold text-foreground font-sans text-xs truncate">
@@ -223,7 +223,7 @@ function DrawerTabsHeader({
   hasMetadataBadge: boolean;
 }) {
   return (
-    <div className="flex items-center border-b border-border/60 bg-muted/20 px-3.5 pt-1.5 gap-2 shrink-0">
+    <div className="flex items-center border-groove-b bg-muted/20 px-3.5 pt-1.5 gap-2 shrink-0">
       <button
         type="button"
         onClick={() => setActiveTab("overview")}
@@ -370,7 +370,7 @@ export function LogsDetailDrawer({
     <div
       style={{ width: isMaximized ? "min(1100px, 92vw)" : `${drawerWidth}px` }}
       className={cn(
-        "absolute right-0 top-0 h-full max-w-full bg-card border-l border-border flex flex-col z-30 shadow-2xl transition-all duration-200",
+        "absolute right-0 top-0 h-full max-w-full bg-card border-groove-l flex flex-col z-30 shadow-2xl transition-all duration-200",
         isDragging && "select-none transition-none"
       )}
     >
@@ -433,7 +433,7 @@ export function LogsDetailDrawer({
         )}
       </div>
 
-      <div className="p-3 border-t border-border bg-muted/20 flex items-center justify-between gap-2 shrink-0 select-none">
+      <div className="p-3 border-groove-t bg-muted/20 flex items-center justify-between gap-2 shrink-0 select-none">
         <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
           Use &apos;j&apos; / &apos;k&apos; to navigate • &apos;Esc&apos; to close
         </span>

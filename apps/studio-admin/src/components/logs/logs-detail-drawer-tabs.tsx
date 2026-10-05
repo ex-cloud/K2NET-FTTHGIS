@@ -36,7 +36,7 @@ export function DrawerStatusBar({
   if (!hash && !isImpersonated) return null;
 
   return (
-    <div className="border-b border-border/50 bg-muted/15 p-2 px-3.5 space-y-1.5 shrink-0 select-none">
+    <div className="border-groove-b bg-muted/15 p-2 px-3.5 space-y-1.5 shrink-0 select-none">
       {hash && (
         <div className="flex items-center justify-between gap-2 text-[11px] font-mono">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -54,7 +54,7 @@ export function DrawerStatusBar({
             className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground font-sans px-1.5 py-0.5 rounded border border-border/50 bg-card hover:bg-muted transition-colors cursor-pointer shrink-0 shadow-2xs"
             title="Copy full SHA-256 hash"
           >
-            {copiedKey === "SHA-256 Hash" ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+            {copiedKey === "SHA-256 Hash" ? <Check className="w-3 h-3 text-foreground" /> : <Copy className="w-3 h-3" />}
             <span>{copiedKey === "SHA-256 Hash" ? "Copied" : "Copy Hash"}</span>
           </button>
         </div>

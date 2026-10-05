@@ -195,5 +195,8 @@
   "working_hours": "Jam Kerja (08-17)",
   "apply_range": "Terapkan Rentang",
   "cancel": "Batal",
-  "staged_preview": "Pratinjau Rentang Terpilih:"
+  "staged_preview": "Pratinjau Rentang Terpilih:",
+  "type_duration_placeholder": "Ketik durasi (misal 45m, 2h, 7d)...",
+  "last_24_hours": "24 Jam Terakhir",
+  "older": "Lebih Lama"
 }

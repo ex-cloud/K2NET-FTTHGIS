@@ -104,7 +104,7 @@ function MonthPickerView({
               className={cn(
                 "h-7 text-xs rounded-md transition-colors font-medium flex items-center justify-center cursor-pointer",
                 isSelected
-                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                  ? "bg-foreground text-background font-semibold shadow-xs"
                   : isDisabled
                   ? "opacity-30 cursor-not-allowed text-muted-foreground"
                   : "hover:bg-muted text-foreground"
@@ -176,7 +176,7 @@ function YearPickerView({
               className={cn(
                 "h-7 text-xs rounded-md transition-colors font-medium flex items-center justify-center cursor-pointer",
                 isSelected
-                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                  ? "bg-foreground text-background font-semibold shadow-xs"
                   : isDisabled
                   ? "opacity-30 cursor-not-allowed text-muted-foreground"
                   : "hover:bg-muted text-foreground"
@@ -241,7 +241,7 @@ export function TimePickerInputs({
   }, [localRange, fh, fm, fs, th, tm, ts]);
 
   return (
-    <div className="flex items-center justify-between gap-1.5 p-2 border-b border-border/40 bg-muted/10">
+    <div className="flex items-center justify-between gap-1.5 p-2 border-groove-b bg-muted/10">
       {/* Start DateTime Group */}
       <div className="flex items-center gap-1 min-w-0">
         <span className="text-[10px] font-semibold text-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/60 shrink-0 font-mono">
@@ -364,7 +364,7 @@ export function CustomHistoricalTabContent({
   return (
     <div className="flex min-h-[300px]">
       {/* Historical Shortcuts Sidebar */}
-      <div className="w-[140px] shrink-0 border-r border-border/40 p-2 flex flex-col gap-1 bg-muted/10 select-none">
+      <div className="w-[140px] shrink-0 border-groove-r p-2 flex flex-col gap-1 bg-muted/10 select-none">
         <span className="text-[10px] font-bold text-muted-foreground px-1 pb-1 flex items-center gap-1.5 uppercase tracking-wider">
           <History className="w-3 h-3 text-muted-foreground" />
           <span>Shortcuts</span>
@@ -469,8 +469,12 @@ export function CustomHistoricalTabContent({
                 weekdays: "flex w-full justify-between mb-1",
                 weekday: "text-muted-foreground/70 rounded w-8 font-medium text-[10px] pb-1 text-center shrink-0",
                 week: "flex w-full justify-between mt-1",
-                day: "h-7.5 w-8 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l last:[&:has([aria-selected])]:rounded-r shrink-0",
-                day_button: "h-7.5 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary !cursor-pointer",
+                day: "h-7.5 w-8 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-muted/50 first:[&:has([aria-selected])]:rounded-l last:[&:has([aria-selected])]:rounded-r shrink-0",
+                day_button: "h-7.5 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/30 !cursor-pointer",
+                range_start: "day-range-start [&>button]:rounded-md [&>button]:!bg-foreground [&>button]:!text-background [&>button]:font-bold",
+                range_end: "day-range-end [&>button]:rounded-md [&>button]:!bg-foreground [&>button]:!text-background [&>button]:font-bold",
+                range_middle: "[&>button]:rounded-none [&>button]:!bg-muted/80 [&>button]:!text-foreground",
+                today: "[&>button]:border [&>button]:border-foreground/40 [&>button]:font-bold",
               }}
             />
           )}

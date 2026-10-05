@@ -106,7 +106,7 @@ function LogsTableHeader({
   ];
 
   return (
-    <div className="flex items-center px-4 py-2 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-mono">
+    <div className="flex items-center px-4 py-2 bg-muted/40 border-groove-b text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-mono">
       <div className="w-[20px] mr-2.5 shrink-0 flex items-center justify-center">
         <Checkbox
           checked={isAllSelected ? true : isSomeSelected ? "indeterminate" : false}
@@ -421,7 +421,7 @@ function LogsContainerContent() {
       />
 
       {showHistogram && (
-        <div className="bg-muted/20 border-b border-border/60 shrink-0">
+        <div className="bg-muted/20 border-groove-b shrink-0">
           <LogsHistogram
             data={histogramData}
             onSelectRange={(startIso, endIso) => {

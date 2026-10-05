@@ -49,7 +49,7 @@ function TabButtons({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center justify-between border-b border-border/50 bg-muted/20 p-1.5 gap-1.5">
+    <div className="flex items-center justify-between border-groove-b bg-muted/20 p-1.5 gap-1.5">
       <div className="flex items-center gap-1 flex-1">
         <button
           type="button"
@@ -118,7 +118,7 @@ function FooterActions({
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border/50 bg-muted/20 select-none">
+    <div className="flex items-center justify-between gap-2 px-3 py-2 border-groove-t bg-muted/20 select-none">
       <div className="flex items-center gap-1.5 min-w-0">
         <Lock className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
         <span className="text-[9px] font-mono text-muted-foreground truncate" title={previewText}>
@@ -133,7 +133,7 @@ function FooterActions({
           className="inline-flex items-center gap-1 justify-center text-center font-normal rounded-md transition-colors hover:bg-muted text-xs h-6.5 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
           title="Copy range string to clipboard"
         >
-          {copied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+          {copied ? <Check className="w-3 h-3 text-foreground" /> : <Copy className="w-3 h-3" />}
           <span>{copied ? "Copied" : (t("observability.copy") || "Copy")}</span>
         </button>
 
@@ -160,7 +160,7 @@ function FooterActions({
           className={cn(
             "inline-flex items-center justify-center text-center font-medium rounded-md transition-colors text-xs h-6.5 px-3 cursor-pointer",
             canApply
-              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs font-semibold"
+              ? "bg-foreground text-background hover:bg-foreground/90 shadow-xs font-semibold"
               : "bg-muted text-muted-foreground/50 cursor-not-allowed border border-border/40"
           )}
         >

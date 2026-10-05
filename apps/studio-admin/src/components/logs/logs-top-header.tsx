@@ -196,13 +196,13 @@ export function LogsTopHeader({
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
+    <div className="flex items-center gap-2 px-3 py-2 border-groove-b bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
       <ActionTooltip label={t("observability.toggle_filter_panel")} shortcut="Alt+S">
         <button
           onClick={() => setIsSidebarCollapsed((prev) => !prev)}
           className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
-          <PanelLeft className="w-4 h-4" />
+          <PanelLeft className="w-3.5 h-3.5" />
         </button>
       </ActionTooltip>
 
@@ -284,38 +284,38 @@ export function LogsTopHeader({
               placeholder={hasActivePills ? t("observability.add_more_filters") : t("observability.filter_placeholder")}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 text-xs font-mono min-w-[80px]"
             />
-              <ActionTooltip label={t("observability.advanced_filter")} shortcut="Alt+F">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowPalette((prev) => !prev);
-                    inputRef.current?.focus();
-                  }}
-                  className={cn(
-                    "shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] border transition-colors cursor-pointer",
-                    showPalette
-                      ? "bg-primary/15 border-primary/40 text-primary"
-                      : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-muted/40"
-                  )}
-                >
-                  <SlidersHorizontal className="w-3 h-3" />
-                </button>
-              </ActionTooltip>
-            </div>
+            <ActionTooltip label={t("observability.advanced_filter")} shortcut="Alt+F">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPalette((prev) => !prev);
+                  inputRef.current?.focus();
+                }}
+                className={cn(
+                  "shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] border transition-colors cursor-pointer",
+                  showPalette
+                    ? "bg-primary/15 border-primary/40 text-primary"
+                    : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-muted/40"
+                )}
+              >
+                <SlidersHorizontal className="w-3 h-3" />
+              </button>
+            </ActionTooltip>
           </div>
-
-          {searchQuery && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setSearchQuery("");
-              }}
-              className="shrink-0 text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
         </div>
+
+        {searchQuery && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSearchQuery("");
+            }}
+            className="shrink-0 text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
 
       <LogsHeaderActions
         filteredLogs={filteredLogs}

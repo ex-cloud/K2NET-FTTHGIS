@@ -45,8 +45,8 @@ export function TenantScopeFilterSection({
   const hasActive = normalizedScope !== "ALL" || Boolean(tenantFilter.trim());
 
   return (
-    <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+    <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
         <span>{t("observability.tenant_and_scope") || "Tenant & Scope"}</span>
         <div className="flex items-center gap-1.5">
           {hasActive && (
@@ -54,7 +54,7 @@ export function TenantScopeFilterSection({
               {tenantFilter.trim() || normalizedScope}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-1 space-y-2 font-mono text-[11px]">
@@ -116,8 +116,8 @@ export function TenantFilterSection({
 }) {
   const { t } = useTranslation();
   return (
-    <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+    <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2.5 border-groove-t">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
         <span>{t("observability.tenant")}</span>
         <div className="flex items-center gap-1.5">
           {tenantFilter && (
@@ -125,7 +125,7 @@ export function TenantFilterSection({
               {tenantFilter}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-1 space-y-1">
@@ -165,8 +165,8 @@ export function LevelFilterSection({
   const activeCount = Object.values(selectedLevels).filter(Boolean).length;
 
   return (
-    <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+    <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
         <span>Level</span>
         <div className="flex items-center gap-1.5">
           {activeCount > 0 && (
@@ -174,37 +174,40 @@ export function LevelFilterSection({
               × {activeCount}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-0.5 mt-1 font-mono text-[11px]">
-        {LEVEL_OPTIONS.map((lvl) => {
-          const count = levelCounts[lvl.key] ?? 0;
-          return (
-            <label
-              key={lvl.key}
-              className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/40 cursor-pointer transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={!!selectedLevels[lvl.key]}
-                  onCheckedChange={() => toggleLevel(lvl.key)}
-                  className="size-3.5 rounded-[3px]"
-                />
-                <span className="text-muted-foreground text-[11px]">{lvl.label}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/70">
-                  <span className={`w-2 h-2 rounded-xs ${lvl.dot}`} />
-                  <span>{lvl.badge}</span>
-                </span>
-                <span className={`text-[10px] font-mono w-4 text-right ${count > 0 ? "text-foreground font-semibold" : "text-muted-foreground/40"}`}>
-                  {count}
-                </span>
-              </div>
-            </label>
-          );
-        })}
+      <CollapsibleContent className="mt-1">
+        <div className="rounded-md border border-border/70 bg-card/40 overflow-hidden divide-y divide-border/40 font-mono text-[11px] shadow-2xs">
+          {LEVEL_OPTIONS.map((lvl) => {
+            const count = levelCounts[lvl.key] ?? 0;
+            const isChecked = !!selectedLevels[lvl.key];
+            return (
+              <label
+                key={lvl.key}
+                className="flex items-center justify-between px-2.5 py-1.5 hover:bg-muted/40 cursor-pointer transition-colors select-none group/lvl"
+              >
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={isChecked}
+                    onCheckedChange={() => toggleLevel(lvl.key)}
+                    className="size-3.5 rounded-[3px]"
+                  />
+                  <span className="text-muted-foreground group-hover/lvl:text-foreground transition-colors text-[11px]">{lvl.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/70">
+                    <span className={`w-2 h-2 rounded-xs ${lvl.dot}`} />
+                    <span>{lvl.badge}</span>
+                  </span>
+                  <span className={`text-[10px] font-mono min-w-[14px] text-right ${count > 0 ? "text-foreground font-semibold" : "text-muted-foreground/40"}`}>
+                    {count}
+                  </span>
+                </div>
+              </label>
+            );
+          })}
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );
@@ -224,8 +227,8 @@ export function ScopeFilterSection({
   const normalizedScope = scopeFilter === "ORGANIZATION" ? "TENANT" : scopeFilter;
 
   return (
-    <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+    <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
         <span>Scope & Project</span>
         <div className="flex items-center gap-1.5">
           {normalizedScope !== "ALL" && (
@@ -233,7 +236,7 @@ export function ScopeFilterSection({
               {normalizedScope}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-1 space-y-2 font-mono text-[11px]">
@@ -292,8 +295,8 @@ export function SeverityFilterSection({
   const activeCount = Object.values(selectedSeverities).filter(Boolean).length;
 
   return (
-    <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+    <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
         <span>Severity</span>
         <div className="flex items-center gap-1.5">
           {activeCount > 0 && (
@@ -301,34 +304,37 @@ export function SeverityFilterSection({
               × {activeCount}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-0.5 mt-1 font-mono text-[11px]">
-        {SEVERITY_OPTIONS.map((sev) => {
-          const count = severityCounts[sev.key] ?? 0;
-          return (
-            <label
-              key={sev.key}
-              className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/40 cursor-pointer transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={!!selectedSeverities[sev.key]}
-                  onCheckedChange={() => toggleSeverity(sev.key)}
-                  className="size-3.5 rounded-[3px]"
-                />
-                <span className="text-muted-foreground text-[11px]">{sev.label}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`w-2.5 h-2.5 rounded-xs ${sev.dot}`} />
-                <span className={`text-[10px] font-mono w-4 text-right ${count > 0 ? "text-foreground font-semibold" : "text-muted-foreground/40"}`}>
-                  {count}
-                </span>
-              </div>
-            </label>
-          );
-        })}
+      <CollapsibleContent className="mt-1">
+        <div className="rounded-md border border-border/70 bg-card/40 overflow-hidden divide-y divide-border/40 font-mono text-[11px] shadow-2xs">
+          {SEVERITY_OPTIONS.map((sev) => {
+            const count = severityCounts[sev.key] ?? 0;
+            const isChecked = !!selectedSeverities[sev.key];
+            return (
+              <label
+                key={sev.key}
+                className="flex items-center justify-between px-2.5 py-1.5 hover:bg-muted/40 cursor-pointer transition-colors select-none group/sev"
+              >
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={isChecked}
+                    onCheckedChange={() => toggleSeverity(sev.key)}
+                    className="size-3.5 rounded-[3px]"
+                  />
+                  <span className="text-muted-foreground group-hover/sev:text-foreground transition-colors text-[11px]">{sev.label}</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-2 h-2 rounded-xs ${sev.dot}`} />
+                  <span className={`text-[10px] font-mono min-w-[14px] text-right ${count > 0 ? "text-foreground font-semibold" : "text-muted-foreground/40"}`}>
+                    {count}
+                  </span>
+                </div>
+              </label>
+            );
+          })}
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );
@@ -342,7 +348,7 @@ export function BenchmarkFilterSection({
   setIncludeBenchmark: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   return (
-    <div className="pt-2 border-t border-border/40 font-mono text-[11px]">
+    <div className="pt-2.5 border-groove-t font-mono text-[11px]">
       <div className="p-2 rounded-lg border border-border/50 bg-muted/20 space-y-1">
         <label className="flex items-center justify-between cursor-pointer group select-none">
           <div className="flex items-center gap-2 min-w-0">

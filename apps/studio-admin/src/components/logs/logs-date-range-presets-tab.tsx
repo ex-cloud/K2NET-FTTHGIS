@@ -21,6 +21,11 @@ export function PresetsTabContent({
 }: PresetsTabContentProps) {
   const { t } = useTranslation();
 
+  const getSafeTrans = (key: string, fallback: string) => {
+    const res = t(key);
+    return !res || res === key || res.startsWith("observability.") ? fallback : res;
+  };
+
   const renderPresetGrid = (presets: PresetItem[]) => {
     return (
       <div className="grid grid-cols-3 gap-1.5">
@@ -30,8 +35,7 @@ export function PresetsTabContent({
             (stagedPreset === "60m" && (p.value === "1h" || p.value === "60m")) ||
             (stagedPreset === "1h" && (p.value === "60m" || p.value === "1h"));
           const transKey = `observability.${p.key}`;
-          const trans = t(transKey);
-          const label = !trans || trans === transKey || trans.startsWith("observability.preset_") ? p.fallback : trans;
+          const label = getSafeTrans(transKey, p.fallback);
 
           return (
             <button
@@ -60,7 +64,7 @@ export function PresetsTabContent({
         <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
         <input
           type="text"
-          placeholder={t("observability.type_duration_placeholder") || "Type duration (e.g. 45m, 2h, 7d)..."}
+          placeholder={getSafeTrans("observability.type_duration_placeholder", "Type duration (e.g. 45m, 2h, 7d)...")}
           value={customRelativeInput}
           onChange={(e) => setCustomRelativeInput(e.target.value)}
           onKeyDown={onRelativeSubmit}
@@ -71,7 +75,7 @@ export function PresetsTabContent({
       {/* Section 1: Last 24 Hours */}
       <div className="space-y-1.5">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5 block select-none">
-          {t("observability.last_24_hours") || "Last 24 Hours"}
+          {getSafeTrans("observability.last_24_hours", "Last 24 Hours")}
         </span>
         {renderPresetGrid(PRESETS_RECENT)}
       </div>
@@ -79,7 +83,7 @@ export function PresetsTabContent({
       {/* Section 2: Older */}
       <div className="space-y-1.5">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5 block select-none">
-          {t("observability.older") || "Older"}
+          {getSafeTrans("observability.older", "Older")}
         </span>
         {renderPresetGrid(PRESETS_OLDER)}
       </div>

@@ -50,7 +50,7 @@ export function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: Co
       style={{ position: "absolute", top: `${coords.top}px`, right: `${coords.right}px` }}
       className="z-[9999] w-[220px] rounded-xl border border-border bg-card shadow-xl overflow-hidden font-mono text-xs text-foreground animate-in fade-in zoom-in-95 duration-100"
     >
-      <div className="px-3 pt-3 pb-2 border-b border-border/50">
+      <div className="px-3 pt-3 pb-2 border-groove-b">
         <div className="relative">
           <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
           <input

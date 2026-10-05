@@ -114,7 +114,7 @@ export function LogsIntegrityVerifierModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[82vh] flex flex-col p-0 gap-0 overflow-hidden font-mono border-border bg-card shadow-2xl rounded-xl">
         {/* Header */}
-        <DialogHeader className="px-5 py-3.5 border-b border-border/60 bg-muted/20 shrink-0">
+        <DialogHeader className="px-5 py-3.5 border-groove-b bg-muted/20 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-lg bg-muted/50 border border-border/60 text-muted-foreground shrink-0">
@@ -236,7 +236,7 @@ export function LogsIntegrityVerifierModal({
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-border/60 bg-muted/20 flex items-center justify-between shrink-0 select-none">
+        <div className="p-3 border-groove-t bg-muted/20 flex items-center justify-between shrink-0 select-none">
           <div className="text-[11px] text-muted-foreground flex items-center gap-2">
             <span>Verified with Web Cryptography API</span>
             <span>•</span>

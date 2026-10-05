@@ -117,7 +117,7 @@ export function LogsSavePresetModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-card text-card-foreground border-border shadow-2xl p-0 font-sans rounded-xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-border bg-muted/20">
+        <div className="px-5 py-3.5 border-groove-b bg-muted/20">
           <DialogHeader className="gap-1">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-lg bg-muted/40 text-muted-foreground border border-border/60 shrink-0">
@@ -188,7 +188,7 @@ export function LogsSavePresetModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-4 py-3 border-t border-border bg-muted/20 flex items-center justify-end gap-2 select-none">
+        <div className="px-4 py-3 border-groove-t bg-muted/20 flex items-center justify-end gap-2 select-none">
           <Button
             type="button"
             variant="outline"

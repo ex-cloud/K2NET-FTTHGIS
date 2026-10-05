@@ -195,5 +195,8 @@
   "working_hours": "Work Hours (08-17)",
   "apply_range": "Apply",
   "cancel": "Cancel",
-  "staged_preview": "Staged Range Preview:"
+  "staged_preview": "Staged Range Preview:",
+  "type_duration_placeholder": "Type duration (e.g. 45m, 2h, 7d)...",
+  "last_24_hours": "Last 24 Hours",
+  "older": "Older"
 }

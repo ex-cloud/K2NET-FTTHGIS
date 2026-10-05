@@ -48,10 +48,10 @@ export function PresetsFilterSection() {
 
   return (
     <>
-      <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-        <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+      <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
+        <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/80 dark:text-foreground uppercase tracking-widest hover:text-foreground group select-none">
           <span className="flex items-center gap-1.5">
-            <Bookmark className="w-3 h-3 text-muted-foreground/60" />
+            <Bookmark className="w-3 h-3 text-muted-foreground/70 group-hover:text-foreground dark:text-muted-foreground/80" />
             <span>Saved Presets</span>
           </span>
           <div className="flex items-center gap-1.5">
@@ -61,7 +61,7 @@ export function PresetsFilterSection() {
             >
               {presets.length}
             </Badge>
-            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
           </div>
         </CollapsibleTrigger>
 

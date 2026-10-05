@@ -107,7 +107,7 @@ export function LogsColdArchiveModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden bg-card border-border text-foreground font-sans max-h-[80vh] flex flex-col rounded-xl shadow-2xl">
         {/* Header */}
-        <DialogHeader className="px-5 py-3.5 border-b border-border bg-muted/20 shrink-0">
+        <DialogHeader className="px-5 py-3.5 border-groove-b bg-muted/20 shrink-0">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-lg bg-muted/40 border border-border/60 flex items-center justify-center text-muted-foreground shrink-0">
@@ -188,7 +188,7 @@ export function LogsColdArchiveModal({
         </DialogHeader>
 
         {/* Toolbar & Search Filter */}
-        <div className="px-4 py-2 border-b border-border/60 bg-muted/10 flex items-center justify-between gap-3 shrink-0">
+        <div className="px-4 py-2 border-groove-b bg-muted/10 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 flex-1 max-w-md">
             <div className="relative flex-1">
               <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -322,7 +322,7 @@ export function LogsColdArchiveModal({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-border bg-muted/20 flex items-center justify-between text-[11px] text-muted-foreground shrink-0 select-none">
+        <div className="px-4 py-2.5 border-groove-t bg-muted/20 flex items-center justify-between text-[11px] text-muted-foreground shrink-0 select-none">
           <div className="flex items-center gap-2">
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
             <span>Object Storage Engine: MinIO S3 WORM Compliance Mode</span>
