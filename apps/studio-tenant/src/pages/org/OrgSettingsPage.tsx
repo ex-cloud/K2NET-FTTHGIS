@@ -15,14 +15,13 @@ import {
   Label,
   Textarea,
   Switch,
-  Badge,
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { useAuth } from "@k2net/auth/client";
 import { useTenantInfo } from "../../hooks/useTenantInfo";
 import { useTranslation } from "@k2net/i18n";
 
-type SettingsSection = "general" | "branding" | "security" | "sso" | "oauth" | "audit-logs";
+type SettingsSection = "general" | "branding" | "security" | "sso" | "oauth";
 
 interface SectionMeta {
   title: string;
@@ -187,32 +186,6 @@ function OAuthSettingsSection() {
   );
 }
 
-function AuditLogsSettingsSection() {
-  const { t } = useTranslation();
-  return (
-    <Card className="p-5 border-border/60 bg-card space-y-3 shadow-xs">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-        {t("settings.audit_trail_org_title")}
-      </h3>
-      <div className="space-y-2">
-        <div className="p-3 rounded-lg bg-muted/30 border border-border/40 text-xs flex items-center justify-between">
-          <div className="space-y-0.5">
-            <span className="font-semibold text-foreground">
-              {t("settings.audit_mfa_change_event")}
-            </span>
-            <span className="text-[10px] font-mono text-muted-foreground block">
-              IP: 103.144.20.10 • {t("settings.audit_active_session")}
-            </span>
-          </div>
-          <Badge variant="outline" className="font-mono text-[9px]">
-            SECURITY
-          </Badge>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 export function OrgSettingsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -226,7 +199,6 @@ export function OrgSettingsPage() {
     security: { title: t("security.title"), breadcrumb: t("nav.security_access") },
     sso: { title: t("nav.sso_oauth_config"), breadcrumb: "SSO" },
     oauth: { title: t("nav.api_keys_tokens"), breadcrumb: "OAuth & API" },
-    "audit-logs": { title: t("nav.compliance_audit_logs"), breadcrumb: "Audit Trail" },
   };
 
   const currentSection: SettingsSection = React.useMemo(() => {
@@ -234,7 +206,6 @@ export function OrgSettingsPage() {
     if (pathname.includes("/settings/security")) return "security";
     if (pathname.includes("/settings/sso")) return "sso";
     if (pathname.includes("/settings/oauth")) return "oauth";
-    if (pathname.includes("/settings/audit-logs")) return "audit-logs";
     return "general";
   }, [pathname]);
 
@@ -254,16 +225,14 @@ export function OrgSettingsPage() {
           { label: meta.breadcrumb },
         ]}
         actions={
-          currentSection !== "audit-logs" && (
-            <Button
-              size="sm"
-              onClick={handleSave}
-              className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
-            >
-              <Save className="h-3.5 w-3.5" />
-              {t("common.save_changes")}
-            </Button>
-          )
+          <Button
+            size="sm"
+            onClick={handleSave}
+            className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
+          >
+            <Save className="h-3.5 w-3.5" />
+            {t("common.save_changes")}
+          </Button>
         }
       />
 
@@ -279,7 +248,6 @@ export function OrgSettingsPage() {
         {currentSection === "security" && <SecuritySettingsSection />}
         {currentSection === "sso" && <SsoSettingsSection slug={slug} />}
         {currentSection === "oauth" && <OAuthSettingsSection />}
-        {currentSection === "audit-logs" && <AuditLogsSettingsSection />}
       </PageContentShell>
     </div>
   );

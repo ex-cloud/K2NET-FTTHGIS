@@ -20,6 +20,8 @@ import {
   SubscribersPageWrapper,
   IssuesPageWrapper,
   ProjectSettingsPageWrapper,
+  AuditLogsPageWrapper,
+  ProjectAuditLogsPageWrapper,
 } from "./components/page-guards";
 
 // ----------------------------------------------------------------
@@ -90,6 +92,9 @@ const BillingPage = lazyWithRetry(() =>
 const OrgSettingsPage = lazyWithRetry(() =>
   import("./pages/org/OrgSettingsPage").then((m) => ({ default: m.OrgSettingsPage }))
 );
+const OrgAuditLogsPage = lazyWithRetry(() =>
+  import("./pages/org/OrgAuditLogsPage").then((m) => ({ default: m.OrgAuditLogsPage }))
+);
 
 // Layer 2: Project Scope Pages
 const ProjectOverviewPage = lazyWithRetry(() =>
@@ -154,6 +159,9 @@ const ProjectMembersPage = lazyWithRetry(() =>
 );
 const GisDataImportPage = lazyWithRetry(() =>
   import("./pages/project/settings/GisDataImportPage").then((m) => ({ default: m.GisDataImportPage }))
+);
+const ProjectAuditLogsPage = lazyWithRetry(() =>
+  import("./pages/project/ProjectAuditLogsPage").then((m) => ({ default: m.ProjectAuditLogsPage }))
 );
 
 // ----------------------------------------------------------------
@@ -445,16 +453,22 @@ const settingsOauthRoute = createRoute({
   ),
 });
 
+const orgAuditLogsRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/audit-logs",
+  component: () => (
+    <AuditLogsPageWrapper>
+      <Lazy>
+        <OrgAuditLogsPage />
+      </Lazy>
+    </AuditLogsPageWrapper>
+  ),
+});
+
 const settingsAuditRoute = createRoute({
   getParentRoute: () => orgAuthenticatedRoute,
   path: "/settings/audit-logs",
-  component: () => (
-    <OrgSettingsPageWrapper>
-      <Lazy>
-        <OrgSettingsPage />
-      </Lazy>
-    </OrgSettingsPageWrapper>
-  ),
+  component: () => <Navigate to="/audit-logs" />,
 });
 
 const settingsFallbackRoute = createRoute({
@@ -787,6 +801,30 @@ const projectImportRoute = createRoute({
   ),
 });
 
+// Standalone Project Audit Trail
+const projectAuditLogsRoute = createRoute({
+  getParentRoute: () => projectAuthenticatedRoute,
+  path: "/audit-logs",
+  component: () => (
+    <ProjectAuditLogsPageWrapper>
+      <Lazy>
+        <ProjectAuditLogsPage />
+      </Lazy>
+    </ProjectAuditLogsPageWrapper>
+  ),
+});
+
+function ProjectSettingsAuditRedirect() {
+  const { projectId } = useParams({ strict: false }) as { projectId: string };
+  return <Navigate to="/project/$projectId/audit-logs" params={{ projectId }} />;
+}
+
+const projectSettingsAuditRoute = createRoute({
+  getParentRoute: () => projectAuthenticatedRoute,
+  path: "/settings/audit-logs",
+  component: ProjectSettingsAuditRedirect,
+});
+
 function ProjectSettingsRedirect() {
   const { projectId } = useParams({ strict: false }) as { projectId: string };
   return <Navigate to="/project/$projectId/settings/general" params={{ projectId }} />;
@@ -836,6 +874,7 @@ const orgTree = orgAuthenticatedRoute.addChildren([
   integrationsRoute,
   usageRoute,
   billingRoute,
+  orgAuditLogsRoute,
   settingsGeneralRoute,
   settingsBrandingRoute,
   settingsSecurityRoute,
@@ -873,9 +912,11 @@ const projectTree = projectAuthenticatedRoute.addChildren([
   projectTicketsRoute,
   projectDispatcherRoute,
   projectIssuesFallbackRoute,
+  projectAuditLogsRoute,
   projectGeneralSettingsRoute,
   projectMembersRoute,
   projectImportRoute,
+  projectSettingsAuditRoute,
   projectSettingsFallbackRoute,
 ]);
 

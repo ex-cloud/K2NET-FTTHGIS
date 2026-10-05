@@ -100,6 +100,8 @@
   "tenant_integrations": "Integrations",
   "tenant_settings": "Settings",
   "tenant_usage": "Usage",
+  "tenant_audit_logs": "Audit Trail",
+  "project_audit_logs": "Project Audit Trail",
   "go_to_item": "Go to {{name}}",
   "tenant_gis_map": "GIS Spatial Map",
   "tenant_inventory": "Device Inventory",

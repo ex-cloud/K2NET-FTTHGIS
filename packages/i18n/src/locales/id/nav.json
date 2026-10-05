@@ -100,6 +100,8 @@
   "tenant_integrations": "Integrasi",
   "tenant_settings": "Pengaturan",
   "tenant_usage": "Penggunaan",
+  "tenant_audit_logs": "Audit Trail",
+  "project_audit_logs": "Audit Trail Proyek",
   "go_to_item": "Buka {{name}}",
   "tenant_gis_map": "Peta Spasial GIS",
   "tenant_inventory": "Inventaris Perangkat",

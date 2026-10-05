@@ -6,7 +6,6 @@ import {
   Mail,
   Shield,
   MoreVertical,
-  UserCheck,
   Loader2,
   Users,
 } from "lucide-react";
@@ -34,6 +33,7 @@ import { apiClient } from "../../lib/api-client";
 import { getCurrentOrgSlug } from "../../lib/domain";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 import { TeamInviteWizard } from "../../components/team/TeamInviteWizard";
+import { TenantAuditExplorer } from "../../components/audit";
 import { useTranslation } from "@k2net/i18n";
 
 interface UserProjectRole {
@@ -322,15 +322,12 @@ export function TeamPage() {
 
         {/* VIEW 3: ACTIVITY */}
         {subView === "activity" && (
-          <Card className="p-6 border-border/60 bg-card space-y-3 shadow-xs text-center">
-            <div className="flex flex-col items-center justify-center space-y-2">
-              <UserCheck className="h-8 w-8 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">{t("security.audit_trail_title")}</h3>
-              <p className="text-xs text-muted-foreground max-w-md">
-                {t("security.audit_trail_desc")}
-              </p>
-            </div>
-          </Card>
+          <TenantAuditExplorer
+            scope="ORGANIZATION"
+            initialCategory="IAM"
+            title={t("security.audit_trail_title")}
+            description={t("security.audit_trail_desc")}
+          />
         )}
       </PageContentShell>
 

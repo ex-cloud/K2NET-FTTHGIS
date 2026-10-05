@@ -17,6 +17,7 @@ import {
   Users,
   HardDrive,
   Cpu,
+  History,
   Settings,
 } from "lucide-react";
 import type { NavItem, SecondarySidebarConfig } from "./tenant-sidebar-navigation";
@@ -79,6 +80,15 @@ export function getProjectNavItems(projectId: string): NavItem[] {
       icon: AlertTriangle,
       shortcut: "G then T",
       hasSecondarySidebar: true,
+    },
+    {
+      id: "audit-logs",
+      title: "Audit Trail",
+      translationKey: "nav.project_audit_logs",
+      href: `/project/${projectId}/audit-logs`,
+      icon: History,
+      shortcut: "G then A",
+      requiredPermission: "project.audit.view",
     },
     {
       id: "settings",
