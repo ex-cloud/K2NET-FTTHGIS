@@ -15,6 +15,12 @@ import {
   Target,
 } from "lucide-react";
 
+import type {
+  FilterFieldConfig as BaseFilterFieldConfig,
+  FilterOperatorConfig as BaseFilterOperatorConfig,
+  FilterQuickOption as BaseFilterQuickOption,
+  SmartParseResult as BaseSmartParseResult,
+} from "@k2net/ui";
 import {
   type AdvancedFilterField,
   type AdvancedFilterOperator,
@@ -24,17 +30,10 @@ import {
 
 // ─── Field Definitions & Categorized Operator Metadata ────────────────────────
 
-export interface QuickOption {
-  value: string;
-  label: string;
-  badgeClass?: string;
-  colorDot?: string;
-}
+export type QuickOption = BaseFilterQuickOption;
 
-export interface OperatorItem {
+export interface OperatorItem extends BaseFilterOperatorConfig {
   key: AdvancedFilterOperator;
-  label: string;
-  symbol: string;
 }
 
 export interface OperatorGroup {
@@ -42,7 +41,11 @@ export interface OperatorGroup {
   operators: OperatorItem[];
 }
 
-export interface FilterFieldConfig {
+export interface FilterFieldConfig
+  extends Omit<
+    BaseFilterFieldConfig,
+    "key" | "defaultOperator" | "operatorGroups" | "quickOptions"
+  > {
   key: AdvancedFilterField;
   label: string;
   icon: React.ReactNode;
@@ -51,6 +54,11 @@ export interface FilterFieldConfig {
   defaultOperator: AdvancedFilterOperator;
   quickOptions?: QuickOption[];
   placeholder: string;
+}
+
+export interface SmartParseResult extends BaseSmartParseResult {
+  field?: AdvancedFilterField;
+  operator?: AdvancedFilterOperator;
 }
 
 const OP_EQUALS: OperatorItem = { key: "eq", label: "Equals", symbol: "=" };

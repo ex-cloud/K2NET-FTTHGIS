@@ -1,9 +1,9 @@
 import * as React from "react";
 import { History, ChevronLeft, ChevronRight, Archive } from "lucide-react";
 import { format } from "date-fns";
-import { Calendar, cn } from "@k2net/ui";
+import { Calendar } from "../calendar";
+import { cn } from "../../utils";
 import type { DateRange } from "react-day-picker";
-import { useTranslation } from "@k2net/i18n";
 import {
   HISTORICAL_SHORTCUTS,
   type HistoricalShortcutId,
@@ -11,7 +11,7 @@ import {
   isColdStorageRange,
 } from "./logs-date-range-types";
 
-export interface CustomHistoricalTabContentProps {
+export interface LogsDateRangeCustomTabCoreProps {
   localRange: DateRange | undefined;
   setLocalRange: (r: DateRange | undefined) => void;
   displayMonth: Date;
@@ -22,6 +22,7 @@ export interface CustomHistoricalTabContentProps {
   setToTime: (t: string) => void;
   onShortcutSelect: (id: HistoricalShortcutId) => void;
   today: Date;
+  translateFn?: (key: string) => string | undefined;
 }
 
 const MONTH_NAMES = [
@@ -74,7 +75,7 @@ function MonthPickerView({
           type="button"
           onClick={onSwitchToYears}
           title="Click to choose year"
-          className="text-xs font-semibold text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+          className="text-xs font-medium text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors cursor-pointer"
         >
           {currentYear}
         </button>
@@ -104,7 +105,7 @@ function MonthPickerView({
               className={cn(
                 "h-7 text-xs rounded-md transition-colors font-medium flex items-center justify-center cursor-pointer",
                 isSelected
-                  ? "bg-foreground text-background font-semibold shadow-xs"
+                  ? "bg-foreground text-background font-medium shadow-xs"
                   : isDisabled
                   ? "opacity-30 cursor-not-allowed text-muted-foreground"
                   : "hover:bg-muted text-foreground"
@@ -147,7 +148,7 @@ function YearPickerView({
           <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
         </button>
 
-        <span className="text-xs font-semibold text-foreground px-2.5 py-1">
+        <span className="text-xs font-medium text-foreground px-2.5 py-1">
           {decadeStart} - {decadeStart + 11}
         </span>
 
@@ -176,7 +177,7 @@ function YearPickerView({
               className={cn(
                 "h-7 text-xs rounded-md transition-colors font-medium flex items-center justify-center cursor-pointer",
                 isSelected
-                  ? "bg-foreground text-background font-semibold shadow-xs"
+                  ? "bg-foreground text-background font-medium shadow-xs"
                   : isDisabled
                   ? "opacity-30 cursor-not-allowed text-muted-foreground"
                   : "hover:bg-muted text-foreground"
@@ -191,7 +192,7 @@ function YearPickerView({
   );
 }
 
-export function TimePickerInputs({
+export function LogsTimePickerInputs({
   localRange,
   fromTime,
   toTime,
@@ -244,7 +245,7 @@ export function TimePickerInputs({
     <div className="flex items-center justify-between gap-1.5 p-2 border-groove-b bg-muted/10">
       {/* Start DateTime Group */}
       <div className="flex items-center gap-1 min-w-0">
-        <span className="text-[10px] font-semibold text-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/60 shrink-0 font-mono">
+        <span className="text-[10px] font-medium text-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/60 shrink-0 font-mono">
           {fromDateLabel}
         </span>
         <div className="flex h-7 items-center justify-center gap-0.5 rounded-md border border-border/80 bg-card text-xs px-1 font-mono shadow-xs">
@@ -256,7 +257,7 @@ export function TimePickerInputs({
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
               setFromTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromM}:${fromS}`);
             }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-medium"
           />
           <span className="text-muted-foreground/50">:</span>
           <input
@@ -267,7 +268,7 @@ export function TimePickerInputs({
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
               setFromTime(`${fromH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${fromS}`);
             }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-medium"
           />
           <span className="text-muted-foreground/50">:</span>
           <input
@@ -278,7 +279,7 @@ export function TimePickerInputs({
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
               setFromTime(`${fromH}:${fromM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
             }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-medium"
           />
         </div>
       </div>
@@ -287,7 +288,7 @@ export function TimePickerInputs({
 
       {/* End DateTime Group */}
       <div className="flex items-center gap-1 min-w-0">
-        <span className="text-[10px] font-semibold text-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/60 shrink-0 font-mono">
+        <span className="text-[10px] font-medium text-foreground px-1.5 py-0.5 rounded bg-muted/60 border border-border/60 shrink-0 font-mono">
           {toDateLabel}
         </span>
         <div className="flex h-7 items-center justify-center gap-0.5 rounded-md border border-border/80 bg-card text-xs px-1 font-mono shadow-xs">
@@ -299,7 +300,7 @@ export function TimePickerInputs({
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
               setToTime(`${String(Math.min(23, parseInt(val, 10) || 0)).padStart(2, "0")}:${toM}:${toS}`);
             }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-medium"
           />
           <span className="text-muted-foreground/50">:</span>
           <input
@@ -310,7 +311,7 @@ export function TimePickerInputs({
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
               setToTime(`${toH}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}:${toS}`);
             }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-medium"
           />
           <span className="text-muted-foreground/50">:</span>
           <input
@@ -321,13 +322,13 @@ export function TimePickerInputs({
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
               setToTime(`${toH}:${toM}:${String(Math.min(59, parseInt(val, 10) || 0)).padStart(2, "0")}`);
             }}
-            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-semibold"
+            className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none font-medium"
           />
         </div>
       </div>
 
       {durationLabel && (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/60 shrink-0 font-semibold">
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/60 shrink-0 font-medium">
           {durationLabel}
         </span>
       )}
@@ -335,7 +336,7 @@ export function TimePickerInputs({
   );
 }
 
-export function CustomHistoricalTabContent({
+export function LogsDateRangeCustomTabCore({
   localRange,
   setLocalRange,
   displayMonth,
@@ -346,8 +347,8 @@ export function CustomHistoricalTabContent({
   setToTime,
   onShortcutSelect,
   today,
-}: CustomHistoricalTabContentProps) {
-  const { t } = useTranslation();
+  translateFn,
+}: LogsDateRangeCustomTabCoreProps) {
   const [viewMode, setViewMode] = React.useState<"days" | "months" | "years">("days");
 
   const isCold = React.useMemo(() => {
@@ -361,24 +362,29 @@ export function CustomHistoricalTabContent({
     onShortcutSelect(id);
   };
 
+  const getSafeLabel = (key: string, fallback: string) => {
+    if (!translateFn) return fallback;
+    const res = translateFn(key);
+    return !res || res === key || res.startsWith("observability.") ? fallback : res;
+  };
+
   return (
     <div className="flex min-h-[300px]">
       {/* Historical Shortcuts Sidebar */}
       <div className="w-[140px] shrink-0 border-groove-r p-2 flex flex-col gap-1 bg-muted/10 select-none">
-        <span className="text-[10px] font-bold text-muted-foreground px-1 pb-1 flex items-center gap-1.5 uppercase tracking-wider">
+        <span className="text-[10px] font-medium text-muted-foreground px-1 pb-1 flex items-center gap-1.5 uppercase tracking-wider">
           <History className="w-3 h-3 text-muted-foreground" />
           <span>Shortcuts</span>
         </span>
         {HISTORICAL_SHORTCUTS.map((s) => {
           const transKey = `observability.${s.key}`;
-          const trans = t(transKey);
-          const label = !trans || trans === transKey ? s.fallback : trans;
+          const label = getSafeLabel(transKey, s.fallback);
           return (
             <button
               type="button"
               key={s.id}
               onClick={() => handleShortcutClick(s.id)}
-              className="w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors cursor-pointer truncate font-normal text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              className="w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors cursor-pointer truncate font-medium text-muted-foreground hover:bg-muted/80 hover:text-foreground"
             >
               <span className="truncate">{label}</span>
             </button>
@@ -388,7 +394,7 @@ export function CustomHistoricalTabContent({
 
       {/* Calendar and Time Inputs */}
       <div className="flex-1 flex flex-col min-w-0">
-        <TimePickerInputs
+        <LogsTimePickerInputs
           localRange={localRange}
           fromTime={fromTime}
           toTime={toTime}
@@ -445,7 +451,7 @@ export function CustomHistoricalTabContent({
                       type="button"
                       onClick={() => setViewMode("months")}
                       title="Click to choose month and year"
-                      className="text-xs font-semibold text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                      className="text-xs font-medium text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors cursor-pointer"
                     >
                       {format(displayMonth, "MMMM yyyy")}
                     </button>
@@ -471,10 +477,10 @@ export function CustomHistoricalTabContent({
                 week: "flex w-full justify-between mt-1",
                 day: "h-7.5 w-8 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-muted/50 first:[&:has([aria-selected])]:rounded-l last:[&:has([aria-selected])]:rounded-r shrink-0",
                 day_button: "h-7.5 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/30 !cursor-pointer",
-                range_start: "day-range-start [&>button]:rounded-md [&>button]:!bg-foreground [&>button]:!text-background [&>button]:font-bold",
-                range_end: "day-range-end [&>button]:rounded-md [&>button]:!bg-foreground [&>button]:!text-background [&>button]:font-bold",
+                range_start: "day-range-start [&>button]:rounded-md [&>button]:!bg-foreground [&>button]:!text-background [&>button]:font-medium",
+                range_end: "day-range-end [&>button]:rounded-md [&>button]:!bg-foreground [&>button]:!text-background [&>button]:font-medium",
                 range_middle: "[&>button]:rounded-none [&>button]:!bg-muted/80 [&>button]:!text-foreground",
-                today: "[&>button]:border [&>button]:border-foreground/40 [&>button]:font-bold",
+                today: "[&>button]:border [&>button]:border-foreground/40 [&>button]:font-medium",
               }}
             />
           )}

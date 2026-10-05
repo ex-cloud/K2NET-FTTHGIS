@@ -1,6 +1,5 @@
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
-import type { useTranslation } from "@k2net/i18n";
 
 export interface PresetItem {
   key: string;
@@ -50,6 +49,9 @@ export function isColdStorageRange(value: string): boolean {
 }
 
 export function parseValue(value: string): { preset: string | null; range: DateRange | undefined } {
+  if (!value) {
+    return { preset: "60m", range: undefined };
+  }
   if (value.startsWith("custom:")) {
     const raw = value.substring(7);
     const parts = raw.includes("_") ? raw.split("_") : raw.split("..");
@@ -63,7 +65,13 @@ export function parseValue(value: string): { preset: string | null; range: DateR
   return { preset: normVal, range: undefined };
 }
 
-export function getDisplayLabel(value: string, t: ReturnType<typeof useTranslation>["t"]): string {
+export type DisplayLabelTranslator = (key: string, fallback: string) => string;
+
+export function getDisplayLabel(
+  value: string,
+  translateFn?: (key: string) => string | undefined
+): string {
+  if (!value) return "Last 1 hour";
   if (value.startsWith("custom:")) {
     const raw = value.substring(7);
     const parts = raw.includes("_") ? raw.split("_") : raw.split("..");
@@ -97,12 +105,14 @@ export function getDisplayLabel(value: string, t: ReturnType<typeof useTranslati
     }
     return value;
   }
-  const transKey = `observability.${preset.key}`;
-  const translated = t(transKey);
-  if (!translated || translated === transKey || translated.startsWith("observability.preset_")) {
-    return preset.fallback;
+  if (translateFn) {
+    const transKey = `observability.${preset.key}`;
+    const translated = translateFn(transKey);
+    if (translated && translated !== transKey && !translated.startsWith("observability.preset_")) {
+      return translated;
+    }
   }
-  return translated;
+  return preset.fallback;
 }
 
 export function getPresetRange(preset: string): { from: Date; to: Date } {
@@ -252,4 +262,3 @@ export function parseAnyTimeInput(raw: string): ParsedInputResult {
 
   return null;
 }
-

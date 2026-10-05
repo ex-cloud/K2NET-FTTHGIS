@@ -6,7 +6,7 @@ import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { LogsTopHeader } from "@/components/logs/logs-top-header";
 import { LogsHistogram, buildHistogramData, useAuditAnalyticsSummary } from "@/components/logs/logs-histogram";
 import { toast } from "sonner";
-import { Button, Checkbox } from "@k2net/ui";
+import { Button, LogsTableHeader, LogsStatusBar, type LogsTableColumn } from "@k2net/ui";
 import { LOG_COLUMNS } from "./logs-utils";
 import { LogsRowItem } from "./logs-row-item";
 import { LogsDetailDrawer } from "./logs-detail-drawer";
@@ -80,135 +80,19 @@ const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   project: false,
 };
 
-function LogsTableHeader({
-  columnVisibility,
-  isAllSelected,
-  isSomeSelected,
-  onToggleSelectAll,
-}: {
-  columnVisibility: VisibilityState;
-  isAllSelected?: boolean;
-  isSomeSelected?: boolean;
-  onToggleSelectAll?: () => void;
-}) {
-  const columns = [
-    { id: "date", label: "Timestamp", width: "w-[140px]" },
-    { id: "source", label: "", width: "w-[24px]" },
-    { id: "status", label: "", width: "w-[44px]", withSpacer: true },
-    { id: "severity", label: "Severity", width: "w-[68px]" },
-    { id: "group", label: "Group", width: "w-[80px]" },
-    { id: "tenant", label: "Tenant", width: "w-[80px]" },
-    { id: "scope", label: "Scope", width: "w-[64px]" },
-    { id: "project", label: "Project", width: "w-[88px]" },
-    { id: "method", label: "Method", width: "w-[48px]" },
-    { id: "pathname", label: "Path / Resource", width: "w-[200px]" },
-    { id: "message", label: "Event Message & Actor", width: "flex-1 min-w-0" },
-  ];
-
-  return (
-    <div className="flex items-center px-4 py-2 bg-muted/40 border-groove-b text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-mono">
-      <div className="w-[20px] mr-2.5 shrink-0 flex items-center justify-center">
-        <Checkbox
-          checked={isAllSelected ? true : isSomeSelected ? "indeterminate" : false}
-          onCheckedChange={onToggleSelectAll}
-          className="size-3.5 rounded-[3px]"
-          aria-label="Toggle select all"
-        />
-      </div>
-      {columns.map((col) => {
-        if (columnVisibility[col.id] === false) return null;
-        return (
-          <React.Fragment key={col.id}>
-            <div className={`${col.width} shrink-0 truncate`}>{col.label}</div>
-            {col.withSpacer && <div className="w-6 shrink-0" />}
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
-}
-
-function LogsStatusBar({
-  isLivePaused,
-  isHistoricalMode,
-  filteredCount,
-  totalCount,
-  selectedCount,
-  hasMore,
-  isLoadingMore,
-  onClearSelection,
-  onCopySelected,
-}: {
-  isLivePaused: boolean;
-  isHistoricalMode: boolean;
-  filteredCount: number;
-  totalCount: number;
-  selectedCount: number;
-  hasMore: boolean;
-  isLoadingMore: boolean;
-  onClearSelection?: () => void;
-  onCopySelected?: () => void;
-}) {
-  return (
-    <div className="px-6 py-2 border-t border-border bg-muted/20 flex items-center justify-between text-[10px] text-muted-foreground font-mono shrink-0">
-      <div className="flex items-center gap-3">
-        <span>
-          {isHistoricalMode
-            ? `🔬 Forensic Range: ${filteredCount} of ${totalCount} events loaded ${hasMore ? "(Scroll for more)" : "(All loaded)"}`
-            : isLivePaused
-            ? `⏸ Paused — ${filteredCount} of ${totalCount} events buffered`
-            : `● Live Tail — ${filteredCount} of ${totalCount} events matching`}
-        </span>
-        {selectedCount > 0 && (
-          <div className="flex items-center gap-2 pl-3 border-l border-border/60">
-            <span className="px-1.5 py-0.5 rounded bg-muted text-foreground border border-border font-semibold">
-              {selectedCount} selected
-            </span>
-            <button
-              type="button"
-              onClick={onCopySelected}
-              className="text-foreground hover:underline transition-colors cursor-pointer"
-            >
-              Copy Selected JSON
-            </button>
-            <button
-              type="button"
-              onClick={onClearSelection}
-              className="text-muted-foreground hover:text-rose-400 transition-colors cursor-pointer"
-            >
-              Clear
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        {isLoadingMore && (
-          <span className="flex items-center gap-1.5 text-muted-foreground text-[10px]">
-            <Loader2 className="w-3 h-3 animate-spin shrink-0" />
-            <span>Loading older logs...</span>
-          </span>
-        )}
-        {isHistoricalMode ? (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
-            <span>Forensic Mode</span>
-          </span>
-        ) : isLivePaused ? (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
-            <span>Stream Paused</span>
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/30 font-sans font-medium text-[10px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <span>Live Stream</span>
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
+const LOG_TABLE_COLUMNS: LogsTableColumn[] = [
+  { id: "date", label: "Timestamp", width: "w-[140px]" },
+  { id: "source", label: "", width: "w-[24px]" },
+  { id: "status", label: "", width: "w-[44px]", withSpacer: true },
+  { id: "severity", label: "Severity", width: "w-[68px]" },
+  { id: "group", label: "Group", width: "w-[80px]" },
+  { id: "tenant", label: "Tenant", width: "w-[80px]" },
+  { id: "scope", label: "Scope", width: "w-[64px]" },
+  { id: "project", label: "Project", width: "w-[88px]" },
+  { id: "method", label: "Method", width: "w-[48px]" },
+  { id: "pathname", label: "Path / Resource", width: "w-[200px]" },
+  { id: "message", label: "Event Message & Actor", width: "flex-1 min-w-0" },
+];
 
 function LogsContainerContent() {
   const {
@@ -459,6 +343,7 @@ function LogsContainerContent() {
         )}
 
         <LogsTableHeader
+          columns={LOG_TABLE_COLUMNS}
           columnVisibility={columnVisibility}
           isAllSelected={isAllSelected}
           isSomeSelected={isSomeSelected}
@@ -498,7 +383,7 @@ function LogsContainerContent() {
                       variant="outline"
                       size="sm"
                       onClick={resetAllFilters}
-                      className="h-8 px-3 text-xs font-mono gap-1.5 border-border/80 bg-card hover:bg-muted text-foreground cursor-pointer shadow-xs"
+                      className="h-8 px-3 text-xs font-mono gap-1.5 border-border/80 bg-card hover:bg-muted text-foreground cursor-pointer shadow-xs font-medium"
                     >
                       <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>Clear Active Filters</span>
@@ -507,7 +392,7 @@ function LogsContainerContent() {
                       variant="secondary"
                       size="sm"
                       onClick={() => setTimeRange("24h")}
-                      className="h-8 px-3 text-xs font-mono gap-1.5 bg-muted/80 hover:bg-muted text-foreground cursor-pointer"
+                      className="h-8 px-3 text-xs font-mono gap-1.5 bg-muted/80 hover:bg-muted text-foreground cursor-pointer font-medium"
                     >
                       <Clock className="w-3.5 h-3.5 text-primary" />
                       <span>Reset to 24h</span>
@@ -516,7 +401,7 @@ function LogsContainerContent() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setTimeRange("7d")}
-                      className="h-8 px-3 text-xs font-mono gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                      className="h-8 px-3 text-xs font-mono gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer font-medium"
                     >
                       <Calendar className="w-3.5 h-3.5" />
                       <span>Expand to 7d</span>
@@ -552,7 +437,7 @@ function LogsContainerContent() {
                   <button
                     type="button"
                     onClick={() => loadMore()}
-                    className="text-xs text-muted-foreground hover:text-foreground underline font-sans py-1 cursor-pointer"
+                    className="text-xs text-muted-foreground hover:text-foreground underline font-sans py-1 cursor-pointer font-medium"
                   >
                     Scroll or click to load more older events...
                   </button>
@@ -576,6 +461,24 @@ function LogsContainerContent() {
           isLoadingMore={isLoadingMore}
           onClearSelection={() => setSelectedRowIds(new Set())}
           onCopySelected={handleCopySelected}
+          rightSlot={
+            isHistoricalMode ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                <span>Forensic Mode</span>
+              </span>
+            ) : isLivePaused ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+                <span>Stream Paused</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/30 font-sans font-medium text-[10px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span>Live Stream</span>
+              </span>
+            )
+          }
         />
 
         {selectedLog && (

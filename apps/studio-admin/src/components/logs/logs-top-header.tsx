@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Badge, ActionTooltip, cn } from "@k2net/ui";
+import { Badge, ActionTooltip, cn, parseAnyTimeInput } from "@k2net/ui";
 import { Search, X, PanelLeft, SlidersHorizontal } from "lucide-react";
 
 import {
@@ -9,7 +9,6 @@ import {
   FILTER_FIELD_LABELS,
   OPERATOR_SYMBOLS,
 } from "./logs-filter-context";
-import { parseAnyTimeInput } from "./logs-date-range-types";
 import { toast } from "sonner";
 import type { Table, VisibilityState } from "@tanstack/react-table";
 import type { AuditStreamEntry } from "@/hooks/use-audit-log-stream";

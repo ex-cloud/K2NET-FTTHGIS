@@ -1,28 +1,28 @@
 import * as React from "react";
 import { Search } from "lucide-react";
-import { cn } from "@k2net/ui";
-import { useTranslation } from "@k2net/i18n";
+import { cn } from "../../utils";
 import { PRESETS_RECENT, PRESETS_OLDER, type PresetItem } from "./logs-date-range-types";
 
-export interface PresetsTabContentProps {
+export interface LogsDateRangePresetsTabCoreProps {
   stagedPreset: string | null;
-  onSelectPreset: (p: string) => void;
+  onSelectPreset: (presetValue: string) => void;
   customRelativeInput: string;
-  setCustomRelativeInput: (v: string) => void;
+  setCustomRelativeInput: (val: string) => void;
   onRelativeSubmit: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  translateFn?: (key: string) => string | undefined;
 }
 
-export function PresetsTabContent({
+export function LogsDateRangePresetsTabCore({
   stagedPreset,
   onSelectPreset,
   customRelativeInput,
   setCustomRelativeInput,
   onRelativeSubmit,
-}: PresetsTabContentProps) {
-  const { t } = useTranslation();
-
-  const getSafeTrans = (key: string, fallback: string) => {
-    const res = t(key);
+  translateFn,
+}: LogsDateRangePresetsTabCoreProps) {
+  const getSafeLabel = (key: string, fallback: string) => {
+    if (!translateFn) return fallback;
+    const res = translateFn(key);
     return !res || res === key || res.startsWith("observability.") ? fallback : res;
   };
 
@@ -35,7 +35,7 @@ export function PresetsTabContent({
             (stagedPreset === "60m" && (p.value === "1h" || p.value === "60m")) ||
             (stagedPreset === "1h" && (p.value === "60m" || p.value === "1h"));
           const transKey = `observability.${p.key}`;
-          const label = getSafeTrans(transKey, p.fallback);
+          const label = getSafeLabel(transKey, p.fallback);
 
           return (
             <button
@@ -45,8 +45,8 @@ export function PresetsTabContent({
               className={cn(
                 "flex items-center justify-center h-8 px-2 rounded-md border text-xs text-center transition-colors cursor-pointer truncate font-sans",
                 isSelected
-                  ? "border-border bg-muted/80 text-foreground font-semibold shadow-2xs"
-                  : "border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/60 hover:text-foreground hover:border-border"
+                  ? "border-border bg-muted/80 text-foreground font-medium shadow-2xs"
+                  : "border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/60 hover:text-foreground hover:border-border font-medium"
               )}
             >
               <span className="truncate">{label}</span>
@@ -64,7 +64,7 @@ export function PresetsTabContent({
         <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
         <input
           type="text"
-          placeholder={getSafeTrans("observability.type_duration_placeholder", "Type duration (e.g. 45m, 2h, 7d)...")}
+          placeholder={getSafeLabel("observability.type_duration_placeholder", "Type duration (e.g. 45m, 2h, 7d)...")}
           value={customRelativeInput}
           onChange={(e) => setCustomRelativeInput(e.target.value)}
           onKeyDown={onRelativeSubmit}
@@ -74,16 +74,16 @@ export function PresetsTabContent({
 
       {/* Section 1: Last 24 Hours */}
       <div className="space-y-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5 block select-none">
-          {getSafeTrans("observability.last_24_hours", "Last 24 Hours")}
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground px-0.5 block select-none">
+          {getSafeLabel("observability.last_24_hours", "Last 24 Hours")}
         </span>
         {renderPresetGrid(PRESETS_RECENT)}
       </div>
 
       {/* Section 2: Older */}
       <div className="space-y-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5 block select-none">
-          {getSafeTrans("observability.older", "Older")}
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground px-0.5 block select-none">
+          {getSafeLabel("observability.older", "Older")}
         </span>
         {renderPresetGrid(PRESETS_OLDER)}
       </div>

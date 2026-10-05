@@ -63,6 +63,9 @@ export * from "./components/auth";
 // Shared Mobile Floating Command Dock & Navigation Sheet Suite
 export * from "./components/mobile-dock";
 
+// Shared Logs Explorer & Telemetry Primitives (Supabase Studio Style)
+export * from "./components/logs";
+
 // Error Pages
 export * from "./components/errors/NotFoundError";
 export * from "./components/errors/TenantDomainError";

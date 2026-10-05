@@ -23,9 +23,11 @@ backups/
 docker/traefik/logs/
 logs/
 *.log
-# Exception: source code components named logs/ or backups/ inside apps/ MUST be tracked
+# Exception: source code components named logs/ or backups/ inside apps/ and packages/ MUST be tracked
 !apps/*/src/**/logs/
 !apps/*/src/**/backups/
+!packages/*/src/**/logs/
+!packages/*/src/**/backups/
 
 # =============================================
 # 🔴 DOKUMEN INTERNAL & CATATAN PRIBADI
