@@ -146,7 +146,7 @@ export function LogsSavePresetModal({
               placeholder="e.g. OLT Outage Investigation - Oct 3"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-md border border-border bg-card text-foreground text-xs focus:outline-none focus:border-border font-mono placeholder:text-muted-foreground/50 shadow-2xs"
+              className="w-full px-2.5 py-1.5 rounded-md border border-border bg-card text-foreground text-xs focus:outline-none focus:border-border focus:ring-1 focus:ring-foreground/20 selection:bg-muted-foreground/30 selection:text-foreground font-mono placeholder:text-muted-foreground/50 shadow-2xs"
             />
           </div>
 
@@ -160,7 +160,7 @@ export function LogsSavePresetModal({
               placeholder="Add investigation context or case reference ID..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-md border border-border bg-card text-foreground text-xs focus:outline-none focus:border-border font-mono resize-none placeholder:text-muted-foreground/50 shadow-2xs"
+              className="w-full px-2.5 py-1.5 rounded-md border border-border bg-card text-foreground text-xs focus:outline-none focus:border-border focus:ring-1 focus:ring-foreground/20 selection:bg-muted-foreground/30 selection:text-foreground font-mono resize-none placeholder:text-muted-foreground/50 shadow-2xs"
             />
           </div>
 
@@ -194,17 +194,16 @@ export function LogsSavePresetModal({
             variant="outline"
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="text-xs h-7.5 px-3 cursor-pointer"
+            className="text-xs h-7.5 px-3 cursor-pointer border-border"
           >
             Cancel
           </Button>
           <Button
             type="button"
-            variant="default"
             size="sm"
             onClick={handleSave}
             disabled={!name.trim()}
-            className="text-xs h-7.5 px-3 font-semibold gap-1.5 cursor-pointer"
+            className="text-xs h-7.5 px-3 font-semibold gap-1.5 cursor-pointer bg-foreground text-background hover:bg-foreground/90 border border-foreground shadow-xs disabled:opacity-40 font-sans"
           >
             <Check className="w-3.5 h-3.5" />
             <span>Save Preset</span>

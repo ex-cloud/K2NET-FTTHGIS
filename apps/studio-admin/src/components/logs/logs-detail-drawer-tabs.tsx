@@ -202,10 +202,14 @@ function OverviewBasicInfoSection({
 
 function OverviewContextSection({
   log,
+  onCopyValue,
+  copiedKey,
   onQuickFilter,
   t,
 }: {
   log: AuditStreamEntry;
+  onCopyValue: (k: string, v: string) => void;
+  copiedKey: string | null;
   onQuickFilter: (f: AdvancedFilter["field"], v: string, op?: AdvancedFilter["operator"]) => void;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
@@ -226,6 +230,14 @@ function OverviewContextSection({
             >
               <Plus className="w-3 h-3" />
             </button>
+            <button
+              type="button"
+              onClick={() => onCopyValue("Service Source", log.serviceSource || "")}
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+              title="Copy Service Source"
+            >
+              {copiedKey === "Service Source" ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+            </button>
           </div>
         </OverviewTableRow>
       )}
@@ -244,6 +256,14 @@ function OverviewContextSection({
               title="Filter for this tenant"
             >
               <Plus className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onCopyValue("Tenant", log.tenantSlug || "")}
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+              title="Copy Tenant"
+            >
+              {copiedKey === "Tenant" ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
             </button>
           </div>
         </OverviewTableRow>
@@ -265,6 +285,14 @@ function OverviewContextSection({
             >
               <Plus className="w-3 h-3" />
             </button>
+            <button
+              type="button"
+              onClick={() => onCopyValue("Scope", log.scope || "")}
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+              title="Copy Scope"
+            >
+              {copiedKey === "Scope" ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+            </button>
           </div>
         </OverviewTableRow>
       )}
@@ -279,6 +307,14 @@ function OverviewContextSection({
             title="Filter for this actor"
           >
             <Plus className="w-3 h-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onCopyValue("Actor", log.actor)}
+            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+            title="Copy Actor"
+          >
+            {copiedKey === "Actor" ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
           </button>
         </div>
       </OverviewTableRow>
@@ -389,6 +425,8 @@ export function OverviewTab({
         />
         <OverviewContextSection
           log={log}
+          onCopyValue={onCopyValue}
+          copiedKey={copiedKey}
           onQuickFilter={onQuickFilter}
           t={t}
         />

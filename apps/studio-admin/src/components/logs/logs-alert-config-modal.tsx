@@ -565,11 +565,10 @@ export function LogsAlertConfigModal({
             </Button>
             <Button
               type="button"
-              variant="default"
               size="sm"
               onClick={handleSave}
               disabled={saving || loading}
-              className="text-xs h-7.5 px-3 font-semibold gap-1.5 cursor-pointer"
+              className="text-xs h-7.5 px-3 font-semibold gap-1.5 cursor-pointer bg-foreground text-background hover:bg-foreground/90 border border-foreground shadow-xs disabled:opacity-40 font-sans"
             >
               {saving ? (
                 <>

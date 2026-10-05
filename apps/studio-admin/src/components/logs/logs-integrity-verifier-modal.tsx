@@ -143,7 +143,7 @@ export function LogsIntegrityVerifierModal({
               type="button"
               onClick={() => setActiveTab("overview")}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer select-none",
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium transition-all cursor-pointer select-none",
                 activeTab === "overview"
                   ? "bg-card text-foreground border border-border/60 shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -156,7 +156,7 @@ export function LogsIntegrityVerifierModal({
               type="button"
               onClick={() => setActiveTab("tree")}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer select-none",
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium transition-all cursor-pointer select-none",
                 activeTab === "tree"
                   ? "bg-card text-foreground border border-border/60 shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -169,7 +169,7 @@ export function LogsIntegrityVerifierModal({
               type="button"
               onClick={() => setActiveTab("certificate")}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer select-none",
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium transition-all cursor-pointer select-none",
                 activeTab === "certificate"
                   ? "bg-card text-foreground border border-border/60 shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -254,10 +254,10 @@ export function LogsIntegrityVerifierModal({
               <span>Re-Verify Batch</span>
             </Button>
             <Button
-              variant="default"
+              type="button"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="text-xs h-7.5 px-3 cursor-pointer font-mono"
+              className="text-xs h-7.5 px-3 cursor-pointer font-mono bg-foreground text-background hover:bg-foreground/90 border border-foreground font-semibold shadow-xs"
             >
               Done
             </Button>
