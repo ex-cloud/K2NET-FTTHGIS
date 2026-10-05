@@ -61,7 +61,7 @@ function TabButtons({
               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           )}
         >
-          <Clock className="w-3 h-3 text-primary" />
+          <Clock className="w-3 h-3 text-muted-foreground" />
           <span>{t("observability.quick_presets") || "Quick Presets"}</span>
         </button>
 
@@ -75,7 +75,7 @@ function TabButtons({
               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           )}
         >
-          <CalendarRange className="w-3 h-3 text-primary" />
+          <CalendarRange className="w-3 h-3 text-muted-foreground" />
           <span>{t("observability.historical") || "Historical"}</span>
         </button>
       </div>
@@ -91,7 +91,7 @@ function TabButtons({
           aria-label="Reset time range to default (60m)"
           className="flex items-center justify-center h-6.5 w-6.5 rounded-md bg-transparent hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
         >
-          <RotateCcw className="w-3.5 h-3.5 text-primary" />
+          <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
       </ActionTooltip>
     </div>
@@ -482,9 +482,9 @@ export function LogsDateRangePicker({
         >
           <span className="flex items-center gap-1.5 truncate">
             {value.startsWith("custom:") ? (
-              <CalendarIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+              <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             ) : (
-              <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+              <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             )}
             {mounted ? getDisplayLabel(value, t) : (t("observability.loading") || "Loading...")}
           </span>

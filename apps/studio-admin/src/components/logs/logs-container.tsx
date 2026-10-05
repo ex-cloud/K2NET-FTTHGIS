@@ -68,11 +68,11 @@ class LogsErrorBoundary extends Component<LogsErrorBoundaryProps, LogsErrorBound
 
 const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   date: true,
+  source: true,
   status: true,
   method: true,
   pathname: true,
   message: true,
-  source: false,
   severity: false,
   group: false,
   tenant: false,
@@ -93,16 +93,16 @@ function LogsTableHeader({
 }) {
   const columns = [
     { id: "date", label: "Timestamp", width: "w-[140px]" },
-    { id: "source", label: "Src", width: "w-[28px]" },
+    { id: "source", label: "", width: "w-[24px]" },
     { id: "severity", label: "Severity", width: "w-[68px]" },
     { id: "group", label: "Group", width: "w-[80px]" },
-    { id: "status", label: "Status", width: "w-[52px]", withSpacer: true },
+    { id: "status", label: "", width: "w-[44px]", withSpacer: true },
     { id: "tenant", label: "Tenant", width: "w-[80px]" },
     { id: "scope", label: "Scope", width: "w-[64px]" },
     { id: "project", label: "Project", width: "w-[88px]" },
-    { id: "method", label: "Method", width: "w-[52px]" },
-    { id: "pathname", label: "Target / Resource", width: "w-[180px]" },
-    { id: "message", label: "Event Details & Actor", width: "flex-1 min-w-0" },
+    { id: "method", label: "Method", width: "w-[48px]" },
+    { id: "pathname", label: "Path / Resource", width: "w-[200px]" },
+    { id: "message", label: "Event Message & Actor", width: "flex-1 min-w-0" },
   ];
 
   return (

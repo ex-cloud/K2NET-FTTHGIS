@@ -9,31 +9,9 @@ import {
 } from "@k2net/ui";
 import {
   Search,
-  Clock,
-  Layers,
   ChevronDown,
   ChevronRight,
-  Activity,
-  Globe,
-  Sliders,
   RotateCcw,
-  Shield,
-  Bell,
-  Radio,
-  CalendarClock,
-  HardDrive,
-  Database,
-  Map,
-  Network,
-  Server,
-  Briefcase,
-  MessageSquare,
-  CreditCard,
-  FileOutput,
-  Wifi,
-  Sparkles,
-  FolderKanban,
-  MapPin,
 } from "lucide-react";
 import {
   useLogsFilter,
@@ -43,39 +21,6 @@ import {
 } from "./logs-filter-context";
 import { LogsDateRangePicker } from "./logs-date-range-picker";
 import { useTranslation } from "@k2net/i18n";
-
-const LOG_TYPE_CONFIG: Record<string, { icon: React.ElementType; description: string }> = {
-  // CORE
-  edge: { icon: Network, description: "HTTP requests & routes via Kong API Gateway" },
-  auth: { icon: Shield, description: "Keycloak IAM, sessions & security policies" },
-  postgres: { icon: Database, description: "Postgres & PostGIS spatial database changes" },
-  redis: { icon: Database, description: "Redis queue & caching broker" },
-  traefik: { icon: Globe, description: "Traefik edge reverse proxy & SSL" },
-  // OPERATIONS
-  ai: { icon: Sparkles, description: "AI Copilot, RAG embedding & simulations" },
-  task: { icon: FolderKanban, description: "Task, project & Obsidian Nextcloud sync" },
-  audit: { icon: Layers, description: "Domain business entity mutations" },
-  notification: { icon: Bell, description: "SMS & transactional email dispatch" },
-  scheduler: { icon: CalendarClock, description: "Cron jobs & backup execution history" },
-  storage: { icon: HardDrive, description: "MinIO S3 uploads & asset presigned URLs" },
-  export: { icon: FileOutput, description: "GIS layer export jobs (GeoJSON/PDF)" },
-  payment: { icon: CreditCard, description: "Xendit payment links & webhook settlement" },
-  // NETWORK
-  olt: { icon: Wifi, description: "OLT CLI operations & ONT provisioning" },
-  poller: { icon: Radio, description: "SNMP poller device health telemetry" },
-  map: { icon: Map, description: "Geocoding & routing calculations" },
-  martin: { icon: MapPin, description: "Martin PostGIS Vector Tile (MVT) server" },
-  // MESSAGING
-  whatsapp: { icon: MessageSquare, description: "WhatsApp Business API OTP & alerts" },
-};
-
-const GROUP_ICONS: Record<LogGroupKey, React.ElementType> = {
-  CORE: Server,
-  OPERATIONS: Briefcase,
-  NETWORK: Network,
-  MESSAGING: MessageSquare,
-};
-
 import {
   TenantScopeFilterSection,
   LevelFilterSection,
@@ -117,7 +62,6 @@ function LogGroupRowItem({
   toggleEdgeSubFilter: (s: string) => void;
 }) {
   const group = LOG_GROUPS[groupKey];
-  const GroupIcon = GROUP_ICONS[groupKey];
   const q = typeSearch.toLowerCase().trim();
   const visibleTypes = group.types.filter((t) => !q || t.toLowerCase().includes(q));
   if (visibleTypes.length === 0) return null;
@@ -143,10 +87,9 @@ function LogGroupRowItem({
           className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
           title={`Toggle all ${group.label}`}
         />
-        <CollapsibleTrigger className="flex flex-1 items-center justify-between min-w-0 group/grp">
-          <span className="flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider text-muted-foreground group-hover/grp:text-foreground transition-colors">
-            <GroupIcon className="w-3 h-3 shrink-0" />
-            <span className="truncate">{group.label}</span>
+        <CollapsibleTrigger className="flex flex-1 items-center justify-between min-w-0 group/grp select-none">
+          <span className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground group-hover/grp:text-foreground transition-colors truncate">
+            {group.label}
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
             {eventCount > 0 ? (
@@ -171,24 +114,21 @@ function LogGroupRowItem({
       <CollapsibleContent>
         <div className="ml-5 mt-0.5 space-y-0.5 border-l border-border/40 pl-2">
           {visibleTypes.map((typeKey) => {
-            const cfg = LOG_TYPE_CONFIG[typeKey];
-            const TypeIcon = cfg?.icon ?? Activity;
             const count = logTypeCounts[typeKey] ?? 0;
             const isOn = !!selectedTypes[typeKey];
 
             return (
               <div key={typeKey}>
                 <label className="flex items-center justify-between px-2 py-1 rounded hover:bg-muted/40 cursor-pointer transition-colors group/type">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <input
                       type="checkbox"
                       checked={isOn}
                       onClick={(e) => e.stopPropagation()}
                       onChange={() => toggleType(typeKey)}
-                      className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
                     />
-                    <TypeIcon className="w-3 h-3 text-muted-foreground/50 group-hover/type:text-foreground/70 shrink-0" />
-                    <span className="text-muted-foreground group-hover/type:text-foreground transition-colors truncate max-w-[100px]">
+                    <span className="text-muted-foreground group-hover/type:text-foreground transition-colors truncate text-[11px]">
                       {getLogTypeLabel(typeKey)}
                     </span>
                   </div>
@@ -210,7 +150,7 @@ function LogGroupRowItem({
                           checked={!!edgeSubFilters[sub.key]}
                           onClick={(e) => e.stopPropagation()}
                           onChange={() => toggleEdgeSubFilter(sub.key)}
-                          className="w-3 h-3 rounded border-border text-primary accent-primary cursor-pointer"
+                          className="w-3 h-3 rounded border-border text-primary accent-primary cursor-pointer shrink-0"
                         />
                         <span className="text-[10px] text-muted-foreground/70 group-hover/sub:text-foreground transition-colors font-mono">
                           {sub.label}
@@ -283,7 +223,7 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
                 onClick={resetAllFilters}
                 className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-primary" />
+                <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>{t("common.reset") || "Reset"}</span>
               </button>
             </ActionTooltip>
@@ -294,8 +234,8 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-thin p-3 space-y-4">
         <div className="w-full space-y-1">
           <div className="flex items-center justify-between px-1 py-1">
-            <span className="flex items-center gap-1.5 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest">
-              <Clock className="w-3 h-3 text-primary" /> {t("observability.time_range")}
+            <span className="text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest">
+              {t("observability.time_range")}
             </span>
           </div>
           <LogsDateRangePicker value={timeRange} onChange={setTimeRange} />
@@ -317,17 +257,15 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
         />
 
         <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-            <span className="flex items-center gap-1.5">
-              <Layers className="w-3 h-3 text-primary" /> {t("observability.log_type")}
-            </span>
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+            <span>{t("observability.log_type")}</span>
             <div className="flex items-center gap-1.5">
               {selectedTypeCount > 0 && (
-                <span className="text-[9px] font-mono text-primary font-semibold">
+                <span className="text-[9px] font-mono text-muted-foreground font-semibold">
                   × {selectedTypeCount}
                 </span>
               )}
-              <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-1.5 mt-1">
@@ -368,20 +306,16 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
         />
 
         <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-            <span className="flex items-center gap-1.5">
-              <Sliders className="w-3 h-3 text-primary" /> {t("observability.method")}
-            </span>
-            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+            <span>{t("observability.method")}</span>
+            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
           </CollapsibleTrigger>
         </Collapsible>
 
         <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-            <span className="flex items-center gap-1.5">
-              <Globe className="w-3 h-3 text-primary" /> {t("observability.pathname")}
-            </span>
-            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+            <span>{t("observability.pathname")}</span>
+            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
           </CollapsibleTrigger>
         </Collapsible>
 
@@ -390,17 +324,6 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
           setIncludeBenchmark={setIncludeBenchmark}
         />
       </div>
-
-      <div className="p-3 border-t border-border/40 space-y-1 font-mono text-[10px] shrink-0 bg-card/40">
-        <div className="flex items-center gap-1.5 text-foreground font-bold font-sans">
-          <Activity className="w-3.5 h-3.5 text-primary" />
-          <span>{t("observability.capture_your_logs")}</span>
-        </div>
-        <p className="text-muted-foreground/70 text-[9px] leading-tight font-sans">
-          {t("observability.capture_logs_desc")}
-        </p>
-      </div>
     </div>
   );
 }
-

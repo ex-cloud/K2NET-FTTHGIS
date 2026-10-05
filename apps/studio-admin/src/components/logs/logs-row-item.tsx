@@ -1,6 +1,6 @@
 import React from "react";
 import { format } from "date-fns";
-import { Copy, Check, Sparkles, FileCode, Globe } from "lucide-react";
+import { Copy, Check, Sparkles, FileCode, Globe, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -33,16 +33,31 @@ interface LogsRowItemProps {
 function getStatusColor(statusNum?: number) {
   if (!statusNum) return "text-muted-foreground/40";
   if (statusNum >= 500) return "text-rose-400 font-semibold";
-  if (statusNum >= 400) return "text-amber-400 font-semibold";
-  if (statusNum >= 200) return "text-muted-foreground";
+  if (statusNum >= 400) return "text-amber-400 font-medium";
+  if (statusNum >= 200 && statusNum < 300) return "text-muted-foreground";
   return "text-muted-foreground/60";
 }
 
-function getMethodColor(method?: string) {
-  const m = (method || "").toUpperCase();
+function normalizeMethodDisplay(method?: string): { display: string; fullMethod: string } {
+  if (!method) return { display: "—", fullMethod: "" };
+  const m = method.trim();
+  const upper = m.toUpperCase();
+  const httpVerbs = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"];
+  if (httpVerbs.includes(upper)) {
+    return { display: upper, fullMethod: upper };
+  }
+  if (m.includes(".") || m.length > 7) {
+    return { display: "RPC", fullMethod: m };
+  }
+  return { display: upper, fullMethod: m };
+}
+
+function getMethodColor(displayMethod: string) {
+  const m = displayMethod.toUpperCase();
   if (m === "POST" || m === "PUT" || m === "PATCH") return "text-sky-400 font-semibold";
   if (m === "DELETE") return "text-rose-400 font-semibold";
   if (m === "GET") return "text-muted-foreground font-medium";
+  if (m === "RPC" || m === "EXEC") return "text-muted-foreground/70 font-semibold";
   return "text-muted-foreground/60";
 }
 
@@ -223,7 +238,7 @@ function StatusCell({
 
   return (
     <React.Fragment>
-      <div className="w-[52px] shrink-0 flex items-center">
+      <div className="w-[44px] shrink-0 flex items-center">
         {renderBadge()}
       </div>
       <button
@@ -378,10 +393,14 @@ function ProjectCell({ projectId, projectName }: { projectId?: string; projectNa
 }
 
 function MethodCell({ method }: { method?: string }) {
-  if (!method) return <span className="text-muted-foreground/20 font-mono text-[10px]">—</span>;
+  const { display, fullMethod } = normalizeMethodDisplay(method);
+  if (display === "—") return <span className="text-muted-foreground/20 font-mono text-[10px] select-none">—</span>;
   return (
-    <span className={`text-[10px] font-mono ${getMethodColor(method)}`}>
-      {method}
+    <span
+      className={`text-[10px] font-mono truncate block max-w-[48px] ${getMethodColor(display)}`}
+      title={fullMethod !== display ? `Service Method: ${fullMethod}` : undefined}
+    >
+      {display}
     </span>
   );
 }
@@ -410,8 +429,11 @@ function MessageCell({
     <div className="flex-1 min-w-0 font-mono text-[11px] flex items-center justify-between gap-3">
       <div className="flex items-center gap-1.5 min-w-0 truncate">
         {hasHashChain && (
-          <span title="Cryptographic Hash Chain Verified (SHA-256)" className="text-[9px] font-mono text-primary/70 shrink-0 select-none">
-            [SHA256]
+          <span
+            title="Cryptographic Hash Chain Verified (SHA-256)"
+            className="inline-flex items-center text-muted-foreground/40 shrink-0 select-none"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
           </span>
         )}
         {isBenchmark && <BenchmarkPill />}
@@ -485,7 +507,7 @@ export function LogsRowItem({
         {visibleCols.has("date") && <DateCell timestamp={log.timestamp} />}
 
         {visibleCols.has("source") && (
-          <div className="w-[28px] shrink-0 flex items-center justify-center">
+          <div className="w-[24px] shrink-0 flex items-center justify-center">
             <SourceCell source={log.serviceSource} logGroup={log.logGroup} />
           </div>
         )}
@@ -525,19 +547,19 @@ export function LogsRowItem({
         )}
 
         {visibleCols.has("method") && (
-          <div className="w-[52px] shrink-0">
+          <div className="w-[48px] shrink-0">
             <MethodCell method={log.method} />
           </div>
         )}
 
         {visibleCols.has("pathname") && (
-          <div className="w-[180px] max-w-[180px] shrink-0 font-mono text-[11px] truncate text-muted-foreground/80 pr-2">
+          <div className="w-[200px] max-w-[200px] shrink-0 font-mono text-[11px] overflow-hidden truncate text-muted-foreground/80 pr-3">
             {log.pathname || log.targetResource ? (
-              <span title={log.pathname || log.targetResource}>
+              <span className="truncate block" title={log.pathname || log.targetResource}>
                 {log.pathname || log.targetResource}
               </span>
             ) : (
-              <span className="text-muted-foreground/20">—</span>
+              <span className="text-muted-foreground/20 select-none">—</span>
             )}
           </div>
         )}

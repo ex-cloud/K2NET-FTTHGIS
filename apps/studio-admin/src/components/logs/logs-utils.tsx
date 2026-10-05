@@ -29,21 +29,21 @@ interface SourceIconMatcher {
 }
 
 const SOURCE_ICON_MATCHERS: SourceIconMatcher[] = [
-  { match: (s) => s.includes("ai") || s.includes("rag"), icon: <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" /> },
-  { match: (s) => s.includes("task") || s.includes("obsidian"), icon: <FolderKanban className="w-3.5 h-3.5 text-sky-400 shrink-0" /> },
-  { match: (s) => s.includes("martin") || s.includes("tile"), icon: <MapPin className="w-3.5 h-3.5 text-primary shrink-0" /> },
-  { match: (s) => s.includes("poller"), icon: <Radio className="w-3.5 h-3.5 text-primary/80 shrink-0" /> },
-  { match: (s) => s.includes("olt"), icon: <Wifi className="w-3.5 h-3.5 text-primary/80 shrink-0" /> },
-  { match: (s) => s.includes("map"), icon: <Map className="w-3.5 h-3.5 text-primary/80 shrink-0" /> },
-  { match: (s) => s.includes("payment"), icon: <CreditCard className="w-3.5 h-3.5 text-sky-400 shrink-0" /> },
-  { match: (s) => s.includes("storage") || s.includes("minio"), icon: <HardDrive className="w-3.5 h-3.5 text-sky-400 shrink-0" /> },
-  { match: (s) => s.includes("export"), icon: <FileOutput className="w-3.5 h-3.5 text-sky-400 shrink-0" /> },
-  { match: (s) => s.includes("scheduler"), icon: <CalendarClock className="w-3.5 h-3.5 text-sky-400 shrink-0" /> },
-  { match: (s) => s.includes("kong") || s.includes("edge") || s.includes("traefik"), icon: <Globe className="w-3.5 h-3.5 text-indigo-400 shrink-0" /> },
-  { match: (s) => s.includes("keycloak") || s.includes("auth"), icon: <Shield className="w-3.5 h-3.5 text-amber-400 shrink-0" /> },
-  { match: (s) => s.includes("notification") || s.includes("whatsapp") || s.includes("sms"), icon: <Send className="w-3.5 h-3.5 text-sky-400 shrink-0" /> },
-  { match: (s) => s.includes("db") || s.includes("postgres") || s.includes("redis"), icon: <Database className="w-3.5 h-3.5 text-violet-400 shrink-0" /> },
-  { match: (s) => s.includes("backend"), icon: <Server className="w-3.5 h-3.5 text-violet-400 shrink-0" /> },
+  { match: (s) => s.includes("ai") || s.includes("rag"), icon: <Sparkles className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("task") || s.includes("obsidian"), icon: <FolderKanban className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("martin") || s.includes("tile"), icon: <MapPin className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("poller"), icon: <Radio className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("olt"), icon: <Wifi className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("map"), icon: <Map className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("payment"), icon: <CreditCard className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("storage") || s.includes("minio"), icon: <HardDrive className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("export"), icon: <FileOutput className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("scheduler"), icon: <CalendarClock className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("kong") || s.includes("edge") || s.includes("traefik"), icon: <Globe className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("keycloak") || s.includes("auth"), icon: <Shield className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("notification") || s.includes("whatsapp") || s.includes("sms"), icon: <Send className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("db") || s.includes("postgres") || s.includes("redis"), icon: <Database className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("backend"), icon: <Server className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
 ];
 
 export function getSourceIcon(source: string) {

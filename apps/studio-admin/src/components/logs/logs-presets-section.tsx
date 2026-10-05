@@ -21,15 +21,6 @@ import {
 } from "./logs-presets-types";
 import { LogsSavePresetModal } from "./logs-save-preset-modal";
 
-const COLOR_ACCENTS: Record<string, { dot: string; text: string }> = {
-  red: { dot: "bg-destructive", text: "text-destructive" },
-  amber: { dot: "bg-amber-500", text: "text-amber-500" },
-  emerald: { dot: "bg-primary", text: "text-primary" },
-  blue: { dot: "bg-sky-400", text: "text-sky-400" },
-  purple: { dot: "bg-purple-400", text: "text-purple-400" },
-  neutral: { dot: "bg-muted-foreground", text: "text-muted-foreground" },
-};
-
 export function PresetsFilterSection() {
   const { applyPreset } = useLogsFilter();
   const [presets, setPresets] = React.useState<InvestigationPreset[]>([]);
@@ -61,7 +52,7 @@ export function PresetsFilterSection() {
       <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
         <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
           <span className="flex items-center gap-1.5">
-            <Bookmark className="w-3 h-3 text-primary" />
+            <Bookmark className="w-3 h-3 text-muted-foreground/60" />
             <span>Saved Presets</span>
           </span>
           <div className="flex items-center gap-1.5">
@@ -78,7 +69,6 @@ export function PresetsFilterSection() {
         <CollapsibleContent className="space-y-1 mt-1">
           <div className="space-y-0.5 max-h-[220px] overflow-y-auto custom-scrollbar-thin pr-1 font-sans">
             {presets.map((p) => {
-              const accent = COLOR_ACCENTS[p.colorTag] || COLOR_ACCENTS.neutral;
               return (
                 <div
                   key={p.id}
@@ -87,10 +77,10 @@ export function PresetsFilterSection() {
                   className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted/70 transition-colors cursor-pointer group text-xs text-foreground"
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1 pr-1.5">
-                    <span className={cn("w-2 h-2 rounded-full shrink-0", accent.dot)} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 group-hover:bg-foreground/70 transition-colors shrink-0" />
                     <span
                       title={p.name}
-                      className="truncate font-medium text-[11px] group-hover:text-primary transition-colors select-none"
+                      className="truncate font-medium text-[11px] group-hover:text-foreground transition-colors select-none text-muted-foreground"
                     >
                       {p.name}
                     </span>
@@ -98,7 +88,7 @@ export function PresetsFilterSection() {
 
                   <div className="flex items-center gap-1 shrink-0">
                     {p.isSystem ? (
-                      <span className="text-[9px] font-mono font-semibold px-1 py-0.5 rounded bg-muted/90 text-muted-foreground border border-border/40">
+                      <span className="text-[9px] font-mono font-semibold px-1 py-0.5 rounded bg-muted/70 text-muted-foreground/70 border border-border/30">
                         SYS
                       </span>
                     ) : (
@@ -120,9 +110,9 @@ export function PresetsFilterSection() {
           <button
             type="button"
             onClick={() => setShowSaveModal(true)}
-            className="w-full flex items-center justify-center gap-1.5 py-1 px-2 mt-1 rounded-md border border-dashed border-border/80 text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 py-1 px-2 mt-1 rounded-md border border-dashed border-border/80 text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-colors cursor-pointer"
           >
-            <Plus className="w-3 h-3 text-primary" />
+            <Plus className="w-3 h-3 text-muted-foreground" />
             <span>Save Current Search</span>
           </button>
         </CollapsibleContent>

@@ -5,27 +5,20 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@k2net/ui";
-import {
-  Layers,
-  Filter,
-  ChevronDown,
-  User,
-  Shield,
-  Zap,
-} from "lucide-react";
+import { ChevronDown, Zap } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
 
 export const LEVEL_OPTIONS = [
-  { key: "success", label: "Success", badge: "2xx", color: "text-muted-foreground", bg: "bg-muted/20 border-border/30" },
-  { key: "warning", label: "Warning", badge: "4xx", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-  { key: "error", label: "Error", badge: "5xx", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
+  { key: "success", label: "Success", badge: "2xx", dot: "bg-muted-foreground/40" },
+  { key: "warning", label: "Warning", badge: "4xx", dot: "bg-amber-400" },
+  { key: "error", label: "Error", badge: "5xx", dot: "bg-rose-400" },
 ];
 
 export const SEVERITY_OPTIONS = [
-  { key: "CRITICAL", label: "Critical", badge: "CRIT", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
-  { key: "ERROR", label: "Error", badge: "ERR", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
-  { key: "WARN", label: "Warning", badge: "WARN", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-  { key: "INFO", label: "Info", badge: "INFO", color: "text-muted-foreground", bg: "bg-muted/20 border-border/30" },
+  { key: "CRITICAL", label: "Critical", badge: "CRIT", dot: "bg-rose-500" },
+  { key: "ERROR", label: "Error", badge: "ERR", dot: "bg-rose-400" },
+  { key: "WARN", label: "Warning", badge: "WARN", dot: "bg-amber-400" },
+  { key: "INFO", label: "Info", badge: "INFO", dot: "bg-muted-foreground/40" },
 ];
 
 export const SCOPE_OPTIONS = [
@@ -51,17 +44,15 @@ export function TenantScopeFilterSection({
 
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-        <span className="flex items-center gap-1.5">
-          <User className="w-3 h-3 text-primary" /> {t("observability.tenant_and_scope") || "Tenant & Scope"}
-        </span>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+        <span>{t("observability.tenant_and_scope") || "Tenant & Scope"}</span>
         <div className="flex items-center gap-1.5">
           {hasActive && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-mono font-semibold max-w-[100px] truncate">
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono font-semibold max-w-[100px] truncate border border-border/40">
               {tenantFilter.trim() || scopeFilter}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-1 space-y-2 font-mono text-[11px]">
@@ -75,8 +66,8 @@ export function TenantScopeFilterSection({
                 onClick={() => setScopeFilter(s.key)}
                 className={`px-2 py-1 rounded text-[10px] border transition-colors text-left truncate ${
                   isSelected
-                    ? "bg-primary/15 border-primary/40 text-primary font-semibold"
-                    : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    ? "bg-muted/80 border-border text-foreground font-semibold"
+                    : "bg-muted/20 border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 }`}
               >
                 {s.label}
@@ -124,17 +115,15 @@ export function TenantFilterSection({
   const { t } = useTranslation();
   return (
     <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-        <span className="flex items-center gap-1.5">
-          <User className="w-3 h-3 text-primary" /> {t("observability.tenant")}
-        </span>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+        <span>{t("observability.tenant")}</span>
         <div className="flex items-center gap-1.5">
           {tenantFilter && (
-            <span className="text-[9px] px-1 rounded bg-primary/20 text-primary font-mono">
+            <span className="text-[9px] px-1 rounded bg-muted/60 text-muted-foreground font-mono">
               {tenantFilter}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-1 space-y-1">
@@ -175,17 +164,15 @@ export function LevelFilterSection({
 
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-        <span className="flex items-center gap-1.5">
-          <Filter className="w-3 h-3 text-primary" /> HTTP Status / Level
-        </span>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+        <span>Level</span>
         <div className="flex items-center gap-1.5">
           {activeCount > 0 && (
-            <span className="text-[9px] font-mono text-primary font-semibold">
+            <span className="text-[9px] font-mono text-muted-foreground font-semibold">
               × {activeCount}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-0.5 mt-1 font-mono text-[11px]">
@@ -204,11 +191,12 @@ export function LevelFilterSection({
                   onChange={() => toggleLevel(lvl.key)}
                   className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
                 />
-                <span className="text-muted-foreground">{lvl.label}</span>
+                <span className="text-muted-foreground text-[11px]">{lvl.label}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${lvl.color} ${lvl.bg}`}>
-                  {lvl.badge}
+                <span className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/70">
+                  <span className={`w-2 h-2 rounded-xs ${lvl.dot}`} />
+                  <span>{lvl.badge}</span>
                 </span>
                 <span className={`text-[10px] font-mono w-4 text-right ${count > 0 ? "text-foreground font-semibold" : "text-muted-foreground/40"}`}>
                   {count}
@@ -235,17 +223,15 @@ export function ScopeFilterSection({
 }) {
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-        <span className="flex items-center gap-1.5">
-          <Layers className="w-3 h-3 text-primary" /> Scope & Project
-        </span>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+        <span>Scope & Project</span>
         <div className="flex items-center gap-1.5">
           {scopeFilter !== "ALL" && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-mono font-semibold">
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono font-semibold border border-border/40">
               {scopeFilter}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-1 space-y-2 font-mono text-[11px]">
@@ -257,10 +243,11 @@ export function ScopeFilterSection({
                 key={s.key}
                 type="button"
                 onClick={() => setScopeFilter(s.key)}
-                className={`px-2 py-1 rounded text-[10px] border transition-colors text-left truncate ${isSelected
-                  ? "bg-primary/15 border-primary/40 text-primary font-semibold"
-                  : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                  }`}
+                className={`px-2 py-1 rounded text-[10px] border transition-colors text-left truncate ${
+                  isSelected
+                    ? "bg-muted/80 border-border text-foreground font-semibold"
+                    : "bg-muted/20 border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                }`}
               >
                 {s.label}
               </button>
@@ -304,17 +291,15 @@ export function SeverityFilterSection({
 
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-        <span className="flex items-center gap-1.5">
-          <Shield className="w-3 h-3 text-primary" /> Severity
-        </span>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
+        <span>Severity</span>
         <div className="flex items-center gap-1.5">
           {activeCount > 0 && (
-            <span className="text-[9px] font-mono text-primary font-semibold">
+            <span className="text-[9px] font-mono text-muted-foreground font-semibold">
               × {activeCount}
             </span>
           )}
-          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-0.5 mt-1 font-mono text-[11px]">
@@ -333,11 +318,12 @@ export function SeverityFilterSection({
                   onChange={() => toggleSeverity(sev.key)}
                   className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
                 />
-                <span className="text-muted-foreground">{sev.label}</span>
+                <span className="text-muted-foreground text-[11px]">{sev.label}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold border ${sev.color} ${sev.bg}`}>
-                  {sev.badge}
+                <span className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/70">
+                  <span className={`w-2 h-2 rounded-xs ${sev.dot}`} />
+                  <span>{sev.badge}</span>
                 </span>
                 <span className={`text-[10px] font-mono w-4 text-right ${count > 0 ? "text-foreground font-semibold" : "text-muted-foreground/40"}`}>
                   {count}
@@ -367,15 +353,15 @@ export function BenchmarkFilterSection({
               type="checkbox"
               checked={includeBenchmark}
               onChange={(e) => setIncludeBenchmark(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-border text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0"
+              className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
             />
             <span className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground font-semibold transition-colors truncate text-[11px]">
-              <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+              <Zap className="w-3 h-3 text-muted-foreground/60 shrink-0" />
               <span>Synthetic Telemetry</span>
             </span>
           </div>
-          <span className="text-[8px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0">
-            ⚡ TEST
+          <span className="text-[8px] px-1.5 py-0.2 rounded font-mono font-bold bg-muted/60 text-muted-foreground border border-border/40 shrink-0">
+            TEST
           </span>
         </label>
         <p className="pl-5 text-[9px] text-muted-foreground/60 font-sans leading-tight">
@@ -385,5 +371,3 @@ export function BenchmarkFilterSection({
     </div>
   );
 }
-
-
