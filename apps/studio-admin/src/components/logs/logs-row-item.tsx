@@ -174,7 +174,7 @@ function DateCell({ timestamp }: { timestamp?: string }) {
 }
 
 function SourceCell({ source, logGroup }: { source?: string; logGroup?: string }) {
-  if (!source) return <span className="text-muted-foreground/20">—</span>;
+  if (!source) return <span className="text-muted-foreground/20 select-none text-[10px]">—</span>;
 
   const groupInfo = logGroup ? LOG_GROUPS[logGroup as keyof typeof LOG_GROUPS] : null;
   const colorClass = groupInfo ? `${groupInfo.color} ${groupInfo.accentBg} border-current/20` : "text-muted-foreground/60 bg-muted/20 border-border/30";
@@ -189,7 +189,7 @@ function SourceCell({ source, logGroup }: { source?: string; logGroup?: string }
         </TooltipTrigger>
         <TooltipContent side="top" className="text-[11px] font-mono px-2 py-1.5 bg-popover border border-border text-foreground [&_svg]:!hidden">
           <span className="flex items-center gap-1.5">
-            {getSourceIcon(source)}
+            {getSourceIcon(source, "w-3 h-3 text-muted-foreground/80 shrink-0")}
             <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${colorClass}`}>
               {source}
             </span>
@@ -490,24 +490,36 @@ export function LogsRowItem({
             : "hover:bg-muted/30 text-muted-foreground hover:text-foreground"
         }`}
       >
-        <div className="w-[32px] shrink-0 flex items-center">
+        {/* Leading Slot: Monochrome Dot by default, Checkbox on Hover/Selected */}
+        <div className="w-[20px] mr-2.5 shrink-0 flex items-center justify-center">
           <input
             type="checkbox"
             checked={!!isRowSelected}
             onClick={(e) => e.stopPropagation()}
             onChange={() => onToggleSelectRow?.(log.id)}
-            className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
+            className={`w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer ${
+              isRowSelected ? "block" : "hidden group-hover:block"
+            }`}
           />
-        </div>
-
-        <div className="w-[14px] mr-2 shrink-0 flex items-center justify-center">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${dotColorClass}`} />
+          {!isRowSelected && (
+            <span
+              className={`w-1.5 h-1.5 rounded-full block group-hover:hidden transition-colors ${
+                isCritical
+                  ? "bg-rose-500 animate-ping"
+                  : isError
+                  ? "bg-rose-500"
+                  : isWarn
+                  ? "bg-amber-500"
+                  : "bg-muted-foreground/40"
+              }`}
+            />
+          )}
         </div>
 
         {visibleCols.has("date") && <DateCell timestamp={log.timestamp} />}
 
         {visibleCols.has("source") && (
-          <div className="w-[24px] shrink-0 flex items-center justify-center">
+          <div className="w-[20px] shrink-0 flex items-center justify-center">
             <SourceCell source={log.serviceSource} logGroup={log.logGroup} />
           </div>
         )}

@@ -71,10 +71,10 @@ export function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: Co
                 type="checkbox"
                 checked={isVisible}
                 onChange={(e) => col.toggleVisibility(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
+                className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer"
               />
               <span className="text-[11px] text-foreground/80">{label}</span>
-              {isVisible && <Check className="w-3 h-3 text-primary ml-auto shrink-0" />}
+              {isVisible && <Check className="w-3 h-3 text-foreground ml-auto shrink-0" />}
             </label>
           );
         })}

@@ -84,7 +84,7 @@ function LogGroupRowItem({
           }}
           onClick={(e) => e.stopPropagation()}
           onChange={() => toggleGroup(groupKey)}
-          className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
+          className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer shrink-0"
           title={`Toggle all ${group.label}`}
         />
         <CollapsibleTrigger className="flex flex-1 items-center justify-between min-w-0 group/grp select-none">
@@ -126,7 +126,7 @@ function LogGroupRowItem({
                       checked={isOn}
                       onClick={(e) => e.stopPropagation()}
                       onChange={() => toggleType(typeKey)}
-                      className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
+                      className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer shrink-0"
                     />
                     <span className="text-muted-foreground group-hover/type:text-foreground transition-colors truncate text-[11px]">
                       {getLogTypeLabel(typeKey)}
@@ -150,7 +150,7 @@ function LogGroupRowItem({
                           checked={!!edgeSubFilters[sub.key]}
                           onClick={(e) => e.stopPropagation()}
                           onChange={() => toggleEdgeSubFilter(sub.key)}
-                          className="w-3 h-3 rounded border-border text-primary accent-primary cursor-pointer shrink-0"
+                          className="w-3 h-3 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer shrink-0"
                         />
                         <span className="text-[10px] text-muted-foreground/70 group-hover/sub:text-foreground transition-colors font-mono">
                           {sub.label}

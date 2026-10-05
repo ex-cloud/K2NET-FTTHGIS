@@ -25,31 +25,37 @@ import {
 
 interface SourceIconMatcher {
   match: (src: string) => boolean;
-  icon: React.ReactElement;
+  IconComponent: React.ComponentType<{ className?: string; strokeWidth?: number }>;
 }
 
 const SOURCE_ICON_MATCHERS: SourceIconMatcher[] = [
-  { match: (s) => s.includes("ai") || s.includes("rag"), icon: <Sparkles className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("task") || s.includes("obsidian"), icon: <FolderKanban className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("martin") || s.includes("tile"), icon: <MapPin className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("poller"), icon: <Radio className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("olt"), icon: <Wifi className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("map"), icon: <Map className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("payment"), icon: <CreditCard className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("storage") || s.includes("minio"), icon: <HardDrive className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("export"), icon: <FileOutput className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("scheduler"), icon: <CalendarClock className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("kong") || s.includes("edge") || s.includes("traefik"), icon: <Globe className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("keycloak") || s.includes("auth"), icon: <Shield className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("notification") || s.includes("whatsapp") || s.includes("sms"), icon: <Send className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("db") || s.includes("postgres") || s.includes("redis"), icon: <Database className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
-  { match: (s) => s.includes("backend"), icon: <Server className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" /> },
+  { match: (s) => s.includes("ai") || s.includes("rag"), IconComponent: Sparkles },
+  { match: (s) => s.includes("task") || s.includes("obsidian"), IconComponent: FolderKanban },
+  { match: (s) => s.includes("martin") || s.includes("tile"), IconComponent: MapPin },
+  { match: (s) => s.includes("poller"), IconComponent: Radio },
+  { match: (s) => s.includes("olt"), IconComponent: Wifi },
+  { match: (s) => s.includes("map"), IconComponent: Map },
+  { match: (s) => s.includes("payment"), IconComponent: CreditCard },
+  { match: (s) => s.includes("storage") || s.includes("minio"), IconComponent: HardDrive },
+  { match: (s) => s.includes("export"), IconComponent: FileOutput },
+  { match: (s) => s.includes("scheduler"), IconComponent: CalendarClock },
+  { match: (s) => s.includes("kong") || s.includes("edge") || s.includes("traefik"), IconComponent: Globe },
+  { match: (s) => s.includes("keycloak") || s.includes("auth"), IconComponent: Shield },
+  { match: (s) => s.includes("notification") || s.includes("whatsapp") || s.includes("sms"), IconComponent: Send },
+  { match: (s) => s.includes("db") || s.includes("postgres") || s.includes("redis"), IconComponent: Database },
+  { match: (s) => s.includes("backend"), IconComponent: Server },
 ];
 
-export function getSourceIcon(source: string) {
+export function getSourceIcon(source: string, className?: string) {
   const src = source.toLowerCase();
   const matched = SOURCE_ICON_MATCHERS.find((m) => m.match(src));
-  return matched ? matched.icon : <Cpu className="w-3.5 h-3.5 text-muted-foreground shrink-0" />;
+  const IconComp = matched ? matched.IconComponent : Cpu;
+  return (
+    <IconComp
+      className={className || "w-2.5 h-2.5 text-muted-foreground/60 shrink-0"}
+      strokeWidth={1.5}
+    />
+  );
 }
 
 export function getEventMessageDisplay(log: AuditStreamEntry): string {

@@ -15,10 +15,10 @@ export const LEVEL_OPTIONS = [
 ];
 
 export const SEVERITY_OPTIONS = [
-  { key: "CRITICAL", label: "Critical", badge: "CRIT", dot: "bg-rose-500" },
-  { key: "ERROR", label: "Error", badge: "ERR", dot: "bg-rose-400" },
-  { key: "WARN", label: "Warning", badge: "WARN", dot: "bg-amber-400" },
-  { key: "INFO", label: "Info", badge: "INFO", dot: "bg-muted-foreground/40" },
+  { key: "CRITICAL", label: "Critical", dot: "bg-rose-500" },
+  { key: "ERROR", label: "Error", dot: "bg-rose-400" },
+  { key: "WARN", label: "Warning", dot: "bg-amber-400" },
+  { key: "INFO", label: "Info", dot: "bg-muted-foreground/40" },
 ];
 
 export const SCOPE_OPTIONS = [
@@ -189,7 +189,7 @@ export function LevelFilterSection({
                   checked={!!selectedLevels[lvl.key]}
                   onClick={(e) => e.stopPropagation()}
                   onChange={() => toggleLevel(lvl.key)}
-                  className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
+                  className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer"
                 />
                 <span className="text-muted-foreground text-[11px]">{lvl.label}</span>
               </div>
@@ -316,15 +316,12 @@ export function SeverityFilterSection({
                   checked={!!selectedSeverities[sev.key]}
                   onClick={(e) => e.stopPropagation()}
                   onChange={() => toggleSeverity(sev.key)}
-                  className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
+                  className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer"
                 />
                 <span className="text-muted-foreground text-[11px]">{sev.label}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/70">
-                  <span className={`w-2 h-2 rounded-xs ${sev.dot}`} />
-                  <span>{sev.badge}</span>
-                </span>
+              <div className="flex items-center gap-3">
+                <span className={`w-2.5 h-2.5 rounded-xs ${sev.dot}`} />
                 <span className={`text-[10px] font-mono w-4 text-right ${count > 0 ? "text-foreground font-semibold" : "text-muted-foreground/40"}`}>
                   {count}
                 </span>
@@ -353,7 +350,7 @@ export function BenchmarkFilterSection({
               type="checkbox"
               checked={includeBenchmark}
               onChange={(e) => setIncludeBenchmark(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
+              className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer shrink-0"
             />
             <span className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground font-semibold transition-colors truncate text-[11px]">
               <Zap className="w-3 h-3 text-muted-foreground/60 shrink-0" />

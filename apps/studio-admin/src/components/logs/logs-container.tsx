@@ -93,7 +93,7 @@ function LogsTableHeader({
 }) {
   const columns = [
     { id: "date", label: "Timestamp", width: "w-[140px]" },
-    { id: "source", label: "", width: "w-[24px]" },
+    { id: "source", label: "", width: "w-[20px]" },
     { id: "severity", label: "Severity", width: "w-[68px]" },
     { id: "group", label: "Group", width: "w-[80px]" },
     { id: "status", label: "", width: "w-[44px]", withSpacer: true },
@@ -107,7 +107,7 @@ function LogsTableHeader({
 
   return (
     <div className="flex items-center px-4 py-2 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-mono">
-      <div className="w-[32px] shrink-0 flex items-center">
+      <div className="w-[20px] mr-2.5 shrink-0 flex items-center justify-center">
         <input
           type="checkbox"
           checked={!!isAllSelected}
@@ -117,11 +117,10 @@ function LogsTableHeader({
             }
           }}
           onChange={onToggleSelectAll}
-          className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
+          className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer"
           title="Toggle select all"
         />
       </div>
-      <div className="w-[14px] mr-2 shrink-0" />
       {columns.map((col) => {
         if (columnVisibility[col.id] === false) return null;
         return (
@@ -168,13 +167,13 @@ function LogsStatusBar({
         </span>
         {selectedCount > 0 && (
           <div className="flex items-center gap-2 pl-3 border-l border-border/60">
-            <span className="px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-muted text-foreground border border-border font-semibold">
               {selectedCount} selected
             </span>
             <button
               type="button"
               onClick={onCopySelected}
-              className="text-foreground hover:text-primary transition-colors underline cursor-pointer"
+              className="text-foreground hover:underline transition-colors cursor-pointer"
             >
               Copy Selected JSON
             </button>
@@ -191,25 +190,25 @@ function LogsStatusBar({
 
       <div className="flex items-center gap-2">
         {isLoadingMore && (
-          <span className="flex items-center gap-1.5 text-primary text-[10px]">
+          <span className="flex items-center gap-1.5 text-muted-foreground text-[10px]">
             <Loader2 className="w-3 h-3 animate-spin shrink-0" />
             <span>Loading older logs...</span>
           </span>
         )}
         {isHistoricalMode ? (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 font-sans font-medium text-[10px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
             <span>Forensic Mode</span>
           </span>
         ) : isLivePaused ? (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-sans font-medium text-[10px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span>Live Stream Paused</span>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+            <span>Stream Paused</span>
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary font-sans font-medium text-[10px]">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/30 font-sans font-medium text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <span>Live Tail Active</span>
+            <span>Live Stream</span>
           </span>
         )}
       </div>
