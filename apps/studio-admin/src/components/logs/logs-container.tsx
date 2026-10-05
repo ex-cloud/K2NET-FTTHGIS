@@ -66,6 +66,20 @@ class LogsErrorBoundary extends Component<LogsErrorBoundaryProps, LogsErrorBound
   }
 }
 
+const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
+  date: true,
+  status: true,
+  method: true,
+  pathname: true,
+  message: true,
+  source: false,
+  severity: false,
+  group: false,
+  tenant: false,
+  scope: false,
+  project: false,
+};
+
 function LogsTableHeader({
   columnVisibility,
   isAllSelected,
@@ -78,22 +92,22 @@ function LogsTableHeader({
   onToggleSelectAll?: () => void;
 }) {
   const columns = [
-    { id: "date", label: "Timestamp", width: "w-[148px]" },
+    { id: "date", label: "Timestamp", width: "w-[140px]" },
     { id: "source", label: "Src", width: "w-[28px]" },
-    { id: "severity", label: "Severity", width: "w-[72px]" },
-    { id: "group", label: "Group", width: "w-[88px]" },
+    { id: "severity", label: "Severity", width: "w-[68px]" },
+    { id: "group", label: "Group", width: "w-[80px]" },
     { id: "status", label: "Status", width: "w-[52px]", withSpacer: true },
-    { id: "tenant", label: "Tenant", width: "w-[88px]" },
-    { id: "scope", label: "Scope", width: "w-[72px]" },
-    { id: "project", label: "Project", width: "w-[96px]" },
-    { id: "method", label: "Method", width: "w-[56px]" },
-    { id: "pathname", label: "Target / Resource", width: "w-[140px]" },
+    { id: "tenant", label: "Tenant", width: "w-[80px]" },
+    { id: "scope", label: "Scope", width: "w-[64px]" },
+    { id: "project", label: "Project", width: "w-[88px]" },
+    { id: "method", label: "Method", width: "w-[52px]" },
+    { id: "pathname", label: "Target / Resource", width: "w-[180px]" },
     { id: "message", label: "Event Details & Actor", width: "flex-1 min-w-0" },
   ];
 
   return (
-    <div className="flex items-center px-4 py-2 bg-muted/50 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-mono">
-      <div className="w-[42px] shrink-0 flex items-center">
+    <div className="flex items-center px-4 py-2 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-mono">
+      <div className="w-[32px] shrink-0 flex items-center">
         <input
           type="checkbox"
           checked={!!isAllSelected}
@@ -107,13 +121,13 @@ function LogsTableHeader({
           title="Toggle select all"
         />
       </div>
-      <div className="w-[16px] mr-2 shrink-0" />
+      <div className="w-[14px] mr-2 shrink-0" />
       {columns.map((col) => {
         if (columnVisibility[col.id] === false) return null;
         return (
           <React.Fragment key={col.id}>
-            <div className={`${col.width} shrink-0`}>{col.label}</div>
-            {col.withSpacer && <div className="w-7 shrink-0" />}
+            <div className={`${col.width} shrink-0 truncate`}>{col.label}</div>
+            {col.withSpacer && <div className="w-6 shrink-0" />}
           </React.Fragment>
         );
       })}
@@ -208,7 +222,7 @@ function LogsContainerContent() {
     filteredLogs,
     rawLogs,
     totalCount,
-    clearLogs,
+    refresh,
     selectedLog,
     setSelectedLog,
     isLivePaused,
@@ -229,7 +243,7 @@ function LogsContainerContent() {
 
   const { summaryBuckets } = useAuditAnalyticsSummary(timeRange, tenantFilter);
 
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [dismissedWideRange, setDismissedWideRange] = useState(false);
@@ -241,7 +255,12 @@ function LogsContainerContent() {
   const activeIncident = useMemo(() => {
     const list = rawLogs.length > 0 ? rawLogs : filteredLogs;
     for (const log of list) {
-      if (log.severity === "CRITICAL" && !dismissedIncidentIds.has(log.id)) {
+      if (
+        log.severity === "CRITICAL" &&
+        !dismissedIncidentIds.has(log.id) &&
+        !log.action.includes("IMPERSONATION_STARTED") &&
+        !log.action.includes("IMPERSONATION_ENDED")
+      ) {
         return log;
       }
     }
@@ -378,7 +397,7 @@ function LogsContainerContent() {
     <div className="flex flex-col h-full w-full bg-background font-mono text-xs overflow-hidden select-none">
       <LogsTopHeader
         filteredLogs={filteredLogs}
-        clearLogs={clearLogs}
+        onRefresh={refresh}
         table={table}
         columnVisibility={columnVisibility}
         setColumnVisibility={setColumnVisibility}

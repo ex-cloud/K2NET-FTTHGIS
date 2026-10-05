@@ -54,7 +54,7 @@ func NewBatchIngestionEngine(db *pgxpool.Pool, cfg BatchConfig, dispatcher *Aler
 		db:         db,
 		cfg:        cfg,
 		ringBuffer: make(chan *CreateAuditEventRequest, cfg.BufferSize),
-		dedup:      NewSlidingWindowDeduplicator(10*time.Second, 50),
+		dedup:      NewSlidingWindowDeduplicator(10*time.Second, 5),
 		dispatcher: dispatcher,
 		stopChan:   make(chan struct{}),
 	}

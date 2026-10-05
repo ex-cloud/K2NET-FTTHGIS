@@ -215,7 +215,12 @@ func (r *Repository) QueryEventsWithFilter(ctx context.Context, filter QueryAudi
 		argCount++
 	}
 	if !filter.IncludeBenchmark {
-		whereClause += " AND actor_id NOT LIKE 'worker-benchmark-%' AND COALESCE(metadata->>'category', '') != 'BENCHMARK'"
+		whereClause += " AND actor_id NOT LIKE 'worker-benchmark-%' AND actor_id NOT LIKE '%benchmark%' AND actor_id NOT LIKE '%synthetic%'"
+		whereClause += " AND COALESCE(metadata->>'category', '') NOT IN ('BENCHMARK', 'SYNTHETIC', 'STRESS_TEST')"
+		whereClause += " AND COALESCE(metadata->>'is_synthetic', 'false') != 'true'"
+		whereClause += " AND COALESCE(metadata->>'isSynthetic', 'false') != 'true'"
+		whereClause += " AND resource_id NOT LIKE '%flapping%' AND resource_id NOT LIKE '%benchmark%' AND resource_id NOT LIKE '%synthetic%' AND resource_id NOT LIKE '%mock%'"
+		whereClause += " AND action NOT LIKE '%BENCHMARK%' AND action NOT LIKE '%STRESS%' AND action NOT LIKE '%SYNTHETIC%'"
 	}
 	if filter.BeforeOccurredAt != nil {
 		if filter.BeforeID != "" {

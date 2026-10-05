@@ -259,8 +259,24 @@ func TestAlertDispatcherEvaluationAndCooldown(t *testing.T) {
 		t.Errorf("Expected non-empty reason for critical alert")
 	}
 
-	// 2. High-risk security action should alert even if severity is WARN
+	// 2. High-risk security action (e.g. stepup_failed) should alert even if severity is INFO/WARN
 	highRiskReq := &CreateAuditEventRequest{
+		TenantSlug:   "system",
+		ActorID:      "super_admin@k2net.id",
+		Action:       "impersonation.stepup_failed",
+		ResourceType: "SESSION",
+		Metadata: map[string]any{
+			"severity": "INFO",
+		},
+	}
+
+	shouldAlert, _ = dispatcher.ShouldAlert(highRiskReq)
+	if !shouldAlert {
+		t.Errorf("Expected high-risk action impersonation.stepup_failed to trigger alert")
+	}
+
+	// 2b. Routine authorized impersonation start should NOT alert (anti-alert fatigue)
+	routineImpersonationReq := &CreateAuditEventRequest{
 		TenantSlug:   "system",
 		ActorID:      "super_admin@k2net.id",
 		Action:       "impersonation.start",
@@ -270,9 +286,9 @@ func TestAlertDispatcherEvaluationAndCooldown(t *testing.T) {
 		},
 	}
 
-	shouldAlert, _ = dispatcher.ShouldAlert(highRiskReq)
-	if !shouldAlert {
-		t.Errorf("Expected high-risk action impersonation.start to trigger alert")
+	shouldAlert, _ = dispatcher.ShouldAlert(routineImpersonationReq)
+	if shouldAlert {
+		t.Errorf("Routine impersonation.start should NOT trigger alert (anti-alert fatigue)")
 	}
 
 	// 3. Normal INFO event should NOT alert

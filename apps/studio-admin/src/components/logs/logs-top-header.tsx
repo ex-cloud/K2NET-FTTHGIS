@@ -35,7 +35,7 @@ export { FILTER_FIELD_CONFIGS, parseSmartFilter } from "./logs-filter-palette-co
 
 export interface LogsTopHeaderProps {
   filteredLogs: AuditStreamEntry[];
-  clearLogs: () => void;
+  onRefresh: () => Promise<void> | void;
   table: Table<AuditStreamEntry>;
   columnVisibility: VisibilityState;
   setColumnVisibility: React.Dispatch<React.SetStateAction<VisibilityState>>;
@@ -43,7 +43,7 @@ export interface LogsTopHeaderProps {
 
 export function LogsTopHeader({
   filteredLogs,
-  clearLogs,
+  onRefresh,
   table,
   columnVisibility,
 }: LogsTopHeaderProps) {
@@ -319,7 +319,7 @@ export function LogsTopHeader({
 
       <LogsHeaderActions
         filteredLogs={filteredLogs}
-        clearLogs={clearLogs}
+        onRefresh={onRefresh}
         showHistogram={showHistogram}
         setShowHistogram={setShowHistogram}
         showColumnPicker={showColumnPicker}

@@ -1,6 +1,6 @@
 import React from "react";
 import { format } from "date-fns";
-import { Copy, Check, Sparkles, FileCode, Globe, ShieldCheck } from "lucide-react";
+import { Copy, Check, Sparkles, FileCode, Globe } from "lucide-react";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -31,19 +31,19 @@ interface LogsRowItemProps {
 }
 
 function getStatusColor(statusNum?: number) {
-  if (!statusNum) return "text-muted-foreground/30";
-  if (statusNum >= 500) return "text-rose-400";
-  if (statusNum >= 400) return "text-amber-400";
-  if (statusNum >= 200) return "text-primary/80";
-  return "text-muted-foreground/50";
+  if (!statusNum) return "text-muted-foreground/40";
+  if (statusNum >= 500) return "text-rose-400 font-semibold";
+  if (statusNum >= 400) return "text-amber-400 font-semibold";
+  if (statusNum >= 200) return "text-muted-foreground";
+  return "text-muted-foreground/60";
 }
 
 function getMethodColor(method?: string) {
-  if (method === "POST") return "text-sky-400 bg-sky-500/10 border-sky-500/20";
-  if (method === "PUT" || method === "PATCH") return "text-amber-400 bg-amber-500/10 border-amber-500/20";
-  if (method === "DELETE") return "text-rose-400 bg-rose-500/10 border-rose-500/20";
-  if (method === "GET") return "text-primary/80 bg-primary/10 border-primary/20";
-  return "text-muted-foreground/60 bg-muted/20 border-border/30";
+  const m = (method || "").toUpperCase();
+  if (m === "POST" || m === "PUT" || m === "PATCH") return "text-sky-400 font-semibold";
+  if (m === "DELETE") return "text-rose-400 font-semibold";
+  if (m === "GET") return "text-muted-foreground font-medium";
+  return "text-muted-foreground/60";
 }
 
 function buildContextMenuGroups(
@@ -119,7 +119,7 @@ function buildContextMenuGroups(
 function DateCell({ timestamp }: { timestamp?: string }) {
   let formattedDate = timestamp ?? "";
   try {
-    formattedDate = format(new Date(timestamp || ""), "dd MMM yy HH:mm:ss");
+    formattedDate = format(new Date(timestamp || ""), "dd MMM HH:mm:ss");
   } catch {
     // ignore
   }
@@ -129,7 +129,7 @@ function DateCell({ timestamp }: { timestamp?: string }) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="w-[148px] shrink-0 text-muted-foreground text-[11px] font-mono flex items-center cursor-default outline-none select-none">
+          <span className="w-[140px] shrink-0 text-muted-foreground/80 text-[11px] font-mono flex items-center cursor-default outline-none select-none">
             {formattedDate}
           </span>
         </TooltipTrigger>
@@ -206,7 +206,7 @@ function StatusCell({
   const renderBadge = () => {
     if (statusNum) {
       return (
-        <span className={`font-mono text-[11px] font-semibold tracking-tight ${getStatusColor(statusNum)}`}>
+        <span className={`font-mono text-[11px] tracking-tight ${getStatusColor(statusNum)}`}>
           {statusNum}
         </span>
       );
@@ -230,7 +230,7 @@ function StatusCell({
         type="button"
         onClick={(e) => onCopyLog(log, e)}
         title="Copy Log JSON"
-        className="w-7 shrink-0 flex items-center justify-center p-0.5 rounded hover:bg-muted/80 text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+        className="w-6 shrink-0 flex items-center justify-center p-0.5 rounded hover:bg-muted/80 text-muted-foreground/40 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
       >
         {copiedId === log.id ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
       </button>
@@ -242,7 +242,7 @@ function SeverityBadge({ severity }: { severity: string }) {
   const s = severity.toUpperCase();
   if (s === "CRITICAL") {
     return (
-      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 animate-pulse inline-flex items-center gap-1">
+      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1">
         <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
         CRITICAL
       </span>
@@ -250,20 +250,20 @@ function SeverityBadge({ severity }: { severity: string }) {
   }
   if (s === "ERROR") {
     return (
-      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
         ERROR
       </span>
     );
   }
   if (s === "WARN" || s === "WARNING") {
     return (
-      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
         WARN
       </span>
     );
   }
   return (
-    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground bg-muted/20 border border-border/30">
       INFO
     </span>
   );
@@ -278,9 +278,9 @@ function ImpersonationPill({ log }: { log: AuditStreamEntry }) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400 font-mono text-[9px] border border-purple-500/30 mr-1.5 shrink-0 cursor-help select-none">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 font-mono text-[9px] border border-purple-500/20 mr-1.5 shrink-0 cursor-help select-none">
             <span>🎭</span>
-            <span className="font-semibold">Impersonated: {realActor}</span>
+            <span className="font-semibold">{realActor}</span>
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="z-50 p-2.5 bg-popover border border-border text-foreground font-mono text-[10px] rounded-lg shadow-xl max-w-[320px] select-none [&_svg]:!hidden">
@@ -308,9 +308,9 @@ function BenchmarkPill() {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 font-mono text-[9px] font-semibold border border-amber-500/30 mr-1.5 shrink-0 cursor-help select-none">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-mono text-[9px] font-semibold border border-amber-500/20 mr-1.5 shrink-0 cursor-help select-none">
             <span>⚡</span>
-            <span>BENCHMARK</span>
+            <span>TEST</span>
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="z-50 p-2.5 bg-popover border border-border text-foreground font-mono text-[10px] rounded-lg shadow-xl max-w-[280px] select-none [&_svg]:!hidden">
@@ -333,8 +333,7 @@ function ProjectPill({ log }: { log: AuditStreamEntry }) {
   if (!label) return null;
 
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary/90 font-mono text-[9px] border border-primary/20 mr-1.5 shrink-0 select-none">
-      <span>📁</span>
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground font-mono text-[9px] border border-border/50 mr-1.5 shrink-0 select-none">
       <span className="truncate max-w-[120px]">{label}</span>
     </span>
   );
@@ -344,9 +343,7 @@ function GroupCell({ logGroup }: { logGroup?: string }) {
   if (!logGroup) return <span className="text-muted-foreground/20">—</span>;
   const groupInfo = LOG_GROUPS[logGroup as keyof typeof LOG_GROUPS];
   return (
-    <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${
-      groupInfo?.color ?? "text-muted-foreground"
-    } ${groupInfo?.accentBg ?? "bg-muted/20"}`}>
+    <span className="text-muted-foreground/70 font-mono text-[10px] truncate" title={logGroup}>
       {groupInfo?.label ?? logGroup}
     </span>
   );
@@ -355,7 +352,7 @@ function GroupCell({ logGroup }: { logGroup?: string }) {
 function TenantCell({ tenantSlug }: { tenantSlug?: string }) {
   if (!tenantSlug) return <span className="text-muted-foreground/20">—</span>;
   return (
-    <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-mono text-[9px] border border-primary/20">
+    <span className="text-muted-foreground/80 font-mono text-[10px] truncate" title={tenantSlug}>
       {tenantSlug}
     </span>
   );
@@ -364,7 +361,7 @@ function TenantCell({ tenantSlug }: { tenantSlug?: string }) {
 function ScopeCell({ scope }: { scope?: string }) {
   if (!scope) return <span className="text-muted-foreground/20">—</span>;
   return (
-    <span className="px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground font-mono text-[9px] border border-border/50">
+    <span className="text-muted-foreground/60 font-mono text-[10px] truncate" title={scope}>
       {scope}
     </span>
   );
@@ -374,16 +371,16 @@ function ProjectCell({ projectId, projectName }: { projectId?: string; projectNa
   const label = projectName || projectId;
   if (!label) return <span className="text-muted-foreground/20">—</span>;
   return (
-    <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-mono text-[9px] border border-primary/20">
+    <span className="text-muted-foreground/80 font-mono text-[10px] truncate" title={label}>
       {label}
     </span>
   );
 }
 
 function MethodCell({ method }: { method?: string }) {
-  if (!method) return <span className="text-muted-foreground/20">—</span>;
+  if (!method) return <span className="text-muted-foreground/20 font-mono text-[10px]">—</span>;
   return (
-    <span className={`px-1 py-0.5 rounded text-[9px] font-mono font-bold border ${getMethodColor(method)}`}>
+    <span className={`text-[10px] font-mono ${getMethodColor(method)}`}>
       {method}
     </span>
   );
@@ -398,26 +395,13 @@ function isBenchmarkEvent(log: AuditStreamEntry): boolean {
   return false;
 }
 
-function getMessageColorClass(isCritical: boolean, isError: boolean, isWarn: boolean): string {
-  if (isCritical || isError) return "text-rose-400";
-  if (isWarn) return "text-amber-400";
-  return "text-foreground/90";
-}
-
 function MessageCell({
   log,
-  isCritical,
-  isError,
-  isWarn,
   showProjectPill,
 }: {
   log: AuditStreamEntry;
-  isCritical: boolean;
-  isError: boolean;
-  isWarn: boolean;
   showProjectPill: boolean;
 }) {
-  const colorClass = getMessageColorClass(isCritical, isError, isWarn);
   const actorLabel = log.actor !== "system" ? log.actor : null;
   const hasHashChain = Boolean(log.metadata?.hash || log.metadata?.prevHash);
   const isBenchmark = isBenchmarkEvent(log);
@@ -426,22 +410,22 @@ function MessageCell({
     <div className="flex-1 min-w-0 font-mono text-[11px] flex items-center justify-between gap-3">
       <div className="flex items-center gap-1.5 min-w-0 truncate">
         {hasHashChain && (
-          <span title="Cryptographic Hash Chain Verified (SHA-256)" className="inline-flex items-center shrink-0">
-            <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+          <span title="Cryptographic Hash Chain Verified (SHA-256)" className="text-[9px] font-mono text-primary/70 shrink-0 select-none">
+            [SHA256]
           </span>
         )}
         {isBenchmark && <BenchmarkPill />}
         {(log.isImpersonated || log.realActorId) && <ImpersonationPill log={log} />}
         {showProjectPill && <ProjectPill log={log} />}
-        <span className={`truncate ${colorClass}`} title={log.message || log.action}>
+        <span className="truncate text-foreground/90 font-mono" title={log.message || log.action}>
           {getEventMessageDisplay(log)}
         </span>
       </div>
       {actorLabel && (
-        <span className="text-muted-foreground/60 text-[10px] shrink-0 font-mono hidden md:inline-flex items-center gap-1">
+        <span className="text-muted-foreground/50 text-[10px] shrink-0 font-mono hidden md:inline-flex items-center gap-1 select-none">
           <span>by</span>
-          <span className="text-muted-foreground/90 font-medium">{actorLabel}</span>
-          {log.ip && <span className="text-muted-foreground/40 text-[9px]">({log.ip})</span>}
+          <span className="text-muted-foreground/80 font-medium">{actorLabel}</span>
+          {log.ip && <span className="text-muted-foreground/30 text-[9px]">({log.ip})</span>}
         </span>
       )}
     </div>
@@ -470,7 +454,7 @@ export function LogsRowItem({
     ? "bg-rose-500"
     : isWarn
     ? "bg-amber-500"
-    : "bg-primary/70";
+    : "bg-muted-foreground/30";
 
   return (
     <UniversalContextMenu groups={buildContextMenuGroups(log, isSelected, onSelect, t)}>
@@ -484,7 +468,7 @@ export function LogsRowItem({
             : "hover:bg-muted/30 text-muted-foreground hover:text-foreground"
         }`}
       >
-        <div className="w-[42px] shrink-0 flex items-center">
+        <div className="w-[32px] shrink-0 flex items-center">
           <input
             type="checkbox"
             checked={!!isRowSelected}
@@ -494,8 +478,8 @@ export function LogsRowItem({
           />
         </div>
 
-        <div className="w-[16px] mr-2 shrink-0 flex items-center justify-center">
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColorClass}`} />
+        <div className="w-[14px] mr-2 shrink-0 flex items-center justify-center">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${dotColorClass}`} />
         </div>
 
         {visibleCols.has("date") && <DateCell timestamp={log.timestamp} />}
@@ -507,13 +491,13 @@ export function LogsRowItem({
         )}
 
         {visibleCols.has("severity") && (
-          <div className="w-[72px] shrink-0">
+          <div className="w-[68px] shrink-0">
             <SeverityBadge severity={log.severity || "INFO"} />
           </div>
         )}
 
         {visibleCols.has("group") && (
-          <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
+          <div className="w-[80px] shrink-0 font-mono text-[10px] truncate">
             <GroupCell logGroup={log.logGroup} />
           </div>
         )}
@@ -523,41 +507,44 @@ export function LogsRowItem({
         )}
 
         {visibleCols.has("tenant") && (
-          <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
+          <div className="w-[80px] shrink-0 font-mono text-[10px] truncate">
             <TenantCell tenantSlug={log.tenantSlug} />
           </div>
         )}
 
         {visibleCols.has("scope") && (
-          <div className="w-[72px] shrink-0 font-mono text-[10px] truncate">
+          <div className="w-[64px] shrink-0 font-mono text-[10px] truncate">
             <ScopeCell scope={log.scope} />
           </div>
         )}
 
         {visibleCols.has("project") && (
-          <div className="w-[96px] shrink-0 font-mono text-[10px] truncate">
+          <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
             <ProjectCell projectId={log.projectId} projectName={log.projectName} />
           </div>
         )}
 
         {visibleCols.has("method") && (
-          <div className="w-[56px] shrink-0">
+          <div className="w-[52px] shrink-0">
             <MethodCell method={log.method} />
           </div>
         )}
 
         {visibleCols.has("pathname") && (
-          <div className="w-[140px] shrink-0 font-mono text-[10px] truncate text-muted-foreground/80">
-            {log.pathname ? <span title={log.pathname}>{log.pathname}</span> : <span className="text-muted-foreground/20">—</span>}
+          <div className="w-[180px] max-w-[180px] shrink-0 font-mono text-[11px] truncate text-muted-foreground/80 pr-2">
+            {log.pathname || log.targetResource ? (
+              <span title={log.pathname || log.targetResource}>
+                {log.pathname || log.targetResource}
+              </span>
+            ) : (
+              <span className="text-muted-foreground/20">—</span>
+            )}
           </div>
         )}
 
         {visibleCols.has("message") && (
           <MessageCell
             log={log}
-            isCritical={isCritical}
-            isError={isError}
-            isWarn={isWarn}
             showProjectPill={log.scope === "PROJECT" && !visibleCols.has("project")}
           />
         )}
@@ -565,5 +552,3 @@ export function LogsRowItem({
     </UniversalContextMenu>
   );
 }
-
-

@@ -16,16 +16,16 @@ import {
 import { useTranslation } from "@k2net/i18n";
 
 export const LEVEL_OPTIONS = [
-  { key: "success", label: "Success", badge: "2xx", color: "text-primary/80", bg: "bg-primary/10" },
-  { key: "warning", label: "Warning", badge: "4xx", color: "text-amber-400", bg: "bg-amber-500/10" },
-  { key: "error", label: "Error", badge: "5xx", color: "text-rose-400", bg: "bg-rose-500/10" },
+  { key: "success", label: "Success", badge: "2xx", color: "text-muted-foreground", bg: "bg-muted/20 border-border/30" },
+  { key: "warning", label: "Warning", badge: "4xx", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  { key: "error", label: "Error", badge: "5xx", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
 ];
 
 export const SEVERITY_OPTIONS = [
-  { key: "CRITICAL", label: "Critical", badge: "CRIT", color: "text-rose-400", bg: "bg-rose-500/15 border-rose-500/30" },
+  { key: "CRITICAL", label: "Critical", badge: "CRIT", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
   { key: "ERROR", label: "Error", badge: "ERR", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
   { key: "WARN", label: "Warning", badge: "WARN", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-  { key: "INFO", label: "Info", badge: "INFO", color: "text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
+  { key: "INFO", label: "Info", badge: "INFO", color: "text-muted-foreground", bg: "bg-muted/20 border-border/30" },
 ];
 
 export const SCOPE_OPTIONS = [
@@ -360,26 +360,28 @@ export function BenchmarkFilterSection({
 }) {
   return (
     <div className="pt-2 border-t border-border/40 font-mono text-[11px]">
-      <label className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/40 cursor-pointer transition-colors group">
-        <div className="flex items-center gap-2 min-w-0">
-          <input
-            type="checkbox"
-            checked={includeBenchmark}
-            onChange={(e) => setIncludeBenchmark(e.target.checked)}
-            className="w-3.5 h-3.5 rounded border-border text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0"
-          />
-          <span className="flex items-center gap-1.5 text-muted-foreground group-hover:text-foreground transition-colors truncate">
-            <Zap className="w-3 h-3 text-amber-500 shrink-0" />
-            <span>Include Benchmarks</span>
+      <div className="p-2 rounded-lg border border-border/50 bg-muted/20 space-y-1">
+        <label className="flex items-center justify-between cursor-pointer group select-none">
+          <div className="flex items-center gap-2 min-w-0">
+            <input
+              type="checkbox"
+              checked={includeBenchmark}
+              onChange={(e) => setIncludeBenchmark(e.target.checked)}
+              className="w-3.5 h-3.5 rounded border-border text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0"
+            />
+            <span className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground font-semibold transition-colors truncate text-[11px]">
+              <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+              <span>Synthetic Telemetry</span>
+            </span>
+          </div>
+          <span className="text-[8px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0">
+            ⚡ TEST
           </span>
-        </div>
-        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0">
-          ⚡ TEST
-        </span>
-      </label>
-      <p className="px-2 pt-0.5 text-[9px] text-muted-foreground/50 font-sans leading-tight">
-        Load-test &amp; synthetic worker events (worker-benchmark-*)
-      </p>
+        </label>
+        <p className="pl-5 text-[9px] text-muted-foreground/60 font-sans leading-tight">
+          Include synthetic simulations, flapping test devices, and load-test workers.
+        </p>
+      </div>
     </div>
   );
 }

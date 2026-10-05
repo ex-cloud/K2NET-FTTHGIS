@@ -53,8 +53,9 @@ const DEFAULT_CONFIG: AlertConfig = {
   cooldownSeconds: 30,
   minSeverity: "CRITICAL",
   highRiskActions: [
-    "impersonation.start",
     "impersonation.stepup_failed",
+    "impersonation.unauthorized_attempt",
+    "impersonation.force_revoked",
     "auth.tamper_detected",
     "system.security.tamper_detected",
     "tenant.suspend",

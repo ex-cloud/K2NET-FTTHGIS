@@ -10,6 +10,7 @@ import {
   checkTimeRangeMatch,
   resolveLogTypeFromSource,
   resolveLogGroup,
+  isSyntheticOrBenchmarkEntry,
 } from "./audit-log-mappers";
 
 export {
@@ -126,6 +127,39 @@ export interface UseAuditLogStreamOptions {
   pageSize?: number;
 }
 
+// ─── Pure client-side filters (kept outside the hook for testability) ─────────
+
+interface ClientFilterInput {
+  timeRange?: string;
+  nowMs: number;
+  includeBenchmark: boolean;
+}
+
+interface FacetFilterInput extends ClientFilterInput {
+  selectedTypes: Record<string, boolean>;
+  selectedGroups?: Record<LogGroupKey, boolean>;
+  filterCategory: string;
+}
+
+/** Time-window + synthetic-data filter (base set used for counters & incident banner). */
+function passesBaseFilter(log: AuditStreamEntry, f: ClientFilterInput): boolean {
+  if (f.timeRange && !checkTimeRangeMatch(log.timestamp, f.timeRange, f.nowMs)) return false;
+  return f.includeBenchmark || !isSyntheticOrBenchmarkEntry(log);
+}
+
+function applyFacetFilters(logs: AuditStreamEntry[], f: FacetFilterInput): AuditStreamEntry[] {
+  const anyTypeActive = Object.values(f.selectedTypes).some(Boolean);
+  const groups = f.selectedGroups;
+  const anyGroupActive = groups ? Object.values(groups).some(Boolean) : false;
+
+  return logs.filter((log) => {
+    if (anyTypeActive && !f.selectedTypes[log.logType]) return false;
+    if (anyGroupActive && groups && !groups[log.logGroup]) return false;
+    if (f.filterCategory !== "all" && log.category && log.category !== f.filterCategory) return false;
+    return passesBaseFilter(log, f);
+  });
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useAuditLogStream(
@@ -188,6 +222,8 @@ export function useAuditLogStream(
     if (!token) return;
     try {
       setIsLoading(true);
+      // Re-anchor the relative window ("Last 1 hour") to *now* on every fetch
+      nowRef.current = Date.now();
       const headers = { Authorization: `Bearer ${token}` };
       const qParams = buildQueryParams();
 
@@ -310,40 +346,23 @@ export function useAuditLogStream(
   const selectedTypes = useMemo(() => options?.selectedTypes ?? {}, [options?.selectedTypes]);
   const selectedGroups = options?.selectedGroups;
 
-  const anyTypeActive = useMemo(() => Object.values(selectedTypes).some(Boolean), [selectedTypes]);
-  const anyGroupActive = useMemo(
-    () => (selectedGroups ? Object.values(selectedGroups).some(Boolean) : false),
-    [selectedGroups]
+  const timeFilteredLogs = useMemo(
+    () => logs.filter((log) => passesBaseFilter(log, { timeRange, nowMs: nowRef.current, includeBenchmark })),
+    [logs, timeRange, includeBenchmark]
   );
 
-  const timeFilteredLogs = useMemo(() => {
-    return logs.filter((log) => {
-      if (timeRange && !checkTimeRangeMatch(log.timestamp, timeRange, nowRef.current)) {
-        return false;
-      }
-      return true;
-    });
-  }, [logs, timeRange]);
-
-  const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
-      if (anyTypeActive && !selectedTypes[log.logType]) {
-        return false;
-      }
-
-      if (anyGroupActive && selectedGroups && !selectedGroups[log.logGroup]) {
-        return false;
-      }
-
-      if (timeRange && !checkTimeRangeMatch(log.timestamp, timeRange, nowRef.current)) {
-        return false;
-      }
-
-      if (filterCategory !== "all" && log.category && log.category !== filterCategory) return false;
-
-      return true;
-    });
-  }, [logs, anyTypeActive, selectedTypes, anyGroupActive, selectedGroups, timeRange, filterCategory]);
+  const filteredLogs = useMemo(
+    () =>
+      applyFacetFilters(logs, {
+        timeRange,
+        nowMs: nowRef.current,
+        includeBenchmark,
+        selectedTypes,
+        selectedGroups,
+        filterCategory,
+      }),
+    [logs, timeRange, includeBenchmark, selectedTypes, selectedGroups, filterCategory]
+  );
 
   return {
     logs: filteredLogs,

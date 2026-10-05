@@ -90,8 +90,9 @@ func DefaultAlertConfig() AlertConfig {
 		CooldownSeconds:        30,
 		MinSeverity:            "CRITICAL",
 		HighRiskActions: []string{
-			"impersonation.start",
 			"impersonation.stepup_failed",
+			"impersonation.unauthorized_attempt",
+			"impersonation.force_revoked",
 			"auth.tamper_detected",
 			"system.security.tamper_detected",
 			"tenant.suspend",

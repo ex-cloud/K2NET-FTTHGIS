@@ -187,34 +187,103 @@ export function resolveAuditPathname(e: Record<string, unknown>, metadata: Recor
   return undefined;
 }
 
+type Severity = "INFO" | "WARN" | "ERROR" | "CRITICAL";
+
+/**
+ * Severity taxonomy — two separate axes:
+ *  - "Audit importance": every impersonation is still recorded in full (isImpersonated flag + dual identity).
+ *  - "Needs real-time human response": only genuine violations are CRITICAL (banner + webhook).
+ * A routine, MFA-verified impersonation session is a legitimate support workflow → INFO.
+ */
+const CRITICAL_ACTION_KEYWORDS = [
+  "STEPUP_FAILED",
+  "UNAUTHORIZED",
+  "TAMPER",
+  "BREACH",
+  "BRUTE_FORCE",
+  "FORCE_REVOKED",
+  "DESTRUCTIVE_PURGE",
+];
+const ROUTINE_IMPERSONATION_KEYWORDS = ["IMPERSONATION_STARTED", "IMPERSONATION_ENDED", "IMPERSONATION_SESSION"];
+const WARN_ACTION_KEYWORDS = ["GLOBAL_SETTING", "API_KEY", "PASSWORD", "SECURITY_POLICY"];
+const ERROR_ACTION_KEYWORDS = ["DEGRADED", "FAIL"];
+const VALID_SEVERITIES: ReadonlySet<string> = new Set(["CRITICAL", "ERROR", "WARN", "INFO"]);
+
+const containsAny = (value: string, keywords: readonly string[]): boolean =>
+  keywords.some((k) => value.includes(k));
+
+function readRawSeverity(metadata: Record<string, unknown>, e: Record<string, unknown>): string | undefined {
+  const raw = metadata.severity ?? e.severity;
+  return typeof raw === "string" ? raw.toUpperCase() : undefined;
+}
+
+function severityFromStatus(e: Record<string, unknown>, actionStr: string, status?: number): Severity {
+  const httpStatus = typeof status === "number" ? status : 0;
+  if (e.status === "FAILED" || httpStatus >= 500 || containsAny(actionStr, ERROR_ACTION_KEYWORDS)) return "ERROR";
+  if (httpStatus >= 400) return "WARN";
+  return "INFO";
+}
+
 export function resolveEntrySeverity(
   metadata: Record<string, unknown>,
   e: Record<string, unknown>,
   status?: number
-): "INFO" | "WARN" | "ERROR" | "CRITICAL" {
+): Severity {
   const actionStr = String(e.action ?? metadata.action ?? "").toUpperCase();
-  const rawSeverity = typeof metadata.severity === "string"
-    ? metadata.severity.toUpperCase()
-    : typeof e.severity === "string"
-    ? e.severity.toUpperCase()
-    : undefined;
 
-  if (actionStr.includes("IMPERSONATION") || actionStr.includes("UNAUTHORIZED") || actionStr.includes("TAMPER") || actionStr.includes("BREACH")) {
-    return "CRITICAL";
-  }
-  if (actionStr.includes("GLOBAL_SETTING") || actionStr.includes("API_KEY") || actionStr.includes("PASSWORD") || actionStr.includes("SECURITY_POLICY")) {
-    return "WARN";
-  }
-  if (rawSeverity === "CRITICAL" || rawSeverity === "ERROR" || rawSeverity === "WARN" || rawSeverity === "INFO") {
-    return rawSeverity as "INFO" | "WARN" | "ERROR" | "CRITICAL";
-  }
-  if (e.status === "FAILED" || (typeof status === "number" && status >= 500) || actionStr.includes("DEGRADED") || actionStr.includes("FAIL")) {
-    return "ERROR";
-  }
-  if (typeof status === "number" && status >= 400) {
-    return "WARN";
-  }
-  return "INFO";
+  // 1. Genuine security violations always win → CRITICAL
+  if (containsAny(actionStr, CRITICAL_ACTION_KEYWORDS)) return "CRITICAL";
+
+  // 2. Routine authorized impersonation → INFO, even if the producer tagged it CRITICAL
+  if (actionStr === "IMPERSONATION" || containsAny(actionStr, ROUTINE_IMPERSONATION_KEYWORDS)) return "INFO";
+
+  // 3. Sensitive config mutations → WARN
+  if (containsAny(actionStr, WARN_ACTION_KEYWORDS)) return "WARN";
+
+  // 4. Trust explicit producer severity
+  const rawSeverity = readRawSeverity(metadata, e);
+  if (rawSeverity && VALID_SEVERITIES.has(rawSeverity)) return rawSeverity as Severity;
+
+  // 5. Derive from status
+  return severityFromStatus(e, actionStr, status);
+}
+
+/** Keyword tables for synthetic / simulation / load-test telemetry detection. */
+const SYNTHETIC_CATEGORIES: ReadonlySet<string> = new Set(["BENCHMARK", "SYNTHETIC", "STRESS_TEST"]);
+const SYNTHETIC_ACTOR_KEYWORDS = ["benchmark", "synthetic"];
+const SYNTHETIC_RESOURCE_KEYWORDS = ["flapping", "benchmark", "synthetic", "mock", "sim-"];
+const SYNTHETIC_ACTION_KEYWORDS = ["benchmark", "stress", "synthetic"];
+
+const isTruthyFlag = (v: unknown): boolean => v === true || v === "true";
+
+const lowerStr = (...candidates: unknown[]): string => {
+  const found = candidates.find((c) => typeof c === "string" && c.length > 0);
+  return typeof found === "string" ? found.toLowerCase() : "";
+};
+
+/**
+ * Multi-vector detection of synthetic / simulation / benchmark telemetry.
+ * Priority: explicit `is_synthetic` flag set at the source (authoritative) → category → naming heuristics
+ * (actor, resource e.g. `olt-flapping-01`, action). Heuristics are a safety net for legacy producers only.
+ */
+export function isSyntheticOrBenchmarkEntry(e: Record<string, unknown> | AuditStreamEntry): boolean {
+  const rec = e as Record<string, unknown>;
+  const metadata = (rec.metadata as Record<string, unknown>) ?? {};
+
+  if (isTruthyFlag(metadata.is_synthetic) || isTruthyFlag(metadata.isSynthetic)) return true;
+
+  const category = lowerStr(metadata.category, rec.category).toUpperCase();
+  if (SYNTHETIC_CATEGORIES.has(category)) return true;
+
+  const actor = lowerStr(rec.actor, rec.actorId, rec.username);
+  const resource = `${lowerStr(rec.resourceId)} ${lowerStr(rec.targetResource)}`;
+  const action = lowerStr(rec.action);
+
+  return (
+    containsAny(actor, SYNTHETIC_ACTOR_KEYWORDS) ||
+    containsAny(resource, SYNTHETIC_RESOURCE_KEYWORDS) ||
+    containsAny(action, SYNTHETIC_ACTION_KEYWORDS)
+  );
 }
 
 export function resolveEntryImpersonation(metadata: Record<string, unknown>, e: Record<string, unknown>) {

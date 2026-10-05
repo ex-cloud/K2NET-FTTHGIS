@@ -33,7 +33,8 @@ import { exportLogsToCsv } from "./logs-utils";
 
 export interface LogsHeaderActionsProps {
   filteredLogs: AuditStreamEntry[];
-  clearLogs: () => void;
+  /** Re-fetch the latest events from the audit gateway (does NOT wipe the buffer first). */
+  onRefresh: () => Promise<void> | void;
   showHistogram: boolean;
   setShowHistogram: React.Dispatch<React.SetStateAction<boolean>>;
   showColumnPicker: boolean;
@@ -51,7 +52,7 @@ export interface LogsHeaderActionsProps {
 
 export function LogsHeaderActions({
   filteredLogs,
-  clearLogs,
+  onRefresh,
   showHistogram,
   setShowHistogram,
   showColumnPicker,
@@ -94,9 +95,13 @@ export function LogsHeaderActions({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              clearLogs();
-              toast.info("Refreshing real-time log feed...");
+            onClick={async () => {
+              try {
+                await onRefresh();
+                toast.success("Log feed refreshed.");
+              } catch {
+                toast.error("Failed to refresh log feed.");
+              }
             }}
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/60 border border-border/60 rounded-md transition-colors"
           >

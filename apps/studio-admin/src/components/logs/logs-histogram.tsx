@@ -85,7 +85,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-[2px] bg-primary shrink-0" />
+            <span className="w-2 h-2 rounded-[2px] bg-muted-foreground/50 shrink-0" />
             <span className="text-foreground">Success</span>
             <span className="text-muted-foreground/60 text-[9px]">2xx</span>
           </div>
@@ -198,7 +198,7 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
           <Bar
             dataKey="success"
             stackId="a"
-            fill="hsl(142 71% 45%)"
+            fill="hsl(var(--muted-foreground) / 0.35)"
             name="Success"
             radius={[0, 0, 0, 0]}
             className="cursor-pointer"
@@ -207,7 +207,7 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
           <Bar
             dataKey="warning"
             stackId="a"
-            fill="hsl(38 92% 50%)"
+            fill="hsl(38 92% 50% / 0.7)"
             name="Warning"
             className="cursor-pointer"
             onClick={handleDirectBarClick}
@@ -215,7 +215,7 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
           <Bar
             dataKey="error"
             stackId="a"
-            fill="hsl(0 84% 60%)"
+            fill="hsl(0 84% 60% / 0.85)"
             name="Error"
             radius={[2, 2, 0, 0]}
             className="cursor-pointer"

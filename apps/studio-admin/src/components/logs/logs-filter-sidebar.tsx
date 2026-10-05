@@ -144,13 +144,13 @@ function LogGroupRowItem({
           title={`Toggle all ${group.label}`}
         />
         <CollapsibleTrigger className="flex flex-1 items-center justify-between min-w-0 group/grp">
-          <span className={`flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider ${group.color}`}>
+          <span className="flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider text-muted-foreground group-hover/grp:text-foreground transition-colors">
             <GroupIcon className="w-3 h-3 shrink-0" />
             <span className="truncate">{group.label}</span>
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
             {eventCount > 0 ? (
-              <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${group.color} ${group.accentBg}`}>
+              <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold bg-muted/40 text-foreground/80 border border-border/40">
                 {eventCount}
               </span>
             ) : (
@@ -303,6 +303,12 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
 
         <PresetsFilterSection />
 
+        <SeverityFilterSection
+          selectedSeverities={selectedSeverities}
+          toggleSeverity={toggleSeverity}
+          severityCounts={severityCounts}
+        />
+
         <TenantScopeFilterSection
           scopeFilter={scopeFilter}
           setScopeFilter={setScopeFilter}
@@ -355,21 +361,10 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
           </CollapsibleContent>
         </Collapsible>
 
-        <SeverityFilterSection
-          selectedSeverities={selectedSeverities}
-          toggleSeverity={toggleSeverity}
-          severityCounts={severityCounts}
-        />
-
         <LevelFilterSection
           selectedLevels={selectedLevels}
           toggleLevel={toggleLevel}
           levelCounts={levelCounts}
-        />
-
-        <BenchmarkFilterSection
-          includeBenchmark={includeBenchmark}
-          setIncludeBenchmark={setIncludeBenchmark}
         />
 
         <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">
@@ -389,6 +384,11 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
             <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
           </CollapsibleTrigger>
         </Collapsible>
+
+        <BenchmarkFilterSection
+          includeBenchmark={includeBenchmark}
+          setIncludeBenchmark={setIncludeBenchmark}
+        />
       </div>
 
       <div className="p-3 border-t border-border/40 space-y-1 font-mono text-[10px] shrink-0 bg-card/40">
