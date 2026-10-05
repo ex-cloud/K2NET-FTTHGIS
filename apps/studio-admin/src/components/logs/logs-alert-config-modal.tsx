@@ -7,6 +7,7 @@ import {
   DialogDescription,
   Badge,
   Button,
+  Checkbox,
   cn,
 } from "@k2net/ui";
 import {
@@ -303,11 +304,10 @@ function NotificationGatewaySection({
         <div className="p-3 rounded-lg border border-border bg-background space-y-2">
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 font-semibold text-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={config.enableEmail}
-                onChange={(e) => setConfig({ ...config, enableEmail: e.target.checked })}
-                className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
+                onCheckedChange={(checked) => setConfig({ ...config, enableEmail: !!checked })}
+                className="size-3.5 rounded-[3px]"
               />
               <Mail className="w-3.5 h-3.5 text-primary" />
               <span>Emergency Email Alerts</span>
@@ -326,11 +326,10 @@ function NotificationGatewaySection({
         <div className="p-3 rounded-lg border border-border bg-background space-y-2">
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 font-semibold text-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={config.enableWhatsApp}
-                onChange={(e) => setConfig({ ...config, enableWhatsApp: e.target.checked })}
-                className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
+                onCheckedChange={(checked) => setConfig({ ...config, enableWhatsApp: !!checked })}
+                className="size-3.5 rounded-[3px]"
               />
               <MessageSquare className="w-3.5 h-3.5 text-primary" />
               <span>WhatsApp Incident Alerts</span>
@@ -463,11 +462,10 @@ export function LogsAlertConfigModal({
 
               <div className="flex items-center gap-2">
                 <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={config.enabled}
-                    onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
-                    className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
+                    onCheckedChange={(checked) => setConfig({ ...config, enabled: !!checked })}
+                    className="size-3.5 rounded-[3px]"
                   />
                   <span className={cn("text-[11px]", config.enabled ? "text-primary" : "text-muted-foreground")}>
                     {config.enabled ? "Engine Active" : "Engine Paused"}

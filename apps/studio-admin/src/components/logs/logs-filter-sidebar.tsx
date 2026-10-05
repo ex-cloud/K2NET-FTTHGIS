@@ -6,6 +6,7 @@ import {
   CollapsibleTrigger,
   SecondarySidebarHeader,
   ActionTooltip,
+  Checkbox,
 } from "@k2net/ui";
 import {
   Search,
@@ -74,18 +75,11 @@ function LogGroupRowItem({
   return (
     <Collapsible defaultOpen={activeCount > 0} className="w-full">
       <div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-muted/30 transition-colors">
-        <input
-          type="checkbox"
-          checked={isAllChecked}
-          ref={(el) => {
-            if (el) {
-              el.indeterminate = isPartiallyChecked;
-            }
-          }}
-          onClick={(e) => e.stopPropagation()}
-          onChange={() => toggleGroup(groupKey)}
-          className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer shrink-0"
-          title={`Toggle all ${group.label}`}
+        <Checkbox
+          checked={isAllChecked ? true : isPartiallyChecked ? "indeterminate" : false}
+          onCheckedChange={() => toggleGroup(groupKey)}
+          className="size-3.5 rounded-[3px] shrink-0"
+          aria-label={`Toggle all ${group.label}`}
         />
         <CollapsibleTrigger className="flex flex-1 items-center justify-between min-w-0 group/grp select-none">
           <span className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground group-hover/grp:text-foreground transition-colors truncate">
@@ -121,12 +115,10 @@ function LogGroupRowItem({
               <div key={typeKey}>
                 <label className="flex items-center justify-between px-2 py-1 rounded hover:bg-muted/40 cursor-pointer transition-colors group/type">
                   <div className="flex items-center gap-2 min-w-0">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={isOn}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={() => toggleType(typeKey)}
-                      className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer shrink-0"
+                      onCheckedChange={() => toggleType(typeKey)}
+                      className="size-3.5 rounded-[3px] shrink-0"
                     />
                     <span className="text-muted-foreground group-hover/type:text-foreground transition-colors truncate text-[11px]">
                       {getLogTypeLabel(typeKey)}
@@ -145,12 +137,10 @@ function LogGroupRowItem({
                         className="flex items-center gap-2 px-2 py-0.5 rounded hover:bg-muted/30 cursor-pointer transition-colors group/sub"
                       >
                         <ChevronRight className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={!!edgeSubFilters[sub.key]}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={() => toggleEdgeSubFilter(sub.key)}
-                          className="w-3 h-3 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer shrink-0"
+                          onCheckedChange={() => toggleEdgeSubFilter(sub.key)}
+                          className="size-3 rounded-[3px] shrink-0"
                         />
                         <span className="text-[10px] text-muted-foreground/70 group-hover/sub:text-foreground transition-colors font-mono">
                           {sub.label}

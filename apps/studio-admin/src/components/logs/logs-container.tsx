@@ -6,7 +6,7 @@ import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { LogsTopHeader } from "@/components/logs/logs-top-header";
 import { LogsHistogram, buildHistogramData, useAuditAnalyticsSummary } from "@/components/logs/logs-histogram";
 import { toast } from "sonner";
-import { Button } from "@k2net/ui";
+import { Button, Checkbox } from "@k2net/ui";
 import { LOG_COLUMNS } from "./logs-utils";
 import { LogsRowItem } from "./logs-row-item";
 import { LogsDetailDrawer } from "./logs-detail-drawer";
@@ -108,17 +108,11 @@ function LogsTableHeader({
   return (
     <div className="flex items-center px-4 py-2 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-mono">
       <div className="w-[20px] mr-2.5 shrink-0 flex items-center justify-center">
-        <input
-          type="checkbox"
-          checked={!!isAllSelected}
-          ref={(el) => {
-            if (el) {
-              el.indeterminate = !!isSomeSelected;
-            }
-          }}
-          onChange={onToggleSelectAll}
-          className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer"
-          title="Toggle select all"
+        <Checkbox
+          checked={isAllSelected ? true : isSomeSelected ? "indeterminate" : false}
+          onCheckedChange={onToggleSelectAll}
+          className="size-3.5 rounded-[3px]"
+          aria-label="Toggle select all"
         />
       </div>
       {columns.map((col) => {
@@ -389,8 +383,12 @@ function LogsContainerContent() {
   }, []);
 
   const visibleCols = useMemo(() => {
-    return new Set(table.getAllLeafColumns().filter((c) => c.getIsVisible()).map((c) => c.id));
-  }, [table]);
+    return new Set(
+      Object.entries(columnVisibility)
+        .filter(([_, isVisible]) => isVisible !== false)
+        .map(([colId]) => colId)
+    );
+  }, [columnVisibility]);
 
   return (
     <div className="flex flex-col h-full w-full bg-background font-mono text-xs overflow-hidden select-none">

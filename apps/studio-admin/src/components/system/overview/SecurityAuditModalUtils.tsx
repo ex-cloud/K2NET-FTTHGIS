@@ -35,13 +35,13 @@ export const LOG_GROUPS_META: Record<string, { label: string; color: string; bg:
     border: "border-violet-500/20",
   },
   OPERATIONS: {
-    label: "Bisnis & Operasional",
+    label: "Business & Operations",
     color: "text-sky-400",
     bg: "bg-sky-500/10",
     border: "border-sky-500/20",
   },
   NETWORK: {
-    label: "Jaringan GIS",
+    label: "GIS & Network",
     color: "text-primary",
     bg: "bg-primary/10",
     border: "border-primary/20",

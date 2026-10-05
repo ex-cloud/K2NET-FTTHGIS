@@ -271,7 +271,7 @@ export function LogsHistogram({ data = [], className, onSelectRange }: LogsHisto
               }
               setSelectedBucket(null);
             }}
-            className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-muted/20 text-muted-foreground hover:bg-muted/60 transition-colors cursor-pointer shadow-xs"
+            className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border text-xs font-medium bg-muted/20 text-muted-foreground hover:bg-muted/60 transition-colors cursor-pointer shadow-xs"
           >
             <Search className="w-3 h-3 shrink-0" />
             <span>Filter logs to selected range</span>

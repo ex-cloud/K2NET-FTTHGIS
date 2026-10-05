@@ -4,6 +4,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
+  Checkbox,
 } from "@k2net/ui";
 import { ChevronDown, Zap } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
@@ -24,7 +25,7 @@ export const SEVERITY_OPTIONS = [
 export const SCOPE_OPTIONS = [
   { key: "ALL", label: "All Scopes" },
   { key: "SYSTEM", label: "System Core" },
-  { key: "ORGANIZATION", label: "Tenant Org" },
+  { key: "TENANT", label: "Tenant" },
   { key: "PROJECT", label: "Project Tech" },
 ];
 
@@ -40,7 +41,8 @@ export function TenantScopeFilterSection({
   setTenantFilter: (v: string) => void;
 }) {
   const { t } = useTranslation();
-  const hasActive = scopeFilter !== "ALL" || Boolean(tenantFilter.trim());
+  const normalizedScope = scopeFilter === "ORGANIZATION" ? "TENANT" : scopeFilter;
+  const hasActive = normalizedScope !== "ALL" || Boolean(tenantFilter.trim());
 
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
@@ -49,7 +51,7 @@ export function TenantScopeFilterSection({
         <div className="flex items-center gap-1.5">
           {hasActive && (
             <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono font-semibold max-w-[100px] truncate border border-border/40">
-              {tenantFilter.trim() || scopeFilter}
+              {tenantFilter.trim() || normalizedScope}
             </span>
           )}
           <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
@@ -58,7 +60,7 @@ export function TenantScopeFilterSection({
       <CollapsibleContent className="pt-1 space-y-2 font-mono text-[11px]">
         <div className="grid grid-cols-2 gap-1">
           {SCOPE_OPTIONS.map((s) => {
-            const isSelected = scopeFilter === s.key;
+            const isSelected = normalizedScope === s.key;
             return (
               <button
                 key={s.key}
@@ -184,12 +186,10 @@ export function LevelFilterSection({
               className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/40 cursor-pointer transition-colors"
             >
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={!!selectedLevels[lvl.key]}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={() => toggleLevel(lvl.key)}
-                  className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer"
+                  onCheckedChange={() => toggleLevel(lvl.key)}
+                  className="size-3.5 rounded-[3px]"
                 />
                 <span className="text-muted-foreground text-[11px]">{lvl.label}</span>
               </div>
@@ -221,14 +221,16 @@ export function ScopeFilterSection({
   projectFilter: string;
   setProjectFilter: (v: string) => void;
 }) {
+  const normalizedScope = scopeFilter === "ORGANIZATION" ? "TENANT" : scopeFilter;
+
   return (
     <Collapsible defaultOpen className="w-full space-y-1 pt-2 border-t border-border/40">
       <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group select-none">
         <span>Scope & Project</span>
         <div className="flex items-center gap-1.5">
-          {scopeFilter !== "ALL" && (
+          {normalizedScope !== "ALL" && (
             <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono font-semibold border border-border/40">
-              {scopeFilter}
+              {normalizedScope}
             </span>
           )}
           <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/40" />
@@ -237,7 +239,7 @@ export function ScopeFilterSection({
       <CollapsibleContent className="pt-1 space-y-2 font-mono text-[11px]">
         <div className="grid grid-cols-2 gap-1">
           {SCOPE_OPTIONS.map((s) => {
-            const isSelected = scopeFilter === s.key;
+            const isSelected = normalizedScope === s.key;
             return (
               <button
                 key={s.key}
@@ -311,12 +313,10 @@ export function SeverityFilterSection({
               className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/40 cursor-pointer transition-colors"
             >
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={!!selectedSeverities[sev.key]}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={() => toggleSeverity(sev.key)}
-                  className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer"
+                  onCheckedChange={() => toggleSeverity(sev.key)}
+                  className="size-3.5 rounded-[3px]"
                 />
                 <span className="text-muted-foreground text-[11px]">{sev.label}</span>
               </div>
@@ -346,11 +346,10 @@ export function BenchmarkFilterSection({
       <div className="p-2 rounded-lg border border-border/50 bg-muted/20 space-y-1">
         <label className="flex items-center justify-between cursor-pointer group select-none">
           <div className="flex items-center gap-2 min-w-0">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={includeBenchmark}
-              onChange={(e) => setIncludeBenchmark(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer shrink-0"
+              onCheckedChange={(checked) => setIncludeBenchmark(!!checked)}
+              className="size-3.5 rounded-[3px] shrink-0"
             />
             <span className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground font-semibold transition-colors truncate text-[11px]">
               <Zap className="w-3 h-3 text-muted-foreground/60 shrink-0" />

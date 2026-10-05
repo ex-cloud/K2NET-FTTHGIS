@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   UniversalContextMenu,
   type ContextMenuGroupConfig,
+  Checkbox,
 } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { type AuditStreamEntry, LOG_GROUPS } from "@/hooks/use-audit-log-stream";
@@ -491,16 +492,18 @@ export function LogsRowItem({
         }`}
       >
         {/* Leading Slot: Monochrome Dot by default, Checkbox on Hover/Selected */}
-        <div className="w-[20px] mr-2.5 shrink-0 flex items-center justify-center">
-          <input
-            type="checkbox"
-            checked={!!isRowSelected}
-            onClick={(e) => e.stopPropagation()}
-            onChange={() => onToggleSelectRow?.(log.id)}
-            className={`w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer ${
-              isRowSelected ? "block" : "hidden group-hover:block"
-            }`}
-          />
+        <div
+          className="w-[20px] mr-2.5 shrink-0 flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className={isRowSelected ? "block" : "hidden group-hover:block"}>
+            <Checkbox
+              checked={!!isRowSelected}
+              onCheckedChange={() => onToggleSelectRow?.(log.id)}
+              className="size-3.5 rounded-[3px]"
+              aria-label="Select row"
+            />
+          </div>
           {!isRowSelected && (
             <span
               className={`w-1.5 h-1.5 rounded-full block group-hover:hidden transition-colors ${

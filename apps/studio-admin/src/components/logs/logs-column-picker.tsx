@@ -3,6 +3,7 @@ import { Search, Check } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { Table, VisibilityState } from "@tanstack/react-table";
 import type { AuditStreamEntry } from "@/hooks/use-audit-log-stream";
+import { Checkbox } from "@k2net/ui";
 
 export interface ColumnPickerProps {
   table: Table<AuditStreamEntry>;
@@ -67,11 +68,10 @@ export function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: Co
           const isVisible = (columnVisibility as Record<string, boolean>)?.[col.id] !== false;
           return (
             <label key={col.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer transition-colors">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={isVisible}
-                onChange={(e) => col.toggleVisibility(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border border-border bg-background text-foreground accent-neutral-800 dark:accent-neutral-200 cursor-pointer"
+                onCheckedChange={(checked) => col.toggleVisibility(!!checked)}
+                className="size-3.5 rounded-[3px]"
               />
               <span className="text-[11px] text-foreground/80">{label}</span>
               {isVisible && <Check className="w-3 h-3 text-foreground ml-auto shrink-0" />}

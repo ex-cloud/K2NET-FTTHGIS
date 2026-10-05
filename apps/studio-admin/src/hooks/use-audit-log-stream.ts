@@ -32,20 +32,20 @@ export const LOG_GROUPS: Record<LogGroupKey, {
 }> = {
   CORE: {
     label: "Core System",
-    description: "Kong, Keycloak, Postgres, Redis, Traefik — infrastruktur platform",
+    description: "Kong, Keycloak, Postgres, Redis, Traefik — platform infrastructure",
     color: "text-violet-400",
     accentBg: "bg-violet-500/10",
     types: ["edge", "auth", "postgres", "redis", "traefik"],
   },
   OPERATIONS: {
-    label: "Bisnis & Operasional",
-    description: "AI Copilot, Task/Project Sync, Payment, Notifikasi, Storage, Scheduler, Export",
+    label: "Business & Operations",
+    description: "AI Copilot, Task/Project Sync, Payment, Notification, Storage, Scheduler, Export",
     color: "text-sky-400",
     accentBg: "bg-sky-500/10",
     types: ["ai", "task", "audit", "notification", "storage", "export", "payment", "scheduler"],
   },
   NETWORK: {
-    label: "Jaringan GIS",
+    label: "GIS & Network",
     description: "OLT gateway, Poller SNMP, Map/Geocoding, Martin Vector Tile",
     color: "text-primary/80",
     accentBg: "bg-primary/10",
