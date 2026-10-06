@@ -101,6 +101,9 @@ public class ProjectService {
         if (incoming.getDescription() != null) {
             existing.setDescription(incoming.getDescription());
         }
+        if (incoming.getStatus() != null) {
+            existing.setStatus(incoming.getStatus());
+        }
         if (incoming.getRegion() != null) {
             existing.setRegion(incoming.getRegion());
         }

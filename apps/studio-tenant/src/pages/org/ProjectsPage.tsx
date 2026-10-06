@@ -109,13 +109,13 @@ export function ProjectsPage() {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
                 {/* Search Input */}
                 <div className="relative w-full sm:w-56 shrink-0">
-                  <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   <Input
                     type="text"
                     placeholder={t("gis.search_projects")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-7.5 pl-8 text-xs bg-muted/20 border-border/80"
+                    className="h-7 pl-8 text-xs bg-muted/20 border-border/80"
                   />
                 </div>
 
@@ -125,17 +125,17 @@ export function ProjectsPage() {
                   onValueChange={setStatusFilter}
                   className="w-full sm:w-auto overflow-x-auto custom-scrollbar"
                 >
-                  <TabsList className="h-7.5 p-0.5 bg-muted/60 border border-border/60 shrink-0">
-                    <TabsTrigger value="ALL" className="text-xs px-2.5 h-6.5">
+                  <TabsList size="sm" className="border border-border/60 bg-muted/60 shrink-0">
+                    <TabsTrigger value="ALL">
                       {t("common.all")} ({projects.length})
                     </TabsTrigger>
-                    <TabsTrigger value="PRODUCTION" className="text-xs px-2.5 h-6.5">
+                    <TabsTrigger value="PRODUCTION">
                       Production
                     </TabsTrigger>
-                    <TabsTrigger value="PLANNING" className="text-xs px-2.5 h-6.5">
+                    <TabsTrigger value="PLANNING">
                       Planning
                     </TabsTrigger>
-                    <TabsTrigger value="MAINTENANCE" className="text-xs px-2.5 h-6.5">
+                    <TabsTrigger value="MAINTENANCE">
                       Maintenance
                     </TabsTrigger>
                   </TabsList>

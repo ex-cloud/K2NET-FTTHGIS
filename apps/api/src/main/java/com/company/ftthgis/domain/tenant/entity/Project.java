@@ -50,6 +50,10 @@ public class Project extends OrganizationAwareEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(length = 50)
+    @Builder.Default
+    private String status = "PRODUCTION";
+
     @Column
     private String region;
 

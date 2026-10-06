@@ -184,48 +184,27 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
           </Button>
         </div>
 
-        {/* Usage list with border-groove-t dividers and visual progress bars */}
-        <div className="space-y-2.5">
-          {usageItems.map((item, idx) => {
-            const isCritical = item.percent >= 95;
-            const isWarning = item.percent >= 80 && item.percent < 95;
-
-            const progressColor = isCritical
-              ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.45)]"
-              : isWarning
-              ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.45)]"
-              : "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.4)]";
-
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  "py-1.5 space-y-1.5",
-                  idx > 0 && "border-groove-t pt-2.5"
-                )}
-              >
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <CircularMeter percent={item.percent} />
-                    <span className="font-medium text-foreground/90 truncate text-[11px]">
-                      {item.label}
-                    </span>
-                  </div>
-                  <span className="font-mono font-bold text-foreground shrink-0 ml-2 text-[11px]">
-                    {item.value}
-                  </span>
-                </div>
-
-                {/* Visual Capacity Mini Progress Bar with Sunken Groove Track */}
-                <div className="h-1.5 w-full track-groove rounded-full overflow-hidden">
-                  <div
-                    className={cn("h-full rounded-full transition-all duration-500", progressColor)}
-                    style={{ width: `${Math.min(100, Math.max(0, item.percent))}%` }}
-                  />
-                </div>
+        {/* Usage list with border-groove-t dividers */}
+        <div className="space-y-1">
+          {usageItems.map((item, idx) => (
+            <div
+              key={idx}
+              className={cn(
+                "py-2 flex items-center justify-between text-xs",
+                idx > 0 && "border-groove-t"
+              )}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <CircularMeter percent={item.percent} />
+                <span className="font-medium text-foreground/90 truncate text-[11px]">
+                  {item.label}
+                </span>
               </div>
-            );
-          })}
+              <span className="font-mono font-bold text-foreground shrink-0 ml-2 text-[11px]">
+                {item.value}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </Card>
