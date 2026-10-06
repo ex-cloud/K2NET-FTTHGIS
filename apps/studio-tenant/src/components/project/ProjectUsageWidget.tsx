@@ -178,27 +178,48 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
           </Button>
         </div>
 
-        {/* Usage list with border-groove-t dividers */}
-        <div>
-          {usageItems.map((item, idx) => (
-            <div
-              key={idx}
-              className={cn(
-                "flex items-center justify-between py-2 text-xs",
-                idx > 0 && "border-groove-t"
-              )}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <CircularMeter percent={item.percent} />
-                <span className="font-medium text-foreground/90 truncate">
-                  {item.label}
-                </span>
+        {/* Usage list with border-groove-t dividers and visual progress bars */}
+        <div className="space-y-2.5">
+          {usageItems.map((item, idx) => {
+            const isCritical = item.percent >= 95;
+            const isWarning = item.percent >= 80 && item.percent < 95;
+
+            const progressColor = isCritical
+              ? "bg-rose-500"
+              : isWarning
+              ? "bg-amber-500"
+              : "bg-primary";
+
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  "py-1.5 space-y-1.5",
+                  idx > 0 && "border-groove-t pt-2.5"
+                )}
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <CircularMeter percent={item.percent} />
+                    <span className="font-medium text-foreground/90 truncate text-[11px]">
+                      {item.label}
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-foreground shrink-0 ml-2 text-[11px]">
+                    {item.value}
+                  </span>
+                </div>
+
+                {/* Visual Capacity Mini Progress Bar */}
+                <div className="h-1.5 w-full bg-muted/60 rounded-full overflow-hidden border border-border/40">
+                  <div
+                    className={cn("h-full rounded-full transition-all duration-500", progressColor)}
+                    style={{ width: `${Math.min(100, Math.max(0, item.percent))}%` }}
+                  />
+                </div>
               </div>
-              <span className="font-mono font-bold text-foreground shrink-0 ml-3">
-                {item.value}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </Card>

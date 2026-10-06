@@ -1,24 +1,24 @@
-# Global UI Style & Theme Consistency Rules
+# Global UI Style & Theme Consistency Rules — Monochrome Enterprise Standard
 
-Halaman ini mendefinisikan aturan wajib untuk menjaga keseragaman visual di seluruh platform **K2NET-FTTHGIS**, baik untuk Portal Utama (System Admin) maupun Portal Tenant. Aturan ini harus dipatuhi secara ketat untuk menjamin kecocokan di mode **Light/Dark** dan pilihan **Brand Style (Green/Blue)**.
+Halaman ini mendefinisikan aturan wajib untuk menjaga keseragaman visual di seluruh platform **K2NET-FTTHGIS**, baik untuk Portal Utama (System Admin) maupun Portal Tenant (`studio-tenant`). Aturan ini dirancang untuk menghasilkan estetika **Monochrome-First Enterprise (tenang, elegan, berwibawa, dan non-distracting)** serta menjamin keterbacaan sempurna di mode **Light/Dark**.
 
 > 📖 Spesifikasi lengkap token desain: [design_tokens_spec.md](file:///opt/project5/docs/Server/UI/theme/design_tokens_spec.md)
 
 ---
 
-## 🎨 1. Sistem Warna Global (Tailwind v4 & CSS Variables)
+## 🎨 1. Sistem Warna Global (Monochrome-First & Semantic Tokens)
 
-Aplikasi mendukung tema dinamis (**Version 1 - Green** dan **Version 2 - Blue**) dikonfigurasi melalui `@theme inline` di `packages/design-system/src/theme.css`:
+Platform K2NET menganut filosofi **Monochrome Enterprise**: kanvas utama, panel kartu, border, tipografi, dan tombol aksi mengutamakan kontras monokrom netral. Aksen warna fungsional dibatasi secara ketat hanya untuk indikator status semantik (*Status Dot / Badges / Metrics Telemetry*).
 
-| Kategori | Token Warna | Green v1 HSL | Blue v2 HSL | Class Tailwind |
-|---|---|---|---|---|
-| **Brand Accent** | Dynamic Primary | `hsl(153 60% 53%)` | `hsl(199 89% 54%)` | `bg-primary` / `text-primary` |
-| **Background** | Charcoal Canvas | `hsl(0 0% 4.7%)` | `hsl(0 0% 4.7%)` | `bg-background` |
-| **Card Panel** | Elevated Surface | `hsl(0 0% 9%)` | `hsl(0 0% 9%)` | `bg-card` |
-| **Sidebar** | Panel Sidebar | `hsl(0 0% 4.7%)` | `hsl(0 0% 4.7%)` | `bg-sidebar` |
-| **Borders** | Subtle Lines | `hsl(0 0% 12%)` | `hsl(0 0% 12%)` | `border-border` |
-| **Text Primary** | Slate/White | `hsl(0 0% 94%)` | `hsl(0 0% 94%)` | `text-foreground` |
-| **Text Muted** | Neutral Grey | `hsl(0 0% 64%)` | `hsl(0 0% 64%)` | `text-muted-foreground` |
+| Kategori | Token Warna | Dark Mode HSL | Light Mode HSL | Class Tailwind | Keterangan |
+|---|---|---|---|---|---|
+| **Canvas Background** | Base Canvas | `hsl(0 0% 4.7%)` (`#0c0c0c`) | `hsl(0 0% 100%)` (`#ffffff`) | `bg-background` | Latar utama halaman |
+| **Card Panel** | Elevated Surface | `hsl(0 0% 9%)` (`#171717`) | `hsl(0 0% 100%)` (`#ffffff`) | `bg-card` | Permukaan kartu, drawer, popover |
+| **Borders** | Subtle Lines | `hsl(0 0% 12%)` (`#1f1f1f`) | `hsl(0 0% 89%)` (`#e5e5e5`) | `border-border` / `border-border/60` | Garis pembatas panel |
+| **Text Primary** | High Contrast | `hsl(0 0% 94%)` | `hsl(0 0% 9%)` | `text-foreground` | Judul, teks isi utama, label |
+| **Text Muted** | Neutral Grey | `hsl(0 0% 64%)` | `hsl(0 0% 28%)` | `text-muted-foreground` | Subtitle, metadata, placeholder |
+| **Primary Solid CTA** | Solid Monochrome | `hsl(0 0% 98%)` (Dark) | `hsl(0 0% 9%)` (Light) | `bg-foreground text-background` | Tombol aksi utama (Save, Add, Create) |
+| **Status ONLINE/SUCCESS** | Semantic Emerald | `hsl(142.1 76.2% 45.3%)` | `hsl(142.1 76.2% 45.3%)` | `text-emerald-500` / `bg-emerald-500/10` | Khusus status aktif, success, paid |
 
 ---
 
@@ -30,7 +30,7 @@ Aplikasi mendukung tema dinamis (**Version 1 - Green** dan **Version 2 - Blue**)
 * **Text Primary**: `#f0f0f0` (`text-foreground`) / **Text Muted**: `#a3a3a3` (`text-muted-foreground`)
 
 ### ☀️ B. Light Mode (Workspace/Field)
-* **Page Background**: `#fafafa` (`bg-background`)
+* **Page Background**: `#fafafa` / `#ffffff` (`bg-background`)
 * **Card & Dialog Background**: `#ffffff` (`bg-card`)
 * **Sidebar Background**: `#f5f5f5` (`bg-sidebar`)
 * **Border & Input Stroke**: `#e5e5e5` (`border-border`)
@@ -38,13 +38,16 @@ Aplikasi mendukung tema dinamis (**Version 1 - Green** dan **Version 2 - Blue**)
 
 ---
 
-## 🚫 3. Aturan Anti-Hardcode Warna (WAJIB — Level 1 Critical)
+## 🚫 3. Aturan Penggunaan Warna & Anti-Hardcode (WAJIB — Level 1 Critical)
 
-> ⚠️ **PELANGGARAN PALING KRITIS**: Warna hardcoded `zinc-*`, `emerald-*`, dan `text-white` menyebabkan UI **RUSAK di Light Mode** — teks menjadi tidak terbaca (putih di atas putih, atau card gelap di atas background putih). Setiap commit yang mengandung pelanggaran ini **HARUS ditolak**.
+> ⚠️ **ATURAN MUTLAK AKSEN WARNA**:
+> 1. **Dilarang keras mewarnai tombol utama secara acak dengan warna hijau neon / warna-warni pelangi**. Tombol aksi utama (*CTA*) wajib berwajah monokrom tegas (`bg-foreground text-background hover:bg-foreground/90` atau `variant="default"`).
+> 2. **Aksen Hijau (Emerald)** **DIPESERIKATKAN KHUSUS** untuk indikator semantik `SUCCESS`, `ONLINE`, `PAID`, atau `HEALTHY`. Dilarang menggunakannya sebagai latar tombol umum atau background kartu.
+> 3. **Warna hardcoded `zinc-*`, `emerald-*`, dan `text-white`** pada teks biasa menyebabkan UI rusak di Light Mode dan **HARUS ditolak**.
 
 ### A. Tabel Pemetaan Lengkap (Migration Cheat Sheet)
 
-| ❌ DILARANG — Hardcoded | ✅ WAJIB — Token Semantik | Alasan |
+| ❌ DILARANG — Hardcoded / Flashy | ✅ WAJIB — Token Semantik / Monokrom | Alasan |
 |---|---|---|
 | `text-white` | `text-foreground` | Tidak terlihat di Light Mode |
 | `text-zinc-100` / `text-zinc-200` | `text-foreground` | Tidak auto-invert |
@@ -54,28 +57,24 @@ Aplikasi mendukung tema dinamis (**Version 1 - Green** dan **Version 2 - Blue**)
 | `bg-zinc-800` / `bg-zinc-700` | `bg-muted` | Tetap gelap di Light Mode |
 | `border-zinc-700` sampai `border-zinc-900` | `border-border` atau `border-border/60` | Tidak responsif terhadap tema |
 | `bg-white/5` / `border-white/10` | `bg-card/30` / `border-border/30` | Menghilang di Light Mode |
-| `text-emerald-500` / `text-emerald-600` | `text-primary` | Terikat brand lama, tidak bisa Blue v2 |
-| `bg-emerald-500` / `bg-emerald-600` | `bg-primary` | Terikat brand lama |
-| `hover:bg-emerald-700` | `hover:bg-primary/90` | Hardcoded ke brand lama |
-| `border-emerald-500` | `border-primary` | Hardcoded ke brand lama |
-| `data-[state=checked]:bg-emerald-600` | `data-[state=checked]:bg-primary` | Checkbox/switch state |
+| Tombol CTA `bg-emerald-600` / `bg-green-500` | `bg-foreground text-background` atau `variant="default"` | Mengganggu hierarki monokrom |
 
-### B. Warna Non-Semantik Yang DIIZINKAN (Fixed Semantic)
+### B. Warna Semantik Fungsional Yang DIIZINKAN (Fixed Semantic)
 
-| ✅ Diizinkan | Penggunaan Valid |
+| ✅ Token / Class | Penggunaan Valid |
 |---|---|
-| `text-sky-400` / `bg-sky-500` | Metrik CPU, komputasi, grafik |
-| `text-violet-400` / `bg-violet-500` | Metrik identity / security |
-| `text-rose-400` / `bg-rose-500` | Alert error, offline, destructive |
-| `text-amber-400` / `bg-amber-500` | Warning, degraded, pending |
-| `bg-emerald-500/10 text-emerald-500` | Badge "success" semantik (bukan brand) |
+| `text-emerald-500` / `bg-emerald-500/10` | Status `ONLINE`, `ACTIVE`, `PAID`, `HEALTHY`, success badge |
+| `text-sky-400` / `bg-sky-500/10` | Metrik CPU, throughput jaringan, geometri spasial, `PLANNING` |
+| `text-violet-400` / `bg-violet-500/10` | Metrik identity / security / PBAC permission chip |
+| `text-rose-400` / `bg-rose-500/10` | Alert error, offline, destructive action, `FAILED`, `EXPIRED` |
+| `text-amber-400` / `bg-amber-500/10` | Warning, degraded, `PENDING`, `MAINTENANCE`, `TRIAL_EXPIRED` |
 
 ### C. Perintah Audit Wajib Sebelum Commit
 
 ```bash
 # Target: 0 pelanggaran di file .tsx/.ts (globals.css dikecualikan)
-grep -rn "text-zinc-\|bg-zinc-\|border-zinc-\|text-white\|bg-emerald-\|text-emerald-" \
-  apps/studio-admin/src \
+grep -rn "text-zinc-\|bg-zinc-\|border-zinc-\|text-white" \
+  apps/studio-admin/src apps/studio-tenant/src \
   --include="*.tsx" --include="*.ts" | wc -l
 ```
 
@@ -86,15 +85,14 @@ grep -rn "text-zinc-\|bg-zinc-\|border-zinc-\|text-white\|bg-emerald-\|text-emer
 ### A. Kartu, KPI Metrics, & GlowingEffect (Cards)
 
 * **Gunakan `<Card>` dari `@k2net/ui`** — Dilarang membuat wrapper card HTML/CSS independen per halaman.
-* **GlowingEffect pada KPI Strip (WAJIB)**: Seluruh baris KPI Cards / Metric Summary Strip di bagian atas halaman (seperti di `/tasks`, `/observability/*`, `/gateways/*`, `/organizations`, `/users`, `/ai`) **WAJIB** menggunakan `<Card glowingEffect>`:
-  * Menghasilkan efek border gradient yang mengikuti pergerakan kursor mouse secara dinamis (*mouse-tracking subtle rainbow/primary glow*).
+* **GlowingEffect pada KPI Strip (WAJIB)**: Seluruh baris KPI Cards / Metric Summary Strip di bagian atas halaman (seperti di `/tasks`, `/observability/*`, `/gateways/*`, `/organizations`, `/users`, `/team`) **WAJIB** menggunakan `<Card glowingEffect>` atau `<MetricCard variant="groove">`:
+  * Menghasilkan efek border gradient yang mengikuti pergerakan kursor mouse secara dinamis (*mouse-tracking subtle monochrome/primary glow*).
   * Struktur baku KPI: `<Card glowingEffect className="p-5 flex flex-col gap-3">`.
 * **Standard `<Card>` Tanpa GlowingEffect**:
   * Digunakan untuk container tabel data, panel konfigurasi bertingkat (seperti Multi-Provider Hub), form editor panjang, atau dialog modal.
-  * Gunakan interaksi border standar: `hover:border-primary/40 transition-colors`.
+  * Gunakan interaksi border standar: `hover:border-primary/40 transition-colors` atau `border-border/60`.
 * **Pencegahan Bug Overlap/Clipped Glow**:
   * Pada `<Card glowingEffect>`, dilarang menambahkan `overflow-hidden` jika card memiliki elemen anak yang menempel pada tepi border, agar efek glow tidak terpotong.
-* **DILARANG**: `<Card animatedBeam>` / `<Card beamColor="...">` — props ini sudah **dihapus**.
 * **TracingBeam**: Untuk halaman berkonten panjang (settings, compliance, wizard form), gunakan:
   ```tsx
   import { TracingBeam } from "@k2net/ui";
@@ -106,21 +104,22 @@ grep -rn "text-zinc-\|bg-zinc-\|border-zinc-\|text-white\|bg-emerald-\|text-emer
   </TracingBeam>
   ```
   Tambahkan `pl-4 md:pl-10` pada container dalam untuk menghindari garis beam menimpa konten.
-* **Pulsing Dot ONLINE**: `h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_var(--primary)] animate-pulse`
+* **Pulsing Dot ONLINE**: `h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_var(--color-emerald-500,#10b981)] animate-pulse`
 
 ### B. Tombol & Badge
 
-* **Primary CTA** `variant="default"`: `bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] h-9 rounded-lg` — Maks 1 per halaman.
-* **Toolbar** `variant="outline"`: `bg-card border-border hover:bg-muted h-9 rounded-lg`.
-* **Destructive** `variant="destructive"`: `bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20`.
+* **Primary Action CTA** `variant="default"`: `bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98] h-8 px-3 rounded-lg text-xs font-semibold shadow-xs` — Maksimal 1 aksi primer per view.
+* **Toolbar / Action Icon** `variant="outline"`: `bg-card text-foreground border-border/80 hover:bg-muted/80 h-8 px-3 rounded-lg text-xs font-medium`.
+* **Destructive Action** `variant="destructive"`: `bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20 h-8 px-3 rounded-lg text-xs font-medium`.
 
 Badge Status:
 | Tipe | Class |
 |---|---|
-| Brand/ONLINE | `bg-primary/10 text-primary border-primary/20 text-[11px]` |
-| SUCCESS tetap | `bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[11px]` |
-| OFFLINE/Error | `bg-rose-500/15 text-rose-400 border-rose-500/30 text-[11px]` |
-| WARNING | `bg-amber-500/15 text-amber-400 border-amber-500/30 text-[11px]` |
+| Neutral / Info | `bg-muted text-foreground border border-border/60 text-[10px] font-mono` |
+| ONLINE / SUCCESS | `bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-mono` |
+| OFFLINE / Error | `bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-mono` |
+| WARNING / Trial | `bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-mono` |
+| PBAC Scope / Role | `bg-violet-500/10 text-violet-400 border border-violet-500/20 text-[10px] font-mono` |
 
 ### C. Tipografi
 
