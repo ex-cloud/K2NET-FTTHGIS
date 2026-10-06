@@ -1,30 +1,12 @@
 import * as React from "react";
-import {
-  Input,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-  SecondarySidebarHeader,
-  ActionTooltip,
-  Checkbox,
-} from "@k2net/ui";
-import {
-  Search,
-  ChevronDown,
-  RotateCcw,
-  Plus,
-  Minus,
-} from "lucide-react";
+import { LogsFilterSidebarShell } from "@k2net/ui";
 import { useLogsFilter } from "./logs-filter-context";
-import { LogsDateRangePicker } from "./logs-date-range-picker";
 import { useTranslation } from "@k2net/i18n";
 import {
   TenantScopeFilterSection,
-  LevelFilterSection,
-  SeverityFilterSection,
-  MethodFilterSection,
-  PathnameFilterSection,
   BenchmarkFilterSection,
+  LEVEL_OPTIONS,
+  SEVERITY_OPTIONS,
 } from "./logs-filter-sections";
 import { PresetsFilterSection } from "./logs-presets-section";
 
@@ -136,6 +118,22 @@ export const LOG_TYPE_DEFINITIONS: LogTypeItem[] = [
   },
 ];
 
+const METHOD_OPTIONS = [
+  { key: "GET", label: "GET", badge: "text-muted-foreground bg-muted border-border" },
+  { key: "POST", label: "POST", badge: "text-sky-400 bg-sky-500/10 border-sky-500/30" },
+  { key: "PUT", label: "PUT", badge: "text-blue-400 bg-blue-500/10 border-blue-500/30" },
+  { key: "DELETE", label: "DELETE", badge: "text-rose-400 bg-rose-500/10 border-rose-500/30" },
+  { key: "PATCH", label: "PATCH", badge: "text-amber-400 bg-amber-500/10 border-amber-500/30" },
+];
+
+const ADMIN_QUICK_PATHS = [
+  "api/v1/projects/*",
+  "api/v1/network/*",
+  "api/v1/customers/*",
+  "api/v1/spatial/*",
+  "api/v1/system/*",
+];
+
 export interface LogsFilterSidebarProps {
   onCollapse?: () => void;
 }
@@ -154,26 +152,12 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     edgeSubFilters, toggleEdgeSubFilter,
     resetAllFilters,
     logTypeCounts,
-    levelCounts,
     severityCounts,
-    methodCounts,
     tenantFilter, setTenantFilter,
     includeBenchmark, setIncludeBenchmark,
     searchQuery,
     advancedFilters,
   } = useLogsFilter();
-
-  const [typeSearch, setTypeSearch] = React.useState("");
-  const [expandedTypes, setExpandedTypes] = React.useState<Record<string, boolean>>({
-    edge: true,
-  });
-
-  const toggleExpand = React.useCallback((key: string) => {
-    setExpandedTypes((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  }, []);
 
   const hasActiveFilters =
     timeRange !== "60m" ||
@@ -190,207 +174,73 @@ export function LogsFilterSidebar(_props: LogsFilterSidebarProps) {
     searchQuery.trim().length > 0 ||
     (advancedFilters && advancedFilters.length > 0);
 
-  const selectedTypeCount = Object.values(selectedTypes).filter(Boolean).length;
+  const facetItems = React.useMemo(() => {
+    return LOG_TYPE_DEFINITIONS.map((item) => ({
+      key: item.key,
+      label: item.label,
+      count: logTypeCounts[item.key] ?? 0,
+      subItems: item.subItems?.map((s) => ({
+        key: s.key,
+        label: s.label,
+        count: edgeSubFilters[s.key] ? 1 : 0,
+      })),
+    }));
+  }, [logTypeCounts, edgeSubFilters]);
 
-  const q = typeSearch.toLowerCase().trim();
-  const filteredTypes = React.useMemo(() => {
-    if (!q) return LOG_TYPE_DEFINITIONS;
-    return LOG_TYPE_DEFINITIONS.filter((item) => {
-      const matchLabel = item.label.toLowerCase().includes(q);
-      const matchKey = item.key.toLowerCase().includes(q);
-      const matchSub = item.subItems?.some(
-        (sub) => sub.label.toLowerCase().includes(q) || sub.key.toLowerCase().includes(q)
-      );
-      return matchLabel || matchKey || matchSub;
-    });
-  }, [q]);
+  const severities = React.useMemo(() => {
+    return SEVERITY_OPTIONS.map((s) => ({
+      ...s,
+      count: severityCounts[s.key] ?? 0,
+    }));
+  }, [severityCounts]);
+
+  const customSections = (
+    <>
+      <PresetsFilterSection />
+      <TenantScopeFilterSection
+        scopeFilter={scopeFilter}
+        setScopeFilter={setScopeFilter}
+        tenantFilter={tenantFilter}
+        setTenantFilter={setTenantFilter}
+      />
+      <BenchmarkFilterSection
+        includeBenchmark={includeBenchmark}
+        setIncludeBenchmark={setIncludeBenchmark}
+      />
+    </>
+  );
 
   return (
-    <div className="flex flex-col h-full w-[240px] font-sans text-xs bg-sidebar select-none border-groove-r shrink-0">
-      <SecondarySidebarHeader
-        title={t("observability.logs_explorer")}
-        onCollapse={_props.onCollapse}
-        actions={
-          hasActiveFilters ? (
-            <ActionTooltip label={t("observability.reset_filter") || "Reset filter"}>
-              <button
-                type="button"
-                onClick={resetAllFilters}
-                className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>{t("common.reset") || "Reset"}</span>
-              </button>
-            </ActionTooltip>
-          ) : null
-        }
-      />
-
-      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-thin p-3 space-y-4">
-        <div className="w-full space-y-1">
-          <div className="flex items-center justify-between px-1 py-1">
-            <span className="text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/80 uppercase tracking-widest">
-              {t("observability.time_range")}
-            </span>
-          </div>
-          <LogsDateRangePicker value={timeRange} onChange={setTimeRange} />
-        </div>
-
-        <PresetsFilterSection />
-
-        <SeverityFilterSection
-          selectedSeverities={selectedSeverities}
-          toggleSeverity={toggleSeverity}
-          severityCounts={severityCounts}
-        />
-
-        <TenantScopeFilterSection
-          scopeFilter={scopeFilter}
-          setScopeFilter={setScopeFilter}
-          tenantFilter={tenantFilter}
-          setTenantFilter={setTenantFilter}
-        />
-
-        {/* LOG TYPE FILTER WITH SUPABASE-STYLE TABLE BORDER & WORKTREE */}
-        <Collapsible defaultOpen className="w-full space-y-1 pt-2.5 border-groove-t">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/80 uppercase tracking-widest hover:text-foreground group select-none">
-            <span>{t("observability.log_type")}</span>
-            <div className="flex items-center gap-1.5">
-              {selectedTypeCount > 0 && (
-                <span className="text-[9px] font-mono text-muted-foreground font-semibold">
-                  × {selectedTypeCount}
-                </span>
-              )}
-              <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180 text-muted-foreground/60 group-hover:text-foreground dark:text-muted-foreground/70" />
-            </div>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-1.5 mt-1">
-            <div className="relative">
-              <Input
-                type="text"
-                value={typeSearch}
-                onChange={(e) => setTypeSearch(e.target.value)}
-                placeholder={t("observability.search") || "Search"}
-                className="bg-background border-border/60 text-foreground text-xs h-7 pl-7 font-mono focus:border-border focus-visible:ring-0"
-              />
-              <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-            </div>
-
-            <div className="rounded-md border border-border/70 bg-card/40 overflow-hidden divide-y divide-border/40 font-mono text-[11px] shadow-2xs max-h-[320px] overflow-y-auto custom-scrollbar-thin">
-              {filteredTypes.map((item) => {
-                const count = logTypeCounts[item.key] ?? 0;
-                const isOn = !!selectedTypes[item.key];
-                const hasSubItems = item.subItems && item.subItems.length > 0;
-                const isExpanded = (q && hasSubItems) ? true : !!expandedTypes[item.key];
-
-                return (
-                  <div key={item.key} className="transition-colors">
-                    <div
-                      onClick={() => toggleType(item.key)}
-                      className="flex items-center justify-between px-2.5 py-1.5 hover:bg-muted/40 transition-colors cursor-pointer group/type select-none"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Checkbox
-                          checked={isOn}
-                          onCheckedChange={() => toggleType(item.key)}
-                          className="size-3.5 rounded-[3px] shrink-0"
-                        />
-                        <span className="text-muted-foreground group-hover/type:text-foreground transition-colors truncate text-[11px]">
-                          {item.label}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {hasSubItems && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              toggleExpand(item.key);
-                            }}
-                            className="w-4 h-4 flex items-center justify-center rounded hover:bg-muted text-muted-foreground/70 hover:text-foreground transition-colors cursor-pointer"
-                            aria-label={isExpanded ? `Collapse ${item.label}` : `Expand ${item.label}`}
-                          >
-                            {isExpanded ? (
-                              <Minus className="w-3 h-3 stroke-[2.5]" />
-                            ) : (
-                              <Plus className="w-3 h-3 stroke-[2.5]" />
-                            )}
-                          </button>
-                        )}
-                        <span className={`text-[10px] font-mono min-w-[14px] text-right ${count > 0 ? "text-foreground font-semibold" : "text-muted-foreground/40"}`}>
-                          {count}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Worktree Sub-items */}
-                    {isExpanded && hasSubItems && (
-                      <div className="bg-muted/15 border-t border-border/30 divide-y divide-border/20">
-                        {item.subItems!.map((sub, idx) => {
-                          const isLast = idx === item.subItems!.length - 1;
-                          const isSubChecked = !!edgeSubFilters[sub.key];
-                          return (
-                            <div
-                              key={sub.key}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleEdgeSubFilter(sub.key);
-                              }}
-                              className="relative pl-7 pr-2.5 py-1 hover:bg-muted/30 cursor-pointer transition-colors select-none group/sub flex items-center justify-between"
-                            >
-                              {/* Tree Line Connector Trunk & Branch */}
-                              <div
-                                className="absolute left-[17px] top-0 w-[1px] bg-border/60 pointer-events-none"
-                                style={{ height: isLast ? "50%" : "100%" }}
-                              />
-                              <div className="absolute left-[17px] top-1/2 w-2.5 h-[1px] bg-border/60 pointer-events-none" />
-
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Checkbox
-                                  checked={isSubChecked}
-                                  onCheckedChange={() => toggleEdgeSubFilter(sub.key)}
-                                  className="size-3 rounded-[2.5px] shrink-0"
-                                />
-                                <span className="text-[10.5px] text-muted-foreground group-hover/sub:text-foreground transition-colors font-mono truncate">
-                                  {sub.label}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-
-        <LevelFilterSection
-          selectedLevels={selectedLevels}
-          toggleLevel={toggleLevel}
-          levelCounts={levelCounts}
-        />
-
-        <MethodFilterSection
-          selectedMethods={selectedMethods}
-          toggleMethod={toggleMethod}
-          methodCounts={methodCounts}
-        />
-
-        <PathnameFilterSection
-          pathnameFilter={pathnameFilter}
-          setPathnameFilter={setPathnameFilter}
-        />
-
-        <BenchmarkFilterSection
-          includeBenchmark={includeBenchmark}
-          setIncludeBenchmark={setIncludeBenchmark}
-        />
-      </div>
-    </div>
+    <LogsFilterSidebarShell
+      title={t("observability.logs_explorer")}
+      isCollapsed={false}
+      onToggleCollapse={_props.onCollapse || (() => {})}
+      hasActiveFilters={hasActiveFilters}
+      onResetAll={resetAllFilters}
+      resetTooltipLabel={t("observability.reset_filter") || "Reset filter"}
+      timeRange={timeRange}
+      onTimeRangeChange={setTimeRange}
+      timeRangeLabel={t("observability.time_range") || "TIME RANGE"}
+      severities={severities}
+      isSeveritySelected={(k) => !!selectedSeverities[k]}
+      onToggleSeverity={toggleSeverity}
+      facetTitle={t("observability.log_type") || "LOG TYPE"}
+      facetItems={facetItems}
+      isFacetItemSelected={(k) => !!selectedTypes[k]}
+      onToggleFacetItem={toggleType}
+      isSubFacetItemSelected={(subKey) => !!edgeSubFilters[subKey]}
+      onToggleSubFacetItem={toggleEdgeSubFilter}
+      levels={LEVEL_OPTIONS}
+      isLevelSelected={(k) => !!selectedLevels[k]}
+      onToggleLevel={toggleLevel}
+      methods={METHOD_OPTIONS}
+      isMethodSelected={(k) => !!selectedMethods[k]}
+      onToggleMethod={toggleMethod}
+      pathnameFilter={pathnameFilter}
+      onPathnameFilterChange={setPathnameFilter}
+      quickPaths={ADMIN_QUICK_PATHS}
+      customSectionsSlot={customSections}
+      translateFn={(k) => t(k)}
+    />
   );
 }

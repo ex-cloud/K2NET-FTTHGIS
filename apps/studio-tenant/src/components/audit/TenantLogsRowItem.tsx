@@ -1,6 +1,21 @@
 import * as React from "react";
 import { format } from "date-fns";
-import { Copy, Check, Sparkles, FileCode, ShieldCheck } from "lucide-react";
+import {
+  Copy,
+  Check,
+  Sparkles,
+  FileCode,
+  ShieldCheck,
+  Users,
+  Shield,
+  CreditCard,
+  Box,
+  Network,
+  Home,
+  Wrench,
+  Globe,
+  Activity,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -60,6 +75,19 @@ function getMethodColor(displayMethod: string) {
   if (m === "GET") return "text-muted-foreground font-medium";
   if (m === "RPC" || m === "EXEC") return "text-muted-foreground/70 font-semibold";
   return "text-muted-foreground/60";
+}
+
+function getCategorySourceIcon(category: string) {
+  const cat = (category || "").toUpperCase();
+  if (cat === "IAM" || cat === "PROJECT_ACCESS") return Users;
+  if (cat === "SECURITY" || cat === "IMPERSONATION") return Shield;
+  if (cat === "BILLING") return CreditCard;
+  if (cat === "GIS_NODE") return Box;
+  if (cat === "GIS_CABLE" || cat === "FIBER_SPLICING") return Network;
+  if (cat === "CUSTOMER_HOMEPASS") return Home;
+  if (cat === "FIELD_TASK") return Wrench;
+  if (cat === "SPATIAL_IO" || cat === "API_INTEGRATION") return Globe;
+  return Activity;
 }
 
 function buildContextMenuGroups(
@@ -164,6 +192,32 @@ function DateCell({ timestamp }: { timestamp?: string }) {
   );
 }
 
+function SourceCell({ category }: { category?: string }) {
+  if (!category) return <span className="text-muted-foreground/20 select-none text-xs">—</span>;
+
+  const IconComp = getCategorySourceIcon(category);
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="flex items-center justify-center cursor-default outline-none select-none">
+            <IconComp className="w-4 h-4 text-muted-foreground/80 hover:text-foreground transition-colors shrink-0" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs font-mono px-2 py-1.5 bg-popover border border-border text-foreground [&_svg]:!hidden">
+          <span className="flex items-center gap-1.5">
+            <IconComp className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0" />
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono border border-border bg-muted/40 text-foreground">
+              {category}
+            </span>
+          </span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 function StatusCell({
   statusNum,
   event,
@@ -191,6 +245,37 @@ function StatusCell({
         {copiedId === event.id ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
       </button>
     </React.Fragment>
+  );
+}
+
+function SeverityBadge({ severity }: { severity: string }) {
+  const s = severity.toUpperCase();
+  if (s === "CRITICAL") {
+    return (
+      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+        CRITICAL
+      </span>
+    );
+  }
+  if (s === "ERROR") {
+    return (
+      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+        ERROR
+      </span>
+    );
+  }
+  if (s === "WARN" || s === "WARNING") {
+    return (
+      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+        WARN
+      </span>
+    );
+  }
+  return (
+    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground bg-muted/20 border border-border/30">
+      INFO
+    </span>
   );
 }
 
@@ -268,9 +353,9 @@ function MessageCell({
 }) {
   const actorLabel = event.actorEmail || (event.actorId !== "system" ? event.actorId : null);
   const isImpersonated =
-    !!event.metadata?.impersonatedBy ||
-    !!event.metadata?.superAdmin ||
-    event.actorRole === "super_admin";
+  Boolean(event.metadata?.impersonatedBy) ||
+  Boolean(event.metadata?.superAdmin) ||
+  event.actorRole === "super_admin";
   const hasHashChain = Boolean(event.metadata?.hash || event.metadata?.prevHash);
 
   const rawAction = (event.action || "EVENT").replace(/_/g, " ").toUpperCase();
@@ -396,6 +481,12 @@ export function TenantLogsRowItem({
 
         {visibleCols.date !== false && <DateCell timestamp={event.occurredAt} />}
 
+        {visibleCols.source !== false && (
+          <div className="w-[24px] shrink-0 flex items-center justify-center">
+            <SourceCell category={event.category} />
+          </div>
+        )}
+
         {visibleCols.status !== false && (
           <StatusCell
             statusNum={statusCode}
@@ -405,7 +496,29 @@ export function TenantLogsRowItem({
           />
         )}
 
-        {visibleCols.method !== false && <MethodCell method={method} />}
+        {visibleCols.severity === true && (
+          <div className="w-[68px] shrink-0">
+            <SeverityBadge severity={event.severity || "INFO"} />
+          </div>
+        )}
+
+        {visibleCols.category === true && (
+          <div className="w-[80px] shrink-0 font-mono text-[10px] truncate text-muted-foreground/80" title={event.category}>
+            {event.category}
+          </div>
+        )}
+
+        {visibleCols.project === true && (
+          <div className="w-[88px] shrink-0 font-mono text-[10px] truncate text-muted-foreground/80" title={event.projectName || event.projectId}>
+            {event.projectName || event.projectId || "—"}
+          </div>
+        )}
+
+        {visibleCols.method !== false && (
+          <div className="w-[48px] shrink-0">
+            <MethodCell method={method} />
+          </div>
+        )}
 
         {visibleCols.pathname !== false && <PathnameCell pathname={path} />}
 

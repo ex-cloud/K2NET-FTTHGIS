@@ -2,7 +2,7 @@ import * as React from "react";
 import { Checkbox } from "../checkbox";
 import { cn } from "../../utils";
 import { Button } from "../button";
-import { Copy, X } from "lucide-react";
+import { Copy, X, Terminal, RotateCcw, Clock, Calendar, Loader2 } from "lucide-react";
 
 export interface LogsTableColumn {
   id: string;
@@ -133,6 +133,119 @@ export function LogsStatusBar({
           </div>
         )}
         {rightSlot}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared Empty State & Loading State Components
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface LogsEmptyStateCoreProps {
+  title?: string;
+  description?: string;
+  totalBufferCount?: number;
+  onResetFilters?: () => void;
+  onSetTimeRange?: (range: string) => void;
+  resetButtonLabel?: string;
+  reset24hButtonLabel?: string;
+  expand7dButtonLabel?: string;
+  iconSlot?: React.ReactNode;
+  className?: string;
+}
+
+export function LogsEmptyStateCore({
+  title = "No matching events",
+  description,
+  totalBufferCount,
+  onResetFilters,
+  onSetTimeRange,
+  resetButtonLabel = "Clear Active Filters",
+  reset24hButtonLabel = "Reset to 24h",
+  expand7dButtonLabel = "Expand to 7d",
+  iconSlot,
+  className,
+}: LogsEmptyStateCoreProps) {
+  const defaultDesc =
+    totalBufferCount !== undefined && totalBufferCount > 0
+      ? `${totalBufferCount} raw event${totalBufferCount !== 1 ? "s" : ""} exist in this buffer — try clearing active filters or widening the time range.`
+      : "No events recorded in this time range. Adjust your query or await live streams.";
+
+  return (
+    <div className={cn("h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground select-none", className)}>
+      <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center shadow-xs">
+        {iconSlot || <Terminal className="w-6 h-6 text-muted-foreground/60" />}
+      </div>
+      <div className="text-center space-y-1">
+        <p className="font-semibold text-foreground text-sm font-sans">
+          {title}
+        </p>
+        <p className="text-[11px] text-muted-foreground/70 font-sans max-w-[320px] leading-relaxed">
+          {description || defaultDesc}
+        </p>
+      </div>
+
+      {(onResetFilters || onSetTimeRange) && (
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+          {onResetFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onResetFilters}
+              className="h-8 px-3 text-xs font-mono gap-1.5 border-border/80 bg-card hover:bg-muted text-foreground cursor-pointer shadow-xs font-medium"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+              <span>{resetButtonLabel}</span>
+            </Button>
+          )}
+          {onSetTimeRange && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onSetTimeRange("24h")}
+                className="h-8 px-3 text-xs font-mono gap-1.5 bg-muted/80 hover:bg-muted text-foreground cursor-pointer font-medium"
+              >
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span>{reset24hButtonLabel}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSetTimeRange("7d")}
+                className="h-8 px-3 text-xs font-mono gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer font-medium"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{expand7dButtonLabel}</span>
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export interface LogsLoadingStateCoreProps {
+  title?: string;
+  description?: string;
+  className?: string;
+}
+
+export function LogsLoadingStateCore({
+  title = "Loading audit records...",
+  description = "Executing range query against PostgreSQL 17...",
+  className,
+}: LogsLoadingStateCoreProps) {
+  return (
+    <div className={cn("h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground select-none", className)}>
+      <Loader2 className="w-8 h-8 text-primary animate-spin opacity-80" />
+      <div className="text-center space-y-1">
+        <p className="font-semibold text-foreground text-xs font-sans">{title}</p>
+        <p className="text-[11px] text-muted-foreground/60 font-sans text-center max-w-[280px]">
+          {description}
+        </p>
       </div>
     </div>
   );

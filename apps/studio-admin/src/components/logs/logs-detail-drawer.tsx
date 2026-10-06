@@ -5,7 +5,12 @@ import {
   Layers,
   Code2,
 } from "lucide-react";
-import { Button, LogsDetailDrawerShell, type LogsDetailDrawerTabItem } from "@k2net/ui";
+import {
+  Button,
+  LogsDetailDrawerShell,
+  LogsDetailRawJsonTab,
+  type LogsDetailDrawerTabItem,
+} from "@k2net/ui";
 import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { useTranslation } from "@k2net/i18n";
 import { useLogsFilter, type AdvancedFilter } from "./logs-filter-context";
@@ -30,35 +35,6 @@ export interface LogsDetailDrawerProps {
 
 type TabKey = "overview" | "metadata" | "json";
 
-function DrawerJsonTab({
-  log,
-  onCopyLog,
-}: {
-  log: AuditStreamEntry;
-  onCopyLog: (log: AuditStreamEntry, e: React.MouseEvent) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-          Full Audit Event JSON
-        </span>
-        <button
-          type="button"
-          onClick={(e) => onCopyLog(log, e)}
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-sans px-2 py-1 rounded border border-border/60 bg-card hover:bg-muted transition-colors cursor-pointer shadow-xs font-medium"
-        >
-          <Copy className="w-3 h-3" />
-          <span>Copy Raw JSON</span>
-        </button>
-      </div>
-      <pre className="bg-muted/20 p-3 rounded-lg border border-border/60 text-xs text-foreground/90 overflow-x-auto whitespace-pre-wrap font-mono select-text leading-relaxed">
-        {JSON.stringify(log, null, 2)}
-      </pre>
-    </div>
-  );
-}
-
 export function LogsDetailDrawer({
   selectedLog,
   onClose,
@@ -76,7 +52,7 @@ export function LogsDetailDrawer({
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const hash = selectedLog.metadata?.hash as string | undefined;
+  const hash = (selectedLog.metadata?.hash || selectedLog.metadata?.prevHash) as string | undefined;
   const hasMetadataDiff = Boolean(selectedLog.oldValue || selectedLog.newValue);
   const hasExtendedMetadata = Boolean(
     selectedLog.metadata &&
@@ -193,7 +169,13 @@ export function LogsDetailDrawer({
       {activeTab === "metadata" && <MetadataDiffTab log={selectedLog} />}
 
       {activeTab === "json" && (
-        <DrawerJsonTab log={selectedLog} onCopyLog={onCopyLog} />
+        <LogsDetailRawJsonTab
+          data={selectedLog}
+          onCopyJson={() => {
+            navigator.clipboard.writeText(JSON.stringify(selectedLog, null, 2));
+            toast.success("Copied Raw JSON to clipboard");
+          }}
+        />
       )}
     </LogsDetailDrawerShell>
   );

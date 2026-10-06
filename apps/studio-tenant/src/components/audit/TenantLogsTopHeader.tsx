@@ -1,31 +1,24 @@
 import * as React from "react";
 import {
+  LogsTopHeaderShell,
+  LogsColumnPickerCore,
   ActionTooltip,
-  Badge,
   Button,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuShortcut,
-  LogsTimeRangeInlinePillCore,
-  LogsFilterPaletteCore,
-  LogsColumnPickerCore,
   type FilterFieldConfig,
   type AppliedFilter,
-  cn,
 } from "@k2net/ui";
 import {
-  PanelLeft,
-  Search,
-  SlidersHorizontal,
   RefreshCw,
   BarChart2,
   Columns3,
   Download,
   Play,
   Pause,
-  X,
   FileSpreadsheet,
   FileCode,
   Layers,
@@ -69,11 +62,15 @@ interface TenantLogsTopHeaderProps {
 }
 
 const AVAILABLE_COLUMNS = [
-  { id: "date", label: "Timestamp" },
-  { id: "status", label: "Status" },
-  { id: "method", label: "Method" },
+  { id: "date", label: "Date & Time" },
+  { id: "source", label: "Category Icon" },
+  { id: "status", label: "Status Code" },
+  { id: "method", label: "Action Method" },
   { id: "pathname", label: "Path / Resource" },
   { id: "message", label: "Event & Actor" },
+  { id: "severity", label: "Severity Level" },
+  { id: "category", label: "Taxonomy Category" },
+  { id: "project", label: "Project Target" },
 ];
 
 const COMMON_OPERATORS = [
@@ -194,41 +191,79 @@ function buildPaletteFields(scope: TenantAuditScope): FilterFieldConfig[] {
   ];
 }
 
-interface TopHeaderRightActionsProps {
-  onRefresh: () => void | Promise<void>;
-  isFetching: boolean;
-  showHistogram: boolean;
-  onToggleHistogram: () => void;
-  showColumnPicker: boolean;
-  setShowColumnPicker: React.Dispatch<React.SetStateAction<boolean>>;
-  columnVisibility: Record<string, boolean>;
-  onColumnVisibilityChange: (cols: Record<string, boolean>) => void;
-  columnBtnRef: React.RefObject<HTMLButtonElement | null>;
-  onExportCsv: () => void;
-  onExportJson?: () => void;
-  autoRefreshMs: number;
-  onAutoRefreshChange: (ms: number) => void;
-}
-
-function TopHeaderRightActions({
-  onRefresh,
-  isFetching,
-  showHistogram,
-  onToggleHistogram,
-  showColumnPicker,
-  setShowColumnPicker,
-  columnVisibility,
-  onColumnVisibilityChange,
-  columnBtnRef,
-  onExportCsv,
-  onExportJson,
-  autoRefreshMs,
-  onAutoRefreshChange,
-}: TopHeaderRightActionsProps) {
+export function TenantLogsTopHeader(props: TenantLogsTopHeaderProps) {
   const { t } = useTranslation();
-  const isLiveActive = autoRefreshMs > 0;
+  const [showColumnPicker, setShowColumnPicker] = React.useState(false);
+  const columnBtnRef = React.useRef<HTMLButtonElement>(null);
 
-  return (
+  const paletteFields = React.useMemo(() => buildPaletteFields(props.scope), [props.scope]);
+
+  const handleApplyPaletteFilter = (f: AppliedFilter) => {
+    if (f.field === "category") props.onToggleCategory(f.value);
+    else if (f.field === "severity") props.onToggleSeverity(f.value.toUpperCase());
+    else if (f.field === "level") props.onToggleLevel(f.value.toLowerCase());
+    else if (f.field === "method") props.onToggleMethod(f.value.toUpperCase());
+    else if (f.field === "pathname") props.onPathnameFilterChange(f.value);
+    else if (f.field === "actor") props.onSearchChange(f.value);
+  };
+
+  const activePills = React.useMemo(() => {
+    const list: Array<{ id: string; label: string; onRemove: () => void }> = [];
+
+    props.selectedCategories.forEach((cat) => {
+      list.push({
+        id: `category-${cat}`,
+        label: `${props.scope === "PROJECT" ? "Log Type" : "Category"} = ${cat}`,
+        onRemove: () => props.onToggleCategory(cat),
+      });
+    });
+
+    props.selectedSeverities.forEach((sev) => {
+      list.push({
+        id: `sev-${sev}`,
+        label: `Severity = ${sev}`,
+        onRemove: () => props.onToggleSeverity(sev),
+      });
+    });
+
+    props.selectedLevels.forEach((lvl) => {
+      list.push({
+        id: `lvl-${lvl}`,
+        label: `Level = ${lvl}`,
+        onRemove: () => props.onToggleLevel(lvl),
+      });
+    });
+
+    props.selectedMethods.forEach((m) => {
+      list.push({
+        id: `method-${m}`,
+        label: `Method = ${m}`,
+        onRemove: () => props.onToggleMethod(m),
+      });
+    });
+
+    if (props.pathnameFilter.trim()) {
+      list.push({
+        id: "pathname",
+        label: `Path = ${props.pathnameFilter.trim()}`,
+        onRemove: () => props.onPathnameFilterChange(""),
+      });
+    }
+
+    if (props.searchQuery.trim()) {
+      list.push({
+        id: "search",
+        label: `Search = "${props.searchQuery.trim()}"`,
+        onRemove: () => props.onSearchChange(""),
+      });
+    }
+
+    return list;
+  }, [props]);
+
+  const isLiveActive = props.autoRefreshMs > 0;
+
+  const rightActions = (
     <div className="flex items-center gap-1.5 shrink-0 pl-1">
       {/* Refresh Button */}
       <ActionTooltip label={t("observability.refresh_logs") || "Refresh logs"} shortcut="R">
@@ -237,14 +272,14 @@ function TopHeaderRightActions({
           size="sm"
           onClick={async () => {
             try {
-              await onRefresh();
+              await props.onRefresh();
             } catch {
               // handled by parent
             }
           }}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/60 border border-border/60 rounded-md transition-colors cursor-pointer"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-primary" : ""}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${props.isFetching ? "animate-spin text-primary" : ""}`} />
         </Button>
       </ActionTooltip>
 
@@ -253,9 +288,9 @@ function TopHeaderRightActions({
         <Button
           variant="ghost"
           size="sm"
-          onClick={onToggleHistogram}
+          onClick={props.onToggleHistogram}
           className={`h-7 w-7 p-0 border rounded-md transition-colors cursor-pointer ${
-            showHistogram
+            props.showHistogram
               ? "bg-muted text-foreground border-border"
               : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/60"
           }`}
@@ -286,11 +321,11 @@ function TopHeaderRightActions({
           columns={AVAILABLE_COLUMNS.map((col) => ({
             id: col.id,
             label: col.label,
-            visible: columnVisibility[col.id] !== false,
+            visible: props.columnVisibility[col.id] !== false,
           }))}
           onToggleColumn={(colId, visible) => {
-            onColumnVisibilityChange({
-              ...columnVisibility,
+            props.onColumnVisibilityChange({
+              ...props.columnVisibility,
               [colId]: visible,
             });
           }}
@@ -315,7 +350,7 @@ function TopHeaderRightActions({
         </ActionTooltip>
         <DropdownMenuContent align="end" className="w-52 font-mono text-xs p-1 shadow-xl border border-border bg-popover">
           <DropdownMenuItem
-            onClick={onExportCsv}
+            onClick={props.onExportCsv}
             className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -325,9 +360,9 @@ function TopHeaderRightActions({
             <DropdownMenuShortcut className="text-[9px] opacity-70">Alt+S</DropdownMenuShortcut>
           </DropdownMenuItem>
 
-          {onExportJson && (
+          {props.onExportJson && (
             <DropdownMenuItem
-              onClick={onExportJson}
+              onClick={props.onExportJson}
               className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors"
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -348,7 +383,7 @@ function TopHeaderRightActions({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onAutoRefreshChange(isLiveActive ? 0 : 30000)}
+          onClick={() => props.onAutoRefreshChange(isLiveActive ? 0 : 30000)}
           className={`h-7 text-xs font-mono gap-1.5 rounded-md px-2.5 transition-all cursor-pointer ${
             !isLiveActive
               ? "bg-transparent text-muted-foreground border-border/60 hover:text-foreground hover:bg-muted/40"
@@ -365,260 +400,22 @@ function TopHeaderRightActions({
       </ActionTooltip>
     </div>
   );
-}
-
-export function TenantLogsTopHeader({
-  scope,
-  searchQuery,
-  onSearchChange,
-  timeRange,
-  onTimeRangeChange,
-  isSidebarCollapsed,
-  onToggleSidebar,
-  showHistogram,
-  onToggleHistogram,
-  onRefresh,
-  isFetching,
-  autoRefreshMs,
-  onAutoRefreshChange,
-  onExportCsv,
-  onExportJson,
-  columnVisibility,
-  onColumnVisibilityChange,
-  selectedCategories,
-  onToggleCategory,
-  selectedSeverities,
-  onToggleSeverity,
-  selectedLevels,
-  onToggleLevel,
-  selectedMethods,
-  onToggleMethod,
-  pathnameFilter,
-  onPathnameFilterChange,
-}: TenantLogsTopHeaderProps) {
-  const { t } = useTranslation();
-  const [showPalette, setShowPalette] = React.useState(false);
-  const [showTopTimePicker, setShowTopTimePicker] = React.useState(false);
-  const [showColumnPicker, setShowColumnPicker] = React.useState(false);
-  const filterAnchorRef = React.useRef<HTMLDivElement>(null);
-  const timeRangePillRef = React.useRef<HTMLDivElement>(null);
-  const columnBtnRef = React.useRef<HTMLButtonElement>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
-  const paletteFields = React.useMemo(() => buildPaletteFields(scope), [scope]);
-
-  const handleApplyPaletteFilter = (f: AppliedFilter) => {
-    if (f.field === "category") onToggleCategory(f.value);
-    else if (f.field === "severity") onToggleSeverity(f.value.toUpperCase());
-    else if (f.field === "level") onToggleLevel(f.value.toLowerCase());
-    else if (f.field === "method") onToggleMethod(f.value.toUpperCase());
-    else if (f.field === "pathname") onPathnameFilterChange(f.value);
-    else if (f.field === "actor") onSearchChange(f.value);
-    setShowPalette(false);
-  };
-
-  const activePills = React.useMemo(() => {
-    const list: Array<{ id: string; label: string; kind: "category" | "severity" | "level" | "method" | "pathname" | "search" }> = [];
-
-    selectedCategories.forEach((cat) => {
-      list.push({
-        id: cat,
-        label: `${scope === "PROJECT" ? "Log Type" : "Category"} = ${cat}`,
-        kind: "category",
-      });
-    });
-
-    selectedSeverities.forEach((sev) => {
-      list.push({
-        id: sev,
-        label: `Severity = ${sev}`,
-        kind: "severity",
-      });
-    });
-
-    selectedLevels.forEach((lvl) => {
-      list.push({
-        id: lvl,
-        label: `Level = ${lvl}`,
-        kind: "level",
-      });
-    });
-
-    selectedMethods.forEach((m) => {
-      list.push({
-        id: m,
-        label: `Method = ${m}`,
-        kind: "method",
-      });
-    });
-
-    if (pathnameFilter.trim()) {
-      list.push({
-        id: "pathname",
-        label: `Path = ${pathnameFilter.trim()}`,
-        kind: "pathname",
-      });
-    }
-
-    if (searchQuery.trim()) {
-      list.push({
-        id: "search",
-        label: `Search = "${searchQuery.trim()}"`,
-        kind: "search",
-      });
-    }
-
-    return list;
-  }, [selectedCategories, selectedSeverities, selectedLevels, selectedMethods, pathnameFilter, searchQuery, scope]);
-
-  const hasActivePills = activePills.length > 0;
-
-  const handleRemovePill = (pill: { id: string; kind: "category" | "severity" | "level" | "method" | "pathname" | "search" }) => {
-    if (pill.kind === "category") onToggleCategory(pill.id);
-    else if (pill.kind === "severity") onToggleSeverity(pill.id);
-    else if (pill.kind === "level") onToggleLevel(pill.id);
-    else if (pill.kind === "method") onToggleMethod(pill.id);
-    else if (pill.kind === "pathname") onPathnameFilterChange("");
-    else if (pill.kind === "search") onSearchChange("");
-  };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-groove-b bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
-      {/* 1. Sidebar Toggle Button */}
-      {isSidebarCollapsed && (
-        <ActionTooltip label={t("observability.open_filter_panel") || "Open filter panel"} shortcut="Alt+S">
-          <button
-            onClick={onToggleSidebar}
-            className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          >
-            <PanelLeft className="w-3.5 h-3.5" />
-          </button>
-        </ActionTooltip>
-      )}
-
-      {/* 2. Unified Search Input Bar with Embedded Pills */}
-      <div
-        ref={filterAnchorRef}
-        className="flex-1 flex items-center gap-1.5 bg-background border border-border/80 rounded-lg px-2.5 py-1 text-xs transition-colors overflow-hidden min-w-0 cursor-text shadow-2xs focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20"
-        onClick={() => {
-          if (!showTopTimePicker) {
-            inputRef.current?.focus();
-            setShowPalette(true);
-          }
-        }}
-      >
-        <Search className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
-
-        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto no-scrollbar py-0.5">
-          {/* Time Range Inline Pill */}
-          <LogsTimeRangeInlinePillCore
-            timeRange={timeRange}
-            setTimeRange={onTimeRangeChange}
-            showTopTimePicker={showTopTimePicker}
-            setShowTopTimePicker={setShowTopTimePicker}
-            filterAnchorRef={filterAnchorRef}
-            timeRangePillRef={timeRangePillRef}
-            translateFn={(key) => t(key)}
-          />
-
-          {/* Active Filter Badges */}
-          {activePills.map((pill) => (
-            <Badge
-              key={`${pill.kind}-${pill.id}`}
-              className="h-5 text-[10px] font-mono bg-muted/90 text-foreground border border-border/70 gap-1 px-1.5 py-0 shrink-0 whitespace-nowrap leading-none flex items-center"
-            >
-              <span>{pill.label}</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemovePill(pill);
-                }}
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer ml-0.5 font-medium"
-              >
-                <X className="w-2.5 h-2.5" />
-              </button>
-            </Badge>
-          ))}
-
-          {/* Search Input Field */}
-          <div className="flex-1 flex items-center gap-1 min-w-[120px]">
-            <input
-              ref={inputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onFocus={() => setShowPalette(true)}
-              placeholder={hasActivePills ? (t("observability.add_more_filters") || "Add more filters...") : (t("observability.filter_placeholder") || "Filter by Category, Severity, Action, or Actor...")}
-              className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 text-xs font-mono min-w-[80px]"
-            />
-
-            <ActionTooltip label={t("observability.advanced_filter") || "Filter / Quick Palettes"} shortcut="Alt+F">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowPalette((prev) => !prev);
-                  inputRef.current?.focus();
-                }}
-                className={cn(
-                  "shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] border transition-colors cursor-pointer",
-                  showPalette
-                    ? "bg-primary/15 border-primary/40 text-primary"
-                    : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-muted/40"
-                )}
-              >
-                <SlidersHorizontal className="w-3 h-3" />
-              </button>
-            </ActionTooltip>
-          </div>
-        </div>
-
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSearchChange("");
-            }}
-            className="shrink-0 text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        )}
-      </div>
-
-      {/* 3. Action Buttons Right Suite */}
-      <TopHeaderRightActions
-        onRefresh={onRefresh}
-        isFetching={isFetching}
-        showHistogram={showHistogram}
-        onToggleHistogram={onToggleHistogram}
-        showColumnPicker={showColumnPicker}
-        setShowColumnPicker={setShowColumnPicker}
-        columnVisibility={columnVisibility}
-        onColumnVisibilityChange={onColumnVisibilityChange}
-        columnBtnRef={columnBtnRef}
-        onExportCsv={onExportCsv}
-        onExportJson={onExportJson}
-        autoRefreshMs={autoRefreshMs}
-        onAutoRefreshChange={onAutoRefreshChange}
-      />
-
-      {/* 4. Interactive Quick Filter Palette */}
-      {showPalette && (
-        <LogsFilterPaletteCore
-          fields={paletteFields}
-          anchorRef={filterAnchorRef}
-          searchQuery={searchQuery}
-          onSearchQueryChange={onSearchChange}
-          onClose={() => setShowPalette(false)}
-          onApplyFilter={handleApplyPaletteFilter}
-          onSelectTimeRange={(val) => {
-            if (val) onTimeRangeChange(val);
-          }}
-        />
-      )}
-    </div>
+    <LogsTopHeaderShell
+      isSidebarCollapsed={props.isSidebarCollapsed}
+      onToggleSidebar={props.onToggleSidebar}
+      sidebarTooltipLabel={t("observability.open_filter_panel") || "Open filter panel"}
+      searchQuery={props.searchQuery}
+      onSearchChange={props.onSearchChange}
+      searchPlaceholder={t("observability.filter_placeholder") || "Filter by Category, Severity, Action, or Actor..."}
+      timeRange={props.timeRange}
+      onTimeRangeChange={props.onTimeRangeChange}
+      activePills={activePills}
+      paletteFields={paletteFields}
+      onApplyPaletteFilter={handleApplyPaletteFilter}
+      rightActionsSlot={rightActions}
+      translateFn={(k) => t(k)}
+    />
   );
 }

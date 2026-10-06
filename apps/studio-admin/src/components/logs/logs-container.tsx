@@ -1,12 +1,19 @@
 import React, { useState, useMemo, Component, useEffect, useRef, useCallback, type ErrorInfo, type ReactNode } from "react";
-import { Terminal, RefreshCcw, AlertTriangle, Loader2, RotateCcw, Clock, Calendar } from "lucide-react";
+import { RefreshCcw, AlertTriangle, Loader2 } from "lucide-react";
 import { useReactTable, getCoreRowModel, type VisibilityState } from "@tanstack/react-table";
 import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { LogsTopHeader } from "@/components/logs/logs-top-header";
 import { LogsHistogram, buildHistogramData, useAuditAnalyticsSummary } from "@/components/logs/logs-histogram";
 import { toast } from "sonner";
-import { Button, LogsTableHeader, LogsStatusBar, type LogsTableColumn } from "@k2net/ui";
+import {
+  Button,
+  LogsTableHeader,
+  LogsStatusBar,
+  LogsEmptyStateCore,
+  LogsLoadingStateCore,
+  type LogsTableColumn,
+} from "@k2net/ui";
 import { LOG_COLUMNS } from "./logs-utils";
 import { LogsRowItem } from "./logs-row-item";
 import { LogsDetailDrawer } from "./logs-detail-drawer";
@@ -355,61 +362,18 @@ function LogsContainerContent() {
           className="flex-1 overflow-y-auto overflow-x-hidden divide-y divide-border/30 custom-scrollbar-thin"
         >
           {filteredLogs.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-8 h-8 text-primary animate-spin opacity-80" />
-                  <p className="font-semibold text-foreground text-xs font-sans">Loading audit partition records...</p>
-                  <p className="text-[11px] text-muted-foreground/60 font-sans text-center max-w-[280px]">
-                    Executing partitioned range query against PostgreSQL 17...
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center shadow-xs">
-                    <Terminal className="w-6 h-6 text-muted-foreground/60" />
-                  </div>
-                  <div className="text-center space-y-1">
-                    <p className="font-semibold text-foreground text-sm font-sans">No matching events</p>
-                    <p className="text-[11px] text-muted-foreground/70 font-sans max-w-[320px] leading-relaxed">
-                      {totalCount > 0
-                        ? `${totalCount} raw event${totalCount !== 1 ? "s" : ""} exist in this buffer — try clearing active filters or widening the time range.`
-                        : "No events recorded in this time range. Adjust your query or await live streams."}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={resetAllFilters}
-                      className="h-8 px-3 text-xs font-mono gap-1.5 border-border/80 bg-card hover:bg-muted text-foreground cursor-pointer shadow-xs font-medium"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Clear Active Filters</span>
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setTimeRange("24h")}
-                      className="h-8 px-3 text-xs font-mono gap-1.5 bg-muted/80 hover:bg-muted text-foreground cursor-pointer font-medium"
-                    >
-                      <Clock className="w-3.5 h-3.5 text-primary" />
-                      <span>Reset to 24h</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setTimeRange("7d")}
-                      className="h-8 px-3 text-xs font-mono gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer font-medium"
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>Expand to 7d</span>
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
+            isLoading ? (
+              <LogsLoadingStateCore
+                title="Loading audit partition records..."
+                description="Executing partitioned range query against PostgreSQL 17..."
+              />
+            ) : (
+              <LogsEmptyStateCore
+                totalBufferCount={totalCount}
+                onResetFilters={resetAllFilters}
+                onSetTimeRange={setTimeRange}
+              />
+            )
           ) : (
             <>
               {filteredLogs.map((log: AuditStreamEntry) => (

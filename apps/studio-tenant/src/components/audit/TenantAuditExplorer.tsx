@@ -3,11 +3,11 @@ import {
   LogsTableGridShell,
   LogsHistogramCore,
   LogsStatusBar,
+  LogsEmptyStateCore,
+  LogsLoadingStateCore,
   type LogsTableColumn,
   buildHistogramDataFromLogs,
-  Button,
 } from "@k2net/ui";
-import { Terminal, RotateCcw, Clock, Calendar } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { useTenantAudit, type UseTenantAuditOptions } from "../../hooks/useTenantAudit";
@@ -35,15 +35,23 @@ interface AuditFilterCriteria {
 
 const DEFAULT_COLUMN_VISIBILITY: Record<string, boolean> = {
   date: true,
+  source: true,
   status: true,
   method: true,
   pathname: true,
   message: true,
+  severity: false,
+  category: false,
+  project: false,
 };
 
 const LOG_TABLE_COLUMNS: LogsTableColumn[] = [
   { id: "date", label: "Timestamp", width: "w-[140px]" },
+  { id: "source", label: "", width: "w-[24px]" },
   { id: "status", label: "", width: "w-[44px]", withSpacer: true },
+  { id: "severity", label: "Severity", width: "w-[68px]" },
+  { id: "category", label: "Category", width: "w-[80px]" },
+  { id: "project", label: "Project", width: "w-[88px]" },
   { id: "method", label: "Method", width: "w-[48px]" },
   { id: "pathname", label: "Path / Resource", width: "w-[200px]" },
   { id: "message", label: "Event Message & Actor", width: "flex-1 min-w-0" },
@@ -84,11 +92,25 @@ function matchesMethod(event: TenantAuditEvent, methods: Set<string>): boolean {
 function matchesPathname(event: TenantAuditEvent, query: string): boolean {
   const q = query.toLowerCase().trim();
   if (!q) return true;
-  const path = `${event.resourceType.toLowerCase()}/${event.resourceId || ""}`.toLowerCase();
+  const path = `${(event.resourceType || "").toLowerCase()}/${(event.resourceId || "").toLowerCase()}`;
+  const resType = (event.resourceType || "").toLowerCase();
+  const resId = (event.resourceId || "").toLowerCase();
+
+  if (q.includes("*")) {
+    const cleanPattern = q.replace(/\*/g, ".*");
+    try {
+      const reg = new RegExp(`^${cleanPattern}`, "i");
+      return reg.test(path) || reg.test(resType) || reg.test(resId);
+    } catch {
+      // Fallback
+    }
+  }
+
+  const cleanQ = q.replace(/\*$/, "");
   return (
-    path.includes(q) ||
-    event.resourceType.toLowerCase().includes(q) ||
-    (event.resourceId?.toLowerCase().includes(q) ?? false)
+    path.includes(cleanQ) ||
+    resType.includes(cleanQ) ||
+    resId.includes(cleanQ)
   );
 }
 
@@ -126,60 +148,6 @@ function parseTimeRangeBounds(val: string): { from: Date; to: Date } {
     from = new Date(now - 30 * 24 * 60 * 60 * 1000);
   }
   return { from, to };
-}
-
-interface TenantAuditEmptyStateProps {
-  onResetAll: () => void;
-  onTimeRangeChange: (val: string) => void;
-}
-
-function TenantAuditEmptyState({ onResetAll, onTimeRangeChange }: TenantAuditEmptyStateProps) {
-  const { t } = useTranslation();
-  return (
-    <div className="h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
-      <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center shadow-xs">
-        <Terminal className="w-6 h-6 text-muted-foreground/60" />
-      </div>
-      <div className="text-center space-y-1">
-        <p className="font-semibold text-foreground text-sm font-sans">
-          {t("security.audit_empty_title") || "No matching events"}
-        </p>
-        <p className="text-[11px] text-muted-foreground/70 font-sans max-w-[320px] leading-relaxed">
-          {t("security.audit_empty_desc") || "No events recorded in this time range. Adjust your query or await live streams."}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onResetAll}
-          className="h-8 px-3 text-xs font-mono gap-1.5 border-border/80 bg-card hover:bg-muted text-foreground cursor-pointer shadow-xs font-medium"
-        >
-          <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
-          <span>Clear Active Filters</span>
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => onTimeRangeChange("24h")}
-          className="h-8 px-3 text-xs font-mono gap-1.5 bg-muted/80 hover:bg-muted text-foreground cursor-pointer font-medium"
-        >
-          <Clock className="w-3.5 h-3.5 text-primary" />
-          <span>Reset to 24h</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onTimeRangeChange("7d")}
-          className="h-8 px-3 text-xs font-mono gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer font-medium"
-        >
-          <Calendar className="w-3.5 h-3.5" />
-          <span>Expand to 7d</span>
-        </Button>
-      </div>
-    </div>
-  );
 }
 
 export function TenantAuditExplorer({
@@ -415,7 +383,7 @@ export function TenantAuditExplorer({
       />
 
       {/* 2. Main Log Stream Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header Toolbar */}
         <TenantLogsTopHeader
           scope={scope}
@@ -463,88 +431,93 @@ export function TenantAuditExplorer({
           </div>
         )}
 
-        {/* High-density Log Table Grid Shell */}
-        <LogsTableGridShell
-          columns={LOG_TABLE_COLUMNS}
-          columnVisibility={columnVisibility}
-          isAllSelected={isAllSelected}
-          isSomeSelected={isSomeSelected}
-          onToggleSelectAll={handleToggleSelectAll}
-          className="flex-1 min-h-0 bg-card/40 border-none rounded-none overflow-hidden"
-          statusBar={
-            <LogsStatusBar
-              isLivePaused={autoRefreshMs === 0}
-              isHistoricalMode={isHistoricalMode}
-              filteredCount={filteredEvents.length}
-              totalCount={totalElements}
-              selectedCount={selectedRowIds.size}
-              onClearSelection={() => setSelectedRowIds(new Set())}
-              onCopySelected={handleCopySelected}
-              rightSlot={
-                isHistoricalMode ? (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
-                    <span>Forensic Mode</span>
-                  </span>
-                ) : autoRefreshMs === 0 ? (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
-                    <span>Stream Paused</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/30 font-sans font-medium text-[10px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    <span>Live Tail Mode</span>
-                  </span>
-                )
-              }
-            />
-          }
-        >
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center p-16 space-y-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <span className="text-xs font-mono text-muted-foreground">
-                {t("security.audit_loading_logs") || "Loading tenant audit partition records..."}
-              </span>
-            </div>
-          ) : filteredEvents.length > 0 ? (
-            <div className="divide-y divide-border/20">
-              {filteredEvents.map((event) => (
-                <TenantLogsRowItem
-                  key={event.id}
-                  event={event}
-                  scope={scope}
-                  isSelected={selectedEvent?.id === event.id}
-                  isRowSelected={selectedRowIds.has(event.id)}
-                  onToggleSelectRow={handleToggleSelectRow}
-                  visibleCols={columnVisibility}
-                  copiedId={copiedId}
-                  onSelect={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
-                  onCopyLog={handleCopyLog}
-                />
-              ))}
-            </div>
-          ) : (
-            <TenantAuditEmptyState
-              onResetAll={handleResetAll}
-              onTimeRangeChange={handleTimeRangeChange}
+        {/* High-density Log Table & Drawer Workspace (Relative Anchor) */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+          <LogsTableGridShell
+            columns={LOG_TABLE_COLUMNS}
+            columnVisibility={columnVisibility}
+            isAllSelected={isAllSelected}
+            isSomeSelected={isSomeSelected}
+            onToggleSelectAll={handleToggleSelectAll}
+            className="flex-1 min-h-0 bg-card/40 border-none rounded-none overflow-hidden"
+            statusBar={
+              <LogsStatusBar
+                isLivePaused={autoRefreshMs === 0}
+                isHistoricalMode={isHistoricalMode}
+                filteredCount={filteredEvents.length}
+                totalCount={totalElements}
+                selectedCount={selectedRowIds.size}
+                onClearSelection={() => setSelectedRowIds(new Set())}
+                onCopySelected={handleCopySelected}
+                rightSlot={
+                  isHistoricalMode ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                      <span>Forensic Mode</span>
+                    </span>
+                  ) : autoRefreshMs === 0 ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+                      <span>Stream Paused</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/30 font-sans font-medium text-[10px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                      <span>Live Tail Mode</span>
+                    </span>
+                  )
+                }
+              />
+            }
+          >
+            {isLoading ? (
+              <LogsLoadingStateCore
+                title={t("security.audit_loading_logs") || "Loading tenant audit partition records..."}
+                description={t("security.audit_loading_desc") || "Executing partitioned range query against PostgreSQL 17..."}
+              />
+            ) : filteredEvents.length > 0 ? (
+              <div className="divide-y divide-border/20">
+                {filteredEvents.map((event) => (
+                  <TenantLogsRowItem
+                    key={event.id}
+                    event={event}
+                    scope={scope}
+                    isSelected={selectedEvent?.id === event.id}
+                    isRowSelected={selectedRowIds.has(event.id)}
+                    onToggleSelectRow={handleToggleSelectRow}
+                    visibleCols={columnVisibility}
+                    copiedId={copiedId}
+                    onSelect={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
+                    onCopyLog={handleCopyLog}
+                  />
+                ))}
+              </div>
+            ) : (
+              <LogsEmptyStateCore
+                title={t("security.audit_empty_title") || "No matching events"}
+                description={t("security.audit_empty_desc")}
+                totalBufferCount={totalElements}
+                onResetFilters={handleResetAll}
+                onSetTimeRange={handleTimeRangeChange}
+              />
+            )}
+          </LogsTableGridShell>
+
+          {/* Forensic Detail Slide-Over Drawer */}
+          {selectedEvent && (
+            <TenantAuditDetailDrawer
+              event={selectedEvent}
+              open={!!selectedEvent}
+              onClose={() => setSelectedEvent(null)}
+              currentIndex={selectedEventIndex >= 0 ? selectedEventIndex : undefined}
+              totalLogsCount={filteredEvents.length}
+              onPrevLog={handlePrevLog}
+              onNextLog={handleNextLog}
+              hasPrevLog={hasPrevLog}
+              hasNextLog={hasNextLog}
             />
           )}
-        </LogsTableGridShell>
-
-        {/* Forensic Detail Slide-Over Drawer */}
-        <TenantAuditDetailDrawer
-          event={selectedEvent}
-          open={!!selectedEvent}
-          onClose={() => setSelectedEvent(null)}
-          currentIndex={selectedEventIndex >= 0 ? selectedEventIndex + 1 : undefined}
-          totalLogsCount={filteredEvents.length}
-          onPrevLog={handlePrevLog}
-          onNextLog={handleNextLog}
-          hasPrevLog={hasPrevLog}
-          hasNextLog={hasNextLog}
-        />
+        </div>
       </div>
     </div>
   );
