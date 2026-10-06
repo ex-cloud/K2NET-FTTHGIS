@@ -7,6 +7,7 @@ import {
   buildHistogramDataFromLogs,
 } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
+import { toast } from "sonner";
 import { useTenantAudit, type UseTenantAuditOptions } from "../../hooks/useTenantAudit";
 import { TenantLogsFilterSidebar } from "./TenantLogsFilterSidebar";
 import { TenantLogsTopHeader } from "./TenantLogsTopHeader";
@@ -28,18 +29,14 @@ const DEFAULT_COLUMN_VISIBILITY: Record<string, boolean> = {
   method: true,
   pathname: true,
   message: true,
-  actor: true,
-  severity: false,
-  scope: false,
 };
 
 const LOG_TABLE_COLUMNS: LogsTableColumn[] = [
-  { id: "date", label: "TIMESTAMP", width: "w-[140px]" },
+  { id: "date", label: "Timestamp", width: "w-[140px]" },
   { id: "status", label: "", width: "w-[44px]", withSpacer: true },
-  { id: "method", label: "METHOD", width: "w-[48px]" },
-  { id: "pathname", label: "PATH / RESOURCE", width: "w-[200px]" },
-  { id: "message", label: "EVENT MESSAGE & ACTOR", width: "flex-1 min-w-0" },
-  { id: "actor", label: "", width: "w-[200px]" },
+  { id: "method", label: "Method", width: "w-[48px]" },
+  { id: "pathname", label: "Path / Resource", width: "w-[200px]" },
+  { id: "message", label: "Event Message & Actor", width: "flex-1 min-w-0" },
 ];
 
 export function TenantAuditExplorer({
@@ -57,6 +54,8 @@ export function TenantAuditExplorer({
   const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
   const [selectedSeverities, setSelectedSeverities] = React.useState<Set<string>>(new Set());
   const [activePreset, setActivePreset] = React.useState<string | null>(null);
+  const [resourceSearch, setResourceSearch] = React.useState<string>("");
+  const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
   const auditOptions: UseTenantAuditOptions = React.useMemo(
     () => ({
@@ -79,7 +78,6 @@ export function TenantAuditExplorer({
     resetFilters,
     refetch,
     exportCsv,
-    isExporting,
   } = useTenantAudit(auditOptions);
 
   // Toggle Severity in Filter
@@ -140,6 +138,7 @@ export function TenantAuditExplorer({
   const handleResetAll = () => {
     setSelectedSeverities(new Set());
     setActivePreset(null);
+    setResourceSearch("");
     setTimeRange("24h");
     resetFilters();
   };
@@ -186,42 +185,82 @@ export function TenantAuditExplorer({
     });
   };
 
-  const isAllSelected = events.length > 0 && selectedRowIds.size === events.length;
-  const isSomeSelected = selectedRowIds.size > 0 && selectedRowIds.size < events.length;
+  // Client-side resource filtering if search string entered in resource input
+  const filteredEvents = React.useMemo(() => {
+    if (!resourceSearch.trim()) return events;
+    const term = resourceSearch.toLowerCase();
+    return events.filter(
+      (e) =>
+        e.resourceId?.toLowerCase().includes(term) ||
+        e.resourceType?.toLowerCase().includes(term) ||
+        e.action?.toLowerCase().includes(term) ||
+        e.category?.toLowerCase().includes(term) ||
+        e.actorEmail?.toLowerCase().includes(term)
+    );
+  }, [events, resourceSearch]);
+
+  const isAllSelected = filteredEvents.length > 0 && selectedRowIds.size === filteredEvents.length;
+  const isSomeSelected = selectedRowIds.size > 0 && selectedRowIds.size < filteredEvents.length;
 
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
       setSelectedRowIds(new Set());
     } else {
-      setSelectedRowIds(new Set(events.map((e) => e.id)));
+      setSelectedRowIds(new Set(filteredEvents.map((e) => e.id)));
     }
+  };
+
+  const handleCopyLog = (event: TenantAuditEvent, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(JSON.stringify(event, null, 2));
+    setCopiedId(event.id);
+    toast.success(t("security.audit_copy_payload_success") || "Log copied to clipboard");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleCopySelected = () => {
+    const selectedEvents = filteredEvents.filter((e) => selectedRowIds.has(e.id));
+    if (selectedEvents.length === 0) return;
+    navigator.clipboard.writeText(JSON.stringify(selectedEvents, null, 2));
+    toast.success(`Copied ${selectedEvents.length} selected audit events to clipboard.`);
+  };
+
+  const handleExportJson = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredEvents, null, 2));
+    const a = document.createElement("a");
+    a.setAttribute("href", dataStr);
+    a.setAttribute("download", `k2net-tenant-audit-${scope.toLowerCase()}-${Date.now()}.json`);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast.success(`Exported ${filteredEvents.length} audit events to JSON.`);
   };
 
   // Convert raw logs to Histogram buckets
   const histogramBuckets = React.useMemo(() => {
-    const rawForHistogram = events.map((e) => ({
+    const rawForHistogram = filteredEvents.map((e) => ({
       timestamp: e.occurredAt,
       severity: e.severity,
       status: e.severity === "ERROR" || e.severity === "CRITICAL" ? 500 : 200,
     }));
     return buildHistogramDataFromLogs(rawForHistogram, timeRange);
-  }, [events, timeRange]);
+  }, [filteredEvents, timeRange]);
 
   const isHistoricalMode = timeRange.startsWith("custom:") || timeRange === "7d" || timeRange === "30d";
 
-  const selectedEventIndex = selectedEvent ? events.findIndex((e) => e.id === selectedEvent.id) : -1;
+  const selectedEventIndex = selectedEvent ? filteredEvents.findIndex((e) => e.id === selectedEvent.id) : -1;
   const hasPrevLog = selectedEventIndex > 0;
-  const hasNextLog = selectedEventIndex >= 0 && selectedEventIndex < events.length - 1;
+  const hasNextLog = selectedEventIndex >= 0 && selectedEventIndex < filteredEvents.length - 1;
 
   const handlePrevLog = () => {
     if (hasPrevLog) {
-      setSelectedEvent(events[selectedEventIndex - 1]);
+      setSelectedEvent(filteredEvents[selectedEventIndex - 1]);
     }
   };
 
   const handleNextLog = () => {
     if (hasNextLog) {
-      setSelectedEvent(events[selectedEventIndex + 1]);
+      setSelectedEvent(filteredEvents[selectedEventIndex + 1]);
     }
   };
 
@@ -239,6 +278,8 @@ export function TenantAuditExplorer({
         onToggleSeverity={handleToggleSeverity}
         selectedCategory={filters.category}
         onSelectCategory={handleSelectCategory}
+        resourceSearch={resourceSearch}
+        onResourceSearchChange={setResourceSearch}
         stats={stats}
         onResetAll={handleResetAll}
         onApplyPreset={handleApplyPreset}
@@ -255,7 +296,7 @@ export function TenantAuditExplorer({
           timeRange={timeRange}
           onTimeRangeChange={handleTimeRangeChange}
           isSidebarCollapsed={isSidebarCollapsed}
-          onToggleSidebar={() => setIsSidebarCollapsed(false)}
+          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           showHistogram={showHistogram}
           onToggleHistogram={() => setShowHistogram(!showHistogram)}
           onRefresh={refetch}
@@ -263,13 +304,15 @@ export function TenantAuditExplorer({
           autoRefreshMs={autoRefreshMs}
           onAutoRefreshChange={setAutoRefreshMs}
           onExportCsv={exportCsv}
-          isExporting={isExporting}
+          onExportJson={handleExportJson}
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={setColumnVisibility}
           selectedCategory={filters.category}
           onSelectCategory={handleSelectCategory}
           selectedSeverities={selectedSeverities}
           onToggleSeverity={handleToggleSeverity}
+          resourceSearch={resourceSearch}
+          onResourceSearchChange={setResourceSearch}
         />
 
         {/* Interactive Histogram Chart across the top */}
@@ -300,10 +343,29 @@ export function TenantAuditExplorer({
             <LogsStatusBar
               isLivePaused={autoRefreshMs === 0}
               isHistoricalMode={isHistoricalMode}
-              filteredCount={events.length}
+              filteredCount={filteredEvents.length}
               totalCount={totalElements}
               selectedCount={selectedRowIds.size}
               onClearSelection={() => setSelectedRowIds(new Set())}
+              onCopySelected={handleCopySelected}
+              rightSlot={
+                isHistoricalMode ? (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                    <span>Forensic Mode</span>
+                  </span>
+                ) : autoRefreshMs === 0 ? (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/40 text-muted-foreground border border-border/40 font-sans font-medium text-[10px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+                    <span>Stream Paused</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/30 font-sans font-medium text-[10px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    <span>Live Tail Mode</span>
+                  </span>
+                )
+              }
             />
           }
         >
@@ -311,28 +373,33 @@ export function TenantAuditExplorer({
             <div className="flex flex-col items-center justify-center p-16 space-y-3">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <span className="text-xs font-mono text-muted-foreground">
-                {t("security.audit_loading_logs")}
+                {t("security.audit_loading_logs") || "Loading tenant audit partition records..."}
               </span>
             </div>
-          ) : events.length > 0 ? (
+          ) : filteredEvents.length > 0 ? (
             <div className="divide-y divide-border/20">
-              {events.map((event) => (
+              {filteredEvents.map((event) => (
                 <TenantLogsRowItem
                   key={event.id}
                   event={event}
+                  scope={scope}
                   isSelected={selectedEvent?.id === event.id}
                   isRowSelected={selectedRowIds.has(event.id)}
                   onToggleSelectRow={handleToggleSelectRow}
                   visibleCols={columnVisibility}
-                  onSelect={() => setSelectedEvent(event)}
+                  copiedId={copiedId}
+                  onSelect={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
+                  onCopyLog={handleCopyLog}
                 />
               ))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-16 space-y-2.5 text-center">
-              <h3 className="text-sm font-bold text-foreground">{t("security.audit_empty_title")}</h3>
+              <h3 className="text-sm font-bold text-foreground">
+                {t("security.audit_empty_title") || "No matching audit events"}
+              </h3>
               <p className="text-xs text-muted-foreground max-w-sm">
-                {t("security.audit_empty_desc")}
+                {t("security.audit_empty_desc") || "No events recorded matching your active filters. Try adjusting filter criteria."}
               </p>
             </div>
           )}
@@ -344,7 +411,7 @@ export function TenantAuditExplorer({
           open={!!selectedEvent}
           onClose={() => setSelectedEvent(null)}
           currentIndex={selectedEventIndex >= 0 ? selectedEventIndex + 1 : undefined}
-          totalLogsCount={events.length}
+          totalLogsCount={filteredEvents.length}
           onPrevLog={handlePrevLog}
           onNextLog={handleNextLog}
           hasPrevLog={hasPrevLog}
