@@ -43,19 +43,28 @@ interface ProjectCardGridProps {
   onDeleteProject?: (id: string) => void;
 }
 
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "PRODUCTION":
-    case "ACTIVE":
-      return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-    case "PLANNING":
-      return "bg-sky-500/10 text-sky-400 border-sky-500/20";
-    case "MAINTENANCE":
-      return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-    default:
-      return "bg-muted text-muted-foreground border-border/60";
+function getProjectStatusInfo(status?: string, t?: (k: string) => string) {
+  const raw = (status || "PRODUCTION").toUpperCase();
+  if (raw === "PLANNING") {
+    return {
+      label: t ? t("projects.status_planning") || "PLANNING" : "PLANNING",
+      shortLabel: "PLANNING",
+      badgeClass: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+    };
   }
-};
+  if (raw === "MAINTENANCE") {
+    return {
+      label: t ? t("projects.status_maintenance") || "MAINTENANCE" : "MAINTENANCE",
+      shortLabel: "MAINTENANCE",
+      badgeClass: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    };
+  }
+  return {
+    label: t ? t("projects.status_production") || "PRODUCTION" : "PRODUCTION",
+    shortLabel: "PRODUCTION",
+    badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  };
+}
 
 const handleExportSpatial = (project: Project, successMessage: string) => {
   const exportData = {
@@ -98,9 +107,11 @@ const handleDuplicateStructure = (project: Project, successMessage: string) => {
 function ProjectActionMenu({
   project,
   onDeleteProject,
+  compact = false,
 }: {
   project: Project;
   onDeleteProject?: (id: string) => void;
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -109,16 +120,19 @@ function ProjectActionMenu({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+          size={compact ? "icon-xs" : "icon-sm"}
+          className={cn(
+            "text-muted-foreground hover:text-foreground cursor-pointer",
+            compact ? "h-6 w-6" : "h-7 w-7"
+          )}
         >
-          <MoreVertical className="h-3.5 w-3.5" />
+          <MoreVertical className={compact ? "size-3" : "size-3.5"} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 text-xs">
         <DropdownMenuItem asChild>
           <Link to="/project/$projectId/overview" params={{ projectId: project.id }}>
-            <Activity className="h-3.5 w-3.5 mr-2" />
+            <Activity className="size-3.5 mr-2" />
             {t("projects.open_summary")}
           </Link>
         </DropdownMenuItem>
@@ -127,16 +141,16 @@ function ProjectActionMenu({
             to="/project/$projectId/infrastructure/topology"
             params={{ projectId: project.id }}
           >
-            <Map className="h-3.5 w-3.5 mr-2" />
+            <Map className="size-3.5 mr-2" />
             {t("projects.open_gis_map")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExportSpatial(project, t("projects.import_success"))}>
-          <Download className="h-3.5 w-3.5 mr-2" />
+          <Download className="size-3.5 mr-2" />
           {t("projects.export_spatial_data")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleDuplicateStructure(project, t("common.copied_to_clipboard"))}>
-          <Copy className="h-3.5 w-3.5 mr-2" />
+          <Copy className="size-3.5 mr-2" />
           {t("projects.duplicate_project")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -145,7 +159,7 @@ function ProjectActionMenu({
             to="/project/$projectId/settings/general"
             params={{ projectId: project.id }}
           >
-            <Settings className="h-3.5 w-3.5 mr-2" />
+            <Settings className="size-3.5 mr-2" />
             {t("projects.project_settings")}
           </Link>
         </DropdownMenuItem>
@@ -154,7 +168,7 @@ function ProjectActionMenu({
             onClick={() => onDeleteProject(project.id)}
             className="text-destructive focus:bg-destructive/10 cursor-pointer"
           >
-            <Trash2 className="h-3.5 w-3.5 mr-2" />
+            <Trash2 className="size-3.5 mr-2" />
             {t("projects.delete_project")}
           </DropdownMenuItem>
         )}
@@ -171,6 +185,7 @@ function ProjectCardItem({
   onDeleteProject?: (id: string) => void;
 }) {
   const { t, formatNumber } = useTranslation();
+  const statusInfo = getProjectStatusInfo(project.status, t);
   const isDegraded = project.status === "MAINTENANCE";
   const oltHealthLabel = `${project.oltCount || 1} OLT ${
     isDegraded ? t("projects.olt_degraded") : t("projects.olt_online")
@@ -191,7 +206,7 @@ function ProjectCardItem({
               className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-lg shrink-0"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/50 border border-border/80 text-foreground/80 hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
-                <Box className="h-5 w-5" />
+                <Box className="size-5" />
               </div>
             </Link>
             <div className="min-w-0">
@@ -209,8 +224,8 @@ function ProjectCardItem({
                   {project.code}
                 </span>
                 <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
-                  <MapPin className="h-3 w-3 text-muted-foreground/70 shrink-0" />
-                  {project.slug ? `${project.slug} Region` : "Coverage Area"}
+                  <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
+                  {project.region || (project.slug ? `${project.slug} Region` : "Coverage Area")}
                 </span>
               </div>
             </div>
@@ -222,10 +237,10 @@ function ProjectCardItem({
               variant="outline"
               className={cn(
                 "text-[10px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5",
-                getStatusBadge(project.status)
+                statusInfo.badgeClass
               )}
             >
-              {project.status === "ACTIVE" ? t("projects.status_active") : project.status}
+              {statusInfo.shortLabel}
             </Badge>
             <ProjectActionMenu project={project} onDeleteProject={onDeleteProject} />
           </div>
@@ -242,7 +257,7 @@ function ProjectCardItem({
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40"
             title={t("projects.stats_total_subscribers")}
           >
-            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+            <Users className="size-4 text-muted-foreground shrink-0" />
             <div className="text-[11px] truncate">
               <span className="font-mono font-bold text-foreground">
                 {formatNumber(project.totalSubscribers || 0)}
@@ -255,7 +270,7 @@ function ProjectCardItem({
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40"
             title={t("projects.stats_cable_length")}
           >
-            <Network className="h-4 w-4 text-sky-400 shrink-0" />
+            <Network className="size-4 text-sky-400 shrink-0" />
             <div className="text-[11px] truncate">
               <span className="font-mono font-bold text-foreground">
                 {(project.cableLengthKm || 0).toFixed(1)}
@@ -268,7 +283,7 @@ function ProjectCardItem({
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40"
             title={t("gis.odc_odp_devices")}
           >
-            <Layers className="h-4 w-4 text-amber-400 shrink-0" />
+            <Layers className="size-4 text-amber-400 shrink-0" />
             <div className="text-[11px] truncate">
               <span className="font-mono font-bold text-foreground">
                 {project.odcCount || 0}
@@ -285,11 +300,11 @@ function ProjectCardItem({
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40"
             title={t("projects.col_olt_health")}
           >
-            <Server className="h-4 w-4 text-muted-foreground shrink-0" />
+            <Server className="size-4 text-muted-foreground shrink-0" />
             <div className="text-[11px] flex items-center gap-1.5 truncate">
               <span
                 className={cn(
-                  "h-2 w-2 rounded-full shrink-0",
+                  "size-2 rounded-full shrink-0",
                   isDegraded ? "bg-amber-500" : "bg-emerald-500"
                 )}
               />
@@ -307,21 +322,25 @@ function ProjectCardItem({
           asChild
           variant="outline"
           size="sm"
-          className="h-7.5 px-3 text-xs gap-1.5 font-medium border-border/80 hover:bg-muted/60 cursor-pointer"
+          className="h-7 px-2.5 text-xs gap-1.5 font-medium border-border/80 bg-card hover:bg-accent text-foreground cursor-pointer"
         >
           <Link
             to="/project/$projectId/infrastructure/topology"
             params={{ projectId: project.id }}
           >
-            <Map className="h-3.5 w-3.5" />
+            <Map className="size-3.5" />
             <span>{t("projects.open_map_editor")}</span>
           </Link>
         </Button>
 
-        <Button asChild size="sm" className="h-7.5 px-3.5 text-xs gap-1.5 font-medium cursor-pointer">
+        <Button
+          asChild
+          size="sm"
+          className="h-7 px-2.5 text-xs gap-1.5 font-medium cursor-pointer shadow-xs"
+        >
           <Link to="/project/$projectId/overview" params={{ projectId: project.id }}>
             <span>{t("projects.open_project")}</span>
-            <ArrowRight className="h-3 w-3" />
+            <ArrowRight className="size-3" />
           </Link>
         </Button>
       </div>
@@ -337,6 +356,7 @@ function ProjectTableRowItem({
   onDeleteProject?: (id: string) => void;
 }) {
   const { t, formatNumber } = useTranslation();
+  const statusInfo = getProjectStatusInfo(project.status, t);
   const isDegraded = project.status === "MAINTENANCE";
   const oltHealthLabel = `${project.oltCount || 1} OLT ${
     isDegraded ? t("projects.olt_degraded") : t("projects.olt_online")
@@ -345,15 +365,15 @@ function ProjectTableRowItem({
   return (
     <TableRow className="text-xs hover:bg-muted/30 border-b border-border/40 transition-colors">
       {/* Col 1: Project & Region */}
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-2.5 px-3.5">
         <div className="flex items-center gap-3">
           <Link
             to="/project/$projectId/overview"
             params={{ projectId: project.id }}
             className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-lg shrink-0"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50 border border-border/80 text-foreground/80 hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
-              <Box className="h-4.5 w-4.5" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50 border border-border/80 text-foreground/80 hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+              <Box className="size-4" />
             </div>
           </Link>
           <div className="min-w-0">
@@ -362,7 +382,7 @@ function ProjectTableRowItem({
               params={{ projectId: project.id }}
               className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded truncate block"
             >
-              <span className="font-bold text-foreground hover:text-primary transition-colors cursor-pointer block truncate text-sm">
+              <span className="font-bold text-foreground hover:text-primary transition-colors cursor-pointer block truncate text-xs">
                 {project.name}
               </span>
             </Link>
@@ -371,8 +391,8 @@ function ProjectTableRowItem({
                 {project.code}
               </span>
               <span className="text-[11px] text-muted-foreground flex items-center gap-1 truncate font-medium">
-                <MapPin className="h-3 w-3 text-muted-foreground/70 shrink-0" />
-                {project.slug ? `${project.slug} Region` : "Coverage Area"}
+                <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
+                {project.region || (project.slug ? `${project.slug} Region` : "Coverage Area")}
               </span>
             </div>
           </div>
@@ -380,24 +400,24 @@ function ProjectTableRowItem({
       </TableCell>
 
       {/* Col 2: Status */}
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-2.5 px-3.5">
         <Badge
           variant="outline"
           className={cn(
-            "text-[10px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5",
-            getStatusBadge(project.status)
+            "text-[10px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.2",
+            statusInfo.badgeClass
           )}
         >
-          {project.status === "ACTIVE" ? t("projects.status_active") : project.status}
+          {statusInfo.shortLabel}
         </Badge>
       </TableCell>
 
       {/* Col 3: OLT Health */}
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-2.5 px-3.5">
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              "h-2 w-2 rounded-full",
+              "size-2 rounded-full",
               isDegraded ? "bg-amber-500" : "bg-emerald-500"
             )}
           />
@@ -408,24 +428,24 @@ function ProjectTableRowItem({
       </TableCell>
 
       {/* Col 4: Network Metrics */}
-      <TableCell className="py-3 px-4">
+      <TableCell className="py-2.5 px-3.5">
         <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1.5" title={t("projects.stats_total_subscribers")}>
-            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            <Users className="size-3.5 text-muted-foreground" />
             <span className="font-mono font-bold text-foreground">
               {formatNumber(project.totalSubscribers || 0)}
             </span>
             <span className="text-[10px] text-muted-foreground">Plg</span>
           </div>
           <div className="flex items-center gap-1.5" title={t("projects.stats_cable_length")}>
-            <Network className="h-3.5 w-3.5 text-sky-400" />
+            <Network className="size-3.5 text-sky-400" />
             <span className="font-mono font-bold text-foreground">
               {(project.cableLengthKm || 0).toFixed(1)}
             </span>
             <span className="text-[10px] text-muted-foreground">Km</span>
           </div>
           <div className="flex items-center gap-1.5" title={t("gis.odc_odp_devices")}>
-            <Layers className="h-3.5 w-3.5 text-amber-400" />
+            <Layers className="size-3.5 text-amber-400" />
             <span className="font-mono font-bold text-foreground">
               {project.odcCount || 0}
             </span>
@@ -440,35 +460,35 @@ function ProjectTableRowItem({
       </TableCell>
 
       {/* Col 5: Actions */}
-      <TableCell className="py-3 px-4 text-right">
-        <div className="flex items-center justify-end gap-2">
+      <TableCell className="py-2.5 px-3.5 text-right">
+        <div className="flex items-center justify-end gap-1.5">
           <Button
             asChild
             variant="outline"
-            size="sm"
-            className="h-7.5 px-2.5 text-xs gap-1.5 font-medium border-border/80 hover:bg-muted/60 cursor-pointer"
+            size="xs"
+            className="h-6 px-2 text-[11px] gap-1 font-medium border-border/80 bg-card hover:bg-accent text-foreground cursor-pointer"
           >
             <Link
               to="/project/$projectId/infrastructure/topology"
               params={{ projectId: project.id }}
             >
-              <Map className="h-3.5 w-3.5" />
+              <Map className="size-3" />
               <span className="hidden xl:inline">{t("projects.open_map_editor")}</span>
             </Link>
           </Button>
 
           <Button
             asChild
-            size="sm"
-            className="h-7.5 px-3 text-xs gap-1.5 font-medium cursor-pointer"
+            size="xs"
+            className="h-6 px-2 text-[11px] gap-1 font-medium cursor-pointer shadow-xs"
           >
             <Link to="/project/$projectId/overview" params={{ projectId: project.id }}>
               <span>{t("projects.open_project")}</span>
-              <ArrowRight className="h-3 w-3" />
+              <ArrowRight className="size-3" />
             </Link>
           </Button>
 
-          <ProjectActionMenu project={project} onDeleteProject={onDeleteProject} />
+          <ProjectActionMenu project={project} onDeleteProject={onDeleteProject} compact />
         </div>
       </TableCell>
     </TableRow>
@@ -488,11 +508,11 @@ export function ProjectCardGrid({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40 text-[10px] uppercase font-bold tracking-wider text-muted-foreground border-b border-border/60">
-              <TableHead className="py-2.5 px-4">{t("projects.col_project_region")}</TableHead>
-              <TableHead className="py-2.5 px-4">{t("projects.col_status")}</TableHead>
-              <TableHead className="py-2.5 px-4">{t("projects.col_olt_health")}</TableHead>
-              <TableHead className="py-2.5 px-4">{t("projects.col_network_metrics")}</TableHead>
-              <TableHead className="py-2.5 px-4 text-right">{t("projects.col_actions")}</TableHead>
+              <TableHead className="py-2 px-3.5">{t("projects.col_project_region")}</TableHead>
+              <TableHead className="py-2 px-3.5">{t("projects.col_status")}</TableHead>
+              <TableHead className="py-2 px-3.5">{t("projects.col_olt_health")}</TableHead>
+              <TableHead className="py-2 px-3.5">{t("projects.col_network_metrics")}</TableHead>
+              <TableHead className="py-2 px-3.5 text-right">{t("projects.col_actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -108,5 +108,7 @@
   "col_actions": "Aksi",
   "unit_subscribers": "Pelanggan",
   "unit_km_cable": "Km Kabel",
-  "status_active": "AKTIF"
+  "status_active": "AKTIF",
+  "trial_expired_desc": "Masa evaluasi 14 hari telah berakhir dan proyek saat ini di-pause dalam mode Read-Only. Tingkatkan paket langganan Anda untuk membuat dan mengelola proyek jaringan secara penuh.",
+  "quota_exceeded_desc": "Organisasi Anda telah mencapai batas maksimum {{used}} dari {{max}} proyek aktif untuk paket {{tier}}. Tingkatkan ke paket yang lebih tinggi untuk membuat proyek FTTH baru."
 }

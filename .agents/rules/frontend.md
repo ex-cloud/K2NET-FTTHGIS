@@ -369,3 +369,56 @@ Untuk menjaga performa tinggi (60–120 FPS) dan menghindari memory leak pada vi
    * Pola ini sangat ideal untuk membangun *Landing Page Marketing* interaktif yang memiliki latar belakang/objek 3D dinamis dengan teks dan tombol CTA 2D yang meluncur mulus.
 3. **Manajemen Memori & Cleanup Wajib**:
    * Setiap komponen 3D Three.js wajib menyertakan pembersihan memori lengkap pada unmount: `cancelAnimationFrame`, `resizeObserver.disconnect()`, serta traversal `geometry.dispose()` dan `material.dispose()`.
+
+---
+
+## 🌐 15. Standar Baku Internasionalisasi & Anti-Hardcoded Strings (`@k2net/i18n`)
+
+> 🛑 **ATURAN MUTLAK LEVEL 1 (CRITICAL)**: Dilarang keras menuliskan teks antarmuka (*UI strings*), judul, deskripsi, placeholder, tooltip, pesan validasi, pesan toast notifikasi, dialog konfirmasi modal, maupun teks peringatan batas kuota secara langsung (*hardcoded string*) dalam bahasa Indonesia atau Inggris di dalam berkas JSX/TSX.
+
+### A. Kaidah Implementasi Internasionalisasi:
+1. **Penggunaan Hook `useTranslation()`**:
+   * Seluruh komponen UI **wajib** mengimpor `useTranslation` dari `@k2net/i18n`:
+     ```tsx
+     import { useTranslation } from "@k2net/i18n";
+
+     export function MyComponent() {
+       const { t, formatNumber } = useTranslation();
+       return <Button>{t("gis.create_project")}</Button>;
+     }
+     ```
+2. **Sinkronisasi Dua Bahasa Simultan (Dual-Locale Parity)**:
+   * Setiap penambahan atau perubahan translation key **wajib** didaftarkan secara bersamaan di kedua file kamus:
+     * `packages/i18n/src/locales/en/<modul>.json` (Bahasa Inggris)
+     * `packages/i18n/src/locales/id/<modul>.json` (Bahasa Indonesia)
+3. **Interpolasi Parameter Dinamis**:
+   * Gunakan format interpolasi ganda `{{param}}` atau kurung `{param}` untuk string yang memuat variabel dinamis:
+     ```json
+     "quota_exceeded_desc": "Organisasi Anda telah mencapai batas {{used}} dari {{max}} proyek aktif untuk paket {{tier}}."
+     ```
+     ```tsx
+     t("projects.quota_exceeded_desc", { used: usedCount, max: maxCount, tier: currentTier.toUpperCase() })
+     ```
+4. **Normalisasi Enum & Data Status Backend**:
+   * Hindari merender `project.status` atau `user.role` mentah yang dapat bernilai `null` atau `undefined` dari database/API. Selalu gunakan helper fallback terpusat (contoh: `const status = project.status || "PRODUCTION"`) agar UI tidak menampilkan badge kosong atau strip `-`.
+
+---
+
+## 📐 16. Standar Anatomi Ukuran Kontrol UI & Skala Densitas Baku
+
+Untuk menjamin konsistensi visual di seluruh portal `studio-admin` dan `studio-tenant` selaras dengan [Fluid-Design-Tokens.md](file:///opt/project5/docs/06_Archive_Dev_History/Server/UI/theme/Fluid-Design-Tokens.md) dan [rules/styles.md](file:///opt/project5/.agents/rules/styles.md):
+
+| Area UI / Kontainer | Ukuran Kontrol | Kelas Tailwind Baku | Icon Scale |
+|---|---|---|---|
+| **Toolbar Primary CTA** | `size="sm"` | `h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs bg-foreground text-background` | `<Plus className="size-3.5" />` |
+| **Toolbar Controls / Dropdown** | `size="sm"` | `h-7 px-2.5 text-xs font-medium gap-1.5 border-border/80 bg-card hover:bg-accent` | `size-3.5` |
+| **Toolbar Refresh / Icon-Only** | `size="icon-sm"` / `size="sm"` | `h-7 w-7 p-0 border-border/80 bg-card hover:bg-accent text-muted-foreground` | `size-3.5` |
+| **Toolbar Search Input** | Input Standar | `h-7.5 pl-8 text-xs bg-muted/20 border-border/80 rounded-md` | `size-3.5` |
+| **Toolbar Filter Tabs** | TabsList | `h-7.5 p-0.5 bg-muted/60 border border-border/60 rounded-md` (Trigger: `h-6.5 px-2.5 text-xs`) | - |
+| **View Switcher (Grid/List/Table)** | Segmented Box | Container: `rounded-md border border-border/80 bg-card p-0.5` (Button: `p-1 rounded-sm`) | `size-3.5` |
+| **Card Footer Actions** | `size="sm"` | `h-7 px-2.5 text-xs font-medium gap-1.5 rounded-md` | `size-3.5` / `size-3` |
+| **Data Table Row Actions** | `size="xs"` | `h-6 px-2 text-[11px] font-medium gap-1 rounded-md` | `size-3` |
+| **Data Table Row 3-Dots Menu** | `size="icon-xs"` | `h-6 w-6 text-muted-foreground hover:text-foreground` | `size-3` |
+| **Status Badge (Card View)** | Badge MD | `px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider` | - |
+| **Status Badge (Table View)** | Badge Dense | `px-1.5 py-0.2 text-[10px] font-mono font-semibold uppercase tracking-wider` | - |
+

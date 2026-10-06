@@ -108,5 +108,7 @@
   "col_actions": "Actions",
   "unit_subscribers": "Subscribers",
   "unit_km_cable": "Km Cable",
-  "status_active": "ACTIVE"
+  "status_active": "ACTIVE",
+  "trial_expired_desc": "The 14-day evaluation period has ended and projects are currently paused in Read-Only mode. Upgrade your subscription plan to create and manage network projects fully.",
+  "quota_exceeded_desc": "Your organization has reached the maximum limit of {{used}} of {{max}} active projects for the {{tier}} tier. Upgrade to a higher plan to create new FTTH projects."
 }

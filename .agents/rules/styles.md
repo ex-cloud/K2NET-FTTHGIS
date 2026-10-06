@@ -106,20 +106,35 @@ grep -rn "text-zinc-\|bg-zinc-\|border-zinc-\|text-white" \
   Tambahkan `pl-4 md:pl-10` pada container dalam untuk menghindari garis beam menimpa konten.
 * **Pulsing Dot ONLINE**: `h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_var(--color-emerald-500,#10b981)] animate-pulse`
 
-### B. Tombol & Badge
+### B. Standar Ukuran Tombol & Anatomi Kontrol (Anti-Oversized Scale)
 
-* **Primary Action CTA** `variant="default"`: `bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98] h-8 px-3 rounded-lg text-xs font-semibold shadow-xs` — Maksimal 1 aksi primer per view.
-* **Toolbar / Action Icon** `variant="outline"`: `bg-card text-foreground border-border/80 hover:bg-muted/80 h-8 px-3 rounded-lg text-xs font-medium`.
-* **Destructive Action** `variant="destructive"`: `bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20 h-8 px-3 rounded-lg text-xs font-medium`.
+Sistem UI K2NET mengikuti skala densitas presisi (*Supabase / Studio-Admin compact scale*) untuk mencegah tombol terlihat membengkak atau tidak seimbang dengan icon di sekitarnya:
+
+* **Primary Action CTA (`variant="default"`)**:
+  * **Toolbar / Card Footer**: Gunakan `size="sm"` (`h-7 px-2.5 text-xs font-medium gap-1.5 rounded-md shadow-xs bg-foreground text-background hover:bg-foreground/90`). Maksimal 1 aksi primer per view.
+  * **Modal Form Submissions**: Gunakan `size="default"` (`h-8 px-3 text-xs font-medium rounded-md shadow-xs`).
+* **Toolbar Controls & Dropdowns (`variant="outline"`)**:
+  * Gunakan `size="sm"` (`h-7 px-2.5 text-xs font-medium gap-1.5 rounded-md border-border/80 bg-card hover:bg-accent text-foreground`).
+* **Icon-Only Buttons**:
+  * **Toolbar**: Gunakan `size="icon-sm"` atau `size="sm"` (`h-7 w-7 p-0 rounded-md border-border/80 bg-card hover:bg-accent text-muted-foreground hover:text-foreground`). Icon berukuran `size-3.5`.
+  * **Data Table Rows**: Gunakan `size="icon-xs"` (`h-6 w-6 rounded-md text-muted-foreground hover:text-foreground`). Icon berukuran `size-3`.
+* **Data Table Row Actions (Dense Enterprise Table)**:
+  * Gunakan `size="xs"` (`h-6 px-2 text-[11px] font-medium gap-1 rounded-md`). Icon berukuran `size-3`. Dilarang menggunakan tombol `h-7.5` atau `h-8` di dalam baris tabel karena akan meregangkan tinggi baris secara berlebihan.
+* **Segmented / View Mode Switcher**:
+  * Container: `rounded-md border border-border/80 bg-card p-0.5 flex items-center`.
+  * Item Button: `p-1 rounded-sm text-muted-foreground hover:text-foreground transition-all cursor-pointer` (Aktif: `bg-secondary text-foreground shadow-xs`). Icon berukuran `size-3.5`.
+* **Destructive Action (`variant="destructive"`)**:
+  * `bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20 h-7 px-2.5 rounded-md text-xs font-medium`.
 
 Badge Status:
-| Tipe | Class |
-|---|---|
-| Neutral / Info | `bg-muted text-foreground border border-border/60 text-[10px] font-mono` |
-| ONLINE / SUCCESS | `bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-mono` |
-| OFFLINE / Error | `bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-mono` |
-| WARNING / Trial | `bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-mono` |
-| PBAC Scope / Role | `bg-violet-500/10 text-violet-400 border border-violet-500/20 text-[10px] font-mono` |
+| Tipe | Class Card View | Class Table Row View |
+|---|---|---|
+| Neutral / Info | `bg-muted text-foreground border border-border/60 text-[10px] font-mono font-semibold uppercase px-2 py-0.5` | `px-1.5 py-0.2 text-[10px] font-mono font-semibold uppercase` |
+| ONLINE / PRODUCTION / SUCCESS | `bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-mono font-semibold uppercase px-2 py-0.5` | `px-1.5 py-0.2 text-[10px] font-mono font-semibold uppercase` |
+| PLANNING / SKY | `bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-mono font-semibold uppercase px-2 py-0.5` | `px-1.5 py-0.2 text-[10px] font-mono font-semibold uppercase` |
+| OFFLINE / Error / Rose | `bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-mono font-semibold uppercase px-2 py-0.5` | `px-1.5 py-0.2 text-[10px] font-mono font-semibold uppercase` |
+| WARNING / MAINTENANCE / Amber | `bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-mono font-semibold uppercase px-2 py-0.5` | `px-1.5 py-0.2 text-[10px] font-mono font-semibold uppercase` |
+| PBAC Scope / Role | `bg-violet-500/10 text-violet-400 border border-violet-500/20 text-[10px] font-mono font-semibold uppercase px-2 py-0.5` | `px-1.5 py-0.2 text-[10px] font-mono font-semibold uppercase` |
 
 ### C. Tipografi
 
@@ -137,11 +152,13 @@ Badge Status:
 | Data Teknis (IP/MAC) | `font-mono text-xs text-foreground` |
 | Data Timestamp | `font-mono text-xs text-muted-foreground` |
 
-### D. Anatomi Form, Tabel & Modal
+### D. Anatomi Form, Search Input, Tabel & Modal
 
-* **Form Control**: `h-9 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary`
-* **Tabel Header**: `sticky top-0 bg-muted/60 backdrop-blur-md border-b border-border` + teks `text-[10px] font-bold uppercase tracking-wider text-muted-foreground`
-* **Tabel Data Row**: `text-sm text-foreground hover:bg-muted/40 transition-colors`
+* **Search Input Toolbar**: `h-7.5 pl-8 text-xs bg-muted/20 border-border/80 rounded-md` dengan icon `<Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground" />`.
+* **Tabs Filter Toolbar**: `TabsList className="h-7.5 p-0.5 bg-muted/60 border border-border/60 shrink-0"` dengan `TabsTrigger className="text-xs px-2.5 h-6.5"`.
+* **Form Control Editor**: `h-8.5 rounded-lg focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:border-primary text-xs`
+* **Tabel Header**: `sticky top-0 bg-muted/40 backdrop-blur-md border-b border-border/60` + teks `text-[10px] font-bold uppercase tracking-wider text-muted-foreground py-2 px-3.5`
+* **Tabel Data Row**: `py-2.5 px-3.5 text-xs text-foreground hover:bg-muted/30 transition-colors border-b border-border/40`
 * **Modal**: `bg-card/95 backdrop-blur-2xl border border-border shadow-2xl rounded-xl p-6`
 * **Modal Footer**: `flex justify-end gap-2 pt-4 border-t border-border` — Cancel outline kiri, Save primary kanan.
 
@@ -155,6 +172,13 @@ Badge Status:
   * Batas luar shell (Header utama, batas kanan Sidebar) menggunakan flat border halus `border-border/40`.
   * Pembatas dalam sidebar menu menggunakan hairline `border-groove-t`.
   * Efek groove penuh digunakan di dalam kartu dashboard untuk memberikan pantulan bevel premium.
+
+### F. Pencegahan Anti-Pattern Anatomi UI (Oversized Anti-Patterns)
+
+1. ❌ **Dilarang Tombol Bulky/Tebal di Toolbar**: Menggunakan `h-8 px-3 font-semibold` atau `h-10` pada tombol CTA di sebelah kontrol kecil membuat visual timpang (*imbalanced*). Gunakan `size="sm"` (`h-7 px-2.5 text-xs font-medium gap-1.5`).
+2. ❌ **Dilarang Tombol Raksasa di Footer Card**: Tombol `Open Project` atau aksi footer card tidak boleh menggunakan `px-3.5` / `h-7.5` berlebih. Wajib konsisten dengan `size="sm"` (`h-7 px-2.5 text-xs`).
+3. ❌ **Dilarang Tombol Longgar di Data Table**: Jangan letakkan tombol `size="sm"` atau `size="default"` di dalam baris tabel data padat. Selalu gunakan `size="xs"` (`h-6 px-2 text-[11px]`) untuk tombol aksi dan `size="icon-xs"` (`h-6 w-6`) untuk menu 3-dots.
+4. ❌ **Dilarang Status Badge Kosong / Strip `-`**: Data status yang tidak terdefinisi dari API backend wajib melalui normalisasi fallback (contoh: default `PRODUCTION` emerald) agar tidak merender outline kosong atau strip.
 
 ---
 

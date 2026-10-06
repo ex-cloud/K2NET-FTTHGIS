@@ -7,6 +7,7 @@ export interface Project {
   name: string;
   code: string;
   slug?: string;
+  region?: string;
   description?: string;
   status: "PLANNING" | "PRODUCTION" | "MAINTENANCE" | "ACTIVE" | "ARCHIVED";
   customerCount?: number;
@@ -25,6 +26,7 @@ export interface Project {
 export interface CreateProjectPayload {
   name: string;
   code: string;
+  region?: string;
   description?: string;
   status?: string;
   boundaryGeom?: unknown;

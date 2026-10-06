@@ -159,6 +159,19 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Penggunaan**: Bungkus halaman berkonten panjang (settings, compliance, password-policy) dengan `<TracingBeam className="px-4">` dari `@k2net/ui`.
 - **Padding dalam**: Tambahkan `pl-4 md:pl-10` pada container dalam `<TracingBeam>` agar garis SVG beam tidak menimpa sisi kiri konten card/form.
 
+### UI Compliance — Standar Anatomi Ukuran Kontrol & Tombol UI (Oktober 2026)
+- **Toolbar & Card Footer Actions**: Gunakan `size="sm"` (`h-7 px-2.5 text-xs font-medium gap-1.5 rounded-md` dengan icon `size-3.5`).
+- **Toolbar Primary CTA (`variant="default"`)**: Gunakan `size="sm"` (`h-7 px-2.5 text-xs font-medium gap-1.5 rounded-md shadow-xs bg-foreground text-background`). Dilarang keras tombol bulky `h-8 px-3 font-semibold` atau `h-10` di sebelah kontrol compact.
+- **Data Table Row Actions (Dense Density)**: Gunakan `size="xs"` (`h-6 px-2 text-[11px] font-medium gap-1 rounded-md` dengan icon `size-3`) dan 3-dots `size="icon-xs"` (`h-6 w-6`). Dilarang meletakkan tombol `h-7.5` atau `h-8` di baris tabel.
+- **Segmented View Switcher**: Wadah luar `rounded-md border border-border/80 bg-card p-0.5`, item tombol `p-1 rounded-sm` dengan icon `size-3.5`.
+- **Toolbar Search & Tabs Filter**: Ketinggian baku `h-7.5` (`pl-8 text-xs bg-muted/20 border-border/80`).
+
+### UI Compliance — Zero Hardcoded Strings & Dual-Locale `@k2net/i18n` (Oktober 2026)
+- **Level 1 Critical Rule**: Dilarang keras menuliskan raw string bahasa Indonesia atau Inggris di berkas JSX/TSX.
+- **Wajib `useTranslation()`**: Seluruh judul, deskripsi, label, placeholder, toast, status, empty state, dan dialog konfirmasi modal wajib menggunakan `const { t } = useTranslation();` dari `@k2net/i18n`.
+- **Dual-Locale Parity**: Penambahan kunci baru wajib simultan di `packages/i18n/src/locales/en/<modul>.json` dan `packages/i18n/src/locales/id/<modul>.json`.
+- **Status & Enum Normalization**: Selalu terapkan fallback aman (contoh: `project.status || "PRODUCTION"`) agar UI tidak menampilkan badge kosong atau strip `-`.
+
 ### Integrasi Audit Logging Terpadu (Agustus 2026)
 - **Arsitektur Pipeline**: Log audit dari semua tier (Go microservices, Spring Boot, Keycloak, Kong, Traefik) dialirkan secara asinkronus ke `gateway-audit:5009`.
 - **Go Shared Client**: Library `gateways/shared/auditclient` dirancang *fire-and-forget* (goroutine) dan aman dari crash jika URL log tidak di-set (no-op fallback).

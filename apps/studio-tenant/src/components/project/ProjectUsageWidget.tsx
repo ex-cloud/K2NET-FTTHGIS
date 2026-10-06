@@ -17,7 +17,7 @@ function CircularMeter({ percent }: { percent: number }) {
   return (
     <div className="relative flex items-center justify-center shrink-0 w-4 h-4">
       <svg className="w-4 h-4 -rotate-90" viewBox="0 0 16 16">
-        {/* Background track circle */}
+        {/* Background track circle with sunken dark groove feel */}
         <circle
           cx="8"
           cy="8"
@@ -25,7 +25,7 @@ function CircularMeter({ percent }: { percent: number }) {
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
-          className="text-muted-foreground/30 dark:text-muted/60"
+          className="text-black/40 dark:text-black/70"
         />
         {/* Active progress arc */}
         <circle
@@ -40,7 +40,13 @@ function CircularMeter({ percent }: { percent: number }) {
           strokeLinecap="round"
           className={cn(
             "transition-all duration-500",
-            percent > 85 ? "text-amber-500" : percent > 0 ? "text-primary" : "text-transparent"
+            percent >= 95
+              ? "text-rose-500"
+              : percent >= 80
+              ? "text-amber-500"
+              : percent > 0
+              ? "text-primary"
+              : "text-transparent"
           )}
         />
       </svg>
@@ -185,10 +191,10 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
             const isWarning = item.percent >= 80 && item.percent < 95;
 
             const progressColor = isCritical
-              ? "bg-rose-500"
+              ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.45)]"
               : isWarning
-              ? "bg-amber-500"
-              : "bg-primary";
+              ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.45)]"
+              : "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.4)]";
 
             return (
               <div
@@ -210,8 +216,8 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
                   </span>
                 </div>
 
-                {/* Visual Capacity Mini Progress Bar */}
-                <div className="h-1.5 w-full bg-muted/60 rounded-full overflow-hidden border border-border/40">
+                {/* Visual Capacity Mini Progress Bar with Sunken Groove Track */}
+                <div className="h-1.5 w-full track-groove rounded-full overflow-hidden">
                   <div
                     className={cn("h-full rounded-full transition-all duration-500", progressColor)}
                     style={{ width: `${Math.min(100, Math.max(0, item.percent))}%` }}

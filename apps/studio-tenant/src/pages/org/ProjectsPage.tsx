@@ -109,13 +109,13 @@ export function ProjectsPage() {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
                 {/* Search Input */}
                 <div className="relative w-full sm:w-56 shrink-0">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     type="text"
                     placeholder={t("gis.search_projects")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-8 pl-8 text-xs bg-muted/20 border-border/60"
+                    className="h-7.5 pl-8 text-xs bg-muted/20 border-border/80"
                   />
                 </div>
 
@@ -125,17 +125,17 @@ export function ProjectsPage() {
                   onValueChange={setStatusFilter}
                   className="w-full sm:w-auto overflow-x-auto custom-scrollbar"
                 >
-                  <TabsList className="h-8 p-0.5 bg-muted/60 border border-border/40 shrink-0">
-                    <TabsTrigger value="ALL" className="text-xs px-2.5">
+                  <TabsList className="h-7.5 p-0.5 bg-muted/60 border border-border/60 shrink-0">
+                    <TabsTrigger value="ALL" className="text-xs px-2.5 h-6.5">
                       {t("common.all")} ({projects.length})
                     </TabsTrigger>
-                    <TabsTrigger value="PRODUCTION" className="text-xs px-2.5">
+                    <TabsTrigger value="PRODUCTION" className="text-xs px-2.5 h-6.5">
                       Production
                     </TabsTrigger>
-                    <TabsTrigger value="PLANNING" className="text-xs px-2.5">
+                    <TabsTrigger value="PLANNING" className="text-xs px-2.5 h-6.5">
                       Planning
                     </TabsTrigger>
-                    <TabsTrigger value="MAINTENANCE" className="text-xs px-2.5">
+                    <TabsTrigger value="MAINTENANCE" className="text-xs px-2.5 h-6.5">
                       Maintenance
                     </TabsTrigger>
                   </TabsList>
@@ -143,16 +143,16 @@ export function ProjectsPage() {
               </div>
 
               {/* Right: Dropdown Sort + Refresh + View Mode Toggle + Plus Button */}
-              <div className="flex items-center gap-2 shrink-0 self-end md:self-auto flex-wrap">
+              <div className="flex items-center gap-1.5 shrink-0 self-end md:self-auto flex-wrap">
                 {/* Dropdown Sort */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 px-2.5 text-xs font-medium gap-1.5 border-border/60 hover:bg-muted/60 cursor-pointer"
+                      className="h-7 px-2.5 text-xs font-medium gap-1.5 border-border/80 bg-card hover:bg-accent text-foreground cursor-pointer"
                     >
-                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      <ArrowUpDown className="size-3.5 text-muted-foreground" />
                       <span className="hidden sm:inline text-muted-foreground">
                         {t("projects.sort_by") || "Sort"}:
                       </span>
@@ -167,7 +167,7 @@ export function ProjectsPage() {
                         className="flex items-center justify-between cursor-pointer"
                       >
                         <span>{sortLabels[option]}</span>
-                        {sortBy === option && <Check className="h-3.5 w-3.5 text-foreground" />}
+                        {sortBy === option && <Check className="size-3.5 text-foreground" />}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
@@ -177,30 +177,30 @@ export function ProjectsPage() {
                 <ActionTooltip label={t("gis.refresh_projects")} shortcut="R" side="bottom">
                   <Button
                     variant="outline"
-                    size="icon"
+                    size="sm"
                     onClick={() => refetch()}
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground border-border/60 cursor-pointer"
+                    className="h-7 w-7 p-0 border-border/80 bg-card hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
                     aria-label={t("gis.refresh_projects")}
                   >
-                    <RefreshCcw className="h-3.5 w-3.5" />
+                    <RefreshCcw className="size-3.5" />
                   </Button>
                 </ActionTooltip>
 
                 {/* Toggle View Mode (Grid vs List) */}
-                <div className="flex items-center p-0.5 rounded-lg border border-border/60 bg-muted/40">
+                <div className="flex items-center rounded-md border border-border/80 bg-card p-0.5">
                   <ActionTooltip label={t("gis.grid_view")} side="bottom">
                     <button
                       type="button"
                       onClick={() => setViewMode("grid")}
                       className={cn(
-                        "p-1 rounded-md transition-colors cursor-pointer",
+                        "p-1 rounded-sm text-muted-foreground hover:text-foreground transition-all cursor-pointer",
                         viewMode === "grid"
-                          ? "bg-background text-foreground shadow-xs"
+                          ? "bg-secondary text-foreground shadow-xs"
                           : "text-muted-foreground hover:text-foreground"
                       )}
                       aria-label={t("gis.grid_view")}
                     >
-                      <LayoutGrid className="h-3.5 w-3.5" />
+                      <LayoutGrid className="size-3.5" />
                     </button>
                   </ActionTooltip>
                   <ActionTooltip label={t("gis.list_view")} side="bottom">
@@ -208,14 +208,14 @@ export function ProjectsPage() {
                       type="button"
                       onClick={() => setViewMode("list")}
                       className={cn(
-                        "p-1 rounded-md transition-colors cursor-pointer",
+                        "p-1 rounded-sm text-muted-foreground hover:text-foreground transition-all cursor-pointer",
                         viewMode === "list"
-                          ? "bg-background text-foreground shadow-xs"
+                          ? "bg-secondary text-foreground shadow-xs"
                           : "text-muted-foreground hover:text-foreground"
                       )}
                       aria-label={t("gis.list_view")}
                     >
-                      <List className="h-3.5 w-3.5" />
+                      <List className="size-3.5" />
                     </button>
                   </ActionTooltip>
                 </div>
@@ -226,9 +226,9 @@ export function ProjectsPage() {
                     variant="default"
                     size="sm"
                     onClick={handleOpenCreateProject}
-                    className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
+                    className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer"
                   >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="size-3.5" />
                     <span className="hidden sm:inline">{t("gis.create_project")}</span>
                   </Button>
                 </ActionTooltip>
@@ -264,9 +264,9 @@ export function ProjectsPage() {
                   <Button
                     size="sm"
                     onClick={handleOpenCreateProject}
-                    className="text-xs font-semibold gap-1.5 cursor-pointer shadow-xs"
+                    className="h-7 px-2.5 text-xs font-medium gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="size-3.5" />
                     {t("gis.create_new_project")}
                   </Button>
                 }
@@ -298,8 +298,12 @@ export function ProjectsPage() {
         }
         featureDescription={
           isTrialExpired || status === "TRIAL_EXPIRED"
-            ? "Masa evaluasi 14 hari telah berakhir dan proyek saat ini di-pause dalam mode Read-Only. Tingkatkan paket langganan Anda untuk membuat dan mengelola proyek jaringan secara penuh."
-            : `Organisasi Anda telah mencapai batas maksimum ${usedProjects} dari ${maxProjects} proyek aktif untuk paket ${tier.toUpperCase()}. Tingkatkan ke paket yang lebih tinggi untuk membuat proyek FTTH baru.`
+            ? t("projects.trial_expired_desc")
+            : t("projects.quota_exceeded_desc", {
+                used: usedProjects,
+                max: maxProjects,
+                tier: tier.toUpperCase(),
+              })
         }
         requiredTier={tier === "free" ? "starter" : tier === "starter" ? "pro" : "enterprise"}
         currentTier={tier}
