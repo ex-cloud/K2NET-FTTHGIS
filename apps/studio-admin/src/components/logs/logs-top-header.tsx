@@ -61,7 +61,7 @@ export function LogsTopHeader({
     includeBenchmark, setIncludeBenchmark,
     isLivePaused, setIsLivePaused,
     showHistogram, setShowHistogram,
-    setIsSidebarCollapsed,
+    isSidebarCollapsed, setIsSidebarCollapsed,
     advancedFilters, addAdvancedFilter, removeAdvancedFilter,
   } = useLogsFilter();
 
@@ -208,14 +208,16 @@ export function LogsTopHeader({
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 border-groove-b bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
-      <ActionTooltip label={t("observability.toggle_filter_panel")} shortcut="Alt+S">
-        <button
-          onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-          className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        >
-          <PanelLeft className="w-3.5 h-3.5" />
-        </button>
-      </ActionTooltip>
+      {isSidebarCollapsed && (
+        <ActionTooltip label={t("observability.toggle_filter_panel")} shortcut="Alt+S">
+          <button
+            onClick={() => setIsSidebarCollapsed(false)}
+            className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <PanelLeft className="w-3.5 h-3.5" />
+          </button>
+        </ActionTooltip>
+      )}
 
       <div
         ref={filterAnchorRef}

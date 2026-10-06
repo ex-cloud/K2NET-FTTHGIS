@@ -5,7 +5,9 @@ import {
   LogsStatusBar,
   type LogsTableColumn,
   buildHistogramDataFromLogs,
+  Button,
 } from "@k2net/ui";
+import { Terminal, RotateCcw, Clock, Calendar } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import { useTenantAudit, type UseTenantAuditOptions } from "../../hooks/useTenantAudit";
@@ -21,6 +23,14 @@ interface TenantAuditExplorerProps {
   initialCategory?: string;
   title?: string;
   description?: string;
+}
+
+interface AuditFilterCriteria {
+  selectedCategories: Set<string>;
+  selectedSeverities: Set<string>;
+  selectedLevels: Set<string>;
+  selectedMethods: Set<string>;
+  pathnameFilter: string;
 }
 
 const DEFAULT_COLUMN_VISIBILITY: Record<string, boolean> = {
@@ -39,6 +49,139 @@ const LOG_TABLE_COLUMNS: LogsTableColumn[] = [
   { id: "message", label: "Event Message & Actor", width: "flex-1 min-w-0" },
 ];
 
+function matchesCategory(event: TenantAuditEvent, categories: Set<string>): boolean {
+  return categories.size === 0 || categories.has(event.category);
+}
+
+function matchesSeverity(event: TenantAuditEvent, severities: Set<string>): boolean {
+  return severities.size === 0 || severities.has((event.severity || "INFO").toUpperCase());
+}
+
+function matchesLevel(event: TenantAuditEvent, levels: Set<string>): boolean {
+  if (levels.size === 0) return true;
+  const s = (event.severity || "INFO").toUpperCase();
+  const isError = s === "ERROR" || s === "CRITICAL";
+  const isWarn = s === "WARN" || s === "WARNING";
+  const isSuccess = !isError && !isWarn;
+  return (
+    (levels.has("success") && isSuccess) ||
+    (levels.has("warning") && isWarn) ||
+    (levels.has("error") && isError)
+  );
+}
+
+function matchesMethod(event: TenantAuditEvent, methods: Set<string>): boolean {
+  if (methods.size === 0) return true;
+  const a = (event.action || "").toUpperCase();
+  let m = "RPC";
+  if (a.includes("CREATE") || a.includes("REGISTER") || a.includes("ADD")) m = "POST";
+  else if (a.includes("UPDATE") || a.includes("EDIT") || a.includes("CHANGE")) m = "PUT";
+  else if (a.includes("DELETE") || a.includes("REVOKE") || a.includes("REMOVE")) m = "DELETE";
+  else if (a.includes("GET") || a.includes("VIEW") || a.includes("READ")) m = "GET";
+  return methods.has(m);
+}
+
+function matchesPathname(event: TenantAuditEvent, query: string): boolean {
+  const q = query.toLowerCase().trim();
+  if (!q) return true;
+  const path = `${event.resourceType.toLowerCase()}/${event.resourceId || ""}`.toLowerCase();
+  return (
+    path.includes(q) ||
+    event.resourceType.toLowerCase().includes(q) ||
+    (event.resourceId?.toLowerCase().includes(q) ?? false)
+  );
+}
+
+function filterAuditEvents(events: TenantAuditEvent[], criteria: AuditFilterCriteria): TenantAuditEvent[] {
+  return events.filter(
+    (e) =>
+      matchesCategory(e, criteria.selectedCategories) &&
+      matchesSeverity(e, criteria.selectedSeverities) &&
+      matchesLevel(e, criteria.selectedLevels) &&
+      matchesMethod(e, criteria.selectedMethods) &&
+      matchesPathname(e, criteria.pathnameFilter)
+  );
+}
+
+function parseTimeRangeBounds(val: string): { from: Date; to: Date } {
+  const now = Date.now();
+  let from = new Date(now - 24 * 60 * 60 * 1000);
+  const to = new Date(now);
+
+  if (val.startsWith("custom:")) {
+    const parts = val.substring(7).split("_");
+    if (parts.length === 2) {
+      from = new Date(parts[0]);
+      return { from, to: new Date(parts[1]) };
+    }
+  } else if (val === "15m") {
+    from = new Date(now - 15 * 60 * 1000);
+  } else if (val === "60m" || val === "1h") {
+    from = new Date(now - 60 * 60 * 1000);
+  } else if (val === "24h" || val === "1d") {
+    from = new Date(now - 24 * 60 * 60 * 1000);
+  } else if (val === "7d") {
+    from = new Date(now - 7 * 24 * 60 * 60 * 1000);
+  } else if (val === "30d") {
+    from = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  }
+  return { from, to };
+}
+
+interface TenantAuditEmptyStateProps {
+  onResetAll: () => void;
+  onTimeRangeChange: (val: string) => void;
+}
+
+function TenantAuditEmptyState({ onResetAll, onTimeRangeChange }: TenantAuditEmptyStateProps) {
+  const { t } = useTranslation();
+  return (
+    <div className="h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+      <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center shadow-xs">
+        <Terminal className="w-6 h-6 text-muted-foreground/60" />
+      </div>
+      <div className="text-center space-y-1">
+        <p className="font-semibold text-foreground text-sm font-sans">
+          {t("security.audit_empty_title") || "No matching events"}
+        </p>
+        <p className="text-[11px] text-muted-foreground/70 font-sans max-w-[320px] leading-relaxed">
+          {t("security.audit_empty_desc") || "No events recorded in this time range. Adjust your query or await live streams."}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onResetAll}
+          className="h-8 px-3 text-xs font-mono gap-1.5 border-border/80 bg-card hover:bg-muted text-foreground cursor-pointer shadow-xs font-medium"
+        >
+          <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+          <span>Clear Active Filters</span>
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => onTimeRangeChange("24h")}
+          className="h-8 px-3 text-xs font-mono gap-1.5 bg-muted/80 hover:bg-muted text-foreground cursor-pointer font-medium"
+        >
+          <Clock className="w-3.5 h-3.5 text-primary" />
+          <span>Reset to 24h</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onTimeRangeChange("7d")}
+          className="h-8 px-3 text-xs font-mono gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer font-medium"
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Expand to 7d</span>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function TenantAuditExplorer({
   scope,
   projectId,
@@ -53,8 +196,13 @@ export function TenantAuditExplorer({
   const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>(DEFAULT_COLUMN_VISIBILITY);
   const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
   const [selectedSeverities, setSelectedSeverities] = React.useState<Set<string>>(new Set());
+  const [selectedCategories, setSelectedCategories] = React.useState<Set<string>>(
+    initialCategory ? new Set([initialCategory]) : new Set()
+  );
+  const [selectedLevels, setSelectedLevels] = React.useState<Set<string>>(new Set());
+  const [selectedMethods, setSelectedMethods] = React.useState<Set<string>>(new Set());
+  const [pathnameFilter, setPathnameFilter] = React.useState<string>("");
   const [activePreset, setActivePreset] = React.useState<string | null>(null);
-  const [resourceSearch, setResourceSearch] = React.useState<string>("");
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
   const auditOptions: UseTenantAuditOptions = React.useMemo(
@@ -80,7 +228,6 @@ export function TenantAuditExplorer({
     exportCsv,
   } = useTenantAudit(auditOptions);
 
-  // Toggle Severity in Filter
   const handleToggleSeverity = (sev: string) => {
     setSelectedSeverities((prev) => {
       const next = new Set(prev);
@@ -88,86 +235,74 @@ export function TenantAuditExplorer({
       else next.add(sev);
       return next;
     });
+  };
 
-    setFilters((prev) => {
-      const isCurrentlySelected = selectedSeverities.has(sev);
-      return {
-        ...prev,
-        severity: isCurrentlySelected ? "ALL" : sev,
-        page: 0,
-      };
+  const handleToggleCategory = (cat: string) => {
+    setActivePreset(null);
+    setSelectedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
     });
   };
 
-  // Toggle Category
-  const handleSelectCategory = (cat: string) => {
-    setActivePreset(null);
-    setFilters((prev) => ({
-      ...prev,
-      category: cat,
-      page: 0,
-    }));
+  const handleToggleLevel = (lvl: string) => {
+    setSelectedLevels((prev) => {
+      const next = new Set(prev);
+      if (next.has(lvl)) next.delete(lvl);
+      else next.add(lvl);
+      return next;
+    });
   };
 
-  // Apply Presets
+  const handleToggleMethod = (m: string) => {
+    setSelectedMethods((prev) => {
+      const next = new Set(prev);
+      if (next.has(m)) next.delete(m);
+      else next.add(m);
+      return next;
+    });
+  };
+
   const handleApplyPreset = (presetKey: string) => {
     setActivePreset(presetKey);
-    if (presetKey === "critical") {
-      setSelectedSeverities(new Set(["CRITICAL", "ERROR"]));
-      setFilters((prev) => ({ ...prev, severity: "CRITICAL", page: 0 }));
-    } else if (presetKey === "impersonation") {
-      setFilters((prev) => ({ ...prev, search: "impersonat", page: 0 }));
-    } else if (presetKey === "iam") {
-      setFilters((prev) => ({ ...prev, category: "IAM", page: 0 }));
-    } else if (presetKey === "mfa") {
-      setFilters((prev) => ({ ...prev, category: "SECURITY", page: 0 }));
-    } else if (presetKey === "billing") {
-      setFilters((prev) => ({ ...prev, category: "BILLING", page: 0 }));
-    } else if (presetKey === "topology") {
-      setFilters((prev) => ({ ...prev, category: "NETWORK", page: 0 }));
-    } else if (presetKey === "fiber") {
-      setFilters((prev) => ({ ...prev, category: "FIBER", page: 0 }));
-    } else if (presetKey === "customer") {
-      setFilters((prev) => ({ ...prev, category: "CUSTOMER", page: 0 }));
-    } else if (presetKey === "tasks") {
-      setFilters((prev) => ({ ...prev, category: "TASK", page: 0 }));
+    const presetsMap: Record<string, () => void> = {
+      critical: () => {
+        setSelectedSeverities(new Set(["CRITICAL", "ERROR"]));
+        setSelectedCategories(new Set());
+      },
+      impersonation: () => {
+        setSelectedCategories(new Set(["IMPERSONATION"]));
+        setFilters((prev) => ({ ...prev, search: "impersonat", page: 0 }));
+      },
+      iam: () => setSelectedCategories(new Set(["IAM"])),
+      mfa: () => setSelectedCategories(new Set(["SECURITY"])),
+      billing: () => setSelectedCategories(new Set(["BILLING"])),
+      topology: () => setSelectedCategories(new Set(["GIS_NODE"])),
+      fiber: () => setSelectedCategories(new Set(["GIS_CABLE", "FIBER_SPLICING"])),
+      customer: () => setSelectedCategories(new Set(["CUSTOMER_HOMEPASS"])),
+      tasks: () => setSelectedCategories(new Set(["FIELD_TASK"])),
+    };
+    if (presetsMap[presetKey]) {
+      presetsMap[presetKey]();
     }
   };
 
-  // Reset All Filters
   const handleResetAll = () => {
     setSelectedSeverities(new Set());
+    setSelectedCategories(new Set());
+    setSelectedLevels(new Set());
+    setSelectedMethods(new Set());
+    setPathnameFilter("");
     setActivePreset(null);
-    setResourceSearch("");
     setTimeRange("24h");
     resetFilters();
   };
 
-  // Handle Time Range Change
   const handleTimeRangeChange = (val: string) => {
     setTimeRange(val);
-    const now = Date.now();
-    let from = new Date(now - 24 * 60 * 60 * 1000);
-    let to = new Date(now);
-
-    if (val.startsWith("custom:")) {
-      const parts = val.substring(7).split("_");
-      if (parts.length === 2) {
-        from = new Date(parts[0]);
-        to = new Date(parts[1]);
-      }
-    } else if (val === "15m") {
-      from = new Date(now - 15 * 60 * 1000);
-    } else if (val === "60m" || val === "1h") {
-      from = new Date(now - 60 * 60 * 1000);
-    } else if (val === "24h" || val === "1d") {
-      from = new Date(now - 24 * 60 * 60 * 1000);
-    } else if (val === "7d") {
-      from = new Date(now - 7 * 24 * 60 * 60 * 1000);
-    } else if (val === "30d") {
-      from = new Date(now - 30 * 24 * 60 * 60 * 1000);
-    }
-
+    const { from, to } = parseTimeRangeBounds(val);
     setFilters((prev) => ({
       ...prev,
       dateRange: { from, to },
@@ -175,7 +310,6 @@ export function TenantAuditExplorer({
     }));
   };
 
-  // Multi-select row handling
   const handleToggleSelectRow = (id: string) => {
     setSelectedRowIds((prev) => {
       const next = new Set(prev);
@@ -185,19 +319,15 @@ export function TenantAuditExplorer({
     });
   };
 
-  // Client-side resource filtering if search string entered in resource input
   const filteredEvents = React.useMemo(() => {
-    if (!resourceSearch.trim()) return events;
-    const term = resourceSearch.toLowerCase();
-    return events.filter(
-      (e) =>
-        e.resourceId?.toLowerCase().includes(term) ||
-        e.resourceType?.toLowerCase().includes(term) ||
-        e.action?.toLowerCase().includes(term) ||
-        e.category?.toLowerCase().includes(term) ||
-        e.actorEmail?.toLowerCase().includes(term)
-    );
-  }, [events, resourceSearch]);
+    return filterAuditEvents(events, {
+      selectedCategories,
+      selectedSeverities,
+      selectedLevels,
+      selectedMethods,
+      pathnameFilter,
+    });
+  }, [events, selectedCategories, selectedSeverities, selectedLevels, selectedMethods, pathnameFilter]);
 
   const isAllSelected = filteredEvents.length > 0 && selectedRowIds.size === filteredEvents.length;
   const isSomeSelected = selectedRowIds.size > 0 && selectedRowIds.size < filteredEvents.length;
@@ -236,7 +366,6 @@ export function TenantAuditExplorer({
     toast.success(`Exported ${filteredEvents.length} audit events to JSON.`);
   };
 
-  // Convert raw logs to Histogram buckets
   const histogramBuckets = React.useMemo(() => {
     const rawForHistogram = filteredEvents.map((e) => ({
       timestamp: e.occurredAt,
@@ -247,21 +376,16 @@ export function TenantAuditExplorer({
   }, [filteredEvents, timeRange]);
 
   const isHistoricalMode = timeRange.startsWith("custom:") || timeRange === "7d" || timeRange === "30d";
-
   const selectedEventIndex = selectedEvent ? filteredEvents.findIndex((e) => e.id === selectedEvent.id) : -1;
   const hasPrevLog = selectedEventIndex > 0;
   const hasNextLog = selectedEventIndex >= 0 && selectedEventIndex < filteredEvents.length - 1;
 
   const handlePrevLog = () => {
-    if (hasPrevLog) {
-      setSelectedEvent(filteredEvents[selectedEventIndex - 1]);
-    }
+    if (hasPrevLog) setSelectedEvent(filteredEvents[selectedEventIndex - 1]);
   };
 
   const handleNextLog = () => {
-    if (hasNextLog) {
-      setSelectedEvent(filteredEvents[selectedEventIndex + 1]);
-    }
+    if (hasNextLog) setSelectedEvent(filteredEvents[selectedEventIndex + 1]);
   };
 
   return (
@@ -276,10 +400,14 @@ export function TenantAuditExplorer({
         onTimeRangeChange={handleTimeRangeChange}
         selectedSeverities={selectedSeverities}
         onToggleSeverity={handleToggleSeverity}
-        selectedCategory={filters.category}
-        onSelectCategory={handleSelectCategory}
-        resourceSearch={resourceSearch}
-        onResourceSearchChange={setResourceSearch}
+        selectedCategories={selectedCategories}
+        onToggleCategory={handleToggleCategory}
+        selectedLevels={selectedLevels}
+        onToggleLevel={handleToggleLevel}
+        selectedMethods={selectedMethods}
+        onToggleMethod={handleToggleMethod}
+        pathnameFilter={pathnameFilter}
+        onPathnameFilterChange={setPathnameFilter}
         stats={stats}
         onResetAll={handleResetAll}
         onApplyPreset={handleApplyPreset}
@@ -296,7 +424,7 @@ export function TenantAuditExplorer({
           timeRange={timeRange}
           onTimeRangeChange={handleTimeRangeChange}
           isSidebarCollapsed={isSidebarCollapsed}
-          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onToggleSidebar={() => setIsSidebarCollapsed(false)}
           showHistogram={showHistogram}
           onToggleHistogram={() => setShowHistogram(!showHistogram)}
           onRefresh={refetch}
@@ -307,12 +435,16 @@ export function TenantAuditExplorer({
           onExportJson={handleExportJson}
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={setColumnVisibility}
-          selectedCategory={filters.category}
-          onSelectCategory={handleSelectCategory}
+          selectedCategories={selectedCategories}
+          onToggleCategory={handleToggleCategory}
           selectedSeverities={selectedSeverities}
           onToggleSeverity={handleToggleSeverity}
-          resourceSearch={resourceSearch}
-          onResourceSearchChange={setResourceSearch}
+          selectedLevels={selectedLevels}
+          onToggleLevel={handleToggleLevel}
+          selectedMethods={selectedMethods}
+          onToggleMethod={handleToggleMethod}
+          pathnameFilter={pathnameFilter}
+          onPathnameFilterChange={setPathnameFilter}
         />
 
         {/* Interactive Histogram Chart across the top */}
@@ -394,14 +526,10 @@ export function TenantAuditExplorer({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center p-16 space-y-2.5 text-center">
-              <h3 className="text-sm font-bold text-foreground">
-                {t("security.audit_empty_title") || "No matching audit events"}
-              </h3>
-              <p className="text-xs text-muted-foreground max-w-sm">
-                {t("security.audit_empty_desc") || "No events recorded matching your active filters. Try adjusting filter criteria."}
-              </p>
-            </div>
+            <TenantAuditEmptyState
+              onResetAll={handleResetAll}
+              onTimeRangeChange={handleTimeRangeChange}
+            />
           )}
         </LogsTableGridShell>
 
