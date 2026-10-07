@@ -16,15 +16,10 @@ import {
   DateCell,
   SourceCell,
   StatusCell,
-  SeverityBadge,
-  ImpersonationPill,
-  BenchmarkPill,
-  ProjectPill,
   GroupCell,
-  TenantCell,
-  ScopeCell,
-  ProjectCell,
+  MethodCell,
   PathnameCell,
+  BenchmarkPill,
 } from "./logs-row-cells";
 
 interface LogsRowItemProps {
@@ -119,10 +114,8 @@ function isBenchmarkEvent(log: AuditStreamEntry): boolean {
 
 function MessageCell({
   log,
-  showProjectPill,
 }: {
   log: AuditStreamEntry;
-  showProjectPill: boolean;
 }) {
   const actorLabel = log.actor !== "system" ? log.actor : null;
   const hasHashChain = Boolean(log.metadata?.hash || log.metadata?.prevHash);
@@ -140,8 +133,6 @@ function MessageCell({
           </span>
         )}
         {isBenchmark && <BenchmarkPill />}
-        {(log.isImpersonated || log.realActorId) && <ImpersonationPill log={log} />}
-        {showProjectPill && <ProjectPill log={log} />}
         <span className="truncate text-foreground font-mono" title={log.message || log.action}>
           {getEventMessageDisplay(log)}
         </span>
@@ -216,7 +207,7 @@ function RowOptionalCells({
       {visibleCols.has("date") && <DateCell timestamp={log.timestamp} />}
 
       {visibleCols.has("source") && (
-        <div className="w-[24px] shrink-0 flex items-center justify-center">
+        <div className="w-[32px] shrink-0 flex items-center justify-center pr-2">
           <SourceCell source={log.serviceSource} logGroup={log.logGroup} />
         </div>
       )}
@@ -225,27 +216,15 @@ function RowOptionalCells({
         <StatusCell status={log.status} log={log} copiedId={copiedId} onCopyLog={onCopyLog} />
       )}
 
-      {visibleCols.has("severity") && (
-        <div className="w-[68px] shrink-0">
-          <SeverityBadge severity={log.severity || "INFO"} />
+      {visibleCols.has("group") && (
+        <div className="w-[90px] shrink-0 font-mono text-xs truncate pr-2">
+          <GroupCell logGroup={log.logGroup} />
         </div>
       )}
 
-      {visibleCols.has("tenant") && (
-        <TenantCell tenantSlug={log.tenantSlug} tenantName={log.tenantName} />
-      )}
-
-      {visibleCols.has("scope") && (
-        <ScopeCell scope={log.scope} />
-      )}
-
-      {visibleCols.has("project") && (
-        <ProjectCell projectId={log.projectId} projectName={log.projectName} />
-      )}
-
-      {visibleCols.has("group") && (
-        <div className="w-[80px] shrink-0 font-mono text-xs truncate">
-          <GroupCell logGroup={log.logGroup} />
+      {visibleCols.has("method") && (
+        <div className="w-[54px] shrink-0 font-mono text-xs pr-2">
+          <MethodCell method={log.method} />
         </div>
       )}
 
@@ -253,7 +232,6 @@ function RowOptionalCells({
         <PathnameCell
           pathname={log.pathname}
           targetResource={log.targetResource}
-          method={log.method}
         />
       )}
     </>
@@ -305,10 +283,7 @@ export function LogsRowItem({
         />
 
         {visibleCols.has("message") && (
-          <MessageCell
-            log={log}
-            showProjectPill={log.scope === "PROJECT_WORKSPACE" && !visibleCols.has("project")}
-          />
+          <MessageCell log={log} />
         )}
       </div>
     </UniversalContextMenu>

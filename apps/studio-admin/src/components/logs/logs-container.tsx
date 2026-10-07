@@ -77,25 +77,19 @@ const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   date: true,
   source: true,
   status: true,
-  tenant: true,
-  scope: true,
+  group: false,
+  method: true,
   pathname: true,
   message: true,
-  severity: false,
-  group: false,
-  project: false,
 };
 
 const LOG_TABLE_COLUMNS: LogsTableColumn[] = [
   { id: "date", label: "Timestamp", width: "w-[140px]" },
-  { id: "source", label: "", width: "w-[24px]" },
+  { id: "source", label: "", width: "w-[32px]" },
   { id: "status", label: "", width: "w-[44px]", withSpacer: true },
-  { id: "severity", label: "Severity", width: "w-[68px]" },
-  { id: "tenant", label: "Tenant", width: "w-[90px]" },
-  { id: "scope", label: "Scope", width: "w-[72px]" },
-  { id: "project", label: "Project", width: "w-[100px]" },
-  { id: "group", label: "Group", width: "w-[80px]" },
-  { id: "pathname", label: "Pathname", width: "w-[230px]" },
+  { id: "group", label: "Group", width: "w-[90px]" },
+  { id: "method", label: "Method", width: "w-[54px]" },
+  { id: "pathname", label: "Pathname", width: "w-[240px]" },
   { id: "message", label: "Event Message", width: "flex-1 min-w-0" },
 ];
 

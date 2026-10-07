@@ -15,7 +15,7 @@ import {
 
 export function getStatusColor(statusNum?: number) {
   if (!statusNum) return "text-muted-foreground/40 font-mono";
-  return "text-foreground font-mono font-medium";
+  return "text-foreground font-mono font-semibold";
 }
 
 export function normalizeMethodDisplay(method?: string): { display: string; fullMethod: string } {
@@ -35,10 +35,10 @@ export function normalizeMethodDisplay(method?: string): { display: string; full
 export function getMethodColor(displayMethod: string) {
   const m = displayMethod.toUpperCase();
   if (m === "POST" || m === "PUT" || m === "PATCH") return "text-sky-400 font-mono font-semibold";
-  if (m === "DELETE") return "text-rose-400 font-mono font-semibold";
+  if (m === "DELETE" || m === "DEL") return "text-rose-400 font-mono font-semibold";
   if (m === "GET") return "text-muted-foreground font-mono font-medium";
-  if (m === "RPC" || m === "EXEC") return "text-muted-foreground/70 font-mono font-semibold";
-  return "text-muted-foreground/60 font-mono";
+  if (m === "RPC" || m === "EXEC") return "text-teal-400 font-mono font-semibold";
+  return "text-muted-foreground/70 font-mono";
 }
 
 export function DateCell({ timestamp }: { timestamp?: string }) {
@@ -131,14 +131,14 @@ export function StatusCell({
   const renderBadge = () => {
     if (statusNum) {
       return (
-        <span className={`font-mono text-xs tracking-tight ${getStatusColor(statusNum)}`}>
+        <span className={`font-mono text-xs font-semibold tracking-tight ${getStatusColor(statusNum)}`}>
           {statusNum}
         </span>
       );
     }
     if (typeof status === "string" && status.trim() && status !== "OK" && status !== "FAIL" && status !== "WARN") {
       return (
-        <span className="font-mono text-xs text-foreground truncate max-w-[48px]">
+        <span className="font-mono text-xs font-semibold text-foreground truncate max-w-[48px]">
           {status}
         </span>
       );
@@ -371,23 +371,12 @@ export function ProjectCell({ projectId, projectName }: { projectId?: string; pr
   );
 }
 
-export function getMethodBadgeClasses(displayMethod: string) {
-  const m = displayMethod.toUpperCase();
-  if (m === "DELETE") return "bg-rose-500/10 text-rose-400 border border-rose-500/20";
-  if (m === "POST") return "bg-sky-500/10 text-sky-400 border border-sky-500/20";
-  if (m === "PUT" || m === "PATCH") return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
-  if (m === "GET" || m === "HEAD") return "bg-muted/40 text-muted-foreground border border-border/40";
-  if (m === "EXEC") return "bg-purple-500/10 text-purple-400 border border-purple-500/20";
-  if (m === "RPC") return "bg-teal-500/10 text-teal-400 border border-teal-500/20";
-  return "bg-muted/30 text-muted-foreground/80 border border-border/30";
-}
-
 export function MethodCell({ method }: { method?: string }) {
   const { display, fullMethod } = normalizeMethodDisplay(method);
-  if (display === "—") return <span className="text-muted-foreground/20 font-mono text-[10px] select-none">—</span>;
+  if (display === "—") return <span className="text-muted-foreground/20 font-mono text-xs select-none">—</span>;
   return (
     <span
-      className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold truncate inline-block ${getMethodBadgeClasses(display)}`}
+      className={`text-xs font-mono font-semibold truncate block ${getMethodColor(display)}`}
       title={fullMethod !== display ? `Service Method: ${fullMethod}` : undefined}
     >
       {display}
@@ -398,19 +387,15 @@ export function MethodCell({ method }: { method?: string }) {
 export function PathnameCell({
   pathname,
   targetResource,
-  method,
 }: {
   pathname?: string;
   targetResource?: string;
-  method?: string;
 }) {
   const path = pathname || targetResource;
-  const { display: displayMethod, fullMethod } = normalizeMethodDisplay(method);
-  const hasMethod = displayMethod && displayMethod !== "—";
 
-  if (!path && !hasMethod) {
+  if (!path) {
     return (
-      <div className="w-[230px] max-w-[230px] shrink-0 font-mono text-xs pr-3 flex items-center">
+      <div className="w-[240px] max-w-[240px] shrink-0 font-mono text-xs pr-3 flex items-center">
         <span className="text-muted-foreground/20 font-mono select-none">—</span>
       </div>
     );
@@ -420,16 +405,9 @@ export function PathnameCell({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="w-[230px] max-w-[230px] shrink-0 font-mono text-xs overflow-hidden pr-3 flex items-center gap-1.5 cursor-default select-none">
-            {hasMethod && (
-              <span
-                className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold shrink-0 tracking-tight select-none ${getMethodBadgeClasses(displayMethod)}`}
-              >
-                {displayMethod}
-              </span>
-            )}
+          <div className="w-[240px] max-w-[240px] shrink-0 font-mono text-xs overflow-hidden pr-3 flex items-center cursor-default select-none">
             <span className="truncate text-foreground/90 font-mono block">
-              {path || "—"}
+              {path}
             </span>
           </div>
         </TooltipTrigger>
@@ -438,22 +416,12 @@ export function PathnameCell({
           className="z-50 p-2.5 bg-popover border border-border text-foreground font-mono text-[10px] rounded-lg shadow-xl max-w-[380px] select-none [&_svg]:!hidden"
         >
           <div className="space-y-1">
-            {hasMethod && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground font-semibold">Method:</span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${getMethodBadgeClasses(displayMethod)}`}>
-                  {fullMethod || displayMethod}
-                </span>
+            <div className="space-y-0.5">
+              <div className="text-muted-foreground font-semibold">Pathname:</div>
+              <div className="text-foreground/90 break-all text-[10px] bg-muted/40 p-1 rounded border border-border/40">
+                {path}
               </div>
-            )}
-            {path && (
-              <div className="space-y-0.5">
-                <div className="text-muted-foreground font-semibold">Pathname:</div>
-                <div className="text-foreground/90 break-all text-[10px] bg-muted/40 p-1 rounded border border-border/40">
-                  {path}
-                </div>
-              </div>
-            )}
+            </div>
             {targetResource && targetResource !== path && (
               <div className="text-[9px] text-muted-foreground pt-1 border-t border-border/40">
                 Target Resource: {targetResource}
