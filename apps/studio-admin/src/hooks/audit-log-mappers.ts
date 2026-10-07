@@ -139,7 +139,29 @@ export function formatAuditMessage(
     return `${humanizeAction(actionStr)}: ${metadata.errorReason}`;
   }
   if (errorMessage) return `Error: ${errorMessage}`;
-  if (resourceType) return `${humanizeAction(actionStr)} on ${resourceType}${resourceId ? ` [${resourceId}]` : ""}`;
+
+  const resourceName = typeof metadata?.resourceName === "string" ? metadata.resourceName : undefined;
+  const projectName = typeof metadata?.projectName === "string" ? metadata.projectName : undefined;
+  const act = String(actionStr || "").toUpperCase();
+
+  if (act.startsWith("PROJECT_") && (projectName || resourceName)) {
+    return `${humanizeAction(actionStr)}: "${projectName || resourceName}"`;
+  }
+
+  if (resourceName) {
+    if (projectName) {
+      return `${humanizeAction(actionStr)}: "${resourceName}" in "${projectName}"`;
+    }
+    return `${humanizeAction(actionStr)}: "${resourceName}"`;
+  }
+
+  if (resourceType) {
+    const label = projectName || resourceId;
+    if (label) {
+      return `${humanizeAction(actionStr)} on ${resourceType} [${label}]`;
+    }
+    return `${humanizeAction(actionStr)} on ${resourceType}`;
+  }
   return `${humanizeAction(actionStr)} completed`;
 }
 
@@ -311,17 +333,33 @@ export function resolveEntryImpersonation(metadata: Record<string, unknown>, e: 
 }
 
 export function resolveEntryScope(metadata: Record<string, unknown>, tenantSlug?: string) {
-  const scope = typeof metadata.scope === "string"
-    ? metadata.scope.toUpperCase()
-    : metadata.projectId
-    ? "PROJECT"
-    : tenantSlug
-    ? "ORGANIZATION"
-    : "SYSTEM";
+  let scope = typeof metadata.scope === "string" ? metadata.scope.toUpperCase() : "";
   const projectId = typeof metadata.projectId === "string" ? metadata.projectId : undefined;
   const projectName = typeof metadata.projectName === "string" ? metadata.projectName : undefined;
+  const tenantName = typeof metadata.tenantName === "string" ? metadata.tenantName : undefined;
 
-  return { scope, projectId, projectName };
+  if (!scope || scope === "AUTO") {
+    const category = typeof metadata.category === "string" ? metadata.category.toUpperCase() : "";
+    if (category.includes("NETWORK") || category.includes("FIBER") || category.includes("GIS") || category.includes("SPLICE")) {
+      scope = "NETWORK_GIS";
+    } else if (category.includes("BILLING") || category.includes("PAYMENT") || category.includes("SUBSCRIPTION")) {
+      scope = "BILLING_SUBSCRIPTION";
+    } else if (projectId || category.includes("PROJECT")) {
+      scope = "PROJECT_WORKSPACE";
+    } else if (tenantSlug && tenantSlug !== "system") {
+      scope = "TENANT_ADMIN";
+    } else {
+      scope = "SYSTEM_CORE";
+    }
+  } else if (scope === "ORGANIZATION") {
+    scope = projectId ? "PROJECT_WORKSPACE" : "TENANT_ADMIN";
+  } else if (scope === "PROJECT") {
+    scope = "PROJECT_WORKSPACE";
+  } else if (scope === "SYSTEM") {
+    scope = "SYSTEM_CORE";
+  }
+
+  return { scope, projectId, projectName, tenantName };
 }
 
 export function resolveEntryDiff(metadata: Record<string, unknown>, e: Record<string, unknown>) {
@@ -349,6 +387,7 @@ export function mapAuditEventToEntry(e: Record<string, unknown>): AuditStreamEnt
   const severity = resolveEntrySeverity(metadata, e, status);
   const impersonation = resolveEntryImpersonation(metadata, e);
   const scopeInfo = resolveEntryScope(metadata, tenantSlug);
+  const tenantName = typeof metadata.tenantName === "string" ? metadata.tenantName : scopeInfo.tenantName;
   const diffInfo = resolveEntryDiff(metadata, e);
 
   return {
@@ -358,6 +397,7 @@ export function mapAuditEventToEntry(e: Record<string, unknown>): AuditStreamEnt
     logGroup,
     serviceSource: rawSource,
     tenantSlug,
+    tenantName,
     scope: scopeInfo.scope,
     projectId: scopeInfo.projectId,
     projectName: scopeInfo.projectName,

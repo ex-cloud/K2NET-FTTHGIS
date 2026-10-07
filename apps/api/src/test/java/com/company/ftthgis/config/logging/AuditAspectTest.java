@@ -1,6 +1,9 @@
 package com.company.ftthgis.config.logging;
 
 import com.company.ftthgis.config.tenant.AuditContext;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
+import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.service.AuditLoggingService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -30,6 +33,15 @@ class AuditAspectTest {
     private AuditLoggingService auditLoggingService;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private ProjectRepository projectRepository;
+
+    @Mock
+    private OrganizationRepository organizationRepository;
+
+    @Mock
     private ProceedingJoinPoint joinPoint;
 
     @Mock
@@ -39,7 +51,7 @@ class AuditAspectTest {
 
     @BeforeEach
     void setUp() {
-        auditAspect = new AuditAspect(auditLoggingService);
+        auditAspect = new AuditAspect(auditLoggingService, userRepository, projectRepository, organizationRepository);
         SecurityContextHolder.clearContext();
         AuditContext.clear();
     }
@@ -55,7 +67,7 @@ class AuditAspectTest {
     public void dummyOrgOperation(String orgSlug, String configKey) {}
 
     @Test
-    @DisplayName("Should correctly evaluate SpEL expressions and inject projectId into metadata with PROJECT scope")
+    @DisplayName("Should correctly evaluate SpEL expressions and inject projectId into metadata with NETWORK_GIS scope")
     void testProjectScopeAuditEmission() throws Throwable {
         Method method = getClass().getMethod("dummyProjectOperation", String.class, UUID.class, String.class);
         UUID projectId = UUID.randomUUID();
@@ -75,8 +87,10 @@ class AuditAspectTest {
         when(annotation.scope()).thenReturn("AUTO");
         when(annotation.category()).thenReturn("NETWORK_ASSET");
         when(annotation.tenantSlugExpression()).thenReturn("#orgSlug");
+        when(annotation.tenantNameExpression()).thenReturn("");
         when(annotation.resourceIdExpression()).thenReturn("#nodeCode");
         when(annotation.projectIdExpression()).thenReturn("#projectId");
+        when(annotation.projectNameExpression()).thenReturn("");
 
         Object result = auditAspect.audit(joinPoint, annotation);
         assertThat(result).isEqualTo("result-ok");
@@ -96,7 +110,7 @@ class AuditAspectTest {
 
         Map<String, Object> metadata = metaCaptor.getValue();
         assertThat(metadata.get("projectId")).isEqualTo(projectId.toString());
-        assertThat(metadata.get("scope")).isEqualTo("PROJECT");
+        assertThat(metadata.get("scope")).isEqualTo("NETWORK_GIS");
         assertThat(metadata.get("logGroup")).isEqualTo("NETWORK");
         assertThat(metadata.get("category")).isEqualTo("NETWORK_ASSET");
         assertThat(metadata.get("status")).isEqualTo("SUCCESS");
@@ -104,7 +118,7 @@ class AuditAspectTest {
     }
 
     @Test
-    @DisplayName("Should resolve scope to ORGANIZATION when projectId is blank")
+    @DisplayName("Should resolve scope to TENANT_ADMIN when projectId is blank and tenant is non-system")
     void testOrgScopeAuditEmission() throws Throwable {
         Method method = getClass().getMethod("dummyOrgOperation", String.class, String.class);
         Object[] args = new Object[]{"cicadas", "smtp.host"};
@@ -123,8 +137,10 @@ class AuditAspectTest {
         when(annotation.scope()).thenReturn("AUTO");
         when(annotation.category()).thenReturn("GENERAL");
         when(annotation.tenantSlugExpression()).thenReturn("#orgSlug");
+        when(annotation.tenantNameExpression()).thenReturn("");
         when(annotation.resourceIdExpression()).thenReturn("#configKey");
         when(annotation.projectIdExpression()).thenReturn("");
+        when(annotation.projectNameExpression()).thenReturn("");
 
         Object result = auditAspect.audit(joinPoint, annotation);
         assertThat(result).isEqualTo("saved");
@@ -144,7 +160,7 @@ class AuditAspectTest {
 
         Map<String, Object> metadata = metaCaptor.getValue();
         assertThat(metadata.get("projectId")).isNull();
-        assertThat(metadata.get("scope")).isEqualTo("ORGANIZATION");
+        assertThat(metadata.get("scope")).isEqualTo("TENANT_ADMIN");
         assertThat(metadata.get("logGroup")).isEqualTo("OPERATIONS");
         assertThat(metadata.get("status")).isEqualTo("SUCCESS");
     }
@@ -174,8 +190,10 @@ class AuditAspectTest {
         when(annotation.scope()).thenReturn("AUTO");
         when(annotation.category()).thenReturn("SECURITY");
         when(annotation.tenantSlugExpression()).thenReturn("#orgSlug");
+        when(annotation.tenantNameExpression()).thenReturn("");
         when(annotation.resourceIdExpression()).thenReturn("#configKey");
         when(annotation.projectIdExpression()).thenReturn("");
+        when(annotation.projectNameExpression()).thenReturn("");
 
         auditAspect.audit(joinPoint, annotation);
 
@@ -207,7 +225,7 @@ class AuditAspectTest {
     public DummyTaskResult dummyCreateTask() { return new DummyTaskResult("PRJ-2026-10-001"); }
 
     @Test
-    @DisplayName("Should resolve scope to SYSTEM and evaluate #result when no org_slug is present")
+    @DisplayName("Should resolve scope to PROJECT_WORKSPACE when category is TASK and evaluate #result")
     void testSystemScopeAndResultBinding() throws Throwable {
         Method method = getClass().getMethod("dummyCreateTask");
         Object[] args = new Object[]{};
@@ -227,8 +245,10 @@ class AuditAspectTest {
         when(annotation.scope()).thenReturn("AUTO");
         when(annotation.category()).thenReturn("TASK");
         when(annotation.tenantSlugExpression()).thenReturn("");
+        when(annotation.tenantNameExpression()).thenReturn("");
         when(annotation.resourceIdExpression()).thenReturn("#result.obsidianRef");
         when(annotation.projectIdExpression()).thenReturn("");
+        when(annotation.projectNameExpression()).thenReturn("");
 
         Object result = auditAspect.audit(joinPoint, annotation);
         assertThat(result).isEqualTo(mockResult);
@@ -247,7 +267,7 @@ class AuditAspectTest {
         );
 
         Map<String, Object> metadata = metaCaptor.getValue();
-        assertThat(metadata.get("scope")).isEqualTo("SYSTEM");
+        assertThat(metadata.get("scope")).isEqualTo("PROJECT_WORKSPACE");
         assertThat(metadata.get("logGroup")).isEqualTo("OPERATIONS");
         assertThat(metadata.get("status")).isEqualTo("SUCCESS");
     }

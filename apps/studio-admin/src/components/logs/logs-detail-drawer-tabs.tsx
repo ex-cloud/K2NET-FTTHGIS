@@ -159,10 +159,10 @@ function OverviewContextSection({
         </LogsDetailOverviewRow>
       )}
 
-      {log.tenantSlug && (
+      {(log.tenantSlug || log.tenantName) && (
         <LogsDetailOverviewRow
           label={t("observability.tenant") || "Tenant"}
-          copyValue={log.tenantSlug}
+          copyValue={log.tenantName || log.tenantSlug}
           onCopyValue={onCopyValue}
           copiedKey={copiedKey}
           quickActionSlot={
@@ -176,10 +176,13 @@ function OverviewContextSection({
             </button>
           }
         >
-          <span className="flex items-center gap-1.5 text-foreground truncate">
-            <Building2 className="w-3 h-3 text-muted-foreground" />
-            <span>{log.tenantSlug}</span>
-          </span>
+          <div className="flex items-center gap-1.5 text-foreground truncate">
+            <Building2 className="w-3 h-3 text-muted-foreground shrink-0" />
+            <span className="font-medium truncate">{log.tenantName || log.tenantSlug}</span>
+            {log.tenantSlug && log.tenantSlug !== "system" && log.tenantSlug !== log.tenantName && (
+              <span className="text-[10px] text-muted-foreground font-mono">(@{log.tenantSlug})</span>
+            )}
+          </div>
         </LogsDetailOverviewRow>
       )}
 
@@ -200,11 +203,44 @@ function OverviewContextSection({
             </button>
           }
         >
-          <span className="flex items-center gap-1.5 text-foreground truncate">
-            <FolderKanban className="w-3 h-3 text-muted-foreground" />
-            <span>{log.scope}</span>
-            {log.projectName && <span className="text-muted-foreground">({log.projectName})</span>}
-          </span>
+          <div className="flex items-center gap-1.5 text-foreground truncate">
+            <FolderKanban className="w-3 h-3 text-muted-foreground shrink-0" />
+            <span className="font-mono text-xs font-semibold px-1.5 py-0.5 rounded border border-border/60 bg-muted/40 text-foreground">
+              {log.scope}
+            </span>
+          </div>
+        </LogsDetailOverviewRow>
+      )}
+
+      {(log.projectName || log.projectId) && (
+        <LogsDetailOverviewRow
+          label="Project"
+          copyValue={log.projectId || log.projectName}
+          onCopyValue={onCopyValue}
+          copiedKey={copiedKey}
+          quickActionSlot={
+            log.projectId ? (
+              <button
+                type="button"
+                onClick={() => onQuickFilter("projectId", log.projectId || "", "eq")}
+                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                title="Filter for this project"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            ) : undefined
+          }
+        >
+          <div className="flex items-center gap-1.5 text-foreground truncate">
+            <span className="font-semibold text-foreground truncate">
+              {log.projectName || log.projectId}
+            </span>
+            {log.projectId && log.projectName && (
+              <span className="text-[10px] text-muted-foreground font-mono truncate" title={log.projectId}>
+                (ID: {log.projectId.slice(0, 8)}...)
+              </span>
+            )}
+          </div>
         </LogsDetailOverviewRow>
       )}
 

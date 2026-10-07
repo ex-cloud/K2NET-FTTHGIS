@@ -61,18 +61,35 @@ public @interface AuditRequired {
     /**
      * Optional: SpEL expression to extract the projectId from a method argument.
      * Example: "#projectId" or "#request.projectId".
-     * If present, the aspect automatically injects "projectId" and scope="PROJECT" into event metadata.
+     * If present, the aspect automatically injects "projectId" into event metadata.
      */
     String projectIdExpression() default "";
 
     /**
-     * Scope classification: "AUTO", "ORGANIZATION", "PROJECT", "SYSTEM".
-     * Defaults to "AUTO" (resolved to "PROJECT" if projectIdExpression is present, else "ORGANIZATION").
+     * Optional: SpEL expression to extract the human-readable project name.
+     * Example: "#project.name" or "#dto.projectName".
+     */
+    String projectNameExpression() default "";
+
+    /**
+     * Optional: SpEL expression to extract the human-readable tenant/organization display name.
+     * Example: "#org.name" or "#dto.tenantName".
+     */
+    String tenantNameExpression() default "";
+
+    /**
+     * Scope classification according to standard taxonomy:
+     * - "AUTO" (Auto-detects based on category, projectId, and caller realm)
+     * - "SYSTEM_CORE" (Global platform, backups, edge gateway, IAM realms)
+     * - "TENANT_ADMIN" (Organization-level config, team members, API keys, webhooks)
+     * - "PROJECT_WORKSPACE" (Project lifecycle: create, archive, delete, update)
+     * - "NETWORK_GIS" (ODC, ODP, Cable, Splicing, Customers, OLT)
+     * - "BILLING_SUBSCRIPTION" (Invoices, plans, payments, quotas)
      */
     String scope() default "AUTO";
 
     /**
-     * Category classification: "GENERAL", "NETWORK_ASSET", "CUSTOMER", "FIBER", "TASK", "TEAM", "BILLING", "SECURITY".
+     * Category classification: "GENERAL", "PROJECT", "NETWORK_ASSET", "CUSTOMER", "FIBER", "TASK", "TEAM", "BILLING", "SECURITY".
      * Defaults to "GENERAL".
      */
     String category() default "GENERAL";

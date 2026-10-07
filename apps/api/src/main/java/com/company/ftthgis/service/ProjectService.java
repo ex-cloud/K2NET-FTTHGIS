@@ -1,6 +1,7 @@
 package com.company.ftthgis.service;
 
 import com.company.ftthgis.config.logging.AuditRequired;
+import com.company.ftthgis.config.tenant.AuditContext;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.Project;
 import com.company.ftthgis.domain.tenant.entity.SubscriptionPlan;
@@ -29,10 +30,13 @@ public class ProjectService {
         action = "PROJECT_CREATED",
         resourceType = "PROJECT",
         logGroup = "OPERATIONS",
-        scope = "ORGANIZATION",
+        scope = "PROJECT_WORKSPACE",
         category = "PROJECT",
         tenantSlugExpression = "#orgSlug",
-        resourceIdExpression = "#project.name"
+        tenantNameExpression = "#result?.organization?.name",
+        projectIdExpression = "#result?.id?.toString()",
+        projectNameExpression = "#result?.name",
+        resourceIdExpression = "#result?.id?.toString()"
     )
     public Project createProject(String orgSlug, Project project) {
         // 🔒 Lock organization row to prevent race conditions during concurrent project creation
@@ -64,7 +68,10 @@ public class ProjectService {
         }
 
         log.info("🚀 Creating new active project: {} for organization: {}", project.getName(), org.getName());
-        return projectRepository.save(project);
+        Project saved = projectRepository.save(project);
+        AuditContext.setProject(saved.getName(), saved.getId());
+        AuditContext.setTenant(org.getName(), org.getSlug());
+        return saved;
     }
 
     @Transactional
@@ -72,9 +79,12 @@ public class ProjectService {
         action = "PROJECT_UPDATED",
         resourceType = "PROJECT",
         logGroup = "OPERATIONS",
-        scope = "ORGANIZATION",
+        scope = "PROJECT_WORKSPACE",
         category = "PROJECT",
         projectIdExpression = "#projectId.toString()",
+        projectNameExpression = "#result?.name",
+        tenantSlugExpression = "#result?.organization?.slug",
+        tenantNameExpression = "#result?.organization?.name",
         resourceIdExpression = "#projectId.toString()"
     )
     public Project updateProject(UUID projectId, Project incoming) {
@@ -112,7 +122,12 @@ public class ProjectService {
             existing.setBoundaryGeom(incoming.getBoundaryGeom());
         }
 
-        return projectRepository.save(existing);
+        Project saved = projectRepository.save(existing);
+        AuditContext.setProject(saved.getName(), saved.getId());
+        if (org != null) {
+            AuditContext.setTenant(org.getName(), org.getSlug());
+        }
+        return saved;
     }
 
     @Transactional
@@ -120,10 +135,13 @@ public class ProjectService {
         action = "PROJECT_ARCHIVED",
         resourceType = "PROJECT",
         logGroup = "OPERATIONS",
-        scope = "ORGANIZATION",
+        scope = "PROJECT_WORKSPACE",
         category = "PROJECT",
         severity = "WARN",
         projectIdExpression = "#projectId.toString()",
+        projectNameExpression = "#result?.name",
+        tenantSlugExpression = "#result?.organization?.slug",
+        tenantNameExpression = "#result?.organization?.name",
         resourceIdExpression = "#projectId.toString()"
     )
     public Project archiveProject(UUID projectId, String userId) {
@@ -147,7 +165,12 @@ public class ProjectService {
         existing.setArchivedBy(userId != null ? userId : "system");
 
         log.info("📦 Project archived: {} (ID: {}) by {}", existing.getName(), existing.getId(), userId);
-        return projectRepository.save(existing);
+        Project saved = projectRepository.save(existing);
+        AuditContext.setProject(saved.getName(), saved.getId());
+        if (org != null) {
+            AuditContext.setTenant(org.getName(), org.getSlug());
+        }
+        return saved;
     }
 
     @Transactional
@@ -155,9 +178,12 @@ public class ProjectService {
         action = "PROJECT_UNARCHIVED",
         resourceType = "PROJECT",
         logGroup = "OPERATIONS",
-        scope = "ORGANIZATION",
+        scope = "PROJECT_WORKSPACE",
         category = "PROJECT",
         projectIdExpression = "#projectId.toString()",
+        projectNameExpression = "#result?.name",
+        tenantSlugExpression = "#result?.organization?.slug",
+        tenantNameExpression = "#result?.organization?.name",
         resourceIdExpression = "#projectId.toString()"
     )
     public Project unarchiveProject(UUID projectId, String userId) {
@@ -181,7 +207,12 @@ public class ProjectService {
         existing.setArchivedBy(null);
 
         log.info("♻️ Project restored/unarchived: {} (ID: {}) by {}", existing.getName(), existing.getId(), userId);
-        return projectRepository.save(existing);
+        Project saved = projectRepository.save(existing);
+        AuditContext.setProject(saved.getName(), saved.getId());
+        if (org != null) {
+            AuditContext.setTenant(org.getName(), org.getSlug());
+        }
+        return saved;
     }
 
     @Transactional
@@ -189,7 +220,7 @@ public class ProjectService {
         action = "PROJECT_DELETED",
         resourceType = "PROJECT",
         logGroup = "OPERATIONS",
-        scope = "ORGANIZATION",
+        scope = "PROJECT_WORKSPACE",
         category = "PROJECT",
         severity = "WARN",
         projectIdExpression = "#projectId.toString()",
@@ -207,8 +238,15 @@ public class ProjectService {
             if (org.isSoftLocked() || org.getStatus() == Organization.OrganizationStatus.SUSPENDED) {
                 throw new IllegalStateException("Account is currently locked or suspended. Please verify your subscription status on the billing page.");
             }
+            AuditContext.setTenant(org.getName(), org.getSlug());
         }
 
+        AuditContext.setProject(existing.getName(), existing.getId());
+        AuditContext.setResource(existing.getName(), existing.getId().toString());
+        AuditContext.setScope("PROJECT_WORKSPACE");
+
+        log.info("🗑️ Deleting project: {} (ID: {}) for organization: {}",
+                existing.getName(), existing.getId(), org != null ? org.getName() : "None");
         projectRepository.delete(existing);
     }
 
@@ -217,7 +255,7 @@ public class ProjectService {
         action = "PROJECT_EXPORTED",
         resourceType = "PROJECT",
         logGroup = "OPERATIONS",
-        scope = "ORGANIZATION",
+        scope = "PROJECT_WORKSPACE",
         category = "PROJECT",
         projectIdExpression = "#projectId.toString()",
         resourceIdExpression = "#projectId.toString()"
@@ -225,6 +263,14 @@ public class ProjectService {
     public Map<String, Object> exportProject(UUID projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        Organization org = project.getOrganization();
+        if (org != null) {
+            AuditContext.setTenant(org.getName(), org.getSlug());
+        }
+        AuditContext.setProject(project.getName(), project.getId());
+        AuditContext.setResource(project.getName(), project.getId().toString());
+        AuditContext.setScope("PROJECT_WORKSPACE");
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("id", project.getId());

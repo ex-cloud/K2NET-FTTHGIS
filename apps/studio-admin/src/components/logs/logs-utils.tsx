@@ -52,11 +52,6 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
     meta: { label: "Severity" },
     enableHiding: true,
   }),
-  columnHelper.accessor("logGroup", {
-    id: "group",
-    meta: { label: "Group" },
-    enableHiding: true,
-  }),
   columnHelper.accessor("tenantSlug", {
     id: "tenant",
     meta: { label: "Tenant" },
@@ -72,14 +67,19 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
     meta: { label: "Project" },
     enableHiding: true,
   }),
-  columnHelper.accessor("method", {
-    id: "method",
-    meta: { label: "Method" },
+  columnHelper.accessor("logGroup", {
+    id: "group",
+    meta: { label: "Group" },
     enableHiding: true,
   }),
   columnHelper.accessor("pathname", {
     id: "pathname",
     meta: { label: "Path / Resource" },
+    enableHiding: true,
+  }),
+  columnHelper.accessor("method", {
+    id: "method",
+    meta: { label: "Method" },
     enableHiding: true,
   }),
   columnHelper.accessor("message", {
