@@ -77,7 +77,6 @@ const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   date: true,
   source: true,
   status: true,
-  group: false,
   method: true,
   pathname: true,
   message: true,
@@ -87,9 +86,8 @@ const LOG_TABLE_COLUMNS: LogsTableColumn[] = [
   { id: "date", label: "Timestamp", width: "w-[140px]" },
   { id: "source", label: "", width: "w-[32px]" },
   { id: "status", label: "", width: "w-[44px]", withSpacer: true },
-  { id: "group", label: "Group", width: "w-[90px]" },
   { id: "method", label: "Method", width: "w-[54px]" },
-  { id: "pathname", label: "Pathname", width: "w-[240px]" },
+  { id: "pathname", label: "Pathname", width: "w-[280px]" },
   { id: "message", label: "Event Message", width: "flex-1 min-w-0" },
 ];
 

@@ -47,11 +47,6 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
     meta: { label: "Status" },
     enableHiding: true,
   }),
-  columnHelper.accessor("logGroup", {
-    id: "group",
-    meta: { label: "Group" },
-    enableHiding: true,
-  }),
   columnHelper.accessor("method", {
     id: "method",
     meta: { label: "Method" },

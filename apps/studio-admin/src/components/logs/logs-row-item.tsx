@@ -16,7 +16,6 @@ import {
   DateCell,
   SourceCell,
   StatusCell,
-  GroupCell,
   MethodCell,
   PathnameCell,
   BenchmarkPill,
@@ -214,12 +213,6 @@ function RowOptionalCells({
 
       {visibleCols.has("status") && (
         <StatusCell status={log.status} log={log} copiedId={copiedId} onCopyLog={onCopyLog} />
-      )}
-
-      {visibleCols.has("group") && (
-        <div className="w-[90px] shrink-0 font-mono text-xs truncate pr-2">
-          <GroupCell logGroup={log.logGroup} />
-        </div>
       )}
 
       {visibleCols.has("method") && (
