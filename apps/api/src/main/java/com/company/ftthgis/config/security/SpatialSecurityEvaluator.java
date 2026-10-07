@@ -35,6 +35,7 @@ public class SpatialSecurityEvaluator {
     private final FiberCableRepository fiberCableRepository;
     private final TaskRepository taskRepository;
     private final TenantSecurity tenantSecurity;
+    private final com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
 
     /**
      * Evaluasi otorisasi tingkat proyek secara mandiri (Pola A).
@@ -46,6 +47,16 @@ public class SpatialSecurityEvaluator {
     public boolean hasProjectPermission(UUID projectId, String permissionCode) {
         if (projectId == null || permissionCode == null || permissionCode.isBlank()) {
             return false;
+        }
+
+        // 🔒 Guard: If the action is a mutation/edit and the project is ARCHIVED, reject write access
+        boolean isReadAction = permissionCode.endsWith(".view") || permissionCode.endsWith(".export");
+        if (!isReadAction) {
+            Optional<com.company.ftthgis.domain.tenant.entity.Project> projOpt = projectRepository.findById(projectId);
+            if (projOpt.isPresent() && projOpt.get().getStatus() == com.company.ftthgis.domain.tenant.entity.Project.ProjectStatus.ARCHIVED) {
+                log.warn("🛡️ Write permission [{}] rejected: Project {} is ARCHIVED (read-only)", permissionCode, projectId);
+                return false;
+            }
         }
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

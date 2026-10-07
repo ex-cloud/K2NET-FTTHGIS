@@ -47,12 +47,24 @@ public class Project extends OrganizationAwareEntity {
     @Column(nullable = false, unique = true)
     private String code;
 
+    public enum ProjectStatus {
+        ACTIVE,
+        ARCHIVED
+    }
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 50)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
     @Builder.Default
-    private String status = "PRODUCTION";
+    private ProjectStatus status = ProjectStatus.ACTIVE;
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
+    @Column(name = "archived_by")
+    private String archivedBy;
 
     @Column
     private String region;

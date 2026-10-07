@@ -14,6 +14,13 @@ export interface SubscriptionSummary {
   planPrice: number;
   planCycle: "MONTHLY" | "YEARLY" | string;
 
+  // FTTH Projects & Archived Quotas
+  maxProjects?: number;
+  usedProjects?: number;
+  effectiveMaxProjects?: number;
+  archivedProjects?: number;
+  maxArchivedProjects?: number;
+
   // Hardware Quotas & Live Usage
   maxOlts: number;
   usedOlts: number;
@@ -49,25 +56,46 @@ export interface SubscriptionSummary {
 
 export type NormalizedTier = "free" | "starter" | "pro" | "enterprise";
 
+const TIER_PROJECT_LIMITS: Record<NormalizedTier, number> = {
+  free: 1,
+  starter: 2,
+  pro: 6,
+  enterprise: 25,
+};
+
 function parseTier(rawInput?: string): NormalizedTier {
   if (!rawInput) return "free";
   const raw = rawInput.toLowerCase();
   if (raw.includes("enterprise") || raw.includes("telco")) return "enterprise";
   if (raw.includes("pro") || raw.includes("professional")) return "pro";
   if (raw.includes("starter") || raw.includes("lite")) return "starter";
-  if (raw.includes("free") || raw.includes("trial") || raw.includes("basic")) return "free";
   return "free";
 }
 
 function getProjectLimits(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier, isTrialExpired: boolean, status: string) {
-  const defaultMax = tier === "free" ? 1 : tier === "starter" ? 2 : tier === "enterprise" ? 25 : 6;
-  const maxProjects = summary?.effectiveMaxOlts ?? defaultMax;
-  const usedProjects = summary?.usedOlts ?? 0;
+  const defaultMax = TIER_PROJECT_LIMITS[tier] ?? 1;
+  const maxProjects = summary?.effectiveMaxProjects ?? summary?.maxProjects ?? summary?.effectiveMaxOlts ?? defaultMax;
+  const usedProjects = summary?.usedProjects ?? summary?.usedOlts ?? 0;
   const projectPercentage = maxProjects > 0 ? Math.min(100, Math.round((usedProjects / maxProjects) * 100)) : 0;
+
+  const maxArchivedProjects = summary?.maxArchivedProjects ?? defaultMax;
+  const archivedProjects = summary?.archivedProjects ?? 0;
+  const archivedPercentage = maxArchivedProjects > 0 ? Math.min(100, Math.round((archivedProjects / maxArchivedProjects) * 100)) : 0;
+
   const isBlocked = isTrialExpired || status === "TRIAL_EXPIRED" || status === "SUSPENDED" || Boolean(summary?.isSoftLocked);
   const canCreateProject = usedProjects < maxProjects && !isBlocked;
+  const canArchiveProject = archivedProjects < maxArchivedProjects;
 
-  return { maxProjects, usedProjects, projectPercentage, canCreateProject };
+  return {
+    maxProjects,
+    usedProjects,
+    projectPercentage,
+    canCreateProject,
+    maxArchivedProjects,
+    archivedProjects,
+    archivedPercentage,
+    canArchiveProject,
+  };
 }
 
 function getOdpLimits(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier) {
@@ -186,7 +214,16 @@ export function useTenantSubscription() {
     [summary, status, isTrialExpired]
   );
 
-  const { maxProjects, usedProjects, projectPercentage, canCreateProject } = React.useMemo(
+  const {
+    maxProjects,
+    usedProjects,
+    projectPercentage,
+    canCreateProject,
+    maxArchivedProjects,
+    archivedProjects,
+    archivedPercentage,
+    canArchiveProject,
+  } = React.useMemo(
     () => getProjectLimits(summary, tier, isTrialExpired, status),
     [summary, tier, isTrialExpired, status]
   );
@@ -223,11 +260,15 @@ export function useTenantSubscription() {
     isBoosterActive: lifecycle.isBoosterActive,
     boosterDaysRemaining: lifecycle.boosterDaysRemaining,
 
-    // Project limits
+    // Project limits (Active & Archived)
     usedProjects,
     maxProjects,
     projectPercentage,
     canCreateProject,
+    archivedProjects,
+    maxArchivedProjects,
+    archivedPercentage,
+    canArchiveProject,
 
     // ODP limits
     usedOdps,

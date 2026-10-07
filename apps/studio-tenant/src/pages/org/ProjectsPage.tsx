@@ -38,15 +38,38 @@ type SortOption = "updatedAt" | "subscribers" | "cableLength" | "name";
 export function ProjectsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { projects, isLoading, refetch, deleteProject } = useProjects();
-  const { canCreateProject, usedProjects, maxProjects, tier, isTrialExpired, status } = useTenantSubscription();
+  const {
+    projects,
+    isLoading,
+    refetch,
+    deleteProject,
+    archiveProject,
+    unarchiveProject,
+  } = useProjects();
+  const {
+    canCreateProject,
+    usedProjects,
+    maxProjects,
+    tier,
+    isTrialExpired,
+    status,
+  } = useTenantSubscription();
 
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("ALL");
+  const [statusFilter, setStatusFilter] = React.useState<"ALL" | "ACTIVE" | "ARCHIVED">("ALL");
   const [sortBy, setSortBy] = React.useState<SortOption>("updatedAt");
   const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
+
+  const activeProjectsCount = React.useMemo(
+    () => projects.filter((p) => p.status !== "ARCHIVED").length,
+    [projects]
+  );
+  const archivedProjectsCount = React.useMemo(
+    () => projects.filter((p) => p.status === "ARCHIVED").length,
+    [projects]
+  );
 
   const sortLabels: Record<SortOption, string> = {
     updatedAt: t("projects.sort_last_modified") || "Last Modified",
@@ -64,9 +87,8 @@ export function ProjectsPage() {
 
       const matchStatus =
         statusFilter === "ALL" ||
-        (statusFilter === "PRODUCTION" && (p.status === "PRODUCTION" || p.status === "ACTIVE")) ||
-        (statusFilter === "PLANNING" && p.status === "PLANNING") ||
-        (statusFilter === "MAINTENANCE" && p.status === "MAINTENANCE");
+        (statusFilter === "ACTIVE" && p.status !== "ARCHIVED") ||
+        (statusFilter === "ARCHIVED" && p.status === "ARCHIVED");
 
       return matchQuery && matchStatus;
     });
@@ -96,13 +118,34 @@ export function ProjectsPage() {
     setCreateModalOpen(true);
   };
 
+  const handleArchiveProject = async (id: string) => {
+    try {
+      await archiveProject(id);
+    } catch {
+      // errors handled or caught
+    }
+  };
+
+  const handleUnarchiveProject = async (id: string) => {
+    try {
+      await unarchiveProject(id);
+    } catch (err: unknown) {
+      const isQuotaError =
+        (err && typeof err === "object" && "status" in err && (err as { status: number }).status === 409) ||
+        !canCreateProject;
+      if (isQuotaError) {
+        setUpgradeModalOpen(true);
+      }
+    }
+  };
+
   return (
     <PageLayout variant="dashboard">
       <div className="space-y-6">
         {/* Main 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Left Column (Wider): Toolbar + Project List/Grid */}
-          <div className="lg:col-span-8 xl:col-span-8 space-y-4">
+          <div className="lg:col-span-8 xl:col-span-8 2xl:col-span-9 space-y-4">
             {/* Toolbar: Left (Search + Filter), Right (Sort + Refresh + View Mode + Plus) */}
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
               {/* Left: Search + Status Filter */}
@@ -122,21 +165,18 @@ export function ProjectsPage() {
                 {/* Status Filter Tabs */}
                 <Tabs
                   value={statusFilter}
-                  onValueChange={setStatusFilter}
+                  onValueChange={(val) => setStatusFilter(val as "ALL" | "ACTIVE" | "ARCHIVED")}
                   className="w-full sm:w-auto overflow-x-auto custom-scrollbar"
                 >
                   <TabsList size="sm" className="border border-border/60 bg-muted/60 shrink-0">
                     <TabsTrigger value="ALL">
-                      {t("common.all")} ({projects.length})
+                      {t("projects.tab_all")} ({projects.length})
                     </TabsTrigger>
-                    <TabsTrigger value="PRODUCTION">
-                      Production
+                    <TabsTrigger value="ACTIVE">
+                      {t("projects.tab_active")} ({activeProjectsCount})
                     </TabsTrigger>
-                    <TabsTrigger value="PLANNING">
-                      Planning
-                    </TabsTrigger>
-                    <TabsTrigger value="MAINTENANCE">
-                      Maintenance
+                    <TabsTrigger value="ARCHIVED">
+                      {t("projects.tab_archived")} ({archivedProjectsCount})
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -250,6 +290,8 @@ export function ProjectsPage() {
                 projects={filteredAndSortedProjects}
                 viewMode={viewMode}
                 onDeleteProject={deleteProject}
+                onArchiveProject={handleArchiveProject}
+                onUnarchiveProject={handleUnarchiveProject}
               />
             ) : (
               <EmptyState
@@ -275,7 +317,7 @@ export function ProjectsPage() {
           </div>
 
           {/* Right Column: Quota Usage List Widget */}
-          <div className="lg:col-span-4 xl:col-span-4">
+          <div className="lg:col-span-4 xl:col-span-4 2xl:col-span-3">
             <ProjectUsageWidget projects={projects} />
           </div>
         </div>

@@ -60,6 +60,7 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
     tier,
     planName,
     maxProjects,
+    maxArchivedProjects,
     maxOdps,
     usedStorageGb,
     maxStorageGb,
@@ -67,6 +68,15 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
     isBoosterActive,
     boosterDaysRemaining,
   } = useTenantSubscription();
+
+  const activeProjectsCount = React.useMemo(
+    () => projects.filter((p) => p.status !== "ARCHIVED").length,
+    [projects]
+  );
+  const archivedProjectsCount = React.useMemo(
+    () => projects.filter((p) => p.status === "ARCHIVED").length,
+    [projects]
+  );
 
   const totalSubscribers = React.useMemo(
     () => projects.reduce((acc, p) => acc + (p.totalSubscribers || 0), 0),
@@ -103,15 +113,21 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
       : 10;
 
   const subscriberPercent = Math.min(100, Math.round((totalSubscribers / subscriberQuota) * 100));
-  const projectPercent = Math.min(100, Math.round((projects.length / Math.max(1, maxProjects)) * 100));
+  const activeProjectPercent = Math.min(100, Math.round((activeProjectsCount / Math.max(1, maxProjects)) * 100));
+  const archivedProjectPercent = Math.min(100, Math.round((archivedProjectsCount / Math.max(1, maxArchivedProjects)) * 100));
   const cablePercent = Math.min(100, Math.round((totalCableKm / Math.max(1, cableQuotaKm)) * 100));
   const odpPercent = Math.min(100, Math.round((totalOdp / Math.max(1, maxOdps)) * 100));
 
   const usageItems = [
     {
       label: t("gis.active_ftth_projects"),
-      value: `${projects.length} / ${maxProjects}`,
-      percent: projectPercent,
+      value: `${activeProjectsCount} / ${maxProjects}`,
+      percent: activeProjectPercent,
+    },
+    {
+      label: t("projects.archived_projects_usage"),
+      value: `${archivedProjectsCount} / ${maxArchivedProjects}`,
+      percent: archivedProjectPercent,
     },
     {
       label: t("gis.total_customers"),

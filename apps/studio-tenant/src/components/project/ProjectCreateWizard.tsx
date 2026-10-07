@@ -11,11 +11,6 @@ import {
   Input,
   Label,
   Textarea,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
 } from "@k2net/ui";
 import { Box, MapPin, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -36,8 +31,8 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
   const [formData, setFormData] = React.useState({
     name: "",
     code: "",
+    region: "",
     description: "",
-    status: "PLANNING",
     centerLng: "107.6191",
     centerLat: "-6.9175",
     targetSubscribers: "1000",
@@ -48,8 +43,8 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
     setFormData({
       name: "",
       code: "",
+      region: "",
       description: "",
-      status: "PLANNING",
       centerLng: "107.6191",
       centerLat: "-6.9175",
       targetSubscribers: "1000",
@@ -87,8 +82,9 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
       const payload = {
         name: formData.name.trim(),
         code: formData.code.trim().toUpperCase(),
+        region: formData.region.trim() || undefined,
         description: formData.description.trim(),
-        status: formData.status,
+        status: "ACTIVE" as const,
       };
 
       const result = await createProject(payload);
@@ -164,20 +160,13 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">{t("projects.initial_status")}</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(val) => setFormData({ ...formData, status: val })}
-                >
-                  <SelectTrigger className="h-8.5 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PLANNING">{t("projects.status_planning")}</SelectItem>
-                    <SelectItem value="PRODUCTION">{t("projects.status_production")}</SelectItem>
-                    <SelectItem value="MAINTENANCE">{t("projects.status_maintenance")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs font-semibold">{t("projects.col_project_region")}</Label>
+                <Input
+                  placeholder="e.g. Jawa Barat / Bandung"
+                  value={formData.region}
+                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                  className="h-8.5 text-xs"
+                />
               </div>
             </div>
 
@@ -250,9 +239,17 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
                 <span className="text-xs text-muted-foreground">{t("projects.project_code")}:</span>
                 <span className="text-xs font-mono font-semibold text-primary">{formData.code}</span>
               </div>
+              {formData.region && (
+                <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                  <span className="text-xs text-muted-foreground">{t("projects.col_project_region")}:</span>
+                  <span className="text-xs font-semibold text-foreground">{formData.region}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between pb-2 border-b border-border/40">
                 <span className="text-xs text-muted-foreground">{t("common.status")}:</span>
-                <span className="text-xs font-semibold text-foreground">{formData.status}</span>
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                  {t("projects.status_active")}
+                </span>
               </div>
               <div className="flex items-center justify-between pb-2 border-b border-border/40">
                 <span className="text-xs text-muted-foreground">{t("projects.center_coords_label")}:</span>

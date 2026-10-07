@@ -22,6 +22,7 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final OrganizationRepository organizationRepository;
+    private final ProjectQuotaService projectQuotaService;
 
     @Transactional
     @AuditRequired(
@@ -34,7 +35,8 @@ public class ProjectService {
         resourceIdExpression = "#project.name"
     )
     public Project createProject(String orgSlug, Project project) {
-        Organization org = organizationRepository.findBySlug(orgSlug)
+        // 🔒 Lock organization row to prevent race conditions during concurrent project creation
+        Organization org = organizationRepository.findBySlugForUpdate(orgSlug)
                 .orElseThrow(() -> new RuntimeException("Organization not found"));
 
         // Feature Gating: Check Trial Expiration & SoftLock
@@ -45,18 +47,15 @@ public class ProjectService {
             throw new IllegalStateException("Account is currently locked or suspended. Please verify your subscription status on the billing page.");
         }
 
-        int effectiveMax = org.getEffectiveMaxOlts(null);
-        long currentProjectCount = projectRepository.countByOrganizationId(org.getId());
-        if (currentProjectCount >= effectiveMax) {
-            log.warn("🚫 Feature Gating: Organization {} reached project limit ({}/{})", 
-                org.getName(), currentProjectCount, effectiveMax);
-            throw new RuntimeException("Quota exceeded: Your current plan and active boosters allow up to " + 
-                effectiveMax + " projects. Please upgrade your plan.");
-        }
+        // 🛡️ Centralized Quota Assertion
+        projectQuotaService.assertCanActivate(org);
 
         project.setOrganization(org);
+        project.setStatus(Project.ProjectStatus.ACTIVE);
+        project.setArchivedAt(null);
+        project.setArchivedBy(null);
         
-        // 🔥 Fix: Ensure all members also have the organization set
+        // Ensure all members also have the organization set
         if (project.getMembers() != null) {
             project.getMembers().forEach(member -> {
                 member.setOrganization(org);
@@ -64,7 +63,7 @@ public class ProjectService {
             });
         }
 
-        log.info("🚀 Creating new project: {} for organization: {}", project.getName(), org.getName());
+        log.info("🚀 Creating new active project: {} for organization: {}", project.getName(), org.getName());
         return projectRepository.save(project);
     }
 
@@ -92,6 +91,11 @@ public class ProjectService {
             }
         }
 
+        // 🔒 Guard: Archived projects are read-only
+        if (existing.getStatus() == Project.ProjectStatus.ARCHIVED) {
+            throw new IllegalStateException("Proyek dalam status ARCHIVED bersifat read-only. Silakan pulihkan (restore) proyek terlebih dahulu untuk melakukan perubahan.");
+        }
+
         if (incoming.getName() != null) {
             existing.setName(incoming.getName());
         }
@@ -101,9 +105,6 @@ public class ProjectService {
         if (incoming.getDescription() != null) {
             existing.setDescription(incoming.getDescription());
         }
-        if (incoming.getStatus() != null) {
-            existing.setStatus(incoming.getStatus());
-        }
         if (incoming.getRegion() != null) {
             existing.setRegion(incoming.getRegion());
         }
@@ -111,6 +112,75 @@ public class ProjectService {
             existing.setBoundaryGeom(incoming.getBoundaryGeom());
         }
 
+        return projectRepository.save(existing);
+    }
+
+    @Transactional
+    @AuditRequired(
+        action = "PROJECT_ARCHIVED",
+        resourceType = "PROJECT",
+        logGroup = "OPERATIONS",
+        scope = "ORGANIZATION",
+        category = "PROJECT",
+        severity = "WARN",
+        projectIdExpression = "#projectId.toString()",
+        resourceIdExpression = "#projectId.toString()"
+    )
+    public Project archiveProject(UUID projectId, String userId) {
+        Project existing = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        if (existing.getStatus() == Project.ProjectStatus.ARCHIVED) {
+            return existing; // Already archived
+        }
+
+        Organization org = existing.getOrganization();
+        if (org != null) {
+            // 🔒 Lock organization row for atomic quota check
+            Organization lockedOrg = organizationRepository.findByIdForUpdate(org.getId())
+                    .orElse(org);
+            projectQuotaService.assertCanArchive(lockedOrg);
+        }
+
+        existing.setStatus(Project.ProjectStatus.ARCHIVED);
+        existing.setArchivedAt(java.time.LocalDateTime.now());
+        existing.setArchivedBy(userId != null ? userId : "system");
+
+        log.info("📦 Project archived: {} (ID: {}) by {}", existing.getName(), existing.getId(), userId);
+        return projectRepository.save(existing);
+    }
+
+    @Transactional
+    @AuditRequired(
+        action = "PROJECT_UNARCHIVED",
+        resourceType = "PROJECT",
+        logGroup = "OPERATIONS",
+        scope = "ORGANIZATION",
+        category = "PROJECT",
+        projectIdExpression = "#projectId.toString()",
+        resourceIdExpression = "#projectId.toString()"
+    )
+    public Project unarchiveProject(UUID projectId, String userId) {
+        Project existing = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        if (existing.getStatus() == Project.ProjectStatus.ACTIVE) {
+            return existing; // Already active
+        }
+
+        Organization org = existing.getOrganization();
+        if (org != null) {
+            // 🔒 Lock organization row for atomic quota check
+            Organization lockedOrg = organizationRepository.findByIdForUpdate(org.getId())
+                    .orElse(org);
+            projectQuotaService.assertCanActivate(lockedOrg);
+        }
+
+        existing.setStatus(Project.ProjectStatus.ACTIVE);
+        existing.setArchivedAt(null);
+        existing.setArchivedBy(null);
+
+        log.info("♻️ Project restored/unarchived: {} (ID: {}) by {}", existing.getName(), existing.getId(), userId);
         return projectRepository.save(existing);
     }
 
@@ -161,6 +231,7 @@ public class ProjectService {
         payload.put("name", project.getName());
         payload.put("code", project.getCode());
         payload.put("description", project.getDescription());
+        payload.put("status", project.getStatus());
         payload.put("region", project.getRegion());
         payload.put("boundaryGeom", project.getBoundaryGeom());
         return payload;

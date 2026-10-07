@@ -37,6 +37,10 @@ public class SubscriptionPlan {
     @Column(name = "max_projects")
     private Integer maxProjects;
 
+    @Builder.Default
+    @Column(name = "max_archived_projects")
+    private Integer maxArchivedProjects = 1;
+
     @Column(name = "max_odcs")
     private Integer maxOdcs;
 

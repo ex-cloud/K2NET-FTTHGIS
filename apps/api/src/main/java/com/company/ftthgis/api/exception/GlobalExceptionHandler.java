@@ -38,6 +38,19 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
     }
 
+    @ExceptionHandler(QuotaExceededException.class)
+    public ResponseEntity<ErrorResponse> handleQuotaExceeded(QuotaExceededException ex) {
+        log.warn("Quota exceeded [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error(ex.getErrorCode() != null ? ex.getErrorCode() : "QUOTA_EXCEEDED")
+                .message(ex.getMessage())
+                .details("Current: " + ex.getCurrent() + ", Limit: " + ex.getMax())
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(InvalidImpersonationSessionException.class)
     public ResponseEntity<ErrorResponse> handleInvalidImpersonationSession(InvalidImpersonationSessionException ex) {
         log.warn("Invalid impersonation session: {}", ex.getMessage());

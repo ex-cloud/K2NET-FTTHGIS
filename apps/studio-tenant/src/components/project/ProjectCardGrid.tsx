@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Box,
@@ -8,13 +7,8 @@ import {
   ArrowRight,
   Server,
   Map,
-  MoreVertical,
   MapPin,
-  Download,
-  Copy,
-  Settings,
-  Trash2,
-  Activity,
+  RotateCcw,
 } from "lucide-react";
 import {
   Card,
@@ -26,187 +20,65 @@ import {
   TableHead,
   TableBody,
   TableCell,
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   cn,
 } from "@k2net/ui";
 import { type Project } from "../../hooks/useProjects";
 import { useTranslation } from "@k2net/i18n";
-import { toast } from "sonner";
+import { getProjectStatusInfo } from "./project-utils";
+import { ProjectActionMenu } from "./ProjectActionMenu";
 
-interface ProjectCardGridProps {
+export interface ProjectCardGridProps {
   projects: Project[];
   viewMode?: "grid" | "list";
   onDeleteProject?: (id: string) => void;
-}
-
-function getProjectStatusInfo(status?: string, t?: (k: string) => string) {
-  const raw = (status || "PRODUCTION").toUpperCase();
-  if (raw === "PLANNING") {
-    return {
-      label: t ? t("projects.status_planning") || "PLANNING" : "PLANNING",
-      shortLabel: "PLANNING",
-      badgeClass: "bg-sky-500/10 text-sky-400 border-sky-500/20",
-    };
-  }
-  if (raw === "MAINTENANCE") {
-    return {
-      label: t ? t("projects.status_maintenance") || "MAINTENANCE" : "MAINTENANCE",
-      shortLabel: "MAINTENANCE",
-      badgeClass: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    };
-  }
-  return {
-    label: t ? t("projects.status_production") || "PRODUCTION" : "PRODUCTION",
-    shortLabel: "PRODUCTION",
-    badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-  };
-}
-
-const handleExportSpatial = (project: Project, successMessage: string) => {
-  const exportData = {
-    type: "FeatureCollection",
-    projectName: project.name,
-    projectCode: project.code,
-    exportedAt: new Date().toISOString(),
-    features: [],
-  };
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${project.code.toLowerCase()}_spatial_export.geojson`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast.success(successMessage || `${project.code} GeoJSON exported!`);
-};
-
-const handleDuplicateStructure = (project: Project, successMessage: string) => {
-  navigator.clipboard.writeText(
-    JSON.stringify(
-      {
-        name: `${project.name} (Copy)`,
-        code: `${project.code}-COPY`,
-        description: project.description,
-        status: "PLANNING",
-      },
-      null,
-      2
-    )
-  );
-  toast.success(successMessage || `Structure ${project.code} copied!`);
-};
-
-function ProjectActionMenu({
-  project,
-  onDeleteProject,
-  compact = false,
-}: {
-  project: Project;
-  onDeleteProject?: (id: string) => void;
-  compact?: boolean;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size={compact ? "icon-xs" : "icon-sm"}
-          className={cn(
-            "text-muted-foreground hover:text-foreground cursor-pointer",
-            compact ? "h-6 w-6" : "h-7 w-7"
-          )}
-        >
-          <MoreVertical className={compact ? "size-3" : "size-3.5"} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 text-xs">
-        <DropdownMenuItem asChild>
-          <Link to="/project/$projectId/overview" params={{ projectId: project.id }}>
-            <Activity className="size-3.5 mr-2" />
-            {t("projects.open_summary")}
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link
-            to="/project/$projectId/infrastructure/topology"
-            params={{ projectId: project.id }}
-          >
-            <Map className="size-3.5 mr-2" />
-            {t("projects.open_gis_map")}
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleExportSpatial(project, t("projects.import_success"))}>
-          <Download className="size-3.5 mr-2" />
-          {t("projects.export_spatial_data")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleDuplicateStructure(project, t("common.copied_to_clipboard"))}>
-          <Copy className="size-3.5 mr-2" />
-          {t("projects.duplicate_project")}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link
-            to="/project/$projectId/settings/general"
-            params={{ projectId: project.id }}
-          >
-            <Settings className="size-3.5 mr-2" />
-            {t("projects.project_settings")}
-          </Link>
-        </DropdownMenuItem>
-        {onDeleteProject && (
-          <DropdownMenuItem
-            onClick={() => onDeleteProject(project.id)}
-            className="text-destructive focus:bg-destructive/10 cursor-pointer"
-          >
-            <Trash2 className="size-3.5 mr-2" />
-            {t("projects.delete_project")}
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  onArchiveProject?: (id: string) => void;
+  onUnarchiveProject?: (id: string) => void;
 }
 
 function ProjectCardItem({
   project,
   onDeleteProject,
+  onArchiveProject,
+  onUnarchiveProject,
 }: {
   project: Project;
   onDeleteProject?: (id: string) => void;
+  onArchiveProject?: (id: string) => void;
+  onUnarchiveProject?: (id: string) => void;
 }) {
   const { t, formatNumber } = useTranslation();
   const statusInfo = getProjectStatusInfo(project.status, t);
-  const isDegraded = project.status === "MAINTENANCE";
-  const oltHealthLabel = `${project.oltCount || 1} OLT ${
-    isDegraded ? t("projects.olt_degraded") : t("projects.olt_online")
-  }`;
+  const isArchived = project.status === "ARCHIVED";
+  const oltHealthLabel = isArchived
+    ? t("projects.archived_badge")
+    : `${project.oltCount || 1} OLT ${t("projects.olt_online")}`;
 
   return (
     <Card
-      glowingEffect
-      className="group relative flex flex-col justify-between p-5 border-border/60 bg-card transition-all duration-200"
+      glowingEffect={!isArchived}
+      className={cn(
+        "group relative flex flex-col justify-between p-4 sm:p-4.5 border-border/60 bg-card transition-all duration-200",
+        isArchived && "opacity-75 bg-muted/20 border-dashed border-border/80"
+      )}
     >
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {/* Header Row */}
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <Link
               to="/project/$projectId/overview"
               params={{ projectId: project.id }}
               className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-lg shrink-0"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/50 border border-border/80 text-foreground/80 hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
-                <Box className="size-5" />
+              <div
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors cursor-pointer",
+                  isArchived
+                    ? "bg-muted/30 border-border/60 text-muted-foreground"
+                    : "bg-muted/50 border-border/80 text-foreground/80 hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Box className="size-4.5" />
               </div>
             </Link>
             <div className="min-w-0">
@@ -215,49 +87,61 @@ function ProjectCardItem({
                 params={{ projectId: project.id }}
                 className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded truncate block"
               >
-                <h3 className="text-sm font-bold text-foreground truncate hover:text-primary transition-colors cursor-pointer">
+                <h3
+                  className={cn(
+                    "text-xs sm:text-sm font-bold truncate transition-colors cursor-pointer",
+                    isArchived
+                      ? "text-muted-foreground hover:text-foreground"
+                      : "text-foreground hover:text-primary"
+                  )}
+                >
                   {project.name}
                 </h3>
               </Link>
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-muted/60 text-muted-foreground border border-border/60">
                   {project.code}
                 </span>
-                <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium truncate max-w-[140px]">
                   <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
-                  {project.region || (project.slug ? `${project.slug} Region` : "Coverage Area")}
+                  <span className="truncate">{project.region || (project.slug ? `${project.slug} Region` : "Coverage Area")}</span>
                 </span>
               </div>
             </div>
           </div>
 
           {/* Right Status Badge + Action Menu */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <Badge
               variant="outline"
               className={cn(
-                "text-[10px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5",
+                "text-[9px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.2",
                 statusInfo.badgeClass
               )}
             >
               {statusInfo.shortLabel}
             </Badge>
-            <ProjectActionMenu project={project} onDeleteProject={onDeleteProject} />
+            <ProjectActionMenu
+              project={project}
+              onDeleteProject={onDeleteProject}
+              onArchiveProject={onArchiveProject}
+              onUnarchiveProject={onUnarchiveProject}
+            />
           </div>
         </div>
 
         {/* Description */}
-        <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px] leading-relaxed">
-          {project.description || "FTTH network infrastructure operational deployment area."}
+        <p className="text-[11px] text-muted-foreground line-clamp-2 min-h-[30px] leading-relaxed">
+          {project.description || (isArchived ? t("projects.archived_read_only_hint") : "FTTH network infrastructure operational deployment area.")}
         </p>
 
         {/* Asset Metrics Grid */}
-        <div className="grid grid-cols-2 gap-2 pt-3 border-groove-t">
+        <div className="grid grid-cols-2 gap-1.5 pt-2.5 border-groove-t">
           <div
-            className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40"
+            className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30 border border-border/40 min-w-0"
             title={t("projects.stats_total_subscribers")}
           >
-            <Users className="size-4 text-muted-foreground shrink-0" />
+            <Users className="size-3.5 text-muted-foreground shrink-0" />
             <div className="text-[11px] truncate">
               <span className="font-mono font-bold text-foreground">
                 {formatNumber(project.totalSubscribers || 0)}
@@ -267,10 +151,10 @@ function ProjectCardItem({
           </div>
 
           <div
-            className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40"
+            className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30 border border-border/40 min-w-0"
             title={t("projects.stats_cable_length")}
           >
-            <Network className="size-4 text-sky-400 shrink-0" />
+            <Network className="size-3.5 text-sky-400 shrink-0" />
             <div className="text-[11px] truncate">
               <span className="font-mono font-bold text-foreground">
                 {(project.cableLengthKm || 0).toFixed(1)}
@@ -280,10 +164,10 @@ function ProjectCardItem({
           </div>
 
           <div
-            className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40"
+            className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30 border border-border/40 min-w-0"
             title={t("gis.odc_odp_devices")}
           >
-            <Layers className="size-4 text-amber-400 shrink-0" />
+            <Layers className="size-3.5 text-amber-400 shrink-0" />
             <div className="text-[11px] truncate">
               <span className="font-mono font-bold text-foreground">
                 {project.odcCount || 0}
@@ -297,15 +181,15 @@ function ProjectCardItem({
           </div>
 
           <div
-            className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40"
+            className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30 border border-border/40 min-w-0"
             title={t("projects.col_olt_health")}
           >
-            <Server className="size-4 text-muted-foreground shrink-0" />
+            <Server className="size-3.5 text-muted-foreground shrink-0" />
             <div className="text-[11px] flex items-center gap-1.5 truncate">
               <span
                 className={cn(
                   "size-2 rounded-full shrink-0",
-                  isDegraded ? "bg-amber-500" : "bg-emerald-500"
+                  isArchived ? "bg-muted-foreground/60" : "bg-emerald-500"
                 )}
               />
               <span className="font-mono font-bold text-foreground truncate">
@@ -317,26 +201,39 @@ function ProjectCardItem({
       </div>
 
       {/* Card Footer Actions */}
-      <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-groove-t">
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          className="h-7 px-2.5 text-xs gap-1.5 font-medium border-border/80 bg-card hover:bg-accent text-foreground cursor-pointer"
-        >
-          <Link
-            to="/project/$projectId/infrastructure/topology"
-            params={{ projectId: project.id }}
+      <div className="flex items-center justify-between gap-1.5 pt-2.5 mt-2.5 border-groove-t">
+        {isArchived ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onUnarchiveProject?.(project.id)}
+            className="h-7 px-2.5 text-xs gap-1.5 font-medium border-border/80 bg-card hover:bg-accent text-primary cursor-pointer"
           >
-            <Map className="size-3.5" />
-            <span>{t("projects.open_map_editor")}</span>
-          </Link>
-        </Button>
+            <RotateCcw className="size-3.5" />
+            <span>{t("projects.restore_project")}</span>
+          </Button>
+        ) : (
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1 font-medium border-border/80 bg-card hover:bg-accent text-foreground cursor-pointer"
+          >
+            <Link
+              to="/project/$projectId/infrastructure/topology"
+              params={{ projectId: project.id }}
+            >
+              <Map className="size-3" />
+              <span>{t("projects.open_map_editor")}</span>
+            </Link>
+          </Button>
+        )}
 
         <Button
           asChild
           size="sm"
-          className="h-7 px-2.5 text-xs gap-1.5 font-medium cursor-pointer shadow-xs"
+          className="h-7 px-2 text-xs gap-1 font-medium cursor-pointer shadow-xs"
         >
           <Link to="/project/$projectId/overview" params={{ projectId: project.id }}>
             <span>{t("projects.open_project")}</span>
@@ -351,19 +248,28 @@ function ProjectCardItem({
 function ProjectTableRowItem({
   project,
   onDeleteProject,
+  onArchiveProject,
+  onUnarchiveProject,
 }: {
   project: Project;
   onDeleteProject?: (id: string) => void;
+  onArchiveProject?: (id: string) => void;
+  onUnarchiveProject?: (id: string) => void;
 }) {
   const { t, formatNumber } = useTranslation();
   const statusInfo = getProjectStatusInfo(project.status, t);
-  const isDegraded = project.status === "MAINTENANCE";
-  const oltHealthLabel = `${project.oltCount || 1} OLT ${
-    isDegraded ? t("projects.olt_degraded") : t("projects.olt_online")
-  }`;
+  const isArchived = project.status === "ARCHIVED";
+  const oltHealthLabel = isArchived
+    ? t("projects.archived_badge")
+    : `${project.oltCount || 1} OLT ${t("projects.olt_online")}`;
 
   return (
-    <TableRow className="text-xs hover:bg-muted/30 border-b border-border/40 transition-colors">
+    <TableRow
+      className={cn(
+        "text-xs border-b border-border/40 transition-colors",
+        isArchived ? "opacity-75 bg-muted/10 hover:bg-muted/20" : "hover:bg-muted/30"
+      )}
+    >
       {/* Col 1: Project & Region */}
       <TableCell className="py-2.5 px-3.5">
         <div className="flex items-center gap-3">
@@ -372,7 +278,14 @@ function ProjectTableRowItem({
             params={{ projectId: project.id }}
             className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-lg shrink-0"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50 border border-border/80 text-foreground/80 hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
+            <div
+              className={cn(
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-colors cursor-pointer",
+                isArchived
+                  ? "bg-muted/30 border-border/60 text-muted-foreground"
+                  : "bg-muted/50 border-border/80 text-foreground/80 hover:bg-muted hover:text-foreground"
+              )}
+            >
               <Box className="size-4" />
             </div>
           </Link>
@@ -382,7 +295,12 @@ function ProjectTableRowItem({
               params={{ projectId: project.id }}
               className="focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded truncate block"
             >
-              <span className="font-bold text-foreground hover:text-primary transition-colors cursor-pointer block truncate text-xs">
+              <span
+                className={cn(
+                  "font-bold transition-colors cursor-pointer block truncate text-xs",
+                  isArchived ? "text-muted-foreground hover:text-foreground" : "text-foreground hover:text-primary"
+                )}
+              >
                 {project.name}
               </span>
             </Link>
@@ -418,7 +336,7 @@ function ProjectTableRowItem({
           <span
             className={cn(
               "size-2 rounded-full",
-              isDegraded ? "bg-amber-500" : "bg-emerald-500"
+              isArchived ? "bg-muted-foreground/60" : "bg-emerald-500"
             )}
           />
           <span className="font-mono text-xs text-foreground/90 font-medium">
@@ -462,20 +380,33 @@ function ProjectTableRowItem({
       {/* Col 5: Actions */}
       <TableCell className="py-2.5 px-3.5 text-right">
         <div className="flex items-center justify-end gap-1.5">
-          <Button
-            asChild
-            variant="outline"
-            size="xs"
-            className="h-6 px-2 text-[11px] gap-1 font-medium border-border/80 bg-card hover:bg-accent text-foreground cursor-pointer"
-          >
-            <Link
-              to="/project/$projectId/infrastructure/topology"
-              params={{ projectId: project.id }}
+          {isArchived ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={() => onUnarchiveProject?.(project.id)}
+              className="h-6 px-2 text-[11px] gap-1 font-medium border-border/80 bg-card hover:bg-accent text-primary cursor-pointer"
             >
-              <Map className="size-3" />
-              <span className="hidden xl:inline">{t("projects.open_map_editor")}</span>
-            </Link>
-          </Button>
+              <RotateCcw className="size-3" />
+              <span className="hidden xl:inline">{t("projects.restore_project")}</span>
+            </Button>
+          ) : (
+            <Button
+              asChild
+              variant="outline"
+              size="xs"
+              className="h-6 px-2 text-[11px] gap-1 font-medium border-border/80 bg-card hover:bg-accent text-foreground cursor-pointer"
+            >
+              <Link
+                to="/project/$projectId/infrastructure/topology"
+                params={{ projectId: project.id }}
+              >
+                <Map className="size-3" />
+                <span className="hidden xl:inline">{t("projects.open_map_editor")}</span>
+              </Link>
+            </Button>
+          )}
 
           <Button
             asChild
@@ -488,7 +419,13 @@ function ProjectTableRowItem({
             </Link>
           </Button>
 
-          <ProjectActionMenu project={project} onDeleteProject={onDeleteProject} compact />
+          <ProjectActionMenu
+            project={project}
+            onDeleteProject={onDeleteProject}
+            onArchiveProject={onArchiveProject}
+            onUnarchiveProject={onUnarchiveProject}
+            compact
+          />
         </div>
       </TableCell>
     </TableRow>
@@ -499,6 +436,8 @@ export function ProjectCardGrid({
   projects,
   viewMode = "grid",
   onDeleteProject,
+  onArchiveProject,
+  onUnarchiveProject,
 }: ProjectCardGridProps) {
   const { t } = useTranslation();
 
@@ -521,6 +460,8 @@ export function ProjectCardGrid({
                 key={project.id}
                 project={project}
                 onDeleteProject={onDeleteProject}
+                onArchiveProject={onArchiveProject}
+                onUnarchiveProject={onUnarchiveProject}
               />
             ))}
           </TableBody>
@@ -530,12 +471,14 @@ export function ProjectCardGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
       {projects.map((project) => (
         <ProjectCardItem
           key={project.id}
           project={project}
           onDeleteProject={onDeleteProject}
+          onArchiveProject={onArchiveProject}
+          onUnarchiveProject={onUnarchiveProject}
         />
       ))}
     </div>

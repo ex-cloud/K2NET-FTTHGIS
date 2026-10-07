@@ -52,6 +52,9 @@ class SpatialSecurityEvaluatorTest {
     @Mock
     private TenantSecurity tenantSecurity;
 
+    @Mock
+    private com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
+
     @InjectMocks
     private SpatialSecurityEvaluator evaluator;
 
@@ -234,5 +237,27 @@ class SpatialSecurityEvaluatorTest {
 
         assertTrue(evaluator.canAccessCable(cableId, "network.manage"));
         verify(taskRepository).existsActiveAssignment("technician-02", "CABLE-FIBER-099");
+    }
+
+    @Test
+    @DisplayName("hasProjectPermission: Archived project rejects mutation / write actions")
+    void testHasProjectPermission_archivedProjectRejectsWrite() {
+        Project archivedProject = new Project();
+        archivedProject.setId(projectId);
+        archivedProject.setStatus(Project.ProjectStatus.ARCHIVED);
+
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(archivedProject));
+
+        assertFalse(evaluator.hasProjectPermission(projectId, "network.manage"));
+        assertFalse(evaluator.hasProjectPermission(projectId, "projects.edit"));
+    }
+
+    @Test
+    @DisplayName("hasProjectPermission: Archived project allows view/export read-only actions")
+    void testHasProjectPermission_archivedProjectAllowsView() {
+        setSecurityContext("superadmin", List.of("ROLE_super_admin"));
+
+        assertTrue(evaluator.hasProjectPermission(projectId, "projects.view"));
+        assertTrue(evaluator.hasProjectPermission(projectId, "projects.export"));
     }
 }

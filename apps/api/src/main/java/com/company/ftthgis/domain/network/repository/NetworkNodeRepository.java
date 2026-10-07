@@ -32,6 +32,7 @@ public interface NetworkNodeRepository extends JpaRepository<NetworkNode, UUID> 
 
     void deleteByOrganizationId(UUID organizationId);
     long countByOrganizationId(UUID organizationId);
+    long countByOrganizationIdAndNodeType(UUID organizationId, String nodeType);
 
     @Query("SELECT DISTINCT n.project.id FROM NetworkNode n WHERE n.id IN :ids AND n.project IS NOT NULL")
     java.util.Set<UUID> findDistinctProjectIdsByIdIn(@Param("ids") List<UUID> ids);

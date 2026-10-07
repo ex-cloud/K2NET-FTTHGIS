@@ -28,6 +28,8 @@ public class OrganizationSubscriptionService {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final OrganizationConfigRepository organizationConfigRepository;
     private final ProjectRepository projectRepository;
+    private final ProjectQuotaService projectQuotaService;
+    private final com.company.ftthgis.domain.network.repository.NetworkNodeRepository networkNodeRepository;
     private final AuditLoggingService auditLoggingService;
     private final com.company.ftthgis.config.tenant.KeycloakService keycloakService;
 
@@ -39,21 +41,27 @@ public class OrganizationSubscriptionService {
         Organization org = getOrg(slug);
         SubscriptionPlan plan = org.getSubscriptionPlan();
 
-        // 1. Quota & Hardware Specs
-        int baseOlts = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 6;
-        int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 2500;
-        
-        int usedOlts = 0;
+        // 1. Quota & Hardware Specs via Centralized ProjectQuotaService
+        int effectiveMaxProjects = projectQuotaService.getEffectiveMaxProjects(org);
+        int maxArchivedProjects = projectQuotaService.getEffectiveMaxArchived(org);
+        int usedActiveProjects = (int) projectQuotaService.getUsedActiveProjects(org.getId());
+        int archivedProjects = (int) projectQuotaService.getUsedArchivedProjects(org.getId());
+
+        int baseProjects = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 6;
+        int maxProjects = getConfigInt(org, "max_projects", getConfigInt(org, "max_olts", baseProjects));
+
+        // Real count of ODPs from database
+        long realUsedOdps = 0;
         try {
-            usedOlts = (int) projectRepository.countByOrganizationId(org.getId());
+            realUsedOdps = networkNodeRepository.countByOrganizationIdAndNodeType(org.getId(), "ODP");
         } catch (Exception e) {
-            log.warn("Could not count projects for {}: {}", slug, e.getMessage());
+            log.warn("Could not count ODP nodes for org {}: {}", slug, e.getMessage());
         }
-        
-        // Baca config dinamis jika ada override
-        int maxOlts = getConfigInt(org, "max_olts", baseOlts);
+
+        int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 2500;
         int maxOdps = getConfigInt(org, "max_odps", baseOdps);
-        int usedOdps = getConfigInt(org, "used_odps", Math.min(usedOlts * 30, maxOdps));
+        int usedOdps = (int) realUsedOdps;
+
         int maxStorageGb = getConfigInt(org, "max_storage_gb",
                 "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
                 "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
@@ -75,7 +83,6 @@ public class OrganizationSubscriptionService {
             boosterDaysRemaining = Math.max(0, Duration.between(LocalDateTime.now(), boosterExpiresAt).toDays());
         }
 
-        int effectiveMaxOlts = maxOlts + (isBoosterActive ? boosterOlts : 0);
         int effectiveMaxOdps = maxOdps + (isBoosterActive ? boosterOdps : 0);
 
         // 3. Lifecycle Details
@@ -86,7 +93,7 @@ public class OrganizationSubscriptionService {
         }
 
         boolean isOverQuota = org.getOverQuotaMode() != null && org.getOverQuotaMode() 
-                || (usedOlts > effectiveMaxOlts || usedOdps > effectiveMaxOdps);
+                || (usedActiveProjects > effectiveMaxProjects || usedOdps > effectiveMaxOdps);
         boolean isSoftLocked = org.isSoftLocked();
 
         String planName = plan != null ? plan.getName() : "PRO";
@@ -103,8 +110,15 @@ public class OrganizationSubscriptionService {
                 .planName(planName)
                 .planPrice(plan != null && plan.getPrice() != null ? plan.getPrice() : BigDecimal.valueOf(3900000))
                 .planCycle(org.getPlanCycle() != null ? org.getPlanCycle() : "MONTHLY")
-                .maxOlts(maxOlts)
-                .usedOlts(usedOlts)
+                // New standardized Project & Archive quota fields
+                .maxProjects(maxProjects)
+                .usedProjects(usedActiveProjects)
+                .effectiveMaxProjects(effectiveMaxProjects)
+                .archivedProjects(archivedProjects)
+                .maxArchivedProjects(maxArchivedProjects)
+                // Backward compatible fields for studio-admin
+                .maxOlts(maxProjects)
+                .usedOlts(usedActiveProjects)
                 .maxOdps(maxOdps)
                 .usedOdps(usedOdps)
                 .maxStorageGb(maxStorageGb)
@@ -116,7 +130,7 @@ public class OrganizationSubscriptionService {
                 .boosterOdps(boosterOdps)
                 .boosterExpiresAt(boosterExpiresAt)
                 .boosterDaysRemaining(boosterDaysRemaining)
-                .effectiveMaxOlts(effectiveMaxOlts)
+                .effectiveMaxOlts(effectiveMaxProjects)
                 .effectiveMaxOdps(effectiveMaxOdps)
                 .trialExpiresAt(org.getTrialExpiresAt())
                 .isTrialExpired(isTrialExpired)

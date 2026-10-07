@@ -78,42 +78,42 @@ public class ProjectController {
 
     @PostMapping
     @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and hasAuthority('projects.create')")
-    public ResponseEntity<?> createProject(@PathVariable String orgSlug, @RequestBody Project project) {
-        try {
-            return ResponseEntity.ok(projectService.createProject(orgSlug, project));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Project> createProject(@PathVariable String orgSlug, @RequestBody Project project) {
+        return ResponseEntity.ok(projectService.createProject(orgSlug, project));
     }
 
     @PutMapping("/{projectId}")
     @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and @tenantSecurity.canAccessProject(#projectId) and hasAuthority('projects.edit')")
-    public ResponseEntity<?> updateProject(@PathVariable String orgSlug, @PathVariable UUID projectId, @RequestBody Project project) {
-        try {
-            return ResponseEntity.ok(projectService.updateProject(projectId, project));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Project> updateProject(@PathVariable String orgSlug, @PathVariable UUID projectId, @RequestBody Project project) {
+        return ResponseEntity.ok(projectService.updateProject(projectId, project));
+    }
+
+    @PostMapping("/{projectId}/archive")
+    @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and @tenantSecurity.canAccessProject(#projectId) and hasAuthority('projects.archive')")
+    public ResponseEntity<Project> archiveProject(@PathVariable String orgSlug, @PathVariable UUID projectId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userId = auth != null ? auth.getName() : "system";
+        return ResponseEntity.ok(projectService.archiveProject(projectId, userId));
+    }
+
+    @PostMapping("/{projectId}/unarchive")
+    @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and @tenantSecurity.canAccessProject(#projectId) and hasAuthority('projects.archive')")
+    public ResponseEntity<Project> unarchiveProject(@PathVariable String orgSlug, @PathVariable UUID projectId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userId = auth != null ? auth.getName() : "system";
+        return ResponseEntity.ok(projectService.unarchiveProject(projectId, userId));
     }
 
     @DeleteMapping("/{projectId}")
     @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and @tenantSecurity.canAccessProject(#projectId) and hasAuthority('projects.delete')")
     public ResponseEntity<?> deleteProject(@PathVariable String orgSlug, @PathVariable UUID projectId) {
-        try {
-            projectService.deleteProject(projectId);
-            return ResponseEntity.ok(Map.of("success", true, "message", "Project deleted"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        projectService.deleteProject(projectId);
+        return ResponseEntity.ok(Map.of("success", true, "message", "Project deleted"));
     }
 
     @GetMapping("/{projectId}/export")
     @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and @tenantSecurity.canAccessProject(#projectId) and hasAuthority('projects.export')")
     public ResponseEntity<?> exportProject(@PathVariable String orgSlug, @PathVariable UUID projectId) {
-        try {
-            return ResponseEntity.ok(projectService.exportProject(projectId));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(projectService.exportProject(projectId));
     }
 }

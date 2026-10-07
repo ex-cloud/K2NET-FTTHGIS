@@ -33,14 +33,18 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
   const setActiveProjectId = useMapStore((s) => s.setActiveProjectId);
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchFilter, setSearchFilter] = React.useState("");
+  const activeProjects = React.useMemo(
+    () => projects.filter((p) => p.status !== "ARCHIVED"),
+    [projects]
+  );
 
   const activeProject = React.useMemo(() => {
-    if (!projects || projects.length === 0) return null;
+    if (!activeProjects || activeProjects.length === 0) return null;
     if (activeProjectId) {
-      return projects.find((p) => p.id === activeProjectId) || projects[0];
+      return activeProjects.find((p) => p.id === activeProjectId) || activeProjects[0];
     }
-    return projects[0];
-  }, [projects, activeProjectId]);
+    return activeProjects[0];
+  }, [activeProjects, activeProjectId]);
 
   React.useEffect(() => {
     if (activeProject?.id) {
@@ -49,13 +53,13 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
   }, [activeProject?.id, setActiveProjectId]);
 
   const filteredProjects = React.useMemo(() => {
-    if (!searchFilter.trim()) return projects;
-    return projects.filter(
+    if (!searchFilter.trim()) return activeProjects;
+    return activeProjects.filter(
       (p) =>
         p.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
         p.code.toLowerCase().includes(searchFilter.toLowerCase())
     );
-  }, [projects, searchFilter]);
+  }, [activeProjects, searchFilter]);
 
   const handleSelectProject = (project: Project) => {
     setActiveProjectId(project.id);
@@ -65,15 +69,12 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "PRODUCTION":
       case "ACTIVE":
         return "bg-primary/10 text-primary border-primary/20";
-      case "PLANNING":
-        return "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20";
-      case "MAINTENANCE":
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
-      default:
+      case "ARCHIVED":
         return "bg-muted text-muted-foreground border-border";
+      default:
+        return "bg-primary/10 text-primary border-primary/20";
     }
   };
 
@@ -110,7 +111,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
               {t("projects.project_list_label")}
             </span>
             <span className="text-[10px] font-mono text-muted-foreground">
-              {projects.length} Proyek
+              {activeProjects.length} {t("nav.projects") || "Projects"}
             </span>
           </div>
           <div className="relative">

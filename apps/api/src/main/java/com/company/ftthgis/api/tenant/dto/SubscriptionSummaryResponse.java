@@ -23,6 +23,13 @@ public class SubscriptionSummaryResponse {
     private String planCycle;
 
     // Hardware Quotas & Live Usage
+    private int maxProjects;
+    private int usedProjects;
+    private int effectiveMaxProjects;
+    private int archivedProjects;
+    private int maxArchivedProjects;
+
+    // Deprecated fields kept for backward compatibility with studio-admin
     private int maxOlts;
     private int usedOlts;
     private int maxOdps;

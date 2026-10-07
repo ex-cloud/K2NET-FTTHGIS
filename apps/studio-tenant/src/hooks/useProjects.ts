@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../lib/api-client";
 import { getCurrentOrgSlug } from "../lib/domain";
 
+export type ProjectStatus = "ACTIVE" | "ARCHIVED";
+
 export interface Project {
   id: string;
   name: string;
@@ -9,7 +11,7 @@ export interface Project {
   slug?: string;
   region?: string;
   description?: string;
-  status: "PLANNING" | "PRODUCTION" | "MAINTENANCE" | "ACTIVE" | "ARCHIVED";
+  status: ProjectStatus;
   customerCount?: number;
   odcCount?: number;
   odpCount?: number;
@@ -19,6 +21,8 @@ export interface Project {
   onlineSubscribers?: number;
   organizationId?: string;
   boundaryGeom?: unknown;
+  archivedAt?: string;
+  archivedBy?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -28,7 +32,7 @@ export interface CreateProjectPayload {
   code: string;
   region?: string;
   description?: string;
-  status?: string;
+  status?: ProjectStatus;
   boundaryGeom?: unknown;
 }
 
@@ -64,6 +68,11 @@ export function useProjects() {
     staleTime: 60 * 1000,
   });
 
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["tenant-projects", orgSlug] });
+    queryClient.invalidateQueries({ queryKey: ["tenant-subscription-summary", orgSlug] });
+  };
+
   const createProjectMutation = useMutation({
     mutationFn: async (payload: CreateProjectPayload) => {
       return apiClient<Project>(`/api/v1/organizations/${orgSlug}/projects`, {
@@ -71,9 +80,7 @@ export function useProjects() {
         body: JSON.stringify(payload),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tenant-projects", orgSlug] });
-    },
+    onSuccess: invalidateAll,
   });
 
   const updateProjectMutation = useMutation({
@@ -83,9 +90,25 @@ export function useProjects() {
         body: JSON.stringify(payload),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tenant-projects", orgSlug] });
+    onSuccess: invalidateAll,
+  });
+
+  const archiveProjectMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiClient<Project>(`/api/v1/organizations/${orgSlug}/projects/${id}/archive`, {
+        method: "POST",
+      });
     },
+    onSuccess: invalidateAll,
+  });
+
+  const unarchiveProjectMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiClient<Project>(`/api/v1/organizations/${orgSlug}/projects/${id}/unarchive`, {
+        method: "POST",
+      });
+    },
+    onSuccess: invalidateAll,
   });
 
   const deleteProjectMutation = useMutation({
@@ -94,9 +117,7 @@ export function useProjects() {
         method: "DELETE",
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tenant-projects", orgSlug] });
-    },
+    onSuccess: invalidateAll,
   });
 
   return {
@@ -109,6 +130,10 @@ export function useProjects() {
     isCreating: createProjectMutation.isPending,
     updateProject: updateProjectMutation.mutateAsync,
     isUpdating: updateProjectMutation.isPending,
+    archiveProject: archiveProjectMutation.mutateAsync,
+    isArchiving: archiveProjectMutation.isPending,
+    unarchiveProject: unarchiveProjectMutation.mutateAsync,
+    isUnarchiving: unarchiveProjectMutation.isPending,
     deleteProject: deleteProjectMutation.mutateAsync,
     isDeleting: deleteProjectMutation.isPending,
   };

@@ -30,7 +30,7 @@ export function ProjectOverviewPage() {
         id: projectId,
         name: "FTTH Bandung Timur Cluster",
         code: "BDG-TMR",
-        status: "PRODUCTION",
+        status: "ACTIVE",
         description: "Area deployment fiber optik Bandung Timur & Arcamanik",
         totalSubscribers: 1420,
         onlineSubscribers: 1398,
