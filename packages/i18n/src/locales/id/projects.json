@@ -127,5 +127,8 @@
   "archived_projects_usage": "Proyek Diarsipkan",
   "archive_quota_exceeded_desc": "Organisasi Anda telah mencapai batas maksimum {{used}} dari {{max}} proyek arsip untuk paket {{tier}}. Tingkatkan ke paket yang lebih tinggi untuk mengarsipkan lebih banyak proyek.",
   "trial_expired_desc": "Masa evaluasi 14 hari telah berakhir dan proyek saat ini di-pause dalam mode Read-Only. Tingkatkan paket langganan Anda untuk membuat dan mengelola proyek jaringan secara penuh.",
-  "quota_exceeded_desc": "Organisasi Anda telah mencapai batas maksimum {{used}} dari {{max}} proyek aktif untuk paket {{tier}}. Tingkatkan ke paket yang lebih tinggi untuk membuat proyek FTTH baru."
+  "quota_exceeded_desc": "Organisasi Anda telah mencapai batas maksimum {{used}} dari {{max}} proyek aktif untuk paket {{tier}}. Tingkatkan ke paket yang lebih tinggi untuk membuat proyek FTTH baru.",
+  "delete_confirm_title": "Hapus Proyek Secara Permanen?",
+  "delete_confirm_desc": "Apakah Anda yakin ingin menghapus proyek {{name}} ({{code}})? Seluruh data topologi, kabel, ODC/ODP, dan konfigurasi akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.",
+  "archived_read_only_banner": "Proyek ini berstatus diarsipkan (Mode Read-Only). Pengeditan topologi, penambahan kabel, dan perubahan jaringan dikunci."
 }

@@ -127,5 +127,8 @@
   "archived_projects_usage": "Archived Projects",
   "archive_quota_exceeded_desc": "Your organization has reached the maximum limit of {{used}} of {{max}} archived projects for the {{tier}} tier. Upgrade to a higher plan to archive more projects.",
   "trial_expired_desc": "The 14-day evaluation period has ended and projects are currently paused in Read-Only mode. Upgrade your subscription plan to create and manage network projects fully.",
-  "quota_exceeded_desc": "Your organization has reached the maximum limit of {{used}} of {{max}} active projects for the {{tier}} tier. Upgrade to a higher plan to create new FTTH projects."
+  "quota_exceeded_desc": "Your organization has reached the maximum limit of {{used}} of {{max}} active projects for the {{tier}} tier. Upgrade to a higher plan to create new FTTH projects.",
+  "delete_confirm_title": "Delete Project Permanently?",
+  "delete_confirm_desc": "Are you sure you want to delete project {{name}} ({{code}})? All topology nodes, cables, and configurations will be permanently deleted. This action cannot be undone.",
+  "archived_read_only_banner": "This project is archived (Read-Only Mode). Topology editing, cable creation, and network modifications are locked."
 }

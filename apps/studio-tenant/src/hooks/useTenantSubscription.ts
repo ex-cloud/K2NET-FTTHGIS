@@ -72,6 +72,28 @@ function parseTier(rawInput?: string): NormalizedTier {
   return "free";
 }
 
+export function getRecommendedUpgradeTier(
+  currentTier: NormalizedTier,
+  requiredTier?: NormalizedTier
+): NormalizedTier {
+  const TIER_ORDER: NormalizedTier[] = ["free", "starter", "pro", "enterprise"];
+  const currentIndex = TIER_ORDER.indexOf(currentTier);
+
+  // By default, recommend the next tier level up
+  let targetIndex = Math.min(currentIndex + 1, TIER_ORDER.length - 1);
+  if (targetIndex === 0) targetIndex = 1; // if free, recommend starter
+
+  // If a specific requiredTier is provided and is higher, recommend that one
+  if (requiredTier) {
+    const reqIndex = TIER_ORDER.indexOf(requiredTier);
+    if (reqIndex > targetIndex) {
+      targetIndex = reqIndex;
+    }
+  }
+
+  return TIER_ORDER[targetIndex];
+}
+
 function getProjectLimits(summary: SubscriptionSummary | null | undefined, tier: NormalizedTier, isTrialExpired: boolean, status: string) {
   const defaultMax = TIER_PROJECT_LIMITS[tier] ?? 1;
   const maxProjects = summary?.effectiveMaxProjects ?? summary?.maxProjects ?? summary?.effectiveMaxOlts ?? defaultMax;
@@ -259,6 +281,9 @@ export function useTenantSubscription() {
     trialDaysRemaining: lifecycle.trialDaysRemaining,
     isBoosterActive: lifecycle.isBoosterActive,
     boosterDaysRemaining: lifecycle.boosterDaysRemaining,
+
+    // Recommended upgrade tier based on current tier & limits
+    recommendedUpgradeTier: getRecommendedUpgradeTier(tier),
 
     // Project limits (Active & Archived)
     usedProjects,

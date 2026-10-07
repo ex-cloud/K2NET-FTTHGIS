@@ -33,18 +33,20 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
   const setActiveProjectId = useMapStore((s) => s.setActiveProjectId);
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchFilter, setSearchFilter] = React.useState("");
+
   const activeProjects = React.useMemo(
     () => projects.filter((p) => p.status !== "ARCHIVED"),
     [projects]
   );
 
   const activeProject = React.useMemo(() => {
-    if (!activeProjects || activeProjects.length === 0) return null;
+    if (!projects || projects.length === 0) return null;
     if (activeProjectId) {
-      return activeProjects.find((p) => p.id === activeProjectId) || activeProjects[0];
+      const matched = projects.find((p) => p.id === activeProjectId);
+      if (matched) return matched;
     }
-    return activeProjects[0];
-  }, [activeProjects, activeProjectId]);
+    return activeProjects[0] || projects[0] || null;
+  }, [projects, activeProjects, activeProjectId]);
 
   React.useEffect(() => {
     if (activeProject?.id) {
@@ -53,13 +55,13 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
   }, [activeProject?.id, setActiveProjectId]);
 
   const filteredProjects = React.useMemo(() => {
-    if (!searchFilter.trim()) return activeProjects;
-    return activeProjects.filter(
+    if (!searchFilter.trim()) return projects;
+    return projects.filter(
       (p) =>
         p.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
         p.code.toLowerCase().includes(searchFilter.toLowerCase())
     );
-  }, [activeProjects, searchFilter]);
+  }, [projects, searchFilter]);
 
   const handleSelectProject = (project: Project) => {
     setActiveProjectId(project.id);
@@ -111,7 +113,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
               {t("projects.project_list_label")}
             </span>
             <span className="text-[10px] font-mono text-muted-foreground">
-              {activeProjects.length} {t("nav.projects") || "Projects"}
+              {projects.length} {t("nav.projects") || "Projects"}
             </span>
           </div>
           <div className="relative">
@@ -135,12 +137,14 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
               <DropdownMenuItem
                 key={project.id}
                 onClick={() => handleSelectProject(project)}
-                className={`flex items-start gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${isSelected ? "bg-accent text-accent-foreground font-medium" : ""
-                  }`}
+                className={`flex items-start gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${
+                  isSelected ? "bg-accent text-accent-foreground font-medium" : ""
+                }`}
               >
                 <div
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded ${isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                    }`}
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded ${
+                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  }`}
                 >
                   <Box className="h-3.5 w-3.5" />
                 </div>
@@ -162,7 +166,7 @@ export function ProjectSwitcher({ activeProjectId, onNewProject }: ProjectSwitch
                     {project.totalSubscribers !== undefined && (
                       <>
                         <span>•</span>
-                        <span>{project.totalSubscribers} Pelanggan</span>
+                        <span>{project.totalSubscribers} {t("projects.unit_subscribers")}</span>
                       </>
                     )}
                   </div>

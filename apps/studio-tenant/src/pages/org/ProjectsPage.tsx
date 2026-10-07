@@ -17,7 +17,6 @@ import {
   TabsList,
   TabsTrigger,
   EmptyState,
-  FeatureUpgradeModal,
   ActionTooltip,
   DropdownMenu,
   DropdownMenuTrigger,
@@ -32,6 +31,8 @@ import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 import { ProjectUsageWidget } from "../../components/project/ProjectUsageWidget";
 import { ProjectCardGrid } from "../../components/project/ProjectCardGrid";
 import { ProjectCreateWizard } from "../../components/project/ProjectCreateWizard";
+import { ProjectActionDialogs } from "../../components/project/ProjectActionDialogs";
+import { TenantFeatureUpgradeModal } from "../../components/system/TenantFeatureUpgradeModal";
 
 type SortOption = "updatedAt" | "subscribers" | "cableLength" | "name";
 
@@ -48,8 +49,11 @@ export function ProjectsPage() {
   } = useProjects();
   const {
     canCreateProject,
+    canArchiveProject,
     usedProjects,
     maxProjects,
+    archivedProjects,
+    maxArchivedProjects,
     tier,
     isTrialExpired,
     status,
@@ -57,6 +61,14 @@ export function ProjectsPage() {
 
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = React.useState(false);
+  const [upgradeModalType, setUpgradeModalType] = React.useState<"active_quota" | "archive_quota" | "trial">("active_quota");
+
+  // Action Confirmation Dialog States
+  const [restoreConfirmProject, setRestoreConfirmProject] = React.useState<Project | null>(null);
+  const [archiveConfirmProject, setArchiveConfirmProject] = React.useState<Project | null>(null);
+  const [deleteConfirmProject, setDeleteConfirmProject] = React.useState<Project | null>(null);
+  const [isProcessingAction, setIsProcessingAction] = React.useState(false);
+
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<"ALL" | "ACTIVE" | "ARCHIVED">("ALL");
   const [sortBy, setSortBy] = React.useState<SortOption>("updatedAt");
@@ -103,7 +115,6 @@ export function ProjectsPage() {
       if (sortBy === "name") {
         return a.name.localeCompare(b.name);
       }
-      // Default: updatedAt or createdAt newest first
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
       return timeB - timeA;
@@ -111,31 +122,90 @@ export function ProjectsPage() {
   }, [projects, searchQuery, statusFilter, sortBy]);
 
   const handleOpenCreateProject = () => {
-    if (isTrialExpired || status === "TRIAL_EXPIRED" || !canCreateProject) {
+    if (isTrialExpired || status === "TRIAL_EXPIRED") {
+      setUpgradeModalType("trial");
+      setUpgradeModalOpen(true);
+      return;
+    }
+    if (!canCreateProject) {
+      setUpgradeModalType("active_quota");
       setUpgradeModalOpen(true);
       return;
     }
     setCreateModalOpen(true);
   };
 
-  const handleArchiveProject = async (id: string) => {
-    try {
-      await archiveProject(id);
-    } catch {
-      // errors handled or caught
+  const handleRequestRestore = (id: string) => {
+    const targetProject = projects.find((p) => p.id === id);
+    if (!targetProject) return;
+
+    if (!canCreateProject) {
+      setUpgradeModalType("active_quota");
+      setUpgradeModalOpen(true);
+      return;
     }
+    setRestoreConfirmProject(targetProject);
   };
 
-  const handleUnarchiveProject = async (id: string) => {
+  const handleConfirmRestore = async () => {
+    if (!restoreConfirmProject) return;
+    setIsProcessingAction(true);
     try {
-      await unarchiveProject(id);
+      await unarchiveProject(restoreConfirmProject.id);
+      setRestoreConfirmProject(null);
     } catch (err: unknown) {
+      setRestoreConfirmProject(null);
       const isQuotaError =
         (err && typeof err === "object" && "status" in err && (err as { status: number }).status === 409) ||
         !canCreateProject;
       if (isQuotaError) {
+        setUpgradeModalType("active_quota");
         setUpgradeModalOpen(true);
       }
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  const handleRequestArchive = (id: string) => {
+    const targetProject = projects.find((p) => p.id === id);
+    if (!targetProject) return;
+
+    if (!canArchiveProject) {
+      setUpgradeModalType("archive_quota");
+      setUpgradeModalOpen(true);
+      return;
+    }
+    setArchiveConfirmProject(targetProject);
+  };
+
+  const handleConfirmArchive = async () => {
+    if (!archiveConfirmProject) return;
+    setIsProcessingAction(true);
+    try {
+      await archiveProject(archiveConfirmProject.id);
+      setArchiveConfirmProject(null);
+    } catch {
+      setArchiveConfirmProject(null);
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  const handleRequestDelete = (id: string) => {
+    const targetProject = projects.find((p) => p.id === id);
+    if (!targetProject) return;
+    setDeleteConfirmProject(targetProject);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmProject) return;
+    setIsProcessingAction(true);
+    try {
+      await deleteProject(deleteConfirmProject.id);
+      setDeleteConfirmProject(null);
+    } finally {
+      setIsProcessingAction(false);
     }
   };
 
@@ -146,11 +216,10 @@ export function ProjectsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Left Column (Wider): Toolbar + Project List/Grid */}
           <div className="lg:col-span-8 xl:col-span-8 2xl:col-span-9 space-y-4">
-            {/* Toolbar: Left (Search + Filter), Right (Sort + Refresh + View Mode + Plus) */}
+            {/* Toolbar */}
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
               {/* Left: Search + Status Filter */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
-                {/* Search Input */}
                 <div className="relative w-full sm:w-56 shrink-0">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   <Input
@@ -162,7 +231,6 @@ export function ProjectsPage() {
                   />
                 </div>
 
-                {/* Status Filter Tabs */}
                 <Tabs
                   value={statusFilter}
                   onValueChange={(val) => setStatusFilter(val as "ALL" | "ACTIVE" | "ARCHIVED")}
@@ -184,7 +252,6 @@ export function ProjectsPage() {
 
               {/* Right: Dropdown Sort + Refresh + View Mode Toggle + Plus Button */}
               <div className="flex items-center gap-1.5 shrink-0 self-end md:self-auto flex-wrap">
-                {/* Dropdown Sort */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -213,7 +280,6 @@ export function ProjectsPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Refresh Icon Button */}
                 <ActionTooltip label={t("gis.refresh_projects")} shortcut="R" side="bottom">
                   <Button
                     variant="outline"
@@ -226,7 +292,6 @@ export function ProjectsPage() {
                   </Button>
                 </ActionTooltip>
 
-                {/* Toggle View Mode (Grid vs List) */}
                 <div className="flex items-center rounded-md border border-border/80 bg-card p-0.5">
                   <ActionTooltip label={t("gis.grid_view")} side="bottom">
                     <button
@@ -260,7 +325,6 @@ export function ProjectsPage() {
                   </ActionTooltip>
                 </div>
 
-                {/* Plus (New Project) CTA Button with ActionTooltip */}
                 <ActionTooltip label={t("gis.create_project")} shortcut="N" side="bottom">
                   <Button
                     variant="default"
@@ -289,9 +353,9 @@ export function ProjectsPage() {
               <ProjectCardGrid
                 projects={filteredAndSortedProjects}
                 viewMode={viewMode}
-                onDeleteProject={deleteProject}
-                onArchiveProject={handleArchiveProject}
-                onUnarchiveProject={handleUnarchiveProject}
+                onDeleteProject={handleRequestDelete}
+                onArchiveProject={handleRequestArchive}
+                onUnarchiveProject={handleRequestRestore}
               />
             ) : (
               <EmptyState
@@ -329,26 +393,46 @@ export function ProjectsPage() {
         onOpenChange={setCreateModalOpen}
       />
 
+      {/* Action Confirmation Dialogs (Restore / Archive / Delete) */}
+      <ProjectActionDialogs
+        restoreProject={restoreConfirmProject}
+        archiveProject={archiveConfirmProject}
+        deleteProject={deleteConfirmProject}
+        isProcessing={isProcessingAction}
+        onCloseRestore={() => setRestoreConfirmProject(null)}
+        onCloseArchive={() => setArchiveConfirmProject(null)}
+        onCloseDelete={() => setDeleteConfirmProject(null)}
+        onConfirmRestore={handleConfirmRestore}
+        onConfirmArchive={handleConfirmArchive}
+        onConfirmDelete={handleConfirmDelete}
+      />
+
       {/* Upgrade Quota Limit & Trial Paused Modal */}
-      <FeatureUpgradeModal
+      <TenantFeatureUpgradeModal
         open={upgradeModalOpen}
         onOpenChange={setUpgradeModalOpen}
         featureName={
-          isTrialExpired || status === "TRIAL_EXPIRED"
+          upgradeModalType === "trial"
             ? t("projects.trial_expired")
+            : upgradeModalType === "archive_quota"
+            ? t("projects.archived_projects_usage")
             : t("projects.project_capacity")
         }
         featureDescription={
-          isTrialExpired || status === "TRIAL_EXPIRED"
+          upgradeModalType === "trial"
             ? t("projects.trial_expired_desc")
+            : upgradeModalType === "archive_quota"
+            ? t("projects.archive_quota_exceeded_desc", {
+                used: archivedProjects,
+                max: maxArchivedProjects,
+                tier: tier.toUpperCase(),
+              })
             : t("projects.quota_exceeded_desc", {
                 used: usedProjects,
                 max: maxProjects,
                 tier: tier.toUpperCase(),
               })
         }
-        requiredTier={tier === "free" ? "starter" : tier === "starter" ? "pro" : "enterprise"}
-        currentTier={tier}
         onUpgradeClick={() => navigate({ to: "/billing" })}
       />
     </PageLayout>

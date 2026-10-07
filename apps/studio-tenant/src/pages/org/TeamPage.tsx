@@ -26,7 +26,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  FeatureUpgradeModal,
 } from "@k2net/ui";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../lib/api-client";
@@ -34,6 +33,7 @@ import { getCurrentOrgSlug } from "../../lib/domain";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 import { TeamInviteWizard } from "../../components/team/TeamInviteWizard";
 import { TenantAuditExplorer } from "../../components/audit";
+import { TenantFeatureUpgradeModal } from "../../components/system/TenantFeatureUpgradeModal";
 import { useTranslation } from "@k2net/i18n";
 
 interface UserProjectRole {
@@ -336,13 +336,11 @@ export function TeamPage() {
         onOpenChange={setInviteModalOpen}
       />
 
-      <FeatureUpgradeModal
+      <TenantFeatureUpgradeModal
         open={upgradeModalOpen}
         onOpenChange={setUpgradeModalOpen}
         featureName={t("users.total_users")}
         featureDescription={t("billing.upgrade_prompt")}
-        requiredTier={tier === "free" ? "starter" : tier === "starter" ? "pro" : "enterprise"}
-        currentTier={tier}
         onUpgradeClick={() => navigate({ to: "/billing" })}
       />
     </div>

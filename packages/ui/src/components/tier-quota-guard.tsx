@@ -49,6 +49,13 @@ export function TierQuotaGuard({
     }
   };
 
+  const targetTierName =
+    requiredTier === "enterprise"
+      ? "Enterprise Core"
+      : requiredTier === "starter"
+      ? "Starter ISP"
+      : "Professional ISP";
+
   if (fallbackVariant === "banner") {
     return (
       <div className={cn("space-y-3", className)}>
@@ -58,9 +65,9 @@ export function TierQuotaGuard({
               <Lock className="h-3.5 w-3.5" />
             </div>
             <div>
-              <p className="text-xs font-semibold">Fitur {featureName} Dibatasi</p>
+              <p className="text-xs font-semibold">{featureName}</p>
               <p className="text-[11px] text-muted-foreground">
-                Tersedia pada paket {requiredTier.toUpperCase()} atau lebih tinggi.
+                {featureDescription || `Available on ${targetTierName} tier and above.`}
               </p>
             </div>
           </div>
@@ -78,10 +85,11 @@ export function TierQuotaGuard({
         <FeatureUpgradeModal
           open={modalOpen}
           onOpenChange={setModalOpen}
-          featureName={featureName}
-          featureDescription={featureDescription}
-          requiredTier={requiredTier}
-          currentTier={currentTier}
+          title={featureName}
+          description={featureDescription}
+          badgeText={`Upgrade to ${targetTierName}`}
+          targetTierTitle={targetTierName}
+          isEnterprise={requiredTier === "enterprise"}
           onUpgradeClick={handleProceedUpgrade}
         />
       </div>
@@ -101,15 +109,14 @@ export function TierQuotaGuard({
         <div className="space-y-1.5 max-w-md">
           <div className="flex items-center justify-center gap-2">
             <h3 className="text-sm font-bold text-foreground">
-              Fitur {featureName} Memerlukan Akses {requiredTier.toUpperCase()}
+              {featureName}
             </h3>
             <Badge variant="outline" className="text-[9px] font-mono uppercase bg-muted text-muted-foreground border-border">
-              {requiredTier.toUpperCase()}
+              {targetTierName}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            {featureDescription ||
-              `Tingkatkan paket organisasi Anda ke ${requiredTier.toUpperCase()} untuk mengaktifkan modul ${featureName} dan memperluas kapasitas jaringan.`}
+            {featureDescription || `Upgrade your subscription to ${targetTierName} to unlock ${featureName}.`}
           </p>
         </div>
 
@@ -121,7 +128,7 @@ export function TierQuotaGuard({
             className="text-xs font-semibold gap-1.5 shadow-xs"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Tingkatkan Paket Langganan
+            Upgrade Plan
           </Button>
         </div>
       </Card>
@@ -129,10 +136,11 @@ export function TierQuotaGuard({
       <FeatureUpgradeModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        featureName={featureName}
-        featureDescription={featureDescription}
-        requiredTier={requiredTier}
-        currentTier={currentTier}
+        title={featureName}
+        description={featureDescription}
+        badgeText={`Upgrade to ${targetTierName}`}
+        targetTierTitle={targetTierName}
+        isEnterprise={requiredTier === "enterprise"}
         onUpgradeClick={handleProceedUpgrade}
       />
     </div>
