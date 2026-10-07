@@ -34,6 +34,32 @@ public interface NetworkNodeRepository extends JpaRepository<NetworkNode, UUID> 
     long countByOrganizationId(UUID organizationId);
     long countByOrganizationIdAndNodeType(UUID organizationId, String nodeType);
 
+    @Query(value = """
+        SELECT COUNT(n.id)
+        FROM network_nodes n
+        LEFT JOIN project_zones z ON n.zone_id = z.id
+        WHERE n.organization_id = :orgId
+          AND n.node_type = 'ODP'
+          AND n.deleted_at IS NULL
+          AND (
+              (z.id IS NOT NULL AND z.stage IN ('CONSTRUCTION', 'LIVE'))
+              OR (z.id IS NULL AND (n.status IS NULL OR n.status NOT IN ('PLANNING', 'DRAFT')))
+          )
+    """, nativeQuery = true)
+    long countBillableOdpsByOrganizationId(@Param("orgId") UUID orgId);
+
+    @Query("SELECT n FROM NetworkNode n WHERE n.zone.id = :zoneId AND n.deletedAt IS NULL")
+    List<NetworkNode> findByZoneId(@Param("zoneId") UUID zoneId);
+
+    @Query(value = """
+        SELECT n.* FROM network_nodes n
+        JOIN project_zones z ON z.id = :zoneId
+        WHERE n.project_id = :projectId
+          AND n.deleted_at IS NULL
+          AND ST_Within(n.geom, z.boundary_geom) = true
+    """, nativeQuery = true)
+    List<NetworkNode> findNodesWithinZoneBoundary(@Param("projectId") UUID projectId, @Param("zoneId") UUID zoneId);
+
     @Query("SELECT DISTINCT n.project.id FROM NetworkNode n WHERE n.id IN :ids AND n.project IS NOT NULL")
     java.util.Set<UUID> findDistinctProjectIdsByIdIn(@Param("ids") List<UUID> ids);
 }

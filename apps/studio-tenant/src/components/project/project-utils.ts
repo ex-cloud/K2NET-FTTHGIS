@@ -13,7 +13,7 @@ export function getProjectStatusInfo(status?: string, t?: (k: string) => string)
   return {
     label: t ? t("projects.status_active") || "ACTIVE" : "ACTIVE",
     shortLabel: "ACTIVE",
-    badgeClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    badgeClass: "bg-primary/10 text-primary border-primary/20",
   };
 }
 

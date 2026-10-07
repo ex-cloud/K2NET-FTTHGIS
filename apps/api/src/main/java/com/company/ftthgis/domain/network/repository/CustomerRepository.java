@@ -23,5 +23,8 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID>, JpaSp
 
     long countByProjectId(UUID projectId);
     
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(c) FROM Customer c WHERE (c.zone.id = :zoneId OR c.odp.zone.id = :zoneId) AND c.deletedAt IS NULL")
+    long countByZoneId(@org.springframework.data.repository.query.Param("zoneId") UUID zoneId);
+
     void deleteByOrganizationId(UUID organizationId);
 }

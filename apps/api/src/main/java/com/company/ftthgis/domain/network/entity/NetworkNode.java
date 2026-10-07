@@ -67,4 +67,8 @@ public abstract class NetworkNode extends BaseEntity {
 
     @Column(name = "node_type", insertable = false, updatable = false)
     private String nodeType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zone_id")
+    private ProjectZone zone;
 }

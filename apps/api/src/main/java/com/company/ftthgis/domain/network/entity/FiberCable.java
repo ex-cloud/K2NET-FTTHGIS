@@ -79,4 +79,8 @@ public class FiberCable extends BaseEntity {
     private Integer speedLimit;
 
     private Boolean oneway;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zone_id")
+    private ProjectZone zone;
 }

@@ -14,11 +14,8 @@ import {
 } from "./logs-utils";
 
 export function getStatusColor(statusNum?: number) {
-  if (!statusNum) return "text-muted-foreground/40";
-  if (statusNum >= 500) return "text-rose-400 font-semibold";
-  if (statusNum >= 400) return "text-amber-400 font-medium";
-  if (statusNum >= 200 && statusNum < 300) return "text-muted-foreground";
-  return "text-muted-foreground/60";
+  if (!statusNum) return "text-muted-foreground/40 font-mono";
+  return "text-foreground font-mono font-medium";
 }
 
 export function normalizeMethodDisplay(method?: string): { display: string; fullMethod: string } {
@@ -37,11 +34,11 @@ export function normalizeMethodDisplay(method?: string): { display: string; full
 
 export function getMethodColor(displayMethod: string) {
   const m = displayMethod.toUpperCase();
-  if (m === "POST" || m === "PUT" || m === "PATCH") return "text-sky-400 font-semibold";
-  if (m === "DELETE") return "text-rose-400 font-semibold";
-  if (m === "GET") return "text-muted-foreground font-medium";
-  if (m === "RPC" || m === "EXEC") return "text-muted-foreground/70 font-semibold";
-  return "text-muted-foreground/60";
+  if (m === "POST" || m === "PUT" || m === "PATCH") return "text-sky-400 font-mono font-semibold";
+  if (m === "DELETE") return "text-rose-400 font-mono font-semibold";
+  if (m === "GET") return "text-muted-foreground font-mono font-medium";
+  if (m === "RPC" || m === "EXEC") return "text-muted-foreground/70 font-mono font-semibold";
+  return "text-muted-foreground/60 font-mono";
 }
 
 export function DateCell({ timestamp }: { timestamp?: string }) {
@@ -57,7 +54,7 @@ export function DateCell({ timestamp }: { timestamp?: string }) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="w-[140px] shrink-0 text-muted-foreground/80 text-[11px] font-mono flex items-center cursor-default outline-none select-none">
+          <span className="w-[140px] shrink-0 text-foreground text-xs font-mono flex items-center cursor-default outline-none select-none">
             {formattedDate}
           </span>
         </TooltipTrigger>
@@ -87,7 +84,7 @@ export function DateCell({ timestamp }: { timestamp?: string }) {
 }
 
 export function SourceCell({ source, logGroup }: { source?: string; logGroup?: string }) {
-  if (!source) return <span className="text-muted-foreground/20 select-none text-xs">—</span>;
+  if (!source) return <span className="text-muted-foreground/20 font-mono select-none text-xs">—</span>;
 
   const groupInfo = logGroup ? LOG_GROUPS[logGroup as keyof typeof LOG_GROUPS] : null;
   const colorClass = groupInfo ? `${groupInfo.color} ${groupInfo.accentBg} border-current/20` : "text-muted-foreground/60 bg-muted/20 border-border/30";
@@ -97,7 +94,7 @@ export function SourceCell({ source, logGroup }: { source?: string; logGroup?: s
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="flex items-center justify-center cursor-default outline-none select-none">
-            {getSourceIcon(source, "w-4 h-4 text-muted-foreground/80 hover:text-foreground transition-colors shrink-0")}
+            {getSourceIcon(source, "w-3.5 h-3.5 text-muted-foreground/80 hover:text-foreground transition-colors shrink-0")}
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs font-mono px-2 py-1.5 bg-popover border border-border text-foreground [&_svg]:!hidden">
@@ -141,7 +138,7 @@ export function StatusCell({
     }
     if (typeof status === "string" && status.trim() && status !== "OK" && status !== "FAIL" && status !== "WARN") {
       return (
-        <span className="font-mono text-xs text-muted-foreground truncate max-w-[48px]">
+        <span className="font-mono text-xs text-foreground truncate max-w-[48px]">
           {status}
         </span>
       );
@@ -170,7 +167,7 @@ export function SeverityBadge({ severity }: { severity: string }) {
   const s = severity.toUpperCase();
   if (s === "CRITICAL") {
     return (
-      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1">
+      <span className="text-xs font-mono font-bold text-rose-500 inline-flex items-center gap-1 truncate">
         <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
         CRITICAL
       </span>
@@ -178,20 +175,20 @@ export function SeverityBadge({ severity }: { severity: string }) {
   }
   if (s === "ERROR") {
     return (
-      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+      <span className="text-xs font-mono font-semibold text-rose-400 truncate block">
         ERROR
       </span>
     );
   }
   if (s === "WARN" || s === "WARNING") {
     return (
-      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+      <span className="text-xs font-mono font-semibold text-amber-400 truncate block">
         WARN
       </span>
     );
   }
   return (
-    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground bg-muted/20 border border-border/30">
+    <span className="text-xs font-mono font-medium text-muted-foreground truncate block">
       INFO
     </span>
   );
@@ -268,30 +265,28 @@ export function ProjectPill({ log }: { log: AuditStreamEntry }) {
 }
 
 export function GroupCell({ logGroup }: { logGroup?: string }) {
-  if (!logGroup) return <span className="text-muted-foreground/20 select-none">—</span>;
+  if (!logGroup) return <span className="text-muted-foreground/20 font-mono select-none text-xs">—</span>;
   const groupInfo = LOG_GROUPS[logGroup as keyof typeof LOG_GROUPS];
   return (
-    <span className="text-muted-foreground/70 font-mono text-[10px] truncate" title={logGroup}>
+    <span className="text-foreground font-mono text-xs truncate block" title={logGroup}>
       {groupInfo?.label ?? logGroup}
     </span>
   );
 }
 
 export function TenantCell({ tenantSlug, tenantName }: { tenantSlug?: string; tenantName?: string }) {
-  if (!tenantSlug && !tenantName) return <span className="text-muted-foreground/20 select-none">—</span>;
+  if (!tenantSlug && !tenantName) return <span className="text-muted-foreground/20 font-mono select-none text-xs">—</span>;
   const isSystem = tenantSlug === "system" || tenantName === "System Core";
   const displayName = isSystem ? "System Core" : (tenantName || tenantSlug);
-  const badgeColor = isSystem 
-    ? "text-violet-400 bg-violet-500/10 border-violet-500/20"
-    : "text-sky-400 bg-sky-500/10 border-sky-500/20";
+  const textColor = isSystem ? "text-violet-400" : "text-sky-400";
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="w-[90px] max-w-[90px] shrink-0 pr-2">
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono border max-w-[84px] truncate cursor-default select-none ${badgeColor}`}>
-              <span className="truncate">{displayName}</span>
+            <span className={`font-mono text-xs font-medium truncate block cursor-default select-none ${textColor}`}>
+              {displayName}
             </span>
           </div>
         </TooltipTrigger>
@@ -307,32 +302,32 @@ export function TenantCell({ tenantSlug, tenantName }: { tenantSlug?: string; te
 }
 
 export function ScopeCell({ scope }: { scope?: string }) {
-  if (!scope) return <span className="text-muted-foreground/20 select-none">—</span>;
+  if (!scope) return <span className="text-muted-foreground/20 font-mono select-none text-xs">—</span>;
   const s = scope.toUpperCase();
   let label = scope;
-  let badgeClass = "text-muted-foreground/70 bg-muted/20 border-border/40";
+  let textColor = "text-muted-foreground font-medium";
 
   if (s === "SYSTEM_CORE" || s === "SYSTEM") {
     label = "SYSTEM";
-    badgeClass = "text-purple-400 bg-purple-500/10 border-purple-500/20";
+    textColor = "text-purple-400 font-semibold";
   } else if (s === "TENANT_ADMIN" || s === "ORGANIZATION") {
     label = "TENANT";
-    badgeClass = "text-sky-400 bg-sky-500/10 border-sky-500/20";
+    textColor = "text-sky-400 font-semibold";
   } else if (s === "PROJECT_WORKSPACE" || s === "PROJECT") {
     label = "PROJECT";
-    badgeClass = "text-amber-400 bg-amber-500/10 border-amber-500/20";
+    textColor = "text-amber-400 font-semibold";
   } else if (s === "NETWORK_GIS" || s === "GIS" || s === "NETWORK") {
     label = "GIS NET";
-    badgeClass = "text-primary bg-primary/10 border-primary/20";
+    textColor = "text-primary font-semibold";
   } else if (s === "BILLING_SUBSCRIPTION" || s === "BILLING") {
     label = "BILLING";
-    badgeClass = "text-indigo-400 bg-indigo-500/10 border-indigo-500/20";
+    textColor = "text-indigo-400 font-semibold";
   }
 
   return (
     <div className="w-[72px] max-w-[72px] shrink-0 pr-2">
-      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-medium border truncate max-w-[68px] select-none ${badgeClass}`} title={`Scope: ${scope}`}>
-        <span className="truncate">{label}</span>
+      <span className={`font-mono text-xs truncate block select-none ${textColor}`} title={`Scope: ${scope}`}>
+        {label}
       </span>
     </div>
   );
@@ -340,7 +335,7 @@ export function ScopeCell({ scope }: { scope?: string }) {
 
 export function ProjectCell({ projectId, projectName }: { projectId?: string; projectName?: string }) {
   const label = projectName || projectId;
-  if (!label) return <span className="text-muted-foreground/20 select-none">—</span>;
+  if (!label) return <span className="text-muted-foreground/20 font-mono select-none text-xs">—</span>;
 
   return (
     <TooltipProvider>
@@ -348,7 +343,7 @@ export function ProjectCell({ projectId, projectName }: { projectId?: string; pr
         <TooltipTrigger asChild>
           <div className="w-[100px] max-w-[100px] shrink-0 pr-2">
             <span
-              className="text-muted-foreground/90 font-mono text-[10px] truncate block cursor-default select-none"
+              className="text-foreground font-mono text-xs truncate block cursor-default select-none"
               title={label}
             >
               {label}
@@ -376,12 +371,23 @@ export function ProjectCell({ projectId, projectName }: { projectId?: string; pr
   );
 }
 
+export function getMethodBadgeClasses(displayMethod: string) {
+  const m = displayMethod.toUpperCase();
+  if (m === "DELETE") return "bg-rose-500/10 text-rose-400 border border-rose-500/20";
+  if (m === "POST") return "bg-sky-500/10 text-sky-400 border border-sky-500/20";
+  if (m === "PUT" || m === "PATCH") return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+  if (m === "GET" || m === "HEAD") return "bg-muted/40 text-muted-foreground border border-border/40";
+  if (m === "EXEC") return "bg-purple-500/10 text-purple-400 border border-purple-500/20";
+  if (m === "RPC") return "bg-teal-500/10 text-teal-400 border border-teal-500/20";
+  return "bg-muted/30 text-muted-foreground/80 border border-border/30";
+}
+
 export function MethodCell({ method }: { method?: string }) {
   const { display, fullMethod } = normalizeMethodDisplay(method);
   if (display === "—") return <span className="text-muted-foreground/20 font-mono text-[10px] select-none">—</span>;
   return (
     <span
-      className={`text-[10px] font-mono truncate block max-w-[48px] ${getMethodColor(display)}`}
+      className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold truncate inline-block ${getMethodBadgeClasses(display)}`}
       title={fullMethod !== display ? `Service Method: ${fullMethod}` : undefined}
     >
       {display}
@@ -404,8 +410,8 @@ export function PathnameCell({
 
   if (!path && !hasMethod) {
     return (
-      <div className="w-[220px] max-w-[220px] shrink-0 font-mono text-[11px] pr-3 flex items-center">
-        <span className="text-muted-foreground/20 select-none">—</span>
+      <div className="w-[230px] max-w-[230px] shrink-0 font-mono text-xs pr-3 flex items-center">
+        <span className="text-muted-foreground/20 font-mono select-none">—</span>
       </div>
     );
   }
@@ -414,15 +420,15 @@ export function PathnameCell({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="w-[220px] max-w-[220px] shrink-0 font-mono text-[11px] overflow-hidden pr-3 flex items-center gap-1.5 cursor-default select-none">
+          <div className="w-[230px] max-w-[230px] shrink-0 font-mono text-xs overflow-hidden pr-3 flex items-center gap-1.5 cursor-default select-none">
             {hasMethod && (
               <span
-                className={`text-[9px] px-1 py-0.2 rounded font-bold shrink-0 uppercase tracking-tight ${getMethodColor(displayMethod)}`}
+                className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold shrink-0 tracking-tight select-none ${getMethodBadgeClasses(displayMethod)}`}
               >
                 {displayMethod}
               </span>
             )}
-            <span className="truncate text-muted-foreground/80 block">
+            <span className="truncate text-foreground/90 font-mono block">
               {path || "—"}
             </span>
           </div>
@@ -435,14 +441,14 @@ export function PathnameCell({
             {hasMethod && (
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground font-semibold">Method:</span>
-                <span className={`font-bold ${getMethodColor(displayMethod)}`}>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${getMethodBadgeClasses(displayMethod)}`}>
                   {fullMethod || displayMethod}
                 </span>
               </div>
             )}
             {path && (
               <div className="space-y-0.5">
-                <div className="text-muted-foreground font-semibold">Path / Resource:</div>
+                <div className="text-muted-foreground font-semibold">Pathname:</div>
                 <div className="text-foreground/90 break-all text-[10px] bg-muted/40 p-1 rounded border border-border/40">
                   {path}
                 </div>
@@ -450,7 +456,7 @@ export function PathnameCell({
             )}
             {targetResource && targetResource !== path && (
               <div className="text-[9px] text-muted-foreground pt-1 border-t border-border/40">
-                Resource: {targetResource}
+                Target Resource: {targetResource}
               </div>
             )}
           </div>

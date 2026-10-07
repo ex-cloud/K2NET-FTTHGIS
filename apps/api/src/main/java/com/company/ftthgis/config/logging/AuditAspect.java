@@ -93,9 +93,6 @@ public class AuditAspect {
                     projectId = rawProj.toString();
                 }
             }
-            if ((projectId == null || projectId.isBlank()) && com.company.ftthgis.config.tenant.TenantContext.getTenantId() != null) {
-                projectId = com.company.ftthgis.config.tenant.TenantContext.getTenantId();
-            }
             String projectName = resolveSpel(ann.projectNameExpression(), ctx, String.class);
 
             if (snapshot != null) {
@@ -254,7 +251,37 @@ public class AuditAspect {
             }
             metadata.put("severity", "FAILED".equals(status) ? "ERROR" : ann.severity());
             metadata.put("status", status);
-            metadata.put("method", sig.getDeclaringType().getSimpleName() + "." + method.getName());
+
+            // Extract HTTP Method & Request URI from active Spring Web Context if available
+            String effectiveMethod = null;
+            String effectivePath = null;
+            try {
+                org.springframework.web.context.request.RequestAttributes reqAttrs =
+                        org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+                if (reqAttrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                    jakarta.servlet.http.HttpServletRequest req = sra.getRequest();
+                    if (req != null) {
+                        effectiveMethod = req.getMethod();
+                        effectivePath = req.getRequestURI();
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            if (effectiveMethod == null || effectiveMethod.isBlank()) {
+                if ("SCHEDULER".equalsIgnoreCase(ann.resourceType()) || ann.action().startsWith("CRON_") || ann.action().startsWith("SCHEDULER_")) {
+                    effectiveMethod = "EXEC";
+                    effectivePath = "/cron/" + (resourceId != null && !resourceId.isBlank() ? resourceId.toLowerCase() : "job");
+                } else {
+                    effectiveMethod = "RPC";
+                    effectivePath = sig.getDeclaringType().getSimpleName() + "." + method.getName();
+                }
+            }
+
+            metadata.put("method", effectiveMethod);
+            if (effectivePath != null && !effectivePath.isBlank()) {
+                metadata.put("pathname", effectivePath);
+            }
+            metadata.put("handlerMethod", sig.getDeclaringType().getSimpleName() + "." + method.getName());
 
             // Dual-identity audit tracking during active impersonation session
             if (AuditContext.isImpersonating()) {

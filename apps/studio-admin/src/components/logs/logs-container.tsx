@@ -84,7 +84,6 @@ const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   severity: false,
   group: false,
   project: false,
-  method: false,
 };
 
 const LOG_TABLE_COLUMNS: LogsTableColumn[] = [
@@ -96,9 +95,8 @@ const LOG_TABLE_COLUMNS: LogsTableColumn[] = [
   { id: "scope", label: "Scope", width: "w-[72px]" },
   { id: "project", label: "Project", width: "w-[100px]" },
   { id: "group", label: "Group", width: "w-[80px]" },
-  { id: "pathname", label: "Path / Resource", width: "w-[220px]" },
-  { id: "method", label: "Method", width: "w-[48px]" },
-  { id: "message", label: "Event Message & Actor", width: "flex-1 min-w-0" },
+  { id: "pathname", label: "Pathname", width: "w-[230px]" },
+  { id: "message", label: "Event Message", width: "flex-1 min-w-0" },
 ];
 
 function LogsContainerContent() {

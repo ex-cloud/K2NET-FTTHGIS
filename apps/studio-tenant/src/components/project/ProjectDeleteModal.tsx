@@ -137,7 +137,7 @@ export function ProjectDeleteModal({
                 </span>
               </div>
               <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 flex flex-col items-center justify-center text-center">
-                <Server className="w-4 h-4 text-emerald-500 mb-1" />
+                <Server className="w-4 h-4 text-primary mb-1" />
                 <span className="text-sm font-mono font-bold text-foreground">
                   {project.oltCount || 1}
                 </span>

@@ -54,12 +54,14 @@ class AuditAspectTest {
         auditAspect = new AuditAspect(auditLoggingService, userRepository, projectRepository, organizationRepository);
         SecurityContextHolder.clearContext();
         AuditContext.clear();
+        com.company.ftthgis.config.tenant.TenantContext.clear();
     }
 
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
         AuditContext.clear();
+        com.company.ftthgis.config.tenant.TenantContext.clear();
     }
 
     // Dummy service methods for reflection simulation

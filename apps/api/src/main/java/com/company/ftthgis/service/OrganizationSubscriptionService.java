@@ -50,12 +50,12 @@ public class OrganizationSubscriptionService {
         int baseProjects = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 6;
         int maxProjects = getConfigInt(org, "max_projects", getConfigInt(org, "max_olts", baseProjects));
 
-        // Real count of ODPs from database
+        // Real count of billable ODPs from database (excluding PLANNING stage zones)
         long realUsedOdps = 0;
         try {
-            realUsedOdps = networkNodeRepository.countByOrganizationIdAndNodeType(org.getId(), "ODP");
+            realUsedOdps = networkNodeRepository.countBillableOdpsByOrganizationId(org.getId());
         } catch (Exception e) {
-            log.warn("Could not count ODP nodes for org {}: {}", slug, e.getMessage());
+            log.warn("Could not count billable ODP nodes for org {}: {}", slug, e.getMessage());
         }
 
         int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 2500;

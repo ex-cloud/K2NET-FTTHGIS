@@ -24,7 +24,6 @@ import {
   TenantCell,
   ScopeCell,
   ProjectCell,
-  MethodCell,
   PathnameCell,
 } from "./logs-row-cells";
 
@@ -130,7 +129,7 @@ function MessageCell({
   const isBenchmark = isBenchmarkEvent(log);
 
   return (
-    <div className="flex-1 min-w-0 font-mono text-[11px] flex items-center justify-between gap-3">
+    <div className="flex-1 min-w-0 font-mono text-xs flex items-center justify-between gap-3">
       <div className="flex items-center gap-1.5 min-w-0 truncate">
         {hasHashChain && (
           <span
@@ -143,7 +142,7 @@ function MessageCell({
         {isBenchmark && <BenchmarkPill />}
         {(log.isImpersonated || log.realActorId) && <ImpersonationPill log={log} />}
         {showProjectPill && <ProjectPill log={log} />}
-        <span className="truncate text-foreground/90 font-mono" title={log.message || log.action}>
+        <span className="truncate text-foreground font-mono" title={log.message || log.action}>
           {getEventMessageDisplay(log)}
         </span>
       </div>
@@ -245,7 +244,7 @@ function RowOptionalCells({
       )}
 
       {visibleCols.has("group") && (
-        <div className="w-[80px] shrink-0 font-mono text-[10px] truncate">
+        <div className="w-[80px] shrink-0 font-mono text-xs truncate">
           <GroupCell logGroup={log.logGroup} />
         </div>
       )}
@@ -256,12 +255,6 @@ function RowOptionalCells({
           targetResource={log.targetResource}
           method={log.method}
         />
-      )}
-
-      {visibleCols.has("method") && (
-        <div className="w-[48px] shrink-0">
-          <MethodCell method={log.method} />
-        </div>
       )}
     </>
   );
@@ -293,7 +286,7 @@ export function LogsRowItem({
     <UniversalContextMenu groups={buildContextMenuGroups(log, isSelected, onSelect, t)}>
       <div
         onClick={onSelect}
-        className={`flex items-center px-4 py-1.5 font-mono text-[11px] transition-colors cursor-pointer group ${rowBgClass}`}
+        className={`flex items-center px-4 py-1.5 font-mono text-xs transition-colors cursor-pointer group ${rowBgClass}`}
       >
         <RowLeadingSlot
           isRowSelected={isRowSelected}

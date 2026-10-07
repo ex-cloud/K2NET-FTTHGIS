@@ -98,16 +98,38 @@ export function resolveLogGroup(logType: string, _resourceType?: string, _metada
   return "CORE";
 }
 
+const KNOWN_HTTP_VERBS: ReadonlySet<string> = new Set([
+  "GET",
+  "POST",
+  "PUT",
+  "DELETE",
+  "PATCH",
+  "HEAD",
+  "OPTIONS",
+  "EXEC",
+  "RPC",
+]);
+
+const POST_ACTION_KEYWORDS = ["CREATE", "ADD", "POST", "INVITE"] as const;
+const PUT_ACTION_KEYWORDS = ["UPDATE", "EDIT", "MODIFY", "PUT", "PATCH", "SAVE", "SYNC", "ARCHIVE"] as const;
+const DELETE_ACTION_KEYWORDS = ["DELETE", "REMOVE", "PURGE", "DROP"] as const;
+const EXEC_ACTION_KEYWORDS = ["CRON_", "SCHEDULER_", "BACKUP_", "JOB_"] as const;
+
 export function resolveHttpMethod(metadataMethod?: string, actionStr?: string): string | undefined {
-  if (metadataMethod) return metadataMethod;
+  if (metadataMethod && metadataMethod.trim() !== "") {
+    const trimmed = metadataMethod.trim();
+    const upper = trimmed.toUpperCase();
+    return KNOWN_HTTP_VERBS.has(upper) ? upper : trimmed;
+  }
   if (!actionStr) return undefined;
   if (actionStr.includes(":")) return actionStr.split(":")[0];
 
   const act = actionStr.toUpperCase();
-  if (act.includes("CREATE") || act.includes("ADD") || act.includes("POST")) return "POST";
-  if (act.includes("UPDATE") || act.includes("EDIT") || act.includes("MODIFY") || act.includes("PUT") || act.includes("PATCH")) return "PUT";
-  if (act.includes("DELETE") || act.includes("REMOVE")) return "DELETE";
-  return "GET";
+  if (POST_ACTION_KEYWORDS.some((kw) => act.includes(kw))) return "POST";
+  if (PUT_ACTION_KEYWORDS.some((kw) => act.includes(kw))) return "PUT";
+  if (DELETE_ACTION_KEYWORDS.some((kw) => act.includes(kw))) return "DELETE";
+  if (EXEC_ACTION_KEYWORDS.some((kw) => act.includes(kw))) return "EXEC";
+  return undefined;
 }
 
 export function humanizeAction(actionStr?: string): string {
@@ -203,8 +225,10 @@ export function resolveAuditStatus(
 }
 
 export function resolveAuditPathname(e: Record<string, unknown>, metadata: Record<string, unknown>, actionStr?: string): string | undefined {
-  if (typeof e.resourceId === "string") return e.resourceId;
-  if (typeof metadata.pathname === "string") return metadata.pathname;
+  if (typeof metadata.pathname === "string" && metadata.pathname.trim() !== "") return metadata.pathname.trim();
+  if (typeof metadata.requestUri === "string" && metadata.requestUri.trim() !== "") return metadata.requestUri.trim();
+  if (typeof metadata.path === "string" && metadata.path.trim() !== "") return metadata.path.trim();
+  if (typeof e.resourceId === "string" && e.resourceId.trim() !== "") return e.resourceId.trim();
   if (actionStr?.includes(":")) return actionStr.split(":")[1];
   return undefined;
 }

@@ -74,17 +74,12 @@ export const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
   }),
   columnHelper.accessor("pathname", {
     id: "pathname",
-    meta: { label: "Path / Resource" },
-    enableHiding: true,
-  }),
-  columnHelper.accessor("method", {
-    id: "method",
-    meta: { label: "Method" },
+    meta: { label: "Pathname" },
     enableHiding: true,
   }),
   columnHelper.accessor("message", {
     id: "message",
-    meta: { label: "Event Message & Actor" },
+    meta: { label: "Event Message" },
     enableHiding: true,
   }),
 ];

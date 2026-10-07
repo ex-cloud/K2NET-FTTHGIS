@@ -135,7 +135,7 @@ export function ProjectGeneralSettings() {
                   className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
                     isArchived
                       ? "bg-muted text-muted-foreground border-border/80"
-                      : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                      : "bg-primary/10 text-primary border-primary/20"
                   }`}
                 >
                   {isArchived ? t("projects.status_archived") : t("projects.status_active")}

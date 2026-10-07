@@ -42,6 +42,21 @@ public interface FiberCableRepository extends JpaRepository<FiberCable, UUID> {
         void deleteByOrganizationId(UUID organizationId);
         long countByOrganizationId(UUID organizationId);
 
+        @Query("SELECT c FROM FiberCable c WHERE c.zone.id = :zoneId AND c.deletedAt IS NULL")
+        List<FiberCable> findByZoneId(@Param("zoneId") UUID zoneId);
+
+        @Query("SELECT SUM(c.lengthMeters) FROM FiberCable c WHERE c.zone.id = :zoneId AND c.deletedAt IS NULL")
+        Double sumLengthByZoneId(@Param("zoneId") UUID zoneId);
+
+        @Query(value = """
+            SELECT c.* FROM network_edges c
+            JOIN project_zones z ON z.id = :zoneId
+            WHERE c.project_id = :projectId
+              AND c.deleted_at IS NULL
+              AND ST_Intersects(c.geom, z.boundary_geom) = true
+        """, nativeQuery = true)
+        List<FiberCable> findCablesWithinZoneBoundary(@Param("projectId") UUID projectId, @Param("zoneId") UUID zoneId);
+
         @Query("SELECT DISTINCT c.project.id FROM FiberCable c WHERE c.id IN :ids AND c.project IS NOT NULL")
         java.util.Set<UUID> findDistinctProjectIdsByIdIn(@Param("ids") java.util.List<UUID> ids);
 }

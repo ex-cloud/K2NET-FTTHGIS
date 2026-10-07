@@ -20,6 +20,7 @@ public class ProjectQuotaService {
 
     private final ProjectRepository projectRepository;
     private final OrganizationConfigRepository organizationConfigRepository;
+    private final com.company.ftthgis.domain.network.repository.NetworkNodeRepository networkNodeRepository;
 
     /**
      * Hitung batas maksimum proyek aktif (Active Projects Limit)
@@ -49,6 +50,15 @@ public class ProjectQuotaService {
     }
 
     /**
+     * Hitung batas maksimum ODP aktif (Billable ODP Limit)
+     */
+    public int getEffectiveMaxOdps(Organization org) {
+        SubscriptionPlan plan = org.getSubscriptionPlan();
+        int basePlanLimit = (plan != null && plan.getMaxOdps() != null) ? plan.getMaxOdps() : 2500;
+        return getConfigInt(org, "max_odps", basePlanLimit);
+    }
+
+    /**
      * Hitung jumlah proyek aktif riil di database
      */
     public long getUsedActiveProjects(UUID orgId) {
@@ -60,6 +70,13 @@ public class ProjectQuotaService {
      */
     public long getUsedArchivedProjects(UUID orgId) {
         return projectRepository.countByOrganizationIdAndStatus(orgId, Project.ProjectStatus.ARCHIVED);
+    }
+
+    /**
+     * Hitung jumlah ODP billable riil di database
+     */
+    public long getUsedBillableOdps(UUID orgId) {
+        return networkNodeRepository.countBillableOdpsByOrganizationId(orgId);
     }
 
     /**
@@ -79,6 +96,31 @@ public class ProjectQuotaService {
                     "Quota exceeded: Your current plan allows up to " + effectiveMax +
                             " active FTTH projects. Please archive an existing project or upgrade your plan.",
                     (int) currentActive,
+                    effectiveMax
+            );
+        }
+    }
+
+    /**
+     * Validasi alokasi ODP baru (saat promosi zona dari PLANNING ke CONSTRUCTION/LIVE)
+     * Melempar QuotaExceededException jika kuota ODP terlampaui.
+     */
+    @Transactional(readOnly = true)
+    public void assertCanAllocateOdps(Organization org, int additionalOdps) {
+        if (additionalOdps <= 0) return;
+        int effectiveMax = getEffectiveMaxOdps(org);
+        long currentUsed = getUsedBillableOdps(org.getId());
+        long projectedUsed = currentUsed + additionalOdps;
+
+        if (projectedUsed > effectiveMax) {
+            log.warn("🚫 ODP Quota Exceeded: Org {} cannot allocate {} additional ODPs ({}/{} max)",
+                    org.getName(), additionalOdps, projectedUsed, effectiveMax);
+            throw new QuotaExceededException(
+                    "ODP_QUOTA_EXCEEDED",
+                    "Zone promotion rejected: Promoting this zone requires " + additionalOdps +
+                            " ODP slots, but your organization only has " + (effectiveMax - currentUsed) +
+                            " remaining slots (" + currentUsed + "/" + effectiveMax + " used). Please upgrade your subscription plan.",
+                    (int) projectedUsed,
                     effectiveMax
             );
         }
