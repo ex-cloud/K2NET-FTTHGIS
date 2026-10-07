@@ -198,7 +198,7 @@ export function ProjectsPage() {
     setDeleteConfirmProject(targetProject);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (_reason?: string, _notes?: string) => {
     if (!deleteConfirmProject) return;
     setIsProcessingAction(true);
     try {

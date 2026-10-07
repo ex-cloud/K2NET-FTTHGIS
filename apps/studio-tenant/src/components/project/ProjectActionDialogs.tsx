@@ -1,5 +1,5 @@
 import * as React from "react";
-import { RotateCcw, Archive, Trash2, Loader2 } from "lucide-react";
+import { RotateCcw, Archive, Loader2 } from "lucide-react";
 import {
   Button,
   Dialog,
@@ -11,6 +11,7 @@ import {
 } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { type Project } from "../../hooks/useProjects";
+import { ProjectDeleteModal } from "./ProjectDeleteModal";
 
 export interface ProjectActionDialogsProps {
   restoreProject: Project | null;
@@ -22,7 +23,7 @@ export interface ProjectActionDialogsProps {
   onCloseDelete: () => void;
   onConfirmRestore: () => void;
   onConfirmArchive: () => void;
-  onConfirmDelete: () => void;
+  onConfirmDelete: (reason?: string, notes?: string) => Promise<void> | void;
 }
 
 export function ProjectActionDialogs({
@@ -145,50 +146,14 @@ export function ProjectActionDialogs({
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Project Danger Confirmation Dialog ───────────────────── */}
-      <Dialog open={!!deleteProject} onOpenChange={(open) => !open && onCloseDelete()}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="text-left space-y-1.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/15 text-destructive mb-1">
-              <Trash2 className="h-5 w-5" />
-            </div>
-            <DialogTitle className="text-base font-bold text-foreground">
-              {t("projects.delete_confirm_title")}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              {deleteProject &&
-                t("projects.delete_confirm_desc", {
-                  name: deleteProject.name,
-                  code: deleteProject.code,
-                })}
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="flex items-center justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onCloseDelete}
-              disabled={isProcessing}
-              className="text-xs"
-            >
-              {t("common.cancel") || "Cancel"}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={onConfirmDelete}
-              disabled={isProcessing}
-              className="text-xs font-semibold gap-1.5"
-            >
-              {isProcessing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {t("projects.delete_project")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ── Enterprise Project Delete Modal (Impact Summary, Spatial Backup, Reason & Code Confirmation) ─ */}
+      <ProjectDeleteModal
+        project={deleteProject}
+        open={!!deleteProject}
+        onOpenChange={(open) => !open && onCloseDelete()}
+        onConfirmDelete={onConfirmDelete}
+        isDeleting={isProcessing}
+      />
     </>
   );
 }
