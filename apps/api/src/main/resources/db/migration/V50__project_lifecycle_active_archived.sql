@@ -20,8 +20,9 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS archived_by VARCHAR(255);
 ALTER TABLE projects_aud ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP;
 ALTER TABLE projects_aud ADD COLUMN IF NOT EXISTS archived_by VARCHAR(255);
 
--- 3. Tambahkan kolom max_archived_projects pada subscription_plans dan perbarui data seed
+-- 3. Tambahkan kolom max_archived_projects pada subscription_plans & subscription_plans_aud
 ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS max_archived_projects INT DEFAULT 1;
+ALTER TABLE subscription_plans_aud ADD COLUMN IF NOT EXISTS max_archived_projects INT DEFAULT 1;
 
 UPDATE subscription_plans SET max_archived_projects = 1 WHERE name = 'FREE';
 UPDATE subscription_plans SET max_archived_projects = 2 WHERE name = 'STARTER';
