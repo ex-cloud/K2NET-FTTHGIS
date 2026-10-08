@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Dot, LogOut } from "lucide-react";
+import { Dot, LogOut, Globe, Clock, Check, Search } from "lucide-react";
 import { cn } from "../../utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../avatar";
 import { Button } from "../button";
@@ -10,8 +10,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "../dropdown-menu";
 import { AppVersionBadge } from "./app-version-badge";
+import {
+  COMMON_TIMEZONES,
+  getBrowserTimezone,
+} from "../../lib/timezone";
 
 export interface UserNavUser {
   name?: string | null;
@@ -29,6 +36,10 @@ export interface UserNavLabels {
   themeLight?: string;
   modeTitle?: string;
   modeMono?: string;
+  languageTitle?: string;
+  timezoneTitle?: string;
+  autoDetect?: string;
+  searchTimezone?: string;
   signOut?: string;
 }
 
@@ -38,6 +49,10 @@ export interface UserNavShellProps extends React.HTMLAttributes<HTMLDivElement> 
   onSetTheme?: (theme: "system" | "dark" | "light") => void;
   isMono?: boolean;
   onToggleMono?: () => void;
+  locale?: string;
+  onSetLocale?: (locale: "en" | "id") => void;
+  selectedTimezone?: string;
+  onTimezoneChange?: (tz: string) => void;
   onLogout?: () => void | Promise<void>;
   portalName?: string;
   labels?: UserNavLabels;
@@ -97,6 +112,156 @@ function UserNavHeader({ user }: { user?: UserNavUser }) {
         )}
       </div>
     </DropdownMenuLabel>
+  );
+}
+
+function UserNavLanguageSection({
+  locale,
+  onSetLocale,
+  labels,
+}: {
+  locale?: string;
+  onSetLocale?: (locale: "en" | "id") => void;
+  labels?: UserNavLabels;
+}) {
+  if (!onSetLocale) return null;
+  const current = locale === "id" ? "ID" : "EN";
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Globe className="size-3.5 text-muted-foreground shrink-0" />
+          <span>{labels?.languageTitle || "Language"}</span>
+        </div>
+        <span className="text-[11px] text-muted-foreground/80 font-mono font-semibold mr-1 uppercase">
+          {current}
+        </span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="w-48 bg-popover border-border p-1">
+        <DropdownMenuItem
+          className="text-xs focus:bg-accent cursor-pointer flex items-center justify-between"
+          onClick={() => onSetLocale("en")}
+        >
+          <div className="flex items-center gap-2">
+            <span>🇬🇧</span>
+            <span>English (EN)</span>
+          </div>
+          {locale === "en" && <Check className="size-3.5 text-primary" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-xs focus:bg-accent cursor-pointer flex items-center justify-between"
+          onClick={() => onSetLocale("id")}
+        >
+          <div className="flex items-center gap-2">
+            <span>🇮🇩</span>
+            <span>Bahasa Indonesia (ID)</span>
+          </div>
+          {locale === "id" && <Check className="size-3.5 text-primary" />}
+        </DropdownMenuItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  );
+}
+
+function UserNavTimezoneSection({
+  selectedTimezone = "auto",
+  onTimezoneChange,
+  labels,
+}: {
+  selectedTimezone?: string;
+  onTimezoneChange?: (tz: string) => void;
+  labels?: UserNavLabels;
+}) {
+  if (!onTimezoneChange) return null;
+  const [search, setSearch] = React.useState("");
+  const detectedTz = React.useMemo(() => getBrowserTimezone(), []);
+
+  const filteredTimezones = React.useMemo(() => {
+    if (!search.trim()) return COMMON_TIMEZONES;
+    const q = search.toLowerCase();
+    return COMMON_TIMEZONES.filter(
+      (tz) =>
+        tz.label.toLowerCase().includes(q) ||
+        tz.value.toLowerCase().includes(q) ||
+        tz.region.toLowerCase().includes(q) ||
+        tz.offset.toLowerCase().includes(q)
+    );
+  }, [search]);
+
+  const displayValue = selectedTimezone === "auto" ? `Auto (${detectedTz})` : selectedTimezone;
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Clock className="size-3.5 text-muted-foreground shrink-0" />
+          <span>{labels?.timezoneTitle || "Timezone"}</span>
+        </div>
+        <span className="text-[11px] text-muted-foreground/80 truncate max-w-[100px] mr-1 text-right">
+          {displayValue}
+        </span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="w-72 bg-popover border-border p-1.5 space-y-1">
+        {/* Search Input */}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/40 border border-border/60 text-xs">
+          <Search className="size-3 text-muted-foreground shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={labels?.searchTimezone || "Search timezone..."}
+            className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/60 outline-none text-xs"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </div>
+
+        {/* Auto Detect Option */}
+        {!search && (
+          <>
+            <DropdownMenuItem
+              className="text-xs focus:bg-accent cursor-pointer flex items-center justify-between py-1.5"
+              onClick={() => onTimezoneChange("auto")}
+            >
+              <div className="flex flex-col text-left">
+                <span className="font-semibold text-foreground">
+                  {labels?.autoDetect || "Auto detect"}
+                </span>
+                <span className="text-[10px] text-muted-foreground">{detectedTz}</span>
+              </div>
+              {selectedTimezone === "auto" && <Check className="size-3.5 text-primary shrink-0" />}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-border/60" />
+          </>
+        )}
+
+        {/* List of Timezones */}
+        <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
+          {filteredTimezones.map((tz) => {
+            const isSelected = selectedTimezone === tz.value;
+            return (
+              <DropdownMenuItem
+                key={tz.value}
+                className="text-xs focus:bg-accent cursor-pointer flex items-center justify-between py-1 px-2"
+                onClick={() => onTimezoneChange(tz.value)}
+              >
+                <div className="flex flex-col text-left min-w-0 pr-2">
+                  <span className="text-foreground truncate font-medium">{tz.label}</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">{tz.offset} • {tz.value}</span>
+                </div>
+                {isSelected && <Check className="size-3.5 text-primary shrink-0" />}
+              </DropdownMenuItem>
+            );
+          })}
+          {filteredTimezones.length === 0 && (
+            <div className="px-2 py-3 text-center text-xs text-muted-foreground">
+              No timezone found
+            </div>
+          )}
+        </div>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   );
 }
 
@@ -179,6 +344,10 @@ export function UserNavShell({
   onSetTheme,
   isMono,
   onToggleMono,
+  locale,
+  onSetLocale,
+  selectedTimezone,
+  onTimezoneChange,
   onLogout,
   portalName = "Portal",
   labels,
@@ -230,6 +399,20 @@ export function UserNavShell({
           </>
         )}
 
+        {/* Preferences Section: Language & Timezone */}
+        {(onSetLocale || onTimezoneChange) && (
+          <>
+            <DropdownMenuSeparator className="bg-border" />
+            <UserNavLanguageSection locale={locale} onSetLocale={onSetLocale} labels={labels} />
+            <UserNavTimezoneSection
+              selectedTimezone={selectedTimezone}
+              onTimezoneChange={onTimezoneChange}
+              labels={labels}
+            />
+          </>
+        )}
+
+        {/* Appearance Section: Theme & Mode */}
         <UserNavThemeSection theme={theme} onSetTheme={onSetTheme} labels={labels} />
         <UserNavModeSection isMono={isMono} onToggleMono={onToggleMono} labels={labels} />
 

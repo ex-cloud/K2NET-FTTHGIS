@@ -1,13 +1,12 @@
 import * as React from "react";
 import { Outlet } from "@tanstack/react-router";
 import { useAuth } from "@k2net/auth/client";
-import { ShieldAlert, Sparkles, Search, HelpCircle, MessageSquare } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import {
   Button,
-  Separator,
-  ActionTooltip,
   ImpersonationBanner,
   AppHeaderShell,
+  AppHeaderActions,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -16,7 +15,7 @@ import {
   DialogFooter,
   SidebarModeProvider,
 } from "@k2net/ui";
-import { LanguageSwitcher, useTranslation } from "@k2net/i18n";
+import { useTranslation } from "@k2net/i18n";
 import { useImpersonationSession } from "../../lib/useImpersonationSession";
 import { TenantCommandPalette } from "../TenantCommandPalette";
 import { TenantAiAssistant } from "../TenantAiAssistant";
@@ -138,70 +137,22 @@ function TenantOrgLayoutContent() {
           </>
         }
         rightSection={
-          <>
-            {/* Desktop Search / Command Palette Trigger (⌘K) */}
-            <ActionTooltip label={t("common.search_commands")} shortcut="⌘K" side="bottom">
-              <button
-                type="button"
-                onClick={() => setCommandPaletteOpen(true)}
-                className="hidden md:flex items-center justify-between w-48 h-7 px-2.5 text-xs rounded-md border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground shadow-xs cursor-pointer mr-1"
-              >
-                <div className="flex items-center gap-1.5">
-                  <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <span className="truncate">{t("common.search_commands")}</span>
-                </div>
-                <kbd className="pointer-events-none inline-flex h-4.5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground shrink-0">
-                  ⌘K
-                </kbd>
-              </button>
-            </ActionTooltip>
-
-            {/* Ask AI Copilot Button (Icon-only with interactive tooltip) */}
-            <ActionTooltip label={t("common.ask_ai_copilot")} shortcut="Ctrl+J" side="bottom">
-              <button
-                type="button"
-                onClick={() => setAiOpen(true)}
-                className="hidden md:flex items-center justify-center h-7 w-7 rounded-md border border-border/80 bg-muted/30 hover:bg-muted/60 text-primary hover:text-primary transition-all shadow-xs cursor-pointer mr-0.5"
-                aria-label={t("common.ask_ai_copilot")}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-              </button>
-            </ActionTooltip>
-
-            {/* Desktop Help & Feedback Buttons */}
-            <div className="hidden md:flex items-center gap-0.5">
-              <ActionTooltip label={t("common.help_support")} shortcut="?" side="bottom">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setHelpOpen(true)}
-                  className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
-                  aria-label={t("common.help_support")}
-                >
-                  <HelpCircle className="h-3.5 w-3.5" />
-                </Button>
-              </ActionTooltip>
-              <ActionTooltip label={t("common.notifications")} shortcut="M" side="bottom">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setNotifOpen(true)}
-                  className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
-                  aria-label={t("common.notifications")}
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                </Button>
-              </ActionTooltip>
-            </div>
-
-            {/* Language Switcher */}
-            <div className="hidden sm:flex items-center">
-              <LanguageSwitcher variant="compact" />
-            </div>
-
-            <Separator orientation="vertical" className="hidden md:block mx-0.5 h-4 bg-border/60" />
-            <TenantUserNav />
-          </>
+          <AppHeaderActions
+            onOpenSearch={() => setCommandPaletteOpen(true)}
+            searchLabel={t("common.search_commands")}
+            searchShortcut="⌘K"
+            searchWidthClass="w-48"
+            onOpenAi={() => setAiOpen(true)}
+            aiLabel={t("common.ask_ai_copilot")}
+            aiShortcut="Ctrl+J"
+            onOpenHelp={() => setHelpOpen(true)}
+            helpLabel={t("common.help_support")}
+            helpShortcut="?"
+            onOpenNotifications={() => setNotifOpen(true)}
+            notificationsLabel={t("common.notifications")}
+            notificationsShortcut="M"
+            userNavSlot={<TenantUserNav />}
+          />
         }
       />
 

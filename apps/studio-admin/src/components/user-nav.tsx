@@ -1,7 +1,7 @@
 import * as React from "react";
 import { UserNavShell, DropdownMenuGroup, DropdownMenuItem } from "@k2net/ui";
 import { ShieldCheck } from "lucide-react";
-import { useTranslation } from "@k2net/i18n";
+import { useTranslation, type SupportedLocale } from "@k2net/i18n";
 import { useTheme } from "@/lib/navigation-compat";
 import { signOut, useSession } from "@/lib/auth-compat";
 import { getSystemUrl, parseDomain } from "@/lib/domain";
@@ -41,6 +41,26 @@ function useMonoMode(mounted: boolean) {
   return { isMono, toggleMono };
 }
 
+function useTimezonePreference(mounted: boolean) {
+  const [selectedTimezone, setSelectedTimezone] = React.useState<string>("auto");
+
+  React.useEffect(() => {
+    if (!mounted) return;
+    const saved = localStorage.getItem("k2net_timezone_preference") || "auto";
+    setSelectedTimezone(saved);
+  }, [mounted]);
+
+  const setTimezone = (tz: string) => {
+    setSelectedTimezone(tz);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("k2net_timezone_preference", tz);
+      window.dispatchEvent(new CustomEvent("k2net-timezone-changed", { detail: tz }));
+    }
+  };
+
+  return { selectedTimezone, setTimezone };
+}
+
 function shouldShowSystemBackLink(roles?: string[], isSystemSubdomain?: boolean): boolean {
   if (!roles?.includes("super_admin")) return false;
   if (typeof window === "undefined") return false;
@@ -49,7 +69,7 @@ function shouldShowSystemBackLink(roles?: string[], isSystemSubdomain?: boolean)
 }
 
 export function UserNav() {
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const { data: session, status } = useSession();
   const { setTheme, theme } = useTheme();
 
@@ -60,6 +80,7 @@ export function UserNav() {
   );
 
   const { isMono, toggleMono } = useMonoMode(mounted);
+  const { selectedTimezone, setTimezone } = useTimezonePreference(mounted);
   const user = session?.user;
 
   const isSystemSubdomain = React.useMemo(() => {
@@ -94,6 +115,10 @@ export function UserNav() {
       onSetTheme={setTheme}
       isMono={isMono}
       onToggleMono={toggleMono}
+      locale={locale}
+      onSetLocale={(l) => setLocale(l as SupportedLocale)}
+      selectedTimezone={selectedTimezone}
+      onTimezoneChange={setTimezone}
       onLogout={handleLogout}
       labels={{
         themeTitle: t("nav.theme"),
@@ -102,6 +127,10 @@ export function UserNav() {
         themeLight: t("common.theme_light"),
         modeTitle: t("nav.mode"),
         modeMono: t("common.mode_mono"),
+        languageTitle: t("nav.language"),
+        timezoneTitle: t("nav.timezone"),
+        autoDetect: t("nav.auto_detect"),
+        searchTimezone: t("nav.search_timezone"),
         signOut: t("nav.sign_out"),
       }}
       navigationSlot={

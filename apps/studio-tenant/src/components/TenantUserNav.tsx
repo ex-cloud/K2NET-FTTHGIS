@@ -8,7 +8,7 @@ import {
 } from "@k2net/ui";
 import { ShieldAlert, Building, Users, CreditCard } from "lucide-react";
 import { useAuth } from "@k2net/auth/client";
-import { useTranslation } from "@k2net/i18n";
+import { useTranslation, type SupportedLocale } from "@k2net/i18n";
 import { useTenantInfo } from "../hooks/useTenantInfo";
 import { useImpersonationSession } from "../lib/useImpersonationSession";
 
@@ -47,8 +47,28 @@ function useMonoMode(mounted: boolean) {
   return { isMono, toggleMono };
 }
 
+function useTimezonePreference(mounted: boolean) {
+  const [selectedTimezone, setSelectedTimezone] = React.useState<string>("auto");
+
+  React.useEffect(() => {
+    if (!mounted) return;
+    const saved = localStorage.getItem("k2net_timezone_preference") || "auto";
+    setSelectedTimezone(saved);
+  }, [mounted]);
+
+  const setTimezone = (tz: string) => {
+    setSelectedTimezone(tz);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("k2net_timezone_preference", tz);
+      window.dispatchEvent(new CustomEvent("k2net-timezone-changed", { detail: tz }));
+    }
+  };
+
+  return { selectedTimezone, setTimezone };
+}
+
 export function TenantUserNav() {
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const { user, logout, initialized } = useAuth();
   const { setTheme, resolvedTheme } = useTheme();
   const { organizationName } = useTenantInfo();
@@ -62,6 +82,7 @@ export function TenantUserNav() {
   );
 
   const { isMono, toggleMono } = useMonoMode(mounted);
+  const { selectedTimezone, setTimezone } = useTimezonePreference(mounted);
 
   const handleLogout = async () => {
     if (typeof window !== "undefined") {
@@ -96,6 +117,10 @@ export function TenantUserNav() {
       onSetTheme={setTheme}
       isMono={isMono}
       onToggleMono={toggleMono}
+      locale={locale}
+      onSetLocale={(l) => setLocale(l as SupportedLocale)}
+      selectedTimezone={selectedTimezone}
+      onTimezoneChange={setTimezone}
       onLogout={handleLogout}
       labels={{
         themeTitle: t("nav.theme"),
@@ -104,6 +129,10 @@ export function TenantUserNav() {
         themeLight: t("common.theme_light"),
         modeTitle: t("nav.mode"),
         modeMono: t("common.mode_mono"),
+        languageTitle: t("nav.language"),
+        timezoneTitle: t("nav.timezone"),
+        autoDetect: t("nav.auto_detect"),
+        searchTimezone: t("nav.search_timezone"),
         signOut: t("nav.sign_out"),
       }}
       navigationSlot={
