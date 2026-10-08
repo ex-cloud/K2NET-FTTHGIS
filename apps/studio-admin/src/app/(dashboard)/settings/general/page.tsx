@@ -3,8 +3,7 @@ import { Badge, Button, Input, PageLayout, Switch, ActionTooltip } from "@k2net/
 import { Sliders, Save, RefreshCw, HardDrive } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
-import { SettingsSection } from "../components/settings-section";
-import { SettingsFormRow } from "../components/settings-form-row";
+import { SettingsSection, SettingsFormRow } from "@/components/settings";
 import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 
@@ -157,6 +156,7 @@ export default function SettingsGeneralPage() {
           <SettingsSection
             title={t("settings.general.maintenance_lock_title")}
             description={t("settings.general.maintenance_lock_desc")}
+            divider={false}
           >
             <SettingsFormRow
               label={t("settings.general.maintenance_mode_label")}

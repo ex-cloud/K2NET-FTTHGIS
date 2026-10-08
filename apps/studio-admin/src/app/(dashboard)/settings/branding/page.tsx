@@ -5,9 +5,11 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
 import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
-import { BrandingLogoSection } from "../components/branding-logo-section";
-import { BrandingThemeSection } from "../components/branding-theme-section";
-import { BrandingInterfaceSection } from "../components/branding-interface-section";
+import {
+  BrandingLogoSection,
+  BrandingThemeSection,
+  BrandingInterfaceSection,
+} from "@/components/settings";
 
 export default function SettingsBrandingPage() {
   const { t } = useTranslation();

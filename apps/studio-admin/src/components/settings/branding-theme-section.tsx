@@ -5,7 +5,7 @@ import { SettingsSection } from "./settings-section";
 import { SettingsFormRow } from "./settings-form-row";
 import { useTranslation } from "@k2net/i18n";
 
-interface BrandingThemeSectionProps {
+export interface BrandingThemeSectionProps {
   brandAccentColor: string;
   onAccentColorChange: (val: string) => void;
   logoUrl: string;

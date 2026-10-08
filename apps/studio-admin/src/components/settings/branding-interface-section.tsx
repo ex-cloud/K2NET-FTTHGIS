@@ -4,7 +4,7 @@ import { SettingsSection } from "./settings-section";
 import { SettingsFormRow } from "./settings-form-row";
 import { useTranslation } from "@k2net/i18n";
 
-interface BrandingInterfaceSectionProps {
+export interface BrandingInterfaceSectionProps {
   fontSize: string;
   onFontSizeChange: (val: string) => void;
   usePointerCursors: boolean;
@@ -31,6 +31,7 @@ export function BrandingInterfaceSection({
     <SettingsSection
       title={t("settings.branding.interface_title")}
       description={t("settings.branding.interface_desc")}
+      divider={false}
     >
       {/* App Sidebar Customization */}
       <SettingsFormRow

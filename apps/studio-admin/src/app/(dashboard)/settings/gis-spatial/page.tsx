@@ -3,8 +3,7 @@ import { Badge, Button, Input, PageLayout, ActionTooltip } from "@k2net/ui";
 import { MapPin, Save, RefreshCw, Map as MapIcon } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
-import { SettingsSection } from "../components/settings-section";
-import { SettingsFormRow } from "../components/settings-form-row";
+import { SettingsSection, SettingsFormRow } from "@/components/settings";
 import { MapCoordinatePicker } from "@/components/dashboard/map-coordinate-picker";
 import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
@@ -159,6 +158,7 @@ export default function SettingsGisPage() {
           <SettingsSection
             title={t("settings.gis.tile_engine_title")}
             description={t("settings.gis.tile_engine_desc")}
+            divider={false}
           >
             <SettingsFormRow
               label={t("settings.gis.zoom_level_label")}

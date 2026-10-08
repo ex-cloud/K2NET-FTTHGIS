@@ -77,13 +77,17 @@ export interface PlatformSystemInfoData {
 }
 
 function parseGitInfo(raw: Partial<GitInfo> | undefined, fallbackCommit: string): GitInfo {
+  const isCommitValid = (c?: string) => Boolean(c && c !== "unknown" && c !== "N/A" && c !== "—");
+  const commitShort = isCommitValid(raw?.commitShort) ? raw!.commitShort! : fallbackCommit;
+  const commitFull = isCommitValid(raw?.commitFull) ? raw!.commitFull! : fallbackCommit;
+
   return {
-    branch: raw?.branch || "main",
-    commitShort: raw?.commitShort || fallbackCommit,
-    commitFull: raw?.commitFull || fallbackCommit,
-    commitMessage: raw?.commitMessage || "—",
-    commitTime: raw?.commitTime || "—",
-    commitAuthor: raw?.commitAuthor || "—",
+    branch: raw?.branch && raw.branch !== "unknown" ? raw.branch : "main",
+    commitShort,
+    commitFull,
+    commitMessage: raw?.commitMessage && raw.commitMessage !== "N/A" ? raw.commitMessage : `Release commit ${commitShort}`,
+    commitTime: raw?.commitTime && raw.commitTime !== "N/A" ? raw.commitTime : "—",
+    commitAuthor: raw?.commitAuthor && raw.commitAuthor !== "N/A" ? raw.commitAuthor : "—",
   };
 }
 

@@ -5,8 +5,7 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
 import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
-import { SmtpCredentialsSection } from "../components/smtp-credentials-section";
-import { SmtpTestCard } from "../components/smtp-test-card";
+import { SmtpCredentialsSection, SmtpTestCard } from "@/components/settings";
 
 export default function SettingsSmtpMailPage() {
   const { t } = useTranslation();

@@ -5,7 +5,7 @@ import { SettingsSection } from "./settings-section";
 import { SettingsFormRow } from "./settings-form-row";
 import { useTranslation } from "@k2net/i18n";
 
-interface SmtpCredentialsSectionProps {
+export interface SmtpCredentialsSectionProps {
   smtpHost: string;
   onSmtpHostChange: (val: string) => void;
   smtpPort: string;
@@ -92,7 +92,7 @@ export function SmtpCredentialsSection({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
           >
             {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           </button>

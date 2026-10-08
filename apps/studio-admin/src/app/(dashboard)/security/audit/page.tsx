@@ -3,8 +3,7 @@ import { Badge, Button, Input, PageLayout, ActionTooltip } from "@k2net/ui";
 import { History, Save, RefreshCw, Database, Clock, Play, CheckCircle2, XCircle } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSecurityWrapper } from "@/components/page-guards/system-security-wrapper";
-import { SettingsSection } from "../../settings/components/settings-section";
-import { SettingsFormRow } from "../../settings/components/settings-form-row";
+import { SettingsSection, SettingsFormRow } from "@/components/settings";
 import { toast } from "sonner";
 
 function AuditHeader({

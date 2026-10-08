@@ -112,7 +112,7 @@
   "description": "Description",
   "brand_green": "K2NET Emerald (Default Accent)",
   "brand_blue": "Enterprise Blue (Alternative Accent)",
-  "mode_mono": "Monochrome Slate (Neutral Accent)",
+  "mode_mono": "Monochrome",
   "saved_successfully": "Settings saved successfully!",
   "capacity": "Capacity",
   "drag_drop_file": "Drag & drop file here or click to browse",
