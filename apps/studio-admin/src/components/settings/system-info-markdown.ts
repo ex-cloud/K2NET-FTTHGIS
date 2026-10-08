@@ -12,7 +12,7 @@ function formatOverview(info?: PlatformSystemInfoData, g?: GitInfo, m?: Migratio
   const patchLevel = info?.patchInfo?.patchLevel ?? 0;
   const api = info?.apiVersion || "/api/v1";
   const flyway = m?.version ? `Flyway V${m.version}` : "Flyway V51";
-  const commit = info?.gitCommitHash || "08604d7f";
+  const commit = info?.gitCommitHash || info?.gitInfo?.commitShort || "—";
   const branch = g?.branch || "main";
 
   return [

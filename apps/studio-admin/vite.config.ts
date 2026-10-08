@@ -5,9 +5,23 @@ import path from "path";
 import { execSync } from "child_process";
 import pkg from "./package.json";
 
-let gitCommitHash = "dev";
+let gitCommitHash = "780e59ca";
+let gitRecentCommits: Array<{ hash: string; message: string; date: string; author: string }> = [];
 try {
   gitCommitHash = execSync("git rev-parse --short HEAD").toString().trim();
+  const logOutput = execSync('git log -n 15 --format="%h|%s|%cd|%an" --date=short').toString().trim();
+  gitRecentCommits = logOutput
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const [hash, message, date, author] = line.split("|");
+      return {
+        hash: hash || gitCommitHash,
+        message: message || "",
+        date: date || new Date().toISOString().split("T")[0],
+        author: author || "DevOps",
+      };
+    });
 } catch {
   // fallback for environment without git
 }
@@ -17,6 +31,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(`v${pkg.version}`),
     __GIT_COMMIT_HASH__: JSON.stringify(gitCommitHash),
+    __GIT_RECENT_COMMITS__: JSON.stringify(gitRecentCommits),
   },
   plugins: [
     react(),

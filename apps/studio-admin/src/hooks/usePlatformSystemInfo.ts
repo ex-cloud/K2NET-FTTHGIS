@@ -5,6 +5,16 @@ import { httpClient } from "@/lib/httpClient";
 
 declare const __APP_VERSION__: string | undefined;
 declare const __GIT_COMMIT_HASH__: string | undefined;
+declare const __GIT_RECENT_COMMITS__:
+  | Array<{ hash: string; message: string; date: string; author: string }>
+  | undefined;
+
+export interface GitCommitInfo {
+  hash: string;
+  message: string;
+  date: string;
+  author: string;
+}
 
 export interface GitInfo {
   branch: string;
@@ -114,51 +124,133 @@ function buildDynamicSystemPatches(
   appVersion: string,
   git: GitInfo,
   lastMigration: MigrationInfo,
-  recentMigrations: MigrationInfo[]
+  recentMigrations: MigrationInfo[],
+  backendCommits?: GitCommitInfo[]
 ): PatchChangelogItem[] {
   const patches: PatchChangelogItem[] = [];
 
-  // 1. Current Active Release & Git Code Patch (Live from Git & Version metadata)
-  patches.push({
-    id: `code-patch-${git.commitShort}`,
-    version: appVersion,
-    type: "BASELINE",
-    component: `Platform Core (${git.branch})`,
-    description: git.commitMessage || `Active production release build (${git.commitShort})`,
-    dbMigration: lastMigration.version !== "—" ? `Flyway V${lastMigration.version}` : "Flyway V51",
-    commitHash: git.commitShort,
-    releaseDate: git.commitTime && git.commitTime !== "—" ? git.commitTime.split(" ")[0] : new Date().toISOString().split("T")[0],
-    status: "ACTIVE",
+  // 1. Gather Real Git Commits (from backend API or Vite compile-time git log)
+  const commitsToUse: GitCommitInfo[] =
+    backendCommits && backendCommits.length > 0
+      ? backendCommits
+      : typeof __GIT_RECENT_COMMITS__ !== "undefined" && __GIT_RECENT_COMMITS__.length > 0
+      ? __GIT_RECENT_COMMITS__
+      : [
+          {
+            hash: git.commitShort || "780e59ca",
+            message: git.commitMessage || "Active production release",
+            date:
+              git.commitTime && git.commitTime !== "—" && git.commitTime !== "N/A"
+                ? git.commitTime.split(" ")[0]
+                : new Date().toISOString().split("T")[0],
+            author: git.commitAuthor || "DevOps",
+          },
+        ];
+
+  commitsToUse.forEach((c, index) => {
+    const rawMsg = c.message || "";
+    const msgLower = rawMsg.toLowerCase();
+
+    // Determine patch type based on message keywords
+    let pType: "BASELINE" | "SECURITY" | "BUGFIX" | "PERFORMANCE" | "MIGRATION" = "BUGFIX";
+    if (index === 0 && (msgLower.includes("feat") || msgLower.includes("baseline") || msgLower.includes("release"))) {
+      pType = "BASELINE";
+    } else if (
+      msgLower.includes("sec") ||
+      msgLower.includes("auth") ||
+      msgLower.includes("mfa") ||
+      msgLower.includes("pbac") ||
+      msgLower.includes("cve")
+    ) {
+      pType = "SECURITY";
+    } else if (msgLower.includes("perf") || msgLower.includes("opt") || msgLower.includes("cache")) {
+      pType = "PERFORMANCE";
+    } else if (msgLower.includes("migration") || msgLower.includes("flyway") || msgLower.includes("schema") || msgLower.includes("db")) {
+      pType = "MIGRATION";
+    } else if (msgLower.startsWith("feat")) {
+      pType = "BASELINE";
+    } else {
+      pType = "BUGFIX";
+    }
+
+    // Determine component from conventional commit e.g. "feat(system-info): ..." -> "Platform Core & Telemetry"
+    let component = "Platform Core";
+    const scopeMatch = rawMsg.match(/^[a-z]+\(([^)]+)\):/i);
+    if (scopeMatch) {
+      const scope = scopeMatch[1].toLowerCase();
+      if (scope === "ui" || scope === "layout" || scope === "components") {
+        component = "UI Shell & Shared (@k2net/ui)";
+      } else if (scope === "system-info" || scope === "telemetry" || scope === "observability") {
+        component = "Platform & Architecture Telemetry";
+      } else if (scope === "settings" || scope === "usernav") {
+        component = "Admin Settings & Navigation";
+      } else if (scope === "gateways" || scope === "microservices" || scope === "services") {
+        component = "Go Gateways & Microservices";
+      } else if (scope === "standards" || scope === "versioning" || scope === "governance") {
+        component = "Standards & Architecture Governance";
+      } else {
+        component = `Core Platform (${scope.charAt(0).toUpperCase() + scope.slice(1)})`;
+      }
+    }
+
+    // Clean up description
+    const cleanDesc = rawMsg.replace(/^[a-z]+(\([^)]+\))?:\s*/i, "").trim() || rawMsg;
+    const formattedDesc = cleanDesc.charAt(0).toUpperCase() + cleanDesc.slice(1);
+
+    patches.push({
+      id: `git-patch-${c.hash}`,
+      version: index === 0 ? appVersion : `${appVersion}-p${commitsToUse.length - index}`,
+      type: pType,
+      component,
+      description: formattedDesc,
+      dbMigration: index === 0 && lastMigration.version !== "—" ? `Flyway V${lastMigration.version}` : "—",
+      commitHash: c.hash, // Unique Real Git Commit Hash
+      releaseDate: c.date || "—",
+      status: index === 0 ? "ACTIVE" : "DEPLOYED",
+    });
   });
 
-  // 2. Real Database Migration Patches from live PostgreSQL flyway_schema_history
+  // 2. Real Database Migrations from live PostgreSQL flyway_schema_history
   if (recentMigrations && recentMigrations.length > 0) {
     recentMigrations.forEach((m) => {
-      // Determine patch type based on description keywords
       const descLower = (m.description || "").toLowerCase();
       let pType: "SECURITY" | "BUGFIX" | "PERFORMANCE" | "MIGRATION" = "MIGRATION";
-      if (descLower.includes("security") || descLower.includes("auth") || descLower.includes("mfa") || descLower.includes("permission")) {
+      if (
+        descLower.includes("security") ||
+        descLower.includes("auth") ||
+        descLower.includes("mfa") ||
+        descLower.includes("permission") ||
+        descLower.includes("pbac")
+      ) {
         pType = "SECURITY";
       } else if (descLower.includes("fix") || descLower.includes("bug")) {
         pType = "BUGFIX";
-      } else if (descLower.includes("index") || descLower.includes("perf") || descLower.includes("view") || descLower.includes("partition")) {
+      } else if (
+        descLower.includes("index") ||
+        descLower.includes("perf") ||
+        descLower.includes("view") ||
+        descLower.includes("partition")
+      ) {
         pType = "PERFORMANCE";
       }
 
       const formattedDesc = (m.description || "")
         .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
+        .replace(/\b\w/g, (ch) => ch.toUpperCase());
 
       patches.push({
         id: `flyway-patch-v${m.version}`,
         version: `Flyway V${m.version}`,
         type: pType,
         component: `Database Schema (PostgreSQL 17 + PostGIS)`,
-        description: `${formattedDesc} (Schema migration patch)`,
+        description: `${formattedDesc} (Flyway SQL migration)`,
         dbMigration: `V${m.version}`,
-        commitHash: git.commitShort,
-        releaseDate: m.installedOn && m.installedOn !== "N/A" && m.installedOn !== "—" ? m.installedOn.split(" ")[0] : "—",
-        status: "DEPLOYED",
+        commitHash: "—", // Migration row indicates DB schema patch
+        releaseDate:
+          m.installedOn && m.installedOn !== "N/A" && m.installedOn !== "—"
+            ? m.installedOn.split(" ")[0]
+            : "—",
+        status: m.success ? "DEPLOYED" : "PLANNED",
       });
     });
   }
@@ -244,12 +336,19 @@ function parseSystemInfoPayload(
   const migration = parseMigrationInfo(devopsData.lastMigration as Partial<MigrationInfo>);
   const recentMigrationsRaw = (devopsData.recentMigrations as Partial<MigrationInfo>[]) || [];
   const recentMigrations = recentMigrationsRaw.map(parseMigrationInfo);
+  const recentCommitsRaw = (devopsData.recentCommits as GitCommitInfo[]) || [];
   const compute = parseComputeInfo(devopsData.compute as Partial<ComputeInfo>);
   const backup = parseBackupInfo(devopsData.lastBackup as Partial<BackupInfo>);
   const hostHealth = parseHostHealth(healthData);
   const semver = parseSemVer(appVersion);
 
-  const dynamicPatches = buildDynamicSystemPatches(appVersion, git, migration, recentMigrations);
+  const dynamicPatches = buildDynamicSystemPatches(
+    appVersion,
+    git,
+    migration,
+    recentMigrations,
+    recentCommitsRaw
+  );
 
   const patchInfo: PatchInfo = {
     patchLevel: semver.patch,

@@ -16,7 +16,7 @@ import { usePlatformSystemInfo } from "@/hooks/usePlatformSystemInfo";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
 import {
   SettingsSection,
-  CoreIdentityCards,
+  SystemStatusStrip,
   BackendStackCards,
   LiveTelemetryCards,
   SystemPatchesChangelogCard,
@@ -46,14 +46,14 @@ export default function SettingsSystemInfoPage() {
     a.download = `k2net-system-spec-${info.appVersion}-${info.gitCommitHash}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("System specification exported as JSON!");
+    toast.success(t("settings.system_info.toast_exported_json"));
   };
 
   const handleCopyMarkdown = () => {
     const md = generateSystemMarkdown(info);
     navigator.clipboard.writeText(md);
     setCopiedMd(true);
-    toast.success("System specification copied as Markdown!");
+    toast.success(t("settings.system_info.toast_copied_md"));
     setTimeout(() => setCopiedMd(false), 2000);
   };
 
@@ -62,80 +62,88 @@ export default function SettingsSystemInfoPage() {
       <PageLayout variant="workspace" spaceY="space-y-6">
         <TooltipProvider delayDuration={0}>
           {/* Header Section */}
-          <div className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
-                  {t("settings.system_info.badge")}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  • {t("settings.system_info.badge_subtitle")}
-                </span>
+          <div className="flex flex-col gap-4 border-b border-border pb-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
+                    {t("settings.system_info.badge")}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    • {t("settings.system_info.badge_subtitle")}
+                  </span>
+                </div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+                  <Cpu className="size-6 text-primary" />{" "}
+                  {t("settings.system_info.title")}
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  {t("settings.system_info_subtitle")}
+                </p>
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-                <Cpu className="w-6 h-6 text-primary" />{" "}
-                {t("settings.system_info.title")}
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                {t("settings.system_info_subtitle")}
-              </p>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <ActionTooltip
+                  label={t("settings.system_info.copy_markdown_tooltip")}
+                  shortcut="M"
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyMarkdown}
+                    className="border-border hover:bg-muted text-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
+                  >
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    <span>
+                      {copiedMd
+                        ? t("settings.system_info.copied_badge")
+                        : t("settings.system_info.copy_markdown_btn")}
+                    </span>
+                  </Button>
+                </ActionTooltip>
+
+                <ActionTooltip
+                  label={t("settings.system_info.export_json_tooltip")}
+                  shortcut="E"
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportJSON}
+                    disabled={loading}
+                    className="border-border hover:bg-muted text-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
+                  >
+                    <ExternalLink className="size-3.5 text-muted-foreground" />
+                    <span>{t("settings.system_info.export_json_btn")}</span>
+                  </Button>
+                </ActionTooltip>
+
+                <ActionTooltip label={t("common.reload")} shortcut="R">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refresh()}
+                    disabled={loading || refreshing}
+                    className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
+                  >
+                    <RefreshCw
+                      className={`size-3.5 ${
+                        loading || refreshing ? "animate-spin" : ""
+                      }`}
+                    />
+                    <span>{t("settings.system_info.reload_btn")}</span>
+                  </Button>
+                </ActionTooltip>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <ActionTooltip label="Copy System Spec as Markdown" shortcut="M">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyMarkdown}
-                  className="border-border hover:bg-muted text-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
-                >
-                  <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>{copiedMd ? "Copied!" : "Copy Markdown"}</span>
-                </Button>
-              </ActionTooltip>
-
-              <ActionTooltip label="Export Diagnostic Specification" shortcut="E">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportJSON}
-                  disabled={loading}
-                  className="border-border hover:bg-muted text-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
-                >
-                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>JSON Spec</span>
-                </Button>
-              </ActionTooltip>
-
-              <ActionTooltip label={t("common.reload")} shortcut="R">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refresh()}
-                  disabled={loading || refreshing}
-                  className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
-                >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 ${loading || refreshing ? "animate-spin" : ""}`}
-                  />
-                  <span>{t("common.reload")}</span>
-                </Button>
-              </ActionTooltip>
-            </div>
+            {/* Single-Row System Status Strip directly in Header */}
+            <SystemStatusStrip info={info} loading={loading} />
           </div>
 
           {/* 2-Column Split Layout Sections (Keterangan di kiri, Data di kanan) */}
           <div className="space-y-8 pb-16">
-            {/* Section 1: Core System Identity & Versions */}
-            <SettingsSection
-              title={t("settings.system_info.core_spec_title")}
-              description={t("settings.system_info.core_spec_desc")}
-              noCardWrapper
-            >
-              <CoreIdentityCards info={info} loading={loading} />
-            </SettingsSection>
-
-            {/* Section 2: Backend & Database Infrastructure */}
+            {/* Section 1: Backend & Database Infrastructure */}
             <SettingsSection
               title={t("settings.system_info.backend_stack_title")}
               description={t("settings.system_info.backend_stack_desc")}
@@ -144,7 +152,7 @@ export default function SettingsSystemInfoPage() {
               <BackendStackCards />
             </SettingsSection>
 
-            {/* Section 3: Live Runtime Telemetry & Health */}
+            {/* Section 2: Live Runtime Telemetry & Health */}
             <SettingsSection
               title={t("settings.system_info.live_telemetry_title")}
               description={t("settings.system_info.live_telemetry_desc")}
@@ -153,7 +161,7 @@ export default function SettingsSystemInfoPage() {
               <LiveTelemetryCards info={info} loading={loading} />
             </SettingsSection>
 
-            {/* Section 4: System Patches & Release Changelog */}
+            {/* Section 3: System Patches & Release Changelog */}
             <SettingsSection
               title={t("settings.system_info.patches_changelog_title")}
               description={t("settings.system_info.patches_changelog_desc")}
@@ -168,3 +176,4 @@ export default function SettingsSystemInfoPage() {
     </SystemSettingsWrapper>
   );
 }
+
