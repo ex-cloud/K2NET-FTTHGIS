@@ -208,6 +208,9 @@ const AiGraphPage = lazyWithRetry(() =>
 const SettingsGeneralPage = lazyWithRetry(() =>
   import("./app/(dashboard)/settings/general/page").then((m) => ({ default: m.default }))
 );
+const SettingsSystemInfoPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/settings/system-info/page").then((m) => ({ default: m.default }))
+);
 const SettingsBrandingPage = lazyWithRetry(() =>
   import("./app/(dashboard)/settings/branding/page").then((m) => ({ default: m.default }))
 );
@@ -445,6 +448,7 @@ const aiGraphRoute = createRoute({ getParentRoute: () => authenticatedLayoutRout
 // Settings
 const settingsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings", component: () => <Navigate to="/settings/general" /> });
 const settingsGeneralRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/general", component: () => <Lazy><SettingsGeneralPage /></Lazy> });
+const settingsSystemInfoRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/system-info", component: () => <Lazy><SettingsSystemInfoPage /></Lazy> });
 const settingsBrandingRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/branding", component: () => <Lazy><SettingsBrandingPage /></Lazy> });
 const settingsSmtpRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/smtp-mail", component: () => <Lazy><SettingsSmtpPage /></Lazy> });
 const settingsGisSpatialRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/gis-spatial", component: () => <Lazy><SettingsGisSpatialPage /></Lazy> });
@@ -488,7 +492,7 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   logsRoute,
   tasksRoute, tasksNewRoute, tasksIdRoute, tasksProjectsRoute, tasksProjectIdRoute,
   aiRoute, aiAddRoute, aiConfigRoute, aiTemplatesRoute, aiPromptsRoute, aiSimulatorRoute, aiGraphRoute,
-  settingsRedirectRoute, settingsGeneralRoute, settingsBrandingRoute, settingsSmtpRoute, settingsGisSpatialRoute,
+  settingsRedirectRoute, settingsGeneralRoute, settingsSystemInfoRoute, settingsBrandingRoute, settingsSmtpRoute, settingsGisSpatialRoute,
   // System
   systemTrashRoute, trashRedirectRoute,
   assets3dRoute,

@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   useTheme,
+  AppVersionBadge,
 } from "@k2net/ui";
 import { Dot, ShieldAlert, Building, Users, CreditCard, LogOut } from "lucide-react";
 import { useAuth } from "@k2net/auth/client";
@@ -20,26 +21,19 @@ import { useTranslation } from "@k2net/i18n";
 import { useTenantInfo } from "../hooks/useTenantInfo";
 import { useImpersonationSession } from "../lib/useImpersonationSession";
 
-function useThemeCustomizations(mounted: boolean) {
+function useMonoMode(mounted: boolean) {
   const [isMono, setIsMono] = React.useState(false);
-  const [brandTheme, setBrandTheme] = React.useState<"green" | "blue">("green");
 
   React.useEffect(() => {
     if (!mounted) return;
     const savedMono = localStorage.getItem("theme-mono") === "true";
     setIsMono(savedMono);
 
-    const savedBrand = (localStorage.getItem("brand-theme") as "green" | "blue") || "green";
-    setBrandTheme(savedBrand);
-
     if (savedMono) {
       document.documentElement.classList.add("mono");
     } else {
       document.documentElement.classList.remove("mono");
     }
-
-    document.documentElement.classList.remove("brand-green", "brand-blue");
-    document.documentElement.classList.add(`brand-${savedBrand}`);
   }, [mounted]);
 
   React.useEffect(() => {
@@ -51,12 +45,6 @@ function useThemeCustomizations(mounted: boolean) {
     }
   }, [isMono, mounted]);
 
-  React.useEffect(() => {
-    if (!mounted) return;
-    document.documentElement.classList.remove("brand-green", "brand-blue");
-    document.documentElement.classList.add(`brand-${brandTheme}`);
-  }, [brandTheme, mounted]);
-
   const toggleMono = () => {
     const newState = !isMono;
     setIsMono(newState);
@@ -65,74 +53,22 @@ function useThemeCustomizations(mounted: boolean) {
     }
   };
 
-  const handleBrandChange = (newBrand: "green" | "blue") => {
-    setBrandTheme(newBrand);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("brand-theme", newBrand);
-    }
-  };
-
-  return { isMono, brandTheme, toggleMono, handleBrandChange };
-}
-
-function UserNavBrandSection({
-  brandTheme,
-  onBrandChange,
-}: {
-  brandTheme: "green" | "blue";
-  onBrandChange: (brand: "green" | "blue") => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <>
-      <DropdownMenuSeparator className="bg-border" />
-      <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
-        {t("nav.brand_style")}
-      </DropdownMenuLabel>
-      <DropdownMenuItem
-        className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium"
-        onClick={() => onBrandChange("green")}
-      >
-        <div className="flex items-center gap-2">
-          <div className="flex h-3.5 w-3.5 items-center justify-center">
-            {brandTheme === "green" && <Dot className="size-8 text-primary" />}
-          </div>
-          <span>Version 1 (Green)</span>
-        </div>
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium"
-        onClick={() => onBrandChange("blue")}
-      >
-        <div className="flex items-center gap-2">
-          <div className="flex h-3.5 w-3.5 items-center justify-center">
-            {brandTheme === "blue" && <Dot className="size-8 text-primary" />}
-          </div>
-          <span>Version 2 (Blue)</span>
-        </div>
-      </DropdownMenuItem>
-    </>
-  );
+  return { isMono, toggleMono };
 }
 
 function UserNavThemeSection({
   theme,
-  isMono,
   onSetTheme,
-  onToggleMono,
 }: {
   theme?: string;
-  isMono: boolean;
   onSetTheme: (theme: "system" | "dark" | "light") => void;
-  onToggleMono: () => void;
 }) {
   const { t } = useTranslation();
 
   const themeLabels: Record<string, string> = {
-    system: t("common.system_mode"),
-    dark: t("common.dark_mode"),
-    light: t("common.light_mode"),
+    system: t("common.theme_system"),
+    dark: t("common.theme_dark"),
+    light: t("common.theme_light"),
   };
 
   return (
@@ -155,6 +91,21 @@ function UserNavThemeSection({
           </div>
         </DropdownMenuItem>
       ))}
+    </>
+  );
+}
+
+function UserNavModeSection({
+  isMono,
+  onToggleMono,
+}: {
+  isMono: boolean;
+  onToggleMono: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <>
       <DropdownMenuSeparator className="bg-border" />
       <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
         {t("nav.mode")}
@@ -167,7 +118,7 @@ function UserNavThemeSection({
           <div className="flex h-3.5 w-3.5 items-center justify-center">
             {isMono && <Dot className="size-8 text-primary" />}
           </div>
-          <span>Mono</span>
+          <span>{t("common.mode_mono")}</span>
         </div>
       </DropdownMenuItem>
     </>
@@ -188,7 +139,7 @@ export function TenantUserNav() {
     () => false
   );
 
-  const { isMono, brandTheme, toggleMono, handleBrandChange } = useThemeCustomizations(mounted);
+  const { isMono, toggleMono } = useMonoMode(mounted);
 
   const handleLogout = async () => {
     if (typeof window !== "undefined") {
@@ -292,11 +243,13 @@ export function TenantUserNav() {
           </>
         )}
 
-        <UserNavBrandSection brandTheme={brandTheme} onBrandChange={handleBrandChange} />
         <UserNavThemeSection
           theme={resolvedTheme}
-          isMono={isMono}
           onSetTheme={setTheme}
+        />
+
+        <UserNavModeSection
+          isMono={isMono}
           onToggleMono={toggleMono}
         />
 
@@ -308,6 +261,12 @@ export function TenantUserNav() {
           <LogOut className="size-3.5" />
           <span>{t("nav.sign_out")}</span>
         </DropdownMenuItem>
+
+        {/* Standardized Version Badge Footer */}
+        <div className="pt-2 mt-1 border-t border-border/80 px-2.5 pb-1 flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground/60 font-mono select-none">Platform</span>
+          <AppVersionBadge portalName="Tenant" />
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

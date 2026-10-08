@@ -145,8 +145,30 @@
   "sso_integration_desc": "Integrated login with Active Directory / Keycloak tenant realm.",
   "issuer_url_label": "Issuer URL",
   "api_secret_label": "Tenant API Secret Key",
-  "api_key_copied": "API Key copied to clipboard",
   "audit_trail_org_title": "Organization Compliance Audit Trail",
   "audit_mfa_change_event": "MFA configuration changed by Administrator",
-  "audit_active_session": "Time: Active Session"
+  "audit_active_session": "Time: Active Session",
+  "system_info_title": "Platform & System Information",
+  "system_info_subtitle": "Enterprise architectural specification, runtime versions, Flyway DB migrations, and ingress telemetry.",
+  "system_info": {
+    "title": "Platform & System Information",
+    "badge": "Architecture Matrix",
+    "badge_subtitle": "Enterprise Telemetry & Spec",
+    "core_spec_title": "Core System Identity & Versions",
+    "core_spec_desc": "Global SemVer release, active Git commit hash, and REST API namespace specifications.",
+    "backend_stack_title": "Backend & Database Infrastructure",
+    "backend_stack_desc": "Spring Boot runtime, PostGIS database clustering, Keycloak IAM, and Go gateways.",
+    "live_telemetry_title": "Live Runtime Telemetry & Health",
+    "live_telemetry_desc": "Real-time JVM heap allocation, process uptime, and database backup status.",
+    "platform_version": "Platform Version",
+    "api_version": "REST API Namespace",
+    "db_schema": "Database Migrations",
+    "git_commit": "Active Git Commit",
+    "edge_ingress": "Edge Gateway Ingress",
+    "storage_cluster": "Object Storage Engine",
+    "jvm_memory": "JVM Heap Allocation",
+    "uptime": "System Uptime",
+    "cpu_cores": "Available CPU Cores",
+    "last_backup": "Disaster Recovery Backup"
+  }
 }

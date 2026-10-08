@@ -145,8 +145,30 @@
   "sso_integration_desc": "Login terintegrasi dengan active directory / Keycloak realm tenant Anda.",
   "issuer_url_label": "Issuer URL",
   "api_secret_label": "Tenant API Secret Key",
-  "api_key_copied": "API Key disalin ke clipboard",
   "audit_trail_org_title": "Rekam Jejak Kepatuhan Organisasi",
   "audit_mfa_change_event": "Perubahan konfigurasi MFA oleh Administrator",
-  "audit_active_session": "Waktu: Sesi Aktif"
+  "audit_active_session": "Waktu: Sesi Aktif",
+  "system_info_title": "Informasi Platform & Sistem",
+  "system_info_subtitle": "Spesifikasi arsitektur enterprise, versi runtime, migrasi database Flyway, dan telemetri ingress.",
+  "system_info": {
+    "title": "Informasi Platform & Sistem",
+    "badge": "Matriks Arsitektur",
+    "badge_subtitle": "Telemetri & Spesifikasi Enterprise",
+    "core_spec_title": "Identitas & Versi Utama Sistem",
+    "core_spec_desc": "Rilis SemVer global, commit hash Git aktif, dan spesifikasi namespace REST API.",
+    "backend_stack_title": "Infrastruktur Backend & Database",
+    "backend_stack_desc": "Runtime Spring Boot, klaster database PostGIS, IAM Keycloak, dan gateway Go.",
+    "live_telemetry_title": "Telemetri & Kesehatan Runtime Langsung",
+    "live_telemetry_desc": "Alokasi memori heap JVM real-time, uptime proses, dan status cadangan database.",
+    "platform_version": "Versi Platform",
+    "api_version": "Namespace REST API",
+    "db_schema": "Migrasi Database",
+    "git_commit": "Commit Git Aktif",
+    "edge_ingress": "Ingress Edge Gateway",
+    "storage_cluster": "Mesin Object Storage",
+    "jvm_memory": "Alokasi Heap JVM",
+    "uptime": "Uptime Sistem",
+    "cpu_cores": "Core CPU Tersedia",
+    "last_backup": "Cadangan Disaster Recovery"
+  }
 }

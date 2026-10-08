@@ -312,6 +312,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         requiredPermission: "system.settings.manage",
         items: [
           { title: "General Settings", translationKey: "nav.general_settings", url: "/settings/general", icon: "Sliders", shortcut: "S then G", requiredPermission: "system.settings.manage" },
+          { title: "Platform & System Info", translationKey: "nav.system_info", url: "/settings/system-info", icon: "Cpu", shortcut: "S then I", requiredPermission: "system.settings.manage" },
           { title: "GIS & Spatial Map", translationKey: "nav.gis_spatial_map", url: "/settings/gis-spatial", icon: "MapPin", shortcut: "S then M", requiredPermission: "system.settings.manage" },
           { title: "Branding & Whitelabel", translationKey: "nav.branding_whitelabel", url: "/settings/branding", icon: "Palette", shortcut: "S then B", requiredPermission: "system.settings.manage" },
           { title: "SMTP Mail Server", translationKey: "nav.smtp_mail_server", url: "/settings/smtp-mail", icon: "Mail", shortcut: "S then S", requiredPermission: "system.settings.manage" },
