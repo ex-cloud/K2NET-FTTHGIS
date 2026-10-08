@@ -175,8 +175,12 @@ func fetchJWKS(realm string) (*CachedJWKS, error) {
 
 // ExtractRealmFromIssuer parses the realm name from an issuer URL
 func ExtractRealmFromIssuer(iss string) string {
-	parts := strings.Split(strings.TrimRight(iss, "/"), "/")
-	if len(parts) > 0 {
+	cleaned := strings.TrimRight(strings.TrimSpace(iss), "/")
+	if cleaned == "" {
+		return "ftth-realm"
+	}
+	parts := strings.Split(cleaned, "/")
+	if len(parts) > 0 && parts[len(parts)-1] != "" {
 		return parts[len(parts)-1]
 	}
 	return "ftth-realm"
