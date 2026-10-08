@@ -109,7 +109,7 @@ export function TenantProjectSidebar({
       topSection={
         <TooltipProvider delayDuration={0}>
           {/* Top Back to Org Level Button */}
-          <div className="px-2 mb-2 pb-2 border-b border-border/80">
+          <div className="px-2 mb-2 pb-2 border-groove-b">
             <ActionTooltip
               label={t("nav.go_to_item", { name: t("nav.all_projects") })}
               shortcut="G then P"
@@ -143,12 +143,14 @@ export function TenantProjectSidebar({
             <div className="flex flex-col gap-1">
               {mainNavItems.map(renderNavButton)}
             </div>
+
+            {/* Project Settings Navigation with divider (groove) */}
+            {bottomNavItems.length > 0 && (
+              <div className="pt-2 mt-1.5 border-groove-t flex flex-col gap-1">
+                {bottomNavItems.map(renderNavButton)}
+              </div>
+            )}
           </nav>
-        </TooltipProvider>
-      }
-      bottomNav={
-        <TooltipProvider delayDuration={0}>
-          {bottomNavItems.map(renderNavButton)}
         </TooltipProvider>
       }
     />

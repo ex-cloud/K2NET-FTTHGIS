@@ -57,10 +57,12 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   ...ADMIN_PLATFORM_NAV_ITEMS,
 ];
 
-export const ADMIN_BOTTOM_NAV_ITEMS: NavItem[] = [
+export const ADMIN_SYSTEM_NAV_ITEMS: NavItem[] = [
   { title: "Recycle Bin", translationKey: "nav.recycle_bin", icon: Trash2, href: "/system/trash", shortcut: "G then R", requiredPermission: "system.trash.manage" },
   { title: "Settings", translationKey: "nav.settings", icon: Settings, href: "/settings", shortcut: "G then ,", requiredPermission: "system.settings.manage" },
 ];
+
+export const ADMIN_BOTTOM_NAV_ITEMS: NavItem[] = [];
 
 export const checkIsActive = (href: string, pathname: string) => {
   if (href === "/overview") return pathname === "/overview";
@@ -91,8 +93,8 @@ export function AdminSidebar() {
     [canAccess]
   );
 
-  const visibleBottomNavItems = React.useMemo(
-    () => ADMIN_BOTTOM_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
+  const visibleSystemItems = React.useMemo(
+    () => ADMIN_SYSTEM_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
     [canAccess]
   );
 
@@ -183,12 +185,14 @@ export function AdminSidebar() {
                 {visiblePlatformItems.map(renderNavButton)}
               </div>
             )}
+
+            {/* Group 3: System Management & Settings (dibawah 3D Assets dengan pembatas groove) */}
+            {visibleSystemItems.length > 0 && (
+              <div className="pt-2 mt-1.5 border-groove-t flex flex-col gap-1">
+                {visibleSystemItems.map(renderNavButton)}
+              </div>
+            )}
           </nav>
-        </TooltipProvider>
-      }
-      bottomNav={
-        <TooltipProvider delayDuration={0}>
-          {visibleBottomNavItems.map(renderNavButton)}
         </TooltipProvider>
       }
     />

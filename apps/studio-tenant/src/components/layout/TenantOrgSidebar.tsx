@@ -99,12 +99,14 @@ export function TenantOrgSidebar() {
             <div className="flex flex-col gap-1">
               {mainNavItems.map(renderNavButton)}
             </div>
+
+            {/* Settings Navigation with divider (groove) */}
+            {bottomNavItems.length > 0 && (
+              <div className="pt-2 mt-1.5 border-groove-t flex flex-col gap-1">
+                {bottomNavItems.map(renderNavButton)}
+              </div>
+            )}
           </nav>
-        </TooltipProvider>
-      }
-      bottomNav={
-        <TooltipProvider delayDuration={0}>
-          {bottomNavItems.map(renderNavButton)}
         </TooltipProvider>
       }
     />

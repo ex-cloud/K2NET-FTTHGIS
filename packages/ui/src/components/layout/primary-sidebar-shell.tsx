@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "../../utils";
 import { SidebarModeControl } from "./sidebar-mode-control";
+import { AppVersionBadge } from "./app-version-badge";
 
 export interface PrimarySidebarShellProps extends React.HTMLAttributes<HTMLElement> {
   isExpanded?: boolean;
@@ -67,18 +68,19 @@ export const PrimarySidebarShell = React.forwardRef<HTMLElement, PrimarySidebarS
             {children}
             <div className="flex-1" />
 
-            {/* Standardized Bottom Nav (e.g. Settings, Trash) with groove border */}
+            {/* Standardized Bottom Nav with groove border (if provided) */}
             {bottomNav && (
               <nav className="flex flex-col gap-1 px-2 border-groove-t pt-2.5 mb-2">
                 {bottomNav}
               </nav>
             )}
 
-            {/* Standardized Footer Control (SidebarModeControl) with exact symmetric alignment */}
+            {/* Standardized Footer Control: Sidebar Mode Toggle + Version Badge */}
             {bottomSection ?? (
-              <div className="flex flex-col gap-2 px-2">
-                <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
+              <div className="flex flex-col px-2">
+                <div className="flex items-center justify-between rounded-lg h-8 w-full pl-[5px] pr-1">
                   {footerControl ?? <SidebarModeControl isExpanded={isExpanded} />}
+                  {isExpanded && <AppVersionBadge />}
                 </div>
               </div>
             )}
