@@ -291,8 +291,132 @@ export function LogsDetailMetadataFields({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. Raw JSON Viewer Tab
+// 6. Raw JSON Viewer Tab with Line Numbers & Syntax Highlighting
 // ─────────────────────────────────────────────────────────────────────────────
+
+function highlightJsonValue(valStr: string): React.ReactNode {
+  const hasComma = valStr.endsWith(",");
+  const core = hasComma ? valStr.slice(0, -1).trim() : valStr.trim();
+  const trailingComma = hasComma ? <span className="text-muted-foreground/60">,</span> : null;
+
+  if (core === "null") {
+    return (
+      <>
+        <span className="text-sky-400 dark:text-sky-400 font-mono font-medium">null</span>
+        {trailingComma}
+      </>
+    );
+  }
+  if (core === "true" || core === "false") {
+    return (
+      <>
+        <span className="text-sky-400 dark:text-sky-400 font-mono font-medium">{core}</span>
+        {trailingComma}
+      </>
+    );
+  }
+  if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(core)) {
+    return (
+      <>
+        <span className="text-amber-400 dark:text-amber-300 font-mono font-medium">{core}</span>
+        {trailingComma}
+      </>
+    );
+  }
+  if (core.startsWith('"') && core.endsWith('"')) {
+    return (
+      <>
+        <span className="text-emerald-500 dark:text-emerald-400 font-mono">{core}</span>
+        {trailingComma}
+      </>
+    );
+  }
+  if (core === "{" || core === "}" || core === "[" || core === "]") {
+    return (
+      <>
+        <span className="text-muted-foreground/80 font-mono">{core}</span>
+        {trailingComma}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <span className="text-foreground/90 font-mono">{core}</span>
+      {trailingComma}
+    </>
+  );
+}
+
+function highlightJsonLine(line: string): React.ReactNode {
+  // Check for key-value pattern: "key": value
+  const kvMatch = line.match(/^(\s*)("(?:\\.|[^"\\])*")(\s*:\s*)(.*)$/);
+  if (kvMatch) {
+    const [, indent, key, colon, rest] = kvMatch;
+    return (
+      <>
+        <span>{indent}</span>
+        <span className="text-foreground/90 dark:text-zinc-200 font-medium">{key}</span>
+        <span className="text-muted-foreground/60">{colon}</span>
+        {highlightJsonValue(rest)}
+      </>
+    );
+  }
+
+  // Standalone array element or bracket line
+  const valMatch = line.match(/^(\s*)(.*)$/);
+  if (valMatch) {
+    const [, indent, rest] = valMatch;
+    return (
+      <>
+        <span>{indent}</span>
+        {highlightJsonValue(rest)}
+      </>
+    );
+  }
+
+  return line;
+}
+
+export function JsonCodeViewer({
+  jsonString,
+  startLineNumber = 1,
+  className,
+}: {
+  jsonString: string;
+  startLineNumber?: number;
+  className?: string;
+}) {
+  const lines = React.useMemo(() => jsonString.split("\n"), [jsonString]);
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border border-border/70 bg-card/60 dark:bg-zinc-950/80 font-mono text-xs overflow-x-auto select-text shadow-2xs",
+        className
+      )}
+    >
+      <div className="flex min-w-full py-2.5">
+        {/* Line Numbers Gutter */}
+        <div
+          className="select-none text-right text-muted-foreground/40 dark:text-zinc-600 pr-3.5 pl-3 border-r border-border/40 shrink-0 font-mono text-[11px] leading-relaxed"
+          aria-hidden="true"
+        >
+          {lines.map((_, i) => (
+            <div key={i}>{startLineNumber + i}</div>
+          ))}
+        </div>
+
+        {/* Code Content */}
+        <div className="pl-3.5 pr-4 whitespace-pre font-mono text-[11px] leading-relaxed overflow-x-auto min-w-0 flex-1">
+          {lines.map((line, i) => (
+            <div key={i}>{highlightJsonLine(line)}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export interface LogsDetailRawJsonTabProps {
   data: unknown;
@@ -307,6 +431,15 @@ export function LogsDetailRawJsonTab({
   copyButtonLabel = "Copy Raw JSON",
   onCopyJson,
 }: LogsDetailRawJsonTabProps) {
+  const jsonString = React.useMemo(() => {
+    if (typeof data === "string") return data;
+    try {
+      return JSON.stringify(data, null, 2);
+    } catch {
+      return String(data);
+    }
+  }, [data]);
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -322,9 +455,7 @@ export function LogsDetailRawJsonTab({
           <span>{copyButtonLabel}</span>
         </button>
       </div>
-      <pre className="bg-muted/20 p-3 rounded-lg border border-border/60 text-xs text-foreground/90 overflow-x-auto whitespace-pre-wrap font-mono select-text leading-relaxed">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+      <JsonCodeViewer jsonString={jsonString} />
     </div>
   );
 }

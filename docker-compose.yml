@@ -357,6 +357,7 @@ services:
       - AUTH_SECRET=${AUTH_SECRET}
       - APP_SECURITY_ENCRYPTION_KEY=${APP_SECURITY_ENCRYPTION_KEY:-${AUTH_SECRET}}
       - APP_DEVOPS_GITHUB_WEBHOOK_SECRET=${APP_DEVOPS_GITHUB_WEBHOOK_SECRET}
+      - REGION=${REGION:-id-cgk-primary}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

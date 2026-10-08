@@ -14,7 +14,7 @@ import {
   LogsLoadingStateCore,
   type LogsTableColumn,
 } from "@k2net/ui";
-import { LOG_COLUMNS } from "./logs-utils";
+import { LOG_COLUMNS, formatSupabaseLogPayload } from "./logs-utils";
 import { LogsRowItem } from "./logs-row-item";
 import { LogsDetailDrawer } from "./logs-detail-drawer";
 import { LogsEmergencyAlertBanner } from "./logs-emergency-alert-banner";
@@ -237,7 +237,8 @@ function LogsContainerContent() {
   const handleCopySelected = useCallback(() => {
     const selectedLogs = filteredLogs.filter((l) => selectedRowIds.has(l.id));
     if (selectedLogs.length === 0) return;
-    navigator.clipboard.writeText(JSON.stringify(selectedLogs, null, 2));
+    const payloads = selectedLogs.map(formatSupabaseLogPayload);
+    navigator.clipboard.writeText(JSON.stringify(payloads, null, 2));
     toast.success(`Copied ${selectedLogs.length} selected log events to clipboard.`);
   }, [filteredLogs, selectedRowIds]);
 
@@ -258,7 +259,8 @@ function LogsContainerContent() {
 
   const handleCopyLog = useCallback((log: AuditStreamEntry, e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(JSON.stringify(log, null, 2));
+    const payload = formatSupabaseLogPayload(log);
+    navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
     setCopiedId(log.id);
     toast.success("Log JSON copied to clipboard");
     setTimeout(() => setCopiedId(null), 2000);

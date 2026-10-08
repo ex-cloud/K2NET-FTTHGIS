@@ -4,6 +4,8 @@ import {
   FolderKanban,
   Plus,
   Minus,
+  Globe,
+  Database,
 } from "lucide-react";
 import {
   cn,
@@ -15,7 +17,7 @@ import {
   LogsDetailMetadataFields,
 } from "@k2net/ui";
 import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
-import { getSourceIcon, getLevel } from "./logs-utils";
+import { getSourceIcon, getLevel, getEventMessageDisplay } from "./logs-utils";
 import { useTranslation } from "@k2net/i18n";
 import { type AdvancedFilter } from "./logs-filter-context";
 
@@ -330,6 +332,133 @@ function OverviewNetworkSection({
   );
 }
 
+function OverviewEdgeSection({
+  log,
+  onCopyValue,
+  copiedKey,
+}: {
+  log: AuditStreamEntry;
+  onCopyValue: (k: string, v: string) => void;
+  copiedKey: string | null;
+}) {
+  const meta = log.metadata || {};
+  const cfRay = meta.cf_ray as string | undefined;
+  const location = [meta.client_city, meta.client_region, meta.client_country || meta.cf_country]
+    .filter(Boolean)
+    .join(", ");
+  const timezone = meta.client_timezone as string | undefined;
+
+  if (!cfRay && !location && !timezone) return null;
+
+  return (
+    <>
+      {cfRay && (
+        <LogsDetailOverviewRow
+          label="Cloudflare Ray ID"
+          copyValue={cfRay}
+          onCopyValue={onCopyValue}
+          copiedKey={copiedKey}
+        >
+          <span className="font-mono text-xs text-foreground">{cfRay}</span>
+        </LogsDetailOverviewRow>
+      )}
+      {location && (
+        <LogsDetailOverviewRow
+          label="GeoIP Location"
+          copyValue={location}
+          onCopyValue={onCopyValue}
+          copiedKey={copiedKey}
+        >
+          <div className="flex items-center gap-1.5 text-foreground">
+            <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
+            <span className="text-xs">{location}</span>
+          </div>
+        </LogsDetailOverviewRow>
+      )}
+      {timezone && (
+        <LogsDetailOverviewRow
+          label="Timezone"
+          copyValue={timezone}
+          onCopyValue={onCopyValue}
+          copiedKey={copiedKey}
+        >
+          <span className="font-mono text-xs text-foreground">{timezone}</span>
+        </LogsDetailOverviewRow>
+      )}
+    </>
+  );
+}
+
+function OverviewDatabaseSection({
+  log,
+  onCopyValue,
+  copiedKey,
+}: {
+  log: AuditStreamEntry;
+  onCopyValue: (k: string, v: string) => void;
+  copiedKey: string | null;
+}) {
+  const meta = log.metadata || {};
+  const isDb =
+    log.serviceSource === "ftth-postgres" ||
+    log.logType === "postgres" ||
+    log._resourceType === "DATABASE_QUERY" ||
+    Boolean(meta.database_name || meta.query);
+
+  if (!isDb) return null;
+
+  const dbName = (meta.database_name as string) || "ftth_gis";
+  const dbUser = meta.database_user as string | undefined;
+  const queryId = (meta.query_id as string) || (meta.queryid as string) || undefined;
+  const meanTime = meta.meanTimeMs ? `${Number(meta.meanTimeMs).toFixed(2)} ms` : undefined;
+  const sqlState = (meta.sql_state_code as string) || undefined;
+
+  return (
+    <>
+      <LogsDetailOverviewRow
+        label="Database Engine"
+        copyValue={dbName}
+        onCopyValue={onCopyValue}
+        copiedKey={copiedKey}
+      >
+        <div className="flex items-center gap-1.5 text-foreground">
+          <Database className="w-3 h-3 text-violet-400 shrink-0" />
+          <span className="font-mono text-xs font-semibold">{dbName}</span>
+          {dbUser && <span className="text-[10px] text-muted-foreground font-mono">({dbUser})</span>}
+        </div>
+      </LogsDetailOverviewRow>
+
+      {queryId && (
+        <LogsDetailOverviewRow
+          label="Query ID"
+          copyValue={queryId}
+          onCopyValue={onCopyValue}
+          copiedKey={copiedKey}
+        >
+          <span className="font-mono text-xs text-foreground">{queryId}</span>
+        </LogsDetailOverviewRow>
+      )}
+
+      {meanTime && (
+        <LogsDetailOverviewRow label="Mean Exec Time">
+          <span className="font-mono text-xs font-bold text-amber-400">{meanTime}</span>
+        </LogsDetailOverviewRow>
+      )}
+
+      {sqlState && (
+        <LogsDetailOverviewRow
+          label="SQL State Code"
+          copyValue={sqlState}
+          onCopyValue={onCopyValue}
+          copiedKey={copiedKey}
+        >
+          <span className="font-mono text-xs font-bold text-rose-400">{sqlState}</span>
+        </LogsDetailOverviewRow>
+      )}
+    </>
+  );
+}
+
 export function OverviewTab({
   log,
   onCopyValue,
@@ -367,11 +496,21 @@ export function OverviewTab({
           onCopyValue={onCopyValue}
           copiedKey={copiedKey}
         />
+        <OverviewEdgeSection
+          log={log}
+          onCopyValue={onCopyValue}
+          copiedKey={copiedKey}
+        />
+        <OverviewDatabaseSection
+          log={log}
+          onCopyValue={onCopyValue}
+          copiedKey={copiedKey}
+        />
       </LogsDetailOverviewTable>
 
       <LogsDetailMessageBox
         label={t("observability.event_message") || "Event Message / Details"}
-        message={log.message}
+        message={getEventMessageDisplay(log)}
       />
     </div>
   );

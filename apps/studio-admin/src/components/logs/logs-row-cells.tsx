@@ -34,11 +34,11 @@ export function normalizeMethodDisplay(method?: string): { display: string; full
 
 export function getMethodColor(displayMethod: string) {
   const m = displayMethod.toUpperCase();
-  if (m === "POST" || m === "PUT" || m === "PATCH") return "text-sky-400 font-mono font-semibold";
-  if (m === "DELETE" || m === "DEL") return "text-rose-400 font-mono font-semibold";
-  if (m === "GET") return "text-muted-foreground font-mono font-medium";
-  if (m === "RPC" || m === "EXEC") return "text-teal-400 font-mono font-semibold";
-  return "text-muted-foreground/70 font-mono";
+  if (m === "POST" || m === "PUT" || m === "PATCH") return "text-sky-400";
+  if (m === "DELETE" || m === "DEL") return "text-rose-400";
+  if (m === "GET") return "text-muted-foreground";
+  if (m === "RPC" || m === "EXEC") return "text-teal-400";
+  return "text-muted-foreground/70";
 }
 
 export function DateCell({ timestamp }: { timestamp?: string }) {
@@ -376,7 +376,7 @@ export function MethodCell({ method }: { method?: string }) {
   if (display === "—") return <span className="text-muted-foreground/20 font-mono text-xs select-none">—</span>;
   return (
     <span
-      className={`text-xs font-mono font-semibold truncate block ${getMethodColor(display)}`}
+      className={`text-xs font-mono font-medium truncate block ${getMethodColor(display)}`}
       title={fullMethod !== display ? `Service Method: ${fullMethod}` : undefined}
     >
       {display}

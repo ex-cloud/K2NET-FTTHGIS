@@ -51,6 +51,25 @@ func (h *HTTPHandler) CreateAuditEvent(c *gin.Context) {
 	c.JSON(http.StatusAccepted, gin.H{"success": true, "status": "queued"})
 }
 
+func getHeaderCI(headers map[string]string, key string) string {
+	if headers == nil {
+		return ""
+	}
+	if v, ok := headers[key]; ok && v != "" {
+		return v
+	}
+	lower := strings.ToLower(key)
+	if v, ok := headers[lower]; ok && v != "" {
+		return v
+	}
+	for k, v := range headers {
+		if strings.EqualFold(k, key) && v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 // POST /audit/events/kong
 func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 	var payload struct {
@@ -75,7 +94,7 @@ func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 
 	// Route Tagging & Explicit Header Filter (P.7.4.1):
 	// Allow GET only if marked with explicit X-Audit-Required header
-	isSensitiveGet := payload.Request.Headers["x-audit-required"] == "true" || payload.Request.Headers["X-Audit-Required"] == "true"
+	isSensitiveGet := getHeaderCI(payload.Request.Headers, "x-audit-required") == "true"
 	if (payload.Request.Method == "GET" || payload.Request.Method == "HEAD" || payload.Request.Method == "OPTIONS") && !isSensitiveGet {
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Ignored read-only request"})
 		return
@@ -87,19 +106,16 @@ func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 		return
 	}
 
-	tenantSlug := payload.Request.Headers["x-tenant-id"]
+	tenantSlug := getHeaderCI(payload.Request.Headers, "x-tenant-id")
 	if tenantSlug == "" {
 		tenantSlug = "system"
 	}
-	actorID := payload.Request.Headers["x-user-email"]
+	actorID := getHeaderCI(payload.Request.Headers, "x-user-email")
 	if actorID == "" {
-		actorID = payload.Request.Headers["x-user-id"]
+		actorID = getHeaderCI(payload.Request.Headers, "x-user-id")
 	}
 	if actorID == "" {
-		authHeader := payload.Request.Headers["authorization"]
-		if authHeader == "" {
-			authHeader = payload.Request.Headers["Authorization"]
-		}
+		authHeader := getHeaderCI(payload.Request.Headers, "authorization")
 		if authHeader != "" {
 			actorID = extractActorFromJWT(authHeader)
 		}
@@ -119,6 +135,71 @@ func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 		severity = "ERROR"
 	}
 
+	traceID := getHeaderCI(payload.Request.Headers, "x-trace-id")
+	if traceID == "" {
+		traceID = getHeaderCI(payload.Request.Headers, "x-request-id")
+	}
+	if traceID == "" {
+		traceID = getHeaderCI(payload.Request.Headers, "x-correlation-id")
+	}
+
+	host := getHeaderCI(payload.Request.Headers, "host")
+	userAgent := getHeaderCI(payload.Request.Headers, "user-agent")
+
+	// Layer 2: Cloudflare Edge CDN & GeoIP Headers
+	cfRay := getHeaderCI(payload.Request.Headers, "cf-ray")
+	cfCountry := getHeaderCI(payload.Request.Headers, "cf-ipcountry")
+	cfCity := getHeaderCI(payload.Request.Headers, "cf-ipcity")
+	cfRegion := getHeaderCI(payload.Request.Headers, "cf-region")
+	cfLat := getHeaderCI(payload.Request.Headers, "cf-iplatitude")
+	cfLong := getHeaderCI(payload.Request.Headers, "cf-iplongitude")
+	cfTimezone := getHeaderCI(payload.Request.Headers, "cf-timezone")
+	xForwardedProto := getHeaderCI(payload.Request.Headers, "x-forwarded-proto")
+	xForwardedPort := getHeaderCI(payload.Request.Headers, "x-forwarded-port")
+
+	metadata := map[string]any{
+		"logGroup":      logGroup,
+		"serviceSource": "kong-gateway",
+		"severity":      severity,
+		"status":        payload.Response.Status,
+		"method":        payload.Request.Method,
+		"pathname":      payload.Request.URI,
+		"host":          host,
+		"userAgent":     userAgent,
+		"traceId":       traceID,
+		"latencyMs":     payload.Latencies.Request,
+		"network_protocol": c.Request.Proto,
+	}
+
+	if cfRay != "" {
+		metadata["cf_ray"] = cfRay
+	}
+	if cfCountry != "" {
+		metadata["cf_country"] = cfCountry
+		metadata["client_country"] = cfCountry
+	}
+	if cfCity != "" {
+		metadata["client_city"] = cfCity
+	}
+	if cfRegion != "" {
+		metadata["client_region"] = cfRegion
+	}
+	if cfLat != "" {
+		metadata["client_latitude"] = cfLat
+	}
+	if cfLong != "" {
+		metadata["client_longitude"] = cfLong
+	}
+	if cfTimezone != "" {
+		metadata["client_timezone"] = cfTimezone
+	}
+	if xForwardedProto != "" {
+		metadata["x_forwarded_proto"] = xForwardedProto
+	}
+	if xForwardedPort != "" {
+		metadata["x_forwarded_port"] = xForwardedPort
+	}
+
 	req := audit.CreateAuditEventRequest{
 		TenantSlug:   tenantSlug,
 		ActorID:      actorID,
@@ -127,14 +208,7 @@ func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 		Action:       action,
 		ResourceType: "EDGE_API",
 		ResourceID:   payload.Request.URI,
-		Metadata: map[string]any{
-			"logGroup":      logGroup,
-			"serviceSource": "kong-gateway",
-			"severity":      severity,
-			"status":        payload.Response.Status,
-			"method":        payload.Request.Method,
-			"latencyMs":     payload.Latencies.Request,
-		},
+		Metadata:     metadata,
 	}
 
 	if err := h.engine.Ingest(&req); err != nil {

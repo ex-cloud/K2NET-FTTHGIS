@@ -10,6 +10,7 @@ import { useTranslation } from "@k2net/i18n";
 import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import {
   getEventMessageDisplay,
+  formatSupabaseLogPayload,
   getLevel,
 } from "./logs-utils";
 import {
@@ -71,7 +72,8 @@ function buildContextMenuGroups(
           icon: Copy,
           shortcut: "Ctrl+C",
           onClick: () => {
-            navigator.clipboard.writeText(JSON.stringify(log, null, 2));
+            const payload = formatSupabaseLogPayload(log);
+            navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
             toast.success(t("observability.log_copied"));
           },
         },
@@ -116,33 +118,27 @@ function MessageCell({
 }: {
   log: AuditStreamEntry;
 }) {
-  const actorLabel = log.actor !== "system" ? log.actor : null;
   const hasHashChain = Boolean(log.metadata?.hash || log.metadata?.prevHash);
   const isBenchmark = isBenchmarkEvent(log);
+  const displayMsg = getEventMessageDisplay(log);
 
   return (
-    <div className="flex-1 min-w-0 font-mono text-xs flex items-center justify-between gap-3">
-      <div className="flex items-center gap-1.5 min-w-0 truncate">
-        {hasHashChain && (
-          <span
-            title="Cryptographic Hash Chain Verified (SHA-256)"
-            className="inline-flex items-center text-muted-foreground/40 shrink-0 select-none"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-          </span>
-        )}
-        {isBenchmark && <BenchmarkPill />}
-        <span className="truncate text-foreground font-mono" title={log.message || log.action}>
-          {getEventMessageDisplay(log)}
-        </span>
-      </div>
-      {actorLabel && (
-        <span className="text-muted-foreground/50 text-[10px] shrink-0 font-mono hidden md:inline-flex items-center gap-1 select-none">
-          <span>by</span>
-          <span className="text-muted-foreground/80 font-medium">{actorLabel}</span>
-          {log.ip && <span className="text-muted-foreground/30 text-[9px]">({log.ip})</span>}
+    <div className="flex-1 min-w-0 font-mono text-[11px] flex items-center gap-1.5 overflow-hidden">
+      {hasHashChain && (
+        <span
+          title="Cryptographic Hash Chain Verified (SHA-256)"
+          className="inline-flex items-center text-muted-foreground/40 shrink-0 select-none"
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
         </span>
       )}
+      {isBenchmark && <BenchmarkPill />}
+      <span
+        className="truncate text-muted-foreground/90 font-mono text-[11px] block"
+        title={displayMsg}
+      >
+        {displayMsg}
+      </span>
     </div>
   );
 }
@@ -165,10 +161,10 @@ function RowLeadingSlot({
   const dotColorClass = isCritical
     ? "bg-rose-500 animate-ping"
     : isError
-    ? "bg-rose-500"
-    : isWarn
-    ? "bg-amber-500"
-    : "bg-muted-foreground/40";
+      ? "bg-rose-500"
+      : isWarn
+        ? "bg-amber-500"
+        : "bg-muted-foreground/40";
 
   return (
     <div
@@ -250,8 +246,8 @@ export function LogsRowItem({
   const rowBgClass = isSelected
     ? "bg-primary/10 text-foreground border-l-2 border-primary"
     : isRowSelected
-    ? "bg-primary/5 text-foreground"
-    : "hover:bg-muted/30 text-muted-foreground hover:text-foreground";
+      ? "bg-primary/5 text-foreground"
+      : "hover:bg-muted/30 text-muted-foreground hover:text-foreground";
 
   return (
     <UniversalContextMenu groups={buildContextMenuGroups(log, isSelected, onSelect, t)}>

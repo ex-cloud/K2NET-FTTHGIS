@@ -44,6 +44,40 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class AuditAspect {
 
+    private static final String HOST_NAME;
+    private static final String PROCESS_PID;
+    private static final String REGION;
+    private static final String APP_VERSION;
+
+    static {
+        String h = "ftth-backend";
+        try {
+            h = java.net.InetAddress.getLocalHost().getHostName();
+        } catch (Exception ignored) {
+            String envHost = System.getenv("HOSTNAME");
+            if (envHost != null && !envHost.isBlank()) {
+                h = envHost;
+            }
+        }
+        HOST_NAME = h;
+        PROCESS_PID = String.valueOf(ProcessHandle.current().pid());
+        String reg = System.getenv("REGION");
+        REGION = (reg != null && !reg.isBlank()) ? reg : "id-cgk-primary";
+
+        String ver = "1.0.0";
+        try (java.io.InputStream is = AuditAspect.class.getClassLoader().getResourceAsStream("git.properties")) {
+            if (is != null) {
+                java.util.Properties p = new java.util.Properties();
+                p.load(is);
+                String abbrev = p.getProperty("git.commit.id.abbrev");
+                if (abbrev != null && !abbrev.isBlank()) {
+                    ver = abbrev;
+                }
+            }
+        } catch (Exception ignored) {}
+        APP_VERSION = ver;
+    }
+
     private final AuditLoggingService auditLoggingService;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
@@ -237,6 +271,10 @@ public class AuditAspect {
             metadata.put("serviceSource", "ftth-backend");
             metadata.put("tenantName", tenantName);
             metadata.put("tenantSlug", tenantSlug);
+            metadata.put("context.host", HOST_NAME);
+            metadata.put("context.pid", PROCESS_PID);
+            metadata.put("region", REGION);
+            metadata.put("appVersion", APP_VERSION);
             if (projectId != null && !projectId.isBlank()) {
                 metadata.put("projectId", projectId);
             }
@@ -252,9 +290,24 @@ public class AuditAspect {
             metadata.put("severity", "FAILED".equals(status) ? "ERROR" : ann.severity());
             metadata.put("status", status);
 
-            // Extract HTTP Method & Request URI from active Spring Web Context if available
+            // Extract HTTP Method, Request URI, User-Agent, Host, TraceID, Client IP, and Cloudflare Edge Headers from active Spring Web Context
             String effectiveMethod = null;
             String effectivePath = null;
+            String userAgent = null;
+            String host = null;
+            String traceId = null;
+            String clientIp = null;
+            String cfRay = null;
+            String cfCountry = null;
+            String cfCity = null;
+            String cfRegion = null;
+            String cfLat = null;
+            String cfLong = null;
+            String cfTimezone = null;
+            String xfp = null;
+            String xport = null;
+            String proto = null;
+
             try {
                 org.springframework.web.context.request.RequestAttributes reqAttrs =
                         org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
@@ -263,6 +316,33 @@ public class AuditAspect {
                     if (req != null) {
                         effectiveMethod = req.getMethod();
                         effectivePath = req.getRequestURI();
+                        userAgent = req.getHeader("User-Agent");
+                        host = req.getHeader("Host");
+                        traceId = req.getHeader("X-Request-Id");
+                        if (traceId == null || traceId.isBlank()) {
+                            traceId = req.getHeader("X-Trace-Id");
+                        }
+                        if (traceId == null || traceId.isBlank()) {
+                            traceId = req.getHeader("X-Correlation-Id");
+                        }
+                        String xff = req.getHeader("X-Forwarded-For");
+                        if (xff != null && !xff.isBlank()) {
+                            clientIp = xff.split(",")[0].trim();
+                        } else {
+                            clientIp = req.getRemoteAddr();
+                        }
+
+                        // Layer 2: Cloudflare Edge & GeoIP Headers
+                        cfRay = req.getHeader("CF-RAY");
+                        cfCountry = req.getHeader("CF-IPCountry");
+                        cfCity = req.getHeader("CF-IPCity");
+                        cfRegion = req.getHeader("CF-Region");
+                        cfLat = req.getHeader("CF-IPLatitude");
+                        cfLong = req.getHeader("CF-IPLongitude");
+                        cfTimezone = req.getHeader("CF-Timezone");
+                        xfp = req.getHeader("X-Forwarded-Proto");
+                        xport = req.getHeader("X-Forwarded-Port");
+                        proto = req.getProtocol();
                     }
                 }
             } catch (Exception ignored) {}
@@ -280,6 +360,49 @@ public class AuditAspect {
             metadata.put("method", effectiveMethod);
             if (effectivePath != null && !effectivePath.isBlank()) {
                 metadata.put("pathname", effectivePath);
+            }
+            if (userAgent != null && !userAgent.isBlank()) {
+                metadata.put("userAgent", userAgent);
+            }
+            if (host != null && !host.isBlank()) {
+                metadata.put("host", host);
+            }
+            if (traceId != null && !traceId.isBlank()) {
+                metadata.put("traceId", traceId);
+            }
+            if (clientIp != null && !clientIp.isBlank()) {
+                metadata.put("ip", clientIp);
+            }
+            if (cfRay != null && !cfRay.isBlank()) {
+                metadata.put("cf_ray", cfRay);
+            }
+            if (cfCountry != null && !cfCountry.isBlank()) {
+                metadata.put("cf_country", cfCountry);
+                metadata.put("client_country", cfCountry);
+            }
+            if (cfCity != null && !cfCity.isBlank()) {
+                metadata.put("client_city", cfCity);
+            }
+            if (cfRegion != null && !cfRegion.isBlank()) {
+                metadata.put("client_region", cfRegion);
+            }
+            if (cfLat != null && !cfLat.isBlank()) {
+                metadata.put("client_latitude", cfLat);
+            }
+            if (cfLong != null && !cfLong.isBlank()) {
+                metadata.put("client_longitude", cfLong);
+            }
+            if (cfTimezone != null && !cfTimezone.isBlank()) {
+                metadata.put("client_timezone", cfTimezone);
+            }
+            if (xfp != null && !xfp.isBlank()) {
+                metadata.put("x_forwarded_proto", xfp);
+            }
+            if (xport != null && !xport.isBlank()) {
+                metadata.put("x_forwarded_port", xport);
+            }
+            if (proto != null && !proto.isBlank()) {
+                metadata.put("network_protocol", proto);
             }
             metadata.put("handlerMethod", sig.getDeclaringType().getSimpleName() + "." + method.getName());
 

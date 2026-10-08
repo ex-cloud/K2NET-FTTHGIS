@@ -70,10 +70,10 @@ function normalizeMethodDisplay(action?: string): string {
 
 function getMethodColor(displayMethod: string) {
   const m = displayMethod.toUpperCase();
-  if (m === "POST" || m === "PUT" || m === "PATCH") return "text-sky-400 font-semibold";
-  if (m === "DEL" || m === "DELETE") return "text-rose-400 font-semibold";
-  if (m === "GET") return "text-muted-foreground font-medium";
-  if (m === "RPC" || m === "EXEC") return "text-muted-foreground/70 font-semibold";
+  if (m === "POST" || m === "PUT" || m === "PATCH") return "text-sky-400";
+  if (m === "DEL" || m === "DELETE") return "text-rose-400";
+  if (m === "GET") return "text-muted-foreground";
+  if (m === "RPC" || m === "EXEC") return "text-muted-foreground/70";
   return "text-muted-foreground/60";
 }
 
@@ -282,7 +282,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 function MethodCell({ method }: { method: string }) {
   return (
     <span
-      className={`text-[10px] font-mono truncate block max-w-[48px] ${getMethodColor(method)}`}
+      className={`text-[10px] font-mono font-medium truncate block max-w-[48px] ${getMethodColor(method)}`}
     >
       {method}
     </span>

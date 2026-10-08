@@ -85,6 +85,24 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getMessage());
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex) {
+        String sqlState = "23000";
+        Throwable root = ex.getRootCause();
+        if (root instanceof java.sql.SQLException sqlEx && sqlEx.getSQLState() != null) {
+            sqlState = sqlEx.getSQLState();
+        }
+        log.warn("Database integrity violation [SQLState: {}]: {}", sqlState, ex.getMessage());
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("DATA_INTEGRITY_VIOLATION")
+                .message("Database constraint violation occurred.")
+                .details("SQLState: " + sqlState + " - " + (root != null ? root.getMessage() : ex.getMessage()))
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
         log.error("Unhandled exception occurred", ex);

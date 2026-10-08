@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"gateways/shared/httpclient"
@@ -131,6 +132,23 @@ func (c *Client) Log(ctx context.Context, event Event, logGroup, serviceSource s
 		case "martin":
 			event.Metadata["logType"] = "martin"
 		}
+	}
+
+	// Layer 3: Compute context auto-enrichment
+	if _, hasHost := event.Metadata["context.host"]; !hasHost {
+		if host, err := os.Hostname(); err == nil && host != "" {
+			event.Metadata["context.host"] = host
+		}
+	}
+	if _, hasPid := event.Metadata["context.pid"]; !hasPid {
+		event.Metadata["context.pid"] = strconv.Itoa(os.Getpid())
+	}
+	if _, hasRegion := event.Metadata["region"]; !hasRegion {
+		reg := os.Getenv("REGION")
+		if reg == "" {
+			reg = "id-cgk-primary"
+		}
+		event.Metadata["region"] = reg
 	}
 
 	// Normalize tenantSlug and auto-derive scope if missing

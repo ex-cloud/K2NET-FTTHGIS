@@ -11,14 +11,219 @@ export function getSourceIcon(source: string, className?: string) {
   return getLogsSourceIcon(source, className);
 }
 
+function resolveLogTenant(log: AuditStreamEntry): string {
+  if (log.tenantSlug) return log.tenantSlug;
+  if (log.tenantName) return log.tenantName;
+  if (log.scope === "SYSTEM_CORE" || log.scope === "SYSTEM") return "system";
+  return "global";
+}
+
+function resolveLogMethod(log: AuditStreamEntry): string {
+  const m = log.method || (log.metadata?.method as string) || "RPC";
+  return m.toUpperCase();
+}
+
+function resolveLogStatus(log: AuditStreamEntry): string {
+  if (log.status !== undefined && log.status !== null) return String(log.status);
+  if (log.metadata?.status) return String(log.metadata.status);
+  if (log.metadata?.statusCode) return String(log.metadata.statusCode);
+  return "200";
+}
+
+function resolveLogIp(log: AuditStreamEntry): string {
+  if (log.ip) return log.ip;
+  if (log.metadata?.ip) return String(log.metadata.ip);
+  if (log.metadata?.client_ip) return String(log.metadata.client_ip);
+  return "127.0.0.1";
+}
+
+function resolveLogTraceId(log: AuditStreamEntry): string {
+  if (log.traceId) return log.traceId;
+  if (log.requestId) return log.requestId;
+  if (log.metadata?.traceId) return String(log.metadata.traceId);
+  if (log.id) return `req-${log.id.slice(0, 8)}`;
+  return "req-trace";
+}
+
+function resolveLogPathname(log: AuditStreamEntry): string {
+  if (log.pathname) return log.pathname;
+  if (log.targetResource) return log.targetResource;
+  if (log.metadata?.pathname) return String(log.metadata.pathname);
+  if (log.metadata?.path) return String(log.metadata.path);
+  if (log.action) return `/${log.action.toLowerCase().replace(/_/g, "/")}`;
+  return "/";
+}
+
+function resolveLogHost(log: AuditStreamEntry): string {
+  if (log.metadata?.["context.host"]) return String(log.metadata["context.host"]);
+  if (log.metadata?.host) return String(log.metadata.host);
+  if (typeof window !== "undefined") return window.location.hostname;
+  return "system.gis.kdua.net";
+}
+
+function resolveLogResponseTime(log: AuditStreamEntry): string {
+  const m = log.metadata;
+  if (m?.latencyMs !== undefined) return String(m.latencyMs);
+  if (m?.responseTimeMs !== undefined) return String(m.responseTimeMs);
+  if (m?.executionTimeMs !== undefined) return String(m.executionTimeMs);
+  if (m?.mean_time_ms !== undefined) return String(m.mean_time_ms);
+  return "2";
+}
+
+function resolveLogUserAgent(log: AuditStreamEntry): string {
+  const custom = log.metadata?.userAgent || log.metadata?.user_agent || log.metadata?.client;
+  if (custom) return String(custom);
+  if (log.actor && log.actor !== "system") return `@${log.actor}`;
+  return "@k2net-system/v1.0";
+}
+
 export function getEventMessageDisplay(log: AuditStreamEntry): string {
-  if (log.message && log.message.trim()) {
-    return log.message;
-  }
-  if (log.action && log.action.trim()) {
-    return log.action.replace(/_/g, " ");
-  }
-  return "Audit Event Recorded";
+  const tenant = resolveLogTenant(log);
+  const method = resolveLogMethod(log);
+  const status = resolveLogStatus(log);
+  const ip = resolveLogIp(log);
+  const traceId = resolveLogTraceId(log);
+  const pathname = resolveLogPathname(log);
+  const userAgent = resolveLogUserAgent(log);
+
+  return `${tenant} | ${method} | ${status} | ${ip} | ${traceId} | ${pathname} | ${userAgent}`;
+}
+
+interface ParsedLogContext {
+  tenant: string;
+  method: string;
+  statusCode: string;
+  ip: string;
+  traceId: string;
+  pathname: string;
+  userAgent: string;
+  host: string;
+  responseTime: string;
+}
+
+function extractLogContext(log: AuditStreamEntry): ParsedLogContext {
+  return {
+    tenant: resolveLogTenant(log),
+    method: resolveLogMethod(log),
+    statusCode: resolveLogStatus(log),
+    ip: resolveLogIp(log),
+    traceId: resolveLogTraceId(log),
+    pathname: resolveLogPathname(log),
+    userAgent: resolveLogUserAgent(log),
+    host: resolveLogHost(log),
+    responseTime: resolveLogResponseTime(log),
+  };
+}
+
+function buildLogAttributes(log: AuditStreamEntry, ctx: ParsedLogContext): Record<string, unknown> {
+  const metadata = log.metadata || {};
+  return {
+    "context.type": (metadata["context.type"] as string) || "request",
+    "context.host": metadata["context.host"] || metadata.host || ctx.host,
+    "context.pid": metadata["context.pid"] || metadata.pid,
+    appVersion: metadata.appVersion || metadata.version,
+    region: metadata.region || metadata.cf_region,
+    executionTime: ctx.responseTime,
+    level: (log.severity || "INFO").toLowerCase(),
+    project: log.projectId || log.projectName || ctx.tenant,
+    tenantId: ctx.tenant,
+    "req.method": ctx.method,
+    "req.url": ctx.pathname,
+    "req.traceId": ctx.traceId,
+    "req.remoteAddress": ctx.ip,
+    "req.hostname": ctx.host,
+    "req.headers.host": ctx.host,
+    "req.headers.user_agent": ctx.userAgent,
+    "req.headers.cf_ray": metadata.cf_ray || metadata.cfRay,
+    "req.headers.cf_ipcountry": metadata.client_country || metadata.cf_country,
+    "res.statusCode": ctx.statusCode,
+    responseTime: ctx.responseTime,
+    resources: JSON.stringify([ctx.pathname]),
+    ...metadata,
+  };
+}
+
+function extractEdgeAttributes(metadata: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    cf_ray: metadata.cf_ray || metadata.cfRay || null,
+    client_country: metadata.client_country || metadata.cf_country || null,
+    client_city: metadata.client_city || null,
+    client_region: metadata.client_region || metadata.cf_region || null,
+    client_timezone: metadata.client_timezone || null,
+  };
+}
+
+function extractComputeAttributes(metadata: Record<string, unknown> = {}, fallbackHost: string): Record<string, unknown> {
+  return {
+    region: metadata.region || metadata.cf_region || null,
+    context_host: metadata["context.host"] || metadata.host || fallbackHost,
+    context_pid: metadata["context.pid"] || metadata.pid || null,
+    app_version: metadata.appVersion || metadata.version || null,
+  };
+}
+
+function extractDatabaseAttributes(metadata: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    database_name: metadata.database_name || metadata.databaseName || metadata.dbName || null,
+    query_id: metadata.query_id || metadata.queryId || null,
+    sql_state_code: metadata.sql_state_code || metadata.sqlStateCode || null,
+    query: metadata.query || null,
+    mean_time_ms: metadata.mean_time_ms || metadata.meanTimeMs || null,
+  };
+}
+
+function extractImpersonationAttributes(log: AuditStreamEntry): Record<string, unknown> {
+  return {
+    is_impersonated: log.isImpersonated ?? false,
+    real_actor_id: log.realActorId || null,
+    session_id: log.impersonationSessionId || null,
+    old_value: log.oldValue || null,
+    new_value: log.newValue || null,
+  };
+}
+
+export function formatSupabaseLogPayload(log: AuditStreamEntry): Record<string, unknown> {
+  const eventMessage = getEventMessageDisplay(log);
+  const metadata = log.metadata || {};
+  const ctx = extractLogContext(log);
+  const logAttributes = buildLogAttributes(log, ctx);
+
+  return {
+    id: log.id,
+    timestamp: log.timestamp,
+    event_message: eventMessage,
+    service_name: log.serviceSource || "ftth-backend",
+    tenantId: ctx.tenant,
+    project: log.projectId || log.projectName || ctx.tenant,
+    level: (log.severity || "INFO").toLowerCase(),
+    host: ctx.host,
+    method: ctx.method,
+    path: ctx.pathname,
+    status_code: ctx.statusCode,
+    client_ip: ctx.ip,
+    headers_user_agent: ctx.userAgent,
+    reqId: ctx.traceId,
+    executionTime: ctx.responseTime,
+    responseTime: ctx.responseTime,
+    scope: log.scope || "SYSTEM_CORE",
+    actor_id: log.actor,
+    action: log.action,
+    resource_type: log._resourceType || null,
+    resource_id: log.resourceId || null,
+    ...extractImpersonationAttributes(log),
+    ...extractEdgeAttributes(metadata),
+    ...extractComputeAttributes(metadata, ctx.host),
+    ...extractDatabaseAttributes(metadata),
+    metadata,
+    raw_log_data: {
+      id: log.id,
+      timestamp: log.timestamp,
+      source: log.serviceSource || "ftth-backend",
+      severity_text: log.severity,
+      event_message: eventMessage,
+      log_attributes: logAttributes,
+    },
+  };
 }
 
 export function getLevel(log: AuditStreamEntry): "error" | "warning" | "success" {
@@ -87,13 +292,29 @@ const FIELD_EXTRACTORS: Record<string, (log: AuditStreamEntry) => string> = {
     return "";
   },
   ip: (log) => log.ip || String(log.metadata?.ip || log.metadata?.client_ip || ""),
+  cf_ray: (log) => String(log.metadata?.cf_ray || log.metadata?.cfRay || ""),
+  client_country: (log) => String(log.metadata?.client_country || log.metadata?.cf_country || ""),
+  client_city: (log) => String(log.metadata?.client_city || ""),
+  region: (log) => String(log.metadata?.region || log.metadata?.cf_region || ""),
+  "context.host": (log) => String(log.metadata?.["context.host"] || log.metadata?.host || ""),
+  "context.pid": (log) => String(log.metadata?.["context.pid"] || log.metadata?.pid || ""),
+  database_name: (log) => String(log.metadata?.database_name || log.metadata?.databaseName || log.metadata?.dbName || ""),
+  query_id: (log) => String(log.metadata?.query_id || log.metadata?.queryId || ""),
+  sql_state_code: (log) => String(log.metadata?.sql_state_code || log.metadata?.sqlStateCode || ""),
 };
 
 export function extractFieldValue(log: AuditStreamEntry, field: string): string {
   if (!log) return "";
   const extractor = FIELD_EXTRACTORS[field];
   if (extractor) return extractor(log);
-  return String((log as unknown as Record<string, unknown>)[field] ?? "");
+  
+  const topVal = (log as unknown as Record<string, unknown>)[field];
+  if (topVal !== undefined && topVal !== null) return String(topVal);
+
+  const metaVal = log.metadata?.[field];
+  if (metaVal !== undefined && metaVal !== null) return String(metaVal);
+
+  return "";
 }
 
 function compareNumeric(numVal: number, numTarget: number, op: string): boolean {
@@ -294,6 +515,34 @@ export function filterAuditLogs(
   });
 }
 
+function buildLogCsvRow(log: AuditStreamEntry, escapeCsv: (val: unknown) => string): string[] {
+  const m = log.metadata || {};
+  return [
+    escapeCsv(log.timestamp),
+    escapeCsv(log.severity),
+    escapeCsv(log.logGroup),
+    escapeCsv(log.serviceSource),
+    escapeCsv(log.tenantSlug ?? ""),
+    escapeCsv(log.scope ?? ""),
+    escapeCsv(log.projectId ?? ""),
+    escapeCsv(log.projectName ?? ""),
+    escapeCsv(log.actor),
+    escapeCsv(log.isImpersonated ? "YES" : "NO"),
+    escapeCsv(log.realActorId ?? ""),
+    escapeCsv(log.impersonationSessionId ?? ""),
+    escapeCsv(log.action),
+    escapeCsv(log.status ?? ""),
+    escapeCsv(log.method ?? ""),
+    escapeCsv(log.pathname ?? ""),
+    escapeCsv(log.ip ?? ""),
+    escapeCsv(m.cf_ray || m.cfRay || ""),
+    escapeCsv(m.client_country || m.cf_country || ""),
+    escapeCsv(m.region || m.client_region || ""),
+    escapeCsv(m["context.host"] || m.host || ""),
+    escapeCsv(log.message),
+  ];
+}
+
 /**
  * RFC-4180 Compliant CSV Export Streamer
  * Properly handles quotes, commas, CRLF newlines and multi-tenant audit properties
@@ -326,29 +575,14 @@ export function exportLogsToCsv(logs: AuditStreamEntry[], filename?: string): vo
     "Method",
     "Pathname",
     "IP",
+    "TraceRayId",
+    "Country",
+    "Region",
+    "Host",
     "Message",
   ];
 
-  const rows = logs.map((log) => [
-    escapeCsv(log.timestamp),
-    escapeCsv(log.severity),
-    escapeCsv(log.logGroup),
-    escapeCsv(log.serviceSource),
-    escapeCsv(log.tenantSlug ?? ""),
-    escapeCsv(log.scope ?? ""),
-    escapeCsv(log.projectId ?? ""),
-    escapeCsv(log.projectName ?? ""),
-    escapeCsv(log.actor),
-    escapeCsv(log.isImpersonated ? "YES" : "NO"),
-    escapeCsv(log.realActorId ?? ""),
-    escapeCsv(log.impersonationSessionId ?? ""),
-    escapeCsv(log.action),
-    escapeCsv(log.status ?? ""),
-    escapeCsv(log.method ?? ""),
-    escapeCsv(log.pathname ?? ""),
-    escapeCsv(log.ip ?? ""),
-    escapeCsv(log.message),
-  ]);
+  const rows = logs.map((log) => buildLogCsvRow(log, escapeCsv));
 
   const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

@@ -20,6 +20,7 @@ import {
   OverviewTab,
   MetadataDiffTab,
 } from "./logs-detail-drawer-tabs";
+import { formatSupabaseLogPayload } from "./logs-utils";
 
 export interface LogsDetailDrawerProps {
   selectedLog: AuditStreamEntry;
@@ -170,9 +171,9 @@ export function LogsDetailDrawer({
 
       {activeTab === "json" && (
         <LogsDetailRawJsonTab
-          data={selectedLog}
+          data={formatSupabaseLogPayload(selectedLog)}
           onCopyJson={() => {
-            navigator.clipboard.writeText(JSON.stringify(selectedLog, null, 2));
+            navigator.clipboard.writeText(JSON.stringify(formatSupabaseLogPayload(selectedLog), null, 2));
             toast.success("Copied Raw JSON to clipboard");
           }}
         />
