@@ -19,6 +19,7 @@
     "verify:security": "bash scripts/audit-security-matrix.sh",
     "audit:security": "bash scripts/audit-security-matrix.sh",
     "audit:rbac": "bash scripts/audit-security-matrix.sh",
+    "audit:versioning": "bash scripts/audit-api-versioning.sh",
     "audit:colors": "bash packages/ui/scripts/audit-colors.sh",
     "audit:design-system": "bash scripts/audit-design-system.sh all",
     "audit:design-system:admin": "bash scripts/audit-design-system.sh admin",

@@ -53,7 +53,7 @@ public class PaymentController {
      * Public payment callback endpoint called by the Go payment gateway.
      * Verified with HMAC-SHA256 signature.
      */
-    @PostMapping("/api/payments/callback")
+    @PostMapping({"/api/v1/payments/callback", "/api/payments/callback"})
     public ResponseEntity<?> handlePaymentCallback(
             @RequestBody String rawBody,
             @RequestHeader(value = "X-Signature", required = false) String signatureHeader) {

@@ -109,7 +109,7 @@ func (s *PaymentService) ReportPaymentToCore(ctx context.Context, extID, status 
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", s.coreURL+"/api/payments/callback", bytes.NewBuffer(bodyBytes))
+	req, err := http.NewRequestWithContext(ctx, "POST", s.coreURL+"/api/v1/payments/callback", bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return err
 	}

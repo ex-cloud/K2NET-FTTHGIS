@@ -133,6 +133,9 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 8. **Standar Baku Pembuatan Modul Baru (SOP Wajib)**: [rules/module-creation-standard.md](file:///opt/project5/.agents/rules/module-creation-standard.md)
    *Membahas: Alur 5-langkah registrasi modul baru, Flyway SQL permissions, @PreAuthorize hasAuthority, dynamic sidebar filtering, UI PermissionGuards, dan daftar anti-patterns.*
 
+9. **Standar API Versioning, SemVer & Database Patching (SOP Wajib)**: [rules/versioning-and-patching-standard.md](file:///opt/project5/.agents/rules/versioning-and-patching-standard.md)
+   *Membahas: Prefix wajib `/api/v[0-9]+/`, prinsip Expand-and-Contract, Semantic Versioning (SemVer), aturan integritas Flyway sekuensial anti-downtime, serta verifikasi otomatis `pnpm audit:versioning`.*
+
 ---
 
 ## 🧠 Pembelajaran Masalah Terselesaikan (Knowledge Base)
