@@ -19,6 +19,7 @@ import {
   CoreIdentityCards,
   BackendStackCards,
   LiveTelemetryCards,
+  SystemPatchesChangelogCard,
   generateSystemMarkdown,
 } from "@/components/settings";
 import { useTranslation } from "@k2net/i18n";
@@ -148,9 +149,18 @@ export default function SettingsSystemInfoPage() {
               title={t("settings.system_info.live_telemetry_title")}
               description={t("settings.system_info.live_telemetry_desc")}
               noCardWrapper
-              divider={false}
             >
               <LiveTelemetryCards info={info} loading={loading} />
+            </SettingsSection>
+
+            {/* Section 4: System Patches & Release Changelog */}
+            <SettingsSection
+              title={t("settings.system_info.patches_changelog_title")}
+              description={t("settings.system_info.patches_changelog_desc")}
+              noCardWrapper
+              divider={false}
+            >
+              <SystemPatchesChangelogCard info={info} loading={loading} />
             </SettingsSection>
           </div>
         </TooltipProvider>

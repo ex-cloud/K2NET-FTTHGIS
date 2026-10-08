@@ -74,8 +74,8 @@ export function CoreIdentityCards({
 
   if (loading && !info) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="rounded-lg border border-border/80 bg-card p-3.5 space-y-3">
             <Skeleton className="h-3 w-24" />
             <Skeleton className="h-7 w-32" />
@@ -89,9 +89,26 @@ export function CoreIdentityCards({
     ? `Flyway V${info.migrationInfo.version}`
     : "Flyway V51";
 
+  const flywayCount = info?.migrationInfo?.version && info.migrationInfo.version !== "—"
+    ? info.migrationInfo.version
+    : "51";
+
+  const semverBreakdown = t("settings.system_info.semver_breakdown", {
+    major: info?.patchInfo?.major ?? 1,
+    minor: info?.patchInfo?.minor ?? 0,
+  });
+
+  const gitCommitDesc = t("settings.system_info.git_commit_desc", {
+    branch: info?.gitInfo?.branch || "main",
+  });
+
+  const dbSchemaDesc = t("settings.system_info.db_schema_desc", {
+    count: flywayCount,
+  });
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-      {/* Platform Version Card */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+      {/* 1. Platform Version Card (SemVer) */}
       <div className="rounded-lg border border-border/80 bg-card p-3.5 flex flex-col justify-between space-y-2 shadow-xs">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="font-medium flex items-center gap-1.5">
@@ -108,13 +125,51 @@ export function CoreIdentityCards({
           </span>
           <CopyableBadge text={info?.appVersion || "v1.0.0"} label="Platform Version" />
         </div>
+        <p className="text-[10px] text-muted-foreground font-mono truncate">
+          {semverBreakdown}
+        </p>
       </div>
 
-      {/* REST API Namespace Card */}
+      {/* 2. Patch & Hotfix Level Card */}
       <div className="rounded-lg border border-border/80 bg-card p-3.5 flex flex-col justify-between space-y-2 shadow-xs">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="font-medium flex items-center gap-1.5">
             <Zap className="h-3.5 w-3.5 text-primary" />
+            {t("settings.system_info.patch_level")}
+          </span>
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-[9px]",
+              info?.patchInfo?.patchLevel && info.patchInfo.patchLevel > 0
+                ? "border-amber-500/30 text-amber-500 bg-amber-500/10"
+                : "border-primary/30 text-primary bg-primary/10"
+            )}
+          >
+            {info?.patchInfo?.patchLevel && info.patchInfo.patchLevel > 0
+              ? t("settings.system_info.patch_status_hotfix")
+              : t("settings.system_info.patch_status_baseline")}
+          </Badge>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-lg font-bold font-mono text-foreground">
+            Patch .{info?.patchInfo?.patchLevel ?? 0}
+          </span>
+          <CopyableBadge
+            text={`v${info?.patchInfo?.major ?? 1}.${info?.patchInfo?.minor ?? 0}.${info?.patchInfo?.patchLevel ?? 0}`}
+            label="SemVer Full Patch"
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground truncate">
+          {t("settings.system_info.patch_level_desc")}
+        </p>
+      </div>
+
+      {/* 3. REST API Namespace Card */}
+      <div className="rounded-lg border border-border/80 bg-card p-3.5 flex flex-col justify-between space-y-2 shadow-xs">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="font-medium flex items-center gap-1.5">
+            <Server className="h-3.5 w-3.5 text-primary" />
             {t("settings.system_info.api_version")}
           </span>
           <Badge variant="outline" className="border-border text-foreground bg-muted/30 text-[9px]">
@@ -127,9 +182,12 @@ export function CoreIdentityCards({
           </span>
           <CopyableBadge text={info?.apiVersion || "/api/v1"} label="API Version" />
         </div>
+        <p className="text-[10px] text-muted-foreground truncate">
+          {t("settings.system_info.api_contract_desc")}
+        </p>
       </div>
 
-      {/* Flyway Database Migrations */}
+      {/* 4. Flyway Database Migrations */}
       <div className="rounded-lg border border-border/80 bg-card p-3.5 flex flex-col justify-between space-y-2 shadow-xs">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="font-medium flex items-center gap-1.5">
@@ -146,9 +204,12 @@ export function CoreIdentityCards({
           </span>
           <CopyableBadge text={flywayDisplay} label="Flyway Schema" />
         </div>
+        <p className="text-[10px] text-muted-foreground truncate">
+          {dbSchemaDesc}
+        </p>
       </div>
 
-      {/* Active Git Commit Hash */}
+      {/* 5. Active Git Commit Hash */}
       <div className="rounded-lg border border-border/80 bg-card p-3.5 flex flex-col justify-between space-y-2 shadow-xs">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="font-medium flex items-center gap-1.5">
@@ -165,6 +226,137 @@ export function CoreIdentityCards({
           </span>
           <CopyableBadge text={info?.gitCommitHash || "08604d7f"} label="Git Commit" />
         </div>
+        <p className="text-[10px] text-muted-foreground truncate">
+          {gitCommitDesc}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function SystemPatchesChangelogCard({
+  info,
+  loading,
+}: {
+  info?: PlatformSystemInfoData;
+  loading: boolean;
+}) {
+  const { t } = useTranslation();
+  const patches = info?.patchInfo?.recentPatches || [];
+
+  if (loading && !info) {
+    return (
+      <div className="rounded-lg border border-border/80 bg-card p-4 space-y-3">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
+
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case "BASELINE":
+        return (
+          <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[9px] font-bold">
+            {t("settings.system_info.tag_baseline")}
+          </Badge>
+        );
+      case "SECURITY":
+        return (
+          <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-500 text-[9px] font-bold">
+            {t("settings.system_info.tag_security")}
+          </Badge>
+        );
+      case "BUGFIX":
+        return (
+          <Badge variant="outline" className="border-blue-500/40 bg-blue-500/10 text-blue-500 text-[9px] font-bold">
+            {t("settings.system_info.tag_bugfix")}
+          </Badge>
+        );
+      case "PERFORMANCE":
+        return (
+          <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-500 text-[9px] font-bold">
+            {t("settings.system_info.tag_performance")}
+          </Badge>
+        );
+      case "MIGRATION":
+        return (
+          <Badge variant="outline" className="border-purple-500/40 bg-purple-500/10 text-purple-500 text-[9px] font-bold">
+            {t("settings.system_info.tag_migration")}
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="border-border text-foreground text-[9px]">
+            {type}
+          </Badge>
+        );
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-border/80 bg-card overflow-hidden shadow-xs">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-muted/30 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider font-semibold">
+            <tr>
+              <th className="py-2.5 px-3.5">{t("settings.system_info.col_patch_version")}</th>
+              <th className="py-2.5 px-3">{t("settings.system_info.col_patch_type")}</th>
+              <th className="py-2.5 px-3">{t("settings.system_info.col_component")}</th>
+              <th className="py-2.5 px-3 min-w-[240px]">{t("settings.system_info.col_description")}</th>
+              <th className="py-2.5 px-3">{t("settings.system_info.col_db_migration")}</th>
+              <th className="py-2.5 px-3">{t("settings.system_info.col_commit")}</th>
+              <th className="py-2.5 px-3">{t("settings.system_info.col_date")}</th>
+              <th className="py-2.5 px-3.5 text-right">{t("settings.system_info.col_status")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/60">
+            {patches.map((patch) => (
+              <tr key={patch.id} className="hover:bg-muted/20 transition-colors">
+                <td className="py-2.5 px-3.5 font-mono font-bold text-foreground whitespace-nowrap">
+                  {patch.version}
+                </td>
+                <td className="py-2.5 px-3 whitespace-nowrap">
+                  {getTypeBadge(patch.type)}
+                </td>
+                <td className="py-2.5 px-3 text-foreground font-medium whitespace-nowrap">
+                  {patch.component}
+                </td>
+                <td className="py-2.5 px-3 text-muted-foreground leading-relaxed">
+                  {patch.description}
+                </td>
+                <td className="py-2.5 px-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                  {patch.dbMigration || "—"}
+                </td>
+                <td className="py-2.5 px-3 whitespace-nowrap">
+                  <CopyableBadge text={patch.commitHash} label="Commit" />
+                </td>
+                <td className="py-2.5 px-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                  {patch.releaseDate}
+                </td>
+                <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[9px] font-semibold",
+                      patch.status === "ACTIVE"
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : patch.status === "DEPLOYED"
+                        ? "border-border bg-muted/40 text-foreground"
+                        : "border-border text-muted-foreground"
+                    )}
+                  >
+                    {patch.status === "ACTIVE"
+                      ? t("settings.system_info.status_active")
+                      : patch.status === "DEPLOYED"
+                      ? t("settings.system_info.status_deployed")
+                      : t("settings.system_info.status_planned")}
+                  </Badge>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

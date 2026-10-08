@@ -65,6 +65,29 @@ export interface HostHealthMetrics {
   postgresConnections: number;
 }
 
+export interface PatchChangelogItem {
+  id: string;
+  version: string;
+  type: "BASELINE" | "SECURITY" | "BUGFIX" | "PERFORMANCE" | "MIGRATION";
+  component: string;
+  description: string;
+  dbMigration?: string;
+  commitHash: string;
+  releaseDate: string;
+  status: "ACTIVE" | "DEPLOYED" | "PLANNED";
+}
+
+export interface PatchInfo {
+  patchLevel: number;
+  major: number;
+  minor: number;
+  patch: number;
+  statusLabel: string;
+  statusBadge: "BASELINE" | "HOTFIX";
+  cleanBuild: boolean;
+  recentPatches: PatchChangelogItem[];
+}
+
 export interface PlatformSystemInfoData {
   appVersion: string;
   apiVersion: string;
@@ -74,6 +97,73 @@ export interface PlatformSystemInfoData {
   computeInfo: ComputeInfo;
   backupInfo: BackupInfo;
   hostHealth: HostHealthMetrics;
+  patchInfo: PatchInfo;
+}
+
+function parseSemVer(versionStr: string): { major: number; minor: number; patch: number } {
+  const clean = versionStr.replace(/^v/, "");
+  const parts = clean.split(".").map((p) => parseInt(p, 10));
+  return {
+    major: isNaN(parts[0]) ? 1 : parts[0],
+    minor: isNaN(parts[1]) ? 0 : parts[1],
+    patch: isNaN(parts[2]) ? 0 : parts[2],
+  };
+}
+
+function buildDynamicSystemPatches(
+  appVersion: string,
+  git: GitInfo,
+  lastMigration: MigrationInfo,
+  recentMigrations: MigrationInfo[]
+): PatchChangelogItem[] {
+  const patches: PatchChangelogItem[] = [];
+
+  // 1. Current Active Release & Git Code Patch (Live from Git & Version metadata)
+  patches.push({
+    id: `code-patch-${git.commitShort}`,
+    version: appVersion,
+    type: "BASELINE",
+    component: `Platform Core (${git.branch})`,
+    description: git.commitMessage || `Active production release build (${git.commitShort})`,
+    dbMigration: lastMigration.version !== "—" ? `Flyway V${lastMigration.version}` : "Flyway V51",
+    commitHash: git.commitShort,
+    releaseDate: git.commitTime && git.commitTime !== "—" ? git.commitTime.split(" ")[0] : new Date().toISOString().split("T")[0],
+    status: "ACTIVE",
+  });
+
+  // 2. Real Database Migration Patches from live PostgreSQL flyway_schema_history
+  if (recentMigrations && recentMigrations.length > 0) {
+    recentMigrations.forEach((m) => {
+      // Determine patch type based on description keywords
+      const descLower = (m.description || "").toLowerCase();
+      let pType: "SECURITY" | "BUGFIX" | "PERFORMANCE" | "MIGRATION" = "MIGRATION";
+      if (descLower.includes("security") || descLower.includes("auth") || descLower.includes("mfa") || descLower.includes("permission")) {
+        pType = "SECURITY";
+      } else if (descLower.includes("fix") || descLower.includes("bug")) {
+        pType = "BUGFIX";
+      } else if (descLower.includes("index") || descLower.includes("perf") || descLower.includes("view") || descLower.includes("partition")) {
+        pType = "PERFORMANCE";
+      }
+
+      const formattedDesc = (m.description || "")
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      patches.push({
+        id: `flyway-patch-v${m.version}`,
+        version: `Flyway V${m.version}`,
+        type: pType,
+        component: `Database Schema (PostgreSQL 17 + PostGIS)`,
+        description: `${formattedDesc} (Schema migration patch)`,
+        dbMigration: `V${m.version}`,
+        commitHash: git.commitShort,
+        releaseDate: m.installedOn && m.installedOn !== "N/A" && m.installedOn !== "—" ? m.installedOn.split(" ")[0] : "—",
+        status: "DEPLOYED",
+      });
+    });
+  }
+
+  return patches;
 }
 
 function parseGitInfo(raw: Partial<GitInfo> | undefined, fallbackCommit: string): GitInfo {
@@ -152,9 +242,25 @@ function parseSystemInfoPayload(
 ): PlatformSystemInfoData {
   const git = parseGitInfo(devopsData.git as Partial<GitInfo>, defaultCommit);
   const migration = parseMigrationInfo(devopsData.lastMigration as Partial<MigrationInfo>);
+  const recentMigrationsRaw = (devopsData.recentMigrations as Partial<MigrationInfo>[]) || [];
+  const recentMigrations = recentMigrationsRaw.map(parseMigrationInfo);
   const compute = parseComputeInfo(devopsData.compute as Partial<ComputeInfo>);
   const backup = parseBackupInfo(devopsData.lastBackup as Partial<BackupInfo>);
   const hostHealth = parseHostHealth(healthData);
+  const semver = parseSemVer(appVersion);
+
+  const dynamicPatches = buildDynamicSystemPatches(appVersion, git, migration, recentMigrations);
+
+  const patchInfo: PatchInfo = {
+    patchLevel: semver.patch,
+    major: semver.major,
+    minor: semver.minor,
+    patch: semver.patch,
+    statusLabel: semver.patch > 0 ? "Hotfix Applied" : "Baseline GA",
+    statusBadge: semver.patch > 0 ? "HOTFIX" : "BASELINE",
+    cleanBuild: true,
+    recentPatches: dynamicPatches,
+  };
 
   return {
     appVersion,
@@ -165,6 +271,7 @@ function parseSystemInfoPayload(
     computeInfo: compute,
     backupInfo: backup,
     hostHealth,
+    patchInfo,
   };
 }
 

@@ -59,6 +59,7 @@ export interface UserNavShellProps extends React.HTMLAttributes<HTMLDivElement> 
   navigationSlot?: React.ReactNode;
   impersonationSlot?: React.ReactNode;
   systemBackSlot?: React.ReactNode;
+  actionSlot?: React.ReactNode;
   customTrigger?: React.ReactNode;
   isLoading?: boolean;
   contentClassName?: string;
@@ -373,6 +374,7 @@ export function UserNavShell({
   navigationSlot,
   impersonationSlot,
   systemBackSlot,
+  actionSlot,
   customTrigger,
   isLoading = false,
   contentClassName,
@@ -429,6 +431,14 @@ export function UserNavShell({
             />
             <UserNavThemeSection theme={theme} onSetTheme={onSetTheme} labels={labels} />
             <UserNavModeSection isMono={isMono} onToggleMono={onToggleMono} labels={labels} />
+          </>
+        )}
+
+        {/* Extra Action Slot (e.g. Upgrade to Next Plan) */}
+        {actionSlot && (
+          <>
+            <DropdownMenuSeparator />
+            {actionSlot}
           </>
         )}
 

@@ -5,8 +5,9 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   useTheme,
+  cn,
 } from "@k2net/ui";
-import { ShieldAlert, Building, Users, CreditCard } from "lucide-react";
+import { ShieldAlert, Building, Users, CreditCard, Sparkles, ArrowUpRight } from "lucide-react";
 import { useAuth } from "@k2net/auth/client";
 import { useTranslation, type SupportedLocale } from "@k2net/i18n";
 import { useTenantInfo } from "../hooks/useTenantInfo";
@@ -71,7 +72,7 @@ export function TenantUserNav() {
   const { t, locale, setLocale } = useTranslation();
   const { user, logout, initialized } = useAuth();
   const { setTheme, resolvedTheme } = useTheme();
-  const { organizationName } = useTenantInfo();
+  const { organizationName, planTier } = useTenantInfo();
   const { isImpersonating, exitSession, isExiting } = useImpersonationSession();
   const navigate = useNavigate();
 
@@ -93,6 +94,37 @@ export function TenantUserNav() {
       redirectUri: `${window.location.origin}/login`,
     });
   };
+
+  const nextPlanInfo = React.useMemo(() => {
+    const rawTier = (planTier || "pro").toLowerCase();
+    if (rawTier.includes("enterprise") || rawTier.includes("sla")) {
+      return {
+        isTopTier: true,
+        targetPlan: "Enterprise",
+        label: `${t("billing.current_plan")}: Enterprise`,
+      };
+    }
+    if (rawTier.includes("pro") || rawTier.includes("business")) {
+      return {
+        isTopTier: false,
+        targetPlan: "Enterprise",
+        label: t("billing.upgrade_to", { planName: "Enterprise" }) || "Upgrade to Enterprise",
+      };
+    }
+    if (rawTier.includes("starter")) {
+      return {
+        isTopTier: false,
+        targetPlan: "Pro",
+        label: t("billing.upgrade_to", { planName: "Pro" }) || "Upgrade to Pro",
+      };
+    }
+    // Free / Trial / Basic
+    return {
+      isTopTier: false,
+      targetPlan: "Starter",
+      label: t("billing.upgrade_to", { planName: "Starter" }) || "Upgrade to Starter",
+    };
+  }, [planTier, t]);
 
   const displayName = isImpersonating
     ? `Super Admin (${t("security.impersonation_active_title")})`
@@ -172,6 +204,28 @@ export function TenantUserNav() {
               <span>{isExiting ? t("common.processing") : t("security.end_session_btn")}</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
+        ) : undefined
+      }
+      actionSlot={
+        !isImpersonating ? (
+          <div className="p-0.5">
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/billing" })}
+              className={cn(
+                "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer group shadow-xs select-none",
+                nextPlanInfo.isTopTier
+                  ? "bg-purple-500/10 hover:bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30"
+                  : "bg-primary/10 hover:bg-primary/15 text-primary border border-primary/30"
+              )}
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Sparkles className="size-3.5 shrink-0 transition-transform group-hover:scale-110" />
+                <span className="truncate">{nextPlanInfo.label}</span>
+              </div>
+              <ArrowUpRight className="size-3.5 opacity-70 group-hover:opacity-100 transition-opacity shrink-0 ml-1" />
+            </button>
+          </div>
         ) : undefined
       }
     />

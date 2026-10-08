@@ -9,6 +9,7 @@ import type {
 
 function formatOverview(info?: PlatformSystemInfoData, g?: GitInfo, m?: MigrationInfo): string[] {
   const version = info?.appVersion || "v1.0.0";
+  const patchLevel = info?.patchInfo?.patchLevel ?? 0;
   const api = info?.apiVersion || "/api/v1";
   const flyway = m?.version ? `Flyway V${m.version}` : "Flyway V51";
   const commit = info?.gitCommitHash || "08604d7f";
@@ -17,11 +18,30 @@ function formatOverview(info?: PlatformSystemInfoData, g?: GitInfo, m?: Migratio
   return [
     "# K2NET FTTH GIS — System & Architecture Specification",
     "",
-    `- **Platform Version**: ${version} (GA STABLE)`,
-    `- **REST API Namespace**: ${api} (ACTIVE)`,
-    `- **Database Schema**: ${flyway} (0 Gap)`,
+    `- **Platform Version**: ${version} (GA STABLE, SemVer: Major ${info?.patchInfo?.major ?? 1}, Minor ${info?.patchInfo?.minor ?? 0}, Patch ${patchLevel})`,
+    `- **Patch & Hotfix Level**: Patch .${patchLevel} (${info?.patchInfo?.statusLabel || "Baseline GA"})`,
+    `- **REST API Namespace**: ${api} (ACTIVE - Non-breaking Expand)`,
+    `- **Database Schema**: ${flyway} (0 Gap, ${m?.version || "51"} patches applied)`,
     `- **Active Git Commit**: \`${commit}\` (Branch: \`${branch}\`)`,
     `- **Generated At**: ${new Date().toISOString()}`,
+    "",
+  ];
+}
+
+function formatPatchesTable(info?: PlatformSystemInfoData): string[] {
+  const patches = info?.patchInfo?.recentPatches || [];
+  if (patches.length === 0) return [];
+
+  const rows = patches.map(
+    (p) =>
+      `| **${p.version}** | \`${p.type}\` | ${p.component} | ${p.description} | ${p.dbMigration || "—"} | \`${p.commitHash}\` | ${p.releaseDate} | \`${p.status}\` |`
+  );
+
+  return [
+    "## System Patches & Release Changelog",
+    "| Version | Type | Component | Changes & Scope | Flyway DB | Commit | Date | Status |",
+    "|---|---|---|---|---|---|---|---|",
+    ...rows,
     "",
   ];
 }
@@ -65,6 +85,7 @@ function formatBackupTelemetry(b?: BackupInfo): string {
 export function generateSystemMarkdown(info?: PlatformSystemInfoData): string {
   return [
     ...formatOverview(info, info?.gitInfo, info?.migrationInfo),
+    ...formatPatchesTable(info),
     ...formatInfraTable(),
     "## Live Runtime Telemetry & Health",
     ...formatComputeTelemetry(info?.computeInfo, info?.hostHealth),
