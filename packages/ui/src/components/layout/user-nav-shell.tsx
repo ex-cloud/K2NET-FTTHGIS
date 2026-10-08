@@ -398,21 +398,21 @@ export function UserNavShell({
 
         {navigationSlot && (
           <>
-            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuSeparator />
             {navigationSlot}
           </>
         )}
 
         {impersonationSlot && (
           <>
-            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuSeparator />
             {impersonationSlot}
           </>
         )}
 
         {systemBackSlot && (
           <>
-            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuSeparator />
             {systemBackSlot}
           </>
         )}
@@ -420,7 +420,7 @@ export function UserNavShell({
         {/* Preferences Section: Language, Timezone, Theme, Monochrome Mode */}
         {(onSetLocale || onTimezoneChange || onSetTheme || onToggleMono) && (
           <>
-            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuSeparator />
             <UserNavLanguageSection locale={locale} onSetLocale={onSetLocale} labels={labels} />
             <UserNavTimezoneSection
               selectedTimezone={selectedTimezone}
@@ -434,7 +434,7 @@ export function UserNavShell({
 
         {onLogout && (
           <>
-            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-xs focus:bg-accent cursor-pointer text-destructive focus:text-destructive font-semibold gap-2"
               onClick={onLogout}
@@ -446,7 +446,8 @@ export function UserNavShell({
         )}
 
         {/* Standardized App Version Badge Footer */}
-        <div className="pt-2 mt-1 border-t border-border/80 px-2.5 pb-1 flex items-center justify-between">
+        <DropdownMenuSeparator />
+        <div className="pt-1 px-2 pb-0.5 flex items-center justify-between">
           <span className="text-[10px] text-muted-foreground/60 font-mono select-none">Platform</span>
           <AppVersionBadge portalName={portalName} />
         </div>

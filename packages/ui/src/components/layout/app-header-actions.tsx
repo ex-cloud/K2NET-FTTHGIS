@@ -99,22 +99,8 @@ export function AppHeaderActions({
         </ActionTooltip>
       )}
 
-      {/* 2. Ask AI Copilot Button */}
-      {showAi && (
-        <ActionTooltip label={aiLabel} shortcut={aiShortcut} side="bottom">
-          <button
-            type="button"
-            onClick={onOpenAi}
-            className="hidden md:flex items-center justify-center h-7 w-7 rounded-md border border-border/80 bg-muted/30 hover:bg-muted/60 text-primary hover:text-primary transition-all shadow-xs cursor-pointer mr-0.5"
-            aria-label={aiLabel}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-          </button>
-        </ActionTooltip>
-      )}
-
-      {/* 3. Desktop Help & Notifications Buttons */}
-      {(showHelp || showNotifications) && (
+      {/* 2. Desktop Utility Buttons: Help, Notifications, AI Copilot */}
+      {(showHelp || showNotifications || showAi) && (
         <div className="hidden md:flex items-center gap-0.5">
           {showHelp && (
             <ActionTooltip label={helpLabel} shortcut={helpShortcut} side="bottom">
@@ -144,6 +130,20 @@ export function AppHeaderActions({
                 aria-label={notificationsLabel}
               >
                 <MessageSquare className="h-3.5 w-3.5" />
+              </Button>
+            </ActionTooltip>
+          )}
+
+          {showAi && (
+            <ActionTooltip label={aiLabel} shortcut={aiShortcut} side="bottom">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onOpenAi}
+                className="h-7 w-7 rounded-md text-primary hover:text-primary hover:bg-muted/40 cursor-pointer"
+                aria-label={aiLabel}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
               </Button>
             </ActionTooltip>
           )}
