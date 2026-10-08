@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Dot, LogOut, Globe, Clock, Check, Search } from "lucide-react";
+import { LogOut, Globe, Clock, Check, Search, Sun, Moon, Monitor, Paintbrush } from "lucide-react";
 import { cn } from "../../utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../avatar";
 import { Button } from "../button";
@@ -147,7 +147,7 @@ function UserNavLanguageSection({
             <span>🇬🇧</span>
             <span>English (EN)</span>
           </div>
-          {locale === "en" && <Check className="size-3.5 text-primary" />}
+          {locale === "en" && <Check className="size-3.5 text-primary shrink-0" />}
         </DropdownMenuItem>
         <DropdownMenuItem
           className="text-xs focus:bg-accent cursor-pointer flex items-center justify-between"
@@ -157,7 +157,7 @@ function UserNavLanguageSection({
             <span>🇮🇩</span>
             <span>Bahasa Indonesia (ID)</span>
           </div>
-          {locale === "id" && <Check className="size-3.5 text-primary" />}
+          {locale === "id" && <Check className="size-3.5 text-primary shrink-0" />}
         </DropdownMenuItem>
       </DropdownMenuSubContent>
     </DropdownMenuSub>
@@ -266,7 +266,7 @@ function UserNavTimezoneSection({
 }
 
 function UserNavThemeSection({
-  theme,
+  theme = "system",
   onSetTheme,
   labels,
 }: {
@@ -276,33 +276,59 @@ function UserNavThemeSection({
 }) {
   if (!onSetTheme) return null;
 
-  const themeLabels: Record<string, string> = {
-    system: labels?.themeSystem || "System",
-    dark: labels?.themeDark || "Dark",
-    light: labels?.themeLight || "Light",
-  };
+  const currentThemeLabel =
+    theme === "dark"
+      ? (labels?.themeDark || "Dark")
+      : theme === "light"
+      ? (labels?.themeLight || "Light")
+      : (labels?.themeSystem || "System");
+
+  const ThemeIcon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
 
   return (
-    <>
-      <DropdownMenuSeparator className="bg-border" />
-      <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
-        {labels?.themeTitle || "Theme"}
-      </DropdownMenuLabel>
-      {(["system", "dark", "light"] as const).map((key) => (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <ThemeIcon className="size-3.5 text-muted-foreground shrink-0" />
+          <span>{labels?.themeTitle || "Theme"}</span>
+        </div>
+        <span className="text-[11px] text-muted-foreground/80 font-mono font-semibold mr-1 capitalize">
+          {currentThemeLabel}
+        </span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="w-40 bg-popover border-border p-1">
         <DropdownMenuItem
-          key={key}
-          className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium capitalize"
-          onClick={() => onSetTheme(key)}
+          className="text-xs focus:bg-accent cursor-pointer flex items-center justify-between"
+          onClick={() => onSetTheme("system")}
         >
           <div className="flex items-center gap-2">
-            <div className="flex h-3.5 w-3.5 items-center justify-center">
-              {theme === key && <Dot className="size-8 text-primary" />}
-            </div>
-            <span>{themeLabels[key] || key}</span>
+            <Monitor className="size-3.5 text-muted-foreground" />
+            <span>{labels?.themeSystem || "System"}</span>
           </div>
+          {theme === "system" && <Check className="size-3.5 text-primary shrink-0" />}
         </DropdownMenuItem>
-      ))}
-    </>
+        <DropdownMenuItem
+          className="text-xs focus:bg-accent cursor-pointer flex items-center justify-between"
+          onClick={() => onSetTheme("dark")}
+        >
+          <div className="flex items-center gap-2">
+            <Moon className="size-3.5 text-muted-foreground" />
+            <span>{labels?.themeDark || "Dark"}</span>
+          </div>
+          {theme === "dark" && <Check className="size-3.5 text-primary shrink-0" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-xs focus:bg-accent cursor-pointer flex items-center justify-between"
+          onClick={() => onSetTheme("light")}
+        >
+          <div className="flex items-center gap-2">
+            <Sun className="size-3.5 text-muted-foreground" />
+            <span>{labels?.themeLight || "Light"}</span>
+          </div>
+          {theme === "light" && <Check className="size-3.5 text-primary shrink-0" />}
+        </DropdownMenuItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   );
 }
 
@@ -318,23 +344,16 @@ function UserNavModeSection({
   if (typeof isMono === "undefined" || !onToggleMono) return null;
 
   return (
-    <>
-      <DropdownMenuSeparator className="bg-border" />
-      <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
-        {labels?.modeTitle || "Mode"}
-      </DropdownMenuLabel>
-      <DropdownMenuItem
-        className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium"
-        onClick={onToggleMono}
-      >
-        <div className="flex items-center gap-2">
-          <div className="flex h-3.5 w-3.5 items-center justify-center">
-            {isMono && <Dot className="size-8 text-primary" />}
-          </div>
-          <span>{labels?.modeMono || "Monochrome Slate (Neutral Accent)"}</span>
-        </div>
-      </DropdownMenuItem>
-    </>
+    <DropdownMenuItem
+      className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium flex items-center justify-between"
+      onClick={onToggleMono}
+    >
+      <div className="flex items-center gap-2">
+        <Paintbrush className="size-3.5 text-muted-foreground shrink-0" />
+        <span>{labels?.modeMono || "Monochrome Mode"}</span>
+      </div>
+      {isMono && <Check className="size-3.5 text-primary shrink-0" />}
+    </DropdownMenuItem>
   );
 }
 
@@ -374,7 +393,6 @@ export function UserNavShell({
         )}
         side="bottom"
         align="end"
-        forceMount
       >
         <UserNavHeader user={user} />
 
@@ -399,8 +417,8 @@ export function UserNavShell({
           </>
         )}
 
-        {/* Preferences Section: Language & Timezone */}
-        {(onSetLocale || onTimezoneChange) && (
+        {/* Preferences Section: Language, Timezone, Theme, Monochrome Mode */}
+        {(onSetLocale || onTimezoneChange || onSetTheme || onToggleMono) && (
           <>
             <DropdownMenuSeparator className="bg-border" />
             <UserNavLanguageSection locale={locale} onSetLocale={onSetLocale} labels={labels} />
@@ -409,12 +427,10 @@ export function UserNavShell({
               onTimezoneChange={onTimezoneChange}
               labels={labels}
             />
+            <UserNavThemeSection theme={theme} onSetTheme={onSetTheme} labels={labels} />
+            <UserNavModeSection isMono={isMono} onToggleMono={onToggleMono} labels={labels} />
           </>
         )}
-
-        {/* Appearance Section: Theme & Mode */}
-        <UserNavThemeSection theme={theme} onSetTheme={onSetTheme} labels={labels} />
-        <UserNavModeSection isMono={isMono} onToggleMono={onToggleMono} labels={labels} />
 
         {onLogout && (
           <>
@@ -438,3 +454,4 @@ export function UserNavShell({
     </DropdownMenu>
   );
 }
+
