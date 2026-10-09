@@ -65,7 +65,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/network/map/**").permitAll()
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()
                         .requestMatchers("/api/v1/network/notifications/**").permitAll()
-                        .requestMatchers("/api/payments/callback").permitAll()
+                        .requestMatchers("/api/v1/payments/callback", "/api/payments/callback").permitAll()
                         .requestMatchers("/api/v1/network/trace-path/**").authenticated()
                         .requestMatchers("/api/v1/network/assets/**").authenticated()
                         .requestMatchers("/api/v1/organizations/register").permitAll() // Self-service tenant registration
