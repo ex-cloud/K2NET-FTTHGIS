@@ -54,7 +54,7 @@ public class OrganizationLicenseController {
      * Mengambil ringkasan metrik KPI lisensi lintas tenant untuk dasbor Super Admin.
      */
     @GetMapping("/licenses/overview")
-    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('system.observability.view')")
     public ResponseEntity<LicenseOverviewKpiDto> getLicensesOverview() {
         return ResponseEntity.ok(licenseManagementService.getLicensesOverview());
     }
@@ -63,7 +63,7 @@ public class OrganizationLicenseController {
      * Mengambil seluruh daftar lisensi lintas organisasi untuk tabel lisensi admin.
      */
     @GetMapping("/licenses")
-    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('system.observability.view')")
     public ResponseEntity<List<LicenseResponseDto>> getAllLicenses() {
         return ResponseEntity.ok(licenseManagementService.getAllLicenses());
     }

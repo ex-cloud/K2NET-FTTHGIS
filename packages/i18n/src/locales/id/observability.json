@@ -211,5 +211,13 @@
   "license_plan_tier": "Paket Langganan",
   "license_validity": "Sisa Masa Aktif",
   "license_quota_caps": "Batas Kuota Perangkat",
-  "license_all_healthy": "Seluruh lisensi tenant aktif dengan utilisasi kuota normal."
+  "license_all_healthy": "Seluruh lisensi tenant aktif dengan utilisasi kuota normal.",
+  "license_watchlist_title": "Daftar Pantau Masa Aktif & Kuota Perangkat Tenant",
+  "license_watchlist_desc": "Pemantauan proaktif tanggal jatuh tempo dan saturasi alokasi perangkat.",
+  "license_sorted_by_expiry": "Diurutkan dari masa aktif terdekat",
+  "license_total_registered": "total terdaftar",
+  "license_soft_locked": "tenant terkunci sementara",
+  "license_restricted_readonly": "akses baca-saja dibatasi",
+  "license_expiring_30d": "berakhir dalam 30 hari",
+  "license_active_renewals": "Pembaruan paket aktif / bln"
 }

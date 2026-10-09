@@ -11,7 +11,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -48,7 +48,8 @@
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": ""
         },
         "colorMode": "background",
         "graphMode": "none"
@@ -69,7 +70,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(ftth_platform_licenses_total{status=\"ACTIVE\"}) or vector(0)",
+          "expr": "ftth_platform_licenses{status=\"ACTIVE\"} or vector(0)",
+          "instant": true,
           "legendFormat": "Active",
           "refId": "A"
         }
@@ -93,7 +95,8 @@
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": ""
         },
         "colorMode": "background",
         "graphMode": "none"
@@ -117,7 +120,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(ftth_platform_licenses_total{status=\"GRACE_PERIOD\"}) or vector(0)",
+          "expr": "ftth_platform_licenses{status=\"GRACE_PERIOD\"} or vector(0)",
+          "instant": true,
           "legendFormat": "Grace Period",
           "refId": "A"
         }
@@ -141,7 +145,8 @@
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": ""
         },
         "colorMode": "background",
         "graphMode": "none"
@@ -165,7 +170,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(ftth_platform_licenses_total{status=\"RESTRICTED_READ_ONLY\"}) or vector(0)",
+          "expr": "ftth_platform_licenses{status=\"RESTRICTED_READ_ONLY\"} or vector(0)",
+          "instant": true,
           "legendFormat": "Read-Only",
           "refId": "A"
         }
@@ -189,7 +195,8 @@
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": ""
         },
         "colorMode": "background",
         "graphMode": "none"
@@ -215,6 +222,7 @@
             "uid": "prometheus"
           },
           "expr": "ftth_platform_licenses_expiring_soon_count or vector(0)",
+          "instant": true,
           "legendFormat": "Expiring Soon",
           "refId": "A"
         }
@@ -238,7 +246,8 @@
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
+          ],
+          "fields": ""
         },
         "colorMode": "background",
         "graphMode": "area"
@@ -260,6 +269,7 @@
             "uid": "prometheus"
           },
           "expr": "ftth_platform_monthly_recurring_revenue_idr or vector(0)",
+          "instant": true,
           "legendFormat": "MRR",
           "refId": "A"
         }
@@ -324,7 +334,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "ftth_license_days_remaining",
+          "expr": "ftth_license_days_remaining_days",
+          "instant": true,
           "legendFormat": "{{tenant_slug}} ({{plan}})",
           "refId": "A"
         }
@@ -371,7 +382,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "ftth_platform_licenses_total",
+          "expr": "ftth_platform_licenses",
+          "instant": true,
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -435,6 +447,7 @@
             "uid": "prometheus"
           },
           "expr": "ftth_hardware_quota_utilization_ratio{resource=\"olt\"}",
+          "instant": true,
           "legendFormat": "{{tenant_slug}}",
           "refId": "A"
         }
@@ -486,6 +499,7 @@
             "uid": "prometheus"
           },
           "expr": "ftth_hardware_quota_utilization_ratio{resource=\"odp\"}",
+          "instant": true,
           "legendFormat": "{{tenant_slug}}",
           "refId": "A"
         }
@@ -537,6 +551,7 @@
             "uid": "prometheus"
           },
           "expr": "ftth_hardware_quota_utilization_ratio{resource=\"storage\"}",
+          "instant": true,
           "legendFormat": "{{tenant_slug}}",
           "refId": "A"
         }

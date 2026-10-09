@@ -90,13 +90,18 @@ export interface RevokeLicensePayload {
 
 export function useLicenseOverview() {
   const { data: session, status } = useSession();
+  const activeToken =
+    session?.accessToken ||
+    (typeof window !== "undefined"
+      ? (window as unknown as { __K2NET_AUTH__?: { token?: string } }).__K2NET_AUTH__?.token
+      : undefined);
 
   return useQuery<LicenseOverviewKpi>({
-    queryKey: ["license-overview", session?.accessToken],
+    queryKey: ["license-overview", activeToken],
     queryFn: async () => {
       const baseUrl = getBackendBaseUrl();
       const res = await httpClient(`${baseUrl}/system/licenses/overview`, {
-        token: session?.accessToken ?? undefined,
+        token: activeToken,
       });
 
       if (!res.ok) {
@@ -104,20 +109,26 @@ export function useLicenseOverview() {
       }
       return res.json();
     },
-    enabled: status === "authenticated" && !!session?.accessToken,
+    enabled: status !== "unauthenticated" && (!!activeToken || typeof window !== "undefined"),
     staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
   });
 }
 
 export function useAllLicenses() {
   const { data: session, status } = useSession();
+  const activeToken =
+    session?.accessToken ||
+    (typeof window !== "undefined"
+      ? (window as unknown as { __K2NET_AUTH__?: { token?: string } }).__K2NET_AUTH__?.token
+      : undefined);
 
   return useQuery<LicenseItem[]>({
-    queryKey: ["all-licenses", session?.accessToken],
+    queryKey: ["all-licenses", activeToken],
     queryFn: async () => {
       const baseUrl = getBackendBaseUrl();
       const res = await httpClient(`${baseUrl}/system/licenses`, {
-        token: session?.accessToken ?? undefined,
+        token: activeToken,
       });
 
       if (!res.ok) {
@@ -126,8 +137,9 @@ export function useAllLicenses() {
       const data = await res.json();
       return Array.isArray(data) ? data : [];
     },
-    enabled: status === "authenticated" && !!session?.accessToken,
+    enabled: status !== "unauthenticated" && (!!activeToken || typeof window !== "undefined"),
     staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
   });
 }
 

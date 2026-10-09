@@ -56,7 +56,7 @@ groups:
           description: "Free disk space on / is less than 10%."
 
       - alert: TenantLicenseExpiringSoon
-        expr: ftth_license_days_remaining <= 7 and ftth_license_days_remaining > 0
+        expr: ftth_license_days_remaining_days <= 7 and ftth_license_days_remaining_days > 0
         for: 5m
         labels:
           severity: warning

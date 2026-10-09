@@ -80,73 +80,129 @@ function DaysBadge({ days }: { days: number }) {
   );
 }
 
-function ActiveLicensesCard({ active, total, loading, label }: { active: number; total: number; loading: boolean; label: string }) {
+function ActiveLicensesCard({
+  active,
+  total,
+  loading,
+  label,
+  subLabel,
+}: {
+  active: number;
+  total: number;
+  loading: boolean;
+  label: string;
+  subLabel: string;
+}) {
   return (
-    <div className="rounded-lg border border-border/80 bg-muted/10 p-3.5 space-y-1">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        <ShieldCheck className="h-3.5 w-3.5 text-foreground/75" />
+    <Card glowingEffect className="p-5 flex flex-col gap-2 bg-card/60 backdrop-blur-sm border-border">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <ShieldCheck className="h-4 w-4 text-primary" />
       </div>
-      <p className="text-xl font-bold text-foreground">
+      <p className="text-2xl font-bold text-foreground">
         {loading ? "…" : active}
       </p>
-      <p className="text-[11px] text-muted-foreground">
-        {loading ? "…" : `${total} total registered`}
+      <p className="text-xs text-muted-foreground">
+        {loading ? "…" : `${total} ${subLabel}`}
       </p>
-    </div>
+    </Card>
   );
 }
 
-function GracePeriodCard({ grace, readOnly, loading, label }: { grace: number; readOnly: number; loading: boolean; label: string }) {
+function GracePeriodCard({
+  grace,
+  readOnly,
+  loading,
+  label,
+  lockedLabel,
+  readOnlyLabel,
+}: {
+  grace: number;
+  readOnly: number;
+  loading: boolean;
+  label: string;
+  lockedLabel: string;
+  readOnlyLabel: string;
+}) {
   const isGrace = grace > 0;
   return (
-    <div className="rounded-lg border border-border/80 bg-muted/10 p-3.5 space-y-1">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        <Clock className="h-3.5 w-3.5 text-amber-500" />
+    <Card glowingEffect className="p-5 flex flex-col gap-2 bg-card/60 backdrop-blur-sm border-border">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <Clock className="h-4 w-4 text-amber-500" />
       </div>
-      <p className={`text-xl font-bold ${isGrace ? "text-amber-500" : "text-foreground"}`}>
+      <p className={`text-2xl font-bold ${isGrace ? "text-amber-500" : "text-foreground"}`}>
         {loading ? "…" : grace}
       </p>
-      <p className="text-[11px] text-muted-foreground">
-        {readOnly > 0 ? `${readOnly} restricted read-only` : "0 soft-locked tenants"}
+      <p className="text-xs text-muted-foreground">
+        {readOnly > 0 ? `${readOnly} ${readOnlyLabel}` : `0 ${lockedLabel}`}
       </p>
-    </div>
+    </Card>
   );
 }
 
-function ExpiringSoonCard({ expiring7, expiring30, loading, label }: { expiring7: number; expiring30: number; loading: boolean; label: string }) {
+function ExpiringSoonCard({
+  expiring7,
+  expiring30,
+  loading,
+  label,
+  subLabel,
+}: {
+  expiring7: number;
+  expiring30: number;
+  loading: boolean;
+  label: string;
+  subLabel: string;
+}) {
   const isExpiring = expiring7 > 0;
   return (
-    <div className="rounded-lg border border-border/80 bg-muted/10 p-3.5 space-y-1">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        <AlertTriangle className={`h-3.5 w-3.5 ${isExpiring ? "text-rose-500" : "text-muted-foreground"}`} />
+    <Card glowingEffect className="p-5 flex flex-col gap-2 bg-card/60 backdrop-blur-sm border-border">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <AlertTriangle className={`h-4 w-4 ${isExpiring ? "text-rose-500" : "text-muted-foreground"}`} />
       </div>
-      <p className={`text-xl font-bold ${isExpiring ? "text-rose-500" : "text-foreground"}`}>
+      <p className={`text-2xl font-bold ${isExpiring ? "text-rose-500" : "text-foreground"}`}>
         {loading ? "…" : expiring7}
       </p>
-      <p className="text-[11px] text-muted-foreground">
-        {loading ? "…" : `${expiring30} expiring in 30 days`}
+      <p className="text-xs text-muted-foreground">
+        {loading ? "…" : `${expiring30} ${subLabel}`}
       </p>
-    </div>
+    </Card>
   );
 }
 
-function MrrCard({ mrr, loading, label }: { mrr: number; loading: boolean; label: string }) {
+function MrrCard({
+  mrr,
+  loading,
+  label,
+  subLabel,
+}: {
+  mrr: number;
+  loading: boolean;
+  label: string;
+  subLabel: string;
+}) {
   return (
-    <div className="rounded-lg border border-border/80 bg-muted/10 p-3.5 space-y-1">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        <TrendingUp className="h-3.5 w-3.5 text-primary" />
+    <Card glowingEffect className="p-5 flex flex-col gap-2 bg-card/60 backdrop-blur-sm border-border">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <TrendingUp className="h-4 w-4 text-primary" />
       </div>
-      <p className="text-xl font-bold text-foreground">
+      <p className="text-2xl font-bold text-foreground">
         {loading ? "…" : formatIdr(mrr)}
       </p>
-      <p className="text-[11px] text-muted-foreground">
-        Active plan renewals / mo
+      <p className="text-xs text-muted-foreground">
+        {subLabel}
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -168,11 +224,35 @@ function LicenseKpiGrid({
   const mrr = kpi?.monthlyRecurringRevenue ?? 0;
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <ActiveLicensesCard active={active} total={total} loading={loading} label={t("observability.license_active_count")} />
-      <GracePeriodCard grace={grace} readOnly={readOnly} loading={loading} label={t("observability.license_grace_count")} />
-      <ExpiringSoonCard expiring7={expiring7} expiring30={expiring30} loading={loading} label={t("observability.license_expiring_soon")} />
-      <MrrCard mrr={mrr} loading={loading} label={t("observability.license_mrr_label")} />
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ActiveLicensesCard
+        active={active}
+        total={total}
+        loading={loading}
+        label={t("observability.license_active_count")}
+        subLabel={t("observability.license_total_registered")}
+      />
+      <GracePeriodCard
+        grace={grace}
+        readOnly={readOnly}
+        loading={loading}
+        label={t("observability.license_grace_count")}
+        lockedLabel={t("observability.license_soft_locked")}
+        readOnlyLabel={t("observability.license_restricted_readonly")}
+      />
+      <ExpiringSoonCard
+        expiring7={expiring7}
+        expiring30={expiring30}
+        loading={loading}
+        label={t("observability.license_expiring_soon")}
+        subLabel={t("observability.license_expiring_30d")}
+      />
+      <MrrCard
+        mrr={mrr}
+        loading={loading}
+        label={t("observability.license_mrr_label")}
+        subLabel={t("observability.license_active_renewals")}
+      />
     </div>
   );
 }
@@ -233,9 +313,9 @@ export function PlatformLicenseTelemetryWidget() {
   }, [allLicenses]);
 
   return (
-    <Card glowingEffect className="border-border bg-card/60 backdrop-blur-sm p-5 space-y-5">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-muted/30">
@@ -267,7 +347,7 @@ export function PlatformLicenseTelemetryWidget() {
             variant="default"
             size="sm"
             onClick={() => router.push("/licenses")}
-            className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs"
+            className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs bg-foreground text-background"
           >
             <ArrowUpRight className="h-3.5 w-3.5" />
             {t("observability.license_open_hub")}
@@ -275,36 +355,43 @@ export function PlatformLicenseTelemetryWidget() {
         </div>
       </div>
 
-      {/* KPI Stats */}
+      {/* KPI Stats - Each card is individual Card with glowingEffect & p-5 padding */}
       <LicenseKpiGrid kpi={kpi} loading={kpiLoading} t={t} />
 
       {/* Tenant Watchlist */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold text-foreground/80">
-            Tenant Validity & Hardware Quotas Watchlist
-          </span>
-          <span className="text-muted-foreground text-[11px]">
-            Sorted by closest expiry date
+      <Card className="border-border bg-card/60 backdrop-blur-sm">
+        <div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
+          <div className="space-y-0.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+              {t("observability.license_watchlist_title")}
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              {t("observability.license_watchlist_desc")}
+            </p>
+          </div>
+          <span className="text-[11px] text-muted-foreground font-mono">
+            {t("observability.license_sorted_by_expiry")}
           </span>
         </div>
 
-        {licensesLoading ? (
-          <div className="rounded-lg border border-border bg-muted/10 p-4 text-center text-xs text-muted-foreground">
-            Loading tenant telemetries…
-          </div>
-        ) : urgentLicenses.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-            {t("observability.license_all_healthy")}
-          </div>
-        ) : (
-          <div className="divide-y divide-border/60 rounded-lg border border-border/80 bg-card/40 overflow-hidden">
-            {urgentLicenses.map((lic: LicenseItem) => (
-              <TenantWatchlistRow key={lic.id} lic={lic} />
-            ))}
-          </div>
-        )}
-      </div>
-    </Card>
+        <div>
+          {licensesLoading ? (
+            <div className="p-5 text-center text-xs text-muted-foreground">
+              Loading tenant telemetries…
+            </div>
+          ) : urgentLicenses.length === 0 ? (
+            <div className="p-5 text-center text-xs text-muted-foreground">
+              {t("observability.license_all_healthy")}
+            </div>
+          ) : (
+            <div className="divide-y divide-border/60">
+              {urgentLicenses.map((lic: LicenseItem) => (
+                <TenantWatchlistRow key={lic.id} lic={lic} />
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }

@@ -211,5 +211,13 @@
   "license_plan_tier": "Plan Tier",
   "license_validity": "Remaining Validity",
   "license_quota_caps": "Hardware Quota Caps",
-  "license_all_healthy": "All tenant licenses are active with healthy quota utilization."
+  "license_all_healthy": "All tenant licenses are active with healthy quota utilization.",
+  "license_watchlist_title": "Tenant Validity & Hardware Quotas Watchlist",
+  "license_watchlist_desc": "Proactive monitoring of upcoming expiration dates and resource saturation.",
+  "license_sorted_by_expiry": "Sorted by closest expiry date",
+  "license_total_registered": "total registered",
+  "license_soft_locked": "soft-locked tenants",
+  "license_restricted_readonly": "restricted read-only",
+  "license_expiring_30d": "expiring in 30 days",
+  "license_active_renewals": "Active plan renewals / mo"
 }
