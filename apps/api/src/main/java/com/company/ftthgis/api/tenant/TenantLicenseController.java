@@ -145,9 +145,13 @@ public class TenantLicenseController {
             if (email != null && !email.isBlank()) return email;
             String preferredUsername = jwt.getClaimAsString("preferred_username");
             if (preferredUsername != null && !preferredUsername.isBlank()) return preferredUsername;
-            return jwt.getSubject();
+            String sub = jwt.getSubject();
+            if (sub != null && !sub.isBlank()) return sub;
         }
-        return auth != null ? auth.getName() : "TENANT_ADMIN";
+        if (auth != null && auth.getName() != null && !auth.getName().isBlank()) {
+            return auth.getName();
+        }
+        return "TENANT_ADMIN";
     }
 
     private BillingInvoiceResponseDto mapToInvoiceDto(BillingInvoice inv) {

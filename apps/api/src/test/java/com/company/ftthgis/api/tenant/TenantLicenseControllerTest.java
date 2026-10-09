@@ -58,6 +58,7 @@ public class TenantLicenseControllerTest {
 
     @BeforeEach
     public void setUp() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
         mockMvc = MockMvcBuilders.standaloneSetup(tenantLicenseController).build();
         OrganizationContext.setOrganizationId(testOrgId);
     }
@@ -65,6 +66,7 @@ public class TenantLicenseControllerTest {
     @AfterEach
     public void tearDown() {
         OrganizationContext.clear();
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 
     @Test

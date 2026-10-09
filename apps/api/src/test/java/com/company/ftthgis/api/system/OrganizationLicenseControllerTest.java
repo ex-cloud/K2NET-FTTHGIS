@@ -53,7 +53,13 @@ public class OrganizationLicenseControllerTest {
 
     @BeforeEach
     public void setUp() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
         mockMvc = MockMvcBuilders.standaloneSetup(organizationLicenseController).build();
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    public void tearDown() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 
     @Test

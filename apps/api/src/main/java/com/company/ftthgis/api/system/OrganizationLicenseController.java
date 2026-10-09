@@ -21,8 +21,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -129,13 +131,14 @@ public class OrganizationLicenseController {
 
         licenseManagementService.revokeLicense(licenseId, request.getReason(), revokedBy);
 
-        return ResponseEntity.ok(Map.of(
-                "status", "REVOKED",
-                "licenseId", licenseId,
-                "organizationId", orgId,
-                "reason", request.getReason(),
-                "revokedBy", revokedBy
-        ));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("status", "REVOKED");
+        result.put("licenseId", licenseId.toString());
+        result.put("organizationId", orgId.toString());
+        result.put("reason", request.getReason());
+        result.put("revokedBy", Objects.requireNonNullElse(revokedBy, "SUPER_ADMIN"));
+
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -165,8 +168,12 @@ public class OrganizationLicenseController {
             if (email != null && !email.isBlank()) return email;
             String preferredUsername = jwt.getClaimAsString("preferred_username");
             if (preferredUsername != null && !preferredUsername.isBlank()) return preferredUsername;
-            return jwt.getSubject();
+            String sub = jwt.getSubject();
+            if (sub != null && !sub.isBlank()) return sub;
         }
-        return auth != null ? auth.getName() : "SUPER_ADMIN";
+        if (auth != null && auth.getName() != null && !auth.getName().isBlank()) {
+            return auth.getName();
+        }
+        return "SUPER_ADMIN";
     }
 }
