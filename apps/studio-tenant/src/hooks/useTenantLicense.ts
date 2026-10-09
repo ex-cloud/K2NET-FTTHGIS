@@ -64,6 +64,21 @@ export interface BillingContacts {
   notifyWhatsappEnabled: boolean;
 }
 
+export interface ProrateEstimate {
+  currentPlan: string;
+  targetPlan: string;
+  currentPlanPrice: number;
+  targetPlanPrice: number;
+  daysRemaining: number;
+  totalCycleDays: number;
+  dailyRateOld: number;
+  proratedCredit: number;
+  netDueAmount: number;
+  currency: string;
+  isUpgradeEligible: boolean;
+  calculationSummary: string;
+}
+
 export function useTenantLicense() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -202,4 +217,16 @@ export function useTenantLicense() {
     activateOfflineCertificate: activateOfflineMutation.mutateAsync,
     isActivatingOffline: activateOfflineMutation.isPending,
   };
+}
+
+export function useProrateEstimate(targetPlan: string | null) {
+  return useQuery<ProrateEstimate | null>({
+    queryKey: ["tenant-prorate-estimate", targetPlan],
+    queryFn: async () => {
+      if (!targetPlan) return null;
+      return apiClient<ProrateEstimate>(`/api/v1/tenant/license/prorate-estimate?targetPlan=${encodeURIComponent(targetPlan)}`);
+    },
+    enabled: Boolean(targetPlan),
+    staleTime: 30 * 1000,
+  });
 }

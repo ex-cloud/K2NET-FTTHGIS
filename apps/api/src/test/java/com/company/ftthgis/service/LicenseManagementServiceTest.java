@@ -2,6 +2,7 @@ package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.tenant.dto.LicenseEntitlementsDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
+import com.company.ftthgis.api.tenant.dto.ProrateEstimateResponseDto;
 import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.SubscriptionPlan;
@@ -18,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -367,5 +369,117 @@ class LicenseManagementServiceTest {
         );
 
         assertTrue(ex.getMessage().contains("Hardware Fingerprint"));
+    }
+
+    @Test
+    @DisplayName("calculateProrateEstimate should calculate 50% credit for Starter to Pro upgrade with 15 days remaining")
+    void testCalculateProrateEstimate_StarterToPro_Day15() {
+        SubscriptionPlan starterPlan = SubscriptionPlan.builder()
+                .id(UUID.randomUUID())
+                .name("STARTER")
+                .price(new BigDecimal("990000.00"))
+                .maxProjects(2)
+                .maxOdps(300)
+                .build();
+
+        SubscriptionPlan targetProPlan = SubscriptionPlan.builder()
+                .id(UUID.randomUUID())
+                .name("PRO")
+                .price(new BigDecimal("3900000.00"))
+                .maxProjects(6)
+                .maxOdps(2500)
+                .build();
+
+        LocalDateTime now = LocalDateTime.now();
+        TenantLicense activeLicense = TenantLicense.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .subscriptionPlan(starterPlan)
+                .licenseKey("K2NET-STARTER-11223344-AABB")
+                .status(LicenseStatus.ACTIVE)
+                .validFrom(now.minusDays(15))
+                .validUntil(now.plusDays(15))
+                .build();
+
+        when(organizationRepository.findById(testOrg.getId())).thenReturn(Optional.of(testOrg));
+        when(subscriptionPlanRepository.findByName("PRO")).thenReturn(Optional.of(targetProPlan));
+        when(tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(testOrg.getId(), LicenseStatus.ACTIVE))
+                .thenReturn(Optional.of(activeLicense));
+
+        ProrateEstimateResponseDto estimate = licenseManagementService.calculateProrateEstimate(testOrg.getId(), "PRO");
+
+        assertNotNull(estimate);
+        assertEquals("STARTER", estimate.getCurrentPlan());
+        assertEquals("PRO", estimate.getTargetPlan());
+        assertEquals(new BigDecimal("990000.00"), estimate.getCurrentPlanPrice());
+        assertEquals(new BigDecimal("3900000.00"), estimate.getTargetPlanPrice());
+        assertTrue(estimate.getDaysRemaining() >= 14 && estimate.getDaysRemaining() <= 15);
+        assertTrue(estimate.isUpgradeEligible());
+        // Daily rate: 990000 / 30 = 33000
+        // Credit for 15 days: 33000 * 15 = 495000
+        assertEquals(0, new BigDecimal("495000.00").compareTo(estimate.getProratedCredit()));
+        assertEquals(0, new BigDecimal("3405000.00").compareTo(estimate.getNetDueAmount()));
+    }
+
+    @Test
+    @DisplayName("calculateProrateEstimate should charge full price with 0 credit when no active license exists")
+    void testCalculateProrateEstimate_NoActiveLicense_FullPrice() {
+        SubscriptionPlan targetStarterPlan = SubscriptionPlan.builder()
+                .id(UUID.randomUUID())
+                .name("STARTER")
+                .price(new BigDecimal("990000.00"))
+                .build();
+
+        when(organizationRepository.findById(testOrg.getId())).thenReturn(Optional.of(testOrg));
+        when(subscriptionPlanRepository.findByName("STARTER")).thenReturn(Optional.of(targetStarterPlan));
+        when(tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(testOrg.getId(), LicenseStatus.ACTIVE))
+                .thenReturn(Optional.empty());
+
+        ProrateEstimateResponseDto estimate = licenseManagementService.calculateProrateEstimate(testOrg.getId(), "STARTER");
+
+        assertNotNull(estimate);
+        assertEquals("STARTER", estimate.getTargetPlan());
+        assertEquals(0, estimate.getDaysRemaining());
+        assertEquals(0, BigDecimal.ZERO.compareTo(estimate.getProratedCredit()));
+        assertEquals(0, new BigDecimal("990000.00").compareTo(estimate.getNetDueAmount()));
+    }
+
+    @Test
+    @DisplayName("calculateProrateEstimate should give 0 credit for same plan or downgrade")
+    void testCalculateProrateEstimate_SameOrDowngrade_ZeroCredit() {
+        SubscriptionPlan proPlanCurrent = SubscriptionPlan.builder()
+                .id(UUID.randomUUID())
+                .name("PRO")
+                .price(new BigDecimal("3900000.00"))
+                .build();
+
+        SubscriptionPlan starterPlanTarget = SubscriptionPlan.builder()
+                .id(UUID.randomUUID())
+                .name("STARTER")
+                .price(new BigDecimal("990000.00"))
+                .build();
+
+        LocalDateTime now = LocalDateTime.now();
+        TenantLicense activeLicense = TenantLicense.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .subscriptionPlan(proPlanCurrent)
+                .licenseKey("K2NET-PRO-55667788-9900")
+                .status(LicenseStatus.ACTIVE)
+                .validFrom(now.minusDays(5))
+                .validUntil(now.plusDays(25))
+                .build();
+
+        when(organizationRepository.findById(testOrg.getId())).thenReturn(Optional.of(testOrg));
+        when(subscriptionPlanRepository.findByName("STARTER")).thenReturn(Optional.of(starterPlanTarget));
+        when(tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(testOrg.getId(), LicenseStatus.ACTIVE))
+                .thenReturn(Optional.of(activeLicense));
+
+        ProrateEstimateResponseDto estimate = licenseManagementService.calculateProrateEstimate(testOrg.getId(), "STARTER");
+
+        assertNotNull(estimate);
+        assertFalse(estimate.isUpgradeEligible());
+        assertEquals(0, BigDecimal.ZERO.compareTo(estimate.getProratedCredit()));
+        assertEquals(0, new BigDecimal("990000.00").compareTo(estimate.getNetDueAmount()));
     }
 }

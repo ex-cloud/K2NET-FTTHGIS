@@ -4,6 +4,7 @@ import com.company.ftthgis.api.system.dto.LicenseOverviewKpiDto;
 import com.company.ftthgis.api.tenant.dto.LicenseEntitlementsDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
+import com.company.ftthgis.api.tenant.dto.ProrateEstimateResponseDto;
 import com.company.ftthgis.domain.tenant.entity.*;
 import com.company.ftthgis.domain.tenant.repository.BillingInvoiceRepository;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -758,6 +760,86 @@ public class LicenseManagementService {
             return parts[0] + "-" + parts[1] + "-****-" + parts[3];
         }
         return key.substring(0, 8) + "-****-" + key.substring(key.length() - 4);
+    }
+
+    /**
+     * Menghitung estimasi prorata penyesuaian biaya upgrade paket langganan
+     * di tengah periode siklus berjalan (Mid-Cycle Upgrade).
+     */
+    @Transactional(readOnly = true)
+    public ProrateEstimateResponseDto calculateProrateEstimate(UUID orgId, String targetPlanName) {
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new NoSuchElementException("Organisasi tidak ditemukan: " + orgId));
+
+        if (targetPlanName == null || targetPlanName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Nama target paket langganan wajib disertakan.");
+        }
+
+        String normalizedTargetPlan = targetPlanName.trim().toUpperCase(Locale.ROOT);
+        SubscriptionPlan targetPlan = subscriptionPlanRepository.findByName(normalizedTargetPlan)
+                .orElseThrow(() -> new NoSuchElementException("Paket langganan target tidak ditemukan: " + targetPlanName));
+
+        // Dapatkan lisensi aktif tenant saat ini
+        Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
+                .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(orgId, LicenseStatus.ACTIVE);
+
+        SubscriptionPlan currentPlan = activeLicenseOpt.map(TenantLicense::getSubscriptionPlan)
+                .orElse(org.getSubscriptionPlan());
+
+        String currentPlanName = currentPlan != null ? currentPlan.getName() : "FREE";
+        BigDecimal currentPlanPrice = currentPlan != null && currentPlan.getPrice() != null
+                ? currentPlan.getPrice()
+                : BigDecimal.ZERO;
+        BigDecimal targetPlanPrice = targetPlan.getPrice() != null ? targetPlan.getPrice() : BigDecimal.ZERO;
+
+        long daysRemaining = 0;
+        int totalCycleDays = 30;
+        BigDecimal dailyRateOld = BigDecimal.ZERO;
+        BigDecimal proratedCredit = BigDecimal.ZERO;
+        boolean isUpgrade = targetPlanPrice.compareTo(currentPlanPrice) > 0;
+
+        if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getValidUntil() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime validUntil = activeLicenseOpt.get().getValidUntil();
+            if (validUntil.isAfter(now)) {
+                daysRemaining = java.time.temporal.ChronoUnit.DAYS.between(now.toLocalDate(), validUntil.toLocalDate());
+                if (daysRemaining <= 0 && validUntil.isAfter(now)) {
+                    daysRemaining = 1;
+                }
+                if (daysRemaining > 0 && currentPlanPrice.compareTo(BigDecimal.ZERO) > 0 && isUpgrade) {
+                    dailyRateOld = currentPlanPrice.divide(BigDecimal.valueOf(totalCycleDays), 2, RoundingMode.HALF_UP);
+                    long creditDays = Math.min(totalCycleDays, daysRemaining);
+                    proratedCredit = dailyRateOld.multiply(BigDecimal.valueOf(creditDays));
+                    if (proratedCredit.compareTo(currentPlanPrice) > 0) {
+                        proratedCredit = currentPlanPrice;
+                    }
+                }
+            }
+        }
+
+        BigDecimal netDueAmount = targetPlanPrice.subtract(proratedCredit);
+        if (netDueAmount.compareTo(BigDecimal.ZERO) < 0) {
+            netDueAmount = BigDecimal.ZERO;
+        }
+
+        String summary = isUpgrade
+                ? String.format("Upgrade from %s to %s with %d days remaining credited.", currentPlanName, normalizedTargetPlan, daysRemaining)
+                : String.format("Direct subscription to %s.", normalizedTargetPlan);
+
+        return ProrateEstimateResponseDto.builder()
+                .currentPlan(currentPlanName)
+                .targetPlan(normalizedTargetPlan)
+                .currentPlanPrice(currentPlanPrice)
+                .targetPlanPrice(targetPlanPrice)
+                .daysRemaining(daysRemaining)
+                .totalCycleDays(totalCycleDays)
+                .dailyRateOld(dailyRateOld)
+                .proratedCredit(proratedCredit)
+                .netDueAmount(netDueAmount)
+                .currency("IDR")
+                .isUpgradeEligible(isUpgrade)
+                .calculationSummary(summary)
+                .build();
     }
 
     private void auditLog(String tenantSlug, String action, String orgId, String details) {

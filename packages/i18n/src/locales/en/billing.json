@@ -118,5 +118,18 @@
   "starter_h1": "Max 2 OLT & 300 ODP, 500 Subscribers",
   "starter_h2": "15 GB MinIO S3 Storage & 2,000 RPM API",
   "starter_h3": "Webhook & REST API Integration Access",
-  "starter_h4": "Standard SLA & Community Support"
+  "starter_h4": "Standard SLA & Community Support",
+  "prorate_modal_title": "Mid-Cycle Prorated Plan Upgrade",
+  "prorate_modal_desc": "Upgrade to a higher tier plan with automatic unused days credit applied.",
+  "calculating_prorate": "Calculating prorated adjustment...",
+  "target_plan": "Target Upgrade Plan",
+  "days_remaining_label": "{{count}} days left",
+  "full_month_entitlement": "30-day full cycle renewal",
+  "price_breakdown_title": "Prorated Calculation Breakdown",
+  "base_target_price": "Standard {{plan}} Price (30 Days)",
+  "prorated_credit_label": "Unused Credit Compensation ({{count}} Days)",
+  "net_due_today": "Net Amount Due Today",
+  "tax_inclusive_notice": "Instant activation via payment gateway",
+  "checkout_reassurance_desc": "Your new plan hardware quotas and feature entitlements will activate immediately once payment is verified via Xendit.",
+  "confirm_and_pay_xendit": "Pay via Xendit"
 }

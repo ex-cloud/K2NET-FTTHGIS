@@ -4,6 +4,7 @@ import com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto;
 import com.company.ftthgis.api.tenant.dto.LicenseActivateRequest;
 import com.company.ftthgis.api.tenant.dto.OfflineLicenseActivateRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
+import com.company.ftthgis.api.tenant.dto.ProrateEstimateResponseDto;
 import com.company.ftthgis.config.tenant.OrganizationContext;
 import com.company.ftthgis.domain.tenant.entity.BillingInvoice;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
@@ -164,6 +165,25 @@ public class TenantLicenseController {
                 .toList();
 
         return ResponseEntity.ok(dtos);
+    }
+
+    /**
+     * Menghitung estimasi rincian kompensasi kredit prorata untuk upgrade paket di tengah siklus.
+     */
+    @GetMapping("/prorate-estimate")
+    @PreAuthorize("@tenantSecurity.hasEffectivePermission('billing.view') or hasAuthority('billing.view')")
+    public ResponseEntity<ProrateEstimateResponseDto> getProrateEstimate(@RequestParam("targetPlan") String targetPlan) {
+        UUID orgId = resolveCurrentOrganizationId();
+        if (orgId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Organisasi tenant tidak ditemukan pada sesi otentikasi.");
+        }
+
+        if (targetPlan == null || targetPlan.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Target plan name is required");
+        }
+
+        ProrateEstimateResponseDto estimate = licenseManagementService.calculateProrateEstimate(orgId, targetPlan.trim());
+        return ResponseEntity.ok(estimate);
     }
 
     // ── Internal Helpers ────────────────────────────────────────────────────

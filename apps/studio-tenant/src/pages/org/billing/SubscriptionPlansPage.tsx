@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "../../../lib/api-client";
 import { useTenantSubscription } from "../../../hooks/useTenantSubscription";
 import { toast } from "sonner";
+import { ProratedUpgradeModal } from "../../../components/licenses/ProratedUpgradeModal";
 
 interface SubscribeResponse {
   invoice_id?: string;
@@ -249,6 +250,7 @@ function buildPlanList(tier: string, formatCurrency: (v: number) => string, t: (
 export function SubscriptionPlansPage() {
   const { t, formatCurrency } = useTranslation();
   const { summary, tier, planCycle, refetch } = useTenantSubscription();
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = React.useState<string | null>(null);
 
   const subscribeMutation = useMutation({
     mutationFn: async (targetPlan: string) => {
@@ -262,6 +264,7 @@ export function SubscriptionPlansPage() {
       if (data?.invoice_url) {
         window.open(data.invoice_url, "_blank");
       }
+      setSelectedUpgradePlan(null);
       refetch();
     },
     onError: (err) => {
@@ -293,7 +296,7 @@ export function SubscriptionPlansPage() {
           planCycle={planCycle}
           isBoosterActive={Boolean(summary?.isBoosterActive)}
           boosterDaysRemaining={summary?.boosterDaysRemaining || 0}
-          onManageQuota={() => subscribeMutation.mutate("STARTER")}
+          onManageQuota={() => setSelectedUpgradePlan("STARTER")}
         />
 
         <div className="space-y-3">
@@ -306,13 +309,26 @@ export function SubscriptionPlansPage() {
               <PricingTierCard
                 key={p.key}
                 plan={p}
-                isPending={subscribeMutation.isPending}
-                onSelect={(k) => subscribeMutation.mutate(k)}
+                isPending={subscribeMutation.isPending && selectedUpgradePlan === p.key}
+                onSelect={(k) => setSelectedUpgradePlan(k)}
               />
             ))}
           </div>
         </div>
       </PageContentShell>
+
+      {/* Prorated Upgrade Interactive Calculator Modal */}
+      <ProratedUpgradeModal
+        open={Boolean(selectedUpgradePlan)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedUpgradePlan(null);
+        }}
+        targetPlan={selectedUpgradePlan}
+        onConfirmCheckout={async (plan) => {
+          await subscribeMutation.mutateAsync(plan);
+        }}
+        isCheckingOut={subscribeMutation.isPending}
+      />
     </div>
   );
 }

@@ -118,5 +118,18 @@
   "starter_h1": "Maks. 2 OLT & 300 ODP, 500 Pelanggan",
   "starter_h2": "15 GB MinIO S3 Storage & 2.000 RPM API",
   "starter_h3": "Akses Webhook & REST API Integrasi",
-  "starter_h4": "Standard SLA & Community Support"
+  "starter_h4": "Standard SLA & Community Support",
+  "prorate_modal_title": "Upgrade Paket Prorata Tengah Periode",
+  "prorate_modal_desc": "Tingkatkan paket ke tier lebih tinggi dengan kompensasi otomatis saldo hari yang belum terpakai.",
+  "calculating_prorate": "Menghitung penyesuaian prorata...",
+  "target_plan": "Paket Target Upgrade",
+  "days_remaining_label": "{{count}} hari tersisa",
+  "full_month_entitlement": "Pembaruan 30 hari siklus penuh",
+  "price_breakdown_title": "Rincian Perhitungan Prorata",
+  "base_target_price": "Harga Standar Paket {{plan}} (30 Hari)",
+  "prorated_credit_label": "Kompensasi Sisa Hari Aktif ({{count}} Hari)",
+  "net_due_today": "Total Pembayaran Bersih Hari Ini",
+  "tax_inclusive_notice": "Aktivasi otomatis via payment gateway",
+  "checkout_reassurance_desc": "Kapasitas hardware dan fitur paket baru Anda akan aktif seketika setelah pembayaran terverifikasi melalui Xendit.",
+  "confirm_and_pay_xendit": "Bayar via Xendit"
 }

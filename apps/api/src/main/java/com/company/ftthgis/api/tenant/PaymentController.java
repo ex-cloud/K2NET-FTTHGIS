@@ -195,13 +195,33 @@ public class PaymentController {
 
             var plan = planOpt.get();
 
+            BigDecimal finalAmount = plan.getPrice();
+            String description = "Upgrade subscription to plan " + plan.getName() + " for org " + org.getName();
+
+            // Hitung kredit kompensasi prorata jika ini adalah upgrade mid-cycle
+            try {
+                var prorateEstimate = licenseManagementService.calculateProrateEstimate(org.getId(), plan.getName());
+                if (prorateEstimate.isUpgradeEligible() && prorateEstimate.getProratedCredit().compareTo(BigDecimal.ZERO) > 0) {
+                    finalAmount = prorateEstimate.getNetDueAmount();
+                    description = String.format("Prorated upgrade to %s (Credited Rp %s, %d days left) for org %s",
+                            plan.getName(),
+                            prorateEstimate.getProratedCredit().toPlainString(),
+                            prorateEstimate.getDaysRemaining(),
+                            org.getName());
+                    log.info("💳 PRORATED UPGRADE: Org '{}' upgrading to '{}' with credit Rp {} -> Net Due: Rp {}",
+                            org.getSlug(), plan.getName(), prorateEstimate.getProratedCredit(), finalAmount);
+                }
+            } catch (Exception ex) {
+                log.warn("Could not calculate prorated credit for org '{}': {}. Falling back to full plan price.", org.getSlug(), ex.getMessage());
+            }
+
             // Prepare Gateway Request payload
             String externalId = String.format("%s:%s:%s", org.getSlug(), plan.getName(), UUID.randomUUID().toString());
             
             Map<String, Object> gatewayPayload = Map.of(
                 "external_id", externalId,
-                "amount", plan.getPrice(),
-                "description", "Upgrade subscription to plan " + plan.getName() + " for org " + org.getName(),
+                "amount", finalAmount,
+                "description", description,
                 "email", user.getEmail()
             );
 
@@ -223,7 +243,7 @@ public class PaymentController {
                     .externalId(externalId)
                     .orgSlug(org.getSlug())
                     .planName(plan.getName())
-                    .amount(plan.getPrice())
+                    .amount(finalAmount)
                     .status("PENDING")
                     .payerEmail(user.getEmail())
                     .build();
