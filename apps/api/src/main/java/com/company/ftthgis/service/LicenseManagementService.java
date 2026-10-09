@@ -469,6 +469,7 @@ public class LicenseManagementService {
         List<TenantLicense> all = tenantLicenseRepository.findAll();
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime in30Days = now.plusDays(30);
+        LocalDateTime in7Days = now.plusDays(7);
 
         long total = all.size();
         long active = 0;
@@ -476,14 +477,24 @@ public class LicenseManagementService {
         long readOnly = 0;
         long suspended = 0;
         long expiringIn30Days = 0;
+        long expiringIn7Days = 0;
+        double mrr = 0.0;
         Map<String, Long> tierDistribution = new HashMap<>();
 
         for (TenantLicense lic : all) {
             LicenseStatus status = lic.getStatus();
             if (status == LicenseStatus.ACTIVE) {
                 active++;
-                if (lic.getValidUntil() != null && lic.getValidUntil().isAfter(now) && !lic.getValidUntil().isAfter(in30Days)) {
-                    expiringIn30Days++;
+                if (lic.getValidUntil() != null && lic.getValidUntil().isAfter(now)) {
+                    if (!lic.getValidUntil().isAfter(in30Days)) {
+                        expiringIn30Days++;
+                    }
+                    if (!lic.getValidUntil().isAfter(in7Days)) {
+                        expiringIn7Days++;
+                    }
+                }
+                if (lic.getSubscriptionPlan() != null && lic.getSubscriptionPlan().getPrice() != null) {
+                    mrr += lic.getSubscriptionPlan().getPrice().doubleValue();
                 }
             } else if (status == LicenseStatus.GRACE_PERIOD) {
                 grace++;
@@ -504,6 +515,8 @@ public class LicenseManagementService {
                 .readOnlyLicenses(readOnly)
                 .suspendedLicenses(suspended)
                 .expiringIn30Days(expiringIn30Days)
+                .expiringIn7Days(expiringIn7Days)
+                .monthlyRecurringRevenue(mrr)
                 .tierDistribution(tierDistribution)
                 .build();
     }

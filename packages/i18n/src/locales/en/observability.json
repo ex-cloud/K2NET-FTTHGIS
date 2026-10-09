@@ -198,5 +198,18 @@
   "staged_preview": "Staged Range Preview:",
   "type_duration_placeholder": "Type duration (e.g. 45m, 2h, 7d)...",
   "last_24_hours": "Last 24 Hours",
-  "older": "Older"
+  "older": "Older",
+  "license_telemetry_title": "Platform SaaS Licenses & Entitlements",
+  "license_telemetry_subtitle": "Real-time subscription lifecycle, hardware quota utilization, and revenue run-rate across tenants.",
+  "license_active_count": "Active Licenses",
+  "license_grace_count": "In Grace Period",
+  "license_expiring_soon": "Expiring ≤ 7 Days",
+  "license_mrr_label": "Estimated MRR",
+  "license_open_hub": "License Management Hub",
+  "license_open_grafana": "Open Grafana Dashboard",
+  "license_tenant_name": "Tenant ISP",
+  "license_plan_tier": "Plan Tier",
+  "license_validity": "Remaining Validity",
+  "license_quota_caps": "Hardware Quota Caps",
+  "license_all_healthy": "All tenant licenses are active with healthy quota utilization."
 }

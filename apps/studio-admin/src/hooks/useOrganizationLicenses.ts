@@ -52,6 +52,8 @@ export interface LicenseOverviewKpi {
   readOnlyLicenses: number;
   suspendedLicenses: number;
   expiringIn30Days: number;
+  expiringIn7Days?: number;
+  monthlyRecurringRevenue?: number;
   tierDistribution: Record<string, number>;
 }
 

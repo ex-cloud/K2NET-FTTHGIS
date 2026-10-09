@@ -22,6 +22,8 @@ public class LicenseOverviewKpiDto {
     private long readOnlyLicenses;
     private long suspendedLicenses;
     private long expiringIn30Days;
+    private long expiringIn7Days;
+    private double monthlyRecurringRevenue;
 
     @Builder.Default
     private Map<String, Long> tierDistribution = Map.of();

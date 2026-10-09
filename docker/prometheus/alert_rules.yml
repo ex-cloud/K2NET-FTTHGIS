@@ -54,3 +54,39 @@ groups:
         annotations:
           summary: "Host disk space low"
           description: "Free disk space on / is less than 10%."
+
+      - alert: TenantLicenseExpiringSoon
+        expr: ftth_license_days_remaining <= 7 and ftth_license_days_remaining > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tenant license expiring soon for {{ $labels.tenant_slug }}"
+          description: "License for tenant {{ $labels.tenant_slug }} (Plan: {{ $labels.plan }}) expires in {{ $value }} days."
+
+      - alert: TenantLicenseInGracePeriod
+        expr: ftth_license_status{status="GRACE_PERIOD"} == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tenant in grace period: {{ $labels.tenant_slug }}"
+          description: "Tenant {{ $labels.tenant_slug }} is currently operating under a grace period license."
+
+      - alert: TenantLicenseRestrictedReadOnly
+        expr: ftth_license_status{status="RESTRICTED_READ_ONLY"} == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tenant soft-locked in restricted read-only mode: {{ $labels.tenant_slug }}"
+          description: "Tenant {{ $labels.tenant_slug }} has exceeded grace period and is restricted to read-only access."
+
+      - alert: TenantHardwareQuotaNearExhaustion
+        expr: ftth_hardware_quota_utilization_ratio >= 0.90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tenant hardware quota near exhaustion for {{ $labels.tenant_slug }} ({{ $labels.resource }})"
+          description: "Tenant {{ $labels.tenant_slug }} quota utilization for {{ $labels.resource }} has reached {{ $value }}."

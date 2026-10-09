@@ -28,6 +28,7 @@ import { useSystemOverviewData } from "@/hooks/useSystemOverviewData";
 import { useServiceNodes } from "@/components/system/overview/overview-service-nodes";
 import { OverviewInfrastructureMap } from "@/components/system/overview";
 import type { ServiceNode } from "@/components/system/overview/overview-types";
+import { PlatformLicenseTelemetryWidget } from "@/components/observability/platform-license-telemetry-widget";
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 function KpiCard({
@@ -444,6 +445,9 @@ export default function ObservabilityOverviewPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Platform SaaS Licenses & Hardware Quotas Telemetry Widget */}
+      <PlatformLicenseTelemetryWidget />
     </PageLayout>
   );
 }

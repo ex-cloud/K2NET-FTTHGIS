@@ -198,5 +198,18 @@
   "staged_preview": "Pratinjau Rentang Terpilih:",
   "type_duration_placeholder": "Ketik durasi (misal 45m, 2h, 7d)...",
   "last_24_hours": "24 Jam Terakhir",
-  "older": "Lebih Lama"
+  "older": "Lebih Lama",
+  "license_telemetry_title": "Lisensi & Hak Akses SaaS Platform",
+  "license_telemetry_subtitle": "Siklus hidup langganan real-time, utilisasi kuota perangkat, dan run-rate pendapatan lintas tenant.",
+  "license_active_count": "Lisensi Aktif",
+  "license_grace_count": "Masa Tenggang",
+  "license_expiring_soon": "Segera Berakhir (≤ 7 Hari)",
+  "license_mrr_label": "Estimasi MRR",
+  "license_open_hub": "Pusat Manajemen Lisensi",
+  "license_open_grafana": "Buka Dasbor Grafana",
+  "license_tenant_name": "Tenant ISP",
+  "license_plan_tier": "Paket Langganan",
+  "license_validity": "Sisa Masa Aktif",
+  "license_quota_caps": "Batas Kuota Perangkat",
+  "license_all_healthy": "Seluruh lisensi tenant aktif dengan utilisasi kuota normal."
 }
