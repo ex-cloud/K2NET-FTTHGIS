@@ -27,6 +27,7 @@ public class ProrateEstimateResponseDto {
     private BigDecimal proratedCredit;
     private BigDecimal netDueAmount;
     private String currency;
+    @com.fasterxml.jackson.annotation.JsonProperty("isUpgradeEligible")
     private boolean isUpgradeEligible;
     private String calculationSummary;
 }

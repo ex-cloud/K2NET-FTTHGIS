@@ -178,6 +178,7 @@ public class OrganizationLicenseController {
      */
     @PostMapping("/organizations/{orgId}/licenses/{licenseId}/send-reminder")
     @PreAuthorize("hasAuthority('system.organizations.manage')")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Map<String, Object>> sendManualReminder(
             @PathVariable UUID orgId,
             @PathVariable UUID licenseId

@@ -189,6 +189,19 @@ public class TenantLicenseController {
     // ── Internal Helpers ────────────────────────────────────────────────────
 
     private UUID resolveCurrentOrganizationId() {
+        org.springframework.web.context.request.RequestAttributes attributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attributes instanceof org.springframework.web.context.request.ServletRequestAttributes servletAttributes) {
+            jakarta.servlet.http.HttpServletRequest req = servletAttributes.getRequest();
+            String tenantHeader = req.getHeader("X-Tenant-ID");
+            if (tenantHeader != null && !tenantHeader.isBlank()) {
+                try {
+                    UUID resolved = UUID.fromString(tenantHeader.trim());
+                    OrganizationContext.setOrganizationId(resolved);
+                    return resolved;
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
+
         UUID orgId = OrganizationContext.getOrganizationId();
         if (orgId != null) {
             return orgId;
