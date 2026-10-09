@@ -132,6 +132,32 @@
     "invoice_paid_at": "Waktu Pembayaran",
     "invoice_action_pay": "Bayar Sekarang",
     "invoice_action_view": "Lihat Faktur",
-    "no_invoices": "Belum ada riwayat faktur untuk organisasi ini."
+    "no_invoices": "Belum ada riwayat faktur untuk organisasi ini.",
+    "contacts_title": "Kontak Penagihan & Preferensi Pengingat",
+    "contacts_desc": "Konfigurasikan informasi kontak PIC untuk pengingat otomatis perpanjangan lisensi, peringatan masa tenggang, dan pengiriman faktur.",
+    "contact_name_label": "Nama PIC Penagihan",
+    "contact_name_placeholder": "cth., Budi Santoso",
+    "contact_email_label": "Email Notifikasi Penagihan",
+    "contact_phone_label": "Nomor WhatsApp PIC",
+    "channels_title": "Kanal Pengiriman Notifikasi",
+    "channels_desc": "Pilih kanal penerimaan peringatan proaktif masa aktif dan tagihan jatuh tempo.",
+    "channel_email": "Email (SMTP / Faktur Tagihan)",
+    "channel_whatsapp": "WhatsApp (Peringatan Proaktif WABA)",
+    "contacts_update_success": "Kontak penagihan berhasil diperbarui.",
+    "contacts_update_failed": "Gagal memperbarui kontak penagihan."
+  },
+  "notifications": {
+    "log_title": "Riwayat Notifikasi Lisensi",
+    "log_desc": "Catatan audit pengiriman notifikasi pengingat via Email dan WhatsApp.",
+    "send_reminder_btn": "Kirim Pengingat Manual",
+    "send_reminder_confirm": "Apakah Anda yakin ingin mengirimkan pengingat proaktif ke kontak penagihan tenant sekarang?",
+    "reminder_sent_success": "Pengingat proaktif berhasil dikirim.",
+    "reminder_sent_failed": "Gagal mengirimkan pengingat proaktif.",
+    "channel": "Kanal",
+    "stage": "Tahapan Siklus",
+    "recipient": "Penerima",
+    "status": "Status",
+    "sent_at": "Waktu Kirim",
+    "no_logs": "Belum ada catatan log notifikasi untuk lisensi ini."
   }
 }

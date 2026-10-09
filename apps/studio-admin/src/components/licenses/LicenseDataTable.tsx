@@ -18,11 +18,13 @@ import {
   Download,
   Ban,
   Building2,
+  Bell,
 } from "lucide-react";
 import type { LicenseItem, LicenseStatus } from "@/hooks/useOrganizationLicenses";
 import { LicenseExtendModal } from "./LicenseExtendModal";
 import { LicenseRevokeModal } from "./LicenseRevokeModal";
 import { OfflineCertExportModal } from "./OfflineCertExportModal";
+import { LicenseNotificationLogsModal } from "./LicenseNotificationLogsModal";
 
 interface LicenseDataTableProps {
   licenses: LicenseItem[];
@@ -39,6 +41,7 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
   const [extendModalOpen, setExtendModalOpen] = React.useState<boolean>(false);
   const [revokeModalOpen, setRevokeModalOpen] = React.useState<boolean>(false);
   const [exportModalOpen, setExportModalOpen] = React.useState<boolean>(false);
+  const [notificationsModalOpen, setNotificationsModalOpen] = React.useState<boolean>(false);
   const [selectedLicense, setSelectedLicense] = React.useState<LicenseItem | null>(null);
 
   // Filtered Licenses
@@ -79,6 +82,11 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
   const handleOpenExport = (item: LicenseItem) => {
     setSelectedLicense(item);
     setExportModalOpen(true);
+  };
+
+  const handleOpenNotifications = (item: LicenseItem) => {
+    setSelectedLicense(item);
+    setNotificationsModalOpen(true);
   };
 
   const renderStatusBadge = (status: LicenseStatus) => {
@@ -307,6 +315,16 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
                         <span>.lic</span>
                       </Button>
 
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => handleOpenNotifications(lic)}
+                        className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+                        title={t("license.notifications.log_title")}
+                      >
+                        <Bell className="size-3" />
+                      </Button>
+
                       {lic.status !== "REVOKED" && (
                         <Button
                           variant="ghost"
@@ -342,6 +360,11 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
         license={selectedLicense}
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
+      />
+      <LicenseNotificationLogsModal
+        license={selectedLicense}
+        open={notificationsModalOpen}
+        onOpenChange={setNotificationsModalOpen}
       />
     </div>
   );

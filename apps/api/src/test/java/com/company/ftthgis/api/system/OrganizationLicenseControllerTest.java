@@ -42,6 +42,12 @@ public class OrganizationLicenseControllerTest {
     @Mock
     private LicenseManagementService licenseManagementService;
 
+    @Mock
+    private com.company.ftthgis.service.LicenseNotificationService licenseNotificationService;
+
+    @Mock
+    private com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository tenantLicenseRepository;
+
     @InjectMocks
     private OrganizationLicenseController organizationLicenseController;
 
@@ -280,5 +286,47 @@ public class OrganizationLicenseControllerTest {
                 .andExpect(content().string(fakeCert));
 
         verify(licenseManagementService, times(1)).exportOfflineCertificate(testLicenseId);
+    }
+
+    @Test
+    @DisplayName("GET /organizations/{orgId}/licenses/{licenseId}/notifications - Sukses mengambil riwayat log notifikasi")
+    public void testGetNotificationLogs_Success() throws Exception {
+        com.company.ftthgis.api.system.dto.LicenseNotificationLogDto logDto = com.company.ftthgis.api.system.dto.LicenseNotificationLogDto.builder()
+                .id(UUID.randomUUID())
+                .channel("EMAIL")
+                .stage(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.EXPIRING_7D)
+                .recipient("billing@test.com")
+                .status("SENT")
+                .build();
+
+        when(licenseNotificationService.getNotificationLogs(testOrgId, testLicenseId))
+                .thenReturn(List.of(logDto));
+
+        mockMvc.perform(get("/api/v1/system/organizations/" + testOrgId + "/licenses/" + testLicenseId + "/notifications"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].channel").value("EMAIL"))
+                .andExpect(jsonPath("$[0].status").value("SENT"));
+
+        verify(licenseNotificationService, times(1)).getNotificationLogs(testOrgId, testLicenseId);
+    }
+
+    @Test
+    @DisplayName("POST /organizations/{orgId}/licenses/{licenseId}/send-reminder - Sukses trigger pengingat manual")
+    public void testSendManualReminder_Success() throws Exception {
+        TenantLicense license = TenantLicense.builder()
+                .id(testLicenseId)
+                .licenseKey("K2NET-PRO-ABCD1234-5678")
+                .build();
+
+        when(tenantLicenseRepository.findById(testLicenseId)).thenReturn(java.util.Optional.of(license));
+
+        mockMvc.perform(post("/api/v1/system/organizations/" + testOrgId + "/licenses/" + testLicenseId + "/send-reminder"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.licenseId").value(testLicenseId.toString()));
+
+        verify(licenseNotificationService, times(1)).dispatchLicenseReminder(
+                eq(license), eq(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.MANUAL_REMINDER), anyString()
+        );
     }
 }

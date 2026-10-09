@@ -131,7 +131,33 @@
     "invoice_due_date": "Due Date",
     "invoice_paid_at": "Paid At",
     "invoice_action_pay": "Pay Now",
-    "invoice_action_view": "View Invoice",
-    "no_invoices": "No invoice history found for this organization."
+    "invoices_action_view": "View Invoice",
+    "no_invoices": "No invoice history found for this organization.",
+    "contacts_title": "Billing Contacts & Reminder Preferences",
+    "contacts_desc": "Configure PIC contact details for automated license renewal reminders, grace period alerts, and invoice delivery.",
+    "contact_name_label": "Billing PIC Name",
+    "contact_name_placeholder": "e.g., John Doe",
+    "contact_email_label": "Billing Notification Email",
+    "contact_phone_label": "WhatsApp PIC Number",
+    "channels_title": "Notification Dispatch Channels",
+    "channels_desc": "Select which channels should receive proactive renewal and overdue notices.",
+    "channel_email": "Email (SMTP / Invoices)",
+    "channel_whatsapp": "WhatsApp (WABA Proactive Alert)",
+    "contacts_update_success": "Billing contact details updated successfully.",
+    "contacts_update_failed": "Failed to update billing contact details."
+  },
+  "notifications": {
+    "log_title": "License Notification History",
+    "log_desc": "Audit records of proactive reminders sent via Email and WhatsApp.",
+    "send_reminder_btn": "Send Manual Reminder",
+    "send_reminder_confirm": "Are you sure you want to dispatch a proactive reminder to the tenant billing contacts now?",
+    "reminder_sent_success": "Proactive reminder dispatched successfully.",
+    "reminder_sent_failed": "Failed to dispatch proactive reminder.",
+    "channel": "Channel",
+    "stage": "Lifecycle Stage",
+    "recipient": "Recipient",
+    "status": "Status",
+    "sent_at": "Sent At",
+    "no_logs": "No notification logs recorded for this license."
   }
 }

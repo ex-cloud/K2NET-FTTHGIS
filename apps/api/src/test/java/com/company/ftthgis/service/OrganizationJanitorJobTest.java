@@ -42,6 +42,9 @@ class OrganizationJanitorJobTest {
     @Mock
     private TenantLicenseRepository tenantLicenseRepository;
 
+    @Mock
+    private LicenseNotificationService licenseNotificationService;
+
     @InjectMocks
     private OrganizationJanitorJob janitorJob;
 
@@ -153,6 +156,8 @@ class OrganizationJanitorJobTest {
                 .validUntil(now.minusHours(1))
                 .build();
 
+        when(tenantLicenseRepository.findByStatusAndValidUntilBetween(any(), any(), any()))
+                .thenReturn(List.of());
         when(tenantLicenseRepository.findByValidUntilBeforeAndStatus(any(), eq(LicenseStatus.ACTIVE)))
                 .thenReturn(List.of(activeLicense));
         when(tenantLicenseRepository.findByGracePeriodUntilBeforeAndStatus(any(), eq(LicenseStatus.GRACE_PERIOD)))
@@ -166,6 +171,9 @@ class OrganizationJanitorJobTest {
         assertNotNull(activeLicense.getGracePeriodUntil());
         assertTrue(activeLicense.getGracePeriodUntil().isAfter(now.plusDays(6)));
         verify(tenantLicenseRepository).save(activeLicense);
+        verify(licenseNotificationService).dispatchLicenseReminder(
+                eq(activeLicense), eq(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.GRACE_PERIOD), anyString()
+        );
     }
 
     @Test
@@ -188,6 +196,8 @@ class OrganizationJanitorJobTest {
                 .gracePeriodUntil(now.minusMinutes(5))
                 .build();
 
+        when(tenantLicenseRepository.findByStatusAndValidUntilBetween(any(), any(), any()))
+                .thenReturn(List.of());
         when(tenantLicenseRepository.findByValidUntilBeforeAndStatus(any(), eq(LicenseStatus.ACTIVE)))
                 .thenReturn(List.of());
         when(tenantLicenseRepository.findByGracePeriodUntilBeforeAndStatus(any(), eq(LicenseStatus.GRACE_PERIOD)))
@@ -199,6 +209,9 @@ class OrganizationJanitorJobTest {
 
         assertEquals(LicenseStatus.RESTRICTED_READ_ONLY, graceLicense.getStatus());
         verify(tenantLicenseRepository).save(graceLicense);
+        verify(licenseNotificationService).dispatchLicenseReminder(
+                eq(graceLicense), eq(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.READ_ONLY_LOCKED), anyString()
+        );
 
         assertTrue(org.getOverQuotaMode());
         assertEquals(Organization.OrganizationStatus.OVERDUE, org.getStatus());
@@ -223,6 +236,8 @@ class OrganizationJanitorJobTest {
                 .gracePeriodUntil(now.minusDays(31))
                 .build();
 
+        when(tenantLicenseRepository.findByStatusAndValidUntilBetween(any(), any(), any()))
+                .thenReturn(List.of());
         when(tenantLicenseRepository.findByValidUntilBeforeAndStatus(any(), eq(LicenseStatus.ACTIVE)))
                 .thenReturn(List.of());
         when(tenantLicenseRepository.findByGracePeriodUntilBeforeAndStatus(any(), eq(LicenseStatus.GRACE_PERIOD)))
@@ -234,8 +249,58 @@ class OrganizationJanitorJobTest {
 
         assertEquals(LicenseStatus.SUSPENDED, readOnlyLicense.getStatus());
         verify(tenantLicenseRepository).save(readOnlyLicense);
+        verify(licenseNotificationService).dispatchLicenseReminder(
+                eq(readOnlyLicense), eq(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.SUSPENDED), anyString()
+        );
 
         assertEquals(Organization.OrganizationStatus.SUSPENDED, org.getStatus());
         verify(organizationRepository).save(org);
+    }
+
+    @Test
+    @DisplayName("License Lifecycle: Proactive reminder H-7 and H-3 dispatched for active licenses")
+    void testProactiveRemindersH7AndH3ForActiveLicenses() {
+        LocalDateTime now = LocalDateTime.now();
+        Organization org = Organization.builder()
+                .id(UUID.randomUUID())
+                .slug("tenant-reminder")
+                .status(Organization.OrganizationStatus.ACTIVE)
+                .build();
+
+        TenantLicense licExpiring7D = TenantLicense.builder()
+                .id(UUID.randomUUID())
+                .licenseKey("K2NET-PRO-7D000000-1111")
+                .organization(org)
+                .status(LicenseStatus.ACTIVE)
+                .validUntil(now.plusDays(5)) // Within 7 days
+                .lastNotifiedStage(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.NONE)
+                .build();
+
+        TenantLicense licExpiring3D = TenantLicense.builder()
+                .id(UUID.randomUUID())
+                .licenseKey("K2NET-PRO-3D000000-2222")
+                .organization(org)
+                .status(LicenseStatus.ACTIVE)
+                .validUntil(now.plusDays(2)) // Within 3 days
+                .lastNotifiedStage(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.EXPIRING_7D)
+                .build();
+
+        when(tenantLicenseRepository.findByStatusAndValidUntilBetween(any(), any(), any()))
+                .thenReturn(List.of(licExpiring7D, licExpiring3D));
+        when(tenantLicenseRepository.findByValidUntilBeforeAndStatus(any(), eq(LicenseStatus.ACTIVE)))
+                .thenReturn(List.of());
+        when(tenantLicenseRepository.findByGracePeriodUntilBeforeAndStatus(any(), eq(LicenseStatus.GRACE_PERIOD)))
+                .thenReturn(List.of());
+        when(tenantLicenseRepository.findByStatus(eq(LicenseStatus.RESTRICTED_READ_ONLY)))
+                .thenReturn(List.of());
+
+        janitorJob.sweepLicenseLifecycle(now);
+
+        verify(licenseNotificationService).dispatchLicenseReminder(
+                eq(licExpiring7D), eq(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.EXPIRING_7D), anyString()
+        );
+        verify(licenseNotificationService).dispatchLicenseReminder(
+                eq(licExpiring3D), eq(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.EXPIRING_3D), anyString()
+        );
     }
 }

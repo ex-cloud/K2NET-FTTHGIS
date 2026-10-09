@@ -44,6 +44,34 @@ public class TenantLicenseController {
     private final LicenseManagementService licenseManagementService;
     private final BillingInvoiceRepository billingInvoiceRepository;
     private final UserRepository userRepository;
+    private final com.company.ftthgis.service.LicenseNotificationService licenseNotificationService;
+
+    /**
+     * Mengambil kontak PIC penagihan dan status preferensi notifikasi lisensi.
+     */
+    @GetMapping("/contacts")
+    @PreAuthorize("@tenantSecurity.hasEffectivePermission('billing.view') or hasAuthority('billing.view')")
+    public ResponseEntity<com.company.ftthgis.api.tenant.dto.BillingContactsDto> getBillingContacts() {
+        UUID orgId = resolveCurrentOrganizationId();
+        if (orgId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Organisasi tenant tidak ditemukan pada sesi otentikasi.");
+        }
+        return ResponseEntity.ok(licenseNotificationService.getBillingContacts(orgId));
+    }
+
+    /**
+     * Memperbarui kontak PIC penagihan dan preferensi notifikasi Email/WhatsApp.
+     */
+    @PutMapping("/contacts")
+    @PreAuthorize("@tenantSecurity.hasEffectivePermission('billing.manage') or hasAuthority('billing.manage')")
+    public ResponseEntity<com.company.ftthgis.api.tenant.dto.BillingContactsDto> updateBillingContacts(
+            @Valid @RequestBody com.company.ftthgis.api.tenant.dto.BillingContactsDto request) {
+        UUID orgId = resolveCurrentOrganizationId();
+        if (orgId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Organisasi tenant tidak ditemukan pada sesi otentikasi.");
+        }
+        return ResponseEntity.ok(licenseNotificationService.updateBillingContacts(orgId, request));
+    }
 
     /**
      * Mengambil detail lisensi aktif organisasi pemanggil untuk dasbor portal tenant.

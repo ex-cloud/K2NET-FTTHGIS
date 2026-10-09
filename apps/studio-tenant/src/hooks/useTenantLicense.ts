@@ -56,6 +56,14 @@ export interface BillingInvoiceItem {
   createdAt: string;
 }
 
+export interface BillingContacts {
+  billingContactName?: string | null;
+  billingContactEmail?: string | null;
+  billingContactPhone?: string | null;
+  notifyEmailEnabled: boolean;
+  notifyWhatsappEnabled: boolean;
+}
+
 export function useTenantLicense() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -111,6 +119,38 @@ export function useTenantLicense() {
     },
   });
 
+  const billingContactsQuery = useQuery<BillingContacts>({
+    queryKey: ["tenant-billing-contacts"],
+    queryFn: async () => {
+      try {
+        const res = await apiClient<BillingContacts>("/api/v1/tenant/license/contacts");
+        return res ?? { notifyEmailEnabled: true, notifyWhatsappEnabled: true };
+      } catch (err) {
+        console.warn("Failed to fetch tenant billing contacts:", err);
+        return { notifyEmailEnabled: true, notifyWhatsappEnabled: true };
+      }
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const updateContactsMutation = useMutation({
+    mutationFn: async (data: BillingContacts) => {
+      return apiClient<BillingContacts>("/api/v1/tenant/license/contacts", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      toast.success(t("license.tenant.contacts_update_success"));
+      queryClient.invalidateQueries({ queryKey: ["tenant-billing-contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-current-license"] });
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : t("license.tenant.contacts_update_failed");
+      toast.error(msg);
+    },
+  });
+
   return {
     license: currentLicenseQuery.data,
     isLoading: currentLicenseQuery.isLoading,
@@ -121,6 +161,11 @@ export function useTenantLicense() {
     invoices: billingInvoicesQuery.data || [],
     isInvoicesLoading: billingInvoicesQuery.isLoading,
     refetchInvoices: billingInvoicesQuery.refetch,
+
+    contacts: billingContactsQuery.data,
+    isContactsLoading: billingContactsQuery.isLoading,
+    updateContacts: updateContactsMutation.mutateAsync,
+    isUpdatingContacts: updateContactsMutation.isPending,
 
     activateLicense: activateMutation.mutateAsync,
     isActivating: activateMutation.isPending,

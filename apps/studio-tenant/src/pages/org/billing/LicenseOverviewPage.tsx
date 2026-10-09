@@ -4,6 +4,7 @@ import { useTranslation } from "@k2net/i18n";
 import { useTenantLicense } from "../../../hooks/useTenantLicense";
 import { ActiveLicenseCard } from "../../../components/licenses/ActiveLicenseCard";
 import { ActivateLicenseKeyModal } from "../../../components/licenses/ActivateLicenseKeyModal";
+import { BillingContactsCard } from "../../../components/licenses/BillingContactsCard";
 
 export function LicenseOverviewPage() {
   const { t } = useTranslation();
@@ -12,6 +13,10 @@ export function LicenseOverviewPage() {
     isLoading,
     activateLicense,
     isActivating,
+    contacts,
+    isContactsLoading,
+    updateContacts,
+    isUpdatingContacts,
   } = useTenantLicense();
 
   const [activateModalOpen, setActivateModalOpen] = React.useState(false);
@@ -32,6 +37,13 @@ export function LicenseOverviewPage() {
           license={license}
           isLoading={isLoading}
           onOpenActivateModal={() => setActivateModalOpen(true)}
+        />
+
+        <BillingContactsCard
+          contacts={contacts}
+          isLoading={isContactsLoading}
+          onSave={updateContacts}
+          isSaving={isUpdatingContacts}
         />
 
         <ActivateLicenseKeyModal

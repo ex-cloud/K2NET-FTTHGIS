@@ -108,6 +108,33 @@ public class TenantLicense extends OrganizationAwareEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    // ── Notification Lifecycle & Proactive Reminder Tracking ────────────────
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "last_notified_stage", nullable = false, length = 32)
+    @Builder.Default
+    private LicenseNotificationStage lastNotifiedStage = LicenseNotificationStage.NONE;
+
+    @Column(name = "last_notified_at")
+    private LocalDateTime lastNotifiedAt;
+
+    @Column(name = "billing_contact_email")
+    private String billingContactEmail;
+
+    @Column(name = "billing_contact_phone", length = 64)
+    private String billingContactPhone;
+
+    @Column(name = "billing_contact_name", length = 128)
+    private String billingContactName;
+
+    @Builder.Default
+    @Column(name = "notify_email_enabled", nullable = false)
+    private boolean notifyEmailEnabled = true;
+
+    @Builder.Default
+    @Column(name = "notify_whatsapp_enabled", nullable = false)
+    private boolean notifyWhatsappEnabled = true;
+
     // ── Helper Domain Logic Methods ─────────────────────────────────────────
 
     public boolean isActive() {

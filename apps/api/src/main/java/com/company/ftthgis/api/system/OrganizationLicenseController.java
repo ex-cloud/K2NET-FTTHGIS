@@ -47,6 +47,8 @@ import java.util.UUID;
 public class OrganizationLicenseController {
 
     private final LicenseManagementService licenseManagementService;
+    private final com.company.ftthgis.service.LicenseNotificationService licenseNotificationService;
+    private final com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository tenantLicenseRepository;
 
     /**
      * Mengambil ringkasan metrik KPI lisensi lintas tenant untuk dasbor Super Admin.
@@ -157,6 +159,46 @@ public class OrganizationLicenseController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .contentType(MediaType.TEXT_PLAIN)
                 .body(certContent);
+    }
+
+    /**
+     * Mengambil riwayat log notifikasi pengingat lisensi (Audit Trail).
+     */
+    @GetMapping("/organizations/{orgId}/licenses/{licenseId}/notifications")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage')")
+    public ResponseEntity<List<com.company.ftthgis.api.system.dto.LicenseNotificationLogDto>> getNotificationLogs(
+            @PathVariable UUID orgId,
+            @PathVariable UUID licenseId
+    ) {
+        return ResponseEntity.ok(licenseNotificationService.getNotificationLogs(orgId, licenseId));
+    }
+
+    /**
+     * Memicu pengingat lisensi manual secara proaktif oleh Super Admin.
+     */
+    @PostMapping("/organizations/{orgId}/licenses/{licenseId}/send-reminder")
+    @PreAuthorize("hasAuthority('system.organizations.manage')")
+    public ResponseEntity<Map<String, Object>> sendManualReminder(
+            @PathVariable UUID orgId,
+            @PathVariable UUID licenseId
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        TenantLicense license = tenantLicenseRepository.findById(licenseId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Lisensi tidak ditemukan"));
+
+        licenseNotificationService.dispatchLicenseReminder(
+                license, com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.MANUAL_REMINDER, actor
+        );
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("status", "SUCCESS");
+        response.put("message", "Pengingat lisensi berhasil dikirim ke kontak penagihan tenant.");
+        response.put("licenseId", licenseId.toString());
+        response.put("organizationId", orgId.toString());
+        response.put("triggeredBy", actor);
+
+        return ResponseEntity.ok(response);
     }
 
     // ── Internal Helpers ────────────────────────────────────────────────────

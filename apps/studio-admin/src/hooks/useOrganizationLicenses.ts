@@ -268,3 +268,73 @@ export async function fetchOfflineLicenseCertificate(
   }
   return res.text();
 }
+
+export interface LicenseNotificationLog {
+  id: string;
+  organizationId: string;
+  licenseId: string;
+  channel: string;
+  stage: string;
+  recipient: string;
+  subject?: string;
+  status: string;
+  messageContent?: string;
+  errorDetails?: string;
+  triggeredBy: string;
+  sentAt: string;
+}
+
+export function useLicenseNotificationLogs(orgId?: string, licenseId?: string) {
+  const { data: session } = useSession();
+
+  return useQuery<LicenseNotificationLog[]>({
+    queryKey: ["license-notifications", orgId, licenseId, session?.accessToken],
+    queryFn: async () => {
+      if (!orgId || !licenseId) return [];
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(
+        `${baseUrl}/system/organizations/${orgId}/licenses/${licenseId}/notifications`,
+        {
+          token: session?.accessToken ?? undefined,
+        }
+      );
+
+      if (!res.ok) {
+        return [];
+      }
+      return res.json();
+    },
+    enabled: !!orgId && !!licenseId,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useSendManualLicenseReminder() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ orgId, licenseId }: { orgId: string; licenseId: string }) => {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(
+        `${baseUrl}/system/organizations/${orgId}/licenses/${licenseId}/send-reminder`,
+        {
+          method: "POST",
+          token: session?.accessToken ?? undefined,
+        }
+      );
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "Unknown error");
+        throw new Error(`Failed to dispatch reminder: ${res.status} - ${errorText}`);
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["license-notifications", variables.orgId, variables.licenseId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["all-licenses"] });
+    },
+  });
+}

@@ -50,6 +50,9 @@ public class TenantLicenseControllerTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private com.company.ftthgis.service.LicenseNotificationService licenseNotificationService;
+
     @InjectMocks
     private TenantLicenseController tenantLicenseController;
 
@@ -233,5 +236,61 @@ public class TenantLicenseControllerTest {
                 .andExpect(jsonPath("$[0].paymentChannel").value("BCA"));
 
         verify(billingInvoiceRepository, times(1)).findByOrganizationIdOrderByDueDateDesc(testOrgId);
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/tenant/license/contacts - Sukses mengambil kontak penagihan")
+    public void testGetBillingContacts_Success() throws Exception {
+        com.company.ftthgis.api.tenant.dto.BillingContactsDto dto = com.company.ftthgis.api.tenant.dto.BillingContactsDto.builder()
+                .billingContactName("John Doe")
+                .billingContactEmail("john@isp.net")
+                .billingContactPhone("+628123456789")
+                .notifyEmailEnabled(true)
+                .notifyWhatsappEnabled(true)
+                .build();
+
+        when(licenseNotificationService.getBillingContacts(testOrgId)).thenReturn(dto);
+
+        mockMvc.perform(get("/api/v1/tenant/license/contacts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.billingContactName").value("John Doe"))
+                .andExpect(jsonPath("$.billingContactEmail").value("john@isp.net"))
+                .andExpect(jsonPath("$.billingContactPhone").value("+628123456789"));
+
+        verify(licenseNotificationService, times(1)).getBillingContacts(testOrgId);
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/tenant/license/contacts - Sukses memperbarui kontak penagihan")
+    public void testUpdateBillingContacts_Success() throws Exception {
+        com.company.ftthgis.api.tenant.dto.BillingContactsDto dto = com.company.ftthgis.api.tenant.dto.BillingContactsDto.builder()
+                .billingContactName("Jane Doe")
+                .billingContactEmail("jane@isp.net")
+                .billingContactPhone("+628987654321")
+                .notifyEmailEnabled(true)
+                .notifyWhatsappEnabled(false)
+                .build();
+
+        when(licenseNotificationService.updateBillingContacts(eq(testOrgId), any())).thenReturn(dto);
+
+        String jsonPayload = """
+            {
+                "billingContactName": "Jane Doe",
+                "billingContactEmail": "jane@isp.net",
+                "billingContactPhone": "+628987654321",
+                "notifyEmailEnabled": true,
+                "notifyWhatsappEnabled": false
+            }
+            """;
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/tenant/license/contacts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.billingContactName").value("Jane Doe"))
+                .andExpect(jsonPath("$.billingContactEmail").value("jane@isp.net"))
+                .andExpect(jsonPath("$.notifyWhatsappEnabled").value(false));
+
+        verify(licenseNotificationService, times(1)).updateBillingContacts(eq(testOrgId), any());
     }
 }

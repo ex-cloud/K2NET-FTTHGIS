@@ -37,4 +37,8 @@ public interface TenantLicenseRepository extends JpaRepository<TenantLicense, UU
     long countByStatus(LicenseStatus status);
 
     long countByStatusAndValidUntilBetween(LicenseStatus status, LocalDateTime start, LocalDateTime end);
+
+    List<TenantLicense> findByStatusAndValidUntilBetween(LicenseStatus status, LocalDateTime start, LocalDateTime end);
+
+    Optional<TenantLicense> findFirstByOrganizationIdAndStatusInOrderByCreatedAtDesc(UUID organizationId, List<LicenseStatus> statuses);
 }

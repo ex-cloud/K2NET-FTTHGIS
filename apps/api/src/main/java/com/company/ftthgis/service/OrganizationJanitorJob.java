@@ -33,6 +33,7 @@ public class OrganizationJanitorJob {
     private final ProjectRepository projectRepository;
     private final OrganizationService organizationService;
     private final TenantLicenseRepository tenantLicenseRepository;
+    private final LicenseNotificationService licenseNotificationService;
 
     @Scheduled(cron = "0 */5 * * * *") // Every 5 minutes
     @Transactional
@@ -146,15 +147,42 @@ public class OrganizationJanitorJob {
      * 3. RESTRICTED_READ_ONLY -> SUSPENDED saat grace_period_until + 30 hari < NOW()
      */
     public void sweepLicenseLifecycle(LocalDateTime now) {
-        log.debug("🔑 JANITOR: Sweeping tenant license lifecycle transitions...");
+        log.debug("🔑 JANITOR: Sweeping tenant license lifecycle transitions & proactive reminders...");
 
-        // 1. ACTIVE -> GRACE_PERIOD (7 hari masa tenggang)
+        // 1. Proactive Reminder H-7 & H-3 untuk lisensi ACTIVE yang akan jatuh tempo dalam 7 hari
+        List<TenantLicense> expiringLicenses = tenantLicenseRepository.findByStatusAndValidUntilBetween(
+                LicenseStatus.ACTIVE, now, now.plusDays(7)
+        );
+        for (TenantLicense lic : expiringLicenses) {
+            try {
+                if (lic.getValidUntil() == null) continue;
+                long daysRemaining = java.time.temporal.ChronoUnit.DAYS.between(now, lic.getValidUntil());
+
+                if (daysRemaining <= 3 && lic.getLastNotifiedStage() != com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.EXPIRING_3D) {
+                    licenseNotificationService.dispatchLicenseReminder(
+                            lic, com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.EXPIRING_3D, "JANITOR_JOB"
+                    );
+                } else if (daysRemaining <= 7 && lic.getLastNotifiedStage() == com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.NONE) {
+                    licenseNotificationService.dispatchLicenseReminder(
+                            lic, com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.EXPIRING_7D, "JANITOR_JOB"
+                    );
+                }
+            } catch (Exception e) {
+                log.error("❌ JANITOR: Failed processing proactive reminder for license '{}': {}", lic.getLicenseKey(), e.getMessage());
+            }
+        }
+
+        // 2. ACTIVE -> GRACE_PERIOD (7 hari masa tenggang)
         List<TenantLicense> expiredActiveLicenses = tenantLicenseRepository.findByValidUntilBeforeAndStatus(now, LicenseStatus.ACTIVE);
         for (TenantLicense lic : expiredActiveLicenses) {
             try {
                 lic.setStatus(LicenseStatus.GRACE_PERIOD);
                 lic.setGracePeriodUntil(now.plusDays(7));
                 tenantLicenseRepository.save(lic);
+
+                licenseNotificationService.dispatchLicenseReminder(
+                        lic, com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.GRACE_PERIOD, "JANITOR_JOB"
+                );
 
                 Organization org = lic.getOrganization();
                 log.warn("⏳ JANITOR: License '{}' for tenant '{}' expired. Transitioned to GRACE_PERIOD (7 days until {}).",
@@ -164,12 +192,16 @@ public class OrganizationJanitorJob {
             }
         }
 
-        // 2. GRACE_PERIOD -> RESTRICTED_READ_ONLY
+        // 3. GRACE_PERIOD -> RESTRICTED_READ_ONLY
         List<TenantLicense> expiredGraceLicenses = tenantLicenseRepository.findByGracePeriodUntilBeforeAndStatus(now, LicenseStatus.GRACE_PERIOD);
         for (TenantLicense lic : expiredGraceLicenses) {
             try {
                 lic.setStatus(LicenseStatus.RESTRICTED_READ_ONLY);
                 tenantLicenseRepository.save(lic);
+
+                licenseNotificationService.dispatchLicenseReminder(
+                        lic, com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.READ_ONLY_LOCKED, "JANITOR_JOB"
+                );
 
                 Organization org = lic.getOrganization();
                 if (org != null) {
@@ -187,13 +219,17 @@ public class OrganizationJanitorJob {
             }
         }
 
-        // 3. RESTRICTED_READ_ONLY -> SUSPENDED (H+30 setelah Grace Period berakhir)
+        // 4. RESTRICTED_READ_ONLY -> SUSPENDED (H+30 setelah Grace Period berakhir)
         List<TenantLicense> readOnlyLicenses = tenantLicenseRepository.findByStatus(LicenseStatus.RESTRICTED_READ_ONLY);
         for (TenantLicense lic : readOnlyLicenses) {
             try {
                 if (lic.getGracePeriodUntil() != null && lic.getGracePeriodUntil().plusDays(30).isBefore(now)) {
                     lic.setStatus(LicenseStatus.SUSPENDED);
                     tenantLicenseRepository.save(lic);
+
+                    licenseNotificationService.dispatchLicenseReminder(
+                            lic, com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.SUSPENDED, "JANITOR_JOB"
+                    );
 
                     Organization org = lic.getOrganization();
                     if (org != null && org.getStatus() != Organization.OrganizationStatus.SUSPENDED) {
