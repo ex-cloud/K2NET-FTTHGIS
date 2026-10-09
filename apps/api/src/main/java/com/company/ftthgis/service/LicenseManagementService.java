@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -192,6 +193,20 @@ public class LicenseManagementService {
             if (license.isExpired()) {
                 throw new IllegalStateException("Kode lisensi ini sudah kedaluwarsa pada " + license.getValidUntil());
             }
+
+            // Validasi Hardware Fingerprint jika lisensi dikunci untuk mesin tertentu (Air-Gapped)
+            if (license.getMachineFingerprint() != null && !license.getMachineFingerprint().isBlank()) {
+                if (!licenseCryptoService.verifyMachineFingerprint(license.getMachineFingerprint(), machineFingerprint)) {
+                    log.warn("🚨 HARDWARE SPOOFING REJECTED: Org '{}' attempted activating license '{}' with mismatched fingerprint '{}' (expected: '{}')",
+                            orgId, licenseKey, machineFingerprint, license.getMachineFingerprint());
+                    throw new IllegalArgumentException("Sidik jari perangkat keras (Hardware Fingerprint) tidak cocok dengan lisensi ini. " +
+                            "Lisensi dikunci khusus untuk mesin dengan sidik jari: " + license.getMachineFingerprint());
+                }
+            } else if (machineFingerprint != null && !machineFingerprint.isBlank()) {
+                // Jika lisensi belum di-bind ke hardware tertentu, bind sekarang saat aktivasi
+                license.setMachineFingerprint(machineFingerprint.trim().toLowerCase(Locale.ROOT));
+            }
+
             license.setStatus(LicenseStatus.ACTIVE);
             license.setGracePeriodUntil(null);
         } else {
@@ -223,7 +238,7 @@ public class LicenseManagementService {
                     .activationType("OFFLINE_KEY")
                     .validFrom(now)
                     .validUntil(validUntil)
-                    .machineFingerprint(machineFingerprint)
+                    .machineFingerprint(machineFingerprint != null ? machineFingerprint.trim().toLowerCase(Locale.ROOT) : null)
                     .issuedBy("SELF_ACTIVATION")
                     .notes("Activated by tenant user: " + activatedBy)
                     .build();
@@ -239,11 +254,129 @@ public class LicenseManagementService {
         }
         organizationRepository.save(org);
 
-        log.info("🎉 LICENSE ACTIVATED: Tenant '{}' successfully activated license '{}'",
-                org.getSlug(), licenseKey);
+        log.info("🎉 LICENSE ACTIVATED: Tenant '{}' successfully activated license '{}' (HW: {})",
+                org.getSlug(), licenseKey, saved.getMachineFingerprint());
 
         auditLog(org.getSlug(), "LICENSE_ACTIVATED", org.getId().toString(),
                 "Tenant activated license key " + maskKey(licenseKey));
+
+        return saved;
+    }
+
+    /**
+     * Mengaktivasi lisensi secara offline melalui konten berkas sertifikat kriptografis bertanda tangan digital (.lic).
+     * Dirancang khusus untuk instalasi server on-premise / intranet tertutup (Air-Gapped) tanpa koneksi internet.
+     *
+     * @param orgId ID organisasi tenant
+     * @param certificateContent Konten berkas sertifikat (.lic)
+     * @param machineFingerprint Sidik jari hardware mesin pelaksana saat aktivasi
+     * @param activatedBy Identitas admin/user pengaktivasi
+     * @return Entitas lisensi aktif tersimpan
+     */
+    @Transactional
+    public TenantLicense activateOfflineCertificate(
+            UUID orgId,
+            String certificateContent,
+            String machineFingerprint,
+            String activatedBy
+    ) {
+        if (certificateContent == null || certificateContent.isBlank()) {
+            throw new IllegalArgumentException("Konten berkas sertifikat lisensi tidak boleh kosong.");
+        }
+
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new NoSuchElementException("Organisasi tidak ditemukan: " + orgId));
+
+        // 1. Parsing dan verifikasi integritas kriptografis HMAC-SHA256 dari sertifikat .lic
+        LicenseCryptoService.OfflineLicensePayload payload = licenseCryptoService.parseAndVerifyOfflineCertificate(certificateContent);
+
+        // 2. Verifikasi kepemilikan tenant: sertifikat harus diterbitkan untuk organisasi pemanggil
+        if (!org.getId().toString().equalsIgnoreCase(payload.getOrganizationId()) &&
+            !org.getSlug().equalsIgnoreCase(payload.getOrganizationSlug())) {
+            throw new IllegalStateException("Sertifikat lisensi ini diterbitkan untuk organisasi lain: " +
+                    payload.getOrganizationName() + " (" + payload.getOrganizationSlug() + ").");
+        }
+
+        // 3. Verifikasi hardware fingerprint jika sertifikat mengikat hardware spesifik (Air-Gapped Node Lock)
+        if (payload.getMachineFingerprint() != null && !payload.getMachineFingerprint().isBlank()) {
+            if (!licenseCryptoService.verifyMachineFingerprint(payload.getMachineFingerprint(), machineFingerprint)) {
+                log.warn("🚨 AIR-GAPPED HARDWARE MISMATCH: Org '{}' certificate expects '{}' but got '{}'",
+                        orgId, payload.getMachineFingerprint(), machineFingerprint);
+                throw new IllegalArgumentException("Sidik jari perangkat keras (Hardware Fingerprint) tidak cocok dengan sertifikat lisensi ini. " +
+                        "Sertifikat dikunci khusus untuk mesin dengan sidik jari: " + payload.getMachineFingerprint());
+            }
+        }
+
+        // 4. Periksa masa berlaku sertifikat
+        LocalDateTime validUntil = LocalDateTime.parse(payload.getValidUntil(), DateTimeFormatter.ISO_DATE_TIME);
+        LocalDateTime validFrom = LocalDateTime.parse(payload.getValidFrom(), DateTimeFormatter.ISO_DATE_TIME);
+        if (LocalDateTime.now().isAfter(validUntil)) {
+            throw new IllegalStateException("Sertifikat lisensi offline ini sudah kedaluwarsa pada " + validUntil);
+        }
+
+        // 5. Muat atau buat entitas lisensi
+        SubscriptionPlan plan = subscriptionPlanRepository.findByName(payload.getPlanName())
+                .orElseGet(() -> subscriptionPlanRepository.findByName("PRO")
+                        .orElse(org.getSubscriptionPlan()));
+
+        Optional<TenantLicense> existingOpt = tenantLicenseRepository.findByLicenseKey(payload.getLicenseKey().trim().toUpperCase(Locale.ROOT));
+        TenantLicense license;
+        if (existingOpt.isPresent()) {
+            license = existingOpt.get();
+            license.setStatus(LicenseStatus.ACTIVE);
+            license.setGracePeriodUntil(null);
+            license.setValidFrom(validFrom);
+            license.setValidUntil(validUntil);
+            license.setActivationType("OFFLINE_CERT");
+            license.setLicenseSignature(payload.getSignature());
+        } else {
+            license = TenantLicense.builder()
+                    .organization(org)
+                    .subscriptionPlan(plan)
+                    .licenseKey(payload.getLicenseKey().trim().toUpperCase(Locale.ROOT))
+                    .licenseSignature(payload.getSignature())
+                    .status(LicenseStatus.ACTIVE)
+                    .activationType("OFFLINE_CERT")
+                    .validFrom(validFrom)
+                    .validUntil(validUntil)
+                    .issuedBy("AIRGAP_IMPORT")
+                    .notes("Activated via offline certificate file by: " + activatedBy)
+                    .build();
+        }
+
+        // Aplikasikan overrides kuota hardware dan feature flags dari sertifikat
+        license.setOverrideMaxProjects(payload.getMaxProjects());
+        license.setOverrideMaxOdps(payload.getMaxOdps());
+        license.setOverrideMaxOdcs(payload.getMaxOdcs());
+        license.setOverrideMaxCustomers(payload.getMaxCustomers());
+        license.setOverrideMaxStorageGb(payload.getMaxStorageGb());
+        license.setFeatureSsoEnabled(payload.isFeatureSsoEnabled());
+        license.setFeatureApiEnabled(payload.isFeatureApiEnabled());
+        license.setFeatureAiCopilotEnabled(payload.isFeatureAiCopilotEnabled());
+        license.setFeatureCustomDomainEnabled(payload.isFeatureCustomDomainEnabled());
+
+        if (payload.getMachineFingerprint() != null && !payload.getMachineFingerprint().isBlank()) {
+            license.setMachineFingerprint(payload.getMachineFingerprint().trim().toLowerCase(Locale.ROOT));
+        } else if (machineFingerprint != null && !machineFingerprint.isBlank()) {
+            license.setMachineFingerprint(machineFingerprint.trim().toLowerCase(Locale.ROOT));
+        }
+
+        TenantLicense saved = tenantLicenseRepository.save(license);
+
+        // Pulihkan status operasional akun organisasi
+        org.setStatus(Organization.OrganizationStatus.ACTIVE);
+        org.setDunningLevel(0);
+        org.setOverQuotaMode(false);
+        if (plan != null) {
+            org.setSubscriptionPlan(plan);
+        }
+        organizationRepository.save(org);
+
+        log.info("🛡️ OFFLINE LICENSE CERTIFICATE ACTIVATED: Tenant '{}' activated cert for key '{}' (HW: {})",
+                org.getSlug(), payload.getLicenseKey(), license.getMachineFingerprint());
+
+        auditLog(org.getSlug(), "OFFLINE_LICENSE_ACTIVATED", org.getId().toString(),
+                "Tenant activated offline certificate for " + maskKey(payload.getLicenseKey()));
 
         return saved;
     }

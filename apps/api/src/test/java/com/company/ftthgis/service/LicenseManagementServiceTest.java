@@ -245,4 +245,127 @@ class LicenseManagementServiceTest {
         assertTrue(license.getNotes().contains("Suspected contract breach"));
         verify(tenantLicenseRepository).save(license);
     }
+
+    @Test
+    @DisplayName("activateLicenseKey should reject activation if hardware fingerprint does not match bound license")
+    void testActivateLicenseKey_HardwareFingerprintMismatch_ThrowsException() {
+        String key = "K2NET-PRO-11223344-AABB";
+        when(licenseCryptoService.verifyLicenseChecksum(key)).thenReturn(true);
+        when(organizationRepository.findById(testOrg.getId())).thenReturn(Optional.of(testOrg));
+
+        TenantLicense boundLicense = TenantLicense.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .licenseKey(key)
+                .machineFingerprint("6a09e667f3bcc908e3309a84")
+                .validFrom(LocalDateTime.now().minusDays(1))
+                .validUntil(LocalDateTime.now().plusMonths(6))
+                .status(LicenseStatus.ACTIVE)
+                .build();
+
+        when(tenantLicenseRepository.findByLicenseKey(key)).thenReturn(Optional.of(boundLicense));
+        when(licenseCryptoService.verifyMachineFingerprint("6a09e667f3bcc908e3309a84", "wrong-hardware-hash"))
+                .thenReturn(false);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                licenseManagementService.activateLicenseKey(testOrg.getId(), key, "wrong-hardware-hash", "admin")
+        );
+
+        assertTrue(ex.getMessage().contains("Hardware Fingerprint"));
+    }
+
+    @Test
+    @DisplayName("activateLicenseKey should accept activation if hardware fingerprint matches bound license")
+    void testActivateLicenseKey_HardwareFingerprintMatch_Success() {
+        String key = "K2NET-PRO-11223344-AABB";
+        when(licenseCryptoService.verifyLicenseChecksum(key)).thenReturn(true);
+        when(organizationRepository.findById(testOrg.getId())).thenReturn(Optional.of(testOrg));
+
+        TenantLicense boundLicense = TenantLicense.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .licenseKey(key)
+                .machineFingerprint("6a09e667f3bcc908e3309a84")
+                .validFrom(LocalDateTime.now().minusDays(1))
+                .validUntil(LocalDateTime.now().plusMonths(6))
+                .status(LicenseStatus.ACTIVE)
+                .build();
+
+        when(tenantLicenseRepository.findByLicenseKey(key)).thenReturn(Optional.of(boundLicense));
+        when(licenseCryptoService.verifyMachineFingerprint("6a09e667f3bcc908e3309a84", "6a09e667f3bcc908e3309a84"))
+                .thenReturn(true);
+        when(tenantLicenseRepository.save(any(TenantLicense.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TenantLicense activated = licenseManagementService.activateLicenseKey(
+                testOrg.getId(), key, "6a09e667f3bcc908e3309a84", "admin"
+        );
+
+        assertNotNull(activated);
+        assertEquals(LicenseStatus.ACTIVE, activated.getStatus());
+        assertEquals("6a09e667f3bcc908e3309a84", activated.getMachineFingerprint());
+    }
+
+    @Test
+    @DisplayName("activateOfflineCertificate should verify certificate and activate license with quota overrides")
+    void testActivateOfflineCertificate_Success() {
+        String certContent = "-----BEGIN K2NET LICENSE CERTIFICATE-----\nTEST_CERT\n-----END K2NET LICENSE CERTIFICATE-----";
+        LicenseCryptoService.OfflineLicensePayload payload = LicenseCryptoService.OfflineLicensePayload.builder()
+                .organizationId(testOrg.getId().toString())
+                .organizationSlug(testOrg.getSlug())
+                .organizationName(testOrg.getName())
+                .licenseKey("K2NET-ENT-99887766-1122")
+                .planName("ENTERPRISE")
+                .validFrom(LocalDateTime.now().minusDays(1).toString())
+                .validUntil(LocalDateTime.now().plusYears(1).toString())
+                .machineFingerprint("c5e150fad4ff14d0")
+                .maxProjects(30)
+                .maxOdps(15000)
+                .featureAiCopilotEnabled(true)
+                .signature("valid-hmac-sig")
+                .build();
+
+        when(organizationRepository.findById(testOrg.getId())).thenReturn(Optional.of(testOrg));
+        when(licenseCryptoService.parseAndVerifyOfflineCertificate(certContent)).thenReturn(payload);
+        when(licenseCryptoService.verifyMachineFingerprint("c5e150fad4ff14d0", "c5e150fad4ff14d0")).thenReturn(true);
+        when(tenantLicenseRepository.findByLicenseKey("K2NET-ENT-99887766-1122")).thenReturn(Optional.empty());
+        when(subscriptionPlanRepository.findByName("ENTERPRISE")).thenReturn(Optional.of(proPlan));
+        when(tenantLicenseRepository.save(any(TenantLicense.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TenantLicense activated = licenseManagementService.activateOfflineCertificate(
+                testOrg.getId(), certContent, "c5e150fad4ff14d0", "admin"
+        );
+
+        assertNotNull(activated);
+        assertEquals(LicenseStatus.ACTIVE, activated.getStatus());
+        assertEquals(30, activated.getOverrideMaxProjects());
+        assertEquals(15000, activated.getOverrideMaxOdps());
+        assertTrue(activated.isFeatureAiCopilotEnabled());
+        assertEquals("c5e150fad4ff14d0", activated.getMachineFingerprint());
+    }
+
+    @Test
+    @DisplayName("activateOfflineCertificate should reject certificate when hardware fingerprint mismatches")
+    void testActivateOfflineCertificate_HardwareMismatch_ThrowsException() {
+        String certContent = "-----BEGIN K2NET LICENSE CERTIFICATE-----\nTEST_CERT\n-----END K2NET LICENSE CERTIFICATE-----";
+        LicenseCryptoService.OfflineLicensePayload payload = LicenseCryptoService.OfflineLicensePayload.builder()
+                .organizationId(testOrg.getId().toString())
+                .organizationSlug(testOrg.getSlug())
+                .organizationName(testOrg.getName())
+                .licenseKey("K2NET-ENT-99887766-1122")
+                .planName("ENTERPRISE")
+                .validFrom(LocalDateTime.now().minusDays(1).toString())
+                .validUntil(LocalDateTime.now().plusYears(1).toString())
+                .machineFingerprint("c5e150fad4ff14d0")
+                .build();
+
+        when(organizationRepository.findById(testOrg.getId())).thenReturn(Optional.of(testOrg));
+        when(licenseCryptoService.parseAndVerifyOfflineCertificate(certContent)).thenReturn(payload);
+        when(licenseCryptoService.verifyMachineFingerprint("c5e150fad4ff14d0", "spoofed-fingerprint")).thenReturn(false);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                licenseManagementService.activateOfflineCertificate(testOrg.getId(), certContent, "spoofed-fingerprint", "admin")
+        );
+
+        assertTrue(ex.getMessage().contains("Hardware Fingerprint"));
+    }
 }

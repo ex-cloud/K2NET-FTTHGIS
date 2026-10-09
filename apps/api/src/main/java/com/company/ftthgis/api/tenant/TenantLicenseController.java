@@ -2,6 +2,7 @@ package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto;
 import com.company.ftthgis.api.tenant.dto.LicenseActivateRequest;
+import com.company.ftthgis.api.tenant.dto.OfflineLicenseActivateRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
 import com.company.ftthgis.config.tenant.OrganizationContext;
 import com.company.ftthgis.domain.tenant.entity.BillingInvoice;
@@ -113,6 +114,35 @@ public class TenantLicenseController {
 
         LicenseResponseDto response = licenseManagementService.getCurrentLicense(orgId)
                 .orElseThrow(() -> new IllegalStateException("Lisensi berhasil diaktivasi tetapi gagal dimuat kembali."));
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Mengaktivasi lisensi secara offline melalui konten berkas sertifikat kriptografis (.lic).
+     * Dirancang khusus untuk server intranet / on-premise tertutup (Air-Gapped).
+     */
+    @PostMapping("/activate-offline")
+    @PreAuthorize("@tenantSecurity.hasEffectivePermission('billing.manage') or hasAuthority('billing.manage')")
+    public ResponseEntity<LicenseResponseDto> activateOfflineLicense(@Valid @RequestBody OfflineLicenseActivateRequest request) {
+        UUID orgId = resolveCurrentOrganizationId();
+        if (orgId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Organisasi tenant tidak ditemukan pada sesi otentikasi.");
+        }
+
+        String activatedBy = resolveCurrentUserIdentifier();
+        log.info("🛡️ AIR-GAP ACTIVATION: Tenant org '{}' is activating offline certificate by '{}'",
+                orgId, activatedBy);
+
+        TenantLicense activated = licenseManagementService.activateOfflineCertificate(
+                orgId,
+                request.getCertificateContent(),
+                request.getMachineFingerprint(),
+                activatedBy
+        );
+
+        LicenseResponseDto response = licenseManagementService.getCurrentLicense(orgId)
+                .orElseThrow(() -> new IllegalStateException("Sertifikat lisensi berhasil diaktivasi tetapi gagal dimuat kembali."));
 
         return ResponseEntity.ok(response);
     }

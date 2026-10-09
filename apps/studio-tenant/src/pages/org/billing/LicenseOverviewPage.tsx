@@ -13,6 +13,8 @@ export function LicenseOverviewPage() {
     isLoading,
     activateLicense,
     isActivating,
+    activateOfflineCertificate,
+    isActivatingOffline,
     contacts,
     isContactsLoading,
     updateContacts,
@@ -50,7 +52,8 @@ export function LicenseOverviewPage() {
           open={activateModalOpen}
           onOpenChange={setActivateModalOpen}
           onActivate={activateLicense}
-          isActivating={isActivating}
+          onActivateOffline={activateOfflineCertificate}
+          isActivating={isActivating || isActivatingOffline}
         />
       </PageContentShell>
     </div>

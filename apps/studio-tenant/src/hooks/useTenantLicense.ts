@@ -101,10 +101,39 @@ export function useTenantLicense() {
   });
 
   const activateMutation = useMutation({
-    mutationFn: async (licenseKey: string) => {
+    mutationFn: async (payload: string | { licenseKey: string; machineFingerprint?: string }) => {
+      const body =
+        typeof payload === "string"
+          ? { licenseKey: payload.trim() }
+          : {
+              licenseKey: payload.licenseKey.trim(),
+              machineFingerprint: payload.machineFingerprint?.trim() || undefined,
+            };
       return apiClient<TenantLicenseDetails>("/api/v1/tenant/license/activate", {
         method: "POST",
-        body: JSON.stringify({ licenseKey: licenseKey.trim() }),
+        body: JSON.stringify(body),
+      });
+    },
+    onSuccess: () => {
+      toast.success(t("license.tenant.activation_success"));
+      queryClient.invalidateQueries({ queryKey: ["tenant-current-license"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-subscription-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-billing-invoices"] });
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : t("license.tenant.activation_failed");
+      toast.error(msg);
+    },
+  });
+
+  const activateOfflineMutation = useMutation({
+    mutationFn: async (payload: { certificateContent: string; machineFingerprint?: string }) => {
+      return apiClient<TenantLicenseDetails>("/api/v1/tenant/license/activate-offline", {
+        method: "POST",
+        body: JSON.stringify({
+          certificateContent: payload.certificateContent.trim(),
+          machineFingerprint: payload.machineFingerprint?.trim() || undefined,
+        }),
       });
     },
     onSuccess: () => {
@@ -169,5 +198,8 @@ export function useTenantLicense() {
 
     activateLicense: activateMutation.mutateAsync,
     isActivating: activateMutation.isPending,
+
+    activateOfflineCertificate: activateOfflineMutation.mutateAsync,
+    isActivatingOffline: activateOfflineMutation.isPending,
   };
 }

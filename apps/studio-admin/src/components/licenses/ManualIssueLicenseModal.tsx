@@ -10,8 +10,10 @@ import {
   Input,
   Label,
   Checkbox,
+  Badge,
   toast,
 } from "@k2net/ui";
+import { Cpu, Copy, Check } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import {
@@ -55,6 +57,7 @@ export function ManualIssueLicenseModal({
 
   // Machine Fingerprint & Notes
   const [machineFingerprint, setMachineFingerprint] = React.useState<string>("");
+  const [copiedCli, setCopiedCli] = React.useState<boolean>(false);
   const [notes, setNotes] = React.useState<string>("");
 
   React.useEffect(() => {
@@ -305,15 +308,46 @@ export function ManualIssueLicenseModal({
 
           {/* Machine Fingerprint & Notes */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              {t("license.modal.machine_fingerprint")}
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <Cpu className="h-3.5 w-3.5 text-primary" />
+                <span>{t("license.modal.machine_fingerprint")}</span>
+                <Badge className="border-border bg-muted/30 text-[9px] text-muted-foreground font-mono">
+                  {t("license.modal.airgap_lock_badge")}
+                </Badge>
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                onClick={() => {
+                  const cmd = 'printf "%s:%s" "$(cat /etc/machine-id 2>/dev/null || cat /var/lib/dbus/machine-id)" "$(cat /sys/class/net/$(ip route show default 2>/dev/null | awk \'{print $5}\')/address 2>/dev/null)" | sha256sum | awk \'{print $1}\'';
+                  navigator.clipboard.writeText(cmd);
+                  setCopiedCli(true);
+                  toast.success(t("license.modal.cli_copied_toast"));
+                  setTimeout(() => setCopiedCli(false), 2000);
+                }}
+                className="h-5 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                {copiedCli ? (
+                  <>
+                    <Check className="h-2.5 w-2.5 text-primary" />
+                    <span>{t("license.modal.copied")}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-2.5 w-2.5" />
+                    <span>{t("license.modal.copy_cli_btn")}</span>
+                  </>
+                )}
+              </Button>
+            </div>
             <Input
               type="text"
               placeholder={t("license.modal.machine_fingerprint_placeholder")}
               value={machineFingerprint}
               onChange={(e) => setMachineFingerprint(e.target.value)}
-              className="h-8 text-xs bg-background"
+              className="h-8 text-xs font-mono bg-background"
             />
           </div>
 
