@@ -16,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Enforcement Layer: Blocks access for SUSPENDED organizations.
@@ -45,9 +46,24 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
 
                 // Set organization context for default system realm or tenant realm
                 if ("ftth-realm".equals(slug) || "master".equals(slug) || "default".equals(slug)) {
-                    organizationRepository.findBySlug("default")
-                            .or(() -> organizationRepository.findBySlug("system"))
-                            .ifPresent(org -> OrganizationContext.setOrganizationId(org.getId()));
+                    String tenantHeader = request.getHeader("X-Tenant-ID");
+                    UUID tenantUuid = null;
+                    if (tenantHeader != null && !tenantHeader.isBlank()) {
+                        try {
+                            tenantUuid = UUID.fromString(tenantHeader.trim());
+                        } catch (IllegalArgumentException ignored) {}
+                    }
+
+                    if (tenantUuid != null) {
+                        organizationRepository.findById(tenantUuid)
+                                .ifPresent(org -> OrganizationContext.setOrganizationId(org.getId()));
+                    }
+
+                    if (OrganizationContext.getOrganizationId() == null) {
+                        organizationRepository.findBySlug("default")
+                                .or(() -> organizationRepository.findBySlug("system"))
+                                .ifPresent(org -> OrganizationContext.setOrganizationId(org.getId()));
+                    }
                 } else {
                     Optional<Organization> orgOpt = organizationRepository.findBySlug(slug)
                             .or(() -> organizationRepository.findByRealmKey(slug));
