@@ -42,6 +42,7 @@ export function TenantSecondarySidebar({ projectId }: TenantSecondarySidebarProp
       // Layer 1: Org Scope
       if (pathname.startsWith("/team")) return ORG_SECONDARY_CONFIGS.team;
       if (pathname.startsWith("/settings")) return ORG_SECONDARY_CONFIGS.settings;
+      if (pathname.startsWith("/billing")) return ORG_SECONDARY_CONFIGS.billing;
       return null;
     }
   }, [pathname, projectId]);
@@ -119,7 +120,7 @@ export function TenantSecondarySidebar({ projectId }: TenantSecondarySidebarProp
       {isCollapsed && (
         <button
           onClick={() => setIsCollapsed(false)}
-          title="Buka sidebar navigasi modul"
+          title={t("common.open")}
           className="absolute top-2.5 left-3 z-40 p-1.5 rounded-md bg-muted border border-border shadow-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-300"
         >
           <PanelLeftOpen className="w-4 h-4" />

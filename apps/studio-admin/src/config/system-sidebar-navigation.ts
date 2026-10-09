@@ -25,6 +25,21 @@ export type SidebarConfig = {
 };
 
 export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
+  licenses: {
+    title: "Billing & Licenses",
+    translationKey: "nav.billing_licenses",
+    sections: [
+      {
+        title: "Licenses & Contracts",
+        translationKey: "nav.licenses_contracts",
+        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        items: [
+          { title: "Overview & KPI", translationKey: "nav.license_overview", url: "/licenses", icon: "LayoutDashboard", shortcut: "S then O", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "All Licenses", translationKey: "nav.all_licenses", url: "/licenses", icon: "KeyRound", shortcut: "S then L", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+        ],
+      },
+    ],
+  },
   organizations: {
     title: "Organizations",
     translationKey: "nav.organizations",

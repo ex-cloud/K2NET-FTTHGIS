@@ -11,6 +11,7 @@ import {
   PenTool,
   Shield,
   Key,
+  Receipt,
   type LucideIcon,
 } from "lucide-react";
 
@@ -95,9 +96,10 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     id: "billing",
     title: "Billing",
     translationKey: "nav.tenant_billing",
-    href: "/billing",
+    href: "/billing/license",
     icon: CreditCard,
     shortcut: "G then B",
+    hasSecondarySidebar: true,
   },
   {
     id: "audit-logs",
@@ -120,39 +122,95 @@ export const ORG_NAV_ITEMS: NavItem[] = [
 ];
 
 export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
+  billing: {
+    headerTitle: "Billing & Licenses",
+    translationKey: "nav.tenant_billing",
+    headerSubtitle: "Manage licenses, quotas, plans & invoices",
+    icon: CreditCard,
+    sections: [
+      {
+        title: "License & Quotas",
+        translationKey: "nav.billing_sec_license",
+        items: [
+          {
+            id: "license",
+            title: "Active License",
+            translationKey: "nav.billing_active_license",
+            href: "/billing/license",
+            icon: Key,
+            description: "Cryptographic token & validity",
+            shortcut: "S then L",
+          },
+          {
+            id: "quotas",
+            title: "Quota Utilization",
+            translationKey: "nav.billing_quota_utilization",
+            href: "/billing/quotas",
+            icon: Activity,
+            description: "OLT, ODP, Storage & API limits",
+            shortcut: "S then Q",
+          },
+        ],
+      },
+      {
+        title: "Plans & Invoices",
+        translationKey: "nav.billing_sec_plans",
+        items: [
+          {
+            id: "plans",
+            title: "Subscription Plans",
+            translationKey: "nav.billing_subscription_plans",
+            href: "/billing/plans",
+            icon: CreditCard,
+            description: "Tier catalog & capacity upgrades",
+            shortcut: "S then P",
+          },
+          {
+            id: "invoices",
+            title: "Billing Invoices",
+            translationKey: "nav.billing_invoices_history",
+            href: "/billing/invoices",
+            icon: Receipt,
+            description: "Official invoices & payment receipts",
+            shortcut: "S then I",
+          },
+        ],
+      },
+    ],
+  },
   team: {
     headerTitle: "Team Management",
     translationKey: "nav.tenant_team",
-    headerSubtitle: "Kelola anggota & peran organisasi",
+    headerSubtitle: "Manage members & organization roles",
     icon: Users,
     sections: [
       {
         items: [
           {
             id: "members",
-            title: "Anggota Tim",
+            title: "Team Members",
             translationKey: "nav.team_members",
             href: "/team/members",
             icon: Users,
-            description: "Daftar pengguna & undangan aktif",
+            description: "User list & active invitations",
             shortcut: "S then M",
           },
           {
             id: "roles",
-            title: "Peran & Izin",
+            title: "Roles & Permissions",
             translationKey: "nav.team_roles",
             href: "/team/roles",
             icon: ShieldCheck,
-            description: "Hak akses PBAC organisasi",
+            description: "Organization PBAC access rights",
             shortcut: "S then R",
           },
           {
             id: "activity",
-            title: "Riwayat Aktivitas",
+            title: "Activity History",
             translationKey: "nav.team_activity",
             href: "/team/activity",
             icon: History,
-            description: "Log audit tindakan anggota",
+            description: "Member action audit logs",
             shortcut: "S then A",
           },
         ],
@@ -162,44 +220,44 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
   settings: {
     headerTitle: "Organization Settings",
     translationKey: "nav.tenant_settings",
-    headerSubtitle: "Konfigurasi instansi & kepatuhan",
+    headerSubtitle: "Instance configuration & compliance",
     icon: Settings,
     sections: [
       {
-        title: "Pengaturan Umum",
+        title: "General Settings",
         translationKey: "nav.general_settings",
         items: [
           {
             id: "general",
-            title: "Profil Instansi",
+            title: "Instance Profile",
             translationKey: "nav.org_profile",
             href: "/settings/general",
             icon: Building,
-            description: "Nama, domain & kontak resmi",
+            description: "Name, domain & official contacts",
             shortcut: "S then G",
           },
           {
             id: "branding",
-            title: "Kustomisasi & Logo",
+            title: "Customization & Logo",
             translationKey: "nav.org_branding",
             href: "/settings/branding",
             icon: PenTool,
-            description: "Identitas visual & logo tenant",
+            description: "Visual identity & tenant logo",
             shortcut: "S then B",
           },
         ],
       },
       {
-        title: "Keamanan & Akses",
+        title: "Security & Access",
         translationKey: "nav.security",
         items: [
           {
             id: "security",
-            title: "Kebijakan MFA / 2FA",
+            title: "MFA / 2FA Policy",
             translationKey: "nav.org_security",
             href: "/settings/security",
             icon: Shield,
-            description: "Autentikasi berlapis & sesi",
+            description: "Multi-factor auth & sessions",
             shortcut: "S then S",
           },
           {
@@ -208,7 +266,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             translationKey: "nav.org_sso",
             href: "/settings/sso",
             icon: Key,
-            description: "Integrasi SAML / OIDC Keycloak",
+            description: "Keycloak SAML / OIDC integration",
             shortcut: "S then K",
           },
           {
@@ -217,7 +275,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             translationKey: "nav.org_oauth",
             href: "/settings/oauth",
             icon: Webhook,
-            description: "Kredensial integrasi gateway",
+            description: "Gateway integration credentials",
             shortcut: "S then O",
           },
         ],

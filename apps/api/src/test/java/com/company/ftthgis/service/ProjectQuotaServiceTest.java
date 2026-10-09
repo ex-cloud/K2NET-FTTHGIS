@@ -23,6 +23,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
+import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
+
 @ExtendWith(MockitoExtension.class)
 class ProjectQuotaServiceTest {
 
@@ -31,6 +35,9 @@ class ProjectQuotaServiceTest {
 
     @Mock
     private OrganizationConfigRepository organizationConfigRepository;
+
+    @Mock
+    private TenantLicenseRepository tenantLicenseRepository;
 
     @InjectMocks
     private ProjectQuotaService projectQuotaService;
@@ -137,5 +144,33 @@ class ProjectQuotaServiceTest {
 
         int effectiveMax = projectQuotaService.getEffectiveMaxProjects(org);
         assertEquals(10, effectiveMax); // 6 base + 4 booster
+    }
+
+    @Test
+    void testLicenseOverrideTakesPrecedenceOverPlanAndBooster() {
+        TenantLicense license = TenantLicense.builder()
+                .status(LicenseStatus.ACTIVE)
+                .overrideMaxProjects(25)
+                .build();
+
+        when(tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(orgId, LicenseStatus.ACTIVE))
+                .thenReturn(Optional.of(license));
+
+        int effectiveMax = projectQuotaService.getEffectiveMaxProjects(org);
+        assertEquals(25, effectiveMax); // Prioritas tertinggi: 25 dari lisensi
+    }
+
+    @Test
+    void testLicenseOdpOverrideTakesPrecedenceOverPlan() {
+        TenantLicense license = TenantLicense.builder()
+                .status(LicenseStatus.ACTIVE)
+                .overrideMaxOdps(15000)
+                .build();
+
+        when(tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(orgId, LicenseStatus.ACTIVE))
+                .thenReturn(Optional.of(license));
+
+        int effectiveMax = projectQuotaService.getEffectiveMaxOdps(org);
+        assertEquals(15000, effectiveMax); // Prioritas tertinggi: 15000 dari lisensi
     }
 }

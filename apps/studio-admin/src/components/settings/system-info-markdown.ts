@@ -7,21 +7,36 @@ import type {
   MigrationInfo,
 } from "@/hooks/usePlatformSystemInfo";
 
-function formatOverview(info?: PlatformSystemInfoData, g?: GitInfo, m?: MigrationInfo): string[] {
+function resolveCommit(info?: PlatformSystemInfoData): string {
+  if (info?.gitCommitHash) return info.gitCommitHash;
+  if (info?.gitInfo?.commitShort) return info.gitInfo.commitShort;
+  return "—";
+}
+
+function resolveSemVerLine(info?: PlatformSystemInfoData): string {
   const version = info?.appVersion || "v1.0.0";
+  const major = info?.patchInfo?.major ?? 1;
+  const minor = info?.patchInfo?.minor ?? 0;
   const patchLevel = info?.patchInfo?.patchLevel ?? 0;
+  return `- **Platform Version**: ${version} (GA STABLE, SemVer: Major ${major}, Minor ${minor}, Patch ${patchLevel})`;
+}
+
+function formatOverview(info?: PlatformSystemInfoData, g?: GitInfo, m?: MigrationInfo): string[] {
+  const patchLevel = info?.patchInfo?.patchLevel ?? 0;
+  const statusLabel = info?.patchInfo?.statusLabel || "Baseline GA";
   const api = info?.apiVersion || "/api/v1";
+  const dbVersion = m?.version || "51";
   const flyway = m?.version ? `Flyway V${m.version}` : "Flyway V51";
-  const commit = info?.gitCommitHash || info?.gitInfo?.commitShort || "—";
+  const commit = resolveCommit(info);
   const branch = g?.branch || "main";
 
   return [
     "# K2NET FTTH GIS — System & Architecture Specification",
     "",
-    `- **Platform Version**: ${version} (GA STABLE, SemVer: Major ${info?.patchInfo?.major ?? 1}, Minor ${info?.patchInfo?.minor ?? 0}, Patch ${patchLevel})`,
-    `- **Patch & Hotfix Level**: Patch .${patchLevel} (${info?.patchInfo?.statusLabel || "Baseline GA"})`,
+    resolveSemVerLine(info),
+    `- **Patch & Hotfix Level**: Patch .${patchLevel} (${statusLabel})`,
     `- **REST API Namespace**: ${api} (ACTIVE - Non-breaking Expand)`,
-    `- **Database Schema**: ${flyway} (0 Gap, ${m?.version || "51"} patches applied)`,
+    `- **Database Schema**: ${flyway} (0 Gap, ${dbVersion} patches applied)`,
     `- **Active Git Commit**: \`${commit}\` (Branch: \`${branch}\`)`,
     `- **Generated At**: ${new Date().toISOString()}`,
     "",

@@ -40,6 +40,9 @@ public class PaymentControllerTest {
     @Mock
     private PaymentTransactionRepository paymentTransactionRepository;
 
+    @Mock
+    private com.company.ftthgis.service.LicenseManagementService licenseManagementService;
+
     @InjectMocks
     private PaymentController paymentController;
 
@@ -224,5 +227,67 @@ public class PaymentControllerTest {
                 .andExpect(jsonPath("$.status").value("ignored"));
 
         verify(organizationService, never()).upgradeSubscription(anyString(), anyString());
+    }
+
+    @Test
+    public void testCallbackTriggersLicenseIssueOrRenew() throws Exception {
+        // Arrange
+        String webhookKey = "my-secret-key-123456";
+        ReflectionTestUtils.setField(paymentController, "webhookKey", webhookKey);
+
+        String payload = "{\"external_id\":\"org-corp:ENTERPRISE:tx-789\",\"status\":\"PAID\",\"payment_method\":\"XENDIT_VA\",\"payment_channel\":\"BCA\",\"amount\":\"4900000\"}";
+        String signature = calculateHmac(payload, webhookKey);
+
+        when(organizationService.upgradeSubscription("org-corp", "ENTERPRISE")).thenReturn(true);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/payments/callback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("X-Signature", signature))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"));
+
+        verify(licenseManagementService, times(1)).issueOrRenewFromPayment(
+                eq("org-corp"),
+                eq("ENTERPRISE"),
+                eq("XENDIT_VA"),
+                eq("BCA"),
+                eq(new java.math.BigDecimal("4900000")),
+                eq("org-corp:ENTERPRISE:tx-789")
+        );
+    }
+
+    @Test
+    public void testCallbackIdempotentWhenAlreadyPaid() throws Exception {
+        // Arrange
+        String webhookKey = "my-secret-key-123456";
+        ReflectionTestUtils.setField(paymentController, "webhookKey", webhookKey);
+
+        String externalId = "org-corp:ENTERPRISE:tx-settled";
+        String payload = "{\"external_id\":\"" + externalId + "\",\"status\":\"PAID\"}";
+        String signature = calculateHmac(payload, webhookKey);
+
+        com.company.ftthgis.domain.tenant.entity.PaymentTransaction existingTx =
+                com.company.ftthgis.domain.tenant.entity.PaymentTransaction.builder()
+                        .externalId(externalId)
+                        .status("PAID")
+                        .build();
+
+        when(paymentTransactionRepository.findByExternalId(externalId))
+                .thenReturn(java.util.Optional.of(existingTx));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/payments/callback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .header("X-Signature", signature))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("already_processed"))
+                .andExpect(jsonPath("$.message").value("Transaction already settled and license renewed"));
+
+        // Must not call license renewal again
+        verify(licenseManagementService, never()).issueOrRenewFromPayment(any(), any(), any(), any(), any(), any());
+        verify(organizationService, never()).upgradeSubscription(any(), any());
     }
 }

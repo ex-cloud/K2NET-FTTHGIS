@@ -120,6 +120,63 @@ function parseSemVer(versionStr: string): { major: number; minor: number; patch:
   };
 }
 
+type PatchType = "BASELINE" | "SECURITY" | "BUGFIX" | "PERFORMANCE" | "MIGRATION";
+
+function determinePatchType(msgLower: string, index: number): PatchType {
+  if (index === 0 && (msgLower.includes("feat") || msgLower.includes("baseline") || msgLower.includes("release"))) {
+    return "BASELINE";
+  }
+  if (
+    msgLower.includes("sec") ||
+    msgLower.includes("auth") ||
+    msgLower.includes("mfa") ||
+    msgLower.includes("pbac") ||
+    msgLower.includes("cve")
+  ) {
+    return "SECURITY";
+  }
+  if (msgLower.includes("perf") || msgLower.includes("opt") || msgLower.includes("cache")) {
+    return "PERFORMANCE";
+  }
+  if (msgLower.includes("migration") || msgLower.includes("flyway") || msgLower.includes("schema") || msgLower.includes("db")) {
+    return "MIGRATION";
+  }
+  if (msgLower.startsWith("feat")) {
+    return "BASELINE";
+  }
+  return "BUGFIX";
+}
+
+function determineComponent(rawMsg: string): string {
+  const scopeMatch = rawMsg.match(/^[a-z]+\(([^)]+)\):/i);
+  if (!scopeMatch) return "Platform Core";
+
+  const scope = scopeMatch[1].toLowerCase();
+  switch (scope) {
+    case "ui":
+    case "layout":
+    case "components":
+      return "UI Shell & Shared (@k2net/ui)";
+    case "system-info":
+    case "telemetry":
+    case "observability":
+      return "Platform & Architecture Telemetry";
+    case "settings":
+    case "usernav":
+      return "Admin Settings & Navigation";
+    case "gateways":
+    case "microservices":
+    case "services":
+      return "Go Gateways & Microservices";
+    case "standards":
+    case "versioning":
+    case "governance":
+      return "Standards & Architecture Governance";
+    default:
+      return `Core Platform (${scope.charAt(0).toUpperCase() + scope.slice(1)})`;
+  }
+}
+
 function buildDynamicSystemPatches(
   appVersion: string,
   git: GitInfo,
@@ -150,48 +207,8 @@ function buildDynamicSystemPatches(
   commitsToUse.forEach((c, index) => {
     const rawMsg = c.message || "";
     const msgLower = rawMsg.toLowerCase();
-
-    // Determine patch type based on message keywords
-    let pType: "BASELINE" | "SECURITY" | "BUGFIX" | "PERFORMANCE" | "MIGRATION" = "BUGFIX";
-    if (index === 0 && (msgLower.includes("feat") || msgLower.includes("baseline") || msgLower.includes("release"))) {
-      pType = "BASELINE";
-    } else if (
-      msgLower.includes("sec") ||
-      msgLower.includes("auth") ||
-      msgLower.includes("mfa") ||
-      msgLower.includes("pbac") ||
-      msgLower.includes("cve")
-    ) {
-      pType = "SECURITY";
-    } else if (msgLower.includes("perf") || msgLower.includes("opt") || msgLower.includes("cache")) {
-      pType = "PERFORMANCE";
-    } else if (msgLower.includes("migration") || msgLower.includes("flyway") || msgLower.includes("schema") || msgLower.includes("db")) {
-      pType = "MIGRATION";
-    } else if (msgLower.startsWith("feat")) {
-      pType = "BASELINE";
-    } else {
-      pType = "BUGFIX";
-    }
-
-    // Determine component from conventional commit e.g. "feat(system-info): ..." -> "Platform Core & Telemetry"
-    let component = "Platform Core";
-    const scopeMatch = rawMsg.match(/^[a-z]+\(([^)]+)\):/i);
-    if (scopeMatch) {
-      const scope = scopeMatch[1].toLowerCase();
-      if (scope === "ui" || scope === "layout" || scope === "components") {
-        component = "UI Shell & Shared (@k2net/ui)";
-      } else if (scope === "system-info" || scope === "telemetry" || scope === "observability") {
-        component = "Platform & Architecture Telemetry";
-      } else if (scope === "settings" || scope === "usernav") {
-        component = "Admin Settings & Navigation";
-      } else if (scope === "gateways" || scope === "microservices" || scope === "services") {
-        component = "Go Gateways & Microservices";
-      } else if (scope === "standards" || scope === "versioning" || scope === "governance") {
-        component = "Standards & Architecture Governance";
-      } else {
-        component = `Core Platform (${scope.charAt(0).toUpperCase() + scope.slice(1)})`;
-      }
-    }
+    const pType = determinePatchType(msgLower, index);
+    const component = determineComponent(rawMsg);
 
     // Clean up description
     const cleanDesc = rawMsg.replace(/^[a-z]+(\([^)]+\))?:\s*/i, "").trim() || rawMsg;

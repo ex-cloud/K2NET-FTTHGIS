@@ -20,6 +20,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
+import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
+
 @ExtendWith(MockitoExtension.class)
 class OrganizationJanitorJobTest {
 
@@ -34,6 +38,9 @@ class OrganizationJanitorJobTest {
 
     @Mock
     private OrganizationService organizationService;
+
+    @Mock
+    private TenantLicenseRepository tenantLicenseRepository;
 
     @InjectMocks
     private OrganizationJanitorJob janitorJob;
@@ -126,5 +133,109 @@ class OrganizationJanitorJobTest {
         janitorJob.sweepTenantLifecycle();
 
         verifyNoInteractions(organizationService);
+    }
+
+    @Test
+    @DisplayName("License Lifecycle: Expired ACTIVE license transitions to GRACE_PERIOD (7 days)")
+    void testLicenseExpiryTransitionsToGracePeriod() {
+        LocalDateTime now = LocalDateTime.now();
+        Organization org = Organization.builder()
+                .id(UUID.randomUUID())
+                .slug("tenant-alpha")
+                .status(Organization.OrganizationStatus.ACTIVE)
+                .build();
+
+        TenantLicense activeLicense = TenantLicense.builder()
+                .id(UUID.randomUUID())
+                .licenseKey("K2NET-PRO-12345678-ABCD")
+                .organization(org)
+                .status(LicenseStatus.ACTIVE)
+                .validUntil(now.minusHours(1))
+                .build();
+
+        when(tenantLicenseRepository.findByValidUntilBeforeAndStatus(any(), eq(LicenseStatus.ACTIVE)))
+                .thenReturn(List.of(activeLicense));
+        when(tenantLicenseRepository.findByGracePeriodUntilBeforeAndStatus(any(), eq(LicenseStatus.GRACE_PERIOD)))
+                .thenReturn(List.of());
+        when(tenantLicenseRepository.findByStatus(eq(LicenseStatus.RESTRICTED_READ_ONLY)))
+                .thenReturn(List.of());
+
+        janitorJob.sweepLicenseLifecycle(now);
+
+        assertEquals(LicenseStatus.GRACE_PERIOD, activeLicense.getStatus());
+        assertNotNull(activeLicense.getGracePeriodUntil());
+        assertTrue(activeLicense.getGracePeriodUntil().isAfter(now.plusDays(6)));
+        verify(tenantLicenseRepository).save(activeLicense);
+    }
+
+    @Test
+    @DisplayName("License Lifecycle: Expired GRACE_PERIOD license transitions to RESTRICTED_READ_ONLY and sets org overQuotaMode")
+    void testLicenseGracePeriodExpiryTransitionsToRestrictedReadOnly() {
+        LocalDateTime now = LocalDateTime.now();
+        Organization org = Organization.builder()
+                .id(UUID.randomUUID())
+                .slug("tenant-beta")
+                .status(Organization.OrganizationStatus.ACTIVE)
+                .overQuotaMode(false)
+                .build();
+
+        TenantLicense graceLicense = TenantLicense.builder()
+                .id(UUID.randomUUID())
+                .licenseKey("K2NET-PRO-87654321-DCBA")
+                .organization(org)
+                .status(LicenseStatus.GRACE_PERIOD)
+                .validUntil(now.minusDays(8))
+                .gracePeriodUntil(now.minusMinutes(5))
+                .build();
+
+        when(tenantLicenseRepository.findByValidUntilBeforeAndStatus(any(), eq(LicenseStatus.ACTIVE)))
+                .thenReturn(List.of());
+        when(tenantLicenseRepository.findByGracePeriodUntilBeforeAndStatus(any(), eq(LicenseStatus.GRACE_PERIOD)))
+                .thenReturn(List.of(graceLicense));
+        when(tenantLicenseRepository.findByStatus(eq(LicenseStatus.RESTRICTED_READ_ONLY)))
+                .thenReturn(List.of());
+
+        janitorJob.sweepLicenseLifecycle(now);
+
+        assertEquals(LicenseStatus.RESTRICTED_READ_ONLY, graceLicense.getStatus());
+        verify(tenantLicenseRepository).save(graceLicense);
+
+        assertTrue(org.getOverQuotaMode());
+        assertEquals(Organization.OrganizationStatus.OVERDUE, org.getStatus());
+        verify(organizationRepository).save(org);
+    }
+
+    @Test
+    @DisplayName("License Lifecycle: RESTRICTED_READ_ONLY license overdue > 30 days transitions to SUSPENDED")
+    void testLicenseRestrictedReadOnlyOverdue30DaysTransitionsToSuspended() {
+        LocalDateTime now = LocalDateTime.now();
+        Organization org = Organization.builder()
+                .id(UUID.randomUUID())
+                .slug("tenant-gamma")
+                .status(Organization.OrganizationStatus.OVERDUE)
+                .build();
+
+        TenantLicense readOnlyLicense = TenantLicense.builder()
+                .id(UUID.randomUUID())
+                .licenseKey("K2NET-ENT-11223344-9988")
+                .organization(org)
+                .status(LicenseStatus.RESTRICTED_READ_ONLY)
+                .gracePeriodUntil(now.minusDays(31))
+                .build();
+
+        when(tenantLicenseRepository.findByValidUntilBeforeAndStatus(any(), eq(LicenseStatus.ACTIVE)))
+                .thenReturn(List.of());
+        when(tenantLicenseRepository.findByGracePeriodUntilBeforeAndStatus(any(), eq(LicenseStatus.GRACE_PERIOD)))
+                .thenReturn(List.of());
+        when(tenantLicenseRepository.findByStatus(eq(LicenseStatus.RESTRICTED_READ_ONLY)))
+                .thenReturn(List.of(readOnlyLicense));
+
+        janitorJob.sweepLicenseLifecycle(now);
+
+        assertEquals(LicenseStatus.SUSPENDED, readOnlyLicense.getStatus());
+        verify(tenantLicenseRepository).save(readOnlyLicense);
+
+        assertEquals(Organization.OrganizationStatus.SUSPENDED, org.getStatus());
+        verify(organizationRepository).save(org);
     }
 }

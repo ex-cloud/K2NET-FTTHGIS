@@ -14,6 +14,7 @@ import issuesId from './locales/id/issues.json';
 import tasksId from './locales/id/tasks.json';
 import gatewaysId from './locales/id/gateways.json';
 import settingsId from './locales/id/settings.json';
+import licenseId from './locales/id/license.json';
 
 import commonEn from './locales/en/common.json';
 import navEn from './locales/en/nav.json';
@@ -31,6 +32,7 @@ import issuesEn from './locales/en/issues.json';
 import tasksEn from './locales/en/tasks.json';
 import gatewaysEn from './locales/en/gateways.json';
 import settingsEn from './locales/en/settings.json';
+import licenseEn from './locales/en/license.json';
 
 import { SupportedLocale } from './types';
 
@@ -52,6 +54,7 @@ export const dictionaries: Record<SupportedLocale, Record<string, Record<string,
     tasks: tasksId,
     gateways: gatewaysId,
     settings: settingsId,
+    license: licenseId,
   },
   en: {
     common: commonEn,
@@ -70,6 +73,7 @@ export const dictionaries: Record<SupportedLocale, Record<string, Record<string,
     tasks: tasksEn,
     gateways: gatewaysEn,
     settings: settingsEn,
+    license: licenseEn,
   },
 };
 

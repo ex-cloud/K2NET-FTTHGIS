@@ -28,6 +28,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 
+import com.company.ftthgis.service.LicenseManagementService;
+import java.math.BigDecimal;
+
 @RestController
 @Slf4j
 @RequiredArgsConstructor
@@ -37,6 +40,7 @@ public class PaymentController {
     private final UserRepository userRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final LicenseManagementService licenseManagementService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate;
 
@@ -66,9 +70,17 @@ public class PaymentController {
         }
 
         try {
-            Map<String, String> payload = objectMapper.readValue(rawBody, new TypeReference<Map<String, String>>() {});
-            String externalId = payload.get("external_id");
-            String status = payload.get("status");
+            Map<String, Object> payload = objectMapper.readValue(rawBody, new TypeReference<Map<String, Object>>() {});
+            String externalId = payload.get("external_id") != null ? payload.get("external_id").toString() : null;
+            String status = payload.get("status") != null ? payload.get("status").toString() : null;
+            String paymentMethod = payload.get("payment_method") != null ? payload.get("payment_method").toString() : "XENDIT";
+            String paymentChannel = payload.get("payment_channel") != null ? payload.get("payment_channel").toString() : "VIRTUAL_ACCOUNT";
+            BigDecimal amount = null;
+            if (payload.get("amount") != null) {
+                try {
+                    amount = new BigDecimal(payload.get("amount").toString());
+                } catch (Exception ignored) {}
+            }
 
             log.info("Processing verified payment callback: ExternalId={}, Status={}", externalId, status);
 
@@ -76,7 +88,18 @@ public class PaymentController {
                 var txOpt = paymentTransactionRepository.findByExternalId(externalId);
                 if (txOpt.isPresent()) {
                     var tx = txOpt.get();
+                    // Idempotency check: jika transaksi sudah dibayar/settled, abaikan pemrosesan ganda
+                    if (isPaidStatus(tx.getStatus()) && isPaidStatus(status)) {
+                        log.info("⚡ Idempotent callback: Transaction '{}' already settled as {}. Skipping duplicate renewal.", externalId, tx.getStatus());
+                        return ResponseEntity.ok(Map.of(
+                            "status", "already_processed",
+                            "message", "Transaction already settled and license renewed"
+                        ));
+                    }
                     tx.setStatus(status.toUpperCase());
+                    if (amount != null && (tx.getAmount() == null || tx.getAmount().compareTo(BigDecimal.ZERO) == 0)) {
+                        tx.setAmount(amount);
+                    }
                     paymentTransactionRepository.save(tx);
                 } else {
                     String[] parts = externalId.split(":");
@@ -86,14 +109,14 @@ public class PaymentController {
                         .externalId(externalId)
                         .orgSlug(orgSlug)
                         .planName(planName)
-                        .amount(java.math.BigDecimal.ZERO)
-                        .status(status.toUpperCase())
+                        .amount(amount != null ? amount : BigDecimal.ZERO)
+                        .status(status != null ? status.toUpperCase() : "PENDING")
                         .build();
                     paymentTransactionRepository.save(tx);
                 }
             }
 
-            if (externalId != null && ("PAID".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status) || "SETTLED".equalsIgnoreCase(status))) {
+            if (externalId != null && isPaidStatus(status)) {
                 // Split format: orgSlug:planName:randomUuid
                 String[] parts = externalId.split(":");
                 if (parts.length >= 2) {
@@ -104,6 +127,20 @@ public class PaymentController {
                     boolean success = organizationService.upgradeSubscription(orgSlug, planName);
                     
                     if (success) {
+                        // Sinkronisasi otomatis penerbitan / perpanjangan lisensi & faktur resmi
+                        try {
+                            log.info("🔑 Automatically issuing/renewing license for orgSlug = {} via payment callback...", orgSlug);
+                            licenseManagementService.issueOrRenewFromPayment(
+                                orgSlug,
+                                planName,
+                                paymentMethod,
+                                paymentChannel,
+                                amount,
+                                externalId
+                            );
+                        } catch (Exception licEx) {
+                            log.error("⚠️ Failed to issue/renew license during payment callback for org '{}': {}", orgSlug, licEx.getMessage(), licEx);
+                        }
                         return ResponseEntity.ok(Map.of("status", "success", "message", "Subscription updated"));
                     } else {
                         return ResponseEntity.status(500).body("Failed to update organization subscription");
@@ -271,6 +308,18 @@ public class PaymentController {
             paymentTransactionRepository.save(tx);
             
             organizationService.upgradeSubscription(tx.getOrgSlug(), tx.getPlanName());
+            try {
+                licenseManagementService.issueOrRenewFromPayment(
+                    tx.getOrgSlug(),
+                    tx.getPlanName(),
+                    "MANUAL_RECONCILE",
+                    "ADMIN",
+                    tx.getAmount(),
+                    tx.getExternalId()
+                );
+            } catch (Exception e) {
+                log.warn("Failed to sync license during reconcile for {}: {}", tx.getOrgSlug(), e.getMessage());
+            }
             updatedCount++;
         }
 
@@ -278,6 +327,12 @@ public class PaymentController {
             "success", true,
             "message", "Reconciliation completed. " + updatedCount + " transactions processed."
         ));
+    }
+
+    private boolean isPaidStatus(String status) {
+        if (status == null) return false;
+        String s = status.trim().toUpperCase(java.util.Locale.ROOT);
+        return "PAID".equals(s) || "SETTLED".equals(s) || "COMPLETED".equals(s);
     }
 
     private boolean isSuperAdmin(Jwt jwt) {

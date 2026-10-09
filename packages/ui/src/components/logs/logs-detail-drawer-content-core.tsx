@@ -326,7 +326,7 @@ function highlightJsonValue(valStr: string): React.ReactNode {
   if (core.startsWith('"') && core.endsWith('"')) {
     return (
       <>
-        <span className="text-emerald-500 dark:text-emerald-400 font-mono">{core}</span>
+        <span className="text-primary font-mono">{core}</span>
         {trailingComma}
       </>
     );
@@ -356,7 +356,7 @@ function highlightJsonLine(line: string): React.ReactNode {
     return (
       <>
         <span>{indent}</span>
-        <span className="text-foreground/90 dark:text-zinc-200 font-medium">{key}</span>
+        <span className="text-foreground/90 font-medium">{key}</span>
         <span className="text-muted-foreground/60">{colon}</span>
         {highlightJsonValue(rest)}
       </>
@@ -392,14 +392,14 @@ export function JsonCodeViewer({
   return (
     <div
       className={cn(
-        "rounded-lg border border-border/70 bg-card/60 dark:bg-zinc-950/80 font-mono text-xs overflow-x-auto select-text shadow-2xs",
+        "rounded-lg border border-border/70 bg-card/60 dark:bg-muted/30 font-mono text-xs overflow-x-auto select-text shadow-2xs",
         className
       )}
     >
       <div className="flex min-w-full py-2.5">
         {/* Line Numbers Gutter */}
         <div
-          className="select-none text-right text-muted-foreground/40 dark:text-zinc-600 pr-3.5 pl-3 border-r border-border/40 shrink-0 font-mono text-[11px] leading-relaxed"
+          className="select-none text-right text-muted-foreground/40 pr-3.5 pl-3 border-r border-border/40 shrink-0 font-mono text-[11px] leading-relaxed"
           aria-hidden="true"
         >
           {lines.map((_, i) => (

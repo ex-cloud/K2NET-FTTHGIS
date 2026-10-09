@@ -52,7 +52,7 @@ export function AppVersionBadge({
       <span>{resolvedVersion}</span>
       <span className="text-muted-foreground/40 font-normal hidden xl:inline">· {resolvedCommit}</span>
       {copied ? (
-        <Check className="h-2.5 w-2.5 text-emerald-500 shrink-0" />
+        <Check className="h-2.5 w-2.5 text-primary shrink-0" />
       ) : (
         <Copy className="h-2.5 w-2.5 opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
       )}

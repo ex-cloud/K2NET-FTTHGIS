@@ -14,6 +14,7 @@ import {
   Sparkles,
   Box,
   Trash2,
+  CreditCard,
 } from "lucide-react";
 import {
   ActionTooltip,
@@ -39,6 +40,7 @@ export type NavItem = {
 export const ADMIN_CORE_NAV_ITEMS: NavItem[] = [
   { title: "Overview", translationKey: "nav.overview", icon: LayoutDashboard, href: "/overview", shortcut: "G then O" },
   { title: "Organizations", translationKey: "nav.organizations", icon: Building2, href: "/organizations", shortcut: "G then T", requiredPermission: ["system.organizations.view", "orgs.view"] },
+  { title: "Billing & Licenses", translationKey: "nav.billing_licenses", icon: CreditCard, href: "/licenses", shortcut: "G then B", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
   { title: "Global Users", translationKey: "nav.global_users", icon: Users, href: "/users", shortcut: "G then U", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
   { title: "Projects & Issues", translationKey: "nav.projects_issues", icon: ClipboardList, href: "/tasks", shortcut: "G then P", requiredPermission: ["system.task.manage", "system.observability.view"] },
 ];
@@ -66,6 +68,7 @@ export const ADMIN_BOTTOM_NAV_ITEMS: NavItem[] = [];
 
 export const checkIsActive = (href: string, pathname: string) => {
   if (href === "/overview") return pathname === "/overview";
+  if (href === "/licenses") return pathname.startsWith("/licenses");
   if (href.startsWith("/ai")) return pathname.startsWith("/ai");
   if (href.startsWith("/gateways")) return pathname.startsWith("/gateways");
   if (href.startsWith("/security")) return pathname.startsWith("/security");

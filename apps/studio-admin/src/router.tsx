@@ -55,6 +55,9 @@ const SystemOverviewPage = lazyWithRetry(() =>
 const OrganizationsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/page").then((m) => ({ default: m.default }))
 );
+const LicensesPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/licenses/page").then((m) => ({ default: m.default }))
+);
 const OrganizationSlugPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/[slug]/page").then((m) => ({ default: m.default }))
 );
@@ -381,6 +384,9 @@ const orgDomainsRoute = createRoute({ getParentRoute: () => authenticatedLayoutR
 const orgVpnRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/vpn", component: () => <Lazy><OrganizationVpnPage /></Lazy> });
 const orgImpersonationRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/impersonation", component: () => <Lazy><OrganizationImpersonationPage /></Lazy> });
 
+// Billing & Licenses
+const licensesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses", component: () => <Lazy><LicensesPage /></Lazy> });
+
 // Users
 const usersRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users", component: () => <Lazy><UsersPage /></Lazy> });
 const usersRolesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users/roles", component: () => <Lazy><UsersRolesPage /></Lazy> });
@@ -464,7 +470,7 @@ const assets3dRoute = createRoute({ getParentRoute: () => authenticatedLayoutRou
 const auditRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/audit", component: () => <Navigate to="/security/audit" /> });
 const alertsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/alerts", component: () => <Navigate to="/security/alerts" /> });
 const healthRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/health", component: () => <Navigate to="/observability/overview" /> });
-const subscriptionsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/subscriptions", component: () => <Navigate to="/organizations" /> });
+const subscriptionsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/subscriptions", component: () => <Navigate to="/licenses" /> });
 const systemSettingsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/system/settings", component: () => <Navigate to="/settings/general" /> });
 
 // ----------------------------------------------------------------
@@ -475,6 +481,8 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   overviewRoute,
   // Orgs
   orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
+  // Billing & Licenses
+  licensesRoute,
   // Users
   usersRoute, usersRolesRoute, usersSessionsRoute,
   // Observability

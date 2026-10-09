@@ -127,9 +127,10 @@ function getActiveSidebarKey(pathname: string | null): string | null {
   if (!pathname) return null;
   if (pathname.startsWith("/ai")) return "ai";
   if (pathname.startsWith("/tasks")) return "tasks";
+  if (pathname.startsWith("/licenses")) return "licenses";
   if (pathname.startsWith("/system")) return "system";
 
-  const includes = ["users", "security", "gateways", "observability", "settings", "logs", "organizations"];
+  const includes = ["users", "security", "gateways", "observability", "settings", "logs", "organizations", "licenses"];
   for (const key of includes) {
     if (pathname.includes(`/${key}`)) return key;
   }

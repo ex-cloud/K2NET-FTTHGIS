@@ -13,6 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
+import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,12 +26,24 @@ public class ProjectQuotaService {
     private final ProjectRepository projectRepository;
     private final OrganizationConfigRepository organizationConfigRepository;
     private final com.company.ftthgis.domain.network.repository.NetworkNodeRepository networkNodeRepository;
+    private final TenantLicenseRepository tenantLicenseRepository;
 
     /**
      * Hitung batas maksimum proyek aktif (Active Projects Limit)
-     * Memperhitungkan config override (max_projects / max_olts), subscription plan, dan booster aktif.
+     * Memprioritaskan: License Overrides > Booster & Config Override > Base Plan Limit.
      */
     public int getEffectiveMaxProjects(Organization org) {
+        if (org == null) return 0;
+
+        // 1. Prioritas Utama: Custom Override dari Lisensi Aktif
+        if (tenantLicenseRepository != null && org.getId() != null) {
+            Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
+                    .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(org.getId(), LicenseStatus.ACTIVE);
+            if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getOverrideMaxProjects() != null) {
+                return activeLicenseOpt.get().getOverrideMaxProjects();
+            }
+        }
+
         SubscriptionPlan plan = org.getSubscriptionPlan();
         int basePlanLimit = (plan != null && plan.getMaxProjects() != null) ? plan.getMaxProjects() : 6;
         
@@ -51,11 +68,24 @@ public class ProjectQuotaService {
 
     /**
      * Hitung batas maksimum ODP aktif (Billable ODP Limit)
+     * Memprioritaskan: License Overrides > Booster & Config Override > Base Plan Limit.
      */
     public int getEffectiveMaxOdps(Organization org) {
+        if (org == null) return 0;
+
+        // 1. Prioritas Utama: Custom Override dari Lisensi Aktif
+        if (tenantLicenseRepository != null && org.getId() != null) {
+            Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
+                    .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(org.getId(), LicenseStatus.ACTIVE);
+            if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getOverrideMaxOdps() != null) {
+                return activeLicenseOpt.get().getOverrideMaxOdps();
+            }
+        }
+
         SubscriptionPlan plan = org.getSubscriptionPlan();
         int basePlanLimit = (plan != null && plan.getMaxOdps() != null) ? plan.getMaxOdps() : 2500;
-        return getConfigInt(org, "max_odps", basePlanLimit);
+        int booster = (org.isBoosterActive() && org.getBoosterOdps() != null) ? org.getBoosterOdps() : 0;
+        return getConfigInt(org, "max_odps", basePlanLimit) + booster;
     }
 
     /**

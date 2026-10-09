@@ -70,6 +70,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
+    @ExceptionHandler(LicenseReadOnlyException.class)
+    public ResponseEntity<ErrorResponse> handleLicenseReadOnly(LicenseReadOnlyException ex) {
+        log.warn("🛡️ LICENSE GUARD: Read-only violation [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error(ex.getErrorCode())
+                .message(ex.getMessage())
+                .details("Lisensi organisasi dalam mode Hanya-Baca karena tagihan tertunggak.")
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
     /**
      * Handles business rule violations such as quota exceeded or geofencing violations.
      * Services throw RuntimeException directly for these cases.

@@ -86,8 +86,17 @@ const IntegrationsPage = lazyWithRetry(() =>
 const UsagePage = lazyWithRetry(() =>
   import("./pages/org/UsagePage").then((m) => ({ default: m.UsagePage }))
 );
-const BillingPage = lazyWithRetry(() =>
-  import("./pages/org/BillingPage").then((m) => ({ default: m.BillingPage }))
+const LicenseOverviewPage = lazyWithRetry(() =>
+  import("./pages/org/billing/LicenseOverviewPage").then((m) => ({ default: m.LicenseOverviewPage }))
+);
+const QuotaUsagePage = lazyWithRetry(() =>
+  import("./pages/org/billing/QuotaUsagePage").then((m) => ({ default: m.QuotaUsagePage }))
+);
+const SubscriptionPlansPage = lazyWithRetry(() =>
+  import("./pages/org/billing/SubscriptionPlansPage").then((m) => ({ default: m.SubscriptionPlansPage }))
+);
+const InvoicesHistoryPage = lazyWithRetry(() =>
+  import("./pages/org/billing/InvoicesHistoryPage").then((m) => ({ default: m.InvoicesHistoryPage }))
 );
 const OrgSettingsPage = lazyWithRetry(() =>
   import("./pages/org/OrgSettingsPage").then((m) => ({ default: m.OrgSettingsPage }))
@@ -384,10 +393,52 @@ const usageRoute = createRoute({
 const billingRoute = createRoute({
   getParentRoute: () => orgAuthenticatedRoute,
   path: "/billing",
+  component: () => <Navigate to="/billing/license" />,
+});
+
+const billingLicenseRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/billing/license",
   component: () => (
     <BillingPageWrapper>
       <Lazy>
-        <BillingPage />
+        <LicenseOverviewPage />
+      </Lazy>
+    </BillingPageWrapper>
+  ),
+});
+
+const billingQuotasRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/billing/quotas",
+  component: () => (
+    <BillingPageWrapper>
+      <Lazy>
+        <QuotaUsagePage />
+      </Lazy>
+    </BillingPageWrapper>
+  ),
+});
+
+const billingPlansRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/billing/plans",
+  component: () => (
+    <BillingPageWrapper>
+      <Lazy>
+        <SubscriptionPlansPage />
+      </Lazy>
+    </BillingPageWrapper>
+  ),
+});
+
+const billingInvoicesRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/billing/invoices",
+  component: () => (
+    <BillingPageWrapper>
+      <Lazy>
+        <InvoicesHistoryPage />
       </Lazy>
     </BillingPageWrapper>
   ),
@@ -874,6 +925,10 @@ const orgTree = orgAuthenticatedRoute.addChildren([
   integrationsRoute,
   usageRoute,
   billingRoute,
+  billingLicenseRoute,
+  billingQuotasRoute,
+  billingPlansRoute,
+  billingInvoicesRoute,
   orgAuditLogsRoute,
   settingsGeneralRoute,
   settingsBrandingRoute,
