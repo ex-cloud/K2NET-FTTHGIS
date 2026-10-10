@@ -1,5 +1,7 @@
 package com.company.ftthgis.service;
 
+import com.company.ftthgis.api.system.dto.UpdateSubscriptionPlanRequest;
+import com.company.ftthgis.api.system.dto.UpdateTenantLicenseRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseEntitlementsDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
 import com.company.ftthgis.api.tenant.dto.ProrateEstimateResponseDto;
@@ -481,5 +483,90 @@ class LicenseManagementServiceTest {
         assertFalse(estimate.isUpgradeEligible());
         assertEquals(0, BigDecimal.ZERO.compareTo(estimate.getProratedCredit()));
         assertEquals(0, new BigDecimal("990000.00").compareTo(estimate.getNetDueAmount()));
+    }
+
+    @Test
+    @DisplayName("getAllSubscriptionPlans should return all plans from repository")
+    void testGetAllSubscriptionPlans() {
+        when(subscriptionPlanRepository.findAll()).thenReturn(java.util.List.of(proPlan));
+
+        java.util.List<SubscriptionPlan> plans = licenseManagementService.getAllSubscriptionPlans();
+
+        assertEquals(1, plans.size());
+        assertEquals("PRO", plans.get(0).getName());
+        verify(subscriptionPlanRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionPlan should update plan pricing and quotas")
+    void testUpdateSubscriptionPlan() {
+        UUID planId = proPlan.getId();
+        when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(proPlan));
+        when(subscriptionPlanRepository.save(any(SubscriptionPlan.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateSubscriptionPlanRequest req = UpdateSubscriptionPlanRequest.builder()
+                .description("Updated PRO description")
+                .price(new BigDecimal("4500000.00"))
+                .maxProjects(8)
+                .maxOdps(3000)
+                .maxCustomers(6000)
+                .hasSso(true)
+                .hasApiAccess(true)
+                .build();
+
+        SubscriptionPlan updated = licenseManagementService.updateSubscriptionPlan(planId, req, "SUPER_ADMIN");
+
+        assertNotNull(updated);
+        assertEquals(new BigDecimal("4500000.00"), updated.getPrice());
+        assertEquals(8, updated.getMaxProjects());
+        assertEquals(3000, updated.getMaxOdps());
+        assertEquals("Updated PRO description", updated.getDescription());
+        verify(subscriptionPlanRepository).save(proPlan);
+    }
+
+    @Test
+    @DisplayName("updateTenantLicense should update quota overrides, contacts and re-sign metadata")
+    void testUpdateTenantLicense() {
+        UUID licenseId = UUID.randomUUID();
+        LocalDateTime now = LocalDateTime.now();
+        TenantLicense existing = TenantLicense.builder()
+                .id(licenseId)
+                .organization(testOrg)
+                .subscriptionPlan(proPlan)
+                .licenseKey("K2NET-PRO-1122-3344")
+                .licenseSignature("old-signature")
+                .status(LicenseStatus.ACTIVE)
+                .validFrom(now.minusDays(10))
+                .validUntil(now.plusDays(20))
+                .build();
+
+        when(tenantLicenseRepository.findById(licenseId)).thenReturn(Optional.of(existing));
+        when(licenseCryptoService.signLicenseMetadata(any(), any(), any(), any(), any(), any()))
+                .thenReturn("new-re-signed-digest");
+        when(tenantLicenseRepository.save(any(TenantLicense.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateTenantLicenseRequest req = UpdateTenantLicenseRequest.builder()
+                .validUntil(now.plusDays(90))
+                .overrideMaxProjects(12)
+                .overrideMaxOdps(5000)
+                .featureAiCopilotEnabled(true)
+                .machineFingerprint("NEW-HW-FINGERPRINT-ABC")
+                .billingContactName("John Finance")
+                .billingContactEmail("finance@westjava.net")
+                .billingContactPhone("+628123456789")
+                .build();
+
+        TenantLicense updated = licenseManagementService.updateTenantLicense(licenseId, req, "SUPER_ADMIN");
+
+        assertNotNull(updated);
+        assertEquals(12, updated.getOverrideMaxProjects());
+        assertEquals(5000, updated.getOverrideMaxOdps());
+        assertTrue(updated.isFeatureAiCopilotEnabled());
+        assertEquals("NEW-HW-FINGERPRINT-ABC", updated.getMachineFingerprint());
+        assertEquals("new-re-signed-digest", updated.getLicenseSignature());
+        assertEquals("John Finance", updated.getBillingContactName());
+        assertEquals("finance@westjava.net", updated.getBillingContactEmail());
+        verify(tenantLicenseRepository).save(existing);
+        verify(licenseCryptoService).signLicenseMetadata(any(), any(), any(), any(), any(), eq("NEW-HW-FINGERPRINT-ABC"));
     }
 }

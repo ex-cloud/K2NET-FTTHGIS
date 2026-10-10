@@ -29,11 +29,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.company.ftthgis.api.system.dto.LicenseNotificationLogDto;
+import com.company.ftthgis.api.system.dto.UpdateSubscriptionPlanRequest;
+import com.company.ftthgis.api.system.dto.UpdateTenantLicenseRequest;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -360,6 +364,131 @@ public class OrganizationLicenseControllerTest {
                 .andExpect(jsonPath("$.netDueAmount").value(7950000));
 
         verify(licenseManagementService, times(1)).calculateProrateEstimate(testOrgId, "ENTERPRISE");
+    }
+
+    @Test
+    @DisplayName("GET /plans - Sukses mengambil seluruh daftar master subscription plans")
+    public void testGetAllSubscriptionPlans_Success() throws Exception {
+        SubscriptionPlan plan = SubscriptionPlan.builder()
+                .id(UUID.randomUUID())
+                .name("PRO")
+                .price(new java.math.BigDecimal("3900000.00"))
+                .maxProjects(6)
+                .maxOdps(2500)
+                .hasSso(true)
+                .build();
+
+        when(licenseManagementService.getAllSubscriptionPlans()).thenReturn(List.of(plan));
+
+        mockMvc.perform(get("/api/v1/system/plans"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("PRO"))
+                .andExpect(jsonPath("$[0].price").value(3900000.0))
+                .andExpect(jsonPath("$[0].maxProjects").value(6));
+
+        verify(licenseManagementService, times(1)).getAllSubscriptionPlans();
+    }
+
+    @Test
+    @DisplayName("PUT /plans/{id} - Sukses memperbarui informasi harga dan kuota paket")
+    public void testUpdateSubscriptionPlan_Success() throws Exception {
+        UUID planId = UUID.randomUUID();
+        UpdateSubscriptionPlanRequest request = UpdateSubscriptionPlanRequest.builder()
+                .description("Pro updated")
+                .price(new java.math.BigDecimal("4500000.00"))
+                .maxProjects(8)
+                .maxOdps(3000)
+                .hasSso(true)
+                .build();
+
+        SubscriptionPlan updated = SubscriptionPlan.builder()
+                .id(planId)
+                .name("PRO")
+                .description("Pro updated")
+                .price(new java.math.BigDecimal("4500000.00"))
+                .maxProjects(8)
+                .maxOdps(3000)
+                .hasSso(true)
+                .build();
+
+        when(licenseManagementService.updateSubscriptionPlan(eq(planId), any(UpdateSubscriptionPlanRequest.class), anyString()))
+                .thenReturn(updated);
+
+        mockMvc.perform(put("/api/v1/system/plans/" + planId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(planId.toString()))
+                .andExpect(jsonPath("$.price").value(4500000.0))
+                .andExpect(jsonPath("$.maxProjects").value(8));
+
+        verify(licenseManagementService, times(1)).updateSubscriptionPlan(eq(planId), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("PUT /organizations/{orgId}/licenses/{licenseId} - Sukses memperbarui kuota override dan detail lisensi")
+    public void testUpdateTenantLicense_Success() throws Exception {
+        UpdateTenantLicenseRequest request = UpdateTenantLicenseRequest.builder()
+                .overrideMaxProjects(12)
+                .overrideMaxOdps(5000)
+                .featureAiCopilotEnabled(true)
+                .billingContactName("Jane PIC")
+                .billingContactEmail("pic@isp.net")
+                .build();
+
+        TenantLicense lic = TenantLicense.builder()
+                .id(testLicenseId)
+                .status(LicenseStatus.ACTIVE)
+                .build();
+
+        LicenseResponseDto dto = LicenseResponseDto.builder()
+                .id(testLicenseId)
+                .organizationId(testOrgId)
+                .overrideMaxProjects(12)
+                .overrideMaxOdps(5000)
+                .featureAiCopilotEnabled(true)
+                .billingContactName("Jane PIC")
+                .billingContactEmail("pic@isp.net")
+                .build();
+
+        when(licenseManagementService.updateTenantLicense(eq(testLicenseId), any(UpdateTenantLicenseRequest.class), anyString()))
+                .thenReturn(lic);
+        when(licenseManagementService.getLicenseById(testLicenseId)).thenReturn(Optional.of(dto));
+
+        mockMvc.perform(put("/api/v1/system/organizations/" + testOrgId + "/licenses/" + testLicenseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testLicenseId.toString()))
+                .andExpect(jsonPath("$.overrideMaxProjects").value(12))
+                .andExpect(jsonPath("$.overrideMaxOdps").value(5000))
+                .andExpect(jsonPath("$.featureAiCopilotEnabled").value(true))
+                .andExpect(jsonPath("$.billingContactName").value("Jane PIC"));
+
+        verify(licenseManagementService, times(1)).updateTenantLicense(eq(testLicenseId), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("GET /licenses/notifications - Sukses mengambil seluruh log pengiriman notifikasi pengingat")
+    public void testGetAllNotificationLogs_Success() throws Exception {
+        LicenseNotificationLogDto log1 = LicenseNotificationLogDto.builder()
+                .id(UUID.randomUUID())
+                .organizationId(testOrgId)
+                .organizationName("ISP Test")
+                .channel("EMAIL")
+                .recipient("billing@isp.net")
+                .status("SENT")
+                .build();
+
+        when(licenseNotificationService.getAllNotificationLogs()).thenReturn(List.of(log1));
+
+        mockMvc.perform(get("/api/v1/system/licenses/notifications"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].channel").value("EMAIL"))
+                .andExpect(jsonPath("$[0].recipient").value("billing@isp.net"))
+                .andExpect(jsonPath("$[0].status").value("SENT"));
+
+        verify(licenseNotificationService, times(1)).getAllNotificationLogs();
     }
 }
 

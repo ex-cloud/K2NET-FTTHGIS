@@ -62,6 +62,7 @@
   },
   "actions": {
     "issue_manual": "Issue License",
+    "edit_details": "Edit License & Quotas",
     "extend_license": "Extend Duration",
     "revoke_license": "Revoke License",
     "export_cert": "Export Offline (.lic)",
@@ -76,11 +77,19 @@
   "modal": {
     "issue_title": "Issue Enterprise License",
     "issue_desc": "Generate a new cryptographic license with custom hardware quotas and feature entitlements.",
+    "edit_title": "Edit License Details & Quotas",
+    "edit_desc": "Adjust active validity period, custom hardware quotas, feature entitlements, and billing contacts for this organization.",
+    "edit_status": "License Status",
+    "edit_valid_until": "Valid Until Date",
+    "edit_grace_until": "Grace Period End Date",
+    "contacts_heading": "Billing Contacts & Reminders",
     "select_org": "Select Organization",
     "select_plan": "Subscription Plan",
     "duration_months": "Duration (Months)",
     "activation_mode": "Activation Mode",
     "quota_overrides": "Quota Overrides (Optional)",
+    "quota_overrides_hint": "Leave blank to inherit base plan defaults",
+    "default_quota_placeholder": "Default",
     "max_projects_olts": "Max OLT Devices",
     "max_odps": "Max ODP Splitters",
     "max_odcs": "Max ODC Enclosures",
@@ -112,6 +121,7 @@
   },
   "feedback": {
     "issue_success": "License key successfully generated and activated.",
+    "update_success": "License details and quota overrides updated successfully.",
     "extend_success": "License extended successfully.",
     "revoke_success": "License has been revoked.",
     "error_generic": "Operation failed. Please verify parameters."
@@ -204,7 +214,29 @@
     "recipient": "Recipient",
     "status": "Status",
     "sent_at": "Sent At",
-    "no_logs": "No notification logs recorded for this license."
+    "no_logs": "No notification logs recorded for this license.",
+    "global_title": "Global Reminder Dispatch Logs",
+    "global_desc": "Audit trail of all proactive renewal and overdue notices sent to tenant contacts across the platform.",
+    "total_dispatches": "Total Dispatches",
+    "email_dispatches": "Email Dispatches",
+    "whatsapp_dispatches": "WhatsApp Dispatches",
+    "failed_dispatches": "Failed Dispatches",
+    "search_placeholder": "Search recipient, subject, or tenant...",
+    "view_content": "View Message",
+    "message_content": "Message Content",
+    "error_details": "Error Details"
+  },
+  "revocations": {
+    "title": "Emergency Revocations & Kill-Switch Console",
+    "desc": "Audit revoked and suspended tenant licenses, verify root-cause reasons, and trigger emergency cryptographic kill-switches.",
+    "total_revoked": "Total Revoked",
+    "total_suspended": "Total Suspended",
+    "active_compliant": "Active Compliant",
+    "trigger_killswitch": "Trigger Kill-Switch",
+    "empty_title": "No Revoked Licenses Found",
+    "empty_desc": "All registered enterprise tenant licenses are running in compliant operational status.",
+    "revocation_reason": "Revocation Reason",
+    "killswitch_prompt": "Emergency cryptographic kill-switches immediately terminate tenant authorization. Ensure valid legal or contract basis."
   },
   "prorate": {
     "calculator_title": "Simulate Mid-Cycle Upgrade Proration",
@@ -224,6 +256,39 @@
     "not_eligible_badge": "Direct Subscription (Downgrade or Same Tier)",
     "no_active_license_warning": "This organization does not currently have an active paid license to calculate prorated credits.",
     "simulate_btn": "Simulate Prorate",
-    "close_btn": "Close"
+    "close_btn": "Close",
+    "copy_estimate": "Copy Estimate Summary",
+    "copy_estimate_success": "Prorate estimate summary copied to clipboard.",
+    "tenant_info": "Current Tenant Contract",
+    "target_tier_selection": "Target Plan Selection",
+    "breakdown_title": "Mid-Cycle Proration Accounting",
+    "upgrade_instruction": "Proactively simulate the financial impact of changing plan tiers before issuing a new invoice.",
+    "accounting_footnote": "Prorated adjustments are computed against UTC database timestamps and applied as credit deductions on the resulting billing invoice."
+  },
+  "plans": {
+    "title": "Master Subscription Plans",
+    "subtitle": "Configure global pricing tiers, default hardware quotas, and feature capabilities.",
+    "kpi_total_plans": "Active Tier Templates",
+    "kpi_total_plans_desc": "{{count}} tiers configured",
+    "kpi_price_range": "Base Pricing Range",
+    "kpi_price_range_desc": "Per tenant monthly billing",
+    "kpi_max_ent_quota": "Top Enterprise Quotas",
+    "kpi_max_ent_quota_desc": "{{olts}} OLTs · {{odps}} ODPs",
+    "kpi_feature_matrix": "Feature Coverage",
+    "kpi_feature_matrix_desc": "SSO & REST API across tiers",
+    "edit_plan_title": "Edit Subscription Plan",
+    "edit_plan_desc": "Adjust pricing, default quotas, and enterprise features for this master tier template.",
+    "price_label": "Monthly Price (IDR / Month)",
+    "description_label": "Tier Description",
+    "base_quotas_heading": "Default Hardware Quotas",
+    "base_quotas_desc": "Organizations on this plan will automatically inherit these quotas unless explicitly overridden.",
+    "features_heading": "Default Capabilities & Access",
+    "sso_label": "Single Sign-On (SSO / SAML)",
+    "api_label": "Developer REST API Access",
+    "per_month": "/ month",
+    "free_badge": "Free Tier",
+    "active_tenants": "Active Tenants",
+    "update_success": "Subscription plan template updated successfully."
   }
 }
+

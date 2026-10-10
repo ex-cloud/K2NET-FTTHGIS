@@ -331,11 +331,29 @@ public class LicenseNotificationService {
         return getBillingContacts(organizationId);
     }
 
+    /**
+     * Mengambil seluruh riwayat log notifikasi pengingat lisensi lintas tenant (Super Admin).
+     */
+    @Transactional(readOnly = true)
+    public List<LicenseNotificationLogDto> getAllNotificationLogs() {
+        return logRepository.findAllByOrderBySentAtDesc()
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
     private LicenseNotificationLogDto mapToDto(LicenseNotificationLog entity) {
+        String rawKey = entity.getLicense() != null ? entity.getLicense().getLicenseKey() : null;
+        String maskedKey = rawKey != null ? maskKey(rawKey) : null;
+
         return LicenseNotificationLogDto.builder()
                 .id(entity.getId())
                 .organizationId(entity.getOrganization() != null ? entity.getOrganization().getId() : null)
+                .organizationName(entity.getOrganization() != null ? entity.getOrganization().getName() : null)
+                .organizationSlug(entity.getOrganization() != null ? entity.getOrganization().getSlug() : null)
                 .licenseId(entity.getLicense() != null ? entity.getLicense().getId() : null)
+                .licenseKey(rawKey)
+                .maskedLicenseKey(maskedKey)
                 .channel(entity.getChannel())
                 .stage(entity.getStage())
                 .recipient(entity.getRecipient())
@@ -346,5 +364,14 @@ public class LicenseNotificationService {
                 .triggeredBy(entity.getTriggeredBy())
                 .sentAt(entity.getSentAt())
                 .build();
+    }
+
+    private String maskKey(String key) {
+        if (key == null || key.length() < 12) return "K2NET-****-****-****";
+        String[] parts = key.split("-");
+        if (parts.length == 4) {
+            return parts[0] + "-" + parts[1] + "-****-" + parts[3];
+        }
+        return key.substring(0, 8) + "-****-" + key.substring(key.length() - 4);
     }
 }

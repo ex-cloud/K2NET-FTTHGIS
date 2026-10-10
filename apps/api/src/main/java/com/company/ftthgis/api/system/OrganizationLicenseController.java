@@ -214,6 +214,58 @@ public class OrganizationLicenseController {
         return ResponseEntity.ok(licenseManagementService.calculateProrateEstimate(orgId, targetPlan));
     }
 
+    /**
+     * Mengambil seluruh master paket langganan platform untuk tata kelola katalog Super Admin.
+     */
+    @GetMapping("/plans")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage')")
+    public ResponseEntity<List<com.company.ftthgis.domain.tenant.entity.SubscriptionPlan>> getAllSubscriptionPlans() {
+        return ResponseEntity.ok(licenseManagementService.getAllSubscriptionPlans());
+    }
+
+    /**
+     * Memperbarui informasi harga, kuota default, dan kapabilitas master paket langganan (Super Admin).
+     */
+    @PutMapping("/plans/{id}")
+    @PreAuthorize("hasAuthority('system.organizations.manage')")
+    public ResponseEntity<com.company.ftthgis.domain.tenant.entity.SubscriptionPlan> updateSubscriptionPlan(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.company.ftthgis.api.system.dto.UpdateSubscriptionPlanRequest request
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        log.info("💎 SUPER ADMIN ACTION: Updating subscription plan '{}' by '{}'", id, actor);
+        return ResponseEntity.ok(licenseManagementService.updateSubscriptionPlan(id, request, actor));
+    }
+
+    /**
+     * Memperbarui detail lisensi spesifik organisasi tenant (Quota overrides, masa aktif, HW binding, kontak).
+     */
+    @PutMapping("/organizations/{orgId}/licenses/{licenseId}")
+    @PreAuthorize("hasAuthority('system.organizations.manage')")
+    public ResponseEntity<LicenseResponseDto> updateTenantLicense(
+            @PathVariable UUID orgId,
+            @PathVariable UUID licenseId,
+            @Valid @RequestBody com.company.ftthgis.api.system.dto.UpdateTenantLicenseRequest request
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        log.info("🔑 SUPER ADMIN ACTION: Updating license '{}' for org '{}' by '{}'", licenseId, orgId, actor);
+
+        TenantLicense updated = licenseManagementService.updateTenantLicense(licenseId, request, actor);
+        LicenseResponseDto dto = licenseManagementService.getLicenseById(updated.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Gagal memuat lisensi yang diperbarui."));
+
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Mengambil seluruh log dispatch notifikasi pengingat lisensi lintas seluruh tenant (Super Admin).
+     */
+    @GetMapping("/licenses/notifications")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage')")
+    public ResponseEntity<List<com.company.ftthgis.api.system.dto.LicenseNotificationLogDto>> getAllNotificationLogs() {
+        return ResponseEntity.ok(licenseNotificationService.getAllNotificationLogs());
+    }
+
     // ── Internal Helpers ────────────────────────────────────────────────────
 
     private String resolveCurrentUserIdentifier() {

@@ -42,6 +42,23 @@ export interface LicenseItem {
   issuedBy: string;
   notes?: string;
   entitlements: LicenseEntitlements;
+  // Custom Quota Overrides
+  overrideMaxProjects?: number;
+  overrideMaxOdps?: number;
+  overrideMaxOdcs?: number;
+  overrideMaxCustomers?: number;
+  overrideMaxStorageGb?: number;
+  // Feature Entitlements
+  featureSsoEnabled?: boolean;
+  featureApiEnabled?: boolean;
+  featureAiCopilotEnabled?: boolean;
+  featureCustomDomainEnabled?: boolean;
+  // Billing Contacts
+  billingContactName?: string;
+  billingContactEmail?: string;
+  billingContactPhone?: string;
+  notifyEmailEnabled?: boolean;
+  notifyWhatsappEnabled?: boolean;
   createdAt: string;
 }
 
@@ -86,6 +103,30 @@ export interface RevokeLicensePayload {
   organizationId: string;
   licenseId: string;
   reason: string;
+}
+
+export interface UpdateLicensePayload {
+  organizationId: string;
+  licenseId: string;
+  status?: LicenseStatus;
+  validUntil?: string;
+  gracePeriodUntil?: string;
+  overrideMaxProjects?: number;
+  overrideMaxOdps?: number;
+  overrideMaxOdcs?: number;
+  overrideMaxCustomers?: number;
+  overrideMaxStorageGb?: number;
+  featureSsoEnabled?: boolean;
+  featureApiEnabled?: boolean;
+  featureAiCopilotEnabled?: boolean;
+  featureCustomDomainEnabled?: boolean;
+  machineFingerprint?: string;
+  billingContactName?: string;
+  billingContactEmail?: string;
+  billingContactPhone?: string;
+  notifyEmailEnabled?: boolean;
+  notifyWhatsappEnabled?: boolean;
+  notes?: string;
 }
 
 export function useLicenseOverview() {
@@ -263,6 +304,40 @@ export function useRevokeLicense() {
   });
 }
 
+export function useUpdateLicense() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: UpdateLicensePayload) => {
+      const baseUrl = getBackendBaseUrl();
+      const { organizationId, licenseId, ...bodyPayload } = payload;
+      const res = await httpClient(
+        `${baseUrl}/system/organizations/${organizationId}/licenses/${licenseId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyPayload),
+          token: session?.accessToken ?? undefined,
+        }
+      );
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "Unknown error");
+        throw new Error(`Failed to update license: ${res.status} - ${errorText}`);
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["license-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["all-licenses"] });
+      queryClient.invalidateQueries({ queryKey: ["org-licenses", variables.organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      queryClient.invalidateQueries({ queryKey: ["organization-quotas"] });
+    },
+  });
+}
+
 export async function fetchOfflineLicenseCertificate(
   orgId: string,
   licenseId: string,
@@ -286,7 +361,10 @@ export async function fetchOfflineLicenseCertificate(
 export interface LicenseNotificationLog {
   id: string;
   organizationId: string;
+  organizationName?: string;
+  organizationSlug?: string;
   licenseId: string;
+  licenseKey?: string;
   channel: string;
   stage: string;
   recipient: string;
@@ -296,6 +374,26 @@ export interface LicenseNotificationLog {
   errorDetails?: string;
   triggeredBy: string;
   sentAt: string;
+}
+
+export function useAllGlobalNotificationLogs() {
+  const { data: session } = useSession();
+
+  return useQuery<LicenseNotificationLog[]>({
+    queryKey: ["all-license-notifications", session?.accessToken],
+    queryFn: async () => {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/system/licenses/notifications`, {
+        token: session?.accessToken ?? undefined,
+      });
+
+      if (!res.ok) {
+        return [];
+      }
+      return res.json();
+    },
+    staleTime: 30 * 1000,
+  });
 }
 
 export function useLicenseNotificationLogs(orgId?: string, licenseId?: string) {

@@ -13,4 +13,6 @@ public interface LicenseNotificationLogRepository extends JpaRepository<LicenseN
     List<LicenseNotificationLog> findByOrganizationIdAndLicenseIdOrderBySentAtDesc(UUID organizationId, UUID licenseId);
 
     List<LicenseNotificationLog> findByOrganizationIdOrderBySentAtDesc(UUID organizationId);
+
+    List<LicenseNotificationLog> findAllByOrderBySentAtDesc();
 }

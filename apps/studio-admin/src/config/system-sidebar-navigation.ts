@@ -45,8 +45,8 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.subscriptions_pricing",
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
-          { title: "Plan Tiers & Quotas", translationKey: "nav.plan_tiers_quotas", url: "/licenses?view=plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Prorated Calculator", translationKey: "nav.prorated_upgrade_calculator", url: "/licenses?view=calculator", icon: "Calculator", shortcut: "S then C", requiredPermission: ["system.organizations.manage"] },
+          { title: "Plan Tiers & Quotas", translationKey: "nav.plan_tiers_quotas", url: "/licenses/plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Prorated Calculator", translationKey: "nav.prorated_upgrade_calculator", url: "/licenses/calculator", icon: "Calculator", shortcut: "S then C", requiredPermission: ["system.organizations.manage"] },
         ],
       },
       {
@@ -54,8 +54,8 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.operations_security",
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
-          { title: "Reminder Dispatch Logs", translationKey: "nav.license_notifications_log", url: "/licenses?view=notifications", icon: "Bell", shortcut: "S then N", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Revocations & Kill-Switch", translationKey: "nav.license_kill_switch", url: "/licenses?status=REVOKED", icon: "ShieldAlert", shortcut: "S then R", requiredPermission: ["system.organizations.manage"] },
+          { title: "Reminder Dispatch Logs", translationKey: "nav.license_notifications_log", url: "/licenses/notifications", icon: "Bell", shortcut: "S then N", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Revocations & Kill-Switch", translationKey: "nav.license_kill_switch", url: "/licenses/revocations", icon: "ShieldAlert", shortcut: "S then R", requiredPermission: ["system.organizations.manage"] },
         ],
       },
     ],

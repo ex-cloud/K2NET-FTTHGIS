@@ -21,9 +21,11 @@ import {
   Bell,
   Cpu,
   Calculator,
+  Sliders,
 } from "lucide-react";
 import { useSearchParams, useRouter } from "@/lib/navigation-compat";
 import type { LicenseItem, LicenseStatus } from "@/hooks/useOrganizationLicenses";
+import { EditLicenseModal } from "./EditLicenseModal";
 import { LicenseExtendModal } from "./LicenseExtendModal";
 import { LicenseRevokeModal } from "./LicenseRevokeModal";
 import { OfflineCertExportModal } from "./OfflineCertExportModal";
@@ -84,6 +86,7 @@ function LicenseStatusBadge({ status }: { status: LicenseStatus }) {
 interface LicenseTableRowProps {
   lic: LicenseItem;
   onCopyKey: (key: string) => void;
+  onEdit: (lic: LicenseItem) => void;
   onExtend: (lic: LicenseItem) => void;
   onExport: (lic: LicenseItem) => void;
   onNotifications: (lic: LicenseItem) => void;
@@ -94,6 +97,7 @@ interface LicenseTableRowProps {
 function LicenseRow({
   lic,
   onCopyKey,
+  onEdit,
   onExtend,
   onExport,
   onNotifications,
@@ -198,6 +202,17 @@ function LicenseRow({
       {/* Row Actions (Compact Density: size="xs") */}
       <TableCell className="py-2 text-xs text-right pr-4">
         <div className="flex items-center justify-end gap-1.5">
+          {/* Edit details & quotas */}
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={() => onEdit(lic)}
+            className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
+            title={t("license.actions.edit_details")}
+          >
+            <Sliders className="size-3" />
+          </Button>
+
           {/* Prorate Simulator trigger per license */}
           <Button
             variant="outline"
@@ -303,6 +318,7 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
   }, []);
 
   // Operational Modals State
+  const [editModalOpen, setEditModalOpen] = React.useState<boolean>(false);
   const [extendModalOpen, setExtendModalOpen] = React.useState<boolean>(false);
   const [revokeModalOpen, setRevokeModalOpen] = React.useState<boolean>(false);
   const [exportModalOpen, setExportModalOpen] = React.useState<boolean>(false);
@@ -347,6 +363,11 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
     navigator.clipboard.writeText(key).then(() => {
       toast.success(t("license.actions.copied"));
     });
+  };
+
+  const handleOpenEdit = (item: LicenseItem) => {
+    setSelectedLicense(item);
+    setEditModalOpen(true);
   };
 
   const handleOpenExtend = (item: LicenseItem) => {
@@ -491,6 +512,7 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
                   key={lic.id}
                   lic={lic}
                   onCopyKey={handleCopyKey}
+                  onEdit={handleOpenEdit}
                   onExtend={handleOpenExtend}
                   onExport={handleOpenExport}
                   onNotifications={handleOpenNotifications}
@@ -504,6 +526,11 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
       </div>
 
       {/* Operational Modals */}
+      <EditLicenseModal
+        license={selectedLicense}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+      />
       <LicenseExtendModal
         license={selectedLicense}
         open={extendModalOpen}

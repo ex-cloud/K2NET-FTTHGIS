@@ -58,6 +58,18 @@ const OrganizationsPage = lazyWithRetry(() =>
 const LicensesPage = lazyWithRetry(() =>
   import("./app/(dashboard)/licenses/page").then((m) => ({ default: m.default }))
 );
+const LicensePlansPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/licenses/plans/page").then((m) => ({ default: m.default }))
+);
+const LicenseCalculatorPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/licenses/calculator/page").then((m) => ({ default: m.default }))
+);
+const LicenseNotificationsPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/licenses/notifications/page").then((m) => ({ default: m.default }))
+);
+const LicenseRevocationsPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/licenses/revocations/page").then((m) => ({ default: m.default }))
+);
 const OrganizationSlugPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/[slug]/page").then((m) => ({ default: m.default }))
 );
@@ -386,6 +398,10 @@ const orgImpersonationRoute = createRoute({ getParentRoute: () => authenticatedL
 
 // Billing & Licenses
 const licensesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses", component: () => <Lazy><LicensesPage /></Lazy> });
+const licensePlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/plans", component: () => <Lazy><LicensePlansPage /></Lazy> });
+const licenseCalculatorRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/calculator", component: () => <Lazy><LicenseCalculatorPage /></Lazy> });
+const licenseNotificationsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/notifications", component: () => <Lazy><LicenseNotificationsPage /></Lazy> });
+const licenseRevocationsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/revocations", component: () => <Lazy><LicenseRevocationsPage /></Lazy> });
 
 // Users
 const usersRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users", component: () => <Lazy><UsersPage /></Lazy> });
@@ -482,7 +498,7 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   // Orgs
   orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
   // Billing & Licenses
-  licensesRoute,
+  licensesRoute, licensePlansRoute, licenseCalculatorRoute, licenseNotificationsRoute, licenseRevocationsRoute,
   // Users
   usersRoute, usersRolesRoute, usersSessionsRoute,
   // Observability

@@ -62,6 +62,7 @@
   },
   "actions": {
     "issue_manual": "Terbitkan Lisensi",
+    "edit_details": "Edit Detail & Kuota Lisensi",
     "extend_license": "Perpanjang Durasi",
     "revoke_license": "Cabut Lisensi",
     "export_cert": "Ekspor Offline (.lic)",
@@ -76,11 +77,19 @@
   "modal": {
     "issue_title": "Terbitkan Lisensi Kontrak B2B",
     "issue_desc": "Hasilkan token lisensi kriptografis baru dengan batas kuota perangkat khusus dan hak fitur.",
+    "edit_title": "Edit Detail & Kuota Lisensi Tenant",
+    "edit_desc": "Sesuaikan masa aktif, batas kuota khusus B2B, hak akses fitur, serta kontak penagihan untuk organisasi ini.",
+    "edit_status": "Status Lisensi",
+    "edit_valid_until": "Tanggal Berakhir Lisensi",
+    "edit_grace_until": "Batas Akhir Masa Tenggang (Grace)",
+    "contacts_heading": "Kontak Penagihan & Notifikasi",
     "select_org": "Pilih Organisasi Tenant",
     "select_plan": "Paket Langganan",
     "duration_months": "Durasi (Bulan)",
     "activation_mode": "Mode Aktivasi",
     "quota_overrides": "Override Kuota Khusus (Opsional)",
+    "quota_overrides_hint": "Kosongkan untuk menggunakan batas bawaan paket",
+    "default_quota_placeholder": "Bawaan",
     "max_projects_olts": "Batas Perangkat OLT",
     "max_odps": "Batas Titik ODP",
     "max_odcs": "Batas Enclosure ODC",
@@ -112,6 +121,7 @@
   },
   "feedback": {
     "issue_success": "Kode lisensi berhasil diterbitkan dan diaktifkan.",
+    "update_success": "Detail lisensi dan batas kuota berhasil diperbarui.",
     "extend_success": "Masa aktif lisensi berhasil diperpanjang.",
     "revoke_success": "Lisensi telah dicabut secara permanen.",
     "error_generic": "Operasi gagal. Silakan periksa parameter yang dimasukkan."
@@ -204,7 +214,29 @@
     "recipient": "Penerima",
     "status": "Status",
     "sent_at": "Waktu Kirim",
-    "no_logs": "Belum ada catatan log notifikasi untuk lisensi ini."
+    "no_logs": "Belum ada catatan log notifikasi untuk lisensi ini.",
+    "global_title": "Log Pengiriman Pengingat Global",
+    "global_desc": "Audit trail seluruh pengingat proaktif perpanjangan dan jatuh tempo yang dikirim ke kontak penagihan tenant lintas platform.",
+    "total_dispatches": "Total Pengiriman",
+    "email_dispatches": "Pengiriman Email",
+    "whatsapp_dispatches": "Pengiriman WhatsApp",
+    "failed_dispatches": "Gagal Terkirim",
+    "search_placeholder": "Cari penerima, subjek, atau tenant...",
+    "view_content": "Lihat Pesan",
+    "message_content": "Isi Pesan",
+    "error_details": "Rincian Error"
+  },
+  "revocations": {
+    "title": "Konsol Pencabutan Darurat & Kill-Switch",
+    "desc": "Audit lisensi tenant yang dicabut dan ditangguhkan, verifikasi alasan penyebab, serta eksekusi kill-switch kriptografis darurat.",
+    "total_revoked": "Total Dicabut",
+    "total_suspended": "Total Ditangguhkan",
+    "active_compliant": "Aktif Patuh",
+    "trigger_killswitch": "Picu Kill-Switch",
+    "empty_title": "Tidak Ada Lisensi yang Dicabut",
+    "empty_desc": "Seluruh lisensi tenant yang terdaftar beroperasi dalam status patuh.",
+    "revocation_reason": "Alasan Pencabutan",
+    "killswitch_prompt": "Pencabutan lisensi kriptografis secara darurat akan seketika memutus otorisasi runtime tenant. Pastikan ada dasar hukum/kontrak yang sah."
   },
   "prorate": {
     "calculator_title": "Simulasi Prorata Upgrade Siklus Berjalan",
@@ -224,6 +256,39 @@
     "not_eligible_badge": "Langganan Penuh (Downgrade atau Paket Sama)",
     "no_active_license_warning": "Organisasi ini saat ini tidak memiliki lisensi berbayar aktif untuk menghitung kredit prorata.",
     "simulate_btn": "Simulasi Prorata",
-    "close_btn": "Tutup"
+    "close_btn": "Tutup",
+    "copy_estimate": "Salin Ringkasan Estimasi",
+    "copy_estimate_success": "Ringkasan estimasi prorata berhasil disalin ke papan klip.",
+    "tenant_info": "Kontrak Tenant Saat Ini",
+    "target_tier_selection": "Pemilihan Paket Target",
+    "breakdown_title": "Perhitungan Akuntansi Prorata Berjalan",
+    "upgrade_instruction": "Simulasikan dampak finansial perubahan paket sebelum menerbitkan invoice baru.",
+    "accounting_footnote": "Penyesuaian prorata dihitung presisi berdasarkan timestamp UTC database dan diterapkan sebagai pengurangan kredit pada faktur berikutnya."
+  },
+  "plans": {
+    "title": "Master Paket Langganan",
+    "subtitle": "Konfigurasi tier harga global, batas kuota bawaan perangkat, dan kapabilitas fitur.",
+    "kpi_total_plans": "Template Tier Aktif",
+    "kpi_total_plans_desc": "{{count}} tier terkonfigurasi",
+    "kpi_price_range": "Rentang Harga Dasar",
+    "kpi_price_range_desc": "Tagihan bulanan per tenant",
+    "kpi_max_ent_quota": "Kuota Puncak Enterprise",
+    "kpi_max_ent_quota_desc": "{{olts}} OLT · {{odps}} ODP",
+    "kpi_feature_matrix": "Cakupan Fitur",
+    "kpi_feature_matrix_desc": "SSO & REST API lintas tier",
+    "edit_plan_title": "Edit Paket Langganan",
+    "edit_plan_desc": "Sesuaikan harga, kuota bawaan, dan fitur enterprise untuk template paket ini.",
+    "price_label": "Harga Bulanan (Rp / Bulan)",
+    "description_label": "Deskripsi Paket",
+    "base_quotas_heading": "Batas Kuota Bawaan Perangkat",
+    "base_quotas_desc": "Organisasi pada paket ini otomatis mewarisi kuota ini kecuali di-override secara khusus.",
+    "features_heading": "Kapabilitas & Akses Bawaan",
+    "sso_label": "Single Sign-On (SSO / SAML)",
+    "api_label": "Akses REST API Pengembang",
+    "per_month": "/ bulan",
+    "free_badge": "Paket Gratis",
+    "active_tenants": "Tenant Aktif",
+    "update_success": "Template paket langganan berhasil diperbarui."
   }
 }
+

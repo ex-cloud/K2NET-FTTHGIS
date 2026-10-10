@@ -1,6 +1,8 @@
 package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.system.dto.LicenseOverviewKpiDto;
+import com.company.ftthgis.api.system.dto.UpdateSubscriptionPlanRequest;
+import com.company.ftthgis.api.system.dto.UpdateTenantLicenseRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseEntitlementsDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
@@ -749,6 +751,20 @@ public class LicenseManagementService {
                 .issuedBy(lic.getIssuedBy())
                 .notes(lic.getNotes())
                 .entitlements(getEffectiveLicenseEntitlements(org != null ? org.getId() : lic.getOrganization().getId()))
+                .overrideMaxProjects(lic.getOverrideMaxProjects())
+                .overrideMaxOdps(lic.getOverrideMaxOdps())
+                .overrideMaxOdcs(lic.getOverrideMaxOdcs())
+                .overrideMaxCustomers(lic.getOverrideMaxCustomers())
+                .overrideMaxStorageGb(lic.getOverrideMaxStorageGb())
+                .featureSsoEnabled(lic.isFeatureSsoEnabled())
+                .featureApiEnabled(lic.isFeatureApiEnabled())
+                .featureAiCopilotEnabled(lic.isFeatureAiCopilotEnabled())
+                .featureCustomDomainEnabled(lic.isFeatureCustomDomainEnabled())
+                .billingContactName(lic.getBillingContactName())
+                .billingContactEmail(lic.getBillingContactEmail())
+                .billingContactPhone(lic.getBillingContactPhone())
+                .notifyEmailEnabled(lic.isNotifyEmailEnabled())
+                .notifyWhatsappEnabled(lic.isNotifyWhatsappEnabled())
                 .createdAt(lic.getCreatedAt())
                 .build();
     }
@@ -840,6 +856,115 @@ public class LicenseManagementService {
                 .isUpgradeEligible(isUpgrade)
                 .calculationSummary(summary)
                 .build();
+    }
+
+    /**
+     * Mengambil seluruh katalog paket langganan master untuk tata kelola Super Admin.
+     */
+    @Transactional(readOnly = true)
+    public List<SubscriptionPlan> getAllSubscriptionPlans() {
+        return subscriptionPlanRepository.findAll();
+    }
+
+    /**
+     * Memperbarui informasi harga, kuota dasar bawaan, dan kapabilitas paket langganan master (Super Admin).
+     */
+    @Transactional
+    public SubscriptionPlan updateSubscriptionPlan(UUID planId, UpdateSubscriptionPlanRequest request, String actor) {
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
+                .orElseThrow(() -> new NoSuchElementException("Paket langganan tidak ditemukan: " + planId));
+
+        if (request.getDescription() != null) plan.setDescription(request.getDescription());
+        if (request.getPrice() != null) plan.setPrice(request.getPrice());
+        if (request.getMaxProjects() != null) plan.setMaxProjects(request.getMaxProjects());
+        if (request.getMaxArchivedProjects() != null) plan.setMaxArchivedProjects(request.getMaxArchivedProjects());
+        if (request.getMaxOdcs() != null) plan.setMaxOdcs(request.getMaxOdcs());
+        if (request.getMaxOdps() != null) plan.setMaxOdps(request.getMaxOdps());
+        if (request.getMaxCustomers() != null) plan.setMaxCustomers(request.getMaxCustomers());
+        if (request.getHasSso() != null) plan.setHasSso(request.getHasSso());
+        if (request.getHasApiAccess() != null) plan.setHasApiAccess(request.getHasApiAccess());
+
+        SubscriptionPlan saved = subscriptionPlanRepository.save(plan);
+
+        auditLog("system", "SUBSCRIPTION_PLAN_UPDATED", planId.toString(),
+                "Super Admin '" + actor + "' updated plan '" + plan.getName() + "' (Price: " + plan.getPrice() + ")");
+
+        log.info("💎 SUBSCRIPTION PLAN UPDATED: Plan '{}' (ID: {}) updated by '{}'",
+                saved.getName(), planId, actor);
+
+        return saved;
+    }
+
+    /**
+     * Memperbarui detail lisensi spesifik organisasi tenant (Super Admin).
+     * Mendukung kustomisasi kuota overrides, masa aktif/grace, hardware fingerprint,
+     * feature entitlements, dan kontak penagihan.
+     */
+    @Transactional
+    public TenantLicense updateTenantLicense(UUID licenseId, UpdateTenantLicenseRequest request, String actor) {
+        TenantLicense lic = tenantLicenseRepository.findById(licenseId)
+                .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
+
+        if (request.getStatus() != null) {
+            lic.setStatus(request.getStatus());
+        }
+        if (request.getValidUntil() != null) {
+            lic.setValidUntil(request.getValidUntil());
+        }
+        if (request.getGracePeriodUntil() != null) {
+            lic.setGracePeriodUntil(request.getGracePeriodUntil());
+        }
+
+        // Custom Quota Overrides
+        if (request.getOverrideMaxProjects() != null) lic.setOverrideMaxProjects(request.getOverrideMaxProjects());
+        if (request.getOverrideMaxOdps() != null) lic.setOverrideMaxOdps(request.getOverrideMaxOdps());
+        if (request.getOverrideMaxOdcs() != null) lic.setOverrideMaxOdcs(request.getOverrideMaxOdcs());
+        if (request.getOverrideMaxCustomers() != null) lic.setOverrideMaxCustomers(request.getOverrideMaxCustomers());
+        if (request.getOverrideMaxStorageGb() != null) lic.setOverrideMaxStorageGb(request.getOverrideMaxStorageGb());
+
+        // Feature Entitlements
+        if (request.getFeatureSsoEnabled() != null) lic.setFeatureSsoEnabled(request.getFeatureSsoEnabled());
+        if (request.getFeatureApiEnabled() != null) lic.setFeatureApiEnabled(request.getFeatureApiEnabled());
+        if (request.getFeatureAiCopilotEnabled() != null) lic.setFeatureAiCopilotEnabled(request.getFeatureAiCopilotEnabled());
+        if (request.getFeatureCustomDomainEnabled() != null) lic.setFeatureCustomDomainEnabled(request.getFeatureCustomDomainEnabled());
+
+        // Hardware Binding & Notes
+        if (request.getMachineFingerprint() != null) lic.setMachineFingerprint(request.getMachineFingerprint().trim());
+        if (request.getNotes() != null) lic.setNotes(request.getNotes());
+
+        // Billing Contacts
+        if (request.getBillingContactName() != null) lic.setBillingContactName(request.getBillingContactName().trim());
+        if (request.getBillingContactEmail() != null) lic.setBillingContactEmail(request.getBillingContactEmail().trim());
+        if (request.getBillingContactPhone() != null) lic.setBillingContactPhone(request.getBillingContactPhone().trim());
+        if (request.getNotifyEmailEnabled() != null) lic.setNotifyEmailEnabled(request.getNotifyEmailEnabled());
+        if (request.getNotifyWhatsappEnabled() != null) lic.setNotifyWhatsappEnabled(request.getNotifyWhatsappEnabled());
+
+        // Perbarui tanda tangan kriptografis Ed25519 jika masa aktif atau hardware fingerprint berubah
+        if (request.getValidUntil() != null || request.getMachineFingerprint() != null) {
+            String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
+            String newSig = licenseCryptoService.signLicenseMetadata(
+                    lic.getOrganization().getId(),
+                    tier,
+                    lic.getLicenseKey(),
+                    lic.getValidFrom(),
+                    lic.getValidUntil(),
+                    lic.getMachineFingerprint()
+            );
+            lic.setLicenseSignature(newSig);
+        }
+
+        TenantLicense saved = tenantLicenseRepository.save(lic);
+
+        auditLog(lic.getOrganization() != null ? lic.getOrganization().getSlug() : "system",
+                "LICENSE_UPDATED", licenseId.toString(),
+                "Super Admin '" + actor + "' updated license details and quota overrides.");
+
+        log.info("🔑 LICENSE UPDATED: License '{}' (ID: {}) for org '{}' updated by '{}'",
+                lic.getLicenseKey(), licenseId,
+                lic.getOrganization() != null ? lic.getOrganization().getSlug() : "unknown",
+                actor);
+
+        return saved;
     }
 
     private void auditLog(String tenantSlug, String action, String orgId, String details) {

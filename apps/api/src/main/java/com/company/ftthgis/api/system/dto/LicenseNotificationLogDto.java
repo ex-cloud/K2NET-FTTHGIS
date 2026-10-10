@@ -16,7 +16,11 @@ import java.util.UUID;
 public class LicenseNotificationLogDto {
     private UUID id;
     private UUID organizationId;
+    private String organizationName;
+    private String organizationSlug;
     private UUID licenseId;
+    private String licenseKey;
+    private String maskedLicenseKey;
     private String channel;
     private LicenseNotificationStage stage;
     private String recipient;

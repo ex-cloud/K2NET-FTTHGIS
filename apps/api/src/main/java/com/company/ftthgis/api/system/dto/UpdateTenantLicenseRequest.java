@@ -1,4 +1,4 @@
-package com.company.ftthgis.api.tenant.dto;
+package com.company.ftthgis.api.system.dto;
 
 import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
 import lombok.AllArgsConstructor;
@@ -7,61 +7,57 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
- * DTO respon detail informasi lisensi tenant untuk konsumsi antarmuka frontend (Admin & Tenant).
+ * Permintaan pembaruan detail lisensi spesifik organisasi tenant oleh Super Admin.
+ * Mendukung kustomisasi kuota overrides, masa aktif/grace, hardware fingerprint,
+ * feature entitlements, dan kontak penagihan.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LicenseResponseDto {
-
-    private UUID id;
-    private UUID organizationId;
-    private String organizationSlug;
-    private String organizationName;
-    private String planName;
-
-    private String licenseKey;
-    private String maskedLicenseKey;
+public class UpdateTenantLicenseRequest {
 
     private LicenseStatus status;
-    private String activationType;
 
-    private LocalDateTime validFrom;
     private LocalDateTime validUntil;
+
     private LocalDateTime gracePeriodUntil;
-
-    private long daysRemaining;
-    private long graceDaysRemaining;
-
-    private String machineFingerprint;
-    private String issuedBy;
-    private String notes;
-
-    private LicenseEntitlementsDto entitlements;
 
     // Custom Quota Overrides
     private Integer overrideMaxProjects;
+
     private Integer overrideMaxOdps;
+
     private Integer overrideMaxOdcs;
+
     private Integer overrideMaxCustomers;
+
     private Integer overrideMaxStorageGb;
 
     // Feature Entitlements
     private Boolean featureSsoEnabled;
+
     private Boolean featureApiEnabled;
+
     private Boolean featureAiCopilotEnabled;
+
     private Boolean featureCustomDomainEnabled;
+
+    // Hardware Binding
+    private String machineFingerprint;
 
     // Billing Contacts
     private String billingContactName;
+
     private String billingContactEmail;
+
     private String billingContactPhone;
+
     private Boolean notifyEmailEnabled;
+
     private Boolean notifyWhatsappEnabled;
 
-    private LocalDateTime createdAt;
+    private String notes;
 }
