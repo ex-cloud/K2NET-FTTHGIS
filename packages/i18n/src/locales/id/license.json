@@ -1,6 +1,9 @@
 {
   "title": "Lisensi & Penagihan",
   "subtitle": "Kelola lisensi resmi tenant, hak kuota teknis, kontrak B2B, dan sertifikat offline platform.",
+  "hero_eyebrow": "Kontrak B2B & Lisensi Enterprise",
+  "cmd_center_title": "Pusat Komando Lisensi & Kontrak",
+  "cmd_center_desc": "Siklus hidup lisensi kriptografis Ed25519, pengikatan mesin air-gapped, kepatuhan kuota, dan kalkulasi upgrade prorata.",
   "kpi": {
     "total_licenses": "Total Lisensi",
     "active_licenses": "Lisensi Aktif",
@@ -8,7 +11,24 @@
     "read_only": "Terbatas (Hanya Baca)",
     "suspended_revoked": "Ditangguhkan / Dicabut",
     "expiring_30d": "Kedaluwarsa < 30 Hari",
-    "tier_distribution": "Distribusi Paket"
+    "expiring_grace": "Masa Tenggang & Kedaluwarsa",
+    "platform_mrr": "MRR Platform & Paket",
+    "security_integrity": "Keamanan & Integritas",
+    "tier_distribution": "Distribusi Paket",
+    "utilization": "Utilisasi",
+    "at_risk": "Beresiko",
+    "tier_mix": "Komposisi Paket",
+    "compliance_rate": "Tingkat Kepatuhan",
+    "attention_needed": "Perlu Perhatian",
+    "healthy": "Sehat",
+    "no_licenses": "Belum ada lisensi terdaftar",
+    "active_ratio": "{{active}} dari {{total}} aktif",
+    "grace_expiring_desc": "{{grace}} tenggang · {{expiring}} segera berakhir",
+    "tier_breakdown_desc": "{{enterprise}} Ent · {{pro}} Pro · {{starter}} Starter",
+    "airgap_online_desc": "{{airgap}} Air-Gapped · {{online}} Online",
+    "revoked_count": "{{count}} Dicabut",
+    "ed25519_verified": "Terverifikasi Ed25519",
+    "ed25519_standard": "Ed25519"
   },
   "table": {
     "license_key": "Kode Lisensi",
@@ -21,6 +41,9 @@
     "entitlements": "Hak Kuota Efektif",
     "actions": "Aksi",
     "search_placeholder": "Cari kode lisensi, nama organisasi, atau slug...",
+    "filter_offline": "Air-Gapped / Offline",
+    "simulate_prorate": "Simulasi Prorata",
+    "airgap_chip_title": "Terikat ke Sidik Jari Perangkat Keras",
     "empty_title": "Tidak Ada Lisensi",
     "empty_desc": "Tidak ditemukan lisensi yang cocok dengan kriteria filter saat ini."
   },
@@ -182,5 +205,25 @@
     "status": "Status",
     "sent_at": "Waktu Kirim",
     "no_logs": "Belum ada catatan log notifikasi untuk lisensi ini."
+  },
+  "prorate": {
+    "calculator_title": "Simulasi Prorata Upgrade Siklus Berjalan",
+    "calculator_desc": "Hitung kompensasi kredit prorata sisa hari dan jumlah tagihan bersih saat organisasi melakukan upgrade paket langganan di tengah siklus.",
+    "select_org": "Organisasi Sasaran",
+    "select_org_placeholder": "Pilih organisasi...",
+    "target_plan": "Paket Langganan Target",
+    "simulation_results": "Rincian Kalkulasi Upgrade",
+    "current_plan": "Paket Saat Ini",
+    "target_plan_label": "Paket Target",
+    "days_remaining": "Sisa Hari Periode Berjalan",
+    "days_of_cycle": "{{days}} dari {{total}} hari",
+    "daily_rate_old": "Tarif Harian (Saat Ini)",
+    "prorated_credit": "Kredit Pemotongan Prorata",
+    "net_amount_due": "Total Tagihan Bersih",
+    "eligible_badge": "Berhak Menerima Kredit Upgrade Prorata",
+    "not_eligible_badge": "Langganan Penuh (Downgrade atau Paket Sama)",
+    "no_active_license_warning": "Organisasi ini saat ini tidak memiliki lisensi berbayar aktif untuk menghitung kredit prorata.",
+    "simulate_btn": "Simulasi Prorata",
+    "close_btn": "Tutup"
   }
 }

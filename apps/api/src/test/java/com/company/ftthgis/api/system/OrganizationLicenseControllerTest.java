@@ -329,4 +329,37 @@ public class OrganizationLicenseControllerTest {
                 eq(license), eq(com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage.MANUAL_REMINDER), anyString()
         );
     }
+
+    @Test
+    @DisplayName("GET /organizations/{orgId}/licenses/prorate-estimate - Sukses kalkulasi upgrade prorata")
+    public void testCalculateProrateEstimate_Success() throws Exception {
+        com.company.ftthgis.api.tenant.dto.ProrateEstimateResponseDto estimate = com.company.ftthgis.api.tenant.dto.ProrateEstimateResponseDto.builder()
+                .currentPlan("PRO")
+                .targetPlan("ENTERPRISE")
+                .currentPlanPrice(new java.math.BigDecimal("3900000"))
+                .targetPlanPrice(new java.math.BigDecimal("9900000"))
+                .daysRemaining(15)
+                .totalCycleDays(30)
+                .dailyRateOld(new java.math.BigDecimal("130000"))
+                .proratedCredit(new java.math.BigDecimal("1950000"))
+                .netDueAmount(new java.math.BigDecimal("7950000"))
+                .currency("IDR")
+                .isUpgradeEligible(true)
+                .calculationSummary("Upgrade from PRO to ENTERPRISE with 15 days remaining credited.")
+                .build();
+
+        when(licenseManagementService.calculateProrateEstimate(testOrgId, "ENTERPRISE"))
+                .thenReturn(estimate);
+
+        mockMvc.perform(get("/api/v1/system/organizations/" + testOrgId + "/licenses/prorate-estimate")
+                        .param("targetPlan", "ENTERPRISE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentPlan").value("PRO"))
+                .andExpect(jsonPath("$.targetPlan").value("ENTERPRISE"))
+                .andExpect(jsonPath("$.isUpgradeEligible").value(true))
+                .andExpect(jsonPath("$.netDueAmount").value(7950000));
+
+        verify(licenseManagementService, times(1)).calculateProrateEstimate(testOrgId, "ENTERPRISE");
+    }
 }
+

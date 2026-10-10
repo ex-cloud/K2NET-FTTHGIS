@@ -352,3 +352,49 @@ export function useSendManualLicenseReminder() {
     },
   });
 }
+
+export interface ProrateEstimateResponse {
+  currentPlan: string;
+  targetPlan: string;
+  currentPlanPrice: number;
+  targetPlanPrice: number;
+  daysRemaining: number;
+  totalCycleDays: number;
+  dailyRateOld: number;
+  proratedCredit: number;
+  netDueAmount: number;
+  currency: string;
+  isUpgradeEligible: boolean;
+  calculationSummary: string;
+}
+
+export function useAdminProrateEstimate(orgId?: string, targetPlan?: string) {
+  const { data: session } = useSession();
+
+  return useQuery<ProrateEstimateResponse>({
+    queryKey: ["admin-prorate-estimate", orgId, targetPlan, session?.accessToken],
+    queryFn: async () => {
+      if (!orgId || !targetPlan) {
+        throw new Error("Organization ID and Target Plan are required");
+      }
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(
+        `${baseUrl}/system/organizations/${orgId}/licenses/prorate-estimate?targetPlan=${encodeURIComponent(
+          targetPlan
+        )}`,
+        {
+          token: session?.accessToken ?? undefined,
+        }
+      );
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "Unknown error");
+        throw new Error(`Failed to calculate prorate estimate: ${res.status} - ${errText}`);
+      }
+      return res.json();
+    },
+    enabled: !!orgId && !!targetPlan,
+    staleTime: 10 * 1000,
+  });
+}
+

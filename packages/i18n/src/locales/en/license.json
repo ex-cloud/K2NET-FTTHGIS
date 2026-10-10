@@ -1,6 +1,9 @@
 {
   "title": "Billing & Licenses",
   "subtitle": "Manage enterprise tenant licenses, quota entitlements, B2B contracts, and offline certificates.",
+  "hero_eyebrow": "B2B Contracts & Enterprise Licensing",
+  "cmd_center_title": "Licenses & Contracts Command Center",
+  "cmd_center_desc": "Cryptographic Ed25519 license lifecycle, air-gapped machine bindings, quota compliance, and prorated mid-cycle upgrades.",
   "kpi": {
     "total_licenses": "Total Licenses",
     "active_licenses": "Active Licenses",
@@ -8,7 +11,24 @@
     "read_only": "Restricted (Read-Only)",
     "suspended_revoked": "Suspended / Revoked",
     "expiring_30d": "Expiring within 30 Days",
-    "tier_distribution": "Plan Distribution"
+    "expiring_grace": "Expiring & Grace",
+    "platform_mrr": "Platform MRR & Plans",
+    "security_integrity": "Security & Integrity",
+    "tier_distribution": "Plan Distribution",
+    "utilization": "Utilization",
+    "at_risk": "At Risk",
+    "tier_mix": "Tier Mix",
+    "compliance_rate": "Compliance Rate",
+    "attention_needed": "Attention Needed",
+    "healthy": "Healthy",
+    "no_licenses": "No licenses registered",
+    "active_ratio": "{{active}} of {{total}} active",
+    "grace_expiring_desc": "{{grace}} grace · {{expiring}} expiring",
+    "tier_breakdown_desc": "{{enterprise}} Ent · {{pro}} Pro · {{starter}} Starter",
+    "airgap_online_desc": "{{airgap}} Air-Gapped · {{online}} Online",
+    "revoked_count": "{{count}} Revoked",
+    "ed25519_verified": "Ed25519 Verified",
+    "ed25519_standard": "Ed25519"
   },
   "table": {
     "license_key": "License Key",
@@ -21,6 +41,9 @@
     "entitlements": "Quota Entitlements",
     "actions": "Actions",
     "search_placeholder": "Search license key, tenant name, or slug...",
+    "filter_offline": "Air-Gapped / Offline",
+    "simulate_prorate": "Simulate Prorate",
+    "airgap_chip_title": "Bound to Hardware Fingerprint",
     "empty_title": "No Licenses Found",
     "empty_desc": "There are no licenses matching your current filter criteria."
   },
@@ -182,5 +205,25 @@
     "status": "Status",
     "sent_at": "Sent At",
     "no_logs": "No notification logs recorded for this license."
+  },
+  "prorate": {
+    "calculator_title": "Simulate Mid-Cycle Upgrade Proration",
+    "calculator_desc": "Calculate exact prorated credits and net amount due when an organization upgrades their subscription plan mid-cycle.",
+    "select_org": "Target Organization",
+    "select_org_placeholder": "Select an organization...",
+    "target_plan": "Target Subscription Tier",
+    "simulation_results": "Upgrade Calculation Breakdown",
+    "current_plan": "Current Plan",
+    "target_plan_label": "Target Plan",
+    "days_remaining": "Days Remaining in Cycle",
+    "days_of_cycle": "{{days}} of {{total}} days",
+    "daily_rate_old": "Daily Rate (Current)",
+    "prorated_credit": "Prorated Credit Deduction",
+    "net_amount_due": "Net Amount Due",
+    "eligible_badge": "Eligible for Mid-Cycle Upgrade Credit",
+    "not_eligible_badge": "Direct Subscription (Downgrade or Same Tier)",
+    "no_active_license_warning": "This organization does not currently have an active paid license to calculate prorated credits.",
+    "simulate_btn": "Simulate Prorate",
+    "close_btn": "Close"
   }
 }

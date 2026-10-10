@@ -202,6 +202,18 @@ public class OrganizationLicenseController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Menghitung simulasi prorata biaya upgrade paket langganan suatu tenant (Super Admin).
+     */
+    @GetMapping("/organizations/{orgId}/licenses/prorate-estimate")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage')")
+    public ResponseEntity<com.company.ftthgis.api.tenant.dto.ProrateEstimateResponseDto> getProrateEstimate(
+            @PathVariable UUID orgId,
+            @RequestParam("targetPlan") String targetPlan
+    ) {
+        return ResponseEntity.ok(licenseManagementService.calculateProrateEstimate(orgId, targetPlan));
+    }
+
     // ── Internal Helpers ────────────────────────────────────────────────────
 
     private String resolveCurrentUserIdentifier() {

@@ -51,6 +51,8 @@ import {
   UserCheck,
   Trash2,
   ArchiveRestore,
+  Calculator,
+  Bell,
 } from "lucide-react";
 import {
   Collapsible,
@@ -66,8 +68,11 @@ import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { useTaskStore } from "@/store/task-store";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLicenseOverview, type LicenseOverviewKpi } from "@/hooks/useOrganizationLicenses";
 
 const ICON_MAP: Record<string, React.ElementType> = {
+  Calculator,
+  Bell,
   Users,
   ShieldCheck,
   History,
@@ -162,9 +167,14 @@ function isSidebarItemActive(
     searchParams.has("project");
 
   const hasOrgFilter = searchParams.has("status") || searchParams.has("view");
+  const hasLicenseFilter =
+    searchParams.has("status") || searchParams.has("view") || searchParams.has("type");
 
   if (itemUrl === "/organizations") {
     return (pathname === "/organizations" || pathname === "/system/organizations") && !hasOrgFilter;
+  }
+  if (itemUrl === "/licenses") {
+    return (pathname === "/licenses" || pathname === "/system/licenses") && !hasLicenseFilter;
   }
   if (itemUrl === "/tasks") {
     return (pathname === "/tasks" || pathname === "/system/tasks") && !hasTaskFilter;
@@ -180,12 +190,40 @@ function getOrgBadgeCount(url: string, orgCounts: OrgCounts): number | null {
   return null;
 }
 
+function getLicenseBadge(url: string, overview?: LicenseOverviewKpi): { count: number; style: string } | null {
+  if (!overview) return null;
+  if (url === "/licenses") {
+    if (typeof overview.totalLicenses === "number" && overview.totalLicenses > 0) {
+      return { count: overview.totalLicenses, style: "bg-muted text-muted-foreground border border-border" };
+    }
+  }
+  if (url === "/licenses?status=ACTIVE") {
+    if (typeof overview.activeLicenses === "number" && overview.activeLicenses > 0) {
+      return { count: overview.activeLicenses, style: "bg-primary/10 text-primary border border-primary/20" };
+    }
+  }
+  if (url === "/licenses?status=GRACE_PERIOD") {
+    const count = (overview.gracePeriodLicenses ?? 0) + (overview.expiringIn30Days ?? 0);
+    if (count > 0) {
+      return { count, style: "bg-amber-500/10 text-amber-500 border border-amber-500/20" };
+    }
+  }
+  if (url === "/licenses?status=REVOKED") {
+    const count = (overview.suspendedLicenses ?? 0) + (overview.readOnlyLicenses ?? 0);
+    if (count > 0) {
+      return { count, style: "bg-destructive/10 text-destructive border border-destructive/20" };
+    }
+  }
+  return null;
+}
+
 interface SidebarNavItemProps {
   item: MenuItem;
   pathname: string | null;
   searchParams: { get: (key: string) => string | null; has: (key: string) => boolean };
   unreadB2BCount: number;
   orgCounts: OrgCounts;
+  licenseOverview?: LicenseOverviewKpi;
 }
 
 function SidebarNavItem({
@@ -194,12 +232,14 @@ function SidebarNavItem({
   searchParams,
   unreadB2BCount,
   orgCounts,
+  licenseOverview,
 }: SidebarNavItemProps) {
   const { t } = useTranslation();
   const isActive = isSidebarItemActive(item.url, pathname, searchParams);
   const Icon = ICON_MAP[item.icon] || FileText;
   const isB2BLink = item.url.includes("scope=TENANT_TO_PLATFORM");
   const orgBadgeCount = getOrgBadgeCount(item.url, orgCounts);
+  const licenseBadge = getLicenseBadge(item.url, licenseOverview);
   const itemTitle = item.translationKey ? t(item.translationKey) : item.title;
 
   const orgBadgeStyle = item.url.includes("status=ACTIVE")
@@ -237,6 +277,12 @@ function SidebarNavItem({
             {orgBadgeCount}
           </span>
         )}
+
+        {licenseBadge !== null && (
+          <span className={`ml-auto text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${licenseBadge.style}`}>
+            {licenseBadge.count}
+          </span>
+        )}
       </Link>
     </ActionTooltip>
   );
@@ -253,6 +299,7 @@ export function SystemSecondarySidebar() {
     useLogsFilter();
 
   const { organizations } = useOrganizations();
+  const { data: licenseOverview } = useLicenseOverview();
   const { canAccess } = usePermissions();
 
   const orgCounts = React.useMemo<OrgCounts>(() => {
@@ -321,6 +368,7 @@ export function SystemSecondarySidebar() {
                           searchParams={searchParams}
                           unreadB2BCount={unreadB2BCount}
                           orgCounts={orgCounts}
+                          licenseOverview={licenseOverview}
                         />
                       ))}
                     </CollapsibleContent>
