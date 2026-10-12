@@ -5,10 +5,11 @@ import {
   TrendingUp,
   Download,
   Zap,
+  Activity,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
   Progress,
@@ -48,7 +49,8 @@ export function UsagePage() {
       percent: projectPercentage,
       unit: t("nav.projects"),
       icon: MapPin,
-      status: projectPercentage > 90 ? "KRITIS" : "NORMAL",
+      status: projectPercentage > 90 ? t("common.critical").toUpperCase() : t("common.normal").toUpperCase(),
+      isCritical: projectPercentage > 90,
     },
     {
       title: t("inventory.odp_title"),
@@ -57,7 +59,8 @@ export function UsagePage() {
       percent: odpPercentage,
       unit: "ODP",
       icon: Cpu,
-      status: odpPercentage > 90 ? "KRITIS" : "NORMAL",
+      status: odpPercentage > 90 ? t("common.critical").toUpperCase() : t("common.normal").toUpperCase(),
+      isCritical: odpPercentage > 90,
     },
     {
       title: t("gateways.gateway_storage_title"),
@@ -66,7 +69,8 @@ export function UsagePage() {
       percent: storagePercentage,
       unit: "GB",
       icon: HardDrive,
-      status: storagePercentage > 90 ? "KRITIS" : "NORMAL",
+      status: storagePercentage > 90 ? t("common.critical").toUpperCase() : t("common.normal").toUpperCase(),
+      isCritical: storagePercentage > 90,
     },
     {
       title: t("gateways.overview_title"),
@@ -75,7 +79,8 @@ export function UsagePage() {
       percent: apiRatePercent,
       unit: "req/hr",
       icon: Zap,
-      status: apiRatePercent > 90 ? "KRITIS" : "NORMAL",
+      status: apiRatePercent > 90 ? t("common.critical").toUpperCase() : t("common.normal").toUpperCase(),
+      isCritical: apiRatePercent > 90,
     },
   ];
 
@@ -84,24 +89,26 @@ export function UsagePage() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
+    <PageLayout variant="dashboard" spaceY="space-y-8">
+      <PageHero
         title={t("nav.usage_quota")}
-        breadcrumbs={[
-          { label: t("nav.organizations"), href: "/projects" },
-          { label: t("nav.usage_quota") },
-        ]}
+        subtitle={t("billing.cycle_quota_usage", { plan: planName })}
+        icon={Activity}
         actions={
-          <Button variant="outline" size="sm" onClick={handleExport} className="h-8 px-2.5 text-xs gap-1.5 border-border/80">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            className="h-7 px-2.5 text-xs font-medium gap-1.5 border-border/80 rounded-md"
+          >
             <Download className="h-3.5 w-3.5" />
             {t("common.export")}
           </Button>
         }
       />
 
-      <PageContentShell className="space-y-4 custom-scrollbar">
-        {/* Metric Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Metric Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {usageMetrics.map((m, idx) => {
             const Icon = m.icon;
             return (
@@ -117,7 +124,7 @@ export function UsagePage() {
                     </div>
                   </div>
                   <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    m.status === "KRITIS"
+                    m.isCritical
                       ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                       : "bg-primary/10 text-primary border-primary/20"
                   }`}>
@@ -165,8 +172,7 @@ export function UsagePage() {
             </span>
           </div>
         </Card>
-      </PageContentShell>
-    </div>
+    </PageLayout>
   );
 }
 

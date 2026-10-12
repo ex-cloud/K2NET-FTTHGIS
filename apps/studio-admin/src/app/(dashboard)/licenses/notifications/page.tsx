@@ -4,6 +4,7 @@ import {
   Card,
   Button,
   Input,
+  PageLayout,
   Table,
   TableHeader,
   TableRow,
@@ -72,12 +73,11 @@ export default function LicenseNotificationsPage() {
   }, [logs, search, channelFilter, statusFilter]);
 
   return (
-    <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-5 overflow-hidden">
+    <PageLayout variant="workspace" spaceY="space-y-6">
       {/* Page Hero Header */}
-      <div className="px-4 md:px-6 shrink-0">
-        <PageHero
-          bordered={false}
-          className="pb-0"
+      <PageHero
+        bordered={false}
+        className="pb-0"
           eyebrow={t("license.hero_eyebrow")}
           title={t("license.notifications.global_title")}
           icon={Bell}
@@ -115,10 +115,9 @@ export default function LicenseNotificationsPage() {
             </div>
           }
         />
-      </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-8 space-y-5">
+      <div className="w-full space-y-5">
         {/* KPI Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card glowingEffect className="p-4 flex flex-col justify-between gap-3 bg-card border-border">
@@ -402,6 +401,6 @@ export default function LicenseNotificationsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }

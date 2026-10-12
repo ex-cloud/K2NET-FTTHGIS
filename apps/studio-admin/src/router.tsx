@@ -70,6 +70,12 @@ const LicenseNotificationsPage = lazyWithRetry(() =>
 const LicenseRevocationsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/licenses/revocations/page").then((m) => ({ default: m.default }))
 );
+const PackagesPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/packages/page").then((m) => ({ default: m.default }))
+);
+const PackageSubscriptionsPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/packages/subscriptions/page").then((m) => ({ default: m.default }))
+);
 const OrganizationSlugPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/[slug]/page").then((m) => ({ default: m.default }))
 );
@@ -403,6 +409,10 @@ const licenseCalculatorRoute = createRoute({ getParentRoute: () => authenticated
 const licenseNotificationsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/notifications", component: () => <Lazy><LicenseNotificationsPage /></Lazy> });
 const licenseRevocationsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/revocations", component: () => <Lazy><LicenseRevocationsPage /></Lazy> });
 
+// Packages & Add-ons
+const packagesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/packages", component: () => <Lazy><PackagesPage /></Lazy> });
+const packagesSubscriptionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/packages/subscriptions", component: () => <Lazy><PackageSubscriptionsPage /></Lazy> });
+
 // Users
 const usersRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users", component: () => <Lazy><UsersPage /></Lazy> });
 const usersRolesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users/roles", component: () => <Lazy><UsersRolesPage /></Lazy> });
@@ -499,6 +509,8 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
   // Billing & Licenses
   licensesRoute, licensePlansRoute, licenseCalculatorRoute, licenseNotificationsRoute, licenseRevocationsRoute,
+  // Packages & Add-ons
+  packagesRoute, packagesSubscriptionsRoute,
   // Users
   usersRoute, usersRolesRoute, usersSessionsRoute,
   // Observability

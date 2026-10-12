@@ -98,6 +98,9 @@ const SubscriptionPlansPage = lazyWithRetry(() =>
 const InvoicesHistoryPage = lazyWithRetry(() =>
   import("./pages/org/billing/InvoicesHistoryPage").then((m) => ({ default: m.InvoicesHistoryPage }))
 );
+const PackageMarketplacePage = lazyWithRetry(() =>
+  import("./pages/org/billing/PackageMarketplacePage").then((m) => ({ default: m.PackageMarketplacePage }))
+);
 const OrgSettingsPage = lazyWithRetry(() =>
   import("./pages/org/OrgSettingsPage").then((m) => ({ default: m.OrgSettingsPage }))
 );
@@ -439,6 +442,18 @@ const billingInvoicesRoute = createRoute({
     <BillingPageWrapper>
       <Lazy>
         <InvoicesHistoryPage />
+      </Lazy>
+    </BillingPageWrapper>
+  ),
+});
+
+const billingMarketplaceRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/billing/marketplace",
+  component: () => (
+    <BillingPageWrapper>
+      <Lazy>
+        <PackageMarketplacePage />
       </Lazy>
     </BillingPageWrapper>
   ),
@@ -929,6 +944,7 @@ const orgTree = orgAuthenticatedRoute.addChildren([
   billingQuotasRoute,
   billingPlansRoute,
   billingInvoicesRoute,
+  billingMarketplaceRoute,
   orgAuditLogsRoute,
   settingsGeneralRoute,
   settingsBrandingRoute,

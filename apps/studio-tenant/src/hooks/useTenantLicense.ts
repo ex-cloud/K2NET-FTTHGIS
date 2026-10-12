@@ -24,7 +24,7 @@ export interface TenantLicenseDetails {
   planName: string;
   licenseKey: string;
   maskedLicenseKey: string;
-  status: "ACTIVE" | "GRACE_PERIOD" | "EXPIRED" | "SUSPENDED" | "REVOKED";
+  status: "ACTIVE" | "GRACE_PERIOD" | "RESTRICTED_READ_ONLY" | "EXPIRED" | "SUSPENDED" | "REVOKED";
   activationType: string;
   validFrom: string;
   validUntil: string;

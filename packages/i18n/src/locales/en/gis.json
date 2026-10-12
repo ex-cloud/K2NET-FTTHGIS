@@ -33,5 +33,7 @@
   "total_customers": "Total Connected Subscribers",
   "fiber_cable_span": "Fiber Cable Span",
   "odc_odp_devices": "ODC & ODP Devices",
-  "s3_storage": "S3 Storage Capacity"
+  "s3_storage": "S3 Storage Capacity",
+  "trace_path_error": "Failed to trace fiber path",
+  "trace_upstream_error": "Failed to trace upstream to OLT"
 }

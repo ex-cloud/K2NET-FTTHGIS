@@ -6,10 +6,11 @@ import {
   AlertTriangle,
   Archive,
   RotateCcw,
+  Settings,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
   Input,
@@ -70,28 +71,23 @@ export function ProjectGeneralSettings() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: t("nav.settings"), href: `/project/${projectId}/settings/general` },
-          { label: t("projects.general_settings_title") },
-        ]}
+    <PageLayout variant="workspace" spaceY="space-y-6" maxWidth="max-w-4xl">
+      <PageHero
         title={t("projects.general_settings_title")}
+        subtitle={t("projects.general_settings_subtitle")}
+        icon={Settings}
         actions={
           <Button
             size="sm"
             onClick={handleSave}
             disabled={isArchived}
-            className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
+            className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs rounded-md"
           >
             <Save className="h-3.5 w-3.5" />
             {t("common.save")}
           </Button>
         }
       />
-
-      <PageContentShell className="space-y-5 custom-scrollbar max-w-4xl">
         {isArchived && (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-400 flex items-center justify-between">
             <span>{t("projects.archived_read_only_hint")}</span>
@@ -169,7 +165,7 @@ export function ProjectGeneralSettings() {
               variant="outline"
               size="sm"
               onClick={handleToggleArchive}
-              className="h-8 text-xs font-medium gap-1.5 bg-card hover:bg-accent cursor-pointer"
+              className="h-7 px-2.5 text-xs font-medium gap-1.5 bg-card hover:bg-accent cursor-pointer rounded-md"
             >
               {isArchived ? (
                 <>
@@ -188,14 +184,13 @@ export function ProjectGeneralSettings() {
               variant="destructive"
               size="sm"
               onClick={() => deleteProject(projectId)}
-              className="h-8 text-xs font-medium gap-1.5 cursor-pointer"
+              className="h-7 px-2.5 text-xs font-medium gap-1.5 cursor-pointer rounded-md"
             >
               <Trash2 className="h-3.5 w-3.5" />
               {t("common.delete")}
             </Button>
           </div>
         </Card>
-      </PageContentShell>
-    </div>
+    </PageLayout>
   );
 }

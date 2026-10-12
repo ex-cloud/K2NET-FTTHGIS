@@ -10,16 +10,32 @@ import {
   Button,
 } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
-import { ExternalLink, Receipt, CheckCircle, Clock, AlertTriangle, FileText } from "lucide-react";
+import { ExternalLink, Receipt, CheckCircle, Clock, AlertTriangle, FileText, FileDown } from "lucide-react";
+import { toast } from "sonner";
 import type { BillingInvoiceItem } from "../../hooks/useTenantLicense";
+import { generateInvoicePdf } from "../../lib/invoicePdfGenerator";
 
 interface BillingInvoicesTableProps {
   invoices: BillingInvoiceItem[];
   isLoading: boolean;
+  tenantSlug?: string;
 }
 
-export function BillingInvoicesTable({ invoices, isLoading }: BillingInvoicesTableProps) {
+export function BillingInvoicesTable({ invoices, isLoading, tenantSlug }: BillingInvoicesTableProps) {
   const { t, formatCurrency, formatDate } = useTranslation();
+
+  const handleDownloadPdf = React.useCallback(
+    (inv: BillingInvoiceItem) => {
+      try {
+        generateInvoicePdf(inv, { tenantSlug });
+        toast.success(t("billing.pdf.download_success"));
+      } catch (err) {
+        console.error("Failed to generate invoice PDF:", err);
+        toast.error(t("billing.pdf.download_error"));
+      }
+    },
+    [t, tenantSlug]
+  );
 
   const renderStatusBadge = (status: BillingInvoiceItem["status"]) => {
     switch (status) {
@@ -144,29 +160,40 @@ export function BillingInvoicesTable({ invoices, isLoading }: BillingInvoicesTab
                   {inv.paidAt ? formatDate(inv.paidAt) : "—"}
                 </TableCell>
                 <TableCell className="py-2.5 text-xs text-right pr-4">
-                  {inv.status === "PENDING" && inv.externalInvoiceUrl ? (
-                    <Button
-                      size="xs"
-                      variant="default"
-                      onClick={() => window.open(inv.externalInvoiceUrl || "#", "_blank")}
-                      className="h-6 px-2 text-[11px] font-medium gap-1 rounded-md shadow-xs bg-foreground text-background hover:bg-foreground/90 cursor-pointer"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      <span>{t("license.tenant.invoice_action_pay")}</span>
-                    </Button>
-                  ) : inv.externalInvoiceUrl ? (
+                  <div className="flex items-center justify-end gap-1.5">
                     <Button
                       size="xs"
                       variant="outline"
-                      onClick={() => window.open(inv.externalInvoiceUrl || "#", "_blank")}
-                      className="h-6 px-2 text-[11px] font-medium gap-1 rounded-md border-border/80"
+                      onClick={() => handleDownloadPdf(inv)}
+                      title={t("billing.download_pdf")}
+                      className="h-6 px-2 text-[11px] font-medium gap-1 rounded-md border-border/80 hover:bg-muted/40 cursor-pointer"
                     >
-                      <ExternalLink className="h-3 w-3" />
-                      <span>{t("license.tenant.invoice_action_view")}</span>
+                      <FileDown className="h-3 w-3" />
+                      <span>{t("billing.download_pdf")}</span>
                     </Button>
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground font-mono">—</span>
-                  )}
+
+                    {inv.status === "PENDING" && inv.externalInvoiceUrl ? (
+                      <Button
+                        size="xs"
+                        variant="default"
+                        onClick={() => window.open(inv.externalInvoiceUrl || "#", "_blank")}
+                        className="h-6 px-2 text-[11px] font-medium gap-1 rounded-md shadow-xs bg-foreground text-background hover:bg-foreground/90 cursor-pointer"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        <span>{t("license.tenant.invoice_action_pay")}</span>
+                      </Button>
+                    ) : inv.externalInvoiceUrl ? (
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => window.open(inv.externalInvoiceUrl || "#", "_blank")}
+                        className="h-6 px-2 text-[11px] font-medium gap-1 rounded-md border-border/80 cursor-pointer"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        <span>{t("license.tenant.invoice_action_view")}</span>
+                      </Button>
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ))

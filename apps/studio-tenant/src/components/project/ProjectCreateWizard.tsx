@@ -247,7 +247,7 @@ export function ProjectCreateWizard({ open, onOpenChange }: ProjectCreateWizardP
               )}
               <div className="flex items-center justify-between pb-2 border-b border-border/40">
                 <span className="text-xs text-muted-foreground">{t("common.status")}:</span>
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
                   {t("projects.status_active")}
                 </span>
               </div>

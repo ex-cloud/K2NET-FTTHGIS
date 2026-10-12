@@ -1,9 +1,9 @@
 import * as React from "react";
 import { useParams } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { Search, Users } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Input,
   Table,
@@ -18,7 +18,7 @@ import { useTranslation } from "@k2net/i18n";
 export function SubscribersListPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const projectId = params?.projectId || "proj-bdg-01";
+  const _projectId = params?.projectId || "proj-bdg-01";
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const subscribers = [
@@ -61,28 +61,24 @@ export function SubscribersListPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: "Subscribers", href: `/project/${projectId}/users/subscribers` },
-          { label: t("inventory.customer_title") },
-        ]}
-        title={t("inventory.customer_subtitle")}
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
+        title={t("inventory.customer_title")}
+        subtitle={t("inventory.customer_subtitle")}
+        icon={Users}
       />
 
-      <PageContentShell className="space-y-4 custom-scrollbar">
-        <div className="flex items-center justify-between gap-3">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder={t("common.search")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 text-xs bg-muted/20"
-            />
-          </div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder={t("common.search")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-7.5 pl-8 text-xs bg-muted/20 border-border/80"
+          />
         </div>
+      </div>
 
         <Card className="border-border/60 overflow-hidden shadow-xs">
           <Table>
@@ -143,7 +139,6 @@ export function SubscribersListPage() {
             </TableBody>
           </Table>
         </Card>
-      </PageContentShell>
-    </div>
+    </PageLayout>
   );
 }

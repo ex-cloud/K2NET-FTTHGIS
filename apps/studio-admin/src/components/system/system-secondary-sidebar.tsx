@@ -53,6 +53,9 @@ import {
   ArchiveRestore,
   Calculator,
   Bell,
+  Boxes,
+  Layers,
+  Package,
 } from "lucide-react";
 import {
   Collapsible,
@@ -69,6 +72,7 @@ import { useTaskStore } from "@/store/task-store";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLicenseOverview, type LicenseOverviewKpi } from "@/hooks/useOrganizationLicenses";
+import { usePackageKpiOverview, type PackageKpiOverview } from "@/hooks/usePlatformPackages";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Calculator,
@@ -119,6 +123,9 @@ const ICON_MAP: Record<string, React.ElementType> = {
   UserCheck,
   Trash2,
   ArchiveRestore,
+  Boxes,
+  Layers,
+  Package,
 };
 
 interface OrgCounts {
@@ -133,9 +140,10 @@ function getActiveSidebarKey(pathname: string | null): string | null {
   if (pathname.startsWith("/ai")) return "ai";
   if (pathname.startsWith("/tasks")) return "tasks";
   if (pathname.startsWith("/licenses")) return "licenses";
+  if (pathname.startsWith("/packages")) return "packages";
   if (pathname.startsWith("/system")) return "system";
 
-  const includes = ["users", "security", "gateways", "observability", "settings", "logs", "organizations", "licenses"];
+  const includes = ["users", "security", "gateways", "observability", "settings", "logs", "organizations", "licenses", "packages"];
   for (const key of includes) {
     if (pathname.includes(`/${key}`)) return key;
   }
@@ -217,6 +225,31 @@ function getLicenseBadge(url: string, overview?: LicenseOverviewKpi): { count: n
   return null;
 }
 
+function getPackageBadge(url: string, overview?: PackageKpiOverview): { count: number; style: string } | null {
+  if (!overview) return null;
+  if (url === "/packages") {
+    if (typeof overview.totalPackages === "number" && overview.totalPackages > 0) {
+      return { count: overview.totalPackages, style: "bg-muted text-muted-foreground border border-border" };
+    }
+  }
+  if (url === "/packages?status=PUBLISHED") {
+    if (typeof overview.publishedPackages === "number" && overview.publishedPackages > 0) {
+      return { count: overview.publishedPackages, style: "bg-primary/10 text-primary border border-primary/20" };
+    }
+  }
+  if (url === "/packages?status=DRAFT") {
+    if (typeof overview.draftPackages === "number" && overview.draftPackages > 0) {
+      return { count: overview.draftPackages, style: "bg-amber-500/10 text-amber-500 border border-amber-500/20" };
+    }
+  }
+  if (url === "/packages/subscriptions") {
+    if (typeof overview.activeSubscriptions === "number" && overview.activeSubscriptions > 0) {
+      return { count: overview.activeSubscriptions, style: "bg-primary/10 text-primary border border-primary/20" };
+    }
+  }
+  return null;
+}
+
 interface SidebarNavItemProps {
   item: MenuItem;
   pathname: string | null;
@@ -224,6 +257,7 @@ interface SidebarNavItemProps {
   unreadB2BCount: number;
   orgCounts: OrgCounts;
   licenseOverview?: LicenseOverviewKpi;
+  packageOverview?: PackageKpiOverview;
 }
 
 function SidebarNavItem({
@@ -233,6 +267,7 @@ function SidebarNavItem({
   unreadB2BCount,
   orgCounts,
   licenseOverview,
+  packageOverview,
 }: SidebarNavItemProps) {
   const { t } = useTranslation();
   const isActive = isSidebarItemActive(item.url, pathname, searchParams);
@@ -240,6 +275,7 @@ function SidebarNavItem({
   const isB2BLink = item.url.includes("scope=TENANT_TO_PLATFORM");
   const orgBadgeCount = getOrgBadgeCount(item.url, orgCounts);
   const licenseBadge = getLicenseBadge(item.url, licenseOverview);
+  const packageBadge = getPackageBadge(item.url, packageOverview);
   const itemTitle = item.translationKey ? t(item.translationKey) : item.title;
 
   const orgBadgeStyle = item.url.includes("status=ACTIVE")
@@ -283,6 +319,12 @@ function SidebarNavItem({
             {licenseBadge.count}
           </span>
         )}
+
+        {packageBadge !== null && (
+          <span className={`ml-auto text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${packageBadge.style}`}>
+            {packageBadge.count}
+          </span>
+        )}
       </Link>
     </ActionTooltip>
   );
@@ -300,6 +342,9 @@ export function SystemSecondarySidebar() {
 
   const { organizations } = useOrganizations();
   const { data: licenseOverview } = useLicenseOverview();
+  const activeKey = getActiveSidebarKey(pathname);
+  const isPackagesPage = activeKey === "packages";
+  const { data: packageOverview } = usePackageKpiOverview({ enabled: isPackagesPage });
   const { canAccess } = usePermissions();
 
   const orgCounts = React.useMemo<OrgCounts>(() => {
@@ -312,7 +357,6 @@ export function SystemSecondarySidebar() {
     };
   }, [organizations]);
 
-  const activeKey = getActiveSidebarKey(pathname);
   if (!activeKey) return null;
 
   const isLogsPage = activeKey === "logs";
@@ -369,6 +413,7 @@ export function SystemSecondarySidebar() {
                           unreadB2BCount={unreadB2BCount}
                           orgCounts={orgCounts}
                           licenseOverview={licenseOverview}
+                          packageOverview={packageOverview}
                         />
                       ))}
                     </CollapsibleContent>

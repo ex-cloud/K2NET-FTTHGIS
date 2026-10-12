@@ -60,5 +60,10 @@
   "role_operator": "Operator GIS & NOC",
   "role_field_tech": "Teknisi Lapangan (JIT Scoped)",
   "role_surveyor": "Surveyor Spasial (CAD & Map)",
-  "role_finance": "Finance & Billing"
+  "role_finance": "Finance & Billing",
+  "role_org_admin_desc": "Akses penuh ke seluruh proyek, konfigurasi organisasi, billing, dan manajemen tim.",
+  "role_operator_desc": "Mengelola topologi jaringan, monitoring kesehatan OLT, dan operasional inventaris.",
+  "role_field_tech_desc": "Akses ke tiket gangguan dan pemetaan ODP pada area proyek yang ditugaskan.",
+  "role_surveyor_desc": "Menggambar jalur kabel baru, validasi survey lapangan, dan import KML/CAD.",
+  "manage_team_subtitle": "Kelola direktori anggota tim, hak akses berbasis peran, dan riwayat aktivitas organisasi Anda."
 }

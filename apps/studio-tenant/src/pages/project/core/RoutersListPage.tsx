@@ -1,9 +1,9 @@
 import * as React from "react";
 import { useParams } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Plus, Router } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
   Badge,
@@ -19,7 +19,7 @@ import { useTranslation } from "@k2net/i18n";
 export function RoutersListPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const projectId = params?.projectId || "proj-bdg-01";
+  const _projectId = params?.projectId || "proj-bdg-01";
 
   const routers = [
     {
@@ -43,23 +43,18 @@ export function RoutersListPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: "Core Devices", href: `/project/${projectId}/core/olt` },
-          { label: t("inventory.routers_title") },
-        ]}
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
         title={t("inventory.routers_title")}
+        subtitle={t("inventory.routers_subtitle")}
+        icon={Router}
         actions={
-          <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
-            <Plus className="h-4 w-4" />
+          <Button size="sm" className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs rounded-md">
+            <Plus className="h-3.5 w-3.5" />
             {t("inventory.add_router")}
           </Button>
         }
       />
-
-      <PageContentShell className="space-y-4 custom-scrollbar">
         <Card className="border-border/60 overflow-hidden shadow-xs">
           <Table>
             <TableHeader>
@@ -94,8 +89,7 @@ export function RoutersListPage() {
             </TableBody>
           </Table>
         </Card>
-      </PageContentShell>
-    </div>
+    </PageLayout>
   );
 }
 

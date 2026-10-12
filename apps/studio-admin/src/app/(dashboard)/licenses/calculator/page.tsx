@@ -1,5 +1,5 @@
 import * as React from "react";
-import { PageHero, Card, Button, Badge, toast } from "@k2net/ui";
+import { PageHero, Card, Button, Badge, PageLayout, toast } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import {
   Calculator,
@@ -382,12 +382,11 @@ export default function LicenseCalculatorPage() {
   );
 
   return (
-    <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-5 overflow-hidden">
+    <PageLayout variant="workspace" spaceY="space-y-6">
       {/* Page Hero Header */}
-      <div className="px-4 md:px-6 shrink-0">
-        <PageHero
-          bordered={false}
-          className="pb-0"
+      <PageHero
+        bordered={false}
+        className="pb-0"
           eyebrow={t("license.hero_eyebrow")}
           title={t("nav.prorated_upgrade_calculator")}
           icon={Calculator}
@@ -406,10 +405,9 @@ export default function LicenseCalculatorPage() {
             </div>
           }
         />
-      </div>
 
       {/* 2-Column Responsive Simulator Grid */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-8">
+      <div className="w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-6xl">
           <CalculatorInputsSection
             licenses={licenses}
@@ -427,6 +425,6 @@ export default function LicenseCalculatorPage() {
           />
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

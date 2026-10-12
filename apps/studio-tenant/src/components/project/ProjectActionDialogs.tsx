@@ -133,11 +133,11 @@ export function ProjectActionDialogs({
             </Button>
             <Button
               type="button"
-              variant="default"
+              variant="outline"
               size="sm"
               onClick={onConfirmArchive}
               disabled={isProcessing}
-              className="text-xs font-semibold gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+              className="text-xs font-medium gap-1.5 border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
             >
               {isProcessing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {t("projects.archive_project")}

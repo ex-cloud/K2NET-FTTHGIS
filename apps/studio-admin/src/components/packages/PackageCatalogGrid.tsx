@@ -1,0 +1,300 @@
+import * as React from "react";
+import { Card, Button, Input } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
+import {
+  Search,
+  SlidersHorizontal,
+  Edit,
+  Eye,
+  EyeOff,
+  FlaskConical,
+  Layers,
+  ShieldAlert,
+  Zap,
+} from "lucide-react";
+import type { PlatformPackageItem, PackageCategory } from "@/hooks/usePlatformPackages";
+
+export interface PackageCatalogGridProps {
+  packages: PlatformPackageItem[];
+  loading?: boolean;
+  selectedCategory?: string;
+  selectedStatus?: string;
+  onSelectCategory: (category: string) => void;
+  onSelectStatus: (status: string) => void;
+  onEditPackage: (pkg: PlatformPackageItem) => void;
+  onTogglePublish: (code: string, published: boolean) => void;
+  onGrantPackage: (pkg: PlatformPackageItem) => void;
+}
+
+const CATEGORIES: PackageCategory[] = [
+  "TELEMETRY",
+  "FIELD_OPS",
+  "CAPACITY_BOOSTER",
+  "SECURITY_GOV",
+  "CIVIL_INFRA",
+  "AI_COPILOT",
+  "GIS_ANALYTICS",
+  "DISASTER_RECOVERY",
+  "BILLING_FINANCE",
+  "INTEGRATION",
+  "WORKFORCE_SAFETY",
+  "COLLABORATION",
+];
+
+export function PackageCatalogGrid({
+  packages,
+  loading = false,
+  selectedCategory = "",
+  selectedStatus = "",
+  onSelectCategory,
+  onSelectStatus,
+  onEditPackage,
+  onTogglePublish,
+  onGrantPackage,
+}: PackageCatalogGridProps) {
+  const { t } = useTranslation();
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  const formatPrice = (price: number, billingType: string): string => {
+    if (price === 0) return t("packages.card.price_free");
+    const formatted = new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(price);
+
+    if (billingType === "ONE_TIME") return t("packages.card.price_one_time", { price: formatted });
+    if (billingType === "ANNUAL_RECURRING") return t("packages.card.price_per_year", { price: formatted });
+    return t("packages.card.price_per_month", { price: formatted });
+  };
+
+  const filteredPackages = React.useMemo(() => {
+    return packages.filter((pkg) => {
+      if (selectedCategory && pkg.category !== selectedCategory) return false;
+      if (selectedStatus === "PUBLISHED" && !pkg.published) return false;
+      if (selectedStatus === "DRAFT" && pkg.published) return false;
+
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesCode = pkg.packageCode.toLowerCase().includes(query);
+        const matchesName = pkg.packageName.toLowerCase().includes(query);
+        const matchesDesc = (pkg.description || "").toLowerCase().includes(query);
+        return matchesCode || matchesName || matchesDesc;
+      }
+      return true;
+    });
+  }, [packages, selectedCategory, selectedStatus, searchQuery]);
+
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      {/* Toolbar: Search + Category Filters + Status Filters */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Search Bar */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("packages.filter_search_placeholder")}
+            className="pl-8 h-8 text-xs bg-muted/20 border-border"
+          />
+        </div>
+
+        {/* Filter Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Category Dropdown */}
+          <div className="flex items-center gap-1.5 text-xs">
+            <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+            <select
+              value={selectedCategory}
+              onChange={(e) => onSelectCategory(e.target.value)}
+              className="h-8 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+            >
+              <option value="">{t("packages.filter_all_categories")}</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {t(`packages.category.${cat}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Dropdown */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => onSelectStatus(e.target.value)}
+            className="h-8 rounded-md border border-border bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+          >
+            <option value="">{t("packages.filter_all_statuses")}</option>
+            <option value="PUBLISHED">{t("packages.status.PUBLISHED")}</option>
+            <option value="DRAFT">{t("packages.status.DRAFT")}</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Package Card Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((idx) => (
+            <Card key={idx} className="p-5 h-48 animate-pulse bg-muted/20 border-border" />
+          ))}
+        </div>
+      ) : filteredPackages.length === 0 ? (
+        <Card className="p-8 text-center bg-card border-border flex flex-col items-center justify-center gap-2">
+          <Layers className="h-8 w-8 text-muted-foreground/60 mb-1" />
+          <p className="text-sm font-semibold text-foreground">
+            {t("packages.fields.prerequisites_help")}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {t("packages.filter_search_placeholder")}
+          </p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredPackages.map((pkg) => {
+            const hasQuotaDelta =
+              (pkg.quotaDeltaOlt && pkg.quotaDeltaOlt > 0) ||
+              (pkg.quotaDeltaOdp && pkg.quotaDeltaOdp > 0);
+
+            return (
+              <Card
+                key={pkg.id || pkg.packageCode}
+                glowingEffect
+                className="p-4 flex flex-col justify-between gap-3 bg-card border-border hover:border-primary/40 transition-colors shadow-2xs"
+              >
+                {/* Header: Category Badge + Status Badge */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 w-fit">
+                      {t(`packages.category.${pkg.category}`)}
+                    </span>
+                    <h3 className="text-sm font-bold text-foreground truncate mt-0.5">
+                      {pkg.packageName}
+                    </h3>
+                    <code className="text-[11px] font-mono text-muted-foreground">
+                      {pkg.packageCode}
+                    </code>
+                  </div>
+
+                  <span
+                    className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase border ${
+                      pkg.published
+                        ? "bg-foreground/10 text-foreground border-foreground/20"
+                        : "bg-muted/40 text-muted-foreground border-border"
+                    }`}
+                  >
+                    {pkg.published ? t("packages.status.PUBLISHED") : t("packages.status.DRAFT")}
+                  </span>
+                </div>
+
+                {/* Description */}
+                <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">
+                  {pkg.description || "—"}
+                </p>
+
+                {/* Price & Quota Highlights */}
+                <div className="pt-2 border-t border-border/60 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase font-mono text-muted-foreground">
+                      {t(`packages.billing_type.${pkg.billingType}`)}
+                    </span>
+                    <span className="text-sm font-bold font-mono text-foreground">
+                      {formatPrice(pkg.priceIdr, pkg.billingType)}
+                    </span>
+                  </div>
+
+                  {pkg.minimumTier && (
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] uppercase font-mono text-muted-foreground">
+                        {t("packages.card.min_tier")}
+                      </span>
+                      <span className="text-xs font-mono font-semibold text-primary">
+                        {pkg.minimumTier}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quota Boosters */}
+                {hasQuotaDelta && (
+                  <div className="flex items-center gap-2 p-1.5 rounded bg-muted/30 border border-border/80 text-[11px] font-mono">
+                    <Zap className="h-3 w-3 text-amber-500 shrink-0" />
+                    <span className="text-muted-foreground">{t("packages.card.quota_boost")}:</span>
+                    {pkg.quotaDeltaOlt && pkg.quotaDeltaOlt > 0 && (
+                      <span className="text-foreground font-semibold">+{pkg.quotaDeltaOlt} OLT</span>
+                    )}
+                    {pkg.quotaDeltaOdp && pkg.quotaDeltaOdp > 0 && (
+                      <span className="text-foreground font-semibold">+{pkg.quotaDeltaOdp} ODP</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Prerequisites & Conflicts Badges */}
+                {((pkg.prerequisiteCodes && pkg.prerequisiteCodes.length > 0) ||
+                  (pkg.conflictCodes && pkg.conflictCodes.length > 0)) && (
+                  <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                    {pkg.prerequisiteCodes && pkg.prerequisiteCodes.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20 font-mono">
+                        {t("packages.card.prereq_badge")}: {pkg.prerequisiteCodes.join(", ")}
+                      </span>
+                    )}
+                    {pkg.conflictCodes && pkg.conflictCodes.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20 font-mono flex items-center gap-1">
+                        <ShieldAlert className="h-2.5 w-2.5" />
+                        {t("packages.card.conflict_badge")}: {pkg.conflictCodes.join(", ")}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Toolbar (size="sm" standard) */}
+                <div className="pt-2 border-t border-border flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onEditPackage(pkg)}
+                      className="h-7 px-2.5 text-xs font-medium gap-1 rounded-md"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      {t("packages.btn_edit")}
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onTogglePublish(pkg.packageCode, !pkg.published)}
+                      className="h-7 px-2 text-xs font-medium gap-1 rounded-md text-muted-foreground hover:text-foreground"
+                    >
+                      {pkg.published ? (
+                        <>
+                          <EyeOff className="h-3.5 w-3.5" />
+                          {t("packages.btn_unpublish")}
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-3.5 w-3.5" />
+                          {t("packages.btn_publish")}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onGrantPackage(pkg)}
+                    className="h-7 px-2 text-xs font-medium gap-1 rounded-md bg-secondary text-secondary-foreground"
+                  >
+                    <FlaskConical className="h-3.5 w-3.5" />
+                    POC
+                  </Button>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

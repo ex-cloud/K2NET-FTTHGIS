@@ -4,10 +4,11 @@ import {
   Plus,
   Search,
   MoreVertical,
+  Layers,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
   Input,
@@ -72,102 +73,97 @@ export function OdcListPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: t("nav.inventory"), href: `/project/${projectId}/inventory/odc` },
-          { label: t("inventory.odc_title") },
-        ]}
-        title={t("inventory.odc_subtitle")}
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
+        title={t("inventory.odc_title")}
+        subtitle={t("inventory.odc_subtitle")}
+        icon={Layers}
         actions={
           <Button
             size="sm"
             onClick={() => setModalOpen(true)}
-            className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
+            className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs rounded-md"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             {t("inventory.add_odc")}
           </Button>
         }
       />
 
-      <PageContentShell className="space-y-4 custom-scrollbar">
-        <div className="flex items-center justify-between gap-3">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder={t("common.search")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 text-xs bg-muted/20"
-            />
-          </div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder={t("common.search")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-7.5 pl-8 text-xs bg-muted/20 border-border/80"
+          />
         </div>
+      </div>
 
-        <Card className="border-border/60 overflow-hidden shadow-xs">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">{t("inventory.odc_code").toUpperCase()} & NAMA</TableHead>
-                <TableHead className="font-bold">TERHUBUNG KE OLT</TableHead>
-                <TableHead className="font-bold">{t("inventory.odc_capacity").toUpperCase()}</TableHead>
-                <TableHead className="font-bold">TOTAL ODP TERHUBUNG</TableHead>
-                <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
-                <TableHead className="w-12 text-right" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {odcList.map((odc) => (
-                <TableRow key={odc.id} className="text-xs">
-                  <TableCell>
-                    <div className="space-y-0.5">
-                      <span className="font-bold font-mono text-primary block">{odc.code}</span>
-                      <span className="text-muted-foreground text-[11px]">{odc.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-foreground font-medium">
-                    {odc.oltName}
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <span className="font-mono font-bold text-foreground">
-                        {odc.usedCapacity} / {odc.capacity} Core
-                      </span>
-                      <span className="text-[10px] text-muted-foreground block">
-                        ({Math.round((odc.usedCapacity / odc.capacity) * 100)}% Terpakai)
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono font-semibold">
-                    {odc.connectedOdpCount} ODP FAT
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                      {odc.status}
+      <Card className="border-border/60 overflow-hidden shadow-xs">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/40 text-[11px]">
+              <TableHead className="font-bold">{t("inventory.odc_code").toUpperCase()} & {t("common.details").toUpperCase()}</TableHead>
+              <TableHead className="font-bold">{t("inventory.connected_olt").toUpperCase()}</TableHead>
+              <TableHead className="font-bold">{t("inventory.odc_capacity").toUpperCase()}</TableHead>
+              <TableHead className="font-bold">{t("inventory.connected_odps").toUpperCase()}</TableHead>
+              <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
+              <TableHead className="w-12 text-right" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {odcList.map((odc) => (
+              <TableRow key={odc.id} className="text-xs">
+                <TableCell>
+                  <div className="space-y-0.5">
+                    <span className="font-bold font-mono text-primary block">{odc.code}</span>
+                    <span className="text-muted-foreground text-[11px]">{odc.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="font-mono text-foreground font-medium">
+                  {odc.oltName}
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <span className="font-mono font-bold text-foreground">
+                      {odc.usedCapacity} / {odc.capacity} Core
                     </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuItem>Lihat di Peta Spasial</DropdownMenuItem>
-                        <DropdownMenuItem>Kelola Port Splitter</DropdownMenuItem>
-                        <DropdownMenuItem>{t("common.edit")}</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">{t("common.delete")}</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      </PageContentShell>
+                    <span className="text-[10px] text-muted-foreground block">
+                      ({Math.round((odc.usedCapacity / odc.capacity) * 100)}% {t("inventory.used_percent", { percent: "" }).trim()})
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="font-mono font-semibold">
+                  {odc.connectedOdpCount} ODP FAT
+                </TableCell>
+                <TableCell>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    {odc.status}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="text-xs">
+                      <DropdownMenuItem>{t("inventory.view_on_map")}</DropdownMenuItem>
+                      <DropdownMenuItem>{t("inventory.manage_ports")}</DropdownMenuItem>
+                      <DropdownMenuItem>{t("common.edit")}</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">{t("common.delete")}</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
 
       <AssetDialog
         type="ODC"
@@ -175,6 +171,6 @@ export function OdcListPage() {
         onOpenChange={setModalOpen}
         projectId={projectId}
       />
-    </div>
+    </PageLayout>
   );
 }

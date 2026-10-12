@@ -289,6 +289,18 @@
     "free_badge": "Paket Gratis",
     "active_tenants": "Tenant Aktif",
     "update_success": "Template paket langganan berhasil diperbarui."
+  },
+  "banner": {
+    "expiring_title": "Lisensi Segera Berakhir",
+    "expiring_desc": "Lisensi aktif Anda berakhir dalam {{days}} hari. Segera lakukan perpanjangan kontrak untuk menjamin kelancaran operasional jaringan.",
+    "renew_btn": "Perpanjang Kontrak",
+    "grace_title": "Masa Tenggang Aktif",
+    "grace_desc": "Perhatian: Akun Anda berada dalam Masa Tenggang (sisa {{days}} hari). Mutasi aset jaringan akan terkunci ke Mode Baca Saja jika tidak diperpanjang.",
+    "pay_invoice_btn": "Bayar Faktur",
+    "locked_title": "Akses Dibatasi (Mode Baca Saja)",
+    "locked_desc": "Aksi modifikasi aset jaringan terkunci oleh kebijakan lisensi. Selesaikan faktur tertunda untuk memulihkan hak akses penuh.",
+    "view_invoices_btn": "Buka Faktur",
+    "dismiss": "Tutup untuk sesi ini"
   }
 }
 

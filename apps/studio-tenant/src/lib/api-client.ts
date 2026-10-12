@@ -157,6 +157,10 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      setApiAuthToken(null);
+      setImpersonationSessionId(null);
+    }
     const errorBody = await response.text().catch(() => "Unknown error");
     throw new Error(errorBody || `HTTP ${response.status} ${response.statusText}`);
   }

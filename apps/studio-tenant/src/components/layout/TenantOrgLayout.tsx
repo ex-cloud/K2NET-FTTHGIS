@@ -28,7 +28,7 @@ import { TenantOrgSidebar } from "./TenantOrgSidebar";
 import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
 import { TenantMobileFloatingDock } from "../system/TenantMobileFloatingDock";
 import { TrialPausedBanner } from "../system/TrialPausedBanner";
-import { GlobalLicenseNoticeBanner } from "../licenses/GlobalLicenseNoticeBanner";
+import { TenantLicenseAlertBanner } from "../licenses/TenantLicenseAlertBanner";
 
 function TenantOrgLayoutContent() {
   const { t } = useTranslation();
@@ -159,7 +159,7 @@ function TenantOrgLayoutContent() {
 
       {/* ── 2.5 Trial Lifecycle & Grace Period Paused Alert Banner ───────── */}
       <TrialPausedBanner />
-      <GlobalLicenseNoticeBanner />
+      <TenantLicenseAlertBanner />
 
       {/* ── 3. Main Workspace Area (Primary Sidebar + Secondary Sidebar + Content) ─ */}
       <div className="flex flex-1 overflow-hidden relative">

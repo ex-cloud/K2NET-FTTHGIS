@@ -1,8 +1,9 @@
 import * as React from "react";
 import { useParams } from "@tanstack/react-router";
+import { Server } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Table,
   TableHeader,
@@ -16,7 +17,7 @@ import { useTranslation } from "@k2net/i18n";
 export function ServersListPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const projectId = params?.projectId || "proj-bdg-01";
+  const _projectId = params?.projectId || "proj-bdg-01";
 
   const servers = [
     {
@@ -38,17 +39,12 @@ export function ServersListPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: "Core Devices", href: `/project/${projectId}/core/olt` },
-          { label: t("inventory.servers_title") },
-        ]}
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
         title={t("inventory.servers_title")}
+        subtitle={t("inventory.servers_subtitle")}
+        icon={Server}
       />
-
-      <PageContentShell className="space-y-4 custom-scrollbar">
         <Card className="border-border/60 overflow-hidden shadow-xs">
           <Table>
             <TableHeader>
@@ -77,8 +73,7 @@ export function ServersListPage() {
             </TableBody>
           </Table>
         </Card>
-      </PageContentShell>
-    </div>
+    </PageLayout>
   );
 }
 

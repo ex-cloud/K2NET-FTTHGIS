@@ -7,8 +7,8 @@ import {
   Copy,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageHero,
+  PageLayout,
   Card,
   Button,
   Input,
@@ -25,6 +25,7 @@ type SettingsSection = "general" | "branding" | "security" | "sso" | "oauth";
 
 interface SectionMeta {
   title: string;
+  subtitle: string;
   breadcrumb: string;
 }
 
@@ -194,11 +195,31 @@ export function OrgSettingsPage() {
   const pathname = routerState.location.pathname;
 
   const sectionConfig: Record<SettingsSection, SectionMeta> = {
-    general: { title: t("nav.organization_profile"), breadcrumb: t("nav.organization_profile") },
-    branding: { title: t("settings.branding_title"), breadcrumb: t("nav.custom_branding") },
-    security: { title: t("security.title"), breadcrumb: t("nav.security_access") },
-    sso: { title: t("nav.sso_oauth_config"), breadcrumb: "SSO" },
-    oauth: { title: t("nav.api_keys_tokens"), breadcrumb: "OAuth & API" },
+    general: {
+      title: t("nav.org_profile"),
+      subtitle: t("settings.general_subtitle"),
+      breadcrumb: t("nav.org_profile"),
+    },
+    branding: {
+      title: t("settings.branding_title"),
+      subtitle: t("settings.branding_subtitle"),
+      breadcrumb: t("nav.org_branding"),
+    },
+    security: {
+      title: t("security.title"),
+      subtitle: t("security.subtitle"),
+      breadcrumb: t("nav.org_security"),
+    },
+    sso: {
+      title: t("nav.org_sso"),
+      subtitle: t("security.mfa_desc"),
+      breadcrumb: t("nav.org_sso"),
+    },
+    oauth: {
+      title: t("nav.org_oauth"),
+      subtitle: t("settings.general.platform_identity_desc"),
+      breadcrumb: t("nav.org_oauth"),
+    },
   };
 
   const currentSection: SettingsSection = React.useMemo(() => {
@@ -216,27 +237,27 @@ export function OrgSettingsPage() {
   const meta = sectionConfig[currentSection] || sectionConfig.general;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
+        bordered={false}
+        className="pb-0"
+        eyebrow={t("nav.tenant_settings")}
         title={meta.title}
-        breadcrumbs={[
-          { label: t("nav.organizations"), href: "/projects" },
-          { label: t("nav.settings"), href: "/settings/general" },
-          { label: meta.breadcrumb },
-        ]}
+        icon={Building}
+        subtitle={meta.subtitle}
         actions={
           <Button
             size="sm"
             onClick={handleSave}
-            className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
+            className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs"
           >
-            <Save className="h-3.5 w-3.5" />
+            <Save className="size-3.5" />
             {t("common.save_changes")}
           </Button>
         }
       />
 
-      <PageContentShell className="space-y-4 custom-scrollbar max-w-4xl">
+      <div className="w-full max-w-4xl space-y-4">
         {currentSection === "general" && (
           <GeneralSettingsSection
             organizationName={organizationName}
@@ -248,7 +269,7 @@ export function OrgSettingsPage() {
         {currentSection === "security" && <SecuritySettingsSection />}
         {currentSection === "sso" && <SsoSettingsSection slug={slug} />}
         {currentSection === "oauth" && <OAuthSettingsSection />}
-      </PageContentShell>
-    </div>
+      </div>
+    </PageLayout>
   );
 }

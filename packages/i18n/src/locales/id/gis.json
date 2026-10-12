@@ -33,5 +33,7 @@
   "total_customers": "Total Pelanggan Terpasang",
   "fiber_cable_span": "Bentang Kabel Fiber",
   "odc_odp_devices": "Perangkat ODC & ODP",
-  "s3_storage": "Kapasitas Storage S3"
+  "s3_storage": "Kapasitas Storage S3",
+  "trace_path_error": "Gagal melakukan trace path fiber",
+  "trace_upstream_error": "Gagal melakukan trace upstream ke OLT"
 }

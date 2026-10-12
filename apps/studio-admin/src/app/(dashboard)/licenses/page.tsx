@@ -1,5 +1,5 @@
 import * as React from "react";
-import { PageHero, Button } from "@k2net/ui";
+import { PageHero, Button, PageLayout } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { Plus, RefreshCcw, KeyRound } from "lucide-react";
 import {
@@ -38,12 +38,11 @@ export default function LicensesPage() {
     (overview?.readOnlyLicenses ?? 0) + (overview?.suspendedLicenses ?? 0);
 
   return (
-    <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-5 overflow-hidden">
+    <PageLayout variant="workspace" spaceY="space-y-6">
       {/* Command Center Hero Header */}
-      <div className="px-4 md:px-6 shrink-0">
-        <PageHero
-          bordered={false}
-          className="pb-0"
+      <PageHero
+        bordered={false}
+        className="pb-0"
           eyebrow={t("license.hero_eyebrow")}
           title={t("license.cmd_center_title")}
           icon={KeyRound}
@@ -104,10 +103,9 @@ export default function LicensesPage() {
             </div>
           }
         />
-      </div>
 
       {/* 4-Grid Responsive KPI Strip */}
-      <div className="px-4 md:px-6 shrink-0 animate-in fade-in-50 duration-150">
+      <div className="w-full animate-in fade-in-50 duration-150">
         <LicenseKpiCards
           overview={overview}
           licenses={licenses}
@@ -116,22 +114,19 @@ export default function LicensesPage() {
       </div>
 
       {/* Elevated Table Container */}
-      <div className="flex-1 min-h-0 flex gap-4 px-4 md:px-6 pb-6 overflow-hidden">
-        <div className="flex-1 min-h-0 border border-border bg-card/10 rounded-xl overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <LicenseDataTable
-              licenses={licenses}
-              loading={isLicensesLoading}
-            />
-          </div>
+      <div className="w-full border border-border bg-card/10 rounded-xl overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <LicenseDataTable
+            licenses={licenses}
+            loading={isLicensesLoading}
+          />
         </div>
       </div>
 
-      {/* Manual Issue Modal */}
       <ManualIssueLicenseModal
         open={issueModalOpen}
         onOpenChange={setIssueModalOpen}
       />
-    </div>
+    </PageLayout>
   );
 }

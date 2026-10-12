@@ -12,6 +12,7 @@ import {
   Shield,
   Key,
   Receipt,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -173,6 +174,16 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Receipt,
             description: "Official invoices & payment receipts",
             shortcut: "S then I",
+          },
+          {
+            id: "marketplace",
+            title: "Add-on Marketplace",
+            translationKey: "nav.billing_marketplace",
+            href: "/billing/marketplace",
+            icon: ShoppingBag,
+            description: "Modular boosters & platform features",
+            shortcut: "S then M",
+            badge: "NEW",
           },
         ],
       },

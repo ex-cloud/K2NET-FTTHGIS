@@ -3,10 +3,11 @@ import { useParams } from "@tanstack/react-router";
 import {
   UserPlus,
   Trash2,
+  Users,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
   Badge,
@@ -22,7 +23,7 @@ import { useTranslation } from "@k2net/i18n";
 export function ProjectMembersPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const projectId = params?.projectId || "proj-bdg-01";
+  const _projectId = params?.projectId || "proj-bdg-01";
 
   const members = [
     {
@@ -46,59 +47,54 @@ export function ProjectMembersPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: t("nav.settings"), href: `/project/${projectId}/settings/general` },
-          { label: t("projects.members_title") },
-        ]}
+    <PageLayout variant="workspace" spaceY="space-y-6" maxWidth="max-w-4xl">
+      <PageHero
         title={t("projects.members_title")}
+        subtitle={t("projects.members_subtitle")}
+        icon={Users}
         actions={
-          <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
-            <UserPlus className="h-4 w-4" />
+          <Button size="sm" className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs rounded-md">
+            <UserPlus className="h-3.5 w-3.5" />
             {t("projects.add_member_btn")}
           </Button>
         }
       />
 
-      <PageContentShell className="space-y-4 custom-scrollbar max-w-4xl">
-        <Card className="border-border/60 overflow-hidden shadow-xs">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 text-[11px]">
-                <TableHead className="font-bold">NAMA STAF</TableHead>
-                <TableHead className="font-bold">{t("projects.member_role").toUpperCase()}</TableHead>
-                <TableHead className="font-bold">HAK AKSES PROYEK</TableHead>
-                <TableHead className="w-12 text-right" />
+      <Card className="border-border/60 overflow-hidden shadow-xs">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/40 text-[11px]">
+              <TableHead className="font-bold">{t("team.member_name", { defaultValue: "STAFF NAME" }).toUpperCase()}</TableHead>
+              <TableHead className="font-bold">{t("projects.member_role").toUpperCase()}</TableHead>
+              <TableHead className="font-bold">{t("team.access_level", { defaultValue: "PROJECT ACCESS" }).toUpperCase()}</TableHead>
+              <TableHead className="w-12 text-right" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {members.map((m, idx) => (
+              <TableRow key={idx} className="text-xs">
+                <TableCell>
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-foreground block">{m.name}</span>
+                    <span className="text-[11px] text-muted-foreground font-mono">{m.email}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="font-medium text-foreground">{m.role}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="font-mono text-[10px] bg-muted/40">
+                    {m.access}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.map((m, idx) => (
-                <TableRow key={idx} className="text-xs">
-                  <TableCell>
-                    <div className="space-y-0.5">
-                      <span className="font-bold text-foreground block">{m.name}</span>
-                      <span className="text-[11px] text-muted-foreground font-mono">{m.email}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">{m.role}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="font-mono text-[10px] bg-muted/40">
-                      {m.access}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      </PageContentShell>
-    </div>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </PageLayout>
   );
 }

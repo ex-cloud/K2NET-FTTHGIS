@@ -90,5 +90,11 @@
   "saving": "Menyimpan...",
   "save_asset": "Simpan Aset",
   "not_connected": "Belum Terhubung",
-  "default_name": "Pelanggan"
+  "default_name": "Pelanggan",
+  "view_on_map": "Lihat di Peta Spasial",
+  "manage_ports": "Kelola Port Splitter",
+  "connected_olt": "Terhubung ke OLT",
+  "connected_odps": "Total ODP Terhubung",
+  "used_percent": "{percent}% Terpakai",
+  "scan_ont_signal": "Pindai Sinyal Optik ONT"
 }

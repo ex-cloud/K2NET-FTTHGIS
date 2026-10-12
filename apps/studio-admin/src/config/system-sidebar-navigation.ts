@@ -60,6 +60,52 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
     ],
   },
+  packages: {
+    title: "Packages & Add-ons",
+    translationKey: "nav.packages_marketplace",
+    sections: [
+      {
+        title: "Catalog Governance",
+        translationKey: "nav.packages_catalog_governance",
+        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        items: [
+          { title: "All Packages (12 Categories)", translationKey: "nav.packages_all", url: "/packages", icon: "Boxes", shortcut: "S then A", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Published & Live", translationKey: "nav.packages_published", url: "/packages?status=PUBLISHED", icon: "CheckCircle", shortcut: "S then 1", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Drafts & In-Review", translationKey: "nav.packages_drafts", url: "/packages?status=DRAFT", icon: "Clock", shortcut: "S then 2", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+        ],
+      },
+      {
+        title: "Domain Taxonomy",
+        translationKey: "nav.packages_domain_taxonomy",
+        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        items: [
+          { title: "Telemetry & OLT Polling", translationKey: "packages.category.TELEMETRY", url: "/packages?category=TELEMETRY", icon: "Activity", shortcut: "S then T", requiredPermission: ["system.organizations.view"] },
+          { title: "Field Operations & Workforce", translationKey: "packages.category.FIELD_OPS", url: "/packages?category=FIELD_OPS", icon: "Wrench", shortcut: "S then F", requiredPermission: ["system.organizations.view"] },
+          { title: "Capacity Boosters & Quotas", translationKey: "packages.category.CAPACITY_BOOSTER", url: "/packages?category=CAPACITY_BOOSTER", icon: "DatabaseZap", shortcut: "S then C", requiredPermission: ["system.organizations.view"] },
+          { title: "Security, SIEM & Forensic", translationKey: "packages.category.SECURITY_GOV", url: "/packages?category=SECURITY_GOV", icon: "ShieldCheck", shortcut: "S then S", requiredPermission: ["system.organizations.view"] },
+          { title: "Civil Infra & IoT Handhole", translationKey: "packages.category.CIVIL_INFRA", url: "/packages?category=CIVIL_INFRA", icon: "Radio", shortcut: "S then I", requiredPermission: ["system.organizations.view"] },
+          { title: "AI Copilot & Diagnostics", translationKey: "packages.category.AI_COPILOT", url: "/packages?category=AI_COPILOT", icon: "Sparkles", shortcut: "S then X", requiredPermission: ["system.organizations.view"] },
+        ],
+      },
+      {
+        title: "Tenant Subscriptions & Trials",
+        translationKey: "nav.packages_tenant_subscriptions",
+        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        items: [
+          { title: "Active Subscriptions", translationKey: "nav.packages_active_subs", url: "/packages/subscriptions", icon: "FolderKanban", shortcut: "S then U", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "POC Trials & Grants", translationKey: "nav.packages_poc_grants", url: "/packages?action=grant", icon: "FlaskConical", shortcut: "S then G", requiredPermission: ["system.organizations.manage"] },
+        ],
+      },
+      {
+        title: "Dependency Rules",
+        translationKey: "nav.packages_rules_matrix",
+        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        items: [
+          { title: "3-Layer Compatibility Matrix", translationKey: "nav.packages_compatibility", url: "/packages?view=rules", icon: "Network", shortcut: "S then M", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+        ],
+      },
+    ],
+  },
   organizations: {
     title: "Organizations",
     translationKey: "nav.organizations",

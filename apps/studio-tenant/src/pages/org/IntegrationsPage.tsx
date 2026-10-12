@@ -8,8 +8,8 @@ import {
   Key,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
   Switch,
@@ -101,72 +101,70 @@ export function IntegrationsPage() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
+    <PageLayout variant="dashboard" spaceY="space-y-8">
+      <PageHero
+        bordered={false}
+        className="pb-0"
+        eyebrow={t("nav.tenant_integrations").toUpperCase()}
         title={t("nav.integrations")}
-        breadcrumbs={[
-          { label: t("nav.organizations"), href: "/projects" },
-          { label: t("nav.integrations") },
-        ]}
+        icon={Webhook}
+        subtitle={t("gateways.overview_subtitle")}
       />
 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {integrations.map((item) => {
+          const Icon = item.icon;
+          const isConnected = item.status === "CONNECTED";
 
-      <PageContentShell className="space-y-4 custom-scrollbar">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {integrations.map((item) => {
-            const Icon = item.icon;
-            const isConnected = item.status === "CONNECTED";
-
-            return (
-              <Card
-                key={item.id}
-                className="flex flex-col justify-between p-5 border-border/60 bg-card hover:border-primary/40 transition-all shadow-xs space-y-4"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                        isConnected
-                          ? "bg-primary/10 text-primary border-primary/20"
-                          : "bg-muted text-muted-foreground border-border"
-                      }`}
-                    >
-                      {isConnected ? "TERHUBUNG" : "BELUM AKTIF"}
-                    </span>
+          return (
+            <Card
+              key={item.id}
+              className="flex flex-col justify-between p-5 border-border/60 bg-card hover:border-primary/40 transition-all shadow-xs space-y-4"
+            >
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+                    <Icon className="h-5 w-5" />
                   </div>
-
-                  <div>
-                    <h3 className="text-sm font-bold text-foreground">{item.title}</h3>
-                    <span className="text-[10px] font-mono text-primary block mt-0.5">
-                      {item.category}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground leading-relaxed min-h-[36px]">
-                    {item.description}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-border/40 flex items-center justify-between">
-                  <span className="text-[11px] text-muted-foreground">API Gateway</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleConfigure(item)}
-                    className="h-7.5 px-2.5 text-xs gap-1.5"
+                  <span
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                      isConnected
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : "bg-muted text-muted-foreground border-border"
+                    }`}
                   >
-                    <Key className="h-3 w-3" />
-                    {t("common.edit")}
-                  </Button>
+                    {isConnected ? t("common.active") : t("common.inactive")}
+                  </span>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      </PageContentShell>
+
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">{item.title}</h3>
+                  <span className="text-[10px] font-mono text-primary block mt-0.5">
+                    {item.category}
+                  </span>
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed min-h-[36px]">
+                  {item.description}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-border/40 flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground font-mono">API Gateway</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleConfigure(item)}
+                  className="h-7 px-2.5 text-xs font-medium gap-1.5"
+                >
+                  <Key className="size-3.5" />
+                  {t("common.edit")}
+                </Button>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
 
       {/* Integration Config Modal */}
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
@@ -221,7 +219,7 @@ export function IntegrationsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }
 

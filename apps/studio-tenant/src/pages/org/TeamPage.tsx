@@ -8,10 +8,11 @@ import {
   MoreVertical,
   Loader2,
   Users,
+  Activity,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageHero,
+  PageLayout,
   Button,
   Input,
   Card,
@@ -118,30 +119,33 @@ export function TeamPage() {
 
   const rolesList = [
     {
-      title: "Organization Admin",
-      description: "Akses penuh ke seluruh proyek, konfigurasi organisasi, billing, dan manajemen tim.",
+      title: t("users.role_org_admin"),
+      description: t("users.role_org_admin_desc"),
       permissions: ["projects.*", "network.*", "team.*", "billing.*", "settings.*"],
     },
     {
-      title: "NOC & GIS Operator",
-      description: "Mengelola topologi jaringan, monitoring kesehatan OLT, dan operasional inventaris.",
+      title: t("users.role_operator"),
+      description: t("users.role_operator_desc"),
       permissions: ["projects.view", "network.manage", "gis.edit", "issues.manage"],
     },
     {
-      title: "Field Technician (JIT Scoped)",
-      description: "Akses ke tiket gangguan dan pemetaan ODP pada area proyek yang ditugaskan.",
+      title: t("users.role_field_tech"),
+      description: t("users.role_field_tech_desc"),
       permissions: ["projects.view", "network.view", "issues.execute", "geom.update"],
     },
     {
-      title: "Surveyor GIS",
-      description: "Menggambar jalur kabel baru, validasi survey lapangan, dan import KML/CAD.",
+      title: t("users.role_surveyor"),
+      description: t("users.role_surveyor_desc"),
       permissions: ["gis.survey", "cad.import", "projects.view"],
     },
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
+        bordered={false}
+        className="pb-0"
+        eyebrow={t("nav.team_members")}
         title={
           subView === "roles"
             ? t("security.roles_matrix")
@@ -149,49 +153,48 @@ export function TeamPage() {
             ? t("security.audit_trail_title")
             : t("users.title")
         }
-        breadcrumbs={[
-          { label: t("nav.organizations"), href: "/projects" },
-          { label: t("nav.team_members"), href: "/team/members" },
-          {
-            label:
-              subView === "roles"
-                ? t("security.roles_matrix")
-                : subView === "activity"
-                ? t("security.audit_trail_title")
-                : t("users.title"),
-          },
-        ]}
+        icon={subView === "roles" ? Shield : subView === "activity" ? Activity : Users}
+        subtitle={
+          subView === "roles"
+            ? t("security.roles_matrix_subtitle")
+            : subView === "activity"
+            ? t("security.audit_trail_desc")
+            : t("users.manage_team_subtitle")
+        }
+        meta={
+          subView === "members" ? (
+            <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+              <span>{t("users.active_now")}:</span>
+              <strong className="text-foreground">{members.length}/{maxMembers}</strong>
+            </div>
+          ) : undefined
+        }
         actions={
           subView === "members" && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-muted-foreground hidden sm:inline">
-                {t("users.active_now")}: <strong>{members.length}/{maxMembers}</strong>
-              </span>
-              <Button
-                size="sm"
-                onClick={handleOpenInvite}
-                className="h-8 px-3 text-xs font-semibold gap-1.5 shadow-xs"
-              >
-                <Plus className="h-4 w-4" />
-                {t("users.add_user_button")}
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              onClick={handleOpenInvite}
+              className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs"
+            >
+              <Plus className="size-3.5" />
+              {t("users.add_user_button")}
+            </Button>
           )
         }
       />
 
-      <PageContentShell className="space-y-4 custom-scrollbar">
+      <div className="w-full space-y-4">
         {/* VIEW 1: MEMBERS */}
         {subView === "members" && (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div className="relative w-full sm:w-72">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder={t("users.filter_placeholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-8 pl-8 text-xs bg-muted/20"
+                  className="h-7.5 pl-8 text-xs bg-muted/20 border-border/80"
                 />
               </div>
             </div>
@@ -254,8 +257,8 @@ export function TeamPage() {
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
-                                <MoreVertical className="h-3.5 w-3.5" />
+                              <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-muted-foreground">
+                                <MoreVertical className="h-3 w-3" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="text-xs">
@@ -329,7 +332,7 @@ export function TeamPage() {
             description={t("security.audit_trail_desc")}
           />
         )}
-      </PageContentShell>
+      </div>
 
       <TeamInviteWizard
         open={inviteModalOpen}
@@ -343,6 +346,6 @@ export function TeamPage() {
         featureDescription={t("billing.upgrade_prompt")}
         onUpgradeClick={() => navigate({ to: "/billing" })}
       />
-    </div>
+    </PageLayout>
   );
 }

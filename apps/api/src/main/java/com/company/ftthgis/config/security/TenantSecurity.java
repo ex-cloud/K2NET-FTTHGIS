@@ -21,6 +21,8 @@ public class TenantSecurity {
 
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    @org.springframework.context.annotation.Lazy
+    private final com.company.ftthgis.service.TenantPackageSubscriptionService packageSubscriptionService;
 
     @Value("${keycloak.server-url}")
     private String keycloakServerUrl;
@@ -243,4 +245,38 @@ public class TenantSecurity {
 
         return false;
     }
+
+    /**
+     * Checks if the currently authenticated tenant organization has an active add-on package.
+     * Evaluates against the tenant's active packages using Redis caching.
+     *
+     * @param packageCode The package code to check (e.g., 'PKG_OLT_POLLER', 'PKG_AI_OTDR')
+     * @return true if the tenant currently has this active package subscription, false otherwise
+     */
+    public boolean hasActivePackage(String packageCode) {
+        if (packageCode == null || packageCode.isBlank()) {
+            return false;
+        }
+
+        UUID orgId = com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId();
+        if (orgId == null) {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
+                String orgClaim = jwt.getClaimAsString("organization_id");
+                if (orgClaim == null) orgClaim = jwt.getClaimAsString("tenant_id");
+                if (orgClaim != null) {
+                    try {
+                        orgId = UUID.fromString(orgClaim);
+                    } catch (IllegalArgumentException ignored) {}
+                }
+            }
+        }
+
+        if (orgId == null) {
+            return false;
+        }
+
+        return packageSubscriptionService.hasActivePackage(orgId, packageCode);
+    }
 }
+

@@ -3,10 +3,11 @@ import { useParams } from "@tanstack/react-router";
 import {
   Plus,
   Search,
+  AlertTriangle,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
   Input,
@@ -23,7 +24,7 @@ import { useTranslation } from "@k2net/i18n";
 export function TroubleTicketsPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const projectId = params?.projectId || "proj-bdg-01";
+  const _projectId = params?.projectId || "proj-bdg-01";
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const tickets = [
@@ -60,34 +61,30 @@ export function TroubleTicketsPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: "Issues", href: `/project/${projectId}/issues/tickets` },
-          { label: t("issues.tickets_title") },
-        ]}
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
         title={t("issues.tickets_title")}
+        subtitle={t("issues.tickets_subtitle")}
+        icon={AlertTriangle}
         actions={
-          <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
-            <Plus className="h-4 w-4" />
+          <Button size="sm" className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs rounded-md">
+            <Plus className="h-3.5 w-3.5" />
             {t("issues.create_ticket")}
           </Button>
         }
       />
 
-      <PageContentShell className="space-y-4 custom-scrollbar">
-        <div className="flex items-center justify-between gap-3">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder={t("common.search")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 text-xs bg-muted/20"
-            />
-          </div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder={t("common.search")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-7.5 pl-8 text-xs bg-muted/20 border-border/80"
+          />
         </div>
+      </div>
 
         <Card className="border-border/60 overflow-hidden shadow-xs">
           <Table>
@@ -138,7 +135,6 @@ export function TroubleTicketsPage() {
             </TableBody>
           </Table>
         </Card>
-      </PageContentShell>
-    </div>
+    </PageLayout>
   );
 }

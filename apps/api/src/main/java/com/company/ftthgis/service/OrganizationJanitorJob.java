@@ -15,8 +15,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
+import com.company.ftthgis.domain.tenant.entity.PackageSubscriptionStatus;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.entity.TenantPackageSubscription;
 import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
+import com.company.ftthgis.domain.tenant.repository.TenantPackageSubscriptionRepository;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Background Janitor Job for B2B Tenant Lifecycle & Subscription Sweep
@@ -34,6 +40,9 @@ public class OrganizationJanitorJob {
     private final OrganizationService organizationService;
     private final TenantLicenseRepository tenantLicenseRepository;
     private final LicenseNotificationService licenseNotificationService;
+    private final TenantPackageSubscriptionRepository tenantPackageSubscriptionRepository;
+    private final TenantPackageSubscriptionService tenantPackageSubscriptionService;
+    private final ProjectQuotaService projectQuotaService;
 
     @Scheduled(cron = "0 */5 * * * *") // Every 5 minutes
     @Transactional
@@ -43,6 +52,9 @@ public class OrganizationJanitorJob {
 
         // 0. Sweep multi-tenant license lifecycle transitions
         sweepLicenseLifecycle(now);
+
+        // 0.1 Sweep expired add-on packages & evaluate soft-locking
+        sweepPackageSubscriptions(now);
 
         List<Organization> allOrgs = organizationRepository.findAll();
 
@@ -243,6 +255,58 @@ public class OrganizationJanitorJob {
             } catch (Exception e) {
                 log.error("❌ JANITOR: Failed transitioning license '{}' to SUSPENDED: {}", lic.getLicenseKey(), e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Sweep berkala untuk menandai paket add-on yang melewati masa berlaku menjadi EXPIRED,
+     * melakukan invalidasi Redis cache, serta menerapkan Soft-Locking (Read-Only) jika aset melebihi kuota dasar.
+     */
+    private void sweepPackageSubscriptions(LocalDateTime now) {
+        try {
+            List<TenantPackageSubscription> expiredSubs = tenantPackageSubscriptionRepository.findExpiredSubscriptionsToSweep(now);
+            if (expiredSubs == null || expiredSubs.isEmpty()) {
+                return;
+            }
+
+            log.info("⏰ JANITOR: Ditemukan {} langganan paket add-on kedaluwarsa. Memperbarui status...", expiredSubs.size());
+            Set<UUID> affectedOrgIds = new HashSet<>();
+
+            for (TenantPackageSubscription sub : expiredSubs) {
+                sub.setStatus(PackageSubscriptionStatus.EXPIRED);
+                tenantPackageSubscriptionRepository.save(sub);
+                if (sub.getOrganization() != null && sub.getOrganization().getId() != null) {
+                    affectedOrgIds.add(sub.getOrganization().getId());
+                }
+            }
+
+            // Invalidate Redis cache & evaluasi soft-locking
+            for (UUID orgId : affectedOrgIds) {
+                tenantPackageSubscriptionService.evictTenantPackagesCache(orgId);
+
+                organizationRepository.findById(orgId).ifPresent(org -> {
+                    int effectiveMaxProjects = projectQuotaService.getEffectiveMaxProjects(org);
+                    int effectiveMaxOdps = projectQuotaService.getEffectiveMaxOdps(org);
+
+                    long usedProjects = projectQuotaService.getUsedActiveProjects(org.getId());
+                    long usedOdps = projectQuotaService.getUsedBillableOdps(org.getId());
+
+                    // Soft-locking: Dilarang keras cascade delete aset GIS!
+                    // Kunci mutasi (POST/PUT/DELETE) dan izinkan baca (GET) jika melebihi batas.
+                    if (usedProjects > effectiveMaxProjects || usedOdps > effectiveMaxOdps) {
+                        log.warn("🛡️ JANITOR: Pemakaian aset org '{}' ({}/{} OLT, {}/{} ODP) melebihi batas dasar pasca-paket expired. Mengaktifkan OVER_QUOTA mode.",
+                                org.getSlug(), usedProjects, effectiveMaxProjects, usedOdps, effectiveMaxOdps);
+                        org.setOverQuotaMode(true);
+                        org.setStatus(Organization.OrganizationStatus.OVER_QUOTA);
+                        if (org.getGracePeriodUntil() == null) {
+                            org.setGracePeriodUntil(now.plusDays(14));
+                        }
+                        organizationRepository.save(org);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            log.error("❌ JANITOR: Gagal mengevaluasi sweep paket add-on: {}", e.getMessage(), e);
         }
     }
 }

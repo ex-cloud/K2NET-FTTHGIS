@@ -1,6 +1,6 @@
 import * as React from "react";
 import { CreditCard, Check, Zap, Loader2, Sparkles, Shield, ExternalLink } from "lucide-react";
-import { PageHeader, PageContentShell, PageHero, Card, Button, Badge } from "@k2net/ui";
+import { PageLayout, PageHero, Card, Button, Badge } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "../../../lib/api-client";
@@ -279,61 +279,50 @@ export function SubscriptionPlansPage() {
   );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-background">
-      <PageHeader
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
+        bordered={false}
+        className="pb-0"
+        eyebrow={t("billing.title")}
         title={t("billing.tenant_billing_title")}
-        breadcrumbs={[
-          { label: t("organizations.tab_overview"), href: "/projects" },
-          { label: t("nav.tenant_billing"), href: "/billing/license" },
-          { label: t("nav.billing_subscription_plans") },
-        ]}
+        icon={CreditCard}
+        subtitle={t("billing.tenant_billing_subtitle")}
+        meta={
+          <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-foreground font-mono">{tier.toUpperCase()}</span>
+              <span>{t("billing.current_plan")}</span>
+            </div>
+            <span className="text-muted-foreground/30 px-1">/</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-foreground font-mono">{planCycle}</span>
+              <span>{t("billing.billing_cycle")}</span>
+            </div>
+            {Boolean(summary?.isBoosterActive) && (
+              <>
+                <span className="text-muted-foreground/30 px-1">/</span>
+                <div className="flex items-center gap-1 text-primary font-mono text-xs">
+                  <Zap className="size-3" />
+                  <span>{t("billing.booster_badge", { days: summary?.boosterDaysRemaining || 0 })}</span>
+                </div>
+              </>
+            )}
+          </div>
+        }
+        actions={
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => setSelectedUpgradePlan("STARTER")}
+            className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs"
+          >
+            <CreditCard className="size-3.5" />
+            <span>{tier === "free" ? t("billing.upgrade_plan") : t("billing.manage_quota")}</span>
+          </Button>
+        }
       />
 
-      <div className="px-6 pt-2 shrink-0">
-        <PageHero
-          bordered={false}
-          className="pb-2"
-          eyebrow={t("billing.title")}
-          title={t("billing.tenant_billing_title")}
-          icon={CreditCard}
-          subtitle={t("billing.tenant_billing_subtitle")}
-          meta={
-            <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground font-medium">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-foreground font-mono">{tier.toUpperCase()}</span>
-                <span>{t("billing.current_plan")}</span>
-              </div>
-              <span className="text-muted-foreground/30 px-1">/</span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-foreground font-mono">{planCycle}</span>
-                <span>{t("billing.billing_cycle")}</span>
-              </div>
-              {Boolean(summary?.isBoosterActive) && (
-                <>
-                  <span className="text-muted-foreground/30 px-1">/</span>
-                  <div className="flex items-center gap-1 text-primary font-mono text-xs">
-                    <Zap className="size-3" />
-                    <span>{t("billing.booster_badge", { days: summary?.boosterDaysRemaining || 0 })}</span>
-                  </div>
-                </>
-              )}
-            </div>
-          }
-          actions={
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => setSelectedUpgradePlan("STARTER")}
-              className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs"
-            >
-              <CreditCard className="size-3.5" />
-              <span>{tier === "free" ? t("billing.upgrade_plan") : t("billing.manage_quota")}</span>
-            </Button>
-          }
-        />
-      </div>
-
-      <PageContentShell className="space-y-6 custom-scrollbar p-6 pt-2">
+      <div className="w-full space-y-6">
         <CurrentPlanCard
           tier={tier}
           status={summary?.status || ""}
@@ -359,7 +348,7 @@ export function SubscriptionPlansPage() {
             ))}
           </div>
         </div>
-      </PageContentShell>
+      </div>
 
       {/* Prorated Upgrade Interactive Calculator Modal */}
       <ProratedUpgradeModal
@@ -373,6 +362,6 @@ export function SubscriptionPlansPage() {
         }}
         isCheckingOut={subscribeMutation.isPending}
       />
-    </div>
+    </PageLayout>
   );
 }

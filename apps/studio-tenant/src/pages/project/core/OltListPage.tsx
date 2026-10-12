@@ -8,8 +8,8 @@ import {
   Loader2,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
   Input,
@@ -74,34 +74,30 @@ export function OltListPage() {
   }, [oltData]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: "Core Devices", href: `/project/${projectId}/core/olt` },
-          { label: t("inventory.olt_title") },
-        ]}
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
         title={t("inventory.olt_title")}
+        subtitle={t("inventory.olt_subtitle")}
+        icon={Server}
         actions={
-          <Button size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
-            <Plus className="h-4 w-4" />
+          <Button size="sm" className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs rounded-md">
+            <Plus className="h-3.5 w-3.5" />
             {t("inventory.add_olt")}
           </Button>
         }
       />
 
-      <PageContentShell className="space-y-4 custom-scrollbar">
-        <div className="flex items-center justify-between gap-3">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder={t("common.search")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 text-xs bg-muted/20"
-            />
-          </div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder={t("common.search")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-7.5 pl-8 text-xs bg-muted/20 border-border/80"
+          />
         </div>
+      </div>
 
         <Card className="border-border/60 overflow-hidden shadow-xs">
           {isLoading ? (
@@ -150,8 +146,8 @@ export function OltListPage() {
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
-                            <MoreVertical className="h-3.5 w-3.5" />
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                            <MoreVertical className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="text-xs">
@@ -174,8 +170,7 @@ export function OltListPage() {
             </div>
           )}
         </Card>
-      </PageContentShell>
-    </div>
+    </PageLayout>
   );
 }
 

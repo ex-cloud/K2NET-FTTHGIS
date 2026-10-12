@@ -1,5 +1,5 @@
 import * as React from "react";
-import { PageHero, Button } from "@k2net/ui";
+import { PageHero, Button, PageLayout } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { Sliders, RefreshCcw } from "lucide-react";
 import {
@@ -23,12 +23,11 @@ export default function LicensePlansPage() {
   };
 
   return (
-    <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-5 overflow-hidden">
+    <PageLayout variant="workspace" spaceY="space-y-6">
       {/* Page Hero Header */}
-      <div className="px-4 md:px-6 shrink-0">
-        <PageHero
-          bordered={false}
-          className="pb-0"
+      <PageHero
+        bordered={false}
+        className="pb-0"
           eyebrow={t("license.hero_eyebrow")}
           title={t("nav.plan_tiers_quotas")}
           icon={Sliders}
@@ -63,13 +62,10 @@ export default function LicensePlansPage() {
             </div>
           }
         />
-      </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-8 space-y-6">
-        <PlanKpiCards plans={plans} loading={isLoading} />
-        <PlanTiersGrid plans={plans} loading={isLoading} onEdit={handleOpenEdit} />
-      </div>
+      <PlanKpiCards plans={plans} loading={isLoading} />
+      <PlanTiersGrid plans={plans} loading={isLoading} onEdit={handleOpenEdit} />
 
       {/* Edit Plan Modal */}
       <EditSubscriptionPlanModal
@@ -77,6 +73,6 @@ export default function LicensePlansPage() {
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
       />
-    </div>
+    </PageLayout>
   );
 }

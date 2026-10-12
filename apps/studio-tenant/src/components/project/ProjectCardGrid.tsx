@@ -189,7 +189,7 @@ function ProjectCardItem({
               <span
                 className={cn(
                   "size-2 rounded-full shrink-0",
-                  isArchived ? "bg-muted-foreground/60" : "bg-emerald-500"
+                  isArchived ? "bg-muted-foreground/60" : "bg-primary"
                 )}
               />
               <span className="font-mono font-bold text-foreground truncate">
@@ -336,7 +336,7 @@ function ProjectTableRowItem({
           <span
             className={cn(
               "size-2 rounded-full",
-              isArchived ? "bg-muted-foreground/60" : "bg-emerald-500"
+              isArchived ? "bg-muted-foreground/60" : "bg-primary"
             )}
           />
           <span className="font-mono text-xs text-foreground/90 font-medium">

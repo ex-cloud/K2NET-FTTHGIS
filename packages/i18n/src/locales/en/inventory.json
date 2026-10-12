@@ -90,5 +90,11 @@
   "saving": "Saving...",
   "save_asset": "Save Asset",
   "not_connected": "Not Connected",
-  "default_name": "Subscriber"
+  "default_name": "Subscriber",
+  "view_on_map": "View on Spatial Map",
+  "manage_ports": "Manage Splitter Ports",
+  "connected_olt": "Connected OLT",
+  "connected_odps": "Connected ODP FAT",
+  "used_percent": "{percent}% Used",
+  "scan_ont_signal": "Scan Optical ONT Signal"
 }

@@ -28,6 +28,7 @@ import { ProjectSwitcher } from "./ProjectSwitcher";
 import { ProjectCreateWizard } from "../project/ProjectCreateWizard";
 import { TenantMobileFloatingDock } from "../system/TenantMobileFloatingDock";
 import { TrialPausedBanner } from "../system/TrialPausedBanner";
+import { TenantLicenseAlertBanner } from "../licenses/TenantLicenseAlertBanner";
 import { ArchivedProjectBanner } from "../system/ArchivedProjectBanner";
 import { useMapStore } from "../../store/map-store";
 import { useTranslation } from "@k2net/i18n";
@@ -204,6 +205,7 @@ function TenantProjectLayoutContent() {
 
       {/* ── 2.5 Trial Lifecycle & Grace Period Paused Alert Banner ───────── */}
       <TrialPausedBanner />
+      <TenantLicenseAlertBanner />
 
       {/* ── 2.6 Archived Read-Only Guard Alert Banner ─────────────────────── */}
       <ArchivedProjectBanner projectId={projectId} />

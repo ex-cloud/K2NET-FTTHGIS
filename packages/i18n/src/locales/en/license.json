@@ -170,7 +170,7 @@
     "invoice_due_date": "Due Date",
     "invoice_paid_at": "Paid At",
     "invoice_action_pay": "Pay Now",
-    "invoices_action_view": "View Invoice",
+    "invoice_action_view": "View Invoice",
     "no_invoices": "No invoice history found for this organization.",
     "contacts_title": "Billing Contacts & Reminder Preferences",
     "contacts_desc": "Configure PIC contact details for automated license renewal reminders, grace period alerts, and invoice delivery.",
@@ -289,6 +289,18 @@
     "free_badge": "Free Tier",
     "active_tenants": "Active Tenants",
     "update_success": "Subscription plan template updated successfully."
+  },
+  "banner": {
+    "expiring_title": "License Expiring Soon",
+    "expiring_desc": "Your active license expires in {{days}} day(s). Renew your contract to ensure uninterrupted network operations.",
+    "renew_btn": "Renew Contract",
+    "grace_title": "Grace Period Active",
+    "grace_desc": "Attention: Your account is in Grace Period ({{days}} day(s) remaining). Network asset mutations will lock into Read-Only if not renewed.",
+    "pay_invoice_btn": "Pay Invoice",
+    "locked_title": "Access Restricted (Read-Only Mode)",
+    "locked_desc": "Network asset modifications are locked by license policy. Please settle pending invoices to restore write access.",
+    "view_invoices_btn": "Settle Invoices",
+    "dismiss": "Dismiss for session"
   }
 }
 

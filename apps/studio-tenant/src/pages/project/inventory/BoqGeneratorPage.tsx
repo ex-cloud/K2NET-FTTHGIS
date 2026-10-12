@@ -6,8 +6,8 @@ import {
   Calculator,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
   Table,
@@ -119,21 +119,18 @@ export function BoqGeneratorPage() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: "Inventory", href: `/project/${projectId}/inventory/odc` },
-          { label: t("inventory.boq_title") },
-        ]}
+    <PageLayout variant="workspace" spaceY="space-y-6">
+      <PageHero
         title={t("inventory.boq_title")}
+        subtitle={t("inventory.boq_subtitle")}
+        icon={Calculator}
         actions={
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={handleExportExcel}
-              className="h-8 px-2.5 text-xs font-medium gap-1.5"
+              className="h-7 px-2.5 text-xs font-medium gap-1.5 rounded-md"
             >
               <Download className="h-3.5 w-3.5" />
               {t("inventory.export_excel")}
@@ -141,7 +138,7 @@ export function BoqGeneratorPage() {
             <Button
               size="sm"
               onClick={handleExportPDF}
-              className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs"
+              className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs rounded-md"
             >
               <Printer className="h-3.5 w-3.5" />
               {t("inventory.export_pdf")}
@@ -149,8 +146,6 @@ export function BoqGeneratorPage() {
           </div>
         }
       />
-
-      <PageContentShell className="space-y-4 custom-scrollbar">
         {/* Total Cost Banner Card */}
         <Card className="p-5 border-border/60 bg-card shadow-xs space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -219,8 +214,7 @@ export function BoqGeneratorPage() {
             </TableBody>
           </Table>
         </Card>
-      </PageContentShell>
-    </div>
+    </PageLayout>
   );
 }
 

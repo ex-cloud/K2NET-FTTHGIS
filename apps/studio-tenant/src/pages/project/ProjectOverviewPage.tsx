@@ -10,8 +10,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import {
-  PageHeader,
-  PageContentShell,
+  PageLayout,
+  PageHero,
   Card,
   Button,
 } from "@k2net/ui";
@@ -43,18 +43,16 @@ export function ProjectOverviewPage() {
   }, [projects, projectId]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <PageLayout variant="dashboard" spaceY="space-y-8">
       {/* Header */}
-      <PageHeader
+      <PageHero
+        eyebrow={project.code}
         title={project.name}
-        breadcrumbs={[
-          { label: t("nav.projects"), href: "/projects" },
-          { label: project.name },
-          { label: t("projects.overview_title") },
-        ]}
+        subtitle={project.description}
+        icon={Layers}
         actions={
           <div className="flex items-center gap-2">
-            <Button asChild size="sm" className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs">
+            <Button asChild size="sm" className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs rounded-md">
               <Link to="/project/$projectId/infrastructure/topology" params={{ projectId }}>
                 <Map className="h-3.5 w-3.5" />
                 {t("projects.quick_view_map")}
@@ -63,9 +61,6 @@ export function ProjectOverviewPage() {
           </div>
         }
       />
-
-      {/* Content */}
-      <PageContentShell className="space-y-5 custom-scrollbar">
         {/* KPI Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Subscribers Card */}
@@ -211,8 +206,7 @@ export function ProjectOverviewPage() {
             </Link>
           </div>
         </div>
-      </PageContentShell>
-    </div>
+    </PageLayout>
   );
 }
 

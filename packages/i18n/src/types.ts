@@ -15,6 +15,7 @@ import tasksId from './locales/id/tasks.json';
 import gatewaysId from './locales/id/gateways.json';
 import settingsId from './locales/id/settings.json';
 import licenseId from './locales/id/license.json';
+import packagesId from './locales/id/packages.json';
 
 export type SupportedLocale = 'id' | 'en';
 
@@ -36,6 +37,7 @@ export interface TranslationsSchema {
   gateways: typeof gatewaysId;
   settings: typeof settingsId;
   license: typeof licenseId;
+  packages: typeof packagesId;
 }
 
 export type TranslationNamespace = keyof TranslationsSchema;

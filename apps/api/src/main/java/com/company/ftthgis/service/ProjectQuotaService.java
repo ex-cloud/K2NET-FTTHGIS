@@ -15,7 +15,13 @@ import java.util.UUID;
 
 import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.entity.TenantPackageSubscription;
 import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
+import com.company.ftthgis.domain.tenant.repository.TenantPackageSubscriptionRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,32 +33,38 @@ public class ProjectQuotaService {
     private final OrganizationConfigRepository organizationConfigRepository;
     private final com.company.ftthgis.domain.network.repository.NetworkNodeRepository networkNodeRepository;
     private final TenantLicenseRepository tenantLicenseRepository;
+    private final TenantPackageSubscriptionRepository tenantPackageSubscriptionRepository;
+    private final ObjectMapper objectMapper;
 
     /**
      * Hitung batas maksimum proyek aktif (Active Projects Limit)
-     * Memprioritaskan: License Overrides > Booster & Config Override > Base Plan Limit.
+     * Memprioritaskan: License Overrides > Booster & Config Override > Base Plan Limit + Active Package Boosters.
      */
     public int getEffectiveMaxProjects(Organization org) {
         if (org == null) return 0;
 
+        int baseLimit;
         // 1. Prioritas Utama: Custom Override dari Lisensi Aktif
         if (tenantLicenseRepository != null && org.getId() != null) {
             Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
                     .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(org.getId(), LicenseStatus.ACTIVE);
             if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getOverrideMaxProjects() != null) {
-                return activeLicenseOpt.get().getOverrideMaxProjects();
+                baseLimit = activeLicenseOpt.get().getOverrideMaxProjects();
+            } else {
+                SubscriptionPlan plan = org.getSubscriptionPlan();
+                int basePlanLimit = (plan != null && plan.getMaxProjects() != null) ? plan.getMaxProjects() : 6;
+                baseLimit = getConfigInt(org, "max_projects", getConfigInt(org, "max_olts", basePlanLimit));
             }
+        } else {
+            SubscriptionPlan plan = org.getSubscriptionPlan();
+            int basePlanLimit = (plan != null && plan.getMaxProjects() != null) ? plan.getMaxProjects() : 6;
+            baseLimit = getConfigInt(org, "max_projects", getConfigInt(org, "max_olts", basePlanLimit));
         }
 
-        SubscriptionPlan plan = org.getSubscriptionPlan();
-        int basePlanLimit = (plan != null && plan.getMaxProjects() != null) ? plan.getMaxProjects() : 6;
-        
-        // Cek override config di organization_configs (cek 'max_projects', fallback 'max_olts')
-        int baseLimit = getConfigInt(org, "max_projects", getConfigInt(org, "max_olts", basePlanLimit));
-        
-        // Booster kuota
-        int booster = (org.isBoosterActive() && org.getBoosterOlts() != null) ? org.getBoosterOlts() : 0;
-        return baseLimit + booster;
+        // Booster kuota: Legacy booster + Active Add-on Packages booster (deltaOlts)
+        int legacyBooster = (org.isBoosterActive() && org.getBoosterOlts() != null) ? org.getBoosterOlts() : 0;
+        int packageBooster = getActivePackageDelta(org.getId(), "deltaOlts");
+        return baseLimit + legacyBooster + packageBooster;
     }
 
     /**
@@ -68,24 +80,55 @@ public class ProjectQuotaService {
 
     /**
      * Hitung batas maksimum ODP aktif (Billable ODP Limit)
-     * Memprioritaskan: License Overrides > Booster & Config Override > Base Plan Limit.
+     * Memprioritaskan: License Overrides > Booster & Config Override > Base Plan Limit + Active Package Boosters.
      */
     public int getEffectiveMaxOdps(Organization org) {
         if (org == null) return 0;
 
+        int baseLimit;
         // 1. Prioritas Utama: Custom Override dari Lisensi Aktif
         if (tenantLicenseRepository != null && org.getId() != null) {
             Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
                     .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(org.getId(), LicenseStatus.ACTIVE);
             if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getOverrideMaxOdps() != null) {
-                return activeLicenseOpt.get().getOverrideMaxOdps();
+                baseLimit = activeLicenseOpt.get().getOverrideMaxOdps();
+            } else {
+                SubscriptionPlan plan = org.getSubscriptionPlan();
+                int basePlanLimit = (plan != null && plan.getMaxOdps() != null) ? plan.getMaxOdps() : 2500;
+                baseLimit = getConfigInt(org, "max_odps", basePlanLimit);
             }
+        } else {
+            SubscriptionPlan plan = org.getSubscriptionPlan();
+            int basePlanLimit = (plan != null && plan.getMaxOdps() != null) ? plan.getMaxOdps() : 2500;
+            baseLimit = getConfigInt(org, "max_odps", basePlanLimit);
         }
 
-        SubscriptionPlan plan = org.getSubscriptionPlan();
-        int basePlanLimit = (plan != null && plan.getMaxOdps() != null) ? plan.getMaxOdps() : 2500;
-        int booster = (org.isBoosterActive() && org.getBoosterOdps() != null) ? org.getBoosterOdps() : 0;
-        return getConfigInt(org, "max_odps", basePlanLimit) + booster;
+        // Booster kuota: Legacy booster + Active Add-on Packages booster (deltaOdps)
+        int legacyBooster = (org.isBoosterActive() && org.getBoosterOdps() != null) ? org.getBoosterOdps() : 0;
+        int packageBooster = getActivePackageDelta(org.getId(), "deltaOdps");
+        return baseLimit + legacyBooster + packageBooster;
+    }
+
+    private int getActivePackageDelta(UUID orgId, String deltaKey) {
+        if (tenantPackageSubscriptionRepository == null || orgId == null) return 0;
+        try {
+            List<TenantPackageSubscription> subs = tenantPackageSubscriptionRepository
+                    .findActiveSubscriptionsByOrganizationId(orgId, LocalDateTime.now());
+            int sum = 0;
+            for (TenantPackageSubscription sub : subs) {
+                String json = sub.getPlatformPackage().getQuotaDeltaJson();
+                if (json != null && !json.isBlank() && json.contains(deltaKey)) {
+                    JsonNode node = objectMapper.readTree(json);
+                    if (node.has(deltaKey)) {
+                        sum += node.get(deltaKey).asInt(0);
+                    }
+                }
+            }
+            return sum;
+        } catch (Exception e) {
+            log.warn("Error calculating package quota delta for key '{}': {}", deltaKey, e.getMessage());
+            return 0;
+        }
     }
 
     /**

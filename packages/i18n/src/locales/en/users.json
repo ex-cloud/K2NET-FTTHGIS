@@ -60,5 +60,10 @@
   "role_operator": "GIS & NOC Operator",
   "role_field_tech": "Field Technician (JIT Scoped)",
   "role_surveyor": "Spatial Surveyor (CAD & Map)",
-  "role_finance": "Finance & Billing"
+  "role_finance": "Finance & Billing",
+  "role_org_admin_desc": "Full access to all projects, organization configuration, billing, and team management.",
+  "role_operator_desc": "Manage network topology, monitor OLT health, and inventory operations.",
+  "role_field_tech_desc": "Access to trouble tickets and ODP mapping in assigned project areas.",
+  "role_surveyor_desc": "Draw new cable routes, validate field surveys, and import KML/CAD files.",
+  "manage_team_subtitle": "Manage member directory, role-based access, and audit log activities for your organization."
 }

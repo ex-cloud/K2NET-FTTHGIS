@@ -45,6 +45,15 @@ class OrganizationJanitorJobTest {
     @Mock
     private LicenseNotificationService licenseNotificationService;
 
+    @Mock
+    private com.company.ftthgis.domain.tenant.repository.TenantPackageSubscriptionRepository tenantPackageSubscriptionRepository;
+
+    @Mock
+    private TenantPackageSubscriptionService tenantPackageSubscriptionService;
+
+    @Mock
+    private ProjectQuotaService projectQuotaService;
+
     @InjectMocks
     private OrganizationJanitorJob janitorJob;
 
