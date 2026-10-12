@@ -192,5 +192,6 @@
   "audit_log_type_spatial_io": "Spatial File I/O",
   "audit_log_type_project_access": "Project Team Access",
   "audit_domain_scope": "Domain & Kategori",
-  "audit_download_failed": "Gagal mengunduh berkas CSV audit."
+  "audit_download_failed": "Gagal mengunduh berkas CSV audit.",
+  "audit_loading_desc": "Memuat aliran log audit tenant..."
 }

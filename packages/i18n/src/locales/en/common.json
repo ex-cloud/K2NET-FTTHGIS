@@ -175,5 +175,9 @@
   "help_noc_title": "Contact NOC Helpdesk 24/7",
   "help_noc_desc": "Emergency hotline for fiber cut alerts, upstream routing anomalies, or Keycloak IAM SSO issues.",
   "help_btn_call_noc": "Call NOC (+62 22 8000-FTTH)",
-  "help_btn_open_docs": "Open Knowledge Docs"
+  "help_btn_open_docs": "Open Knowledge Docs",
+  "copy_id": "Copy ID",
+  "download_csv": "Download CSV",
+  "open": "Open",
+  "copied_to_clipboard": "Copied to clipboard!"
 }

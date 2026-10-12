@@ -44,6 +44,7 @@
     "COLLABORATION": "Real-time Field Chat & Dispatch"
   },
   "billing_type": {
+    "RECURRING_MONTHLY": "Monthly Recurring",
     "MONTHLY_RECURRING": "Monthly Recurring",
     "ANNUAL_RECURRING": "Annual Recurring",
     "ONE_TIME": "One-time Purchase",
@@ -198,5 +199,12 @@
     "quota_boost_summary": "+{{olt}} OLT Ports • +{{odp}} ODP Enclosures",
     "empty_catalog": "No packages found in this category.",
     "empty_active": "You have no active add-on subscriptions yet. Browse the catalog to boost your quotas!"
+  },
+  "feature_guard": {
+    "locked_eyebrow": "PREMIUM ADD-ON REQUIRED",
+    "locked_title": "Feature Requires Active Add-on",
+    "locked_desc": "This capability requires an active subscription to the corresponding marketplace package. Activate the add-on to unlock full access for your organization.",
+    "btn_view_marketplace": "Explore Marketplace",
+    "btn_unlock_now": "Unlock Add-on"
   }
 }

@@ -44,6 +44,7 @@
     "COLLABORATION": "Obrolan Teknisi Lapangan Real-time"
   },
   "billing_type": {
+    "RECURRING_MONTHLY": "Langganan Bulanan",
     "MONTHLY_RECURRING": "Berlangganan Bulanan",
     "ANNUAL_RECURRING": "Berlangganan Tahunan",
     "ONE_TIME": "Pembelian Sekali Beli",
@@ -198,5 +199,12 @@
     "quota_boost_summary": "+{{olt}} Port OLT • +{{odp}} Kotak ODP",
     "empty_catalog": "Tidak ada paket yang ditemukan pada kategori ini.",
     "empty_active": "Anda belum memiliki langganan add-on aktif. Jelajahi katalog untuk meningkatkan kuota Anda!"
+  },
+  "feature_guard": {
+    "locked_eyebrow": "DIPERLUKAN ADD-ON PREMIUM",
+    "locked_title": "Fitur Membutuhkan Add-on Aktif",
+    "locked_desc": "Kapabilitas ini memerlukan langganan aktif ke paket marketplace terkait. Aktifkan add-on untuk membuka akses penuh bagi organisasi Anda.",
+    "btn_view_marketplace": "Jelajahi Marketplace",
+    "btn_unlock_now": "Buka Kunci Add-on"
   }
 }

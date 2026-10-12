@@ -219,5 +219,6 @@
   "license_soft_locked": "soft-locked tenants",
   "license_restricted_readonly": "restricted read-only",
   "license_expiring_30d": "expiring in 30 days",
-  "license_active_renewals": "Active plan renewals / mo"
+  "license_active_renewals": "Active plan renewals / mo",
+  "open_filter_panel": "Open Filter Panel"
 }

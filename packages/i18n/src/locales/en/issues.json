@@ -17,5 +17,6 @@
   "unassigned_tickets": "Unassigned Tickets",
   "active_technicians": "Active Field Technicians",
   "assign_route": "Assign Repair Route",
-  "eta_arrival": "Estimated Arrival (ETA)"
+  "eta_arrival": "Estimated Arrival (ETA)",
+  "active_task": "Active Task"
 }

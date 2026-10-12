@@ -1,0 +1,5 @@
+{
+  "member_name": "Staff Name",
+  "access_level": "Project Access",
+  "abac_desc": "Attribute-Based Access Control (ABAC) manages permissions based on user attributes, project roles, and organizational policies."
+}

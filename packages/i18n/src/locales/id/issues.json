@@ -17,5 +17,6 @@
   "unassigned_tickets": "Tiket Belum Ditugaskan",
   "active_technicians": "Teknisi Lapangan Aktif",
   "assign_route": "Tugaskan Rute Perbaikan",
-  "eta_arrival": "Estimasi Tiba (ETA)"
+  "eta_arrival": "Estimasi Tiba (ETA)",
+  "active_task": "Tugas Aktif"
 }

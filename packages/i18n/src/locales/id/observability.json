@@ -219,5 +219,6 @@
   "license_soft_locked": "tenant terkunci sementara",
   "license_restricted_readonly": "akses baca-saja dibatasi",
   "license_expiring_30d": "berakhir dalam 30 hari",
-  "license_active_renewals": "Pembaruan paket aktif / bln"
+  "license_active_renewals": "Pembaruan paket aktif / bln",
+  "open_filter_panel": "Buka Panel Filter"
 }

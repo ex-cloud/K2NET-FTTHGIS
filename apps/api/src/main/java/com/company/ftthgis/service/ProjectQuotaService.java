@@ -109,7 +109,7 @@ public class ProjectQuotaService {
         return baseLimit + legacyBooster + packageBooster;
     }
 
-    private int getActivePackageDelta(UUID orgId, String deltaKey) {
+    public int getActivePackageDelta(UUID orgId, String deltaKey) {
         if (tenantPackageSubscriptionRepository == null || orgId == null) return 0;
         try {
             List<TenantPackageSubscription> subs = tenantPackageSubscriptionRepository
@@ -117,10 +117,21 @@ public class ProjectQuotaService {
             int sum = 0;
             for (TenantPackageSubscription sub : subs) {
                 String json = sub.getPlatformPackage().getQuotaDeltaJson();
-                if (json != null && !json.isBlank() && json.contains(deltaKey)) {
+                if (json != null && !json.isBlank()) {
                     JsonNode node = objectMapper.readTree(json);
                     if (node.has(deltaKey)) {
                         sum += node.get(deltaKey).asInt(0);
+                    } else if ("deltaOlts".equalsIgnoreCase(deltaKey)) {
+                        if (node.has("olt")) sum += node.get("olt").asInt(0);
+                        else if (node.has("olts")) sum += node.get("olts").asInt(0);
+                        else if (node.has("extraOlts")) sum += node.get("extraOlts").asInt(0);
+                    } else if ("deltaOdps".equalsIgnoreCase(deltaKey)) {
+                        if (node.has("odp")) sum += node.get("odp").asInt(0);
+                        else if (node.has("odps")) sum += node.get("odps").asInt(0);
+                        else if (node.has("extraOdps")) sum += node.get("extraOdps").asInt(0);
+                    } else if ("deltaStorageGb".equalsIgnoreCase(deltaKey)) {
+                        if (node.has("storageGb")) sum += node.get("storageGb").asInt(0);
+                        else if (node.has("storage")) sum += node.get("storage").asInt(0);
                     }
                 }
             }
@@ -129,6 +140,39 @@ public class ProjectQuotaService {
             log.warn("Error calculating package quota delta for key '{}': {}", deltaKey, e.getMessage());
             return 0;
         }
+    }
+
+    /**
+     * Mengambil seluruh akumulasi penambahan kuota dari paket aktif tenant.
+     */
+    public java.util.Map<String, Integer> getActiveQuotaDeltas(UUID orgId) {
+        java.util.Map<String, Integer> map = new java.util.HashMap<>();
+        map.put("deltaOlts", getActivePackageDelta(orgId, "deltaOlts"));
+        map.put("deltaOdps", getActivePackageDelta(orgId, "deltaOdps"));
+        map.put("deltaStorageGb", getActivePackageDelta(orgId, "deltaStorageGb"));
+        return map;
+    }
+
+    /**
+     * Mengambil ringkasan kuota lengkap (kapasitas dasar + booster aktif + pemakaian saat ini).
+     */
+    public java.util.Map<String, Object> getQuotaSummary(Organization org) {
+        if (org == null) return java.util.Map.of();
+        int maxProjects = getEffectiveMaxProjects(org);
+        long usedProjects = getUsedActiveProjects(org.getId());
+        int maxOdps = getEffectiveMaxOdps(org);
+        long usedOdps = getUsedBillableOdps(org.getId());
+        int boosterOlts = getActivePackageDelta(org.getId(), "deltaOlts");
+        int boosterOdps = getActivePackageDelta(org.getId(), "deltaOdps");
+
+        java.util.Map<String, Object> summary = new java.util.HashMap<>();
+        summary.put("effectiveMaxProjects", maxProjects);
+        summary.put("usedProjects", usedProjects);
+        summary.put("packageBoosterOlts", boosterOlts);
+        summary.put("effectiveMaxOdps", maxOdps);
+        summary.put("usedOdps", usedOdps);
+        summary.put("packageBoosterOdps", boosterOdps);
+        return summary;
     }
 
     /**

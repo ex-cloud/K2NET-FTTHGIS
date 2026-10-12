@@ -47,6 +47,8 @@ public class TenantPackageSubscriptionService {
     private final BillingInvoiceRepository billingInvoiceRepository;
     private final PackageEligibilityService eligibilityService;
     private final RedisTemplate<String, Object> redisTemplate;
+    @org.springframework.context.annotation.Lazy
+    private final ProjectQuotaService projectQuotaService;
 
     /**
      * Mengambil katalog marketplace lengkap beserta evaluasi status kelayakan tenant pemanggil.
@@ -348,16 +350,94 @@ public class TenantPackageSubscriptionService {
     }
 
     /**
-     * Menghapus cache paket in-memory Redis tenant.
+     * Memeriksa apakah suatu organisasi memiliki fitur aktif tertentu dari paket add-on dengan Redis Caching.
+     * Evaluasi mencocokkan featureKey paket (misal 'feature.telemetry.olt_poller') atau package code (misal 'PKG_OLT_POLLER').
+     */
+    public boolean hasActiveFeature(UUID orgId, String featureKey) {
+        if (orgId == null || featureKey == null || featureKey.isBlank()) return false;
+
+        String cacheKey = REDIS_KEY_PREFIX + "features:" + orgId;
+        try {
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached instanceof Set<?> set) {
+                return set.contains(featureKey.toLowerCase()) || set.contains(featureKey.toUpperCase());
+            }
+        } catch (Exception e) {
+            log.warn("Redis lookup failed for key '{}': {}", cacheKey, e.getMessage());
+        }
+
+        // Cache miss -> Query DB
+        LocalDateTime now = LocalDateTime.now();
+        List<TenantPackageSubscription> activeSubs = subscriptionRepository
+                .findActiveSubscriptionsByOrganizationId(orgId, now);
+
+        Set<String> activeKeys = new HashSet<>();
+        for (TenantPackageSubscription sub : activeSubs) {
+            PlatformPackage pkg = sub.getPlatformPackage();
+            if (pkg.getCode() != null) {
+                activeKeys.add(pkg.getCode().toUpperCase());
+            }
+            if (pkg.getFeatureKey() != null && !pkg.getFeatureKey().isBlank()) {
+                activeKeys.add(pkg.getFeatureKey().toLowerCase());
+                activeKeys.add(pkg.getFeatureKey().toUpperCase());
+            }
+        }
+
+        try {
+            redisTemplate.opsForValue().set(cacheKey, activeKeys, CACHE_TTL_HOURS, TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.warn("Failed caching features for key '{}': {}", cacheKey, e.getMessage());
+        }
+
+        return activeKeys.contains(featureKey.toLowerCase()) || activeKeys.contains(featureKey.toUpperCase());
+    }
+
+    /**
+     * Mengambil ikhtisar hak fitur aktif (Entitlements) dan alokasi booster kuota tenant.
+     */
+    @Transactional(readOnly = true)
+    public TenantEntitlementsResponseDto getTenantEntitlements(UUID orgId) {
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Organisasi tenant tidak ditemukan."));
+
+        LocalDateTime now = LocalDateTime.now();
+        List<TenantPackageSubscription> activeSubs = subscriptionRepository
+                .findActiveSubscriptionsByOrganizationId(orgId, now);
+
+        List<String> activePackages = activeSubs.stream()
+                .map(s -> s.getPlatformPackage().getCode())
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<String> activeFeatures = activeSubs.stream()
+                .map(s -> s.getPlatformPackage().getFeatureKey())
+                .filter(fk -> fk != null && !fk.isBlank())
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<String, Integer> quotaDeltas = projectQuotaService.getActiveQuotaDeltas(orgId);
+        Map<String, Object> quotaSummary = projectQuotaService.getQuotaSummary(org);
+
+        return TenantEntitlementsResponseDto.builder()
+                .activeFeatures(activeFeatures)
+                .activePackages(activePackages)
+                .quotaDeltas(quotaDeltas)
+                .quotaSummary(quotaSummary)
+                .build();
+    }
+
+    /**
+     * Menghapus cache paket dan fitur in-memory Redis tenant.
      */
     public void evictTenantPackagesCache(UUID orgId) {
         if (orgId == null) return;
-        String cacheKey = REDIS_KEY_PREFIX + orgId;
+        String cacheKey1 = REDIS_KEY_PREFIX + orgId;
+        String cacheKey2 = REDIS_KEY_PREFIX + "features:" + orgId;
         try {
-            redisTemplate.delete(cacheKey);
-            log.debug("🧹 REDIS EVICTION: Kunci '{}' berhasil dihapus.", cacheKey);
+            redisTemplate.delete(List.of(cacheKey1, cacheKey2));
+            log.debug("🧹 REDIS EVICTION: Kunci paket & fitur tenant '{}' berhasil dihapus.", orgId);
         } catch (Exception e) {
-            log.warn("Gagal evict Redis key '{}': {}", cacheKey, e.getMessage());
+            log.warn("Gagal evict Redis key untuk org '{}': {}", orgId, e.getMessage());
         }
     }
 

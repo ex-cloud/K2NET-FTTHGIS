@@ -1,0 +1,5 @@
+{
+  "member_name": "Nama Staf",
+  "access_level": "Akses Proyek",
+  "abac_desc": "Attribute-Based Access Control (ABAC) mengelola izin berdasarkan atribut pengguna, peran proyek, dan kebijakan organisasi."
+}

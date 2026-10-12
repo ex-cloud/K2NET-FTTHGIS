@@ -278,5 +278,52 @@ public class TenantSecurity {
 
         return packageSubscriptionService.hasActivePackage(orgId, packageCode);
     }
+
+    /**
+     * Checks if the currently authenticated tenant organization has an active add-on feature.
+     * Evaluates against the tenant's active feature keys using Redis caching.
+     * Also supports Super Admin impersonation bypass.
+     *
+     * @param featureKey The feature key to check (e.g., 'feature.telemetry.olt_poller', 'feature.notification.wa_blast')
+     * @return true if the tenant currently has this active feature entitlement, false otherwise
+     */
+    public boolean hasEffectiveFeature(String featureKey) {
+        if (featureKey == null || featureKey.isBlank()) {
+            return false;
+        }
+
+        UUID orgId = com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId();
+        if (orgId == null) {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
+                String orgClaim = jwt.getClaimAsString("organization_id");
+                if (orgClaim == null) orgClaim = jwt.getClaimAsString("tenant_id");
+                if (orgClaim != null) {
+                    try {
+                        orgId = UUID.fromString(orgClaim);
+                    } catch (IllegalArgumentException ignored) {}
+                }
+            }
+        }
+
+        if (orgId == null) {
+            return false;
+        }
+
+        // Active Impersonation check: Valid session with authorized actor
+        if (com.company.ftthgis.config.tenant.AuditContext.isImpersonating()) {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null) {
+                boolean isSuperAdmin = auth.getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().toLowerCase().replaceFirst("^role_", "").equals("super_admin"));
+                if (isSuperAdmin) {
+                    log.debug("🛡️ TenantSecurity: Feature '{}' granted via active impersonation session.", featureKey);
+                    return true;
+                }
+            }
+        }
+
+        return packageSubscriptionService.hasActiveFeature(orgId, featureKey);
+    }
 }
 

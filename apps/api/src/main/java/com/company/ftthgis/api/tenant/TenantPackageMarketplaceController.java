@@ -3,6 +3,7 @@ package com.company.ftthgis.api.tenant;
 import com.company.ftthgis.api.tenant.dto.OrderPackageRequest;
 import com.company.ftthgis.api.tenant.dto.OrderPackageResponseDto;
 import com.company.ftthgis.api.tenant.dto.PackageResponseDto;
+import com.company.ftthgis.api.tenant.dto.TenantEntitlementsResponseDto;
 import com.company.ftthgis.api.tenant.dto.TenantPackageSubscriptionDto;
 import com.company.ftthgis.config.tenant.OrganizationContext;
 import com.company.ftthgis.domain.user.repository.UserRepository;
@@ -67,6 +68,19 @@ public class TenantPackageMarketplaceController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Organisasi tenant tidak ditemukan pada sesi otentikasi.");
         }
         return ResponseEntity.ok(subscriptionService.getActiveSubscriptions(orgId));
+    }
+
+    /**
+     * Mengambil ikhtisar hak fitur aktif (Entitlements) dan booster kuota paket add-on tenant.
+     */
+    @GetMapping("/entitlements")
+    @PreAuthorize("@tenantSecurity.hasEffectivePermission('billing.packages.view') or hasAuthority('billing.packages.view') or @tenantSecurity.hasEffectivePermission('billing.view') or hasAuthority('billing.view')")
+    public ResponseEntity<TenantEntitlementsResponseDto> getTenantEntitlements() {
+        UUID orgId = resolveCurrentOrganizationId();
+        if (orgId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Organisasi tenant tidak ditemukan pada sesi otentikasi.");
+        }
+        return ResponseEntity.ok(subscriptionService.getTenantEntitlements(orgId));
     }
 
     /**

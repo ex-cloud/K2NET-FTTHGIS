@@ -175,5 +175,9 @@
   "help_noc_title": "Hubungi Helpdesk NOC 24/7",
   "help_noc_desc": "Saluran darurat untuk insiden kabel putus, anomali routing upstream, atau kendala Keycloak IAM SSO.",
   "help_btn_call_noc": "Hubungi NOC (+62 22 8000-FTTH)",
-  "help_btn_open_docs": "Buka Dokumentasi"
+  "help_btn_open_docs": "Buka Dokumentasi",
+  "copy_id": "Salin ID",
+  "download_csv": "Unduh CSV",
+  "open": "Buka",
+  "copied_to_clipboard": "Disalin ke clipboard!"
 }

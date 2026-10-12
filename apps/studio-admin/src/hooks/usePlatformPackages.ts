@@ -18,6 +18,7 @@ export type PackageCategory =
   | "COLLABORATION";
 
 export type PackageBillingType =
+  | "RECURRING_MONTHLY"
   | "MONTHLY_RECURRING"
   | "ANNUAL_RECURRING"
   | "ONE_TIME"
@@ -133,7 +134,54 @@ export function usePlatformPackages(filters?: { status?: string; category?: stri
       if (!res.ok) {
         throw new Error(`Failed to fetch packages: ${res.status}`);
       }
-      return res.json();
+      const rawList = await res.json();
+      return (Array.isArray(rawList) ? rawList : []).map((item: any): PlatformPackageItem => {
+        let quotaDeltaOlt = item.quotaDeltaOlt;
+        let quotaDeltaOdp = item.quotaDeltaOdp;
+        if (item.quotaDeltaJson) {
+          try {
+            const q =
+              typeof item.quotaDeltaJson === "string" ? JSON.parse(item.quotaDeltaJson) : item.quotaDeltaJson;
+            if (quotaDeltaOlt === undefined && q.olt !== undefined) quotaDeltaOlt = Number(q.olt);
+            if (quotaDeltaOdp === undefined && q.odp !== undefined) quotaDeltaOdp = Number(q.odp);
+          } catch {
+            // ignore parse error
+          }
+        }
+
+        let description = item.description;
+        if (!description && item.metadataJson) {
+          try {
+            const m =
+              typeof item.metadataJson === "string" ? JSON.parse(item.metadataJson) : item.metadataJson;
+            if (m.description) description = String(m.description);
+          } catch {
+            // ignore parse error
+          }
+        }
+
+        const billingType =
+          item.billingType === "MONTHLY_RECURRING" ? "RECURRING_MONTHLY" : item.billingType || "RECURRING_MONTHLY";
+
+        return {
+          id: item.id,
+          packageCode: item.packageCode || item.code,
+          packageName: item.packageName || item.name,
+          description: description || "",
+          category: item.category,
+          billingType: billingType as PackageBillingType,
+          priceIdr: Number(item.priceIdr ?? item.priceMonthly ?? 0),
+          minimumTier: item.minimumTier || item.minPlanTier || "FREE",
+          quotaDeltaOlt: quotaDeltaOlt ?? 0,
+          quotaDeltaOdp: quotaDeltaOdp ?? 0,
+          published: Boolean(item.published ?? item.isPublished ?? true),
+          prerequisiteCodes: item.prerequisiteCodes || [],
+          conflictCodes: item.conflictCodes || [],
+          subscriberCount: item.subscriberCount,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        };
+      });
     },
     enabled: status !== "unauthenticated" && (!!activeToken || typeof window !== "undefined"),
     staleTime: 30 * 1000,
@@ -236,10 +284,32 @@ export function useCreatePackage() {
   return useMutation({
     mutationFn: async (payload: CreatePackagePayload) => {
       const baseUrl = getBackendBaseUrl();
+      const quotaDelta: Record<string, number> = {};
+      if (payload.quotaDeltaOlt !== undefined) quotaDelta.olt = payload.quotaDeltaOlt;
+      if (payload.quotaDeltaOdp !== undefined) quotaDelta.odp = payload.quotaDeltaOdp;
+
+      const metadata: Record<string, any> = {};
+      if (payload.description) metadata.description = payload.description;
+
+      const backendPayload = {
+        code: payload.packageCode,
+        name: payload.packageName,
+        category: payload.category,
+        billingType:
+          payload.billingType === "MONTHLY_RECURRING" ? "RECURRING_MONTHLY" : payload.billingType,
+        priceMonthly: payload.priceIdr,
+        minPlanTier: payload.minimumTier || "FREE",
+        quotaDeltaJson: Object.keys(quotaDelta).length > 0 ? JSON.stringify(quotaDelta) : null,
+        metadataJson: Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : null,
+        isPublished: payload.published ?? true,
+        prerequisiteCodes: payload.prerequisiteCodes || [],
+        conflictCodes: payload.conflictCodes || [],
+      };
+
       const res = await httpClient(`${baseUrl}/system/packages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(backendPayload),
         token: activeToken,
       });
 
@@ -268,10 +338,32 @@ export function useUpdatePackage() {
   return useMutation({
     mutationFn: async ({ code, payload }: { code: string; payload: UpdatePackagePayload }) => {
       const baseUrl = getBackendBaseUrl();
+      const quotaDelta: Record<string, number> = {};
+      if (payload.quotaDeltaOlt !== undefined) quotaDelta.olt = payload.quotaDeltaOlt;
+      if (payload.quotaDeltaOdp !== undefined) quotaDelta.odp = payload.quotaDeltaOdp;
+
+      const metadata: Record<string, any> = {};
+      if (payload.description !== undefined) metadata.description = payload.description;
+
+      const backendPayload: Record<string, any> = {};
+      if (payload.packageName !== undefined) backendPayload.name = payload.packageName;
+      if (payload.category !== undefined) backendPayload.category = payload.category;
+      if (payload.billingType !== undefined) {
+        backendPayload.billingType =
+          payload.billingType === "MONTHLY_RECURRING" ? "RECURRING_MONTHLY" : payload.billingType;
+      }
+      if (payload.priceIdr !== undefined) backendPayload.priceMonthly = payload.priceIdr;
+      if (payload.minimumTier !== undefined) backendPayload.minPlanTier = payload.minimumTier;
+      if (Object.keys(quotaDelta).length > 0) backendPayload.quotaDeltaJson = JSON.stringify(quotaDelta);
+      if (Object.keys(metadata).length > 0) backendPayload.metadataJson = JSON.stringify(metadata);
+      if (payload.published !== undefined) backendPayload.isPublished = payload.published;
+      if (payload.prerequisiteCodes !== undefined) backendPayload.prerequisiteCodes = payload.prerequisiteCodes;
+      if (payload.conflictCodes !== undefined) backendPayload.conflictCodes = payload.conflictCodes;
+
       const res = await httpClient(`${baseUrl}/system/packages/${code}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(backendPayload),
         token: activeToken,
       });
 

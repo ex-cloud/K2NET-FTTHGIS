@@ -16,6 +16,8 @@ import gatewaysId from './locales/id/gateways.json';
 import settingsId from './locales/id/settings.json';
 import licenseId from './locales/id/license.json';
 import packagesId from './locales/id/packages.json';
+import teamId from './locales/id/team.json';
+
 
 import commonEn from './locales/en/common.json';
 import navEn from './locales/en/nav.json';
@@ -35,6 +37,8 @@ import gatewaysEn from './locales/en/gateways.json';
 import settingsEn from './locales/en/settings.json';
 import licenseEn from './locales/en/license.json';
 import packagesEn from './locales/en/packages.json';
+import teamEn from './locales/en/team.json';
+
 
 import { SupportedLocale } from './types';
 
@@ -58,6 +62,7 @@ export const dictionaries: Record<SupportedLocale, Record<string, Record<string,
     settings: settingsId,
     license: licenseId,
     packages: packagesId,
+    team: teamId,
   },
   en: {
     common: commonEn,
@@ -78,6 +83,7 @@ export const dictionaries: Record<SupportedLocale, Record<string, Record<string,
     settings: settingsEn,
     license: licenseEn,
     packages: packagesEn,
+    team: teamEn,
   },
 };
 

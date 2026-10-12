@@ -17,6 +17,7 @@ export type PackageCategory =
   | "COLLABORATION";
 
 export type PackageBillingType =
+  | "RECURRING_MONTHLY"
   | "MONTHLY_RECURRING"
   | "ANNUAL_RECURRING"
   | "ONE_TIME"

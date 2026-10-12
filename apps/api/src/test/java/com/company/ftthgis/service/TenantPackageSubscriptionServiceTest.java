@@ -124,7 +124,8 @@ class TenantPackageSubscriptionServiceTest {
         assertNotNull(response.getInvoiceId());
         assertEquals("IDR", response.getCurrency());
         // Verify Redis eviction called
-        verify(redisTemplate, atLeastOnce()).delete(eq("tenant:packages:" + org.getId()));
+        verify(redisTemplate, atLeastOnce()).delete(argThat((java.util.Collection<String> keys) ->
+                keys.contains("tenant:packages:" + org.getId())));
     }
 
     @Test
@@ -154,7 +155,8 @@ class TenantPackageSubscriptionServiceTest {
         assertTrue(result.getGrantNotes().contains("super_admin_andi"));
         assertFalse(result.isAutoRenew());
         assertNotNull(result.getExpiresAt());
-        verify(redisTemplate, atLeastOnce()).delete(eq("tenant:packages:" + org.getId()));
+        verify(redisTemplate, atLeastOnce()).delete(argThat((java.util.Collection<String> keys) ->
+                keys.contains("tenant:packages:" + org.getId())));
     }
 
     @Test

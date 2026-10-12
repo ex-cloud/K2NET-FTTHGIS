@@ -15,7 +15,6 @@
   "test_connection_btn": "Test Connection",
   "restore_btn": "Restore Object",
   "empty_trash_btn": "Empty Trash",
-
   "general": {
     "title": "General Settings",
     "platform_config_badge": "Platform Config",
@@ -39,7 +38,6 @@
     "maintenance_message_label": "Maintenance Banner Message",
     "maintenance_message_desc": "Custom message displayed to users while maintenance mode is active."
   },
-
   "branding": {
     "title": "Branding & Whitelabel",
     "badge_subtitle": "Whitelabel Identity & Aesthetics",
@@ -77,7 +75,6 @@
     "interface_theme_desc": "Select or customize your portal interface color scheme.",
     "theme_changed_toast": "Theme scheme changed to"
   },
-
   "gis": {
     "title": "GIS & Spatial Map",
     "badge_subtitle": "PostGIS & Vector Tile Engine",
@@ -100,7 +97,6 @@
     "tile_server_label": "Martin Vector Tile Server Endpoint",
     "tile_server_desc": "Martin server endpoint URL template (Rust PostGIS MVT) for fiber optic network vector rendering."
   },
-
   "smtp": {
     "title": "SMTP Mail Server",
     "badge_title": "System Communications",
@@ -129,7 +125,6 @@
     "run_test_btn": "Run Connection Test",
     "save_smtp_btn": "Save SMTP Settings"
   },
-
   "org_official_name": "Official Organization / ISP Name",
   "tenant_subdomain": "Tenant Subdomain",
   "official_email": "Official Contact Email",
@@ -236,5 +231,6 @@
     "status_connected": "Connected",
     "ga_stable": "GA STABLE",
     "commit_hash_label": "Commit Hash"
-  }
+  },
+  "api_key_copied": "API key copied to clipboard!"
 }

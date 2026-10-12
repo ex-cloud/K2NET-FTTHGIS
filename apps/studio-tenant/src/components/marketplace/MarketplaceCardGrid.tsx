@@ -51,12 +51,13 @@ function formatPrice(
   billingType: string,
   t: (key: TranslationKey, params?: Record<string, string | number>) => string
 ): string {
-  if (price === 0) return t("packages.card.price_free");
+  const safePrice = Number.isFinite(price) ? price : 0;
+  if (safePrice === 0) return t("packages.card.price_free");
   const formatted = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
-  }).format(price);
+  }).format(safePrice);
 
   if (billingType === "ONE_TIME") return t("packages.card.price_one_time", { price: formatted });
   if (billingType === "ANNUAL_RECURRING") return t("packages.card.price_per_year", { price: formatted });

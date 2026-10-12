@@ -192,5 +192,6 @@
   "audit_log_type_spatial_io": "Spatial File I/O",
   "audit_log_type_project_access": "Project Team Access",
   "audit_domain_scope": "Domain & Category",
-  "audit_download_failed": "Failed to download audit CSV file."
+  "audit_download_failed": "Failed to download audit CSV file.",
+  "audit_loading_desc": "Loading tenant audit log stream..."
 }
