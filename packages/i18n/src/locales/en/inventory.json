@@ -96,5 +96,18 @@
   "connected_olt": "Connected OLT",
   "connected_odps": "Connected ODP FAT",
   "used_percent": "{percent}% Used",
-  "scan_ont_signal": "Scan Optical ONT Signal"
+  "scan_ont_signal": "Scan Optical ONT Signal",
+  "telemetry_title": "Live Telemetry & Optical Monitoring",
+  "btn_telemetry": "Live Telemetry",
+  "optical_power": "Optical Power (dBm)",
+  "optical_tx": "Tx Power",
+  "optical_rx": "Rx Power Avg",
+  "uptime": "System Uptime",
+  "cpu_temp": "CPU & Temperature",
+  "latency": "Ping Latency",
+  "pon_matrix": "PON Ports Optical Matrix",
+  "active_onts_ratio": "{active} / {total} Active ONTs",
+  "live_status_online": "Online (SNMP Active)",
+  "live_status_offline": "Offline (No SNMP Response)",
+  "sys_descr": "System Description"
 }

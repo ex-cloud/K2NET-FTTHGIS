@@ -96,5 +96,18 @@
   "connected_olt": "Terhubung ke OLT",
   "connected_odps": "Total ODP Terhubung",
   "used_percent": "{percent}% Terpakai",
-  "scan_ont_signal": "Pindai Sinyal Optik ONT"
+  "scan_ont_signal": "Pindai Sinyal Optik ONT",
+  "telemetry_title": "Telemetri Langsung & Monitoring Optik",
+  "btn_telemetry": "Telemetri Langsung",
+  "optical_power": "Daya Optik (dBm)",
+  "optical_tx": "Daya Tx",
+  "optical_rx": "Rata-rata Rx",
+  "uptime": "Masa Aktif Sistem",
+  "cpu_temp": "CPU & Suhu",
+  "latency": "Latensi Ping",
+  "pon_matrix": "Matriks Optik Port PON",
+  "active_onts_ratio": "{active} / {total} ONT Aktif",
+  "live_status_online": "Online (SNMP Aktif)",
+  "live_status_offline": "Offline (Tanpa Respons SNMP)",
+  "sys_descr": "Deskripsi Sistem"
 }

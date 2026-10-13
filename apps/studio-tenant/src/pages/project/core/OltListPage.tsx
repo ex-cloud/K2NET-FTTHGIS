@@ -6,6 +6,7 @@ import {
   MoreVertical,
   Server,
   Loader2,
+  Activity,
 } from "lucide-react";
 import {
   PageLayout,
@@ -27,6 +28,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../../lib/api-client";
 import { useTranslation } from "@k2net/i18n";
+import { OltTelemetryModal } from "../../../components/inventory/OltTelemetryModal";
 
 interface OltItem {
   id: string;
@@ -49,6 +51,7 @@ export function OltListPage() {
   const params = useParams({ strict: false }) as { projectId?: string };
   const projectId = params?.projectId || "proj-bdg-01";
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedTelemetryOlt, setSelectedTelemetryOlt] = React.useState<OltItem | null>(null);
 
   const { data: oltData, isLoading } = useQuery<{ content: OltItem[] } | OltItem[]>({
     queryKey: ["project-olts", projectId, searchQuery],
@@ -113,7 +116,7 @@ export function OltListPage() {
                   <TableHead className="font-bold">{t("inventory.ip_address").toUpperCase()}</TableHead>
                   <TableHead className="font-bold">{t("inventory.pon_ports").toUpperCase()}</TableHead>
                   <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
-                  <TableHead className="w-12 text-right" />
+                  <TableHead className="w-28 text-right" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -137,24 +140,35 @@ export function OltListPage() {
                         className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
                           olt.status === "ACTIVE" || olt.status === "ONLINE" || olt.status === "UP"
                             ? "bg-primary/10 text-primary border-primary/20"
-                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                            : "bg-muted/40 text-muted-foreground border-border"
                         }`}
                       >
                         {olt.status || "ACTIVE"}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
-                            <MoreVertical className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="text-xs">
-                          <DropdownMenuItem>{t("common.edit")}</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">{t("common.delete")}</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => setSelectedTelemetryOlt(olt)}
+                          className="h-6 px-2 text-[11px] font-medium gap-1 text-primary border-primary/20 hover:bg-primary/10"
+                        >
+                          <Activity className="size-3 text-primary animate-pulse" />
+                          {t("inventory.btn_telemetry")}
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="text-xs">
+                            <DropdownMenuItem>{t("common.edit")}</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">{t("common.delete")}</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -170,6 +184,12 @@ export function OltListPage() {
             </div>
           )}
         </Card>
+
+      <OltTelemetryModal
+        open={Boolean(selectedTelemetryOlt)}
+        onOpenChange={(open) => !open && setSelectedTelemetryOlt(null)}
+        olt={selectedTelemetryOlt}
+      />
     </PageLayout>
   );
 }
