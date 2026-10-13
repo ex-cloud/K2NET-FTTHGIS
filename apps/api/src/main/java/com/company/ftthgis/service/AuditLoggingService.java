@@ -264,10 +264,14 @@ public class AuditLoggingService {
                 if (attrs != null) {
                     HttpServletRequest request = attrs.getRequest();
                     String ip = request.getHeader("X-Forwarded-For");
-                    if (ip == null || ip.isBlank() || "unknown".equalsIgnoreCase(ip)) {
-                        ip = request.getRemoteAddr();
+                    if (ip != null && !ip.isBlank() && !"unknown".equalsIgnoreCase(ip)) {
+                        actorIp = ip.split(",")[0].trim();
+                    } else {
+                        String remote = request.getRemoteAddr();
+                        if (remote != null && !remote.isBlank()) {
+                            actorIp = remote;
+                        }
                     }
-                    if (ip != null) actorIp = ip;
                 }
             } catch (Exception ignored) {}
 

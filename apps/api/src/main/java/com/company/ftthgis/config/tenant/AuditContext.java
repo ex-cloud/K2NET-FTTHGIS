@@ -32,6 +32,8 @@ public class AuditContext {
         private String tenantName;
         private String tenantSlug;
         private String scope;
+        private java.util.Map<String, Object> oldValue;
+        private java.util.Map<String, Object> newValue;
     }
 
     private static final ThreadLocal<ImpersonationInfo> currentImpersonation = new ThreadLocal<>();
@@ -69,6 +71,34 @@ public class AuditContext {
         }
         current.setProjectName(projectName);
         current.setProjectId(projectId);
+    }
+
+    public static void setDiff(java.util.Map<String, Object> oldValue, java.util.Map<String, Object> newValue) {
+        ResourceSnapshot current = currentResource.get();
+        if (current == null) {
+            current = new ResourceSnapshot();
+            currentResource.set(current);
+        }
+        current.setOldValue(oldValue);
+        current.setNewValue(newValue);
+    }
+
+    public static void setOldValue(java.util.Map<String, Object> oldValue) {
+        ResourceSnapshot current = currentResource.get();
+        if (current == null) {
+            current = new ResourceSnapshot();
+            currentResource.set(current);
+        }
+        current.setOldValue(oldValue);
+    }
+
+    public static void setNewValue(java.util.Map<String, Object> newValue) {
+        ResourceSnapshot current = currentResource.get();
+        if (current == null) {
+            current = new ResourceSnapshot();
+            currentResource.set(current);
+        }
+        current.setNewValue(newValue);
     }
 
     public static void setTenant(String tenantName, String tenantSlug) {

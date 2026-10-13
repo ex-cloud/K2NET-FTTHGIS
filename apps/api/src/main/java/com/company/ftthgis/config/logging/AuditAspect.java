@@ -83,6 +83,8 @@ public class AuditAspect {
     private final ProjectRepository projectRepository;
     private final OrganizationRepository organizationRepository;
     private final SpelExpressionParser spelParser = new SpelExpressionParser();
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+            new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
 
     @Around("@annotation(auditRequired)")
     public Object audit(ProceedingJoinPoint pjp, AuditRequired auditRequired) throws Throwable {
@@ -144,6 +146,43 @@ public class AuditAspect {
                 }
                 if (projectName == null || projectName.isBlank()) {
                     projectName = proj.getName();
+                }
+            }
+
+            // Inspect returnValue for getProjectId()
+            if ((projectId == null || projectId.isBlank()) && returnValue != null) {
+                try {
+                    Method m = returnValue.getClass().getMethod("getProjectId");
+                    Object pid = m.invoke(returnValue);
+                    if (pid != null) {
+                        projectId = pid.toString();
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            // Inspect method arguments for getProjectId()
+            if (projectId == null || projectId.isBlank()) {
+                if (args != null) {
+                    for (Object arg : args) {
+                        if (arg != null) {
+                            try {
+                                Method m = arg.getClass().getMethod("getProjectId");
+                                Object pid = m.invoke(arg);
+                                if (pid != null) {
+                                    projectId = pid.toString();
+                                    break;
+                                }
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                }
+            }
+
+            // Fallback to active TenantContext (Project ID in FTTH GIS)
+            if (projectId == null || projectId.isBlank()) {
+                String ctxTenant = com.company.ftthgis.config.tenant.TenantContext.getTenantId();
+                if (ctxTenant != null && !ctxTenant.isBlank() && !"system".equalsIgnoreCase(ctxTenant)) {
+                    projectId = ctxTenant;
                 }
             }
 
@@ -420,14 +459,55 @@ public class AuditAspect {
                 }
             }
 
+            // Resolve oldValue and newValue
+            Map<String, Object> oldValue = null;
+            Map<String, Object> newValue = null;
+
+            if (snapshot != null) {
+                if (snapshot.getOldValue() != null) {
+                    oldValue = snapshot.getOldValue();
+                }
+                if (snapshot.getNewValue() != null) {
+                    newValue = snapshot.getNewValue();
+                }
+            }
+
+            // Automatic capture for newValue if not explicitly provided
+            if (newValue == null && "SUCCESS".equals(status)) {
+                if (returnValue != null && !(returnValue instanceof String) && !(returnValue instanceof Number) && !(returnValue instanceof Boolean)) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> mapped = objectMapper.convertValue(returnValue, Map.class);
+                        newValue = mapped;
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            // If action is CREATE/ADD/POST and failed or still null, capture input DTO payload as newValue
+            if (newValue == null && args != null && args.length > 0) {
+                String act = ann.action().toUpperCase();
+                if (act.contains("CREATE") || act.contains("ADD") || act.contains("POST")) {
+                    for (Object arg : args) {
+                        if (arg != null && !(arg instanceof String) && !(arg instanceof Number) && !(arg instanceof Boolean) && !(arg instanceof UUID)) {
+                            try {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> mapped = objectMapper.convertValue(arg, Map.class);
+                                newValue = mapped;
+                                break;
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                }
+            }
+
             // Fire-and-forget — AuditLoggingService#logEvent already has try/catch internally
             auditLoggingService.logEvent(
                     tenantSlug,
                     ann.action(),
                     ann.resourceType(),
                     resourceId,
-                    null,          // oldValue — not captured at AOP level
-                    null,          // newValue — not captured at AOP level
+                    oldValue,
+                    newValue,
                     metadata
             );
 

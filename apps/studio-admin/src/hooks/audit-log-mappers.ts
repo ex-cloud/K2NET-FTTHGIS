@@ -193,6 +193,39 @@ function parseNumericStatus(val: unknown): number | undefined {
   return undefined;
 }
 
+function extractDirectStatus(metadata: Record<string, unknown>, e?: Record<string, unknown>): number | undefined {
+  const candidates = [metadata.status, metadata.statusCode, metadata.httpStatus, e?.status];
+  for (const c of candidates) {
+    const parsed = parseNumericStatus(c);
+    if (parsed !== undefined) return parsed;
+  }
+  return undefined;
+}
+
+const ERROR_STATUSES: ReadonlySet<string> = new Set(["FAILED", "ERROR"]);
+const ERROR_SEVERITIES: ReadonlySet<string> = new Set(["ERROR", "CRITICAL"]);
+const ERROR_KEYWORDS: readonly string[] = ["DEGRADED", "FAIL"];
+
+function isAuditFailure(
+  errorMessage?: string,
+  rawStatus = "",
+  rawSeverity = "",
+  act = ""
+): boolean {
+  if (errorMessage) return true;
+  if (ERROR_STATUSES.has(rawStatus)) return true;
+  if (ERROR_SEVERITIES.has(rawSeverity)) return true;
+  return ERROR_KEYWORDS.some((kw) => act.includes(kw));
+}
+
+function statusFromActionOrState(rawStatus: string, act: string): number {
+  if (rawStatus === "UNAUTHORIZED" || act.includes("UNAUTHORIZED")) return 401;
+  if (rawStatus === "FORBIDDEN" || act.includes("FORBIDDEN")) return 403;
+  if (rawStatus === "RATE_LIMITED" || act.includes("RATE_LIMIT")) return 429;
+  if (act.includes("PROVISIONED") || act.includes("CREATED")) return 201;
+  return 200;
+}
+
 export function resolveAuditStatus(
   metadata: Record<string, unknown>,
   errorMessage?: string,
@@ -200,28 +233,20 @@ export function resolveAuditStatus(
   e?: Record<string, unknown>,
   actionStr?: string
 ): number {
-  const directStatus =
-    parseNumericStatus(metadata.status) ??
-    parseNumericStatus(metadata.statusCode) ??
-    parseNumericStatus(metadata.httpStatus) ??
-    parseNumericStatus(e?.status);
-
+  const directStatus = extractDirectStatus(metadata, e);
   if (directStatus !== undefined) {
     return directStatus;
   }
 
-  const rawStatus = String(e?.status ?? "").toUpperCase();
-  const act = String(actionStr ?? "").toUpperCase();
+  const rawStatus = String(e?.status || metadata?.status || "").toUpperCase();
+  const rawSeverity = String(e?.severity || metadata?.severity || "").toUpperCase();
+  const act = String(actionStr || "").toUpperCase();
 
-  if (errorMessage || rawStatus === "FAILED" || rawStatus === "ERROR" || act.includes("DEGRADED") || act.includes("FAIL")) {
+  if (isAuditFailure(errorMessage, rawStatus, rawSeverity, act)) {
     return 500;
   }
-  if (rawStatus === "UNAUTHORIZED" || act.includes("UNAUTHORIZED")) return 401;
-  if (rawStatus === "FORBIDDEN" || act.includes("FORBIDDEN")) return 403;
-  if (rawStatus === "RATE_LIMITED" || act.includes("RATE_LIMIT")) return 429;
-  if (act.includes("PROVISIONED") || act.includes("CREATED")) return 201;
 
-  return 200;
+  return statusFromActionOrState(rawStatus, act);
 }
 
 export function resolveAuditPathname(e: Record<string, unknown>, metadata: Record<string, unknown>, actionStr?: string): string | undefined {

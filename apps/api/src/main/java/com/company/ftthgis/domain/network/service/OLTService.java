@@ -4,6 +4,8 @@ import com.company.ftthgis.config.logging.AuditRequired;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import com.company.ftthgis.config.tenant.TenantContext;
@@ -89,7 +91,8 @@ public class OLTService {
         logGroup = "NETWORK",
         scope = "PROJECT",
         category = "NETWORK_ASSET",
-        resourceIdExpression = "#dto.code"
+        resourceIdExpression = "#dto.code",
+        projectIdExpression = "#dto.projectId != null ? #dto.projectId.toString() : ''"
     )
     public OLTDto createOlt(OLTDto dto) {
         if (oltRepository.existsByCode(dto.getCode())) {
@@ -136,16 +139,28 @@ public class OLTService {
         logGroup = "NETWORK",
         scope = "PROJECT",
         category = "NETWORK_ASSET",
-        resourceIdExpression = "#id.toString()"
+        resourceIdExpression = "#id.toString()",
+        projectIdExpression = "#dto.projectId != null ? #dto.projectId.toString() : ''"
     )
     public OLTDto updateOlt(UUID id, OLTDto dto) {
         OLT olt = oltRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("OLT not found with id: " + id));
 
+        if (olt.getProject() != null) {
+            AuditContext.setProject(olt.getProject().getName(), olt.getProject().getId());
+        }
+
         String oldStatus = olt.getStatus();
         String newStatus = dto.getStatus();
         String oldHealth = olt.getHealthStatus();
         String newHealth = dto.getHealthStatus();
+
+        Map<String, Object> oldVal = new HashMap<>();
+        oldVal.put("status", oldStatus);
+        oldVal.put("healthStatus", oldHealth);
+        oldVal.put("ipAddress", olt.getIpAddress());
+        oldVal.put("name", olt.getName());
+        AuditContext.setOldValue(oldVal);
 
         updateEntityFromDto(olt, dto);
         olt = oltRepository.save(olt);
