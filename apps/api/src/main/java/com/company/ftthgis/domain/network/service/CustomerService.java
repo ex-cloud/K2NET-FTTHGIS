@@ -201,6 +201,7 @@ public class CustomerService {
         dto.setNodeType("CUSTOMER");
         dto.setCode(customer.getCode());
         dto.setName(customer.getName());
+        dto.setPhone(customer.getPhone());
         dto.setAddress(customer.getAddress());
         dto.setStatus(customer.getStatus());
         dto.setHealthStatus(customer.getHealthStatus());
@@ -223,6 +224,7 @@ public class CustomerService {
     private void updateEntityFromDto(Customer customer, CustomerDto dto) {
         customer.setCode(dto.getCode());
         customer.setName(dto.getName());
+        customer.setPhone(dto.getPhone());
         customer.setAddress(dto.getAddress());
 
         if (dto.getStatus() != null) {

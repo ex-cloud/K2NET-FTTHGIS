@@ -17,6 +17,7 @@ public class CustomerDto {
     private String nodeType;
     private String code;
     private String name;
+    private String phone;
     private String address;
     
     @JsonIgnore

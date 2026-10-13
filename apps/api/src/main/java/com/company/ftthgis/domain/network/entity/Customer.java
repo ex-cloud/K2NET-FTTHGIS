@@ -16,7 +16,11 @@ public class Customer extends NetworkNode {
 
     private String name;
 
+    @Column(name = "phone", length = 32)
+    private String phone;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "odp_id")
     private ODP odp;
 }
+

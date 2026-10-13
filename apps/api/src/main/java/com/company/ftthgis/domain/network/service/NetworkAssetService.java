@@ -4,6 +4,7 @@ import com.company.ftthgis.api.network.dto.AssetDetailDto;
 import com.company.ftthgis.api.network.dto.AssetSearchResult;
 import com.company.ftthgis.api.network.dto.AuditHistoryDto;
 import com.company.ftthgis.api.network.dto.BatchUpdateRequest;
+import com.company.ftthgis.domain.network.dto.OutageBlastResultDto;
 import com.company.ftthgis.domain.network.entity.Customer;
 import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.entity.ODC;
@@ -50,6 +51,7 @@ public class NetworkAssetService {
     private final NetworkNodeRepository networkNodeRepository;
     private final AuditHistoryService auditHistoryService;
     private final ProjectMemberRepository projectMemberRepository;
+    private final WhatsAppOutageNotificationService whatsAppOutageNotificationService;
 
     /**
      * Validates that the current user has access to all project assets in the batch.
@@ -102,6 +104,8 @@ public class NetworkAssetService {
     public Map<String, Object> simulateFailure(String targetCode, String targetType, String status) {
         log.info("🎮 Manual simulation triggered for {}: {}", targetCode, status);
 
+        OutageBlastResultDto outageResult = null;
+
         if ("OLT".equalsIgnoreCase(targetType)) {
             statusPropagationService.handleOltStatusChange(targetCode, status, "Manual Simulation Triggered");
         } else if ("ODC".equalsIgnoreCase(targetType)) {
@@ -110,17 +114,29 @@ public class NetworkAssetService {
             } else {
                 statusPropagationService.simulateCableFailure("SIM-CABLE-01", targetCode, status);
             }
+            if ("FIBERCUT".equalsIgnoreCase(status) || "DOWN".equalsIgnoreCase(status)) {
+                outageResult = whatsAppOutageNotificationService.notifyOutageForAsset(targetCode, "ODC", status);
+            }
         } else if ("ODP".equalsIgnoreCase(targetType)) {
             if ("FIBERCUT".equalsIgnoreCase(status)) {
                 statusPropagationService.handleOdpStatusChange(targetCode, "FIBERCUT", "Manual FIBERCUT Simulation");
             } else {
                 statusPropagationService.handleOdpStatusChange(targetCode, status, "Manual Status Simulation: " + status);
             }
+            if ("FIBERCUT".equalsIgnoreCase(status) || "DOWN".equalsIgnoreCase(status)) {
+                outageResult = whatsAppOutageNotificationService.notifyOutageForAsset(targetCode, "ODP", status);
+            }
         } else if ("CUSTOMER".equalsIgnoreCase(targetType)) {
             statusPropagationService.handleCustomerStatusChange(targetCode, status, "Manual Customer Status Simulation");
         }
 
-        return Map.of("success", true, "message", "Simulation triggered for " + targetCode);
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Simulation triggered for " + targetCode);
+        if (outageResult != null) {
+            response.put("outageNotification", outageResult);
+        }
+        return response;
     }
 
     /**

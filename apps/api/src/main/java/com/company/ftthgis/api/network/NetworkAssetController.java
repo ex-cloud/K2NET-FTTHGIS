@@ -4,7 +4,9 @@ import com.company.ftthgis.api.network.dto.AssetDetailDto;
 import com.company.ftthgis.api.network.dto.AssetSearchResult;
 import com.company.ftthgis.api.network.dto.AuditHistoryDto;
 import com.company.ftthgis.api.network.dto.BatchUpdateRequest;
+import com.company.ftthgis.domain.network.dto.OutageBlastResultDto;
 import com.company.ftthgis.domain.network.service.NetworkAssetService;
+import com.company.ftthgis.domain.network.service.WhatsAppOutageNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,7 @@ import java.util.UUID;
 public class NetworkAssetController {
 
     private final NetworkAssetService networkAssetService;
+    private final WhatsAppOutageNotificationService whatsAppOutageNotificationService;
 
     @PostMapping("/simulate-failure")
     @PreAuthorize("hasAuthority('network.manage')")
@@ -34,6 +37,15 @@ public class NetworkAssetController {
             @RequestParam String targetType,
             @RequestParam String status) {
         return ResponseEntity.ok(networkAssetService.simulateFailure(targetCode, targetType, status));
+    }
+
+    @PostMapping("/outage-blast")
+    @PreAuthorize("hasAuthority('network.manage')")
+    public ResponseEntity<OutageBlastResultDto> triggerOutageBlast(
+            @RequestParam String targetCode,
+            @RequestParam String targetType,
+            @RequestParam(required = false, defaultValue = "FIBERCUT") String reason) {
+        return ResponseEntity.ok(whatsAppOutageNotificationService.notifyOutageForAsset(targetCode, targetType, reason));
     }
 
     @PostMapping("/batch-update")

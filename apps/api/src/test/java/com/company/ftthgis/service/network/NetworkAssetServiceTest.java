@@ -19,6 +19,7 @@ import com.company.ftthgis.domain.network.service.AuditHistoryService;
 import com.company.ftthgis.domain.network.service.NetworkAssetService;
 import com.company.ftthgis.domain.network.service.StatusCacheService;
 import com.company.ftthgis.domain.network.service.StatusPropagationService;
+import com.company.ftthgis.domain.network.service.WhatsAppOutageNotificationService;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.Project;
 import com.company.ftthgis.domain.tenant.repository.ProjectMemberRepository;
@@ -71,6 +72,8 @@ class NetworkAssetServiceTest {
     private AuditHistoryService auditHistoryService;
     @Mock
     private ProjectMemberRepository projectMemberRepository;
+    @Mock
+    private WhatsAppOutageNotificationService whatsAppOutageNotificationService;
 
     @InjectMocks
     private NetworkAssetService networkAssetService;
