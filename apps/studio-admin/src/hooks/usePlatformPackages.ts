@@ -6,14 +6,20 @@ import { useSession } from "@/lib/auth-compat";
 export type PackageCategory =
   | "TELEMETRY"
   | "FIELD_OPS"
+  | "INTEGRATION"
   | "CAPACITY_BOOSTER"
   | "SECURITY_GOV"
+  | "SPATIAL_AI"
+  | "WHITE_LABEL"
+  | "DISASTER_RECOVERY"
+  | "COMPLIANCE_ROW"
+  | "CONTRACTOR_OPS"
+  | "SALES_EXPANSION"
+  | "IOT_SENSORS"
   | "CIVIL_INFRA"
   | "AI_COPILOT"
   | "GIS_ANALYTICS"
-  | "DISASTER_RECOVERY"
   | "BILLING_FINANCE"
-  | "INTEGRATION"
   | "WORKFORCE_SAFETY"
   | "COLLABORATION";
 

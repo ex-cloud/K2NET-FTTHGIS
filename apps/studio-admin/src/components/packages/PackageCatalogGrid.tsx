@@ -11,8 +11,10 @@ import {
   Layers,
   ShieldAlert,
   Zap,
+  Info,
 } from "lucide-react";
 import type { PlatformPackageItem, PackageCategory } from "@/hooks/usePlatformPackages";
+import { PackageDetailModal } from "./PackageDetailModal";
 
 export interface PackageCatalogGridProps {
   packages: PlatformPackageItem[];
@@ -29,16 +31,16 @@ export interface PackageCatalogGridProps {
 const CATEGORIES: PackageCategory[] = [
   "TELEMETRY",
   "FIELD_OPS",
+  "INTEGRATION",
   "CAPACITY_BOOSTER",
   "SECURITY_GOV",
-  "CIVIL_INFRA",
-  "AI_COPILOT",
-  "GIS_ANALYTICS",
+  "SPATIAL_AI",
+  "WHITE_LABEL",
   "DISASTER_RECOVERY",
-  "BILLING_FINANCE",
-  "INTEGRATION",
-  "WORKFORCE_SAFETY",
-  "COLLABORATION",
+  "COMPLIANCE_ROW",
+  "CONTRACTOR_OPS",
+  "SALES_EXPANSION",
+  "IOT_SENSORS",
 ];
 
 export function PackageCatalogGrid({
@@ -54,6 +56,8 @@ export function PackageCatalogGrid({
 }: PackageCatalogGridProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [detailModalOpen, setDetailModalOpen] = React.useState(false);
+  const [selectedForDetail, setSelectedForDetail] = React.useState<PlatformPackageItem | null>(null);
 
   const formatPrice = (price: number, billingType: string): string => {
     const safePrice = Number.isFinite(price) ? price : 0;
@@ -153,9 +157,10 @@ export function PackageCatalogGrid({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPackages.map((pkg) => {
-            const hasQuotaDelta =
+            const hasQuotaDelta = Boolean(
               (pkg.quotaDeltaOlt && pkg.quotaDeltaOlt > 0) ||
-              (pkg.quotaDeltaOdp && pkg.quotaDeltaOdp > 0);
+              (pkg.quotaDeltaOdp && pkg.quotaDeltaOdp > 0)
+            );
 
             return (
               <Card
@@ -167,7 +172,7 @@ export function PackageCatalogGrid({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-col gap-1 min-w-0">
                     <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 w-fit">
-                      {t(`packages.category.${pkg.category}`)}
+                      {t(`packages.category.${pkg.category}` as any)}
                     </span>
                     <h3 className="text-sm font-bold text-foreground truncate mt-0.5">
                       {pkg.packageName}
@@ -188,8 +193,8 @@ export function PackageCatalogGrid({
                   </span>
                 </div>
 
-                {/* Description */}
-                <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">
+                {/* Description - compact & uncluttered */}
+                <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px] leading-relaxed">
                   {pkg.description || "—"}
                 </p>
 
@@ -197,7 +202,7 @@ export function PackageCatalogGrid({
                 <div className="pt-2 border-t border-border/60 flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase font-mono text-muted-foreground">
-                      {t(`packages.billing_type.${pkg.billingType}`)}
+                      {t(`packages.billing_type.${pkg.billingType}` as any)}
                     </span>
                     <span className="text-sm font-bold font-mono text-foreground">
                       {formatPrice(pkg.priceIdr, pkg.billingType)}
@@ -209,40 +214,42 @@ export function PackageCatalogGrid({
                       <span className="text-[10px] uppercase font-mono text-muted-foreground">
                         {t("packages.card.min_tier")}
                       </span>
-                      <span className="text-xs font-mono font-semibold text-primary">
+                      <span className="text-xs font-mono font-semibold text-primary uppercase">
                         {pkg.minimumTier}
                       </span>
                     </div>
                   )}
                 </div>
 
-                {/* Quota Boosters */}
+                {/* Quota Boosters - strictly Boolean guarded to avoid stray 0 */}
                 {hasQuotaDelta && (
                   <div className="flex items-center gap-2 p-1.5 rounded bg-muted/30 border border-border/80 text-[11px] font-mono">
                     <Zap className="h-3 w-3 text-amber-500 shrink-0" />
                     <span className="text-muted-foreground">{t("packages.card.quota_boost")}:</span>
-                    {pkg.quotaDeltaOlt && pkg.quotaDeltaOlt > 0 && (
+                    {Boolean(pkg.quotaDeltaOlt && pkg.quotaDeltaOlt > 0) && (
                       <span className="text-foreground font-semibold">+{pkg.quotaDeltaOlt} OLT</span>
                     )}
-                    {pkg.quotaDeltaOdp && pkg.quotaDeltaOdp > 0 && (
+                    {Boolean(pkg.quotaDeltaOdp && pkg.quotaDeltaOdp > 0) && (
                       <span className="text-foreground font-semibold">+{pkg.quotaDeltaOdp} ODP</span>
                     )}
                   </div>
                 )}
 
                 {/* Prerequisites & Conflicts Badges */}
-                {((pkg.prerequisiteCodes && pkg.prerequisiteCodes.length > 0) ||
-                  (pkg.conflictCodes && pkg.conflictCodes.length > 0)) && (
+                {Boolean(
+                  (pkg.prerequisiteCodes && pkg.prerequisiteCodes.length > 0) ||
+                  (pkg.conflictCodes && pkg.conflictCodes.length > 0)
+                ) && (
                   <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                    {pkg.prerequisiteCodes && pkg.prerequisiteCodes.length > 0 && (
+                    {Boolean(pkg.prerequisiteCodes && pkg.prerequisiteCodes.length > 0) && (
                       <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20 font-mono">
-                        {t("packages.card.prereq_badge")}: {pkg.prerequisiteCodes.join(", ")}
+                        {t("packages.card.prereq_badge")}: {pkg.prerequisiteCodes?.join(", ")}
                       </span>
                     )}
-                    {pkg.conflictCodes && pkg.conflictCodes.length > 0 && (
+                    {Boolean(pkg.conflictCodes && pkg.conflictCodes.length > 0) && (
                       <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20 font-mono flex items-center gap-1">
                         <ShieldAlert className="h-2.5 w-2.5" />
-                        {t("packages.card.conflict_badge")}: {pkg.conflictCodes.join(", ")}
+                        {t("packages.card.conflict_badge")}: {pkg.conflictCodes?.join(", ")}
                       </span>
                     )}
                   </div>
@@ -250,12 +257,12 @@ export function PackageCatalogGrid({
 
                 {/* Action Toolbar (size="sm" standard) */}
                 <div className="pt-2 border-t border-border flex items-center justify-between gap-1.5">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => onEditPackage(pkg)}
-                      className="h-7 px-2.5 text-xs font-medium gap-1 rounded-md"
+                      className="h-7 px-2 text-xs font-medium gap-1 rounded-md"
                     >
                       <Edit className="h-3.5 w-3.5" />
                       {t("packages.btn_edit")}
@@ -264,7 +271,7 @@ export function PackageCatalogGrid({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => onTogglePublish(pkg.packageCode, !pkg.published)}
+                      onClick={() => onTogglePublish(pkg.id || pkg.packageCode, !pkg.published)}
                       className="h-7 px-2 text-xs font-medium gap-1 rounded-md text-muted-foreground hover:text-foreground"
                     >
                       {pkg.published ? (
@@ -278,6 +285,19 @@ export function PackageCatalogGrid({
                           {t("packages.btn_publish")}
                         </>
                       )}
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setSelectedForDetail(pkg);
+                        setDetailModalOpen(true);
+                      }}
+                      className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-foreground"
+                      title={t("packages.btn_view_details")}
+                    >
+                      <Info className="h-3.5 w-3.5" />
                     </Button>
                   </div>
 
@@ -296,6 +316,14 @@ export function PackageCatalogGrid({
           })}
         </div>
       )}
+
+      {/* View Detail Modal */}
+      <PackageDetailModal
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        packageItem={selectedForDetail}
+        onEdit={onEditPackage}
+      />
     </div>
   );
 }

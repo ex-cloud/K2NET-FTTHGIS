@@ -114,9 +114,28 @@ public class PlatformPackageService {
     }
 
     @Transactional
-    public PackageResponseDto updatePackage(UUID id, UpdatePackageRequest request) {
-        PlatformPackage pkg = packageRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Paket tidak ditemukan."));
+    public PlatformPackage resolvePackage(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Package identifier cannot be empty.");
+        }
+        try {
+            UUID uuid = UUID.fromString(identifier.trim());
+            Optional<PlatformPackage> byId = packageRepository.findById(uuid);
+            if (byId.isPresent()) return byId.get();
+        } catch (IllegalArgumentException ignored) {
+            // Not a UUID, fallback to lookup by unique package code
+        }
+        return packageRepository.findByCode(identifier.trim().toUpperCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Paket tidak ditemukan: " + identifier));
+    }
+
+    public PackageResponseDto getPackageByIdOrCode(String identifier) {
+        return mapToDto(resolvePackage(identifier));
+    }
+
+    @Transactional
+    public PackageResponseDto updatePackage(String identifier, UpdatePackageRequest request) {
+        PlatformPackage pkg = resolvePackage(identifier);
 
         pkg.setName(request.getName().trim());
         pkg.setCategory(request.getCategory());
@@ -139,22 +158,31 @@ public class PlatformPackageService {
     }
 
     @Transactional
-    public PackageResponseDto togglePublish(UUID id) {
-        PlatformPackage pkg = packageRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Paket tidak ditemukan."));
+    public PackageResponseDto updatePackage(UUID id, UpdatePackageRequest request) {
+        return updatePackage(id.toString(), request);
+    }
 
-        pkg.setPublished(!pkg.isPublished());
+    @Transactional
+    public PackageResponseDto togglePublish(String identifier, Boolean published) {
+        PlatformPackage pkg = resolvePackage(identifier);
+
+        boolean newStatus = (published != null) ? published : !pkg.isPublished();
+        pkg.setPublished(newStatus);
         PlatformPackage updated = packageRepository.save(pkg);
         log.info("📦 PACKAGE TOGGLED: Code '{}' published={}", updated.getCode(), updated.isPublished());
         return mapToDto(updated);
     }
 
     @Transactional
-    public void deletePackage(UUID id) {
-        PlatformPackage pkg = packageRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Paket tidak ditemukan."));
+    public PackageResponseDto togglePublish(UUID id) {
+        return togglePublish(id.toString(), null);
+    }
 
-        long activeSubs = subscriptionRepository.countByPlatformPackageIdAndStatus(id, PackageSubscriptionStatus.ACTIVE);
+    @Transactional
+    public void deletePackage(String identifier) {
+        PlatformPackage pkg = resolvePackage(identifier);
+
+        long activeSubs = subscriptionRepository.countByPlatformPackageIdAndStatus(pkg.getId(), PackageSubscriptionStatus.ACTIVE);
         if (activeSubs > 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Paket tidak dapat dihapus karena masih memiliki " + activeSubs + " langganan aktif. Silakan unpublish paket.");
@@ -162,6 +190,11 @@ public class PlatformPackageService {
 
         packageRepository.delete(pkg);
         log.info("📦 PACKAGE DELETED: Code '{}'", pkg.getCode());
+    }
+
+    @Transactional
+    public void deletePackage(UUID id) {
+        deletePackage(id.toString());
     }
 
     public PackageResponseDto mapToDto(PlatformPackage pkg) {

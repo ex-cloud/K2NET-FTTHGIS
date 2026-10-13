@@ -70,12 +70,12 @@ public class PlatformPackageAdminController {
     }
 
     /**
-     * Mengambil detail satu paket berdasarkan ID.
+     * Mengambil detail satu paket berdasarkan ID atau Package Code.
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{identifier}")
     @PreAuthorize("hasAuthority('system.packages.view') or hasAuthority('system.packages.manage')")
-    public ResponseEntity<PackageResponseDto> getPackageById(@PathVariable UUID id) {
-        return ResponseEntity.ok(packageService.getPackageById(id));
+    public ResponseEntity<PackageResponseDto> getPackageById(@PathVariable String identifier) {
+        return ResponseEntity.ok(packageService.getPackageByIdOrCode(identifier));
     }
 
     /**
@@ -88,32 +88,34 @@ public class PlatformPackageAdminController {
     }
 
     /**
-     * Memperbarui konfigurasi paket yang sudah ada.
+     * Memperbarui konfigurasi paket yang sudah ada berdasarkan ID atau Package Code.
      */
-    @PutMapping("/{id}")
+    @PutMapping("/{identifier}")
     @PreAuthorize("hasAuthority('system.packages.manage')")
     public ResponseEntity<PackageResponseDto> updatePackage(
-            @PathVariable UUID id,
+            @PathVariable String identifier,
             @Valid @RequestBody UpdatePackageRequest request) {
-        return ResponseEntity.ok(packageService.updatePackage(id, request));
+        return ResponseEntity.ok(packageService.updatePackage(identifier, request));
     }
 
     /**
      * Toggle status publikasi paket di marketplace tenant.
      */
-    @PatchMapping("/{id}/toggle-publish")
+    @PatchMapping(value = {"/{identifier}/toggle-publish", "/{identifier}/publish"})
     @PreAuthorize("hasAuthority('system.packages.manage')")
-    public ResponseEntity<PackageResponseDto> togglePublish(@PathVariable UUID id) {
-        return ResponseEntity.ok(packageService.togglePublish(id));
+    public ResponseEntity<PackageResponseDto> togglePublish(
+            @PathVariable String identifier,
+            @RequestParam(required = false) Boolean published) {
+        return ResponseEntity.ok(packageService.togglePublish(identifier, published));
     }
 
     /**
-     * Menghapus paket dari katalog platform.
+     * Menghapus paket dari katalog platform berdasarkan ID atau Package Code.
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{identifier}")
     @PreAuthorize("hasAuthority('system.packages.manage')")
-    public ResponseEntity<Void> deletePackage(@PathVariable UUID id) {
-        packageService.deletePackage(id);
+    public ResponseEntity<Void> deletePackage(@PathVariable String identifier) {
+        packageService.deletePackage(identifier);
         return ResponseEntity.noContent().build();
     }
 

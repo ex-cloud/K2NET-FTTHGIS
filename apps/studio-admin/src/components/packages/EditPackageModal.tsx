@@ -32,16 +32,16 @@ export interface EditPackageModalProps {
 const CATEGORIES: PackageCategory[] = [
   "TELEMETRY",
   "FIELD_OPS",
+  "INTEGRATION",
   "CAPACITY_BOOSTER",
   "SECURITY_GOV",
-  "CIVIL_INFRA",
-  "AI_COPILOT",
-  "GIS_ANALYTICS",
+  "SPATIAL_AI",
+  "WHITE_LABEL",
   "DISASTER_RECOVERY",
-  "BILLING_FINANCE",
-  "INTEGRATION",
-  "WORKFORCE_SAFETY",
-  "COLLABORATION",
+  "COMPLIANCE_ROW",
+  "CONTRACTOR_OPS",
+  "SALES_EXPANSION",
+  "IOT_SENSORS",
 ];
 
 const BILLING_TYPES: PackageBillingType[] = [
@@ -98,7 +98,7 @@ export function EditPackageModal({
       setMinimumTier(packageToEdit.minimumTier || "FREE");
       setQuotaDeltaOlt(packageToEdit.quotaDeltaOlt || 0);
       setQuotaDeltaOdp(packageToEdit.quotaDeltaOdp || 0);
-      setPublished(packageToEdit.published);
+      setPublished(Boolean(packageToEdit.published));
       setPrerequisiteCodes(packageToEdit.prerequisiteCodes || []);
       setConflictCodes(packageToEdit.conflictCodes || []);
     } else {
@@ -124,7 +124,8 @@ export function EditPackageModal({
     setSubmitting(true);
     try {
       if (isEditing) {
-        await onUpdate(packageToEdit.packageCode, {
+        const targetId = packageToEdit.id || packageToEdit.packageCode;
+        await onUpdate(targetId, {
           packageName: packageName.trim(),
           description: description.trim() || undefined,
           category,

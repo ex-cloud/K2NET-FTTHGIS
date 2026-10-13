@@ -17,12 +17,14 @@ import {
   RefreshCw,
   HardDrive,
   Users,
+  Info,
   type LucideIcon,
 } from "lucide-react";
 import type {
   TenantMarketplacePackage,
   PackageCategory,
 } from "../../hooks/useTenantPackagesMarketplace";
+import { MarketplaceDetailModal } from "./MarketplaceDetailModal";
 
 export interface MarketplaceCardGridProps {
   packages: TenantMarketplacePackage[];
@@ -44,6 +46,12 @@ const CATEGORY_ICONS: Record<PackageCategory, LucideIcon> = {
   CIVIL_INFRA: Server,
   WORKFORCE_SAFETY: Shield,
   COLLABORATION: Boxes,
+  SPATIAL_AI: Sparkles,
+  WHITE_LABEL: Layers,
+  COMPLIANCE_ROW: Shield,
+  CONTRACTOR_OPS: Users,
+  SALES_EXPANSION: ArrowUpRight,
+  IOT_SENSORS: Activity,
 };
 
 function formatPrice(
@@ -215,12 +223,14 @@ interface MarketplacePackageCardProps {
   pkg: TenantMarketplacePackage;
   onSelectPackageForOrder: (pkg: TenantMarketplacePackage) => void;
   onUpgradePlan: () => void;
+  onOpenDetail: (pkg: TenantMarketplacePackage) => void;
 }
 
 function MarketplacePackageCard({
   pkg,
   onSelectPackageForOrder,
   onUpgradePlan,
+  onOpenDetail,
 }: MarketplacePackageCardProps) {
   const { t } = useTranslation();
   const IconComponent = CATEGORY_ICONS[pkg.category] || Layers;
@@ -268,19 +278,28 @@ function MarketplacePackageCard({
           />
         </div>
 
-        {/* Title & Code */}
+        {/* Title, Code & Detail Action */}
         <div className="space-y-1 mb-2">
-          <div className="flex items-baseline justify-between gap-2">
-            <h3 className="text-sm font-semibold text-foreground tracking-tight line-clamp-1">
+          <div className="flex items-center justify-between gap-1.5">
+            <h3 className="text-sm font-semibold text-foreground tracking-tight line-clamp-1 flex-1">
               {pkg.name}
             </h3>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onOpenDetail(pkg)}
+              className="h-6 w-6 p-0 rounded text-muted-foreground hover:text-foreground shrink-0"
+              title={t("packages.btn_view_details")}
+            >
+              <Info className="size-3.5" />
+            </Button>
           </div>
           <p className="font-mono text-[10px] text-muted-foreground tracking-wider">
             {pkg.code}
           </p>
         </div>
 
-        {/* Description */}
+        {/* Description - Compact & Clean */}
         <p className="text-xs text-muted-foreground/90 line-clamp-2 leading-relaxed mb-4">
           {description}
         </p>
@@ -365,6 +384,13 @@ export function MarketplaceCardGrid({
   loading = false,
 }: MarketplaceCardGridProps) {
   const { t } = useTranslation();
+  const [detailModalOpen, setDetailModalOpen] = React.useState(false);
+  const [selectedForDetail, setSelectedForDetail] = React.useState<TenantMarketplacePackage | null>(null);
+
+  const handleOpenDetail = (pkg: TenantMarketplacePackage) => {
+    setSelectedForDetail(pkg);
+    setDetailModalOpen(true);
+  };
 
   if (loading) {
     return (
@@ -403,15 +429,26 @@ export function MarketplaceCardGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {packages.map((pkg) => (
-        <MarketplacePackageCard
-          key={pkg.id}
-          pkg={pkg}
-          onSelectPackageForOrder={onSelectPackageForOrder}
-          onUpgradePlan={onUpgradePlan}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {packages.map((pkg) => (
+          <MarketplacePackageCard
+            key={pkg.id}
+            pkg={pkg}
+            onSelectPackageForOrder={onSelectPackageForOrder}
+            onUpgradePlan={onUpgradePlan}
+            onOpenDetail={handleOpenDetail}
+          />
+        ))}
+      </div>
+
+      <MarketplaceDetailModal
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        pkg={selectedForDetail}
+        onSelectForOrder={onSelectPackageForOrder}
+        onUpgradePlan={onUpgradePlan}
+      />
+    </>
   );
 }

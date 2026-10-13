@@ -29,7 +29,7 @@
     "categories_count": "Active Categories",
     "tenants_engaged": "Tenants Engaged"
   },
-  "category": {
+    "category": {
     "TELEMETRY": "Telemetry & OLT Polling",
     "FIELD_OPS": "Field Operations & Workforce",
     "CAPACITY_BOOSTER": "Capacity Boosters & Quotas",
@@ -41,7 +41,36 @@
     "BILLING_FINANCE": "Billing, Tax & Payment Gateways",
     "INTEGRATION": "Enterprise Webhooks & API",
     "WORKFORCE_SAFETY": "Workforce Safety & RoW Permits",
-    "COLLABORATION": "Real-time Field Chat & Dispatch"
+    "COLLABORATION": "Real-time Field Chat & Dispatch",
+    "SPATIAL_AI": "Spatial AI & Optical Diagnostics",
+    "WHITE_LABEL": "Whitelabel & Custom Branding",
+    "COMPLIANCE_ROW": "Right-of-Way & Pole Compliance",
+    "CONTRACTOR_OPS": "Contractor Ops & BoQ Opname",
+    "SALES_EXPANSION": "Coverage Widget & Lead Expansion",
+    "IOT_SENSORS": "IoT Sensors & Environmental Guard"
+  },
+  "btn_view_details": "View Details",
+  "detail_modal": {
+    "title": "Package Details",
+    "eyebrow": "CATALOG SPECIFICATIONS",
+    "desc": "Technical entitlements, quotas, and licensing rules for this platform package.",
+    "tab_overview": "Overview",
+    "tab_quotas": "Quota & Hardware",
+    "tab_dependencies": "Dependencies",
+    "tab_entitlements": "Entitlements",
+    "field_code": "Package Code",
+    "field_category": "Domain Category",
+    "field_billing": "Billing Model",
+    "field_price": "Price",
+    "field_min_tier": "Minimum Subscription Tier",
+    "field_feature_key": "Feature Entitlement Key",
+    "field_status": "Catalog Status",
+    "quota_title": "Hardware & Quota Expansion",
+    "quota_none": "This package contains specialized software capabilities and does not expand baseline hardware quotas.",
+    "dependencies_title": "Prerequisites & Compatibility",
+    "prereq_none": "None (Can be activated on any eligible tier)",
+    "conflicts_none": "None (No conflicting packages detected)",
+    "btn_close": "Close"
   },
   "billing_type": {
     "RECURRING_MONTHLY": "Monthly Recurring",
