@@ -195,4 +195,32 @@ class WhatsAppOutageNotificationServiceTest {
         assertTrue(downstream.contains(cust1));
         assertTrue(downstream.contains(cust2));
     }
+
+    @Test
+    @DisplayName("notifyOutageForAsset resolves organization and downstream customers")
+    void testNotifyOutageForAsset_Success() {
+        ODC odc = new ODC();
+        odc.setCode("ODC-01");
+        odc.setOrganization(organization);
+
+        when(odcRepository.findByCode("ODC-01")).thenReturn(Optional.of(odc));
+        when(organizationRepository.findById(organization.getId())).thenReturn(Optional.of(organization));
+        when(subscriptionService.hasActiveFeature(organization.getId(), WhatsAppOutageNotificationService.OUTAGE_FEATURE_KEY))
+                .thenReturn(true);
+
+        ODP odp = new ODP();
+        Customer cust = new Customer();
+        cust.setName("Andi");
+        cust.setPhone("+628123456789");
+
+        when(odpRepository.findByOdc(odc)).thenReturn(List.of(odp));
+        when(customerRepository.findByOdp(odp)).thenReturn(List.of(cust));
+        when(whatsAppGatewayClient.sendBlast(eq("tenant-test-slug"), anyList()))
+                .thenReturn(Optional.of(new WhatsAppGatewayClient.BlastResponseData("queued", 1)));
+
+        OutageBlastResultDto result = outageService.notifyOutageForAsset("ODC-01", "ODC", "FIBERCUT");
+
+        assertEquals("QUEUED", result.getStatus());
+        assertEquals(1, result.getQueuedCount());
+    }
 }

@@ -14,6 +14,7 @@ import com.company.ftthgis.service.WhatsAppGatewayClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
  * before dispatching messages to ftth-whatsapp-gateway (port 5005).
  */
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Slf4j
 public class WhatsAppOutageNotificationService {
@@ -192,14 +194,23 @@ public class WhatsAppOutageNotificationService {
     }
 
     private Organization resolveOrganizationForAsset(String assetCode, String assetType) {
+        UUID orgId = null;
         if ("ODC".equalsIgnoreCase(assetType)) {
-            return odcRepository.findByCode(assetCode)
-                    .map(ODC::getOrganization)
+            orgId = odcRepository.findByCode(assetCode)
+                    .map(ODC::getOrganizationIdValue)
                     .orElse(null);
         } else if ("ODP".equalsIgnoreCase(assetType)) {
-            return odpRepository.findByCode(assetCode)
-                    .map(ODP::getOrganization)
+            orgId = odpRepository.findByCode(assetCode)
+                    .map(ODP::getOrganizationIdValue)
                     .orElse(null);
+        }
+
+        if (orgId == null) {
+            orgId = com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId();
+        }
+
+        if (orgId != null) {
+            return organizationRepository.findById(orgId).orElse(null);
         }
         return null;
     }
