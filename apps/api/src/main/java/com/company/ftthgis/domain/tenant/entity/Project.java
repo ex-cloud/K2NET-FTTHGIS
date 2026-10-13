@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "projects")
-@SQLDelete(sql = "UPDATE projects SET deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE projects SET deleted_at = NOW(), status = 'DELETED' WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
@@ -49,7 +49,8 @@ public class Project extends OrganizationAwareEntity {
 
     public enum ProjectStatus {
         ACTIVE,
-        ARCHIVED
+        ARCHIVED,
+        DELETED
     }
 
     @Column(columnDefinition = "TEXT")
