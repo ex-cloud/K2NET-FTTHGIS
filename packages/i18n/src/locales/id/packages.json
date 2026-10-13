@@ -197,6 +197,9 @@
     "active_since": "Aktif sejak {{date}}",
     "expires_on": "Perpanjangan / Kedaluwarsa pada {{date}}",
     "quota_boost_summary": "+{{olt}} Port OLT • +{{odp}} Kotak ODP",
+    "quota_boost_storage": "+{{storage}} GB Penyimpanan MinIO S3",
+    "quota_boost_olt_only": "+{{olt}} Kapasitas Hardware OLT",
+    "quota_boost_odp_only": "+{{odp}} Kotak Kluster ODP",
     "empty_catalog": "Tidak ada paket yang ditemukan pada kategori ini.",
     "empty_active": "Anda belum memiliki langganan add-on aktif. Jelajahi katalog untuk meningkatkan kuota Anda!"
   },

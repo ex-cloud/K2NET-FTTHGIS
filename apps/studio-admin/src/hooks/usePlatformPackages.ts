@@ -142,8 +142,14 @@ export function usePlatformPackages(filters?: { status?: string; category?: stri
           try {
             const q =
               typeof item.quotaDeltaJson === "string" ? JSON.parse(item.quotaDeltaJson) : item.quotaDeltaJson;
-            if (quotaDeltaOlt === undefined && q.olt !== undefined) quotaDeltaOlt = Number(q.olt);
-            if (quotaDeltaOdp === undefined && q.odp !== undefined) quotaDeltaOdp = Number(q.odp);
+            if (quotaDeltaOlt === undefined) {
+              const val = q.deltaOlts !== undefined ? q.deltaOlts : q.olt;
+              if (val !== undefined) quotaDeltaOlt = Number(val);
+            }
+            if (quotaDeltaOdp === undefined) {
+              const val = q.deltaOdps !== undefined ? q.deltaOdps : q.odp;
+              if (val !== undefined) quotaDeltaOdp = Number(val);
+            }
           } catch {
             // ignore parse error
           }

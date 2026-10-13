@@ -197,6 +197,9 @@
     "active_since": "Active since {{date}}",
     "expires_on": "Renews / Expires on {{date}}",
     "quota_boost_summary": "+{{olt}} OLT Ports • +{{odp}} ODP Enclosures",
+    "quota_boost_storage": "+{{storage}} GB MinIO S3 Storage",
+    "quota_boost_olt_only": "+{{olt}} OLT Hardware Capacity",
+    "quota_boost_odp_only": "+{{odp}} ODP Cluster Enclosures",
     "empty_catalog": "No packages found in this category.",
     "empty_active": "You have no active add-on subscriptions yet. Browse the catalog to boost your quotas!"
   },

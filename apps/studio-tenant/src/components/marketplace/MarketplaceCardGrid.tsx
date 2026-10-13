@@ -64,13 +64,14 @@ function formatPrice(
   return t("packages.card.price_per_month", { price: formatted });
 }
 
-function parseQuotaDelta(jsonStr?: string): { olt: number; odp: number } | null {
+function parseQuotaDelta(jsonStr?: string): { olt: number; odp: number; storageGb?: number } | null {
   if (!jsonStr) return null;
   try {
-    const parsed = JSON.parse(jsonStr);
-    const olt = Number(parsed.olt || parsed.extraOlts || 0);
-    const odp = Number(parsed.odp || parsed.extraOdps || 0);
-    if (olt > 0 || odp > 0) return { olt, odp };
+    const parsed = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+    const olt = Number(parsed.deltaOlts || parsed.olt || parsed.extraOlts || 0);
+    const odp = Number(parsed.deltaOdps || parsed.odp || parsed.extraOdps || 0);
+    const storageGb = Number(parsed.deltaStorageGb || parsed.storage || 0);
+    if (olt > 0 || odp > 0 || storageGb > 0) return { olt, odp, storageGb };
   } catch {
     // ignore
   }
@@ -290,10 +291,13 @@ function MarketplacePackageCard({
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/30 border border-border/70 text-[11px] font-mono text-foreground/90">
               <Zap className="size-3 text-primary shrink-0" />
               <span>
-                {t("packages.marketplace.quota_boost_summary", {
-                  olt: quotaDelta.olt,
-                  odp: quotaDelta.odp,
-                })}
+                {quotaDelta.storageGb && quotaDelta.storageGb > 0
+                  ? t("packages.marketplace.quota_boost_storage", { storage: quotaDelta.storageGb })
+                  : quotaDelta.olt > 0 && quotaDelta.odp > 0
+                  ? t("packages.marketplace.quota_boost_summary", { olt: quotaDelta.olt, odp: quotaDelta.odp })
+                  : quotaDelta.olt > 0
+                  ? t("packages.marketplace.quota_boost_olt_only", { olt: quotaDelta.olt })
+                  : t("packages.marketplace.quota_boost_odp_only", { odp: quotaDelta.odp })}
               </span>
             </div>
           </div>
