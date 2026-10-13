@@ -121,7 +121,11 @@ public class OLTService {
 
         OLT olt = new OLT();
         updateEntityFromDto(olt, dto);
-        return networkMapper.toOLTDto(oltRepository.save(olt));
+        OLT saved = oltRepository.save(olt);
+        if (saved.getProject() != null) {
+            AuditContext.setProject(saved.getProject().getName(), saved.getProject().getId());
+        }
+        return networkMapper.toOLTDto(saved);
     }
 
     @Transactional
