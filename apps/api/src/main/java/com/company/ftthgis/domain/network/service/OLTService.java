@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.company.ftthgis.config.tenant.OrganizationContext;
+import com.company.ftthgis.config.tenant.AuditContext;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.service.ProjectQuotaService;
 
