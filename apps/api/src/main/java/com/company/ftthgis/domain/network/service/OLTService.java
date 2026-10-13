@@ -20,6 +20,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.company.ftthgis.config.tenant.OrganizationContext;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.company.ftthgis.service.ProjectQuotaService;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -29,6 +33,8 @@ public class OLTService {
     private final NetworkMapper networkMapper;
     private final StatusPropagationService statusPropagationService;
     private final ProjectRepository projectRepository;
+    private final ProjectQuotaService projectQuotaService;
+    private final OrganizationRepository organizationRepository;
 
     @Transactional(readOnly = true)
     public Page<OLTDto> getOlts(String search, String status, String name, String code, Pageable pageable) {
@@ -87,6 +93,12 @@ public class OLTService {
     public OLTDto createOlt(OLTDto dto) {
         if (oltRepository.existsByCode(dto.getCode())) {
             throw new RuntimeException("OLT with code " + dto.getCode() + " already exists");
+        }
+
+        // --- Hardware OLT Capacity Enforcement ---
+        UUID orgId = OrganizationContext.getOrganizationId();
+        if (orgId != null && projectQuotaService != null && organizationRepository != null) {
+            organizationRepository.findById(orgId).ifPresent(projectQuotaService::assertCanCreateOlt);
         }
 
         // --- ABAC: Geofencing Check ---

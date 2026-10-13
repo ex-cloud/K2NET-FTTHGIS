@@ -166,8 +166,12 @@ public class ProjectQuotaService {
         int boosterOdps = getActivePackageDelta(org.getId(), "deltaOdps");
 
         java.util.Map<String, Object> summary = new java.util.HashMap<>();
+        int maxOlts = getEffectiveMaxOlts(org);
+        long usedOlts = getUsedOlts(org.getId());
         summary.put("effectiveMaxProjects", maxProjects);
         summary.put("usedProjects", usedProjects);
+        summary.put("effectiveMaxOlts", maxOlts);
+        summary.put("usedOlts", usedOlts);
         summary.put("packageBoosterOlts", boosterOlts);
         summary.put("effectiveMaxOdps", maxOdps);
         summary.put("usedOdps", usedOdps);
@@ -261,6 +265,66 @@ public class ProjectQuotaService {
                             " archived projects. Please restore or permanently delete an existing archived project.",
                     (int) currentArchived,
                     maxArchived
+            );
+        }
+    }
+
+    /**
+     * Hitung batas maksimum OLT aktif (Hardware OLT Limit)
+     * Memprioritaskan: License Overrides > Booster & Config Override > Base Plan Limit + Active Package Boosters.
+     */
+    public int getEffectiveMaxOlts(Organization org) {
+        if (org == null) return 0;
+
+        int baseLimit;
+        if (tenantLicenseRepository != null && org.getId() != null) {
+            Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
+                    .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(org.getId(), LicenseStatus.ACTIVE);
+            if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getOverrideMaxProjects() != null) {
+                baseLimit = activeLicenseOpt.get().getOverrideMaxProjects();
+            } else {
+                SubscriptionPlan plan = org.getSubscriptionPlan();
+                int basePlanLimit = (plan != null && plan.getMaxProjects() != null) ? plan.getMaxProjects() : 2;
+                baseLimit = getConfigInt(org, "max_olts", getConfigInt(org, "max_projects", basePlanLimit));
+            }
+        } else {
+            SubscriptionPlan plan = org.getSubscriptionPlan();
+            int basePlanLimit = (plan != null && plan.getMaxProjects() != null) ? plan.getMaxProjects() : 2;
+            baseLimit = getConfigInt(org, "max_olts", getConfigInt(org, "max_projects", basePlanLimit));
+        }
+
+        int legacyBooster = (org.isBoosterActive() && org.getBoosterOlts() != null) ? org.getBoosterOlts() : 0;
+        int packageBooster = getActivePackageDelta(org.getId(), "deltaOlts");
+        return baseLimit + legacyBooster + packageBooster;
+    }
+
+    /**
+     * Hitung jumlah OLT terdaftar di database untuk organisasi
+     */
+    public long getUsedOlts(UUID orgId) {
+        if (orgId == null || networkNodeRepository == null) return 0;
+        return networkNodeRepository.countByOrganizationIdAndNodeType(orgId, "OLT");
+    }
+
+    /**
+     * Validasi pendaftaran OLT baru (Hardware Capacity Check)
+     * Melempar QuotaExceededException jika kuota OLT telah tercapai.
+     */
+    @Transactional(readOnly = true)
+    public void assertCanCreateOlt(Organization org) {
+        if (org == null) return;
+        int effectiveMax = getEffectiveMaxOlts(org);
+        long currentUsed = getUsedOlts(org.getId());
+
+        if (currentUsed >= effectiveMax) {
+            log.warn("🚫 OLT Quota Exceeded: Organization {} reached OLT hardware limit ({}/{})",
+                    org.getName(), currentUsed, effectiveMax);
+            throw new QuotaExceededException(
+                    "OLT_QUOTA_EXCEEDED",
+                    "OLT hardware quota exceeded: Your current plan and active boosters allow up to " + effectiveMax +
+                            " OLTs (" + currentUsed + "/" + effectiveMax + " registered). Please activate PKG_BOOSTER_OLT_5 in the Marketplace or upgrade your plan.",
+                    (int) currentUsed,
+                    effectiveMax
             );
         }
     }

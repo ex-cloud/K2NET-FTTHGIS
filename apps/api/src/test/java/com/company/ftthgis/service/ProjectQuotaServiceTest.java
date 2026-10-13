@@ -39,6 +39,15 @@ class ProjectQuotaServiceTest {
     @Mock
     private TenantLicenseRepository tenantLicenseRepository;
 
+    @Mock
+    private com.company.ftthgis.domain.network.repository.NetworkNodeRepository networkNodeRepository;
+
+    @Mock
+    private com.company.ftthgis.domain.tenant.repository.TenantPackageSubscriptionRepository tenantPackageSubscriptionRepository;
+
+    @Mock
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
     @InjectMocks
     private ProjectQuotaService projectQuotaService;
 
@@ -172,5 +181,49 @@ class ProjectQuotaServiceTest {
 
         int effectiveMax = projectQuotaService.getEffectiveMaxOdps(org);
         assertEquals(15000, effectiveMax); // Prioritas tertinggi: 15000 dari lisensi
+    }
+
+    @Test
+    void testAssertCanCreateOltSuccessWhenBelowLimit() {
+        when(organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(any(), eq("max_olts")))
+                .thenReturn(Optional.empty());
+        when(organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(any(), eq("max_projects")))
+                .thenReturn(Optional.empty());
+        when(networkNodeRepository.countByOrganizationIdAndNodeType(orgId, "OLT"))
+                .thenReturn(2L);
+
+        // Max projects/olts is 6 from PRO plan, current used is 2
+        assertDoesNotThrow(() -> projectQuotaService.assertCanCreateOlt(org));
+    }
+
+    @Test
+    void testAssertCanCreateOltThrowsQuotaExceededExceptionWhenLimitReached() {
+        when(organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(any(), eq("max_olts")))
+                .thenReturn(Optional.empty());
+        when(organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(any(), eq("max_projects")))
+                .thenReturn(Optional.empty());
+        when(networkNodeRepository.countByOrganizationIdAndNodeType(orgId, "OLT"))
+                .thenReturn(6L);
+
+        QuotaExceededException ex = assertThrows(QuotaExceededException.class,
+                () -> projectQuotaService.assertCanCreateOlt(org));
+
+        assertEquals("OLT_QUOTA_EXCEEDED", ex.getErrorCode());
+        assertEquals(6, ex.getCurrent());
+        assertEquals(6, ex.getMax());
+    }
+
+    @Test
+    void testEffectiveMaxOltsWithLicenseOverride() {
+        TenantLicense license = TenantLicense.builder()
+                .status(LicenseStatus.ACTIVE)
+                .overrideMaxProjects(10)
+                .build();
+
+        when(tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(orgId, LicenseStatus.ACTIVE))
+                .thenReturn(Optional.of(license));
+
+        int effectiveMax = projectQuotaService.getEffectiveMaxOlts(org);
+        assertEquals(10, effectiveMax);
     }
 }
