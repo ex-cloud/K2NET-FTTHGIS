@@ -15,10 +15,8 @@ import {
   Zap,
   ShieldCheck,
   ShieldAlert,
-  Key,
   Layers,
   Calendar,
-  HardDrive,
   Edit,
 } from "lucide-react";
 import type { PlatformPackageItem } from "@/hooks/usePlatformPackages";
@@ -64,7 +62,7 @@ export function PackageDetailModal({
         <DialogHeader className="space-y-1.5 pb-3 border-b border-border">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-              {t(`packages.category.${packageItem.category}` as any)}
+              {t(`packages.category.${packageItem.category}`)}
             </span>
             <Badge
               variant="outline"
@@ -107,7 +105,7 @@ export function PackageDetailModal({
                 {t("packages.detail_modal.field_billing")}
               </span>
               <p className="font-semibold text-foreground">
-                {t(`packages.billing_type.${packageItem.billingType}` as any)}
+                {t(`packages.billing_type.${packageItem.billingType}`)}
               </p>
             </div>
 
@@ -133,19 +131,19 @@ export function PackageDetailModal({
           {/* Quota Boosters */}
           <div className="space-y-1.5">
             <span className="text-[11px] font-semibold text-foreground/80 uppercase font-mono tracking-wider flex items-center gap-1">
-              <Zap className="size-3.5 text-amber-500" />
+              <Zap className="size-3.5 text-primary" />
               {t("packages.detail_modal.quota_title")}
             </span>
             {hasQuotaDelta ? (
-              <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-md bg-amber-500/5 border border-amber-500/20 text-xs font-mono">
+              <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-md bg-muted/30 border border-border/80 text-xs font-mono">
                 {Boolean(packageItem.quotaDeltaOlt && packageItem.quotaDeltaOlt > 0) && (
-                  <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20">
-                    +{packageItem.quotaDeltaOlt} OLT Hardware
+                  <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-semibold border border-primary/20">
+                    {t("packages.marketplace.quota_boost_olt_only", { olt: packageItem.quotaDeltaOlt ?? 0 })}
                   </span>
                 )}
                 {Boolean(packageItem.quotaDeltaOdp && packageItem.quotaDeltaOdp > 0) && (
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-                    +{packageItem.quotaDeltaOdp} ODP Splitters
+                  <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-semibold border border-primary/20">
+                    {t("packages.marketplace.quota_boost_odp_only", { odp: packageItem.quotaDeltaOdp ?? 0 })}
                   </span>
                 )}
               </div>
@@ -159,7 +157,7 @@ export function PackageDetailModal({
           {/* Compatibility & Dependencies */}
           <div className="space-y-1.5">
             <span className="text-[11px] font-semibold text-foreground/80 uppercase font-mono tracking-wider flex items-center gap-1">
-              <Layers className="size-3.5 text-sky-500" />
+              <Layers className="size-3.5 text-primary" />
               {t("packages.detail_modal.dependencies_title")}
             </span>
 
@@ -167,7 +165,7 @@ export function PackageDetailModal({
               {/* Prerequisites */}
               <div className="p-2.5 rounded-md bg-muted/20 border border-border/60 space-y-1">
                 <span className="text-[10px] font-mono uppercase text-muted-foreground flex items-center gap-1">
-                  <ShieldCheck className="size-3 text-sky-500" />
+                  <ShieldCheck className="size-3 text-primary" />
                   {t("packages.rules.th_prerequisites")}
                 </span>
                 {packageItem.prerequisiteCodes && packageItem.prerequisiteCodes.length > 0 ? (
@@ -175,7 +173,7 @@ export function PackageDetailModal({
                     {packageItem.prerequisiteCodes.map((code) => (
                       <span
                         key={code}
-                        className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20 font-mono text-[10px]"
+                        className="px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-mono text-[10px]"
                       >
                         {code}
                       </span>
@@ -191,7 +189,7 @@ export function PackageDetailModal({
               {/* Conflicts */}
               <div className="p-2.5 rounded-md bg-muted/20 border border-border/60 space-y-1">
                 <span className="text-[10px] font-mono uppercase text-muted-foreground flex items-center gap-1">
-                  <ShieldAlert className="size-3 text-rose-500" />
+                  <ShieldAlert className="size-3 text-destructive" />
                   {t("packages.rules.th_conflicts")}
                 </span>
                 {packageItem.conflictCodes && packageItem.conflictCodes.length > 0 ? (
@@ -199,7 +197,7 @@ export function PackageDetailModal({
                     {packageItem.conflictCodes.map((code) => (
                       <span
                         key={code}
-                        className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20 font-mono text-[10px]"
+                        className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive border border-destructive/20 font-mono text-[10px]"
                       >
                         {code}
                       </span>

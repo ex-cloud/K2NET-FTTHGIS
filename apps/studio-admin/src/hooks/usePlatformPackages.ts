@@ -116,6 +116,77 @@ export interface GrantPackagePayload {
   notes?: string;
 }
 
+function parsePackageQuotaDelta(item: Record<string, unknown>): { olt: number; odp: number } {
+  let olt = typeof item.quotaDeltaOlt === "number" ? item.quotaDeltaOlt : undefined;
+  let odp = typeof item.quotaDeltaOdp === "number" ? item.quotaDeltaOdp : undefined;
+  if (item.quotaDeltaJson) {
+    try {
+      const q =
+        typeof item.quotaDeltaJson === "string"
+          ? (JSON.parse(item.quotaDeltaJson) as Record<string, unknown>)
+          : (item.quotaDeltaJson as Record<string, unknown>);
+      if (olt === undefined) {
+        const val = q.deltaOlts !== undefined ? q.deltaOlts : q.olt;
+        if (val !== undefined) olt = Number(val);
+      }
+      if (odp === undefined) {
+        const val = q.deltaOdps !== undefined ? q.deltaOdps : q.odp;
+        if (val !== undefined) odp = Number(val);
+      }
+    } catch {
+      // ignore parse error
+    }
+  }
+  return { olt: olt ?? 0, odp: odp ?? 0 };
+}
+
+function parsePackageDescription(item: Record<string, unknown>): string {
+  if (typeof item.description === "string" && item.description.trim()) {
+    return item.description;
+  }
+  if (item.metadataJson) {
+    try {
+      const m =
+        typeof item.metadataJson === "string"
+          ? (JSON.parse(item.metadataJson) as Record<string, unknown>)
+          : (item.metadataJson as Record<string, unknown>);
+      if (m?.description) return String(m.description);
+    } catch {
+      // ignore parse error
+    }
+  }
+  return "";
+}
+
+function mapToPlatformPackageItem(item: Record<string, unknown>): PlatformPackageItem {
+  const { olt, odp } = parsePackageQuotaDelta(item);
+  const description = parsePackageDescription(item);
+  const rawBilling = item.billingType;
+  const billingType =
+    rawBilling === "MONTHLY_RECURRING"
+      ? "RECURRING_MONTHLY"
+      : (rawBilling as PackageBillingType) || "RECURRING_MONTHLY";
+
+  return {
+    id: String(item.id || ""),
+    packageCode: String(item.packageCode || item.code || ""),
+    packageName: String(item.packageName || item.name || ""),
+    description,
+    category: item.category as PackageCategory,
+    billingType,
+    priceIdr: Number(item.priceIdr ?? item.priceMonthly ?? 0),
+    minimumTier: String(item.minimumTier || item.minPlanTier || "FREE"),
+    quotaDeltaOlt: olt,
+    quotaDeltaOdp: odp,
+    published: Boolean(item.published ?? item.isPublished ?? true),
+    prerequisiteCodes: Array.isArray(item.prerequisiteCodes) ? (item.prerequisiteCodes as string[]) : [],
+    conflictCodes: Array.isArray(item.conflictCodes) ? (item.conflictCodes as string[]) : [],
+    subscriberCount: typeof item.subscriberCount === "number" ? item.subscriberCount : undefined,
+    createdAt: typeof item.createdAt === "string" ? item.createdAt : undefined,
+    updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : undefined,
+  };
+}
+
 export function usePlatformPackages(filters?: { status?: string; category?: string }) {
   const { data: session, status } = useSession();
   const activeToken =
@@ -141,59 +212,8 @@ export function usePlatformPackages(filters?: { status?: string; category?: stri
         throw new Error(`Failed to fetch packages: ${res.status}`);
       }
       const rawList = await res.json();
-      return (Array.isArray(rawList) ? rawList : []).map((item: any): PlatformPackageItem => {
-        let quotaDeltaOlt = item.quotaDeltaOlt;
-        let quotaDeltaOdp = item.quotaDeltaOdp;
-        if (item.quotaDeltaJson) {
-          try {
-            const q =
-              typeof item.quotaDeltaJson === "string" ? JSON.parse(item.quotaDeltaJson) : item.quotaDeltaJson;
-            if (quotaDeltaOlt === undefined) {
-              const val = q.deltaOlts !== undefined ? q.deltaOlts : q.olt;
-              if (val !== undefined) quotaDeltaOlt = Number(val);
-            }
-            if (quotaDeltaOdp === undefined) {
-              const val = q.deltaOdps !== undefined ? q.deltaOdps : q.odp;
-              if (val !== undefined) quotaDeltaOdp = Number(val);
-            }
-          } catch {
-            // ignore parse error
-          }
-        }
-
-        let description = item.description;
-        if (!description && item.metadataJson) {
-          try {
-            const m =
-              typeof item.metadataJson === "string" ? JSON.parse(item.metadataJson) : item.metadataJson;
-            if (m.description) description = String(m.description);
-          } catch {
-            // ignore parse error
-          }
-        }
-
-        const billingType =
-          item.billingType === "MONTHLY_RECURRING" ? "RECURRING_MONTHLY" : item.billingType || "RECURRING_MONTHLY";
-
-        return {
-          id: item.id,
-          packageCode: item.packageCode || item.code,
-          packageName: item.packageName || item.name,
-          description: description || "",
-          category: item.category,
-          billingType: billingType as PackageBillingType,
-          priceIdr: Number(item.priceIdr ?? item.priceMonthly ?? 0),
-          minimumTier: item.minimumTier || item.minPlanTier || "FREE",
-          quotaDeltaOlt: quotaDeltaOlt ?? 0,
-          quotaDeltaOdp: quotaDeltaOdp ?? 0,
-          published: Boolean(item.published ?? item.isPublished ?? true),
-          prerequisiteCodes: item.prerequisiteCodes || [],
-          conflictCodes: item.conflictCodes || [],
-          subscriberCount: item.subscriberCount,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-        };
-      });
+      const list = Array.isArray(rawList) ? (rawList as Record<string, unknown>[]) : [];
+      return list.map(mapToPlatformPackageItem);
     },
     enabled: status !== "unauthenticated" && (!!activeToken || typeof window !== "undefined"),
     staleTime: 30 * 1000,
@@ -300,7 +320,7 @@ export function useCreatePackage() {
       if (payload.quotaDeltaOlt !== undefined) quotaDelta.olt = payload.quotaDeltaOlt;
       if (payload.quotaDeltaOdp !== undefined) quotaDelta.odp = payload.quotaDeltaOdp;
 
-      const metadata: Record<string, any> = {};
+      const metadata: Record<string, unknown> = {};
       if (payload.description) metadata.description = payload.description;
 
       const backendPayload = {
@@ -354,10 +374,10 @@ export function useUpdatePackage() {
       if (payload.quotaDeltaOlt !== undefined) quotaDelta.olt = payload.quotaDeltaOlt;
       if (payload.quotaDeltaOdp !== undefined) quotaDelta.odp = payload.quotaDeltaOdp;
 
-      const metadata: Record<string, any> = {};
+      const metadata: Record<string, unknown> = {};
       if (payload.description !== undefined) metadata.description = payload.description;
 
-      const backendPayload: Record<string, any> = {};
+      const backendPayload: Record<string, unknown> = {};
       if (payload.packageName !== undefined) backendPayload.name = payload.packageName;
       if (payload.category !== undefined) backendPayload.category = payload.category;
       if (payload.billingType !== undefined) {

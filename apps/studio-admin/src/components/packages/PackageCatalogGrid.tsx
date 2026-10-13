@@ -172,7 +172,7 @@ export function PackageCatalogGrid({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-col gap-1 min-w-0">
                     <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 w-fit">
-                      {t(`packages.category.${pkg.category}` as any)}
+                      {t(`packages.category.${pkg.category}`)}
                     </span>
                     <h3 className="text-sm font-bold text-foreground truncate mt-0.5">
                       {pkg.packageName}
@@ -202,7 +202,7 @@ export function PackageCatalogGrid({
                 <div className="pt-2 border-t border-border/60 flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase font-mono text-muted-foreground">
-                      {t(`packages.billing_type.${pkg.billingType}` as any)}
+                      {t(`packages.billing_type.${pkg.billingType}`)}
                     </span>
                     <span className="text-sm font-bold font-mono text-foreground">
                       {formatPrice(pkg.priceIdr, pkg.billingType)}

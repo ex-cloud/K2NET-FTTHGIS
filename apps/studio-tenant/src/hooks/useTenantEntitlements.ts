@@ -47,7 +47,14 @@ export function useTenantEntitlements() {
   };
 
   return {
-    ...query,
+    data: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+    status: query.status,
+    isSuccess: query.isSuccess,
+    isFetching: query.isFetching,
     entitlements: query.data,
     activeFeatures: query.data?.activeFeatures ?? [],
     activePackages: query.data?.activePackages ?? [],

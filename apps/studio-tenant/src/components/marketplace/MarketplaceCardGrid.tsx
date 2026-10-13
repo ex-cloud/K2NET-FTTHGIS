@@ -127,7 +127,7 @@ function CardHeaderBadges({
         </Badge>
       )}
       {isPrereqRequired && (
-        <Badge variant="outline" className="text-[10px] font-medium border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 py-0 px-1.5">
+        <Badge variant="outline" className="text-[10px] font-medium border-primary/30 text-primary bg-primary/10 py-0 px-1.5">
           {t("packages.marketplace.state_prereq_required")}
         </Badge>
       )}
@@ -179,10 +179,10 @@ function CardFooterActions({
       <Button
         size="sm"
         variant="outline"
-        className="w-full h-7 px-2.5 text-xs font-medium gap-1.5 rounded-md border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+        className="w-full h-7 px-2.5 text-xs font-medium gap-1.5 rounded-md border-border text-foreground hover:bg-accent"
         onClick={onSelect}
       >
-        <Layers className="size-3.5" />
+        <Layers className="size-3.5 text-primary" />
         <span>{t("packages.marketplace.btn_bundle_subscribe")}</span>
       </Button>
     );
@@ -217,6 +217,59 @@ function CardFooterActions({
   }
 
   return null;
+}
+
+function CardQuotaBadge({
+  quotaDelta,
+}: {
+  quotaDelta: NonNullable<ReturnType<typeof parseQuotaDelta>>;
+}) {
+  const { t } = useTranslation();
+
+  const text =
+    quotaDelta.storageGb && quotaDelta.storageGb > 0
+      ? t("packages.marketplace.quota_boost_storage", { storage: quotaDelta.storageGb })
+      : quotaDelta.olt > 0 && quotaDelta.odp > 0
+      ? t("packages.marketplace.quota_boost_summary", { olt: quotaDelta.olt, odp: quotaDelta.odp })
+      : quotaDelta.olt > 0
+      ? t("packages.marketplace.quota_boost_olt_only", { olt: quotaDelta.olt })
+      : t("packages.marketplace.quota_boost_odp_only", { odp: quotaDelta.odp });
+
+  return (
+    <div className="mb-4">
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/30 border border-border/70 text-[11px] font-mono text-foreground/90">
+        <Zap className="size-3 text-primary shrink-0" />
+        <span>{text}</span>
+      </div>
+    </div>
+  );
+}
+
+function CardPrereqWarningBox({
+  missingPrerequisites,
+}: {
+  missingPrerequisites: string[];
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="mb-4 p-2.5 rounded-md border border-border/80 bg-muted/20 text-xs text-muted-foreground space-y-1">
+      <div className="flex items-center gap-1.5 font-medium text-[11px] text-foreground">
+        <Layers className="size-3 text-primary shrink-0" />
+        <span>{t("packages.rules.th_prerequisites")}:</span>
+      </div>
+      <div className="flex flex-wrap gap-1 pt-0.5">
+        {missingPrerequisites.map((reqCode) => (
+          <span
+            key={reqCode}
+            className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-muted/50 border border-border text-foreground"
+          >
+            {reqCode}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 interface MarketplacePackageCardProps {
@@ -305,41 +358,11 @@ function MarketplacePackageCard({
         </p>
 
         {/* Quota Boost Badge */}
-        {quotaDelta && (
-          <div className="mb-4">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/30 border border-border/70 text-[11px] font-mono text-foreground/90">
-              <Zap className="size-3 text-primary shrink-0" />
-              <span>
-                {quotaDelta.storageGb && quotaDelta.storageGb > 0
-                  ? t("packages.marketplace.quota_boost_storage", { storage: quotaDelta.storageGb })
-                  : quotaDelta.olt > 0 && quotaDelta.odp > 0
-                  ? t("packages.marketplace.quota_boost_summary", { olt: quotaDelta.olt, odp: quotaDelta.odp })
-                  : quotaDelta.olt > 0
-                  ? t("packages.marketplace.quota_boost_olt_only", { olt: quotaDelta.olt })
-                  : t("packages.marketplace.quota_boost_odp_only", { odp: quotaDelta.odp })}
-              </span>
-            </div>
-          </div>
-        )}
+        {quotaDelta && <CardQuotaBadge quotaDelta={quotaDelta} />}
 
         {/* Missing Prerequisite Warning Box (Condition B) */}
         {isPrereqRequired && eligibility?.missingPrerequisites && eligibility.missingPrerequisites.length > 0 && (
-          <div className="mb-4 p-2.5 rounded-md border border-amber-500/30 bg-amber-500/5 text-xs text-amber-700 dark:text-amber-300 space-y-1">
-            <div className="flex items-center gap-1.5 font-medium text-[11px]">
-              <Layers className="size-3 text-amber-500 shrink-0" />
-              <span>{t("packages.rules.th_prerequisites")}:</span>
-            </div>
-            <div className="flex flex-wrap gap-1 pt-0.5">
-              {eligibility.missingPrerequisites.map((reqCode) => (
-                <span
-                  key={reqCode}
-                  className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20"
-                >
-                  {reqCode}
-                </span>
-              ))}
-            </div>
-          </div>
+          <CardPrereqWarningBox missingPrerequisites={eligibility.missingPrerequisites} />
         )}
 
         {/* Minimum Plan Tier requirement (Condition C) */}

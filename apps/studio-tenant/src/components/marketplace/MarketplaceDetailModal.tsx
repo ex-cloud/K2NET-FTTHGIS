@@ -31,6 +31,141 @@ export interface MarketplaceDetailModalProps {
   onUpgradePlan?: () => void;
 }
 
+interface ParsedQuotaDelta {
+  olt?: number;
+  odp?: number;
+  storageGb?: number;
+}
+
+function parseModalDescription(metadataJson?: string | null): string {
+  if (!metadataJson) return "";
+  try {
+    const meta = JSON.parse(metadataJson);
+    return meta?.description ? String(meta.description) : "";
+  } catch {
+    return "";
+  }
+}
+
+function parseModalQuotaDelta(quotaDeltaJson?: string | null): ParsedQuotaDelta | null {
+  if (!quotaDeltaJson) return null;
+  try {
+    const q = JSON.parse(quotaDeltaJson);
+    const olt = Number(q.deltaOlts || q.olt || 0);
+    const odp = Number(q.deltaOdps || q.odp || 0);
+    const storageGb = Number(q.deltaStorageGb || q.storage || 0);
+    if (olt > 0 || odp > 0 || storageGb > 0) return { olt, odp, storageGb };
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function ModalQuotaSection({ quotaDelta }: { quotaDelta: ParsedQuotaDelta | null }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-1.5">
+      <span className="text-[11px] font-semibold text-foreground/80 uppercase font-mono tracking-wider flex items-center gap-1">
+        <Zap className="size-3.5 text-primary" />
+        {t("packages.detail_modal.quota_title")}
+      </span>
+      {quotaDelta ? (
+        <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-md bg-muted/30 border border-border/80 text-xs font-mono">
+          {Boolean(quotaDelta.olt && quotaDelta.olt > 0) && (
+            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-semibold border border-primary/20">
+              {t("packages.marketplace.quota_boost_olt_only", { olt: quotaDelta.olt ?? 0 })}
+            </span>
+          )}
+          {Boolean(quotaDelta.odp && quotaDelta.odp > 0) && (
+            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-semibold border border-primary/20">
+              {t("packages.marketplace.quota_boost_odp_only", { odp: quotaDelta.odp ?? 0 })}
+            </span>
+          )}
+          {Boolean(quotaDelta.storageGb && quotaDelta.storageGb > 0) && (
+            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-semibold border border-primary/20">
+              {t("packages.marketplace.quota_boost_storage", { storage: quotaDelta.storageGb ?? 0 })}
+            </span>
+          )}
+        </div>
+      ) : (
+        <p className="text-muted-foreground/80 text-[11px] p-2.5 rounded-md bg-muted/10 border border-border/40">
+          {t("packages.detail_modal.quota_none")}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ModalDependenciesSection({
+  prerequisiteCodes,
+  conflictCodes,
+}: {
+  prerequisiteCodes?: string[];
+  conflictCodes?: string[];
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-1.5">
+      <span className="text-[11px] font-semibold text-foreground/80 uppercase font-mono tracking-wider flex items-center gap-1">
+        <Layers className="size-3.5 text-primary" />
+        {t("packages.detail_modal.dependencies_title")}
+      </span>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {/* Prerequisites */}
+        <div className="p-2.5 rounded-md bg-muted/20 border border-border/60 space-y-1">
+          <span className="text-[10px] font-mono uppercase text-muted-foreground flex items-center gap-1">
+            <ShieldCheck className="size-3 text-primary" />
+            {t("packages.rules.th_prerequisites")}
+          </span>
+          {prerequisiteCodes && prerequisiteCodes.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {prerequisiteCodes.map((code) => (
+                <span
+                  key={code}
+                  className="px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-mono text-[10px]"
+                >
+                  {code}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              {t("packages.detail_modal.prereq_none")}
+            </p>
+          )}
+        </div>
+
+        {/* Conflicts */}
+        <div className="p-2.5 rounded-md bg-muted/20 border border-border/60 space-y-1">
+          <span className="text-[10px] font-mono uppercase text-muted-foreground flex items-center gap-1">
+            <ShieldAlert className="size-3 text-destructive" />
+            {t("packages.rules.th_conflicts")}
+          </span>
+          {conflictCodes && conflictCodes.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {conflictCodes.map((code) => (
+                <span
+                  key={code}
+                  className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive border border-destructive/20 font-mono text-[10px]"
+                >
+                  {code}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              {t("packages.detail_modal.conflicts_none")}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MarketplaceDetailModal({
   open,
   onOpenChange,
@@ -42,28 +177,8 @@ export function MarketplaceDetailModal({
 
   if (!pkg) return null;
 
-  let description = "";
-  if (pkg.metadataJson) {
-    try {
-      const meta = JSON.parse(pkg.metadataJson);
-      if (meta.description) description = String(meta.description);
-    } catch {
-      // ignore
-    }
-  }
-
-  let quotaDelta: { olt?: number; odp?: number; storageGb?: number } | null = null;
-  if (pkg.quotaDeltaJson) {
-    try {
-      const q = JSON.parse(pkg.quotaDeltaJson);
-      const olt = Number(q.deltaOlts || q.olt || 0);
-      const odp = Number(q.deltaOdps || q.odp || 0);
-      const storageGb = Number(q.deltaStorageGb || q.storage || 0);
-      if (olt > 0 || odp > 0 || storageGb > 0) quotaDelta = { olt, odp, storageGb };
-    } catch {
-      // ignore
-    }
-  }
+  const description = parseModalDescription(pkg.metadataJson);
+  const quotaDelta = parseModalQuotaDelta(pkg.quotaDeltaJson);
 
   const formatPrice = (price: number): string => {
     const safePrice = Number.isFinite(price) ? price : 0;
@@ -79,7 +194,6 @@ export function MarketplaceDetailModal({
   const state = eligibility?.eligibilityState || (pkg.isSubscribed ? "ALREADY_ACTIVE" : "READY");
   const isAlreadyActive = Boolean(pkg.isSubscribed || state === "ALREADY_ACTIVE");
   const isLockedTier = Boolean(state === "PLAN_UPGRADE_REQUIRED" || state === "LICENSE_UNHEALTHY");
-  const isPrereqRequired = Boolean(state === "PREREQUISITE_REQUIRED");
   const isReady = Boolean(state === "READY" && !isAlreadyActive);
 
   return (
@@ -156,93 +270,13 @@ export function MarketplaceDetailModal({
           </div>
 
           {/* Quota Boosters */}
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold text-foreground/80 uppercase font-mono tracking-wider flex items-center gap-1">
-              <Zap className="size-3.5 text-amber-500" />
-              {t("packages.detail_modal.quota_title")}
-            </span>
-            {quotaDelta ? (
-              <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-md bg-amber-500/5 border border-amber-500/20 text-xs font-mono">
-                {Boolean(quotaDelta.olt && quotaDelta.olt > 0) && (
-                  <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20">
-                    +{quotaDelta.olt} OLT Hardware
-                  </span>
-                )}
-                {Boolean(quotaDelta.odp && quotaDelta.odp > 0) && (
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-                    +{quotaDelta.odp} ODP Splitters
-                  </span>
-                )}
-                {Boolean(quotaDelta.storageGb && quotaDelta.storageGb > 0) && (
-                  <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 font-semibold border border-sky-500/20">
-                    +{quotaDelta.storageGb} GB S3 Storage
-                  </span>
-                )}
-              </div>
-            ) : (
-              <p className="text-muted-foreground/80 text-[11px] p-2.5 rounded-md bg-muted/10 border border-border/40">
-                {t("packages.detail_modal.quota_none")}
-              </p>
-            )}
-          </div>
+          <ModalQuotaSection quotaDelta={quotaDelta} />
 
           {/* Compatibility & Dependencies */}
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold text-foreground/80 uppercase font-mono tracking-wider flex items-center gap-1">
-              <Layers className="size-3.5 text-sky-500" />
-              {t("packages.detail_modal.dependencies_title")}
-            </span>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {/* Prerequisites */}
-              <div className="p-2.5 rounded-md bg-muted/20 border border-border/60 space-y-1">
-                <span className="text-[10px] font-mono uppercase text-muted-foreground flex items-center gap-1">
-                  <ShieldCheck className="size-3 text-sky-500" />
-                  {t("packages.rules.th_prerequisites")}
-                </span>
-                {pkg.prerequisiteCodes && pkg.prerequisiteCodes.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {pkg.prerequisiteCodes.map((code) => (
-                      <span
-                        key={code}
-                        className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20 font-mono text-[10px]"
-                      >
-                        {code}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    {t("packages.detail_modal.prereq_none")}
-                  </p>
-                )}
-              </div>
-
-              {/* Conflicts */}
-              <div className="p-2.5 rounded-md bg-muted/20 border border-border/60 space-y-1">
-                <span className="text-[10px] font-mono uppercase text-muted-foreground flex items-center gap-1">
-                  <ShieldAlert className="size-3 text-rose-500" />
-                  {t("packages.rules.th_conflicts")}
-                </span>
-                {pkg.conflictCodes && pkg.conflictCodes.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {pkg.conflictCodes.map((code) => (
-                      <span
-                        key={code}
-                        className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20 font-mono text-[10px]"
-                      >
-                        {code}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    {t("packages.detail_modal.conflicts_none")}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          <ModalDependenciesSection
+            prerequisiteCodes={pkg.prerequisiteCodes}
+            conflictCodes={pkg.conflictCodes}
+          />
         </div>
 
         <DialogFooter className="pt-3 border-t border-border flex items-center justify-between sm:justify-between">
