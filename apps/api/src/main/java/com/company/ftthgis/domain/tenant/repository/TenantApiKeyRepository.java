@@ -17,8 +17,6 @@ public interface TenantApiKeyRepository extends JpaRepository<TenantApiKey, UUID
 
     List<TenantApiKey> findByOrganizationOrderByCreatedAtDesc(Organization organization);
 
-    Optional<TenantApiKey> findByTokenHash(String keyHash);
-
     Optional<TenantApiKey> findByKeyHash(String keyHash);
 
     Optional<TenantApiKey> findByKeyHashAndIsActiveTrue(String keyHash);
