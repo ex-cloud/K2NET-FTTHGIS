@@ -105,7 +105,9 @@ public class SecurityConfig {
         defaultResolver.setAllowUriQueryParameter(true);
         return request -> {
             String token = defaultResolver.resolve(request);
-            if (token != null && token.startsWith(ScopedTokenAuthenticationFilter.SCOPED_TOKEN_PREFIX)) {
+            if (token != null && (token.startsWith(ScopedTokenAuthenticationFilter.SCOPED_TOKEN_PREFIX)
+                    || token.startsWith(ScopedTokenAuthenticationFilter.API_KEY_PREFIX_LIVE)
+                    || token.startsWith(ScopedTokenAuthenticationFilter.API_KEY_PREFIX_TEST))) {
                 return null; // Let ScopedTokenAuthenticationFilter handle it
             }
             return token;

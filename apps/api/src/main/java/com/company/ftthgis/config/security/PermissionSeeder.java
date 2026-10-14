@@ -117,7 +117,10 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("organizations.update",          "Update Organization Settings",    "organizations"),
             new PermissionData("organizations.create",          "Create Organizations",            "organizations"),
             new PermissionData("organizations.delete",          "Delete Organizations",            "organizations"),
-            new PermissionData("organizations.webhooks.manage", "Manage Tenant Webhooks & Keys",   "organizations", "TENANT")
+            new PermissionData("organizations.webhooks.manage", "Manage Tenant Webhooks & Keys",   "organizations", "TENANT"),
+
+            // integration — developer open API and webhooks
+            new PermissionData("feature.integration.open_api",  "Developer REST API & Webhooks Access", "integration", "TENANT")
         );
 
         // 2. Ensure all permissions exist in DB and load full catalog

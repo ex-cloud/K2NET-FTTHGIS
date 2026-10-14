@@ -5,7 +5,7 @@ import { TenantAccessDenied } from "./TenantAccessDenied";
 export function IntegrationsPageWrapper({ children }: { children: ReactNode }) {
   return (
     <PermissionGuard
-      permission={["organizations.webhooks.manage", "organizations.update", "organizations.view"]}
+      permission={["organizations.webhooks.manage", "feature.integration.open_api", "organizations.update", "organizations.view"]}
       fallback={
         <TenantAccessDenied
           title="Akses Integrasi Gateway Dibatasi"

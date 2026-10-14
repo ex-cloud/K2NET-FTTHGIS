@@ -13,6 +13,7 @@ import {
   Key,
   Receipt,
   ShoppingBag,
+  Plug,
   type LucideIcon,
 } from "lucide-react";
 
@@ -79,11 +80,12 @@ export const ORG_NAV_ITEMS: NavItem[] = [
   },
   {
     id: "integrations",
-    title: "Integrations",
+    title: "Developer & API",
     translationKey: "nav.tenant_integrations",
-    href: "/integrations",
+    href: "/developer/api-keys",
     icon: Webhook,
     shortcut: "G then I",
+    hasSecondarySidebar: true,
   },
   {
     id: "usage",
@@ -288,6 +290,45 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Webhook,
             description: "Gateway integration credentials",
             shortcut: "S then O",
+          },
+        ],
+      },
+    ],
+  },
+  integrations: {
+    headerTitle: "Developer & API",
+    translationKey: "nav.tenant_integrations",
+    headerSubtitle: "REST API keys & real-time webhooks",
+    icon: Webhook,
+    sections: [
+      {
+        items: [
+          {
+            id: "api-keys",
+            title: "API Keys",
+            translationKey: "nav.developer_api_keys",
+            href: "/developer/api-keys",
+            icon: Key,
+            description: "Programmatic REST API keys",
+            shortcut: "D then K",
+          },
+          {
+            id: "webhooks",
+            title: "Webhooks",
+            translationKey: "nav.developer_webhooks",
+            href: "/developer/webhooks",
+            icon: Webhook,
+            description: "Outbound event notifications",
+            shortcut: "D then W",
+          },
+          {
+            id: "gateways",
+            title: "Gateways",
+            translationKey: "nav.developer_gateways",
+            href: "/integrations",
+            icon: Plug,
+            description: "Connected services & SMS/S3",
+            shortcut: "D then G",
           },
         ],
       },

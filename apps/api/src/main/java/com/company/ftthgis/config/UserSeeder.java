@@ -89,7 +89,7 @@ public class UserSeeder implements CommandLineRunner {
             "network.view", "network.monitor", "network.manage", "network.nodes", "network.audit",
             "report.view", "report.export", "customer.view", "ticket.view", "ticket.create", "ticket.update",
             "survey.create", "audit.view", "approval.manage", "map.view", "map.edit",
-            "organizations.view", "organizations.update", "organizations.webhooks.manage",
+            "organizations.view", "organizations.update", "organizations.webhooks.manage", "feature.integration.open_api",
             "projects.view", "projects.create", "projects.edit", "projects.delete"
         ));
         put("finance", List.of("billing.view", "billing.manage", "report.view", "report.export"));

@@ -83,6 +83,12 @@ const TeamPage = lazyWithRetry(() =>
 const IntegrationsPage = lazyWithRetry(() =>
   import("./pages/org/IntegrationsPage").then((m) => ({ default: m.IntegrationsPage }))
 );
+const ApiKeysPage = lazyWithRetry(() =>
+  import("./pages/developer/ApiKeysPage").then((m) => ({ default: m.ApiKeysPage }))
+);
+const WebhooksPage = lazyWithRetry(() =>
+  import("./pages/developer/WebhooksPage").then((m) => ({ default: m.WebhooksPage }))
+);
 const UsagePage = lazyWithRetry(() =>
   import("./pages/org/UsagePage").then((m) => ({ default: m.UsagePage }))
 );
@@ -376,6 +382,36 @@ const integrationsRoute = createRoute({
     <IntegrationsPageWrapper>
       <Lazy>
         <IntegrationsPage />
+      </Lazy>
+    </IntegrationsPageWrapper>
+  ),
+});
+
+const developerRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/developer",
+  component: () => <Navigate to="/developer/api-keys" />,
+});
+
+const developerApiKeysRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/developer/api-keys",
+  component: () => (
+    <IntegrationsPageWrapper>
+      <Lazy>
+        <ApiKeysPage />
+      </Lazy>
+    </IntegrationsPageWrapper>
+  ),
+});
+
+const developerWebhooksRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/developer/webhooks",
+  component: () => (
+    <IntegrationsPageWrapper>
+      <Lazy>
+        <WebhooksPage />
       </Lazy>
     </IntegrationsPageWrapper>
   ),
@@ -938,6 +974,9 @@ const orgTree = orgAuthenticatedRoute.addChildren([
   teamRolesRoute,
   teamActivityRoute,
   integrationsRoute,
+  developerRoute,
+  developerApiKeysRoute,
+  developerWebhooksRoute,
   usageRoute,
   billingRoute,
   billingLicenseRoute,

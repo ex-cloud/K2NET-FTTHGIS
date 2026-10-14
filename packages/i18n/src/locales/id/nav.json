@@ -202,5 +202,8 @@
   "register_new_subscriber": "Registrasi Pelanggan Baru",
   "open_ai_copilot": "Buka AI Network Copilot",
   "open_guide_sop": "Buka Pusat Panduan & SOP FTTH",
-  "logout_session": "Keluar dari Sesi Portal"
+  "logout_session": "Keluar dari Sesi Portal",
+  "developer_api_keys": "API Key",
+  "developer_webhooks": "Webhook",
+  "developer_gateways": "Gateway Terhubung"
 }

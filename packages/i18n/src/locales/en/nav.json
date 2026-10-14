@@ -202,5 +202,8 @@
   "register_new_subscriber": "Register New Subscriber",
   "open_ai_copilot": "Open AI Network Copilot",
   "open_guide_sop": "Open FTTH Guide & SOP Center",
-  "logout_session": "Sign Out from Portal Session"
+  "logout_session": "Sign Out from Portal Session",
+  "developer_api_keys": "API Keys",
+  "developer_webhooks": "Webhooks",
+  "developer_gateways": "Connected Gateways"
 }
