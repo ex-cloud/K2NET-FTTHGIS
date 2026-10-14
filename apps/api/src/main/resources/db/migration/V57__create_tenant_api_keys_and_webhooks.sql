@@ -120,9 +120,8 @@ CREATE INDEX IF NOT EXISTS idx_tenant_webhook_deliv_org ON tenant_webhook_delive
 COMMENT ON TABLE tenant_webhook_deliveries IS 'Audit logs and delivery receipts for outbound webhook HTTP dispatches';
 
 -- 6. Register granular permission and assign to canonical admin roles
-INSERT INTO permissions (id, code, name, description, module, scope, created_at, updated_at)
+INSERT INTO permissions (code, name, description, module, scope, created_at, updated_at)
 VALUES (
-    gen_random_uuid(),
     'feature.integration.open_api',
     'Developer REST API & Webhooks Access',
     'Permission to generate API keys, configure webhooks, and trigger integration events',
