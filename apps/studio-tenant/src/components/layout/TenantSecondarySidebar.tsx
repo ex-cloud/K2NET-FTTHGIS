@@ -43,6 +43,7 @@ export function TenantSecondarySidebar({ projectId }: TenantSecondarySidebarProp
       if (pathname.startsWith("/team")) return ORG_SECONDARY_CONFIGS.team;
       if (pathname.startsWith("/settings")) return ORG_SECONDARY_CONFIGS.settings;
       if (pathname.startsWith("/billing")) return ORG_SECONDARY_CONFIGS.billing;
+      if (pathname.startsWith("/developer") || pathname.startsWith("/integrations")) return ORG_SECONDARY_CONFIGS.integrations;
       return null;
     }
   }, [pathname, projectId]);

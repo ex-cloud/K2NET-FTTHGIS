@@ -60,11 +60,9 @@ export function AssetDialog({ type, open, onOpenChange, projectId, onSuccess }: 
       toast.success(t("inventory.asset_saved", { type, code: formData.code }));
       onOpenChange(false);
       onSuccess?.();
-    } catch {
-      // Optimistic fallback if offline/mock
-      toast.success(t("inventory.asset_saved", { type, code: formData.code }));
-      onOpenChange(false);
-      onSuccess?.();
+    } catch (err: unknown) {
+      const msg = (err as Error)?.message || t("common.error_occurred");
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

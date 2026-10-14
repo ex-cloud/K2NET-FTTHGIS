@@ -139,6 +139,23 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
     reqHeaders["X-Impersonation-Session-Id"] = impersonationSessionId;
   }
 
+  if (typeof window !== "undefined") {
+    const searchParams = new URLSearchParams(window.location.search);
+    const paramSlug = searchParams.get("tenant") || searchParams.get("slug");
+    let detectedSlug = paramSlug;
+    if (!detectedSlug) {
+      const host = window.location.hostname;
+      if (host.includes("-gis.")) {
+        detectedSlug = host.split("-gis")[0];
+      } else if (host.includes(".gis.")) {
+        detectedSlug = host.split(".")[0];
+      }
+    }
+    if (detectedSlug && detectedSlug !== "system" && detectedSlug !== "api" && detectedSlug !== "gis") {
+      reqHeaders["X-Tenant-Slug"] = detectedSlug.toLowerCase().trim();
+    }
+  }
+
   let response = await fetch(url, {
     headers: reqHeaders,
     ...customConfig,

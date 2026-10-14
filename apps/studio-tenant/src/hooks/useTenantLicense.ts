@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../lib/api-client";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
+import { getCurrentOrgSlug } from "../lib/domain";
 
 export interface LicenseEntitlements {
   maxProjects: number;
@@ -82,12 +83,14 @@ export interface ProrateEstimate {
 export function useTenantLicense() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const orgSlug = getCurrentOrgSlug() || "system";
+  const slugParam = orgSlug && orgSlug !== "system" ? `?slug=${encodeURIComponent(orgSlug)}` : "";
 
   const currentLicenseQuery = useQuery<TenantLicenseDetails | null>({
-    queryKey: ["tenant-current-license"],
+    queryKey: ["tenant-current-license", orgSlug, slugParam],
     queryFn: async () => {
       try {
-        const res = await apiClient<TenantLicenseDetails>("/api/v1/tenant/license/current");
+        const res = await apiClient<TenantLicenseDetails>(`/api/v1/tenant/license/current${slugParam}`);
         return res ?? null;
       } catch (err: unknown) {
         const status = (err as { status?: number })?.status;
@@ -102,10 +105,10 @@ export function useTenantLicense() {
   });
 
   const billingInvoicesQuery = useQuery<BillingInvoiceItem[]>({
-    queryKey: ["tenant-billing-invoices"],
+    queryKey: ["tenant-billing-invoices", orgSlug, slugParam],
     queryFn: async () => {
       try {
-        const res = await apiClient<BillingInvoiceItem[]>("/api/v1/tenant/license/invoices");
+        const res = await apiClient<BillingInvoiceItem[]>(`/api/v1/tenant/license/invoices${slugParam}`);
         return Array.isArray(res) ? res : [];
       } catch (err) {
         console.warn("Failed to fetch tenant billing invoices:", err);
@@ -124,16 +127,16 @@ export function useTenantLicense() {
               licenseKey: payload.licenseKey.trim(),
               machineFingerprint: payload.machineFingerprint?.trim() || undefined,
             };
-      return apiClient<TenantLicenseDetails>("/api/v1/tenant/license/activate", {
+      return apiClient<TenantLicenseDetails>(`/api/v1/tenant/license/activate${slugParam}`, {
         method: "POST",
         body: JSON.stringify(body),
       });
     },
     onSuccess: () => {
       toast.success(t("license.tenant.activation_success"));
-      queryClient.invalidateQueries({ queryKey: ["tenant-current-license"] });
-      queryClient.invalidateQueries({ queryKey: ["tenant-subscription-summary"] });
-      queryClient.invalidateQueries({ queryKey: ["tenant-billing-invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-current-license", orgSlug] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-subscription-summary", orgSlug] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-billing-invoices", orgSlug] });
     },
     onError: (err: unknown) => {
       const msg = err instanceof Error ? err.message : t("license.tenant.activation_failed");
@@ -143,7 +146,7 @@ export function useTenantLicense() {
 
   const activateOfflineMutation = useMutation({
     mutationFn: async (payload: { certificateContent: string; machineFingerprint?: string }) => {
-      return apiClient<TenantLicenseDetails>("/api/v1/tenant/license/activate-offline", {
+      return apiClient<TenantLicenseDetails>(`/api/v1/tenant/license/activate-offline${slugParam}`, {
         method: "POST",
         body: JSON.stringify({
           certificateContent: payload.certificateContent.trim(),
@@ -153,9 +156,9 @@ export function useTenantLicense() {
     },
     onSuccess: () => {
       toast.success(t("license.tenant.activation_success"));
-      queryClient.invalidateQueries({ queryKey: ["tenant-current-license"] });
-      queryClient.invalidateQueries({ queryKey: ["tenant-subscription-summary"] });
-      queryClient.invalidateQueries({ queryKey: ["tenant-billing-invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-current-license", orgSlug] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-subscription-summary", orgSlug] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-billing-invoices", orgSlug] });
     },
     onError: (err: unknown) => {
       const msg = err instanceof Error ? err.message : t("license.tenant.activation_failed");
@@ -164,10 +167,10 @@ export function useTenantLicense() {
   });
 
   const billingContactsQuery = useQuery<BillingContacts>({
-    queryKey: ["tenant-billing-contacts"],
+    queryKey: ["tenant-billing-contacts", orgSlug, slugParam],
     queryFn: async () => {
       try {
-        const res = await apiClient<BillingContacts>("/api/v1/tenant/license/contacts");
+        const res = await apiClient<BillingContacts>(`/api/v1/tenant/license/contacts${slugParam}`);
         return res ?? { notifyEmailEnabled: true, notifyWhatsappEnabled: true };
       } catch (err) {
         console.warn("Failed to fetch tenant billing contacts:", err);
@@ -179,15 +182,15 @@ export function useTenantLicense() {
 
   const updateContactsMutation = useMutation({
     mutationFn: async (data: BillingContacts) => {
-      return apiClient<BillingContacts>("/api/v1/tenant/license/contacts", {
+      return apiClient<BillingContacts>(`/api/v1/tenant/license/contacts${slugParam}`, {
         method: "PUT",
         body: JSON.stringify(data),
       });
     },
     onSuccess: () => {
       toast.success(t("license.tenant.contacts_update_success"));
-      queryClient.invalidateQueries({ queryKey: ["tenant-billing-contacts"] });
-      queryClient.invalidateQueries({ queryKey: ["tenant-current-license"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-billing-contacts", orgSlug] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-current-license", orgSlug] });
     },
     onError: (err: unknown) => {
       const msg = err instanceof Error ? err.message : t("license.tenant.contacts_update_failed");
@@ -220,11 +223,13 @@ export function useTenantLicense() {
 }
 
 export function useProrateEstimate(targetPlan: string | null) {
+  const orgSlug = getCurrentOrgSlug() || "system";
+  const slugParam = orgSlug && orgSlug !== "system" ? `&slug=${encodeURIComponent(orgSlug)}` : "";
   return useQuery<ProrateEstimate | null>({
-    queryKey: ["tenant-prorate-estimate", targetPlan],
+    queryKey: ["tenant-prorate-estimate", targetPlan, orgSlug, slugParam],
     queryFn: async () => {
       if (!targetPlan) return null;
-      return apiClient<ProrateEstimate>(`/api/v1/tenant/license/prorate-estimate?targetPlan=${encodeURIComponent(targetPlan)}`);
+      return apiClient<ProrateEstimate>(`/api/v1/tenant/license/prorate-estimate?targetPlan=${encodeURIComponent(targetPlan)}${slugParam}`);
     },
     enabled: Boolean(targetPlan),
     staleTime: 30 * 1000,

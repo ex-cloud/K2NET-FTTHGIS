@@ -499,17 +499,22 @@ public class LicenseManagementService {
      */
     @Transactional(readOnly = true)
     public Optional<LicenseResponseDto> getCurrentLicense(UUID orgId) {
-        Organization org = organizationRepository.findById(orgId).orElse(null);
-        if (org == null) return Optional.empty();
+        unwrapAndDisableOrgFilter();
+        try {
+            Organization org = organizationRepository.findById(orgId).orElse(null);
+            if (org == null) return Optional.empty();
 
-        Optional<TenantLicense> licenseOpt = tenantLicenseRepository
-                .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(orgId, LicenseStatus.ACTIVE);
+            Optional<TenantLicense> licenseOpt = tenantLicenseRepository
+                    .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(orgId, LicenseStatus.ACTIVE);
 
-        if (licenseOpt.isEmpty()) {
-            licenseOpt = tenantLicenseRepository.findFirstByOrganizationIdOrderByCreatedAtDesc(orgId);
+            if (licenseOpt.isEmpty()) {
+                licenseOpt = tenantLicenseRepository.findFirstByOrganizationIdOrderByCreatedAtDesc(orgId);
+            }
+
+            return licenseOpt.map(lic -> mapToResponseDto(lic, org));
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
         }
-
-        return licenseOpt.map(lic -> mapToResponseDto(lic, org));
     }
 
     /**

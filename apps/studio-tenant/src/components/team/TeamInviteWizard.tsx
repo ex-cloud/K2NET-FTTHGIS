@@ -59,14 +59,9 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
       setRole("OPERATOR");
       onOpenChange(false);
       onSuccess?.();
-    } catch {
-      // Fallback optimistic simulation if endpoint is mock
-      toast.success(t("users.invite_success", { email }));
-      setEmail("");
-      setFullName("");
-      setRole("OPERATOR");
-      onOpenChange(false);
-      onSuccess?.();
+    } catch (err: unknown) {
+      const msg = (err as Error)?.message || t("users.invite_error_email");
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

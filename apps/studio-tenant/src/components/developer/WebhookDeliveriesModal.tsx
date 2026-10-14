@@ -13,8 +13,8 @@ import {
 } from "@k2net/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "@k2net/i18n";
-import { apiClient } from "../../../lib/api-client";
-import { getCurrentOrgSlug } from "../../../lib/domain";
+import { apiClient } from "../../lib/api-client";
+import { getCurrentOrgSlug } from "../../lib/domain";
 
 export interface WebhookDeliveryItem {
   id: string;

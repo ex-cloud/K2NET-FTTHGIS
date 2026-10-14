@@ -46,6 +46,7 @@ public class TenantLicenseController {
     private final LicenseManagementService licenseManagementService;
     private final BillingInvoiceRepository billingInvoiceRepository;
     private final UserRepository userRepository;
+    private final com.company.ftthgis.domain.tenant.repository.OrganizationRepository organizationRepository;
     private final com.company.ftthgis.service.LicenseNotificationService licenseNotificationService;
 
     /**
@@ -190,40 +191,132 @@ public class TenantLicenseController {
     // ── Internal Helpers ────────────────────────────────────────────────────
 
     private UUID resolveCurrentOrganizationId() {
-        org.springframework.web.context.request.RequestAttributes attributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
-        if (attributes instanceof org.springframework.web.context.request.ServletRequestAttributes servletAttributes) {
-            jakarta.servlet.http.HttpServletRequest req = servletAttributes.getRequest();
-            String tenantHeader = req.getHeader("X-Tenant-ID");
-            if (tenantHeader != null && !tenantHeader.isBlank()) {
-                try {
-                    UUID resolved = UUID.fromString(tenantHeader.trim());
-                    OrganizationContext.setOrganizationId(resolved);
-                    return resolved;
-                } catch (IllegalArgumentException ignored) {}
+        // 1. Sesi Impersonasi aktif (AuditContext)
+        if (com.company.ftthgis.config.tenant.AuditContext.isImpersonating()) {
+            com.company.ftthgis.config.tenant.AuditContext.ImpersonationInfo info =
+                    com.company.ftthgis.config.tenant.AuditContext.getImpersonation();
+            if (info != null && info.getTargetTenantId() != null) {
+                OrganizationContext.setOrganizationId(info.getTargetTenantId());
+                return info.getTargetTenantId();
             }
         }
 
+        org.springframework.web.context.request.RequestAttributes attributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attributes instanceof org.springframework.web.context.request.ServletRequestAttributes servletAttributes) {
+            jakarta.servlet.http.HttpServletRequest req = servletAttributes.getRequest();
+
+            // 2. Periksa header X-Tenant-Slug atau query parameter slug / tenant
+            String slugHeader = req.getHeader("X-Tenant-Slug");
+            if (slugHeader == null || slugHeader.isBlank()) {
+                slugHeader = req.getParameter("slug");
+            }
+            if (slugHeader == null || slugHeader.isBlank()) {
+                slugHeader = req.getParameter("tenant");
+            }
+            if (slugHeader != null && !slugHeader.isBlank()) {
+                String cleanSlug = slugHeader.trim().toLowerCase();
+                var orgBySlug = organizationRepository.findBySlug(cleanSlug);
+                if (orgBySlug.isPresent()) {
+                    UUID id = orgBySlug.get().getId();
+                    OrganizationContext.setOrganizationId(id);
+                    return id;
+                }
+            }
+
+            // 3. Periksa Host / X-Forwarded-Host subdomain (misal dctvdcwnlqnijogkoqwn-gis.kdua.net)
+            String host = req.getHeader("X-Forwarded-Host");
+            if (host == null || host.isBlank()) {
+                host = req.getHeader("Host");
+            }
+            if (host != null && !host.isBlank()) {
+                String sub = host.split(":")[0];
+                String candidateSlug = null;
+                if (sub.contains("-gis.kdua.net")) {
+                    candidateSlug = sub.split("-gis")[0];
+                } else if (sub.contains(".gis.kdua.net")) {
+                    candidateSlug = sub.split("\\.")[0];
+                }
+                if (candidateSlug != null && !candidateSlug.equalsIgnoreCase("system")
+                        && !candidateSlug.equalsIgnoreCase("api")
+                        && !candidateSlug.equalsIgnoreCase("gis")
+                        && !candidateSlug.equalsIgnoreCase("auth")) {
+                    var orgByHost = organizationRepository.findBySlug(candidateSlug.trim().toLowerCase());
+                    if (orgByHost.isPresent()) {
+                        UUID id = orgByHost.get().getId();
+                        OrganizationContext.setOrganizationId(id);
+                        return id;
+                    }
+                }
+            }
+
+            // 4. Periksa header X-Tenant-ID (abaikan dummy zero UUID dari Kong)
+            String tenantHeader = req.getHeader("X-Tenant-ID");
+            if (tenantHeader != null && !tenantHeader.isBlank()) {
+                String cleanHeader = tenantHeader.trim();
+                if (!"00000000-0000-0000-0000-000000000000".equals(cleanHeader)) {
+                    try {
+                        UUID resolved = UUID.fromString(cleanHeader);
+                        OrganizationContext.setOrganizationId(resolved);
+                        return resolved;
+                    } catch (IllegalArgumentException ignored) {
+                        // Jika berupa slug atau realm key (misal dctvdcwnlqnijogkoqwn)
+                        var orgOpt = organizationRepository.findBySlug(cleanHeader)
+                                .or(() -> organizationRepository.findByRealmKey(cleanHeader));
+                        if (orgOpt.isPresent()) {
+                            UUID id = orgOpt.get().getId();
+                            OrganizationContext.setOrganizationId(id);
+                            return id;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. Periksa konteks ThreadLocal OrganizationContext yang sudah valid
         UUID orgId = OrganizationContext.getOrganizationId();
-        if (orgId != null) {
+        if (orgId != null && !"00000000-0000-0000-0000-000000000000".equals(orgId.toString())) {
             return orgId;
         }
 
+        // 6. Token JWT Claims & Realm Issuer
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
             String orgIdClaim = jwt.getClaimAsString("organization_id");
             if (orgIdClaim == null) orgIdClaim = jwt.getClaimAsString("tenant_id");
-            if (orgIdClaim != null) {
+            if (orgIdClaim != null && !orgIdClaim.isBlank() && !"00000000-0000-0000-0000-000000000000".equals(orgIdClaim)) {
                 try {
-                    return UUID.fromString(orgIdClaim);
+                    UUID resolved = UUID.fromString(orgIdClaim);
+                    OrganizationContext.setOrganizationId(resolved);
+                    return resolved;
                 } catch (IllegalArgumentException ignored) {}
+            }
+
+            // Jika token berasal dari tenant realm Keycloak terisolasi
+            String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
+            if (issuer.contains("/realms/")) {
+                String[] parts = issuer.split("/");
+                String realmSlug = parts[parts.length - 1];
+                if (!"ftth-realm".equals(realmSlug) && !"master".equals(realmSlug) && !"default".equals(realmSlug)) {
+                    var orgOpt = organizationRepository.findBySlug(realmSlug)
+                            .or(() -> organizationRepository.findByRealmKey(realmSlug));
+                    if (orgOpt.isPresent()) {
+                        UUID id = orgOpt.get().getId();
+                        OrganizationContext.setOrganizationId(id);
+                        return id;
+                    }
+                }
             }
 
             String subject = jwt.getSubject();
             if (subject != null) {
                 try {
-                    return userRepository.findByIdWithOrganization(UUID.fromString(subject))
+                    UUID userOrgId = userRepository.findByIdWithOrganization(UUID.fromString(subject))
                             .map(u -> u.getOrganization() != null ? u.getOrganization().getId() : null)
                             .orElse(null);
+                    if (userOrgId != null) {
+                        OrganizationContext.setOrganizationId(userOrgId);
+                        return userOrgId;
+                    }
                 } catch (IllegalArgumentException ignored) {}
             }
         }

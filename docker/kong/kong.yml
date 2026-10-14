@@ -37,36 +37,36 @@ consumers:
           cQIDAQAB
           -----END PUBLIC KEY-----
 
-  # Keycloak consumer for realm: fiber-nusantara
-  - username: keycloak-fiber-nusantara
+  # Keycloak consumer for realm: nccxxdmpnorttafohcei (PT UJI COBA - STARTER)
+  - username: keycloak-nccxxdmpnorttafohcei
     jwt_secrets:
-      - key: "https://auth-gis.kdua.net/realms/fiber-nusantara"
+      - key: "https://auth-gis.kdua.net/realms/nccxxdmpnorttafohcei"
         algorithm: RS256
         rsa_public_key: |
           -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAws6unwoG/WgAr7YO/l44
-          BERKnOw51aPGfDfp19+95DlB2KUlenkCupbQmg/mSU/14frNFYgpXBRRSSsSR626
-          B7tsM9Lk3Lprd8X7lKI1jmyrmBc/w/YVxTiT1BLQtZxeXyb8B5nlUbJ9+en5pg3O
-          vWxeIngYK+zj+ylhw5feWyBBoL9TUCOP1zPtHzHutwsdw3+wBGYAleQyOFCU5HmJ
-          aaKagZMZsNJAEVtZKDrTeXHoCkZYSPT/egBrrypHA1xcNvs5PWAHFBSE20gBG/fr
-          iZTv+DZCT9U3dy477J3R/oj30l0uoJ35eslDIHI6tRWair9o3USXNAX9Szx6xXs4
-          oQIDAQAB
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAjcBMyP/zuAu+1KTsVEH4
+          OY3onM7gUJIYSsFRThnzHOhZLivtEv9viPNFRCVSdXTiSRHBEBGurwG+0/hQikAi
+          73++7SsPJgz9zbvXT4ihw7HAX2AdQqWZ8GRDUBD4ecYpThc/26bG6zlmOEmwytAY
+          nNgZhHJ1ZJ3DQ2ssuNo7iWWcOuiwDtqr2RjkLKXkK9IH4dVBcRuRcWhN92yeiDi4
+          D4wk2nMdht4mtwyWzwWzRdi+LXsnyktc1vTck+Ysr+rljRTZVARhdeo6K9KTxZqj
+          wrYZBzilwH5gGCu5XyoDQUgdsowECrsNrlX8jmp/Pe8fKT4ed/w4EJdnr8U+Dlqn
+          4QIDAQAB
           -----END PUBLIC KEY-----
 
-  # Keycloak consumer for realm: hshqwvnwzsdbeqqifkpu
-  - username: keycloak-hshqwvnwzsdbeqqifkpu
+  # Keycloak consumer for realm: dctvdcwnlqnijogkoqwn (PT ABC - FREE TRIAL)
+  - username: keycloak-dctvdcwnlqnijogkoqwn
     jwt_secrets:
-      - key: "https://auth-gis.kdua.net/realms/hshqwvnwzsdbeqqifkpu"
+      - key: "https://auth-gis.kdua.net/realms/dctvdcwnlqnijogkoqwn"
         algorithm: RS256
         rsa_public_key: |
           -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqGbiyvINLNOoMiHQeYcL
-          BCzjtd1KNNhtQD+9ZTbSk9m64zNL5x2qrbg4ba+11hzdc9lRZc9W5h7IrxqSmCrP
-          bli41A88IE0ftIjsEMDYmIToqgQG6GZvmiY4xklDOID1V8mWsfghoztQYV3RyxPU
-          0TOMszRFdeqBucNggab02sCIHAjGKbVHemePRdORrNnXrsYkli4/2xuEPHYaPIuX
-          4EH0jOBS4L6jtqqMaFGNnwMvYW447iwgE6q1mgleMHnF1cjpt4PPghxldwy2AEdk
-          Lxd3C+5fkBb7fCgWdiUy0XZgFGRIjqsAQ5YEvs8/4lC3xGnBBwswWm+kEBNSbMks
-          bwIDAQAB
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr4QGpF2XujdqYDdtLMwl
+          vgUZYnbZEYlrFU3CPVx9eVpVWM0QJdEJ/208Hr1XfXucr+Nxs64o4EWGU9zpxh/Z
+          O2/KjktOrikK9mWXb2XAbg9dKV+AUeUrMCAYnM27hDQVfiNEa68LOFJ6Lmca18oD
+          zuXdPzLoq9g8zdyr9+qc3WHy/gnFn+c1xFr/tG8y9N8VKGsNAOyrBAmm21tQaYCp
+          pMiSrZCfEDIEND43QXaYUIcmRj2NpRwisjEUCRIEWaqGYuHMd2wCll3CCr9ymcWU
+          PzLCVdL4Bfz80CFpAvwxA3NdS2Ol1dA9D9ca5szLt4a2J4t8z5sh1d/YfTMfp1bY
+          rwIDAQAB
           -----END PUBLIC KEY-----
 
   # Keycloak consumer for realm: mjrbxnoozcbjahhahqna
@@ -508,9 +508,19 @@ plugins:
                               if realm and realm ~= "ftth-realm" and realm ~= "master" then
                                   kong.service.request.set_header("X-Tenant-Id", realm)
                                   kong.service.request.set_header("X-Tenant-ID", realm)
+                                  kong.service.request.set_header("X-Tenant-Slug", realm)
                               else
-                                  kong.service.request.set_header("X-Tenant-Id", "00000000-0000-0000-0000-000000000000")
-                                  kong.service.request.set_header("X-Tenant-ID", "00000000-0000-0000-0000-000000000000")
+                                  -- Check if client is accessing via tenant subdomain (e.g. <slug>-gis.kdua.net)
+                                  local host = kong.request.get_header("Host") or ""
+                                  local sub_slug = string.match(host, "^([a-z0-9%-]+)%-gis%.") or string.match(host, "^([a-z0-9%-]+)%.gis%.")
+                                  if sub_slug and sub_slug ~= "system" and sub_slug ~= "api" and sub_slug ~= "gis" and sub_slug ~= "auth" then
+                                      kong.service.request.set_header("X-Tenant-Id", sub_slug)
+                                      kong.service.request.set_header("X-Tenant-ID", sub_slug)
+                                      kong.service.request.set_header("X-Tenant-Slug", sub_slug)
+                                  else
+                                      kong.service.request.set_header("X-Tenant-Id", "00000000-0000-0000-0000-000000000000")
+                                      kong.service.request.set_header("X-Tenant-ID", "00000000-0000-0000-0000-000000000000")
+                                  end
                               end
                           end
                       end
