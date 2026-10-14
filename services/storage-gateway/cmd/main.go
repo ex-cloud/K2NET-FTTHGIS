@@ -176,6 +176,66 @@ func main() {
 			})
 		})
 
+		// Mengambil rincian pemakaian penyimpanan MinIO S3 terisolasi per-prefix tenant
+		api.GET("/tenant-storage-usage", func(c *gin.Context) {
+			slug := c.Query("slug")
+			if slug == "" {
+				slug = c.Query("tenant")
+			}
+			if slug == "" {
+				slug = c.GetHeader("X-Tenant-ID")
+			}
+			if slug == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "tenant slug or X-Tenant-ID header is required"})
+				return
+			}
+
+			usage, err := storageService.GetTenantStorageUsage(c.Request.Context(), slug)
+			if err != nil {
+				logger.Error(c.Request.Context(), "Failed to get tenant storage usage", zap.Error(err), zap.String("tenant", slug))
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, usage)
+		})
+
+		// Memusnahkan seluruh objek dan folder vault tenant di MinIO S3 secara permanen (Nuclear Cascade Purge)
+		api.DELETE("/tenant-vault", func(c *gin.Context) {
+			slug := c.Query("slug")
+			if slug == "" {
+				slug = c.Query("tenant")
+			}
+			if slug == "" {
+				slug = c.GetHeader("X-Tenant-ID")
+			}
+			if slug == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "tenant slug or X-Tenant-ID header is required"})
+				return
+			}
+
+			deletedCount, err := storageService.PurgeTenantVault(c.Request.Context(), slug)
+			if err != nil {
+				logger.Error(c.Request.Context(), "Failed to purge tenant vault from MinIO", zap.Error(err), zap.String("tenant", slug))
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			audit.LogSuccess(c.Request.Context(),
+				slug, c.GetHeader("X-Actor-ID"),
+				"TENANT_VAULT_PURGED", "TENANT_VAULT", slug,
+				auditclient.GroupOperations, "storage-gateway",
+				map[string]any{"deleted_objects": deletedCount},
+			)
+
+			c.JSON(http.StatusOK, gin.H{
+				"status":          "Success",
+				"message":         "Tenant vault purged successfully from MinIO S3",
+				"slug":            slug,
+				"deleted_objects": deletedCount,
+			})
+		})
+
+
 		api.GET("/bucket-stats", func(c *gin.Context) {
 			bucket := c.Query("bucket")
 			if bucket == "" {

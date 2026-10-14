@@ -22,6 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
+import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
+import com.company.ftthgis.service.LicenseManagementService;
+import com.company.ftthgis.service.ProjectQuotaService;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,6 +45,9 @@ public class OrganizationDirectoryService {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final KeycloakService keycloakService;
     private final JdbcTemplate jdbcTemplate;
+    private final LicenseManagementService licenseManagementService;
+    private final TenantLicenseRepository tenantLicenseRepository;
+    private final ProjectQuotaService projectQuotaService;
 
     @Transactional(readOnly = true)
     public List<Organization> getAllOrganizations() {
@@ -214,7 +223,9 @@ public class OrganizationDirectoryService {
 
             Optional<SubscriptionPlan> planOpt = subscriptionPlanRepository.findByName(normalizedPlan);
             if (planOpt.isPresent()) {
-                org.setSubscriptionPlan(planOpt.get());
+                SubscriptionPlan newPlan = planOpt.get();
+                boolean planChanged = org.getSubscriptionPlan() == null || !org.getSubscriptionPlan().getId().equals(newPlan.getId());
+                org.setSubscriptionPlan(newPlan);
                 if ("FREE".equalsIgnoreCase(normalizedPlan)) {
                     if (org.getTrialExpiresAt() == null) {
                         org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(14));
@@ -225,6 +236,28 @@ public class OrganizationDirectoryService {
                     org.setGracePeriodUntil(null);
                 }
                 log.info("💳 Updated subscription plan for {} to {}", org.getSlug(), normalizedPlan);
+
+                if (planChanged && licenseManagementService != null && tenantLicenseRepository != null) {
+                    try {
+                        List<TenantLicense> existing = tenantLicenseRepository.findByOrganizationIdOrderByCreatedAtDesc(org.getId());
+                        for (TenantLicense lic : existing) {
+                            if (lic.getStatus() == LicenseStatus.ACTIVE || lic.getStatus() == LicenseStatus.GRACE_PERIOD) {
+                                lic.setStatus(LicenseStatus.REVOKED);
+                                lic.setNotes((lic.getNotes() != null ? lic.getNotes() + "\n" : "") +
+                                        "Superseded by Directory update to " + newPlan.getName() + " at " + java.time.LocalDateTime.now());
+                                tenantLicenseRepository.save(lic);
+                            }
+                        }
+                        int durationMonths = "FREE".equalsIgnoreCase(newPlan.getName()) ? 1 : 12;
+                        licenseManagementService.issueOnlineLicense(org, newPlan, durationMonths, "SYSTEM_DIRECTORY_UPDATE");
+                        if (projectQuotaService != null) {
+                            projectQuotaService.evictQuotaCache(org.getId());
+                        }
+                        log.info("🔑 Synchronized runtime license on Directory update for org '{}' to plan '{}'", org.getSlug(), newPlan.getName());
+                    } catch (Exception ex) {
+                        log.warn("⚠️ Non-fatal: license sync warning on updateOrganization for {}: {}", org.getSlug(), ex.getMessage());
+                    }
+                }
             }
         }
 

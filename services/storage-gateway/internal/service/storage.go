@@ -413,3 +413,100 @@ func (s *StorageService) GetBucketStats(ctx context.Context, bucket string) (Buc
 	})
 	return stats, err
 }
+
+type TenantStorageUsage struct {
+	TenantSlug  string  `json:"tenant_slug"`
+	TotalFiles  int64   `json:"total_files"`
+	TotalBytes  int64   `json:"total_bytes"`
+	TotalSizeMB float64 `json:"total_size_mb"`
+	TotalSizeGB float64 `json:"total_size_gb"`
+}
+
+func (s *StorageService) GetTenantStorageUsage(ctx context.Context, tenantSlug string) (TenantStorageUsage, error) {
+	cleanSlug := strings.ToLower(strings.TrimSpace(tenantSlug))
+	usage := TenantStorageUsage{TenantSlug: cleanSlug}
+	if cleanSlug == "" {
+		return usage, errors.New("tenant slug cannot be empty")
+	}
+
+	if s.localStore {
+		return usage, nil
+	}
+
+	bucket := "tenant-assets"
+	prefix := fmt.Sprintf("tenants/%s/", cleanSlug)
+
+	err := s.s3Client.ListObjectsPagesWithContext(ctx, &s3.ListObjectsInput{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(prefix),
+	}, func(page *s3.ListObjectsOutput, lastPage bool) bool {
+		for _, obj := range page.Contents {
+			size := aws.Int64Value(obj.Size)
+			usage.TotalFiles++
+			usage.TotalBytes += size
+		}
+		return true
+	})
+	if err != nil {
+		return usage, err
+	}
+
+	usage.TotalSizeMB = float64(usage.TotalBytes) / (1024 * 1024)
+	usage.TotalSizeGB = float64(usage.TotalBytes) / (1024 * 1024 * 1024)
+	return usage, nil
+}
+
+func (s *StorageService) PurgeTenantVault(ctx context.Context, tenantSlug string) (int64, error) {
+	cleanSlug := strings.ToLower(strings.TrimSpace(tenantSlug))
+	if cleanSlug == "" {
+		return 0, errors.New("tenant slug cannot be empty")
+	}
+
+	if s.localStore {
+		return 0, nil
+	}
+
+	bucket := "tenant-assets"
+	prefix := fmt.Sprintf("tenants/%s/", cleanSlug)
+
+	var deletedCount int64
+
+	err := s.s3Client.ListObjectsPagesWithContext(ctx, &s3.ListObjectsInput{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(prefix),
+	}, func(page *s3.ListObjectsOutput, lastPage bool) bool {
+		if len(page.Contents) == 0 {
+			return true
+		}
+
+		var deleteObjects []*s3.ObjectIdentifier
+		for _, obj := range page.Contents {
+			deleteObjects = append(deleteObjects, &s3.ObjectIdentifier{Key: obj.Key})
+		}
+
+		deleteInput := &s3.DeleteObjectsInput{
+			Bucket: aws.String(bucket),
+			Delete: &s3.Delete{
+				Objects: deleteObjects,
+				Quiet:   aws.Bool(true),
+			},
+		}
+
+		_, delErr := s.s3Client.DeleteObjectsWithContext(ctx, deleteInput)
+		if delErr != nil {
+			logger.Error(ctx, "Failed to batch delete tenant objects", zap.String("tenant", cleanSlug), zap.Error(delErr))
+			return false
+		}
+
+		deletedCount += int64(len(deleteObjects))
+		return true
+	})
+
+	if err != nil {
+		return deletedCount, err
+	}
+
+	logger.Info(ctx, "Tenant vault purged successfully from MinIO S3", zap.String("tenant", cleanSlug), zap.Int64("deleted_objects", deletedCount))
+	return deletedCount, nil
+}
+

@@ -105,4 +105,63 @@ public class FileStorageService {
             log.error("Unexpected error deleting file: {}", fileUrl, e);
         }
     }
+
+    /**
+     * Mengambil pemakaian penyimpanan MinIO S3 riil tenant (dalam bytes) via storage-gateway.
+     */
+    public long getTenantStorageUsageBytes(String tenantSlug) {
+        if (tenantSlug == null || tenantSlug.isBlank()) {
+            return 0L;
+        }
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            if (gatewayToken != null && !gatewayToken.isBlank()) {
+                headers.set("X-Gateway-Token", gatewayToken);
+            }
+            headers.set("X-Tenant-ID", tenantSlug);
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+            String apiUrl = storageGatewayUrl + "/api/v1/tenant-storage-usage?slug=" + tenantSlug;
+            ResponseEntity<Map> response = restTemplate.exchange(apiUrl, org.springframework.http.HttpMethod.GET, requestEntity, Map.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Object totalBytesObj = response.getBody().get("total_bytes");
+                if (totalBytesObj instanceof Number) {
+                    return ((Number) totalBytesObj).longValue();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Non-fatal: Failed to query tenant storage usage from storage-gateway for '{}': {}", tenantSlug, e.getMessage());
+        }
+        return 0L;
+    }
+
+    /**
+     * Memusnahkan seluruh isi vault tenant di MinIO S3 via storage-gateway (Nuclear Purge).
+     */
+    @AuditRequired(action = "TENANT_VAULT_PURGED", resourceType = "TENANT_VAULT", resourceIdExpression = "#tenantSlug")
+    public void purgeTenantVault(String tenantSlug) {
+        if (tenantSlug == null || tenantSlug.isBlank()) {
+            return;
+        }
+        try {
+            log.warn("💥 Purging tenant storage vault in MinIO via storage-gateway for '{}'...", tenantSlug);
+            HttpHeaders headers = new HttpHeaders();
+            if (gatewayToken != null && !gatewayToken.isBlank()) {
+                headers.set("X-Gateway-Token", gatewayToken);
+            }
+            headers.set("X-Tenant-ID", tenantSlug);
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+            String apiUrl = storageGatewayUrl + "/api/v1/tenant-vault?slug=" + tenantSlug;
+            ResponseEntity<Map> response = restTemplate.exchange(apiUrl, org.springframework.http.HttpMethod.DELETE, requestEntity, Map.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("✅ Tenant vault successfully purged in MinIO for slug '{}'", tenantSlug);
+            } else {
+                log.warn("⚠️ storage-gateway returned status {} when purging vault for '{}'", response.getStatusCode(), tenantSlug);
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to purge tenant vault in MinIO for '{}': {}", tenantSlug, e.getMessage());
+        }
+    }
 }
+

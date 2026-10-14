@@ -35,6 +35,23 @@ public class ProjectQuotaService {
     private final TenantLicenseRepository tenantLicenseRepository;
     private final TenantPackageSubscriptionRepository tenantPackageSubscriptionRepository;
     private final ObjectMapper objectMapper;
+    private final jakarta.persistence.EntityManager entityManager;
+
+    public void evictQuotaCache(UUID orgId) {
+        if (orgId == null) return;
+        try {
+            if (entityManager != null && entityManager.getEntityManagerFactory() != null) {
+                jakarta.persistence.Cache cache = entityManager.getEntityManagerFactory().getCache();
+                if (cache != null) {
+                    cache.evict(Organization.class, orgId);
+                    cache.evict(TenantLicense.class);
+                }
+            }
+            log.info("🧹 Evicted L2 quota cache for org {}", orgId);
+        } catch (Exception e) {
+            log.warn("Cache eviction warning for org {}: {}", orgId, e.getMessage());
+        }
+    }
 
     /**
      * Hitung batas maksimum proyek aktif (Active Projects Limit)
@@ -168,6 +185,8 @@ public class ProjectQuotaService {
         java.util.Map<String, Object> summary = new java.util.HashMap<>();
         int maxOlts = getEffectiveMaxOlts(org);
         long usedOlts = getUsedOlts(org.getId());
+        int maxStorageGb = getEffectiveMaxStorageGb(org);
+        int boosterStorageGb = getActivePackageDelta(org.getId(), "deltaStorageGb");
         summary.put("effectiveMaxProjects", maxProjects);
         summary.put("usedProjects", usedProjects);
         summary.put("effectiveMaxOlts", maxOlts);
@@ -176,6 +195,8 @@ public class ProjectQuotaService {
         summary.put("effectiveMaxOdps", maxOdps);
         summary.put("usedOdps", usedOdps);
         summary.put("packageBoosterOdps", boosterOdps);
+        summary.put("effectiveMaxStorageGb", maxStorageGb);
+        summary.put("packageBoosterStorageGb", boosterStorageGb);
         return summary;
     }
 
@@ -238,9 +259,9 @@ public class ProjectQuotaService {
                     org.getName(), additionalOdps, projectedUsed, effectiveMax);
             throw new QuotaExceededException(
                     "ODP_QUOTA_EXCEEDED",
-                    "Zone promotion rejected: Promoting this zone requires " + additionalOdps +
-                            " ODP slots, but your organization only has " + (effectiveMax - currentUsed) +
-                            " remaining slots (" + currentUsed + "/" + effectiveMax + " used). Please upgrade your subscription plan.",
+                    "ODP quota exceeded: Allocating " + additionalOdps +
+                            " ODP(s) rejected. Your organization only has " + (effectiveMax - currentUsed) +
+                            " remaining slots (" + currentUsed + "/" + effectiveMax + " used). Please activate PKG_BOOSTER_ODP_100 in the Marketplace or upgrade your plan.",
                     (int) projectedUsed,
                     effectiveMax
             );
@@ -328,6 +349,89 @@ public class ProjectQuotaService {
             );
         }
     }
+
+    /**
+     * Hitung batas maksimum Media Storage MinIO S3 (dalam GB)
+     * Memprioritaskan: License Overrides > Booster & Config Override > Base Plan Limit + Active Package Boosters.
+     */
+    public int getEffectiveMaxStorageGb(Organization org) {
+        if (org == null) return 0;
+
+        int baseLimit;
+        if (tenantLicenseRepository != null && org.getId() != null) {
+            Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
+                    .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(org.getId(), LicenseStatus.ACTIVE);
+            if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getOverrideMaxStorageGb() != null) {
+                baseLimit = activeLicenseOpt.get().getOverrideMaxStorageGb();
+            } else {
+                SubscriptionPlan plan = org.getSubscriptionPlan();
+                int defaultTierStorage = "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
+                        "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
+                        "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2;
+                baseLimit = getConfigInt(org, "max_storage_gb", defaultTierStorage);
+            }
+        } else {
+            SubscriptionPlan plan = org.getSubscriptionPlan();
+            int defaultTierStorage = "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
+                    "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
+                    "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2;
+            baseLimit = getConfigInt(org, "max_storage_gb", defaultTierStorage);
+        }
+
+        int packageBooster = getActivePackageDelta(org.getId(), "deltaStorageGb");
+        return baseLimit + packageBooster;
+    }
+
+    /**
+     * Validasi kapasitas penyimpanan media MinIO S3 sebelum upload
+     * Melempar QuotaExceededException jika kuota byte terlampaui.
+     */
+    public void assertCanUploadBytes(Organization org, long fileSizeBytes, long currentUsedBytes) {
+        if (org == null || fileSizeBytes <= 0) return;
+
+        // 🛡️ License Status Check: Enforce Read-Only and Suspended/Revoked Locks
+        if (tenantLicenseRepository != null && org.getId() != null) {
+            Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
+                    .findFirstByOrganizationIdOrderByCreatedAtDesc(org.getId());
+            if (activeLicenseOpt.isPresent()) {
+                LicenseStatus status = activeLicenseOpt.get().getStatus();
+                if (status == LicenseStatus.RESTRICTED_READ_ONLY) {
+                    log.warn("🛡️ Upload blocked: Org '{}' license is RESTRICTED_READ_ONLY", org.getSlug());
+                    throw new QuotaExceededException(
+                            "LICENSE_RESTRICTED_READ_ONLY",
+                            "Operasi unggah berkas ditolak: Lisensi organisasi berada dalam mode Read-Only (kedaluwarsa). Silakan perpanjang lisensi Anda.",
+                            0, 0
+                    );
+                } else if (status == LicenseStatus.SUSPENDED || status == LicenseStatus.REVOKED) {
+                    log.warn("🛡️ Upload blocked: Org '{}' license is {}", org.getSlug(), status);
+                    throw new QuotaExceededException(
+                            "LICENSE_SUSPENDED",
+                            "Operasi unggah berkas ditolak: Lisensi organisasi telah ditangguhkan atau dicabut.",
+                            0, 0
+                    );
+                }
+            }
+        }
+
+        int maxStorageGb = getEffectiveMaxStorageGb(org);
+        long maxStorageBytes = (long) maxStorageGb * 1024L * 1024L * 1024L;
+        long projectedBytes = currentUsedBytes + fileSizeBytes;
+
+        if (projectedBytes > maxStorageBytes) {
+            log.warn("🚫 Storage Quota Exceeded: Org {} cannot upload {} bytes ({}/{} bytes used)",
+                    org.getName(), fileSizeBytes, projectedBytes, maxStorageBytes);
+            throw new QuotaExceededException(
+                    "STORAGE_QUOTA_EXCEEDED",
+                    "Storage quota exceeded: Uploading " + (fileSizeBytes / (1024 * 1024)) +
+                            " MB rejected. Your organization storage is at capacity (" +
+                            (currentUsedBytes / (1024 * 1024)) + "/" + (maxStorageBytes / (1024 * 1024)) +
+                            " MB used). Please activate PKG_BOOSTER_STORAGE_50 in the Marketplace or upgrade your plan.",
+                    (int) (projectedBytes / (1024 * 1024)),
+                    (int) (maxStorageBytes / (1024 * 1024))
+            );
+        }
+    }
+
 
     private int getConfigInt(Organization org, String key, int defaultValue) {
         try {

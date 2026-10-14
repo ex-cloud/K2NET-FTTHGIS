@@ -51,6 +51,9 @@ class LicenseManagementServiceTest {
     @Mock
     private AuditLoggingService auditLoggingService;
 
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private LicenseManagementService licenseManagementService;
 

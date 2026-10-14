@@ -17,9 +17,11 @@ public interface BillingInvoiceRepository extends JpaRepository<BillingInvoice, 
 
     Optional<BillingInvoice> findByInvoiceNumber(String invoiceNumber);
 
-    Optional<BillingInvoice> findByExternalReferenceId(String externalReferenceId);
+    @Query("SELECT b FROM BillingInvoice b LEFT JOIN FETCH b.organization WHERE b.organization.id = :orgId ORDER BY b.dueDate DESC")
+    List<BillingInvoice> findByOrganizationIdOrderByDueDateDesc(@Param("orgId") UUID orgId);
 
-    List<BillingInvoice> findByOrganizationIdOrderByDueDateDesc(UUID organizationId);
+    @Query("SELECT b FROM BillingInvoice b LEFT JOIN FETCH b.organization WHERE b.organization.id = :orgId ORDER BY b.createdAt DESC")
+    List<BillingInvoice> findByOrganizationIdOrderByCreatedAtDesc(@Param("orgId") UUID orgId);
 
     List<BillingInvoice> findByStatus(InvoiceStatus status);
 

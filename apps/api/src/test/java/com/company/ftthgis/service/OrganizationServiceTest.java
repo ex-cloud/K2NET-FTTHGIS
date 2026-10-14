@@ -100,6 +100,18 @@ class OrganizationServiceTest {
     @Mock
     private com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
 
+    @Mock
+    private LicenseManagementService licenseManagementService;
+
+    @Mock
+    private com.company.ftthgis.domain.tenant.repository.BillingInvoiceRepository billingInvoiceRepository;
+
+    @Mock
+    private com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository tenantLicenseRepository;
+
+    @Mock
+    private ProjectQuotaService projectQuotaService;
+
     private com.company.ftthgis.service.organization.OrganizationDirectoryService directoryService;
     private com.company.ftthgis.service.organization.OrganizationProvisioningService provisioningService;
     private com.company.ftthgis.service.organization.OrganizationLifecycleService lifecycleService;
@@ -125,12 +137,14 @@ class OrganizationServiceTest {
         directoryService = new com.company.ftthgis.service.organization.OrganizationDirectoryService(
                 organizationRepository, userRepository, organizationSlugAliasRepository,
                 randomSlugGenerator, tenantSecurity, fileStorageService,
-                subscriptionPlanRepository, keycloakService, jdbcTemplate
+                subscriptionPlanRepository, keycloakService, jdbcTemplate,
+                licenseManagementService, tenantLicenseRepository, projectQuotaService
         );
         provisioningService = new com.company.ftthgis.service.organization.OrganizationProvisioningService(
                 organizationRepository, subscriptionPlanRepository, organizationSlugAliasRepository,
                 randomSlugGenerator, organizationConfigRepository, encryptionUtils,
-                keycloakService, roleRepository, entityManager, fileStorageService, auditLoggingService
+                keycloakService, roleRepository, entityManager, fileStorageService, auditLoggingService,
+                licenseManagementService, billingInvoiceRepository
         );
         lifecycleService = new com.company.ftthgis.service.organization.OrganizationLifecycleService(
                 organizationRepository, projectRepository, networkNodeRepository,

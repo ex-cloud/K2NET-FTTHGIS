@@ -8,6 +8,9 @@ import com.company.ftthgis.domain.tenant.repository.OrganizationConfigRepository
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
 import com.company.ftthgis.domain.tenant.repository.SubscriptionPlanRepository;
+import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
+import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,37 @@ public class OrganizationSubscriptionService {
     private final com.company.ftthgis.domain.network.repository.NetworkNodeRepository networkNodeRepository;
     private final AuditLoggingService auditLoggingService;
     private final com.company.ftthgis.config.tenant.KeycloakService keycloakService;
+    private final LicenseManagementService licenseManagementService;
+    private final TenantLicenseRepository tenantLicenseRepository;
+
+    private void syncLicenseWithPlan(Organization org, SubscriptionPlan newPlan, String action) {
+        try {
+            // 1. Revoke existing active licenses
+            List<TenantLicense> existing = tenantLicenseRepository.findByOrganizationIdOrderByCreatedAtDesc(org.getId());
+            for (TenantLicense lic : existing) {
+                if (lic.getStatus() == LicenseStatus.ACTIVE || lic.getStatus() == LicenseStatus.GRACE_PERIOD) {
+                    lic.setStatus(LicenseStatus.REVOKED);
+                    lic.setNotes((lic.getNotes() != null ? lic.getNotes() + "\n" : "") +
+                            "Superseded by " + action + " to " + newPlan.getName() + " at " + LocalDateTime.now());
+                    tenantLicenseRepository.save(lic);
+                }
+            }
+
+            // 2. Automatically issue new cryptographic runtime license
+            String planCode = newPlan.getName().toUpperCase(Locale.ROOT);
+            boolean isFree = "FREE".equalsIgnoreCase(planCode);
+            int durationMonths = isFree ? 1 : 12;
+
+            licenseManagementService.issueOnlineLicense(org, newPlan, durationMonths, "SYSTEM_SUBSCRIPTION_" + action);
+            log.info("🔑 LICENSE SYNC COMPLETE: Org '{}' runtime license synchronized to plan '{}' via {}",
+                    org.getSlug(), planCode, action);
+
+            // 3. Evict L2 quota cache
+            projectQuotaService.evictQuotaCache(org.getId());
+        } catch (Exception ex) {
+            log.warn("⚠️ License synchronization warning for org '{}': {}", org.getSlug(), ex.getMessage());
+        }
+    }
 
     /**
      * Mengambil ringkasan langganan dan status siklus hidup tenant secara lengkap & real-time
@@ -208,6 +242,7 @@ public class OrganizationSubscriptionService {
                 "Upgraded to " + targetPlan.getName() + " (" + org.getPlanCycle() + "). DirectOverride=" + request.isDirectOverride() + ". Notes=" + request.getNotes()
         );
 
+        syncLicenseWithPlan(org, targetPlan, "UPGRADE");
         return getSubscriptionSummary(slug);
     }
 
@@ -290,6 +325,7 @@ public class OrganizationSubscriptionService {
         result.put("gracePeriodUntil", org.getGracePeriodUntil());
         result.put("summary", getSubscriptionSummary(slug));
 
+        syncLicenseWithPlan(org, targetPlan, "DOWNGRADE");
         return result;
     }
 

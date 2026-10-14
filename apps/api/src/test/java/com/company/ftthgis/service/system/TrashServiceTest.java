@@ -129,11 +129,13 @@ class TrashServiceTest {
     @DisplayName("emptyTrash — Mengosongkan seluruh kategori dan menghitung total baris terhapus")
     void testEmptyTrash_All() {
         when(jdbcTemplate.update(anyString())).thenReturn(5);
+        when(jdbcTemplate.queryForList(anyString(), eq(String.class))).thenReturn(List.of("org-1", "org-2", "org-3", "org-4", "org-5"));
 
         int totalPurged = trashService.emptyTrash("all");
 
-        assertThat(totalPurged).isEqualTo(20); // 4 queries * 5 deleted
-        verify(jdbcTemplate, times(4)).update(anyString());
+        assertThat(totalPurged).isEqualTo(20); // 3 table updates * 5 + 5 orgs nuclear purged
+        verify(jdbcTemplate, times(3)).update(anyString());
+        verify(organizationService, times(5)).deleteOrganization(anyString(), eq("nuclear"), anyString());
     }
 
     @Test

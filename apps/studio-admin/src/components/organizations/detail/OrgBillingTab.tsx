@@ -6,6 +6,7 @@ import {
   BillingChangePlanSheet,
   BillingPlanDetailModal,
   BillingDunningModal,
+  OrgRuntimeLicenseCard,
 } from "./billing";
 import { useOrgBillingState } from "./billing/useOrgBillingState";
 import { BillingHeaderBar } from "./billing/BillingHeaderBar";
@@ -36,6 +37,11 @@ export function OrgBillingTab({
         status={org.status}
         summary={state.summary}
         onExtendTrial={state.handleExtendTrial}
+      />
+
+      {/* Cryptographic Runtime License Card */}
+      <OrgRuntimeLicenseCard
+        organization={org}
       />
 
       {/* Subscription Plan Summary Card */}

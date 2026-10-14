@@ -306,7 +306,15 @@ public class TrashService {
             totalDeleted += jdbcTemplate.update("DELETE FROM projects WHERE deleted_at IS NOT NULL");
         }
         if ("all".equalsIgnoreCase(category) || "organizations".equalsIgnoreCase(category)) {
-            totalDeleted += jdbcTemplate.update("DELETE FROM organizations WHERE deleted_at IS NOT NULL");
+            List<String> orgIds = jdbcTemplate.queryForList("SELECT id::text FROM organizations WHERE deleted_at IS NOT NULL", String.class);
+            for (String orgId : orgIds) {
+                try {
+                    organizationService.deleteOrganization(orgId, "nuclear", "Recycle Bin Empty Nuclear Wipe");
+                    totalDeleted++;
+                } catch (Exception e) {
+                    log.warn("[TrashService] Failed to nuclear delete organization {} during empty trash: {}", orgId, e.getMessage());
+                }
+            }
         }
 
         log.info("[TrashService] Emptied trash for category {}. Total purged: {}", category, totalDeleted);

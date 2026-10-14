@@ -7,13 +7,16 @@ import com.company.ftthgis.api.tenant.dto.LicenseEntitlementsDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
 import com.company.ftthgis.api.tenant.dto.ProrateEstimateResponseDto;
+import com.company.ftthgis.config.tenant.OrganizationContext;
 import com.company.ftthgis.domain.tenant.entity.*;
 import com.company.ftthgis.domain.tenant.repository.BillingInvoiceRepository;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.tenant.repository.SubscriptionPlanRepository;
 import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +45,19 @@ public class LicenseManagementService {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final LicenseCryptoService licenseCryptoService;
     private final AuditLoggingService auditLoggingService;
+    private final EntityManager entityManager;
+
+    private void unwrapAndDisableOrgFilter() {
+        OrganizationContext.setFilterBypassed(true);
+        if (entityManager != null) {
+            try {
+                Session session = entityManager.unwrap(Session.class);
+                if (session != null && session.getEnabledFilter("organizationFilter") != null) {
+                    session.disableFilter("organizationFilter");
+                }
+            } catch (Exception ignored) {}
+        }
+    }
 
     /**
      * Menerbitkan lisensi online baru untuk organisasi tenant (saat registrasi / pembayaran).
@@ -54,9 +70,11 @@ public class LicenseManagementService {
             String issuedBy
     ) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime validUntil = now.plusMonths(Math.max(1, durationMonths));
-
         String tier = plan != null ? plan.getName() : "PRO";
+        LocalDateTime validUntil = "FREE".equalsIgnoreCase(tier)
+                ? now.plusDays(14)
+                : now.plusMonths(Math.max(1, durationMonths));
+
         String licenseKey = licenseCryptoService.generateLicenseKey(tier);
         String signature = licenseCryptoService.signLicenseMetadata(
                 org.getId(),
@@ -79,7 +97,7 @@ public class LicenseManagementService {
                 .issuedBy(issuedBy != null ? issuedBy : "SYSTEM_BILLING")
                 .featureSsoEnabled(plan != null && plan.isHasSso())
                 .featureApiEnabled(plan != null && plan.isHasApiAccess())
-                .notes("Online subscription license issued automatically")
+                .notes("FREE".equalsIgnoreCase(tier) ? "14-Day Free Trial Online License" : "Online subscription license issued automatically")
                 .build();
 
         TenantLicense saved = tenantLicenseRepository.save(license);
@@ -499,13 +517,18 @@ public class LicenseManagementService {
      */
     @Transactional(readOnly = true)
     public List<LicenseResponseDto> getAllLicenses() {
-        List<TenantLicense> licenses = tenantLicenseRepository.findAll();
-        List<LicenseResponseDto> dtos = new ArrayList<>();
-        for (TenantLicense lic : licenses) {
-            Organization org = lic.getOrganization();
-            dtos.add(mapToResponseDto(lic, org));
+        unwrapAndDisableOrgFilter();
+        try {
+            List<TenantLicense> licenses = tenantLicenseRepository.findAll();
+            List<LicenseResponseDto> dtos = new ArrayList<>();
+            for (TenantLicense lic : licenses) {
+                Organization org = lic.getOrganization();
+                dtos.add(mapToResponseDto(lic, org));
+            }
+            return dtos;
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
         }
-        return dtos;
     }
 
     /**
@@ -513,38 +536,43 @@ public class LicenseManagementService {
      */
     @Transactional
     public TenantLicense extendLicense(UUID licenseId, int additionalMonths, String extendedBy) {
-        TenantLicense license = tenantLicenseRepository.findById(licenseId)
-                .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
+        unwrapAndDisableOrgFilter();
+        try {
+            TenantLicense license = tenantLicenseRepository.findById(licenseId)
+                    .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
 
-        LocalDateTime currentValidUntil = license.getValidUntil();
-        LocalDateTime baseDate = (currentValidUntil != null && currentValidUntil.isAfter(LocalDateTime.now()))
-                ? currentValidUntil
-                : LocalDateTime.now();
+            LocalDateTime currentValidUntil = license.getValidUntil();
+            LocalDateTime baseDate = (currentValidUntil != null && currentValidUntil.isAfter(LocalDateTime.now()))
+                    ? currentValidUntil
+                    : LocalDateTime.now();
 
-        LocalDateTime newValidUntil = baseDate.plusMonths(Math.max(1, additionalMonths));
-        license.setValidUntil(newValidUntil);
-        license.setStatus(LicenseStatus.ACTIVE);
-        license.setGracePeriodUntil(null);
+            LocalDateTime newValidUntil = baseDate.plusMonths(Math.max(1, additionalMonths));
+            license.setValidUntil(newValidUntil);
+            license.setStatus(LicenseStatus.ACTIVE);
+            license.setGracePeriodUntil(null);
 
-        // Perbarui signature digital
-        String newSig = licenseCryptoService.signLicenseMetadata(
-                license.getOrganization().getId(),
-                license.getSubscriptionPlan() != null ? license.getSubscriptionPlan().getName() : "PRO",
-                license.getLicenseKey(),
-                license.getValidFrom(),
-                newValidUntil,
-                license.getMachineFingerprint()
-        );
-        license.setLicenseSignature(newSig);
+            // Perbarui signature digital
+            String newSig = licenseCryptoService.signLicenseMetadata(
+                    license.getOrganization().getId(),
+                    license.getSubscriptionPlan() != null ? license.getSubscriptionPlan().getName() : "PRO",
+                    license.getLicenseKey(),
+                    license.getValidFrom(),
+                    newValidUntil,
+                    license.getMachineFingerprint()
+            );
+            license.setLicenseSignature(newSig);
 
-        TenantLicense saved = tenantLicenseRepository.save(license);
-        log.info("⏰ LICENSE EXTENDED: License '{}' extended by {} months until {}",
-                license.getLicenseKey(), additionalMonths, newValidUntil);
+            TenantLicense saved = tenantLicenseRepository.save(license);
+            log.info("⏰ LICENSE EXTENDED: License '{}' extended by {} months until {}",
+                    license.getLicenseKey(), additionalMonths, newValidUntil);
 
-        auditLog(license.getOrganization().getSlug(), "LICENSE_EXTENDED", license.getOrganization().getId().toString(),
-                "License " + maskKey(license.getLicenseKey()) + " extended by " + additionalMonths + " months by " + extendedBy);
+            auditLog(license.getOrganization().getSlug(), "LICENSE_EXTENDED", license.getOrganization().getId().toString(),
+                    "License " + maskKey(license.getLicenseKey()) + " extended by " + additionalMonths + " months by " + extendedBy);
 
-        return saved;
+            return saved;
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
+        }
     }
 
     /**
@@ -552,19 +580,24 @@ public class LicenseManagementService {
      */
     @Transactional
     public void revokeLicense(UUID licenseId, String reason, String revokedBy) {
-        TenantLicense license = tenantLicenseRepository.findById(licenseId)
-                .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
+        unwrapAndDisableOrgFilter();
+        try {
+            TenantLicense license = tenantLicenseRepository.findById(licenseId)
+                    .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
 
-        license.setStatus(LicenseStatus.REVOKED);
-        license.setNotes((license.getNotes() != null ? license.getNotes() + "\n" : "") +
-                "REVOKED by " + revokedBy + ": " + reason + " at " + LocalDateTime.now());
+            license.setStatus(LicenseStatus.REVOKED);
+            license.setNotes((license.getNotes() != null ? license.getNotes() + "\n" : "") +
+                    "REVOKED by " + revokedBy + ": " + reason + " at " + LocalDateTime.now());
 
-        tenantLicenseRepository.save(license);
-        log.warn("🚨 LICENSE REVOKED: License '{}' revoked by {}: {}",
-                license.getLicenseKey(), revokedBy, reason);
+            tenantLicenseRepository.save(license);
+            log.warn("🚨 LICENSE REVOKED: License '{}' revoked by {}: {}",
+                    license.getLicenseKey(), revokedBy, reason);
 
-        auditLog(license.getOrganization().getSlug(), "LICENSE_REVOKED", license.getOrganization().getId().toString(),
-                "License " + maskKey(license.getLicenseKey()) + " revoked: " + reason);
+            auditLog(license.getOrganization().getSlug(), "LICENSE_REVOKED", license.getOrganization().getId().toString(),
+                    "License " + maskKey(license.getLicenseKey()) + " revoked: " + reason);
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
+        }
     }
 
     /**
@@ -574,9 +607,14 @@ public class LicenseManagementService {
     public List<LicenseResponseDto> getLicensesByOrganization(UUID orgId) {
         Organization org = organizationRepository.findById(orgId)
                 .orElseThrow(() -> new NoSuchElementException("Organisasi tidak ditemukan: " + orgId));
-        return tenantLicenseRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId).stream()
-                .map(lic -> mapToResponseDto(lic, org))
-                .toList();
+        unwrapAndDisableOrgFilter();
+        try {
+            return tenantLicenseRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId).stream()
+                    .map(lic -> mapToResponseDto(lic, org))
+                    .toList();
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
+        }
     }
 
     /**
@@ -584,8 +622,13 @@ public class LicenseManagementService {
      */
     @Transactional(readOnly = true)
     public Optional<LicenseResponseDto> getLicenseById(UUID licenseId) {
-        return tenantLicenseRepository.findById(licenseId)
-                .map(lic -> mapToResponseDto(lic, lic.getOrganization()));
+        unwrapAndDisableOrgFilter();
+        try {
+            return tenantLicenseRepository.findById(licenseId)
+                    .map(lic -> mapToResponseDto(lic, lic.getOrganization()));
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
+        }
     }
 
     /**
@@ -593,9 +636,14 @@ public class LicenseManagementService {
      */
     @Transactional(readOnly = true)
     public String exportOfflineCertificate(UUID licenseId) {
-        TenantLicense license = tenantLicenseRepository.findById(licenseId)
-                .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
-        return licenseCryptoService.generateOfflineCertificate(license, license.getOrganization());
+        unwrapAndDisableOrgFilter();
+        try {
+            TenantLicense license = tenantLicenseRepository.findById(licenseId)
+                    .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
+            return licenseCryptoService.generateOfflineCertificate(license, license.getOrganization());
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
+        }
     }
 
     /**
@@ -603,59 +651,64 @@ public class LicenseManagementService {
      */
     @Transactional(readOnly = true)
     public LicenseOverviewKpiDto getLicensesOverview() {
-        List<TenantLicense> all = tenantLicenseRepository.findAll();
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime in30Days = now.plusDays(30);
-        LocalDateTime in7Days = now.plusDays(7);
+        unwrapAndDisableOrgFilter();
+        try {
+            List<TenantLicense> all = tenantLicenseRepository.findAll();
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime in30Days = now.plusDays(30);
+            LocalDateTime in7Days = now.plusDays(7);
 
-        long total = all.size();
-        long active = 0;
-        long grace = 0;
-        long readOnly = 0;
-        long suspended = 0;
-        long expiringIn30Days = 0;
-        long expiringIn7Days = 0;
-        double mrr = 0.0;
-        Map<String, Long> tierDistribution = new HashMap<>();
+            long total = all.size();
+            long active = 0;
+            long grace = 0;
+            long readOnly = 0;
+            long suspended = 0;
+            long expiringIn30Days = 0;
+            long expiringIn7Days = 0;
+            double mrr = 0.0;
+            Map<String, Long> tierDistribution = new HashMap<>();
 
-        for (TenantLicense lic : all) {
-            LicenseStatus status = lic.getStatus();
-            if (status == LicenseStatus.ACTIVE) {
-                active++;
-                if (lic.getValidUntil() != null && lic.getValidUntil().isAfter(now)) {
-                    if (!lic.getValidUntil().isAfter(in30Days)) {
-                        expiringIn30Days++;
+            for (TenantLicense lic : all) {
+                LicenseStatus status = lic.getStatus();
+                if (status == LicenseStatus.ACTIVE) {
+                    active++;
+                    if (lic.getValidUntil() != null && lic.getValidUntil().isAfter(now)) {
+                        if (!lic.getValidUntil().isAfter(in30Days)) {
+                            expiringIn30Days++;
+                        }
+                        if (!lic.getValidUntil().isAfter(in7Days)) {
+                            expiringIn7Days++;
+                        }
                     }
-                    if (!lic.getValidUntil().isAfter(in7Days)) {
-                        expiringIn7Days++;
+                    if (lic.getSubscriptionPlan() != null && lic.getSubscriptionPlan().getPrice() != null) {
+                        mrr += lic.getSubscriptionPlan().getPrice().doubleValue();
                     }
+                } else if (status == LicenseStatus.GRACE_PERIOD) {
+                    grace++;
+                } else if (status == LicenseStatus.RESTRICTED_READ_ONLY) {
+                    readOnly++;
+                } else if (status == LicenseStatus.SUSPENDED || status == LicenseStatus.REVOKED) {
+                    suspended++;
                 }
-                if (lic.getSubscriptionPlan() != null && lic.getSubscriptionPlan().getPrice() != null) {
-                    mrr += lic.getSubscriptionPlan().getPrice().doubleValue();
-                }
-            } else if (status == LicenseStatus.GRACE_PERIOD) {
-                grace++;
-            } else if (status == LicenseStatus.RESTRICTED_READ_ONLY) {
-                readOnly++;
-            } else if (status == LicenseStatus.SUSPENDED || status == LicenseStatus.REVOKED) {
-                suspended++;
+
+                String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
+                tierDistribution.put(tier, tierDistribution.getOrDefault(tier, 0L) + 1);
             }
 
-            String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
-            tierDistribution.put(tier, tierDistribution.getOrDefault(tier, 0L) + 1);
+            return LicenseOverviewKpiDto.builder()
+                    .totalLicenses(total)
+                    .activeLicenses(active)
+                    .gracePeriodLicenses(grace)
+                    .readOnlyLicenses(readOnly)
+                    .suspendedLicenses(suspended)
+                    .expiringIn30Days(expiringIn30Days)
+                    .expiringIn7Days(expiringIn7Days)
+                    .monthlyRecurringRevenue(mrr)
+                    .tierDistribution(tierDistribution)
+                    .build();
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
         }
-
-        return LicenseOverviewKpiDto.builder()
-                .totalLicenses(total)
-                .activeLicenses(active)
-                .gracePeriodLicenses(grace)
-                .readOnlyLicenses(readOnly)
-                .suspendedLicenses(suspended)
-                .expiringIn30Days(expiringIn30Days)
-                .expiringIn7Days(expiringIn7Days)
-                .monthlyRecurringRevenue(mrr)
-                .tierDistribution(tierDistribution)
-                .build();
     }
 
     /**
@@ -902,69 +955,74 @@ public class LicenseManagementService {
      */
     @Transactional
     public TenantLicense updateTenantLicense(UUID licenseId, UpdateTenantLicenseRequest request, String actor) {
-        TenantLicense lic = tenantLicenseRepository.findById(licenseId)
-                .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
+        unwrapAndDisableOrgFilter();
+        try {
+            TenantLicense lic = tenantLicenseRepository.findById(licenseId)
+                    .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
 
-        if (request.getStatus() != null) {
-            lic.setStatus(request.getStatus());
+            if (request.getStatus() != null) {
+                lic.setStatus(request.getStatus());
+            }
+            if (request.getValidUntil() != null) {
+                lic.setValidUntil(request.getValidUntil());
+            }
+            if (request.getGracePeriodUntil() != null) {
+                lic.setGracePeriodUntil(request.getGracePeriodUntil());
+            }
+
+            // Custom Quota Overrides
+            if (request.getOverrideMaxProjects() != null) lic.setOverrideMaxProjects(request.getOverrideMaxProjects());
+            if (request.getOverrideMaxOdps() != null) lic.setOverrideMaxOdps(request.getOverrideMaxOdps());
+            if (request.getOverrideMaxOdcs() != null) lic.setOverrideMaxOdcs(request.getOverrideMaxOdcs());
+            if (request.getOverrideMaxCustomers() != null) lic.setOverrideMaxCustomers(request.getOverrideMaxCustomers());
+            if (request.getOverrideMaxStorageGb() != null) lic.setOverrideMaxStorageGb(request.getOverrideMaxStorageGb());
+
+            // Feature Entitlements
+            if (request.getFeatureSsoEnabled() != null) lic.setFeatureSsoEnabled(request.getFeatureSsoEnabled());
+            if (request.getFeatureApiEnabled() != null) lic.setFeatureApiEnabled(request.getFeatureApiEnabled());
+            if (request.getFeatureAiCopilotEnabled() != null) lic.setFeatureAiCopilotEnabled(request.getFeatureAiCopilotEnabled());
+            if (request.getFeatureCustomDomainEnabled() != null) lic.setFeatureCustomDomainEnabled(request.getFeatureCustomDomainEnabled());
+
+            // Hardware Binding & Notes
+            if (request.getMachineFingerprint() != null) lic.setMachineFingerprint(request.getMachineFingerprint().trim());
+            if (request.getNotes() != null) lic.setNotes(request.getNotes());
+
+            // Billing Contacts
+            if (request.getBillingContactName() != null) lic.setBillingContactName(request.getBillingContactName().trim());
+            if (request.getBillingContactEmail() != null) lic.setBillingContactEmail(request.getBillingContactEmail().trim());
+            if (request.getBillingContactPhone() != null) lic.setBillingContactPhone(request.getBillingContactPhone().trim());
+            if (request.getNotifyEmailEnabled() != null) lic.setNotifyEmailEnabled(request.getNotifyEmailEnabled());
+            if (request.getNotifyWhatsappEnabled() != null) lic.setNotifyWhatsappEnabled(request.getNotifyWhatsappEnabled());
+
+            // Perbarui tanda tangan kriptografis Ed25519 jika masa aktif atau hardware fingerprint berubah
+            if (request.getValidUntil() != null || request.getMachineFingerprint() != null) {
+                String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
+                String newSig = licenseCryptoService.signLicenseMetadata(
+                        lic.getOrganization().getId(),
+                        tier,
+                        lic.getLicenseKey(),
+                        lic.getValidFrom(),
+                        lic.getValidUntil(),
+                        lic.getMachineFingerprint()
+                );
+                lic.setLicenseSignature(newSig);
+            }
+
+            TenantLicense saved = tenantLicenseRepository.save(lic);
+
+            auditLog(lic.getOrganization() != null ? lic.getOrganization().getSlug() : "system",
+                    "LICENSE_UPDATED", licenseId.toString(),
+                    "Super Admin '" + actor + "' updated license details and quota overrides.");
+
+            log.info("🔑 LICENSE UPDATED: License '{}' (ID: {}) for org '{}' updated by '{}'",
+                    lic.getLicenseKey(), licenseId,
+                    lic.getOrganization() != null ? lic.getOrganization().getSlug() : "unknown",
+                    actor);
+
+            return saved;
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
         }
-        if (request.getValidUntil() != null) {
-            lic.setValidUntil(request.getValidUntil());
-        }
-        if (request.getGracePeriodUntil() != null) {
-            lic.setGracePeriodUntil(request.getGracePeriodUntil());
-        }
-
-        // Custom Quota Overrides
-        if (request.getOverrideMaxProjects() != null) lic.setOverrideMaxProjects(request.getOverrideMaxProjects());
-        if (request.getOverrideMaxOdps() != null) lic.setOverrideMaxOdps(request.getOverrideMaxOdps());
-        if (request.getOverrideMaxOdcs() != null) lic.setOverrideMaxOdcs(request.getOverrideMaxOdcs());
-        if (request.getOverrideMaxCustomers() != null) lic.setOverrideMaxCustomers(request.getOverrideMaxCustomers());
-        if (request.getOverrideMaxStorageGb() != null) lic.setOverrideMaxStorageGb(request.getOverrideMaxStorageGb());
-
-        // Feature Entitlements
-        if (request.getFeatureSsoEnabled() != null) lic.setFeatureSsoEnabled(request.getFeatureSsoEnabled());
-        if (request.getFeatureApiEnabled() != null) lic.setFeatureApiEnabled(request.getFeatureApiEnabled());
-        if (request.getFeatureAiCopilotEnabled() != null) lic.setFeatureAiCopilotEnabled(request.getFeatureAiCopilotEnabled());
-        if (request.getFeatureCustomDomainEnabled() != null) lic.setFeatureCustomDomainEnabled(request.getFeatureCustomDomainEnabled());
-
-        // Hardware Binding & Notes
-        if (request.getMachineFingerprint() != null) lic.setMachineFingerprint(request.getMachineFingerprint().trim());
-        if (request.getNotes() != null) lic.setNotes(request.getNotes());
-
-        // Billing Contacts
-        if (request.getBillingContactName() != null) lic.setBillingContactName(request.getBillingContactName().trim());
-        if (request.getBillingContactEmail() != null) lic.setBillingContactEmail(request.getBillingContactEmail().trim());
-        if (request.getBillingContactPhone() != null) lic.setBillingContactPhone(request.getBillingContactPhone().trim());
-        if (request.getNotifyEmailEnabled() != null) lic.setNotifyEmailEnabled(request.getNotifyEmailEnabled());
-        if (request.getNotifyWhatsappEnabled() != null) lic.setNotifyWhatsappEnabled(request.getNotifyWhatsappEnabled());
-
-        // Perbarui tanda tangan kriptografis Ed25519 jika masa aktif atau hardware fingerprint berubah
-        if (request.getValidUntil() != null || request.getMachineFingerprint() != null) {
-            String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
-            String newSig = licenseCryptoService.signLicenseMetadata(
-                    lic.getOrganization().getId(),
-                    tier,
-                    lic.getLicenseKey(),
-                    lic.getValidFrom(),
-                    lic.getValidUntil(),
-                    lic.getMachineFingerprint()
-            );
-            lic.setLicenseSignature(newSig);
-        }
-
-        TenantLicense saved = tenantLicenseRepository.save(lic);
-
-        auditLog(lic.getOrganization() != null ? lic.getOrganization().getSlug() : "system",
-                "LICENSE_UPDATED", licenseId.toString(),
-                "Super Admin '" + actor + "' updated license details and quota overrides.");
-
-        log.info("🔑 LICENSE UPDATED: License '{}' (ID: {}) for org '{}' updated by '{}'",
-                lic.getLicenseKey(), licenseId,
-                lic.getOrganization() != null ? lic.getOrganization().getSlug() : "unknown",
-                actor);
-
-        return saved;
     }
 
     private void auditLog(String tenantSlug, String action, String orgId, String details) {

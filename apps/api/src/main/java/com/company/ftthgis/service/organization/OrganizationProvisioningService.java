@@ -12,8 +12,13 @@ import com.company.ftthgis.domain.tenant.repository.SubscriptionPlanRepository;
 import com.company.ftthgis.domain.user.entity.Role;
 import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.repository.RoleRepository;
+import com.company.ftthgis.domain.tenant.entity.BillingInvoice;
+import com.company.ftthgis.domain.tenant.entity.InvoiceStatus;
+import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.repository.BillingInvoiceRepository;
 import com.company.ftthgis.service.AuditLoggingService;
 import com.company.ftthgis.service.FileStorageService;
+import com.company.ftthgis.service.LicenseManagementService;
 import com.company.ftthgis.util.EncryptionUtils;
 import com.company.ftthgis.util.RandomSlugGenerator;
 import jakarta.persistence.EntityManager;
@@ -22,8 +27,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -43,6 +50,8 @@ public class OrganizationProvisioningService {
     private final EntityManager entityManager;
     private final FileStorageService fileStorageService;
     private final AuditLoggingService auditLoggingService;
+    private final LicenseManagementService licenseManagementService;
+    private final BillingInvoiceRepository billingInvoiceRepository;
 
     @Transactional
     public Map<String, Object> createOrganization(OrganizationCreateRequest request) {
@@ -185,6 +194,50 @@ public class OrganizationProvisioningService {
                 fileStorageService.initTenantVault(readableFolder);
             } catch (Exception storageEx) {
                 log.warn("⚠️ Non-fatal: storage vault init warning for {}: {}", saved.getName(), storageEx.getMessage());
+            }
+
+            // Step 6: Automatically Issue Cryptographic Runtime License & Initial Welcome Invoice
+            try {
+                String effectivePlanCode = plan != null ? plan.getName().toUpperCase(Locale.ROOT) : "FREE";
+                boolean isFree = "FREE".equalsIgnoreCase(effectivePlanCode);
+                int durationMonths = isFree ? 1 : 12;
+
+                TenantLicense issuedLicense = licenseManagementService.issueOnlineLicense(
+                        saved,
+                        plan,
+                        durationMonths,
+                        "SYSTEM_PROVISIONING"
+                );
+
+                // Generate Initial Welcome Invoice
+                String invNumber = "INV/" + LocalDateTime.now().getYear() + "/" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+                BigDecimal amount = (isFree || plan == null || plan.getPrice() == null)
+                        ? BigDecimal.ZERO
+                        : (plan.getPrice().multiply(BigDecimal.valueOf(12)));
+                String invDesc = isFree
+                        ? "Welcome Invoice - 14-Day Free Trial Entitlement"
+                        : "Welcome Invoice - 12-Month " + effectivePlanCode + " Subscription Contract";
+
+                BillingInvoice welcomeInvoice = BillingInvoice.builder()
+                        .organization(saved)
+                        .license(issuedLicense)
+                        .invoiceNumber(invNumber)
+                        .description(invDesc)
+                        .amount(amount)
+                        .currency("IDR")
+                        .status(InvoiceStatus.PAID)
+                        .dueDate(LocalDateTime.now().plusDays(30))
+                        .paidAt(LocalDateTime.now())
+                        .paymentMethod(isFree ? "FREE_TRIAL" : "B2B_CONTRACT")
+                        .paymentChannel("SYSTEM")
+                        .build();
+
+                billingInvoiceRepository.save(welcomeInvoice);
+
+                log.info("🔑 Step 6: Automatically issued runtime license '{}' and welcome invoice '{}' for organization '{}'",
+                        issuedLicense.getLicenseKey(), invNumber, saved.getName());
+            } catch (Exception licEx) {
+                log.error("⚠️ Failed to issue automatic runtime license / welcome invoice for {}: {}", saved.getName(), licEx.getMessage(), licEx);
             }
 
             log.info("✅ SUCCESS: Organization '{}' provisioned. Owner: {}, Temp Password: {}",

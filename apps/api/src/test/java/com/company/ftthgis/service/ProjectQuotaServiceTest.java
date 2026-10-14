@@ -48,6 +48,9 @@ class ProjectQuotaServiceTest {
     @Mock
     private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private ProjectQuotaService projectQuotaService;
 
@@ -226,4 +229,78 @@ class ProjectQuotaServiceTest {
         int effectiveMax = projectQuotaService.getEffectiveMaxOlts(org);
         assertEquals(10, effectiveMax);
     }
+
+    @Test
+    void testAssertCanAllocateOdpsSuccessWhenBelowLimit() {
+        when(organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(any(), eq("max_odps")))
+                .thenReturn(Optional.empty());
+        when(networkNodeRepository.countBillableOdpsByOrganizationId(orgId))
+                .thenReturn(1000L);
+
+        // Limit is 2500 from PRO plan, allocate 500 -> 1500 <= 2500
+        assertDoesNotThrow(() -> projectQuotaService.assertCanAllocateOdps(org, 500));
+    }
+
+    @Test
+    void testAssertCanAllocateOdpsThrowsQuotaExceededExceptionWhenLimitReached() {
+        when(organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(any(), eq("max_odps")))
+                .thenReturn(Optional.empty());
+        when(networkNodeRepository.countBillableOdpsByOrganizationId(orgId))
+                .thenReturn(2490L);
+
+        // 2490 + 20 = 2510 > 2500
+        QuotaExceededException ex = assertThrows(QuotaExceededException.class,
+                () -> projectQuotaService.assertCanAllocateOdps(org, 20));
+
+        assertEquals("ODP_QUOTA_EXCEEDED", ex.getErrorCode());
+        assertEquals(2510, ex.getCurrent());
+        assertEquals(2500, ex.getMax());
+    }
+
+    @Test
+    void testEffectiveMaxStorageGbWithBasePlanAndLicenseOverride() {
+        // PRO default is 100 GB
+        when(organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(any(), eq("max_storage_gb")))
+                .thenReturn(Optional.empty());
+        int defaultProStorage = projectQuotaService.getEffectiveMaxStorageGb(org);
+        assertEquals(100, defaultProStorage);
+
+        // License override to 250 GB
+        TenantLicense license = TenantLicense.builder()
+                .status(LicenseStatus.ACTIVE)
+                .overrideMaxStorageGb(250)
+                .build();
+        when(tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(orgId, LicenseStatus.ACTIVE))
+                .thenReturn(Optional.of(license));
+
+        int overriddenStorage = projectQuotaService.getEffectiveMaxStorageGb(org);
+        assertEquals(250, overriddenStorage);
+    }
+
+    @Test
+    void testAssertCanUploadBytesSuccessWhenBelowLimit() {
+        when(organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(any(), eq("max_storage_gb")))
+                .thenReturn(Optional.empty());
+        // PRO max is 100 GB. Current used: 10 GB. Uploading 50 MB.
+        long currentUsedBytes = 10L * 1024L * 1024L * 1024L;
+        long uploadBytes = 50L * 1024L * 1024L;
+
+        assertDoesNotThrow(() -> projectQuotaService.assertCanUploadBytes(org, uploadBytes, currentUsedBytes));
+    }
+
+    @Test
+    void testAssertCanUploadBytesThrowsQuotaExceededExceptionWhenLimitReached() {
+        when(organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(any(), eq("max_storage_gb")))
+                .thenReturn(Optional.empty());
+        // PRO max is 100 GB (~102400 MB). Current used: 99.9 GB. Uploading 200 MB.
+        long maxBytes = 100L * 1024L * 1024L * 1024L;
+        long currentUsedBytes = maxBytes - (50L * 1024L * 1024L); // 50MB free
+        long uploadBytes = 200L * 1024L * 1024L; // exceeds free space
+
+        QuotaExceededException ex = assertThrows(QuotaExceededException.class,
+                () -> projectQuotaService.assertCanUploadBytes(org, uploadBytes, currentUsedBytes));
+
+        assertEquals("STORAGE_QUOTA_EXCEEDED", ex.getErrorCode());
+    }
 }
+

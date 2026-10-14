@@ -44,6 +44,9 @@ public class ImportServiceTest {
     @Mock
     private EntityManager entityManager;
 
+    @Mock
+    private com.company.ftthgis.service.ProjectQuotaService projectQuotaService;
+
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -52,14 +55,21 @@ public class ImportServiceTest {
 
     private UUID projectId;
     private Project project;
+    private com.company.ftthgis.domain.tenant.entity.Organization organization;
 
     @BeforeEach
     public void setUp() {
         projectId = UUID.randomUUID();
+        organization = com.company.ftthgis.domain.tenant.entity.Organization.builder()
+                .id(UUID.randomUUID())
+                .name("Org Test")
+                .slug("org-test")
+                .build();
         project = Project.builder()
                 .id(projectId)
                 .name("Test Project")
                 .code("PRJ-001")
+                .organization(organization)
                 .build();
     }
 
@@ -296,5 +306,21 @@ public class ImportServiceTest {
         assertEquals("DUPLICATE_CODE", conflict.getConflictType());
         assertEquals("UP", conflict.getExistingData().get("status"));
         assertEquals(projectId, conflict.getExistingData().get("projectId"));
+    }
+
+    @Test
+    public void testProcessGeoJson_ThrowsQuotaExceededExceptionWhenLimitExceeded() throws Exception {
+        when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
+        when(nodeRepository.findByCode("ODP-OVERQUOTA")).thenReturn(Optional.empty());
+        doThrow(new com.company.ftthgis.api.exception.QuotaExceededException("ODP_QUOTA_EXCEEDED", "Quota exceeded", 2500, 2500))
+                .when(projectQuotaService).assertCanAllocateOdps(organization, 1);
+
+        String geoJson = getSimpleGeoJson("ODP-OVERQUOTA");
+        InputStream is = new ByteArrayInputStream(geoJson.getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(com.company.ftthgis.api.exception.QuotaExceededException.class,
+                () -> importService.processGeoJsonFromStream(projectId, is, false, null));
+
+        verify(odpRepository, never()).saveAll(any());
     }
 }

@@ -152,6 +152,7 @@ public class TenantLicenseController {
      * Mengambil riwayat faktur tagihan resmi (Billing Invoices) organisasi pemanggil.
      */
     @GetMapping("/invoices")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @PreAuthorize("@tenantSecurity.hasEffectivePermission('billing.view') or hasAuthority('billing.view')")
     public ResponseEntity<List<BillingInvoiceResponseDto>> getBillingInvoices() {
         UUID orgId = resolveCurrentOrganizationId();

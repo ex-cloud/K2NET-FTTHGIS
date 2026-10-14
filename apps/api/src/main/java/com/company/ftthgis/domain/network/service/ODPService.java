@@ -39,6 +39,7 @@ public class ODPService {
     private final NetworkNodeRepository networkNodeRepository;
     private final ProjectRepository projectRepository;
     private final OrganizationRepository organizationRepository;
+    private final com.company.ftthgis.service.ProjectQuotaService projectQuotaService;
 
     @Transactional(readOnly = true)
     public Page<ODPDto> getOdps(String search, String status, String name, String code, String odcCode, Pageable pageable) {
@@ -103,25 +104,10 @@ public class ODPService {
             throw new IllegalArgumentException("ODP Code already exists");
         }
 
-        // --- ABAC: Quota Check ---
+        // --- Hardware ODP Capacity Enforcement (Org-wide & Booster-aware) ---
         UUID orgId = OrganizationContext.getOrganizationId();
-        if (orgId != null) {
-            organizationRepository.findById(orgId).ifPresent(org -> {
-                SubscriptionPlan plan = org.getSubscriptionPlan();
-                if (plan != null && plan.getMaxOdps() != null) {
-                    String projectIdStr = TenantContext.getTenantId();
-                    UUID projectId = projectIdStr != null ? UUID.fromString(projectIdStr) : null;
-                    long currentCount = projectId != null
-                            ? networkNodeRepository.countByTypeAndProjectId("ODP", projectId)
-                            : 0;
-                    if (currentCount >= plan.getMaxOdps()) {
-                        throw new RuntimeException(String.format(
-                                "Quota exceeded: Your plan allows a maximum of %d ODPs. Current count: %d.",
-                                plan.getMaxOdps(), currentCount));
-                    }
-                    log.debug("✅ ODP quota OK: {}/{}", currentCount, plan.getMaxOdps());
-                }
-            });
+        if (orgId != null && projectQuotaService != null && organizationRepository != null) {
+            organizationRepository.findById(orgId).ifPresent(org -> projectQuotaService.assertCanAllocateOdps(org, 1));
         }
 
         // --- ABAC: Geofencing Check ---
@@ -145,6 +131,9 @@ public class ODPService {
         ODP odp = new ODP();
         updateEntityFromDto(odp, dto);
         odp = odpRepository.save(odp);
+        if (odp.getProject() != null) {
+            com.company.ftthgis.config.tenant.AuditContext.setProject(odp.getProject().getName(), odp.getProject().getId());
+        }
         return toDto(odp);
     }
 

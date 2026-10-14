@@ -24,8 +24,8 @@ export function LicenseOverviewPage() {
 
   const [activateModalOpen, setActivateModalOpen] = React.useState(false);
 
-  const planName = license?.planName || "Trial";
-  const daysRemaining = license?.daysRemaining ?? "-";
+  const planName = license?.planName || t("license.tenant.no_active_license");
+  const daysRemaining = license?.daysRemaining != null ? license.daysRemaining : "—";
   const isAirGapped = Boolean(license?.machineFingerprint);
 
   return (
@@ -46,7 +46,7 @@ export function LicenseOverviewPage() {
             <span className="text-muted-foreground/30 px-1">/</span>
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-foreground font-mono">{daysRemaining}</span>
-              <span>{t("common.days").toLowerCase()} {t("license.table.days_remaining").toLowerCase()}</span>
+              <span>{t("license.table.days_remaining").toLowerCase()}</span>
             </div>
             {isAirGapped && (
               <>

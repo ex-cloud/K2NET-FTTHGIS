@@ -31,6 +31,7 @@ public class ImportService {
     private final NetworkNodeRepository nodeRepository;
     private final ODPRepository odpRepository;
     private final ProjectRepository projectRepository;
+    private final com.company.ftthgis.service.ProjectQuotaService projectQuotaService;
     private final ObjectMapper objectMapper;
     private final EntityManager entityManager;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
@@ -146,6 +147,9 @@ public class ImportService {
         }
 
         if (!dryRun && !newOdps.isEmpty()) {
+            if (projectQuotaService != null && project.getOrganization() != null) {
+                projectQuotaService.assertCanAllocateOdps(project.getOrganization(), newOdps.size());
+            }
             odpRepository.saveAll(newOdps);
         }
 

@@ -193,6 +193,20 @@ public class OrganizationLifecycleService {
                 } catch (Exception ignored) {}
             }
 
+            // 2b. Nuclear Purge of Tenant Storage Vault in MinIO S3
+            log.info("🗑️ Purging MinIO S3 storage vault for deleted organization: {}", slug);
+            try {
+                fileStorageService.purgeTenantVault(slug);
+                String readableFolder = org.getName() != null && !org.getName().isBlank()
+                    ? org.getName().toLowerCase().trim().replaceAll("[^a-z0-9_.-]+", "-").replaceAll("^-+|-+$", "")
+                    : slug;
+                if (!readableFolder.equalsIgnoreCase(slug)) {
+                    fileStorageService.purgeTenantVault(readableFolder);
+                }
+            } catch (Exception s3Ex) {
+                log.warn("⚠️ Non-critical failure purging MinIO tenant vault for {}: {}", slug, s3Ex.getMessage());
+            }
+
             // 3. Native Cascaded Nuclear Database Wipe in strict topological dependency order
             log.info("💥 Executing atomic SQL cascade wipe for organization: {} (ID: {})", slug, orgId);
 

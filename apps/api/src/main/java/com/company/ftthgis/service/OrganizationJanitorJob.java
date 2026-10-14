@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.company.ftthgis.config.tenant.OrganizationContext;
 import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
 import com.company.ftthgis.domain.tenant.entity.PackageSubscriptionStatus;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
@@ -47,16 +48,18 @@ public class OrganizationJanitorJob {
     @Scheduled(cron = "0 */5 * * * *") // Every 5 minutes
     @Transactional
     public void sweepTenantLifecycle() {
-        log.debug("🧹 JANITOR: Starting B2B tenant lifecycle & subscription sweep...");
-        LocalDateTime now = LocalDateTime.now();
+        OrganizationContext.setFilterBypassed(true);
+        try {
+            log.debug("🧹 JANITOR: Starting B2B tenant lifecycle & subscription sweep...");
+            LocalDateTime now = LocalDateTime.now();
 
-        // 0. Sweep multi-tenant license lifecycle transitions
-        sweepLicenseLifecycle(now);
+            // 0. Sweep multi-tenant license lifecycle transitions
+            sweepLicenseLifecycle(now);
 
-        // 0.1 Sweep expired add-on packages & evaluate soft-locking
-        sweepPackageSubscriptions(now);
+            // 0.1 Sweep expired add-on packages & evaluate soft-locking
+            sweepPackageSubscriptions(now);
 
-        List<Organization> allOrgs = organizationRepository.findAll();
+            List<Organization> allOrgs = organizationRepository.findAll();
 
         for (Organization org : allOrgs) {
             try {
@@ -141,6 +144,9 @@ public class OrganizationJanitorJob {
             } catch (Exception e) {
                 log.error("❌ JANITOR Error processing '{}': {}", org.getSlug(), e.getMessage());
             }
+        }
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
         }
     }
 
