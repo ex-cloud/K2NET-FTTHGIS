@@ -1,0 +1,9 @@
+# ==============================================================================
+# K2NET FTTH GIS — Auto-generated Traefik Dynamic Custom Domains Configuration
+# Generated at: 2026-10-15T03:07:08.858640656
+# Do not edit manually. Changes will be overwritten on branding sync.
+# ==============================================================================
+
+http:
+  routers:
+    # No active custom domains provisioned yet

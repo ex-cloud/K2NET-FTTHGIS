@@ -48,6 +48,7 @@ public class ComprehensiveControllerSecurityCoverageTest {
             "OrganizationController.getSubscriptionPlans",
             "OrganizationController.checkSlug",
             "PublicOrganizationResolveController.resolve",
+            "TenantBrandingController.resolveBrandingPublic",
             
             // Impersonation Protocol Bridge (Dijaga oleh single-use short-lived exchange-token / X-Impersonation-Session-Id header)
             "ImpersonationController.exchange",

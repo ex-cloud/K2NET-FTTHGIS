@@ -3,7 +3,6 @@ import { useRouterState } from "@tanstack/react-router";
 import {
   Building,
   Save,
-  Upload,
   Copy,
 } from "lucide-react";
 import {
@@ -20,6 +19,7 @@ import { toast } from "sonner";
 import { useAuth } from "@k2net/auth/client";
 import { useTenantInfo } from "../../hooks/useTenantInfo";
 import { useTranslation } from "@k2net/i18n";
+import { BrandingSettingsSection } from "../../components/settings/BrandingSettingsSection";
 
 type SettingsSection = "general" | "branding" | "security" | "sso" | "oauth";
 
@@ -82,31 +82,6 @@ function GeneralSettingsSection({
           placeholder={t("settings.hq_address_placeholder")}
           className="text-xs min-h-[60px] resize-none"
         />
-      </div>
-    </Card>
-  );
-}
-
-function BrandingSettingsSection() {
-  const { t } = useTranslation();
-  return (
-    <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
-      <div className="space-y-2">
-        <Label className="text-xs font-semibold">{t("settings.logo_label")}</Label>
-        <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-border bg-muted/20">
-          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-            <Building className="h-8 w-8" />
-          </div>
-          <div className="space-y-1.5">
-            <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-              <Upload className="h-3.5 w-3.5" />
-              {t("settings.logo_upload_btn")}
-            </Button>
-            <p className="text-[10px] text-muted-foreground">
-              {t("settings.logo_size_hint")}
-            </p>
-          </div>
-        </div>
       </div>
     </Card>
   );

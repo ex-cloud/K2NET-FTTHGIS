@@ -63,6 +63,8 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 12. [rules/versioning-and-patching-standard.md](file:///opt/project5/.agents/rules/versioning-and-patching-standard.md): Rute `/api/v[0-9]+/`, Flyway sekuensial anti-downtime, SemVer.
 13. [rules/dev-history-observability.md](file:///opt/project5/.agents/rules/dev-history-observability.md): Riwayat audit 10 modul observabilitas, Prometheus, OLT Poller, Storage.
 14. [rules/dev-history-platform.md](file:///opt/project5/.agents/rules/dev-history-platform.md): Riwayat Linear task management, TipTap, AI assistant, PBAC CI gate.
+15. [rules/marketplace-package-standard.md](file:///opt/project5/.agents/rules/marketplace-package-standard.md): Standar 6-Pilar pembuatan paket marketplace, pola audit Envers Flyway, dan evaluasi kartu UI.
+16. [rules/marketplace-engines.md](file:///opt/project5/.agents/rules/marketplace-engines.md): Panduan pemilihan bahasa engine polyglot (Java, Go, Python, Rust) & pemetaan port 12 paket resmi.
 
 ---
 
