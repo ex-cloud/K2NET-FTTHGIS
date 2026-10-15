@@ -22,6 +22,7 @@ public class OrganizationAnalyticsService {
     private final JdbcTemplate jdbcTemplate;
     private final OrganizationRepository organizationRepository;
     private final ObjectMapper objectMapper;
+    private final ProjectQuotaService projectQuotaService;
 
     public Map<String, Object> getOrganizationStats(String slug) {
         Organization org = organizationRepository.findBySlug(slug)
@@ -60,9 +61,23 @@ public class OrganizationAnalyticsService {
                 "JOIN projects p ON f.project_id = p.id " +
                 "WHERE p.organization_id = ?", Double.class, orgId);
 
+        int maxOlts = projectQuotaService.getEffectiveMaxOlts(org);
+        int maxOdps = projectQuotaService.getEffectiveMaxOdps(org);
+        int maxStorageGb = projectQuotaService.getEffectiveMaxStorageGb(org);
+        String planName = org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "PRO";
+        int apiRateLimitMax = "ENTERPRISE".equalsIgnoreCase(planName) ? 30000 :
+                "PRO".equalsIgnoreCase(planName) ? 8000 :
+                "STARTER".equalsIgnoreCase(planName) ? 2000 : 500;
+
         stats.put("projectCount", projectCount);
+        stats.put("usedOlts", projectCount != null ? projectCount : 0);
+        stats.put("maxOlts", maxOlts);
         stats.put("odcCount", odcCount);
         stats.put("odpCount", odpCount);
+        stats.put("usedOdps", odpCount != null ? odpCount : 0);
+        stats.put("maxOdps", maxOdps);
+        stats.put("maxStorageGb", maxStorageGb);
+        stats.put("apiRateLimitMax", apiRateLimitMax);
         stats.put("customerCount", customerCount);
         stats.put("totalCableLength", Math.round(totalCableLength != null ? totalCableLength : 0));
         stats.put("organizationName", org.getName());
@@ -104,11 +119,22 @@ public class OrganizationAnalyticsService {
                         "WHERE p.organization_id = ? AND n.type = 'CUSTOMER'", Integer.class, orgId);
 
                 int resolvedOltCount = (oltCount != null && oltCount > 0) ? oltCount : (projectCount != null ? projectCount : 0);
+                int orgMaxOlts = projectQuotaService.getEffectiveMaxOlts(org);
+                int orgMaxOdps = projectQuotaService.getEffectiveMaxOdps(org);
+                int orgMaxStorageGb = projectQuotaService.getEffectiveMaxStorageGb(org);
+                String orgPlanName = org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "PRO";
+                int orgApiRateLimitMax = "ENTERPRISE".equalsIgnoreCase(orgPlanName) ? 30000 :
+                        "PRO".equalsIgnoreCase(orgPlanName) ? 8000 :
+                        "STARTER".equalsIgnoreCase(orgPlanName) ? 2000 : 500;
 
                 stats.put("projectCount", projectCount != null ? projectCount : 0);
                 stats.put("usedOlts", resolvedOltCount);
+                stats.put("maxOlts", orgMaxOlts);
                 stats.put("odcCount", odcCount != null ? odcCount : 0);
                 stats.put("usedOdps", odpCount != null ? odpCount : 0);
+                stats.put("maxOdps", orgMaxOdps);
+                stats.put("maxStorageGb", orgMaxStorageGb);
+                stats.put("apiRateLimitMax", orgApiRateLimitMax);
                 stats.put("customerCount", customerCount != null ? customerCount : 0);
                 stats.put("organizationSlug", org.getSlug());
                 stats.put("organizationName", org.getName());
@@ -117,8 +143,12 @@ public class OrganizationAnalyticsService {
                 log.warn("Error calculating stats for {}: {}", org.getSlug(), e.getMessage());
                 stats.put("projectCount", 0);
                 stats.put("usedOlts", 0);
+                stats.put("maxOlts", 6);
                 stats.put("odcCount", 0);
                 stats.put("usedOdps", 0);
+                stats.put("maxOdps", 2500);
+                stats.put("maxStorageGb", 100);
+                stats.put("apiRateLimitMax", 1000);
                 stats.put("customerCount", 0);
                 stats.put("organizationSlug", org.getSlug());
                 stats.put("organizationName", org.getName());

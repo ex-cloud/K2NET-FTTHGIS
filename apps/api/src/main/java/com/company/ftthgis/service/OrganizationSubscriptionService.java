@@ -96,10 +96,7 @@ public class OrganizationSubscriptionService {
         int maxOdps = getConfigInt(org, "max_odps", baseOdps);
         int usedOdps = (int) realUsedOdps;
 
-        int maxStorageGb = getConfigInt(org, "max_storage_gb",
-                "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
-                "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
-                "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2);
+        int maxStorageGb = projectQuotaService.getEffectiveMaxStorageGb(org);
         double usedStorageGb = getConfigDouble(org, "used_storage_gb", 0.0);
         int apiRateLimitMax = getConfigInt(org, "api_rate_limit_max",
                 "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 30000 :
@@ -117,7 +114,7 @@ public class OrganizationSubscriptionService {
             boosterDaysRemaining = Math.max(0, Duration.between(LocalDateTime.now(), boosterExpiresAt).toDays());
         }
 
-        int effectiveMaxOdps = maxOdps + (isBoosterActive ? boosterOdps : 0);
+        int effectiveMaxOdps = projectQuotaService.getEffectiveMaxOdps(org);
 
         // 3. Lifecycle Details
         boolean isTrialExpired = org.isTrialExpired();
