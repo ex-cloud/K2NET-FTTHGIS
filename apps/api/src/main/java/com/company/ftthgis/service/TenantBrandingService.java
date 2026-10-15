@@ -268,31 +268,42 @@ public class TenantBrandingService {
     public boolean isWhitelabelAllowed(Organization org) {
         if (org == null) return false;
 
-        // 1. Cek base tier: ENTERPRISE secara default mendapatkan Whitelabel
+        // 1. Organisasi platform internal (Main Organization / system root) selalu diizinkan
+        if ("default".equalsIgnoreCase(org.getSlug()) || "system".equalsIgnoreCase(org.getSlug())) {
+            return true;
+        }
+
+        // 2. Cek base tier: ENTERPRISE secara default mendapatkan Whitelabel
         if (org.getSubscriptionPlan() != null && "ENTERPRISE".equalsIgnoreCase(org.getSubscriptionPlan().getName())) {
             return true;
         }
 
-        // 2. Cek paket add-on aktif: PKG_TENANT_BRANDING
+        // 3. Cek paket add-on aktif: PKG_TENANT_BRANDING
         if (packageSubscriptionService.hasActivePackage(org.getId(), "PKG_TENANT_BRANDING")) {
             return true;
         }
 
-        // 3. Cek feature entitlement: feature.branding.whitelabel
+        // 4. Cek feature entitlement: feature.branding.whitelabel
         if (packageSubscriptionService.hasActiveFeature(org.getId(), "feature.branding.whitelabel")) {
             return true;
         }
 
-        // 4. Cek lisensi kriptografis aktif override
+        // 5. Cek lisensi kriptografis aktif override & feature flags
         Optional<TenantLicense> licenseOpt = tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(
                 org.getId(), com.company.ftthgis.domain.tenant.entity.LicenseStatus.ACTIVE);
         if (licenseOpt.isPresent()) {
             TenantLicense lic = licenseOpt.get();
+            if (Boolean.TRUE.equals(lic.isFeatureCustomDomainEnabled())) {
+                return true;
+            }
             if (lic.getSubscriptionPlan() != null && "ENTERPRISE".equalsIgnoreCase(lic.getSubscriptionPlan().getName())) {
                 return true;
             }
-            if (lic.getNotes() != null && lic.getNotes().toLowerCase().contains("whitelabel")) {
-                return true;
+            if (lic.getNotes() != null) {
+                String notes = lic.getNotes().toLowerCase();
+                if (notes.contains("whitelabel") || notes.contains("internal_platform")) {
+                    return true;
+                }
             }
         }
 

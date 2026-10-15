@@ -64,6 +64,11 @@ export function OrganizationCard({
                 <span className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm">
                   {org.name}
                 </span>
+                {(org.slug === "default" || org.slug === "system") && (
+                  <Badge variant="outline" className="border-cyan-500/40 text-cyan-400 bg-cyan-500/10 text-[9px] px-1.5 py-0 font-mono font-medium tracking-wide">
+                    SYSTEM PLATFORM
+                  </Badge>
+                )}
                 <Badge variant="outline" className="border-border/60 text-[9px] px-1 py-0 font-mono text-muted-foreground">
                   {org.planTier}
                 </Badge>

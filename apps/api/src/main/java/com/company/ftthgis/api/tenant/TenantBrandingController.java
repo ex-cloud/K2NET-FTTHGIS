@@ -118,7 +118,7 @@ public class TenantBrandingController {
             if (issuer.contains("/realms/")) {
                 String[] parts = issuer.split("/");
                 String realmSlug = parts[parts.length - 1];
-                if (!"ftth-realm".equals(realmSlug) && !"master".equals(realmSlug) && !"default".equals(realmSlug)) {
+                if (!"ftth-realm".equals(realmSlug) && !"master".equals(realmSlug)) {
                     var orgOpt = organizationRepository.findBySlug(realmSlug)
                             .or(() -> organizationRepository.findByRealmKey(realmSlug));
                     if (orgOpt.isPresent()) {
@@ -126,6 +126,17 @@ public class TenantBrandingController {
                         OrganizationContext.setOrganizationId(id);
                         return id;
                     }
+                }
+            }
+
+            // Email user lookup fallback
+            String email = jwt.getClaimAsString("email");
+            if (email != null && !email.isBlank()) {
+                var userOpt = userRepository.findByEmail(email.trim().toLowerCase(java.util.Locale.ROOT));
+                if (userOpt.isPresent() && userOpt.get().getOrganization() != null) {
+                    UUID id = userOpt.get().getOrganization().getId();
+                    OrganizationContext.setOrganizationId(id);
+                    return id;
                 }
             }
 

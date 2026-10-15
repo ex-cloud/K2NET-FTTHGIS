@@ -177,8 +177,19 @@ function resolveFeatureFlags(
 
 function resolveMaxQuotas(
   tier: PlanTier,
-  plan?: RawOrganizationInput["subscriptionPlan"]
+  plan?: RawOrganizationInput["subscriptionPlan"],
+  slug?: string
 ) {
+  // Organisasi platform internal (Main Organization / default / system)
+  if (slug === "default" || slug === "system") {
+    return {
+      maxOlts: 1000,
+      maxOdps: 100000,
+      maxStorageGb: 5000,
+      apiRateLimitMax: 100000,
+    };
+  }
+
   const isEnterprise = tier === "Enterprise" || tier === "Custom";
   const isPro = tier === "Professional";
   const isStarter = tier === "Starter";
@@ -227,7 +238,7 @@ export function enrichOrganization(
   const planTier = normalizePlanTier(rawOrg.subscriptionPlan?.name);
   const status = (rawOrg.status || "ACTIVE") as OrganizationStatus;
   const featureFlags = resolveFeatureFlags(stats?.featureFlags as Partial<OrganizationFeatureFlags> | undefined, planTier);
-  const quotas = resolveMaxQuotas(planTier, rawOrg.subscriptionPlan);
+  const quotas = resolveMaxQuotas(planTier, rawOrg.subscriptionPlan, rawOrg.slug);
   const { customDomain, hasCustomDomain } = resolveCustomDomain(rawOrg.website);
   const { picName, picEmail } = resolvePicInfo(rawOrg);
   const used = resolveUsedQuotas(stats);
