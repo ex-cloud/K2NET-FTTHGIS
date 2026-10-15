@@ -136,6 +136,8 @@
   "mfa_enforce_label": "Enforce MFA / 2FA for All Staff",
   "mfa_enforce_desc": "All operators, surveyors, and technicians must use an authenticator app (TOTP) upon login.",
   "session_timeout_label": "Inactivity Session Timeout",
+  "session_timeout_default": "30 Minutes",
+  "slug_not_identified": "Tenant subdomain could not be identified.",
   "sso_integration_label": "Keycloak SAML / OIDC Integration",
   "sso_integration_desc": "Integrated login with Active Directory / Keycloak tenant realm.",
   "issuer_url_label": "Issuer URL",

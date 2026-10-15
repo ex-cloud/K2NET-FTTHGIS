@@ -101,6 +101,22 @@ consumers:
           qQIDAQAB
           -----END PUBLIC KEY-----
 
+  # Keycloak consumer for realm: ujicoba (PT MAX - ENTERPRISE)
+  - username: keycloak-ujicoba
+    jwt_secrets:
+      - key: "https://auth-gis.kdua.net/realms/ujicoba"
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArYSqI7N1nQr3CgVFzvjs
+          NJy5KDaAowqcfhHXjNC/nA/SV+7pFtH812t35zfsRjRHKyArKnQNW8csjok/anSP
+          NlrImcKkT7QPe5DrsxRRMxqemKkQDQuKVSKE0kTHmm9PQLILUJHgJYzMCp9rBuVw
+          a/gPw8O4eR/2x+Wop8rw+IlnnusyfoxoK0GYSwDgd00XJWVm/BhfL1S20OH0cZ1I
+          +mGgsC6AE1gPDqUjA9HaZlGdSeAv8B9cBZcZh1kIRnw5TMs/pAK3oUe7BtCweGiq
+          ezO553vmQFZ8SoRVq9IF7l0kYVS/SSOHa9II+Q1PwwKfH/ik+onrDcwyE56C/l3M
+          FQIDAQAB
+          -----END PUBLIC KEY-----
+
   # Anonymous consumer — allows requests without a valid JWT to pass through
   - username: anonymous-user
 

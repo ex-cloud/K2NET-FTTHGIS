@@ -48,6 +48,8 @@ public class OrganizationDirectoryService {
     private final LicenseManagementService licenseManagementService;
     private final TenantLicenseRepository tenantLicenseRepository;
     private final ProjectQuotaService projectQuotaService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.company.ftthgis.domain.tenant.repository.TenantBrandingRepository tenantBrandingRepository;
 
     @Transactional(readOnly = true)
     public List<Organization> getAllOrganizations() {
@@ -263,6 +265,28 @@ public class OrganizationDirectoryService {
 
         log.info("🔄 Updating organization profile: {} (Current Slug: {})", org.getName(), org.getSlug());
         Organization savedOrg = organizationRepository.save(org);
+
+        // Synchronize tenant_branding identity if present
+        try {
+            tenantBrandingRepository.findByOrganizationIdNative(savedOrg.getId()).ifPresent(branding -> {
+                boolean changed = false;
+                if (updatedOrg.getName() != null && !updatedOrg.getName().trim().isEmpty()) {
+                    branding.setCompanyName(updatedOrg.getName().trim());
+                    changed = true;
+                }
+                if (newLogoUrl != null) {
+                    branding.setLogoUrl(newLogoUrl);
+                    changed = true;
+                }
+                if (changed) {
+                    branding.setUpdatedAt(java.time.LocalDateTime.now());
+                    tenantBrandingRepository.save(branding);
+                    log.info("🎨 Synchronized tenant_branding identity for org '{}'", savedOrg.getSlug());
+                }
+            });
+        } catch (Exception brandEx) {
+            log.warn("⚠️ Non-fatal: could not sync tenant_branding for {}: {}", savedOrg.getSlug(), brandEx.getMessage());
+        }
 
         // Synchronize Keycloak Realm metadata (Display Name, Subscription Tier Badge & Logo)
         try {

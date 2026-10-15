@@ -136,6 +136,8 @@
   "mfa_enforce_label": "Wajibkan MFA / 2FA untuk Seluruh Staf",
   "mfa_enforce_desc": "Seluruh operator, surveyor, dan teknisi wajib menggunakan authenticator app (TOTP) saat login.",
   "session_timeout_label": "Batas Waktu Sesi Tidak Aktif (Inactivity Timeout)",
+  "session_timeout_default": "30 Menit",
+  "slug_not_identified": "Subdomain tenant tidak dapat diidentifikasi.",
   "sso_integration_label": "Keycloak SAML / OIDC Integration",
   "sso_integration_desc": "Login terintegrasi dengan active directory / Keycloak realm tenant Anda.",
   "issuer_url_label": "Issuer URL",

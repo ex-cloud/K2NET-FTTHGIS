@@ -108,8 +108,18 @@ public class TenantBrandingService {
         }
 
         if (request.getAppTitle() != null) branding.setAppTitle(request.getAppTitle().trim());
-        if (request.getCompanyName() != null) branding.setCompanyName(request.getCompanyName().trim());
-        if (request.getLogoUrl() != null) branding.setLogoUrl(request.getLogoUrl().trim());
+        if (request.getCompanyName() != null && !request.getCompanyName().isBlank()) {
+            String cleanName = request.getCompanyName().trim();
+            branding.setCompanyName(cleanName);
+            org.setName(cleanName);
+            organizationRepository.save(org);
+        }
+        if (request.getLogoUrl() != null && !request.getLogoUrl().isBlank()) {
+            String cleanLogo = request.getLogoUrl().trim();
+            branding.setLogoUrl(cleanLogo);
+            org.setLogoUrl(cleanLogo);
+            organizationRepository.save(org);
+        }
         if (request.getFaviconUrl() != null) branding.setFaviconUrl(request.getFaviconUrl().trim());
         if (request.getBrandColorPrimary() != null) branding.setBrandColorPrimary(request.getBrandColorPrimary().trim());
         if (request.getBrandColorAccent() != null) branding.setBrandColorAccent(request.getBrandColorAccent().trim());

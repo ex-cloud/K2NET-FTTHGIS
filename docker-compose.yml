@@ -365,6 +365,7 @@ services:
     volumes:
       - /opt/project5/backups:/opt/project5/backups
       - /opt/project5/scripts:/opt/project5/scripts
+      - ./docker/kong/kong.yml:/opt/project5/docker/kong/kong.yml
     depends_on:
       postgres:
         condition: service_healthy

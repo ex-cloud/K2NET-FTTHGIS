@@ -33,10 +33,18 @@ function GeneralSettingsSection({
   organizationName,
   slug,
   email,
+  nameValue,
+  setNameValue,
+  addressValue,
+  setAddressValue,
 }: {
   organizationName: string;
   slug: string;
   email: string;
+  nameValue: string;
+  setNameValue: (val: string) => void;
+  addressValue: string;
+  setAddressValue: (val: string) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -44,7 +52,9 @@ function GeneralSettingsSection({
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold">{t("settings.org_official_name")}</Label>
         <Input
-          defaultValue={organizationName || "Organization Workspace"}
+          value={nameValue}
+          onChange={(e) => setNameValue(e.target.value)}
+          placeholder={organizationName || "Organization Workspace"}
           className="h-8.5 text-xs"
         />
       </div>
@@ -69,8 +79,9 @@ function GeneralSettingsSection({
           <Input
             type="email"
             defaultValue={email || ""}
+            disabled
             placeholder="admin@isp.net.id"
-            className="h-8.5 text-xs"
+            className="h-8.5 text-xs bg-muted/40 font-mono"
           />
         </div>
       </div>
@@ -78,7 +89,8 @@ function GeneralSettingsSection({
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold">{t("settings.hq_noc_address")}</Label>
         <Textarea
-          defaultValue=""
+          value={addressValue}
+          onChange={(e) => setAddressValue(e.target.value)}
           placeholder={t("settings.hq_address_placeholder")}
           className="text-xs min-h-[60px] resize-none"
         />
@@ -103,7 +115,7 @@ function SecuritySettingsSection() {
 
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold">{t("settings.session_timeout_label")}</Label>
-        <Input defaultValue="30 Menit" className="h-8.5 text-xs max-w-xs font-mono" />
+        <Input defaultValue={t("settings.session_timeout_default")} className="h-8.5 text-xs max-w-xs font-mono" />
       </div>
     </Card>
   );
@@ -165,9 +177,19 @@ function OAuthSettingsSection() {
 export function OrgSettingsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { organizationName, slug } = useTenantInfo();
+  const { organizationName, slug, refetch: refetchTenantInfo } = useTenantInfo();
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
+
+  const [nameValue, setNameValue] = React.useState(organizationName || "");
+  const [addressValue, setAddressValue] = React.useState("");
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    if (organizationName) {
+      setNameValue(organizationName);
+    }
+  }, [organizationName]);
 
   const sectionConfig: Record<SettingsSection, SectionMeta> = {
     general: {
@@ -205,8 +227,41 @@ export function OrgSettingsPage() {
     return "general";
   }, [pathname]);
 
-  const handleSave = () => {
-    toast.success(t("common.saved_successfully"));
+  const handleSave = async () => {
+    if (currentSection !== "general") {
+      toast.success(t("common.saved_successfully"));
+      return;
+    }
+
+    if (!slug) {
+      toast.error(t("settings.slug_not_identified"));
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { apiClient } = await import("../../lib/api-client");
+      await apiClient(`/api/v1/organizations/${encodeURIComponent(slug)}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: nameValue.trim() || organizationName,
+          address: addressValue.trim(),
+        }),
+      });
+
+      // Hapus cache lokal agar header & sidebar langsung merefleksikan nama baru
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("k2net_resolved_tenant");
+      }
+      await refetchTenantInfo();
+
+      toast.success(t("common.saved_successfully"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("settings.whitelabel.save_error");
+      toast.error(msg);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const meta = sectionConfig[currentSection] || sectionConfig.general;
@@ -224,11 +279,12 @@ export function OrgSettingsPage() {
           currentSection === "branding" ? undefined : (
             <Button
               size="sm"
+              disabled={isSaving}
               onClick={handleSave}
               className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs"
             >
               <Save className="size-3.5" />
-              {t("common.save_changes")}
+              {isSaving ? t("settings.whitelabel.saving") : t("common.save_changes")}
             </Button>
           )
         }
@@ -240,6 +296,10 @@ export function OrgSettingsPage() {
             organizationName={organizationName}
             slug={slug}
             email={user?.email || ""}
+            nameValue={nameValue}
+            setNameValue={setNameValue}
+            addressValue={addressValue}
+            setAddressValue={setAddressValue}
           />
         )}
         {currentSection === "branding" && <BrandingSettingsSection />}

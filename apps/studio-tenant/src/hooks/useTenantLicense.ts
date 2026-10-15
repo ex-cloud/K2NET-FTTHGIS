@@ -93,8 +93,9 @@ export function useTenantLicense() {
         const res = await apiClient<TenantLicenseDetails>(`/api/v1/tenant/license/current${slugParam}`);
         return res ?? null;
       } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
         const status = (err as { status?: number })?.status;
-        if (status === 404) {
+        if (status === 404 || errMsg.includes("404") || errMsg.includes("NOT_FOUND")) {
           return null;
         }
         throw err;
