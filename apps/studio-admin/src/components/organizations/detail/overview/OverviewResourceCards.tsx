@@ -10,6 +10,8 @@ interface OverviewResourceCardsProps {
   usedOdps: number;
   effectiveMaxOdps: number;
   odpPct: number;
+  usedStorageGb?: number;
+  effectiveMaxStorageGb?: number;
   storagePct: number;
   rpmPct: number;
 }
@@ -22,9 +24,13 @@ export function OverviewResourceCards({
   usedOdps,
   effectiveMaxOdps,
   odpPct,
+  usedStorageGb,
+  effectiveMaxStorageGb,
   storagePct,
   rpmPct,
 }: OverviewResourceCardsProps) {
+  const currentMaxStorage = effectiveMaxStorageGb ?? org.maxStorageGb;
+  const currentUsedStorage = usedStorageGb ?? org.usedStorageGb;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Card 1: OLT Capacity */}
@@ -105,7 +111,7 @@ export function OverviewResourceCards({
         <div>
           <div className="flex items-baseline justify-between gap-2">
             <p className="text-xl font-bold tracking-tight text-foreground font-mono">
-              {org.usedStorageGb} <span className="text-xs font-normal text-muted-foreground">/ {org.maxStorageGb} GB</span>
+              {currentUsedStorage} <span className="text-xs font-normal text-muted-foreground">/ {currentMaxStorage} GB</span>
             </p>
             <span className="text-xs font-mono font-semibold text-purple-500">{storagePct}%</span>
           </div>
@@ -119,7 +125,7 @@ export function OverviewResourceCards({
 
         <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
           <span>MinIO Bucket</span>
-          <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {org.maxStorageGb} GB</span>
+          <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {currentMaxStorage} GB</span>
         </div>
       </Card>
 

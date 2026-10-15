@@ -221,14 +221,16 @@ export function OrgSettingsPage() {
         icon={Building}
         subtitle={meta.subtitle}
         actions={
-          <Button
-            size="sm"
-            onClick={handleSave}
-            className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs"
-          >
-            <Save className="size-3.5" />
-            {t("common.save_changes")}
-          </Button>
+          currentSection === "branding" ? undefined : (
+            <Button
+              size="sm"
+              onClick={handleSave}
+              className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs"
+            >
+              <Save className="size-3.5" />
+              {t("common.save_changes")}
+            </Button>
+          )
         }
       />
 

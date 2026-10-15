@@ -286,6 +286,7 @@
     "marketplace_btn": "View in Marketplace",
     "custom_domain_label": "Custom FQDN Domain",
     "custom_domain_placeholder": "e.g. gis.mycompany.net",
+    "domain_status_unconfigured": "Not Configured",
     "domain_status_active": "Domain Verified & SSL Active",
     "domain_status_pending": "DNS Verification Pending",
     "domain_status_failed": "DNS Verification Failed",

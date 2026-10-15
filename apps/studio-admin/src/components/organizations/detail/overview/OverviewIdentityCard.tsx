@@ -116,8 +116,9 @@ export function OverviewIdentityCard({
             <span className="font-mono text-foreground block">{usedOdps}/{effectiveMaxOdps}</span>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.minio_storage")}</span>
-            <span className="font-mono text-foreground block">{org.usedStorageGb}/{org.maxStorageGb} GB</span>
+            <span className="font-mono text-foreground block">
+              {summary?.usedStorageGb ?? org.usedStorageGb}/{summary?.maxStorageGb ?? org.maxStorageGb} GB
+            </span>
           </div>
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.api_latency")}</span>

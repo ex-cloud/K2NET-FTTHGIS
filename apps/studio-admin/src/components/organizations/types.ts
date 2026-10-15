@@ -184,8 +184,8 @@ function resolveMaxQuotas(
   if (slug === "default" || slug === "system") {
     return {
       maxOlts: 1000,
-      maxOdps: 100000,
-      maxStorageGb: 5000,
+      maxOdps: 12000,
+      maxStorageGb: 500,
       apiRateLimitMax: 100000,
     };
   }

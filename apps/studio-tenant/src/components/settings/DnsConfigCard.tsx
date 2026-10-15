@@ -60,7 +60,12 @@ export function DnsConfigCard({
             </CardDescription>
           </div>
           <div>
-            {domainStatus === "ACTIVE" ? (
+            {!branding?.customDomain && !formData.customDomain ? (
+              <Badge variant="outline" className="border-border/60 bg-muted/40 text-muted-foreground gap-1.5 text-xs py-1">
+                <Globe className="size-3.5 text-muted-foreground" />
+                {t("settings.whitelabel.domain_status_unconfigured")}
+              </Badge>
+            ) : domainStatus === "ACTIVE" ? (
               <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 gap-1.5 text-xs py-1">
                 <CheckCircle2 className="size-3.5 text-emerald-500" />
                 {t("settings.whitelabel.domain_status_active")}

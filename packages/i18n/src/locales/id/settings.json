@@ -286,6 +286,7 @@
     "marketplace_btn": "Lihat di Marketplace",
     "custom_domain_label": "Domain FQDN Khusus",
     "custom_domain_placeholder": "mis. gis.perusahaan-anda.net",
+    "domain_status_unconfigured": "Belum Dikonfigurasi",
     "domain_status_active": "Domain Terverifikasi & SSL Aktif",
     "domain_status_pending": "Menunggu Verifikasi DNS",
     "domain_status_failed": "Verifikasi DNS Gagal",
