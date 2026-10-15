@@ -315,7 +315,10 @@
     "save_success": "Branding and custom domain settings updated successfully.",
     "save_error": "Failed to update branding settings.",
     "verify_success": "DNS verification succeeded! Custom domain is now active.",
-    "verify_failed": "DNS verification failed. Please check your registrar CNAME record."
+    "verify_failed": "DNS verification failed. Please check your registrar CNAME record.",
+    "copy_btn": "Copy",
+    "copied": "Copied to clipboard!",
+    "badge_locked": "ENTERPRISE / ADD-ON"
   }
 }
 

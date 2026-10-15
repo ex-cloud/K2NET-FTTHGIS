@@ -59,7 +59,7 @@ export function BrandingSettingsSection() {
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} ${t("settings.api_keys.copied")}`);
+    toast.success(`${label} ${t("settings.whitelabel.copied")}`);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -164,7 +164,7 @@ export function BrandingSettingsSection() {
                 <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   {t("settings.whitelabel.locked_title")}
                   <Badge variant="outline" className="border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] px-1.5 py-0">
-                    PRO / ENTERPRISE
+                    {t("settings.whitelabel.badge_locked")}
                   </Badge>
                 </h4>
                 <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">

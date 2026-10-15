@@ -315,7 +315,10 @@
     "save_success": "Pengaturan branding dan domain kustom berhasil disimpan.",
     "save_error": "Gagal menyimpan pengaturan branding.",
     "verify_success": "Verifikasi DNS CNAME berhasil! Domain kustom kini aktif.",
-    "verify_failed": "Verifikasi DNS gagal. Pastikan CNAME mengarah ke host edge kami."
+    "verify_failed": "Verifikasi DNS gagal. Pastikan CNAME mengarah ke host edge kami.",
+    "copy_btn": "Salin",
+    "copied": "Disalin ke papan klip!",
+    "badge_locked": "ENTERPRISE / ADD-ON"
   }
 }
 

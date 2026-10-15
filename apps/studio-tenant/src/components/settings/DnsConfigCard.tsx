@@ -129,7 +129,7 @@ export function DnsConfigCard({
                   className="h-5 px-1.5 text-[10px] gap-1"
                 >
                   <Copy className="size-3" />
-                  {t("settings.api_keys.copy_btn")}
+                  {t("settings.whitelabel.copy_btn")}
                 </Button>
               </div>
               <div className="font-mono text-xs font-medium text-foreground select-all">
@@ -148,7 +148,7 @@ export function DnsConfigCard({
                   className="h-5 px-1.5 text-[10px] gap-1"
                 >
                   <Copy className="size-3" />
-                  {t("settings.api_keys.copy_btn")}
+                  {t("settings.whitelabel.copy_btn")}
                 </Button>
               </div>
               <div className="font-mono text-xs font-medium text-foreground select-all truncate">
