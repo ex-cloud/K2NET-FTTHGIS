@@ -290,8 +290,8 @@ function MarketplacePackageCard({
   const quotaDelta = parseQuotaDelta(pkg.quotaDeltaJson);
   const description = parseDescription(pkg, t(`packages.category.${pkg.category}` as TranslationKey));
   const eligibility = pkg.eligibility;
-  const state = eligibility?.eligibilityState || (pkg.isSubscribed ? "ALREADY_ACTIVE" : "READY");
-  const isAlreadyActive = Boolean(pkg.isSubscribed || state === "ALREADY_ACTIVE");
+  const state = eligibility?.eligibilityState || (pkg.isSubscribed || (pkg as unknown as Record<string, unknown>)?.subscribed ? "ALREADY_ACTIVE" : "READY");
+  const isAlreadyActive = Boolean(pkg.isSubscribed || (pkg as unknown as Record<string, unknown>)?.subscribed || state === "ALREADY_ACTIVE");
   const isLockedTier = Boolean(state === "PLAN_UPGRADE_REQUIRED" || state === "LICENSE_UNHEALTHY");
   const isPrereqRequired = Boolean(state === "PREREQUISITE_REQUIRED");
   const isReady = Boolean(state === "READY" && !isAlreadyActive);

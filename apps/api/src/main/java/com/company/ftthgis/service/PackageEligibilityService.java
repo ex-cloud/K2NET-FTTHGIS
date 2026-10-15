@@ -49,18 +49,35 @@ public class PackageEligibilityService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 0. Cek apakah paket sudah aktif pada tenant
+        // 0. Cek apakah paket sudah aktif pada tenant (via langganan atau lisensi bawaan)
         List<TenantPackageSubscription> activeSubs = subscriptionRepository
                 .findActiveSubscriptionsByOrganizationId(org.getId(), now);
         
         boolean alreadyActive = activeSubs.stream()
                 .anyMatch(s -> s.getPlatformPackage().getId().equals(targetPackage.getId()));
 
+        // Jika lisensi organisasi sudah mencakup fitur bawaan paket ini
+        if (!alreadyActive && targetPackage.getFeatureKey() != null) {
+            if ("feature.branding.whitelabel".equals(targetPackage.getFeatureKey())) {
+                if ("default".equalsIgnoreCase(org.getSlug()) || "system".equalsIgnoreCase(org.getSlug())) {
+                    alreadyActive = true;
+                } else if (org.getSubscriptionPlan() != null && "ENTERPRISE".equalsIgnoreCase(org.getSubscriptionPlan().getName())) {
+                    alreadyActive = true;
+                } else {
+                    Optional<TenantLicense> licOpt = tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(
+                            org.getId(), LicenseStatus.ACTIVE);
+                    if (licOpt.isPresent() && Boolean.TRUE.equals(licOpt.get().isFeatureCustomDomainEnabled())) {
+                        alreadyActive = true;
+                    }
+                }
+            }
+        }
+
         if (alreadyActive) {
             return PackageEligibilityDto.builder()
                     .isEligible(false)
                     .eligibilityState("ALREADY_ACTIVE")
-                    .message("Paket ini sudah aktif pada organisasi Anda.")
+                    .message("Paket atau fitur ini sudah aktif pada organisasi Anda.")
                     .build();
         }
 

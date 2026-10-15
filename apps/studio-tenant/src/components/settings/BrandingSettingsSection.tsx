@@ -149,7 +149,9 @@ export function BrandingSettingsSection() {
     );
   }
 
-  const isWhitelabelAllowed = branding?.isWhitelabelAllowed ?? false;
+  const isWhitelabelAllowed = Boolean(
+    branding?.isWhitelabelAllowed ?? branding?.whitelabelAllowed
+  );
 
   return (
     <div className="space-y-6">

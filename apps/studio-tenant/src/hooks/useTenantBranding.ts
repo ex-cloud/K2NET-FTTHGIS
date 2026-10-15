@@ -23,6 +23,7 @@ export interface TenantBrandingData {
   supportEmail: string | null;
   supportPhone: string | null;
   isWhitelabelAllowed: boolean;
+  whitelabelAllowed?: boolean;
   dnsInstructions: string;
 }
 
@@ -59,7 +60,11 @@ export function useTenantBranding() {
     queryFn: async () => {
       const params: Record<string, string> = {};
       if (slugParam) params.slug = slugParam;
-      return apiClient<TenantBrandingData>("/api/v1/tenant/branding", { params });
+      const res = await apiClient<TenantBrandingData>("/api/v1/tenant/branding", { params });
+      return {
+        ...res,
+        isWhitelabelAllowed: Boolean(res?.isWhitelabelAllowed ?? res?.whitelabelAllowed),
+      };
     },
     staleTime: 60 * 1000,
   });

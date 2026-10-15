@@ -32,6 +32,19 @@ public class TenantBrandingDto {
     private String footerText;
     private String supportEmail;
     private String supportPhone;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isWhitelabelAllowed")
     private boolean isWhitelabelAllowed;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isWhitelabelAllowed")
+    public boolean isWhitelabelAllowed() {
+        return isWhitelabelAllowed;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("whitelabelAllowed")
+    public boolean getWhitelabelAllowed() {
+        return isWhitelabelAllowed;
+    }
+
     private String dnsInstructions;
 }
