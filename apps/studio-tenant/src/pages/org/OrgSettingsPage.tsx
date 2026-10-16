@@ -4,6 +4,9 @@ import {
   Building,
   Save,
   Copy,
+  Palette,
+  Globe,
+  Lock,
 } from "lucide-react";
 import {
   PageHero,
@@ -14,10 +17,16 @@ import {
   Label,
   Textarea,
   Switch,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { useAuth } from "@k2net/auth/client";
 import { useTenantInfo } from "../../hooks/useTenantInfo";
+import { useTenantBranding } from "../../hooks/useTenantBranding";
+import { parseDomain } from "../../lib/domain";
 import { useTranslation } from "@k2net/i18n";
 import { BrandingSettingsSection } from "../../components/settings/BrandingSettingsSection";
 
@@ -47,6 +56,10 @@ function GeneralSettingsSection({
   setAddressValue: (val: string) => void;
 }) {
   const { t } = useTranslation();
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const { baseDomain, isHyphen } = parseDomain(hostname);
+  const suffix = isHyphen ? `-${baseDomain}` : `.${baseDomain || "gis.kdua.net"}`;
+
   return (
     <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
       <div className="space-y-1.5">
@@ -68,10 +81,13 @@ function GeneralSettingsSection({
               disabled
               className="h-8.5 text-xs font-mono bg-muted/40 rounded-r-none"
             />
-            <span className="h-8.5 px-3 text-xs bg-muted border border-l-0 border-border rounded-r-md flex items-center font-mono text-muted-foreground">
-              .gis.kdua.net
+            <span className="h-8.5 px-3 text-xs bg-muted border border-l-0 border-border rounded-r-md flex items-center font-mono text-muted-foreground select-all">
+              {suffix}
             </span>
           </div>
+          <p className="text-[10px] text-muted-foreground">
+            {t("settings.subdomain_permanent_hint", { defaultValue: "Canonical system subdomain. Permanently assigned to your workspace." })}
+          </p>
         </div>
 
         <div className="space-y-1.5">
@@ -178,8 +194,20 @@ export function OrgSettingsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { organizationName, slug, refetch: refetchTenantInfo } = useTenantInfo();
+  const { branding } = useTenantBranding();
+  const isWhitelabelAllowed = Boolean(branding?.isWhitelabelAllowed ?? branding?.whitelabelAllowed);
+
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
+
+  const [generalTab, setGeneralTab] = React.useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab === "branding" || tab === "domains") return tab;
+    }
+    return "info";
+  });
 
   const [nameValue, setNameValue] = React.useState(organizationName || "");
   const [addressValue, setAddressValue] = React.useState("");
@@ -220,7 +248,7 @@ export function OrgSettingsPage() {
   };
 
   const currentSection: SettingsSection = React.useMemo(() => {
-    if (pathname.includes("/settings/branding")) return "branding";
+    if (pathname.includes("/settings/branding")) return "general";
     if (pathname.includes("/settings/security")) return "security";
     if (pathname.includes("/settings/sso")) return "sso";
     if (pathname.includes("/settings/oauth")) return "oauth";
@@ -276,7 +304,7 @@ export function OrgSettingsPage() {
         icon={Building}
         subtitle={meta.subtitle}
         actions={
-          currentSection === "branding" ? undefined : (
+          (currentSection === "general" && generalTab !== "info") ? undefined : (
             <Button
               size="sm"
               disabled={isSaving}
@@ -292,17 +320,60 @@ export function OrgSettingsPage() {
 
       <div className="w-full max-w-4xl space-y-4">
         {currentSection === "general" && (
-          <GeneralSettingsSection
-            organizationName={organizationName}
-            slug={slug}
-            email={user?.email || ""}
-            nameValue={nameValue}
-            setNameValue={setNameValue}
-            addressValue={addressValue}
-            setAddressValue={setAddressValue}
-          />
+          <Tabs value={generalTab} onValueChange={setGeneralTab} className="w-full space-y-4">
+            <TabsList size="sm" className="border border-border/60 bg-muted/60 p-0.5">
+              <TabsTrigger value="info" className="gap-1.5 text-xs font-medium cursor-pointer">
+                <Building className="size-3.5" />
+                {t("settings.tab_general_info")}
+              </TabsTrigger>
+              <TabsTrigger value="branding" className="gap-1.5 text-xs font-medium cursor-pointer">
+                <Palette className="size-3.5" />
+                {t("settings.tab_branding_whitelabel")}
+                {!isWhitelabelAllowed && (
+                  <Lock className="size-3 text-amber-500 ml-0.5" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="domains" className="gap-1.5 text-xs font-medium cursor-pointer">
+                <Globe className="size-3.5" />
+                {t("settings.tab_custom_domains")}
+                {!isWhitelabelAllowed && (
+                  <Lock className="size-3 text-amber-500 ml-0.5" />
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="info" className="space-y-4 mt-0">
+              <GeneralSettingsSection
+                organizationName={organizationName}
+                slug={slug}
+                email={user?.email || ""}
+                nameValue={nameValue}
+                setNameValue={setNameValue}
+                addressValue={addressValue}
+                setAddressValue={setAddressValue}
+              />
+              <div className="flex justify-end pt-2">
+                <Button
+                  size="sm"
+                  disabled={isSaving}
+                  onClick={handleSave}
+                  className="h-7 px-3 text-xs font-medium gap-1.5"
+                >
+                  <Save className="size-3.5" />
+                  {isSaving ? t("settings.whitelabel.saving") : t("common.save_changes")}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="branding" className="space-y-4 mt-0">
+              <BrandingSettingsSection viewMode="branding" />
+            </TabsContent>
+
+            <TabsContent value="domains" className="space-y-4 mt-0">
+              <BrandingSettingsSection viewMode="domains" />
+            </TabsContent>
+          </Tabs>
         )}
-        {currentSection === "branding" && <BrandingSettingsSection />}
         {currentSection === "security" && <SecuritySettingsSection />}
         {currentSection === "sso" && <SsoSettingsSection slug={slug} />}
         {currentSection === "oauth" && <OAuthSettingsSection />}

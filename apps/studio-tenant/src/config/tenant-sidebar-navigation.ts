@@ -242,21 +242,12 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
         items: [
           {
             id: "general",
-            title: "Instance Profile",
+            title: "Organization & Branding",
             translationKey: "nav.org_profile",
             href: "/settings/general",
             icon: Building,
-            description: "Name, domain & official contacts",
+            description: "Identity, whitelabel branding & custom domains",
             shortcut: "S then G",
-          },
-          {
-            id: "branding",
-            title: "Customization & Logo",
-            translationKey: "nav.org_branding",
-            href: "/settings/branding",
-            icon: PenTool,
-            description: "Visual identity & tenant logo",
-            shortcut: "S then B",
           },
         ],
       },

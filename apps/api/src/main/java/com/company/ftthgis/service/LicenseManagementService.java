@@ -85,6 +85,7 @@ public class LicenseManagementService {
                 null
         );
 
+        boolean isEnt = plan != null && "ENTERPRISE".equalsIgnoreCase(plan.getName());
         TenantLicense license = TenantLicense.builder()
                 .organization(org)
                 .subscriptionPlan(plan)
@@ -95,8 +96,10 @@ public class LicenseManagementService {
                 .validFrom(now)
                 .validUntil(validUntil)
                 .issuedBy(issuedBy != null ? issuedBy : "SYSTEM_BILLING")
-                .featureSsoEnabled(plan != null && plan.isHasSso())
-                .featureApiEnabled(plan != null && plan.isHasApiAccess())
+                .featureSsoEnabled(isEnt || (plan != null && plan.isHasSso()))
+                .featureApiEnabled(isEnt || (plan != null && plan.isHasApiAccess()))
+                .featureAiCopilotEnabled(isEnt)
+                .featureCustomDomainEnabled(isEnt)
                 .notes("FREE".equalsIgnoreCase(tier) ? "14-Day Free Trial Online License" : "Online subscription license issued automatically")
                 .build();
 
@@ -157,10 +160,10 @@ public class LicenseManagementService {
                 .overrideMaxOdcs(request.getOverrideMaxOdcs())
                 .overrideMaxCustomers(request.getOverrideMaxCustomers())
                 .overrideMaxStorageGb(request.getOverrideMaxStorageGb())
-                .featureSsoEnabled(Boolean.TRUE.equals(request.getFeatureSsoEnabled()) || (plan != null && plan.isHasSso()))
-                .featureApiEnabled(Boolean.TRUE.equals(request.getFeatureApiEnabled()) || (plan != null && plan.isHasApiAccess()))
-                .featureAiCopilotEnabled(Boolean.TRUE.equals(request.getFeatureAiCopilotEnabled()))
-                .featureCustomDomainEnabled(Boolean.TRUE.equals(request.getFeatureCustomDomainEnabled()))
+                .featureSsoEnabled(Boolean.TRUE.equals(request.getFeatureSsoEnabled()) || (plan != null && plan.isHasSso()) || (plan != null && "ENTERPRISE".equalsIgnoreCase(plan.getName())))
+                .featureApiEnabled(Boolean.TRUE.equals(request.getFeatureApiEnabled()) || (plan != null && plan.isHasApiAccess()) || (plan != null && "ENTERPRISE".equalsIgnoreCase(plan.getName())))
+                .featureAiCopilotEnabled(Boolean.TRUE.equals(request.getFeatureAiCopilotEnabled()) || (plan != null && "ENTERPRISE".equalsIgnoreCase(plan.getName())))
+                .featureCustomDomainEnabled(Boolean.TRUE.equals(request.getFeatureCustomDomainEnabled()) || (plan != null && "ENTERPRISE".equalsIgnoreCase(plan.getName())))
                 .machineFingerprint(request.getMachineFingerprint())
                 .issuedBy(issuedBy != null ? issuedBy : "SUPER_ADMIN")
                 .notes(request.getNotes())
@@ -251,6 +254,8 @@ public class LicenseManagementService {
                     machineFingerprint
             );
 
+            boolean isEnt = plan != null && "ENTERPRISE".equalsIgnoreCase(plan.getName());
+            boolean isProOrEnt = plan != null && ("PRO".equalsIgnoreCase(plan.getName()) || isEnt);
             license = TenantLicense.builder()
                     .organization(org)
                     .subscriptionPlan(plan)
@@ -260,6 +265,10 @@ public class LicenseManagementService {
                     .activationType("OFFLINE_KEY")
                     .validFrom(now)
                     .validUntil(validUntil)
+                    .featureSsoEnabled(isEnt || (plan != null && plan.isHasSso()))
+                    .featureApiEnabled(isProOrEnt || (plan != null && plan.isHasApiAccess()))
+                    .featureAiCopilotEnabled(isEnt)
+                    .featureCustomDomainEnabled(isEnt)
                     .machineFingerprint(machineFingerprint != null ? machineFingerprint.trim().toLowerCase(Locale.ROOT) : null)
                     .issuedBy("SELF_ACTIVATION")
                     .notes("Activated by tenant user: " + activatedBy)
@@ -468,10 +477,11 @@ public class LicenseManagementService {
             if (lic.getOverrideMaxCustomers() != null) effectiveCustomers = lic.getOverrideMaxCustomers();
             if (lic.getOverrideMaxStorageGb() != null) effectiveStorage = lic.getOverrideMaxStorageGb();
 
-            sso = lic.isFeatureSsoEnabled() || sso;
-            api = lic.isFeatureApiEnabled() || api;
-            ai = lic.isFeatureAiCopilotEnabled();
-            customDomain = lic.isFeatureCustomDomainEnabled();
+            boolean isEnt = "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "");
+            sso = lic.isFeatureSsoEnabled() || sso || isEnt;
+            api = lic.isFeatureApiEnabled() || api || isEnt;
+            ai = lic.isFeatureAiCopilotEnabled() || isEnt;
+            customDomain = lic.isFeatureCustomDomainEnabled() || isEnt;
         } else {
             effectiveProjects = baseProjects + boosterOlts;
             effectiveOdps = baseOdps + boosterOdps;

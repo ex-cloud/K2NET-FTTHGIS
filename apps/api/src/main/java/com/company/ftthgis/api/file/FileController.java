@@ -39,10 +39,50 @@ public class FileController {
     @Value("${app.gateway.token}")
     private String gatewayToken;
 
+    @Value("${app.minio.endpoint:http://minio:9000}")
+    private String minioEndpoint;
+
     private final RestTemplate restTemplate;
     private final FileStorageService fileStorageService;
     private final ProjectQuotaService projectQuotaService;
     private final OrganizationRepository organizationRepository;
+
+    @GetMapping("/public/files/view")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<byte[]> viewPublicFile(
+            @RequestParam(value = "bucket", defaultValue = "public-contents") String bucket,
+            @RequestParam("key") String key) {
+        if (key == null || key.isBlank() || key.contains("..")) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (!"public-contents".equals(bucket) && !"tenant-assets".equals(bucket)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
+        try {
+            String sanitizedKey = key.startsWith("/") ? key.substring(1) : key;
+            String minioUrl = minioEndpoint + "/" + bucket + "/" + sanitizedKey;
+
+            ResponseEntity<byte[]> response = restTemplate.getForEntity(minioUrl, byte[].class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+                String lowerKey = sanitizedKey.toLowerCase();
+                if (lowerKey.endsWith(".svg")) mediaType = MediaType.valueOf("image/svg+xml");
+                else if (lowerKey.endsWith(".png")) mediaType = MediaType.IMAGE_PNG;
+                else if (lowerKey.endsWith(".jpg") || lowerKey.endsWith(".jpeg")) mediaType = MediaType.IMAGE_JPEG;
+                else if (lowerKey.endsWith(".webp")) mediaType = MediaType.valueOf("image/webp");
+                else if (lowerKey.endsWith(".ico")) mediaType = MediaType.valueOf("image/x-icon");
+
+                return ResponseEntity.ok()
+                        .contentType(mediaType)
+                        .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                        .body(response.getBody());
+            }
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to view public file from minio (bucket={}, key={}): {}", bucket, key, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     @GetMapping("/storage/usage")
     @PreAuthorize("hasAnyAuthority('network.manage', 'system.settings.manage', 'organizations.update', 'system.documents.manage', 'ROLE_super_admin', 'ROLE_admin', 'super_admin', 'admin')")
@@ -83,8 +123,14 @@ public class FileController {
 
         try {
             String originalFilename = file.getOriginalFilename();
+            String rawFolder = folder != null ? folder.trim() : "documents";
+            if (rawFolder.contains(",")) {
+                rawFolder = rawFolder.split(",")[0].trim();
+            }
+
             String bucket = "tenant-assets";
-            if (folder != null && (folder.startsWith("public") || folder.startsWith("tasks/public"))) {
+            boolean isPublicContent = rawFolder.startsWith("public") || rawFolder.startsWith("tasks/public") || rawFolder.contains("branding");
+            if (isPublicContent) {
                 bucket = "public-contents";
             }
 
@@ -106,12 +152,10 @@ public class FileController {
             }
 
             // Sandboxing folder inside tenant vault prefix
-            String effectiveFolder = folder != null ? folder.trim() : "documents";
-            if ("tenant-assets".equals(bucket)) {
-                String tenantPrefix = "tenants/" + effectiveTenantSlug;
-                if (!effectiveFolder.startsWith(tenantPrefix)) {
-                    effectiveFolder = tenantPrefix + "/" + effectiveFolder;
-                }
+            String effectiveFolder = rawFolder;
+            String tenantPrefix = "tenants/" + effectiveTenantSlug;
+            if (!effectiveFolder.startsWith(tenantPrefix)) {
+                effectiveFolder = tenantPrefix + "/" + effectiveFolder;
             }
 
             log.info("Forwarding upload of file: {} to storage-gateway (bucket: {}, folder: {})...", originalFilename, bucket, effectiveFolder);
@@ -144,8 +188,17 @@ public class FileController {
                 String remoteUrl = (String) responseBody.get("url");
                 log.info("File uploaded successfully to gateway: {} -> {}", originalFilename, remoteUrl);
 
+                String fileKey = "";
+                if (remoteUrl != null && remoteUrl.contains("/" + bucket + "/")) {
+                    fileKey = remoteUrl.substring(remoteUrl.indexOf("/" + bucket + "/") + bucket.length() + 2);
+                } else if (remoteUrl != null) {
+                    fileKey = remoteUrl.substring(remoteUrl.lastIndexOf("/") + 1);
+                }
+                String publicViewUrl = "/api/v1/public/files/view?bucket=" + bucket + "&key=" + fileKey;
+
                 return ResponseEntity.ok(Map.of(
-                    "url", remoteUrl,
+                    "url", publicViewUrl,
+                    "rawUrl", remoteUrl != null ? remoteUrl : "",
                     "name", originalFilename,
                     "size", file.getSize(),
                     "bucket", bucket,

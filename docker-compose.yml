@@ -343,6 +343,7 @@ services:
       - PAYMENT_GATEWAY_URL=http://ftth-payment-gateway:5002
       - MAP_GATEWAY_URL=http://ftth-map-gateway:5003
       - STORAGE_GATEWAY_URL=http://ftth-storage-gateway:5004
+      - MINIO_ENDPOINT=http://minio:9000
       - WHATSAPP_GATEWAY_URL=http://ftth-whatsapp-gateway:5005
       - SCHEDULER_GATEWAY_URL=http://ftth-scheduler-gateway:5006
       - EXPORT_GATEWAY_URL=http://ftth-export-gateway:5007

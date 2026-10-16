@@ -90,9 +90,11 @@ app:
     olt-url: ${OLT_GATEWAY_URL:http://localhost:5008}
     audit-url: ${AUDIT_GATEWAY_URL:http://localhost:5009}
     webhook-key: ${XENDIT_WEBHOOK_KEY:}
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://minio:9000}
   seeder:
     enabled: false # Data sudah sinkron. Set true HANYA jika ingin reset ulang semua aset.
-  frontend-url: ${FRONTEND_URL:localhost:3000}
+  frontend-url: ${FRONTEND_URL:http://localhost:3002}
   security:
     encryption-key: ${APP_SECURITY_ENCRYPTION_KEY:${AUTH_SECRET:ftth-gis-master-secret-key-32b!!}}
     keycloak:
@@ -106,7 +108,7 @@ app:
         client-id: ${GITHUB_CLIENT_ID:}
         client-secret: ${GITHUB_CLIENT_SECRET:}
     cors:
-      allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"
+      allowed-origins: "http://localhost:3001,http://localhost:3002,http://127.0.0.1:3001,http://127.0.0.1:3002,http://localhost:3000,http://127.0.0.1:3000"
       allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
       allowed-headers: "*"
   devops:

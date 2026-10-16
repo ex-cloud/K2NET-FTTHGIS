@@ -1,6 +1,6 @@
 {
   "general_title": "System Settings & Global Configuration",
-  "general_subtitle": "Platform identity configuration, default storage quotas, and system maintenance lock.",
+  "general_subtitle": "Configure official organization identity, operational contacts, and custom whitelabel branding.",
   "branding_title": "Branding & Whitelabel",
   "branding_subtitle": "Customize platform logo, favicon, theme accent color, and copyright footer across all portals.",
   "gis_spatial_title": "GIS & Spatial Map",
@@ -132,6 +132,11 @@
   "hq_address_placeholder": "Enter your operational headquarters or NOC address...",
   "logo_label": "Organization Logo (PNG / SVG with transparent background)",
   "logo_upload_btn": "Choose New Logo File",
+  "favicon_upload_btn": "Choose Favicon File",
+  "tab_general_info": "General Info",
+  "tab_branding_whitelabel": "Branding & Whitelabel",
+  "tab_custom_domains": "Custom Domains",
+  "dns_enter_domain_hint": "Enter your custom domain above and click 'Verify DNS Record' to view CNAME instructions.",
   "logo_size_hint": "Recommended size: 512x512 px, max 2 MB.",
   "mfa_enforce_label": "Enforce MFA / 2FA for All Staff",
   "mfa_enforce_desc": "All operators, surveyors, and technicians must use an authenticator app (TOTP) upon login.",
@@ -320,8 +325,12 @@
     "verify_success": "DNS verification succeeded! Custom domain is now active.",
     "verify_failed": "DNS verification failed. Please check your registrar CNAME record.",
     "copy_btn": "Copy",
-    "copied": "Copied to clipboard!",
-    "badge_locked": "ENTERPRISE / ADD-ON"
+    "badge_locked": "ENTERPRISE / ADD-ON",
+    "reset_domain_btn": "Reset Domain",
+    "reset_domain_success": "Custom domain removed and reset to default.",
+    "logo_uploaded_success": "Logo uploaded successfully!",
+    "favicon_uploaded_success": "Favicon uploaded successfully!",
+    "upload_failed": "Failed to upload image file."
   }
 }
 

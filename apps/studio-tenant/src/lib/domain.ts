@@ -191,5 +191,15 @@ export function getLogoUrl(logoUrl: string | undefined | null): string {
   if (logoUrl.includes("/uploads/")) {
     return logoUrl.substring(logoUrl.lastIndexOf("/uploads/"));
   }
+  if (logoUrl.includes(":9000/") || logoUrl.includes(":9005/")) {
+    const afterScheme = logoUrl.substring(logoUrl.indexOf("://") + 3);
+    const pathPart = afterScheme.substring(afterScheme.indexOf("/"));
+    const segments = pathPart.split("/").filter(Boolean);
+    if (segments.length >= 2) {
+      const bucket = segments[0];
+      const key = segments.slice(1).join("/");
+      return `/api/v1/public/files/view?bucket=${bucket}&key=${key}`;
+    }
+  }
   return logoUrl;
 }

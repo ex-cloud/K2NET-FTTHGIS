@@ -75,7 +75,11 @@ public class LicenseEnforcementAspect {
 
         // 4. Periksa status lisensi tenant
         Optional<TenantLicense> currentLicenseOpt = tenantLicenseRepository
-                .findFirstByOrganizationIdOrderByCreatedAtDesc(orgId);
+                .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(orgId, LicenseStatus.ACTIVE);
+        if (currentLicenseOpt.isEmpty()) {
+            currentLicenseOpt = tenantLicenseRepository
+                    .findFirstByOrganizationIdOrderByCreatedAtDesc(orgId);
+        }
 
         if (currentLicenseOpt.isPresent()) {
             TenantLicense license = currentLicenseOpt.get();

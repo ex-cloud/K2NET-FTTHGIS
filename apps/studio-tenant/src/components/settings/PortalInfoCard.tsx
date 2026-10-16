@@ -9,6 +9,7 @@ import {
   Label,
 } from "@k2net/ui";
 import { Building2 } from "lucide-react";
+import { useTenantInfo } from "../../hooks/useTenantInfo";
 import type { UpdateTenantBrandingPayload } from "../../hooks/useTenantBranding";
 
 export interface PortalInfoCardProps {
@@ -19,6 +20,7 @@ export interface PortalInfoCardProps {
 
 export function PortalInfoCard({ formData, setFormData, isWhitelabelAllowed }: PortalInfoCardProps) {
   const { t } = useTranslation();
+  const { organizationName } = useTenantInfo();
 
   return (
     <Card className="border-border/60 bg-card shadow-xs">
@@ -37,7 +39,7 @@ export function PortalInfoCard({ formData, setFormData, isWhitelabelAllowed }: P
             <Input
               id="appTitleInput"
               disabled={!isWhitelabelAllowed}
-              placeholder={t("settings.whitelabel.app_title_placeholder")}
+              placeholder={organizationName ? `${organizationName} GIS Portal` : t("settings.whitelabel.app_title_placeholder")}
               value={formData.appTitle || ""}
               onChange={(e) => setFormData((prev) => ({ ...prev, appTitle: e.target.value }))}
               className="h-8 text-xs"
@@ -51,11 +53,14 @@ export function PortalInfoCard({ formData, setFormData, isWhitelabelAllowed }: P
             <Input
               id="companyNameInput"
               disabled={!isWhitelabelAllowed}
-              placeholder={t("settings.whitelabel.company_name_placeholder")}
+              placeholder={organizationName || t("settings.whitelabel.company_name_placeholder")}
               value={formData.companyName || ""}
               onChange={(e) => setFormData((prev) => ({ ...prev, companyName: e.target.value }))}
               className="h-8 text-xs"
             />
+            <p className="text-[10px] text-muted-foreground">
+              {t("settings.company_name_hint", { defaultValue: "Display name on customer portals. Leave empty to use official organization profile name." })}
+            </p>
           </div>
         </div>
 

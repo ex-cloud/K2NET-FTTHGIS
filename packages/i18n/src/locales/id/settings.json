@@ -1,6 +1,6 @@
 {
   "general_title": "Pengaturan Sistem & Konfigurasi Global",
-  "general_subtitle": "Konfigurasi identitas platform, alokasi kuota penyimpanan default, dan status pemeliharaan sistem.",
+  "general_subtitle": "Konfigurasi identitas resmi organisasi, kontak operasional, dan kustomisasi branding whitelabel.",
   "branding_title": "Branding & Whitelabel",
   "branding_subtitle": "Kustomisasi logo, favicon, warna aksen tema, dan teks hak cipta pada seluruh portal aplikasi secara global.",
   "gis_spatial_title": "GIS & Spatial Map",
@@ -132,6 +132,11 @@
   "hq_address_placeholder": "Masukkan alamat kantor pusat operasional atau NOC...",
   "logo_label": "Logo Organisasi (Format PNG / SVG transparan)",
   "logo_upload_btn": "Pilih File Logo Baru",
+  "favicon_upload_btn": "Pilih Berkas Favicon Baru",
+  "tab_general_info": "Informasi Umum",
+  "tab_branding_whitelabel": "Branding & Whitelabel",
+  "tab_custom_domains": "Domain Kustom",
+  "dns_enter_domain_hint": "Masukkan domain kustom Anda di atas dan klik 'Verifikasi Catatan DNS' untuk melihat instruksi CNAME.",
   "logo_size_hint": "Rekomendasi ukuran: 512x512 px, maksimal 2 MB.",
   "mfa_enforce_label": "Wajibkan MFA / 2FA untuk Seluruh Staf",
   "mfa_enforce_desc": "Seluruh operator, surveyor, dan teknisi wajib menggunakan authenticator app (TOTP) saat login.",
@@ -320,8 +325,12 @@
     "verify_success": "Verifikasi DNS CNAME berhasil! Domain kustom kini aktif.",
     "verify_failed": "Verifikasi DNS gagal. Pastikan CNAME mengarah ke host edge kami.",
     "copy_btn": "Salin",
-    "copied": "Disalin ke papan klip!",
-    "badge_locked": "ENTERPRISE / ADD-ON"
+    "badge_locked": "ENTERPRISE / ADD-ON",
+    "reset_domain_btn": "Reset Domain",
+    "reset_domain_success": "Domain kustom berhasil dihapus dan dikembalikan ke default.",
+    "logo_uploaded_success": "Logo berhasil diunggah!",
+    "favicon_uploaded_success": "Favicon berhasil diunggah!",
+    "upload_failed": "Gagal mengunggah berkas gambar."
   }
 }
 

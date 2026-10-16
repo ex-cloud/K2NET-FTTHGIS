@@ -16,6 +16,7 @@ import {
   Globe,
   Building2,
 } from "lucide-react";
+import { getLogoUrl } from "../../lib/domain";
 import type { UpdateTenantBrandingPayload } from "../../hooks/useTenantBranding";
 
 export interface VisualIdentityCardProps {
@@ -56,7 +57,7 @@ export function VisualIdentityCard({
             <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-border/80 bg-muted/10">
               <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0 overflow-hidden">
                 {formData.logoUrl ? (
-                  <img src={formData.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+                  <img src={getLogoUrl(formData.logoUrl)} alt="Logo" className="h-full w-full object-contain p-1" />
                 ) : (
                   <Building2 className="size-8 text-primary/60" />
                 )}
@@ -95,7 +96,7 @@ export function VisualIdentityCard({
             <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-border/80 bg-muted/10">
               <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0 overflow-hidden">
                 {formData.faviconUrl ? (
-                  <img src={formData.faviconUrl} alt="Favicon" className="h-8 w-8 object-contain" />
+                  <img src={getLogoUrl(formData.faviconUrl)} alt="Favicon" className="h-8 w-8 object-contain" />
                 ) : (
                   <Globe className="size-8 text-primary/60" />
                 )}
@@ -110,7 +111,7 @@ export function VisualIdentityCard({
                     className="h-7 px-2.5 text-xs font-medium gap-1.5 pointer-events-none"
                   >
                     <Upload className="size-3.5" />
-                    {isUploadingFavicon ? t("settings.whitelabel.saving") : t("settings.logo_upload_btn")}
+                    {isUploadingFavicon ? t("settings.whitelabel.saving") : t("settings.favicon_upload_btn")}
                   </Button>
                 </Label>
                 <input

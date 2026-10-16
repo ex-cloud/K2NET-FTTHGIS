@@ -392,7 +392,11 @@ public class ProjectQuotaService {
         // 🛡️ License Status Check: Enforce Read-Only and Suspended/Revoked Locks
         if (tenantLicenseRepository != null && org.getId() != null) {
             Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
-                    .findFirstByOrganizationIdOrderByCreatedAtDesc(org.getId());
+                    .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(org.getId(), LicenseStatus.ACTIVE);
+            if (activeLicenseOpt.isEmpty()) {
+                activeLicenseOpt = tenantLicenseRepository
+                        .findFirstByOrganizationIdOrderByCreatedAtDesc(org.getId());
+            }
             if (activeLicenseOpt.isPresent()) {
                 LicenseStatus status = activeLicenseOpt.get().getStatus();
                 if (status == LicenseStatus.RESTRICTED_READ_ONLY) {

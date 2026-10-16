@@ -510,13 +510,7 @@ const settingsGeneralRoute = createRoute({
 const settingsBrandingRoute = createRoute({
   getParentRoute: () => orgAuthenticatedRoute,
   path: "/settings/branding",
-  component: () => (
-    <OrgSettingsPageWrapper>
-      <Lazy>
-        <OrgSettingsPage />
-      </Lazy>
-    </OrgSettingsPageWrapper>
-  ),
+  component: () => <Navigate to="/settings/general" />,
 });
 
 const settingsSecurityRoute = createRoute({

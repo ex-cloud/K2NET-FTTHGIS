@@ -115,12 +115,12 @@ public class TenantBrandingService {
             organizationRepository.save(org);
         }
         if (request.getLogoUrl() != null && !request.getLogoUrl().isBlank()) {
-            String cleanLogo = request.getLogoUrl().trim();
+            String cleanLogo = normalizeUrl(request.getLogoUrl().trim());
             branding.setLogoUrl(cleanLogo);
             org.setLogoUrl(cleanLogo);
             organizationRepository.save(org);
         }
-        if (request.getFaviconUrl() != null) branding.setFaviconUrl(request.getFaviconUrl().trim());
+        if (request.getFaviconUrl() != null) branding.setFaviconUrl(normalizeUrl(request.getFaviconUrl().trim()));
         if (request.getBrandColorPrimary() != null) branding.setBrandColorPrimary(request.getBrandColorPrimary().trim());
         if (request.getBrandColorAccent() != null) branding.setBrandColorAccent(request.getBrandColorAccent().trim());
         if (request.getFooterText() != null) branding.setFooterText(request.getFooterText().trim());
@@ -321,6 +321,10 @@ public class TenantBrandingService {
     }
 
     private TenantBranding createDefaultBranding(Organization org) {
+        boolean isEnt = org.getSubscriptionPlan() != null && "ENTERPRISE".equalsIgnoreCase(org.getSubscriptionPlan().getName());
+        boolean isPlatformRoot = "default".equalsIgnoreCase(org.getSlug()) || "system".equalsIgnoreCase(org.getSlug());
+        String defaultFooter = isEnt || isPlatformRoot ? "" : "Powered by FTTH GIS";
+
         TenantBranding branding = TenantBranding.builder()
                 .organization(org)
                 .customDomain(null)
@@ -332,7 +336,7 @@ public class TenantBrandingService {
                 .companyName(org.getName() != null ? org.getName() : "FTTH ISP")
                 .brandColorPrimary("#2563EB")
                 .brandColorAccent("#1D4ED8")
-                .footerText("Powered by Enterprise FTTH GIS")
+                .footerText(defaultFooter)
                 .supportEmail(null)
                 .supportPhone(null)
                 .build();
@@ -385,6 +389,24 @@ public class TenantBrandingService {
                 || resolvedCname.contains("edge.kdua.net");
     }
 
+    public String normalizeUrl(String url) {
+        if (url == null || url.isBlank()) return url;
+        if (url.startsWith("/api/v1/public/files/view")) return url;
+
+        // Convert internal minio url e.g. http://minio:9000/bucket/key or http://100.110.205.109:9005/bucket/key
+        if (url.contains(":9000/") || url.contains(":9005/")) {
+            String pathPart = url.substring(url.indexOf("://") + 3);
+            pathPart = pathPart.substring(pathPart.indexOf("/")); // e.g. /tenant-assets/tenants/default/branding/...
+            String[] segments = pathPart.split("/", 3);
+            if (segments.length >= 3) {
+                String bucket = segments[1];
+                String key = segments[2];
+                return "/api/v1/public/files/view?bucket=" + bucket + "&key=" + key;
+            }
+        }
+        return url;
+    }
+
     private TenantBrandingDto mapToDto(TenantBranding b, Organization org, boolean isAllowed) {
         String slug = org != null ? org.getSlug() : "";
         String dnsInstructions = String.format(
@@ -406,10 +428,10 @@ public class TenantBrandingService {
                 .verifiedAt(b.getVerifiedAt())
                 .sslStatus(b.getSslStatus())
                 .sslIssuedAt(b.getSslIssuedAt())
-                .appTitle(b.getAppTitle())
-                .companyName(b.getCompanyName())
-                .logoUrl(b.getLogoUrl())
-                .faviconUrl(b.getFaviconUrl())
+                .appTitle(b.getAppTitle() != null && !b.getAppTitle().isBlank() ? b.getAppTitle() : (org != null && org.getName() != null ? org.getName() + " GIS" : "FTTH GIS"))
+                .companyName(b.getCompanyName() != null && !b.getCompanyName().isBlank() ? b.getCompanyName() : (org != null ? org.getName() : null))
+                .logoUrl(normalizeUrl(b.getLogoUrl()))
+                .faviconUrl(normalizeUrl(b.getFaviconUrl()))
                 .brandColorPrimary(b.getBrandColorPrimary())
                 .brandColorAccent(b.getBrandColorAccent())
                 .footerText(b.getFooterText())

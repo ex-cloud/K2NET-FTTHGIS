@@ -19,7 +19,11 @@ import { DnsConfigCard } from "./DnsConfigCard";
 import { VisualIdentityCard } from "./VisualIdentityCard";
 import { PortalInfoCard } from "./PortalInfoCard";
 
-export function BrandingSettingsSection() {
+export interface BrandingSettingsSectionProps {
+  viewMode?: "all" | "branding" | "domains";
+}
+
+export function BrandingSettingsSection({ viewMode = "all" }: BrandingSettingsSectionProps = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { branding, isLoading, isError, updateBranding, isUpdating, verifyDns, isVerifyingDns } = useTenantBranding();
@@ -73,8 +77,23 @@ export function BrandingSettingsSection() {
     }
   };
 
+  const handleResetDomain = async () => {
+    try {
+      setFormData((prev) => ({ ...prev, customDomain: "" }));
+      await updateBranding({ ...formData, customDomain: null });
+      toast.success(t("settings.whitelabel.reset_domain_success"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("settings.whitelabel.save_error");
+      toast.error(msg);
+    }
+  };
+
   const handleVerifyDns = async () => {
     try {
+      // If the domain in form is different from the saved domain, save it first so backend verifies the new domain
+      if (formData.customDomain && formData.customDomain !== branding?.customDomain) {
+        await updateBranding({ ...formData, customDomain: formData.customDomain });
+      }
       const res = await verifyDns();
       if (res.verified) {
         toast.success(t("settings.whitelabel.verify_success"));
@@ -95,7 +114,7 @@ export function BrandingSettingsSection() {
     try {
       const uploadData = new FormData();
       uploadData.append("file", file);
-      uploadData.append("folder", "branding");
+      uploadData.append("folder", "public/branding");
 
       const reqHeaders: Record<string, string> = {};
       const token = getApiAuthToken();
@@ -103,7 +122,7 @@ export function BrandingSettingsSection() {
       const impersonationId = getImpersonationSessionId();
       if (impersonationId) reqHeaders["X-Impersonation-Session-Id"] = impersonationId;
 
-      const res = await fetch("/api/v1/files/upload?folder=branding", {
+      const res = await fetch("/api/v1/files/upload", {
         method: "POST",
         headers: reqHeaders,
         body: uploadData,
@@ -121,9 +140,9 @@ export function BrandingSettingsSection() {
       } else {
         setFormData((prev) => ({ ...prev, faviconUrl: uploadedUrl }));
       }
-      toast.success(`${isLogo ? "Logo" : "Favicon"} uploaded successfully!`);
+      toast.success(isLogo ? t("settings.whitelabel.logo_uploaded_success") : t("settings.whitelabel.favicon_uploaded_success"));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "File upload failed";
+      const msg = err instanceof Error ? err.message : t("settings.whitelabel.upload_failed");
       toast.error(msg);
     } finally {
       if (isLogo) setIsUploadingLogo(false);
@@ -199,30 +218,37 @@ export function BrandingSettingsSection() {
       )}
 
       <form onSubmit={handleSave} className="space-y-6">
-        <DnsConfigCard
-          formData={formData}
-          setFormData={setFormData}
-          branding={branding}
-          isWhitelabelAllowed={isWhitelabelAllowed}
-          isVerifyingDns={isVerifyingDns}
-          onVerifyDns={handleVerifyDns}
-          onCopy={handleCopy}
-        />
+        {(viewMode === "all" || viewMode === "domains") && (
+          <DnsConfigCard
+            formData={formData}
+            setFormData={setFormData}
+            branding={branding}
+            isWhitelabelAllowed={isWhitelabelAllowed}
+            isVerifyingDns={isVerifyingDns}
+            onVerifyDns={handleVerifyDns}
+            onResetDomain={handleResetDomain}
+            onCopy={handleCopy}
+          />
+        )}
 
-        <VisualIdentityCard
-          formData={formData}
-          setFormData={setFormData}
-          isWhitelabelAllowed={isWhitelabelAllowed}
-          onFileUpload={handleFileUpload}
-          isUploadingLogo={isUploadingLogo}
-          isUploadingFavicon={isUploadingFavicon}
-        />
+        {(viewMode === "all" || viewMode === "branding") && (
+          <>
+            <VisualIdentityCard
+              formData={formData}
+              setFormData={setFormData}
+              isWhitelabelAllowed={isWhitelabelAllowed}
+              onFileUpload={handleFileUpload}
+              isUploadingLogo={isUploadingLogo}
+              isUploadingFavicon={isUploadingFavicon}
+            />
 
-        <PortalInfoCard
-          formData={formData}
-          setFormData={setFormData}
-          isWhitelabelAllowed={isWhitelabelAllowed}
-        />
+            <PortalInfoCard
+              formData={formData}
+              setFormData={setFormData}
+              isWhitelabelAllowed={isWhitelabelAllowed}
+            />
+          </>
+        )}
 
         <div className="flex justify-end pt-2">
           <Button
