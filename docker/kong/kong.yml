@@ -185,8 +185,8 @@ services:
 
       - name: backend-org-signup-routes
         paths:
-          - "~/api/v1/organizations/check-slug(/|$)"
-          - "~/api/v1/organizations/register(/|$)"
+          - "~/api/v1/organizations/check-slug(/[^/]+)?$"
+          - "~/api/v1/organizations/register$"
         regex_priority: 110
         strip_path: false
         plugins:
