@@ -126,6 +126,9 @@ class OrganizationCharacterizationTest {
     @Mock
     private ProjectQuotaService projectQuotaService;
 
+    @Mock
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
+
     private com.company.ftthgis.service.organization.OrganizationDirectoryService directoryService;
     private com.company.ftthgis.service.organization.OrganizationProvisioningService provisioningService;
     private com.company.ftthgis.service.organization.OrganizationLifecycleService lifecycleService;
@@ -190,7 +193,7 @@ class OrganizationCharacterizationTest {
         provisioningService = new com.company.ftthgis.service.organization.OrganizationProvisioningService(
                 organizationRepository, subscriptionPlanRepository, organizationSlugAliasRepository,
                 randomSlugGenerator, organizationConfigRepository, encryptionUtils,
-                keycloakService, roleRepository, entityManager, fileStorageService, auditLoggingService,
+                keycloakService, roleRepository, entityManager, transactionManager, fileStorageService, auditLoggingService,
                 licenseManagementService, billingInvoiceRepository
         );
         lifecycleService = new com.company.ftthgis.service.organization.OrganizationLifecycleService(

@@ -32,6 +32,30 @@ public class User extends OrganizationAwareEntity {
 
     private String fullName;
 
+    @Column(name = "phone", length = 64)
+    private String phone;
+
+    @Column(name = "job_title", length = 100)
+    private String jobTitle;
+
+    @Column(name = "last_login_at")
+    private java.time.LocalDateTime lastLoginAt;
+
+    @Column(name = "last_login_ip", length = 45)
+    private String lastLoginIp;
+
+    @Builder.Default
+    @Column(name = "mfa_enabled", nullable = false)
+    private boolean mfaEnabled = false;
+
+    @Builder.Default
+    @Column(name = "timezone", length = 50)
+    private String timezone = "Asia/Jakarta";
+
+    @Builder.Default
+    @Column(name = "locale", length = 10)
+    private String locale = "id";
+
     @Column(length = 1000)
     private String avatarUrl;
 

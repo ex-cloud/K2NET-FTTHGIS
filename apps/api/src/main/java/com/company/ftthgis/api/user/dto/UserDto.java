@@ -18,6 +18,13 @@ public class UserDto {
     private String secondaryEmail;
     private String username;
     private String fullName;
+    private String phone;
+    private String jobTitle;
+    private LocalDateTime lastLoginAt;
+    private String lastLoginIp;
+    private boolean mfaEnabled;
+    private String timezone;
+    private String locale;
     private String avatarUrl;
     private String status;
     private String roleName;

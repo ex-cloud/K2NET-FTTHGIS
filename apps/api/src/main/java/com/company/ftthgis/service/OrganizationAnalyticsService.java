@@ -39,19 +39,19 @@ public class OrganizationAnalyticsService {
         
         // Count ODCs (Nodes with type ODC in projects belonging to this org)
         Integer odcCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(n.*) FROM network_nodes n " +
+                "SELECT COUNT(n.id) FROM network_nodes n " +
                 "JOIN projects p ON n.project_id = p.id " +
                 "WHERE p.organization_id = ? AND n.type = 'ODC'", Integer.class, orgId);
 
         // Count ODPs
         Integer odpCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(n.*) FROM network_nodes n " +
+                "SELECT COUNT(n.id) FROM network_nodes n " +
                 "JOIN projects p ON n.project_id = p.id " +
                 "WHERE p.organization_id = ? AND n.type = 'ODP'", Integer.class, orgId);
 
         // Count Customers
         Integer customerCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(n.*) FROM network_nodes n " +
+                "SELECT COUNT(n.id) FROM network_nodes n " +
                 "JOIN projects p ON n.project_id = p.id " +
                 "WHERE p.organization_id = ? AND n.type = 'CUSTOMER'", Integer.class, orgId);
 
@@ -102,19 +102,19 @@ public class OrganizationAnalyticsService {
                 Integer projectCount = jdbcTemplate.queryForObject(
                         "SELECT COUNT(*) FROM projects WHERE organization_id = ? AND deleted_at IS NULL", Integer.class, orgId);
                 Integer oltCount = jdbcTemplate.queryForObject(
-                        "SELECT COUNT(n.*) FROM network_nodes n " +
+                        "SELECT COUNT(n.id) FROM network_nodes n " +
                         "JOIN projects p ON n.project_id = p.id " +
                         "WHERE p.organization_id = ? AND (n.type = 'OLT' OR n.type = 'CENTRAL_OFFICE')", Integer.class, orgId);
                 Integer odcCount = jdbcTemplate.queryForObject(
-                        "SELECT COUNT(n.*) FROM network_nodes n " +
+                        "SELECT COUNT(n.id) FROM network_nodes n " +
                         "JOIN projects p ON n.project_id = p.id " +
                         "WHERE p.organization_id = ? AND n.type = 'ODC'", Integer.class, orgId);
                 Integer odpCount = jdbcTemplate.queryForObject(
-                        "SELECT COUNT(n.*) FROM network_nodes n " +
+                        "SELECT COUNT(n.id) FROM network_nodes n " +
                         "JOIN projects p ON n.project_id = p.id " +
                         "WHERE p.organization_id = ? AND n.type = 'ODP'", Integer.class, orgId);
                 Integer customerCount = jdbcTemplate.queryForObject(
-                        "SELECT COUNT(n.*) FROM network_nodes n " +
+                        "SELECT COUNT(n.id) FROM network_nodes n " +
                         "JOIN projects p ON n.project_id = p.id " +
                         "WHERE p.organization_id = ? AND n.type = 'CUSTOMER'", Integer.class, orgId);
 

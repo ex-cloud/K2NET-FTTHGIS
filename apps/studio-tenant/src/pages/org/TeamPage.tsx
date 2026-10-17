@@ -9,6 +9,7 @@ import {
   Loader2,
   Users,
   Activity,
+  Phone,
 } from "lucide-react";
 import {
   PageHero,
@@ -49,6 +50,8 @@ interface UserDto {
   email: string;
   username: string;
   fullName: string;
+  phone?: string;
+  jobTitle?: string;
   avatarUrl?: string;
   status: "ACTIVE" | "INVITED" | "SUSPENDED" | string;
   roleName?: string;
@@ -56,6 +59,7 @@ interface UserDto {
   organizationName?: string;
   organizationSlug?: string;
   createdAt?: string;
+  timezone?: string;
   projectRoles?: UserProjectRole[];
   permissions?: string[];
 }
@@ -220,14 +224,35 @@ export function TeamPage() {
                     {filteredMembers.map((member) => (
                       <TableRow key={member.id} className="text-xs">
                         <TableCell>
-                          <div className="space-y-0.5">
-                            <span className="font-bold text-foreground block">
-                              {member.fullName || member.username}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono">
-                              <Mail className="h-3 w-3" />
-                              {member.email}
-                            </span>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-foreground">
+                                {member.fullName || member.username}
+                              </span>
+                              {member.jobTitle && (
+                                <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-normal bg-muted/40 text-muted-foreground border-border/80">
+                                  {member.jobTitle}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground font-mono">
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {member.email}
+                              </span>
+                              {member.phone && member.phone !== "—" && (
+                                <a
+                                  href={`https://wa.me/${member.phone.replace(/[^0-9]/g, "")}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center gap-1 text-primary hover:underline transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Phone className="h-3 w-3" />
+                                  {member.phone}
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>

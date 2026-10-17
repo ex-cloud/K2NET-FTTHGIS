@@ -30,7 +30,7 @@ export function Step4Admin({
   slugError,
   onRegenerateRandomSlug,
 }: Step4AdminProps) {
-  if (isSubmitting) {
+  if (isSubmitting || !!streamError) {
     return (
       <Step4ProvisioningProgress
         provisioningStage={provisioningStage}

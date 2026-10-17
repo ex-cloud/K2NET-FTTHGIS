@@ -78,6 +78,8 @@ export interface WizardFormData {
 
   // Step 4: Admin PIC & Keycloak Setup
   picName: string;
+  picJobTitle: string;
+  adminPhone: string;
   adminEmail: string;
   adminUsername: string;
 }
@@ -99,6 +101,8 @@ export const INITIAL_FORM_DATA: WizardFormData = {
   ldapBindDn: "",
   ldapBindPassword: "",
   picName: "",
+  picJobTitle: "Direktur Operasional",
+  adminPhone: "",
   adminEmail: "",
   adminUsername: "",
 };

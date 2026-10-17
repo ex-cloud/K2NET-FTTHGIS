@@ -32,10 +32,15 @@ export function useOrgTeamState(org: EnrichedOrganization) {
             name: u.name || u.username || org.picName || "Tenant Admin",
             username: u.username || `admin_${org.slug}`,
             email: u.email || `${u.username || "admin"}@${org.slug}.kdua.net`,
+            phone: u.phone && u.phone !== "—" ? u.phone : (org.picPhone && org.picPhone !== "—" ? org.picPhone : undefined),
+            jobTitle: u.jobTitle || (idx === 0 ? "Technical PIC / Owner" : undefined),
             role: (u.role === "admin" || u.role === "TENANT_ADMIN" ? "TENANT_ADMIN" : u.role || "NOC_OPERATOR") as TenantUserRole,
-            mfaEnabled: true,
+            mfaEnabled: typeof u.mfaEnabled === "boolean" ? u.mfaEnabled : true,
             status: (u.status === "ACTIVE" ? "ACTIVE" : "PENDING") as TenantUser["status"],
-            lastLogin: u.lastLogin || "Active recently",
+            lastLogin: u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : (u.lastLogin || "Active recently"),
+            lastLoginAt: u.lastLoginAt,
+            lastLoginIp: u.lastLoginIp,
+            timezone: u.timezone || "Asia/Jakarta",
             source: u.source || "DATABASE",
           }));
         }

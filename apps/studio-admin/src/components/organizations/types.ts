@@ -215,10 +215,34 @@ function resolveCustomDomain(website?: string): { customDomain?: string; hasCust
   return { customDomain: cleanDomain, hasCustomDomain: true };
 }
 
-function resolvePicInfo(rawOrg: Organization | RawOrganizationInput): { picName: string; picEmail: string } {
-  const picName = rawOrg.adminUsername && rawOrg.adminUsername.trim() !== "" ? rawOrg.adminUsername : "—";
-  const picEmail = rawOrg.adminEmail && rawOrg.adminEmail.trim() !== "" ? rawOrg.adminEmail : `${rawOrg.slug || "tenant"}@kdua.net`;
-  return { picName, picEmail };
+function resolvePicInfo(rawOrg: Organization | RawOrganizationInput): { picName: string; picEmail: string; picPhone?: string } {
+  let picName = rawOrg.adminUsername && rawOrg.adminUsername.trim() !== "" ? rawOrg.adminUsername : "";
+  let picEmail = rawOrg.adminEmail && rawOrg.adminEmail.trim() !== "" ? rawOrg.adminEmail : "";
+  let picPhone = (rawOrg as { adminPhone?: string }).adminPhone || "";
+
+  const configs = (rawOrg as { configs?: Array<{ configKey: string; configValue?: string }> }).configs;
+  if (Array.isArray(configs)) {
+    if (!picName) {
+      const picCfg = configs.find((c) => c.configKey === "pic_name");
+      const userCfg = configs.find((c) => c.configKey === "admin_username");
+      if (picCfg?.configValue) picName = picCfg.configValue;
+      else if (userCfg?.configValue) picName = userCfg.configValue;
+    }
+    if (!picEmail) {
+      const emailCfg = configs.find((c) => c.configKey === "admin_email");
+      if (emailCfg?.configValue) picEmail = emailCfg.configValue;
+    }
+    if (!picPhone) {
+      const phoneCfg = configs.find((c) => c.configKey === "admin_phone" || c.configKey === "pic_phone");
+      if (phoneCfg?.configValue) picPhone = phoneCfg.configValue;
+    }
+  }
+
+  return {
+    picName: picName || "—",
+    picEmail: picEmail || (rawOrg.slug ? `${rawOrg.slug}@kdua.net` : "admin@kdua.net"),
+    picPhone: picPhone && picPhone.trim() !== "" ? picPhone.trim() : undefined,
+  };
 }
 
 function resolveUsedQuotas(stats: Partial<OrganizationStats> | OrganizationStatsInput) {
@@ -240,7 +264,7 @@ export function enrichOrganization(
   const featureFlags = resolveFeatureFlags(stats?.featureFlags as Partial<OrganizationFeatureFlags> | undefined, planTier);
   const quotas = resolveMaxQuotas(planTier, rawOrg.subscriptionPlan, rawOrg.slug);
   const { customDomain, hasCustomDomain } = resolveCustomDomain(rawOrg.website);
-  const { picName, picEmail } = resolvePicInfo(rawOrg);
+  const { picName, picEmail, picPhone } = resolvePicInfo(rawOrg);
   const used = resolveUsedQuotas(stats);
 
   return {
@@ -257,7 +281,7 @@ export function enrichOrganization(
 
     picName,
     picEmail,
-    picPhone: undefined,
+    picPhone,
     slaTier: resolveSlaTier(planTier),
 
     maxOlts: quotas.maxOlts,

@@ -48,6 +48,10 @@ function buildProvisioningPayload(formData: WizardFormData, targetSlug: string) 
     ldapBaseDn: formData.ldapBaseDn,
     ldapBindDn: formData.ldapBindDn,
     ldapBindPassword: formData.ldapBindPassword,
+    picName: formData.picName,
+    picJobTitle: formData.picJobTitle,
+    adminPhone: formData.adminPhone,
+    picPhone: formData.adminPhone,
     adminEmail: formData.adminEmail,
     adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
   };
@@ -208,7 +212,16 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
         onError: (err) => {
           isSubmittingRef.current = false;
           setIsSubmitting(false);
-          setSlugError(err.message);
+          const rawMsg = err.message || "";
+          if (
+            rawMsg.toLowerCase().includes("slug") ||
+            rawMsg.toLowerCase().includes("subdomain") ||
+            rawMsg.includes("already in use")
+          ) {
+            setSlugError(rawMsg);
+          } else {
+            setSlugError(null);
+          }
           toast.error("Deployment failed", { description: err.message });
         },
       });
@@ -221,7 +234,16 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
       const { message, freshSlug } = resolveSlugErrorMessage(rawMsg, targetSlug, formData.name, t);
       if (freshSlug) setFormData((prev) => ({ ...prev, slug: freshSlug }));
 
-      setSlugError(message);
+      if (
+        rawMsg.toLowerCase().includes("slug") ||
+        rawMsg.toLowerCase().includes("subdomain") ||
+        rawMsg.includes("already in use") ||
+        freshSlug
+      ) {
+        setSlugError(message);
+      } else {
+        setSlugError(null);
+      }
       toast.error("Deployment failed", { description: message });
     }
   };

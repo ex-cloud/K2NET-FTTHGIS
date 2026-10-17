@@ -25,6 +25,7 @@ import {
   Trash2,
   UserCheck,
   Loader2,
+  Phone,
 } from "lucide-react";
 import type { TenantUser, TenantUserRole } from "./types";
 import { useTranslation } from "@k2net/i18n";
@@ -125,8 +126,15 @@ export function TeamMembersTable({
                     <TableRow className="border-b border-border/50 text-xs hover:bg-muted/30 cursor-pointer">
                       <TableCell className="pl-6 py-3.5">
                         <div className="space-y-0.5">
-                          <span className="font-semibold text-foreground block">{u.name}</span>
-                          <span className="text-[10px] font-mono text-muted-foreground">@{u.username}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-foreground">{u.name}</span>
+                            {u.jobTitle && (
+                              <Badge variant="outline" className="text-[9px] py-0 px-1.5 border-primary/25 bg-primary/5 text-primary font-normal">
+                                {u.jobTitle}
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-mono text-muted-foreground block">@{u.username}</span>
                         </div>
                       </TableCell>
 
@@ -135,7 +143,21 @@ export function TeamMembersTable({
                       </TableCell>
 
                       <TableCell className="py-3.5 font-mono text-[11px] text-muted-foreground">
-                        {u.email}
+                        <span className="text-foreground/90 block">{u.email}</span>
+                        {u.phone && u.phone !== "—" && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                            <Phone className="size-2.5 text-primary shrink-0" />
+                            <a
+                              href={`https://wa.me/${u.phone.replace(/[^0-9]/g, "")}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="hover:text-primary hover:underline transition-colors font-mono"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {u.phone}
+                            </a>
+                          </div>
+                        )}
                       </TableCell>
 
                       <TableCell className="py-3.5">
@@ -163,7 +185,14 @@ export function TeamMembersTable({
                       </TableCell>
 
                       <TableCell className="py-3.5 pr-6 font-mono text-[11px] text-muted-foreground">
-                        {u.lastLogin}
+                        <div>
+                          <span>{u.lastLogin}</span>
+                          {u.lastLoginIp && (
+                            <span className="text-[9px] text-muted-foreground/70 block mt-0.5 font-mono">
+                              IP: {u.lastLoginIp}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   </ContextMenuTrigger>
@@ -219,6 +248,16 @@ export function TeamMembersTable({
                       <span>Copy Email ({u.email})</span>
                       <ContextMenuShortcut>C</ContextMenuShortcut>
                     </ContextMenuItem>
+
+                    {u.phone && u.phone !== "—" && (
+                      <ContextMenuItem
+                        onClick={() => onCopy(u.phone!, "Phone / WhatsApp number")}
+                        className="cursor-pointer gap-2 focus:bg-muted"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-primary" />
+                        <span>Copy Phone ({u.phone})</span>
+                      </ContextMenuItem>
+                    )}
 
                     <ContextMenuItem
                       onClick={() => onRemoveUser(u.id, u.name)}

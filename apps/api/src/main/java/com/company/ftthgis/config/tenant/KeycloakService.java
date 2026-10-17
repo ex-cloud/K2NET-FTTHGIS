@@ -540,6 +540,10 @@ public class KeycloakService {
      * Returns the Keycloak User ID.
      */
     public String createOwnerUser(String realmName, String username, String email, String password, String roleName) {
+        return createOwnerUser(realmName, username, email, password, roleName, null, null);
+    }
+
+    public String createOwnerUser(String realmName, String username, String email, String password, String roleName, String fullName, String phone) {
         try {
             ensureRealmExists(realmName);
             var realmResource = keycloak.realm(realmName);
@@ -555,10 +559,20 @@ public class KeycloakService {
             org.keycloak.representations.idm.UserRepresentation user = new org.keycloak.representations.idm.UserRepresentation();
             user.setUsername(username);
             user.setEmail(email);
-            user.setFirstName("Organization");
-            user.setLastName("Owner");
+            if (fullName != null && !fullName.isBlank()) {
+                String[] parts = fullName.trim().split("\\s+", 2);
+                user.setFirstName(parts[0]);
+                user.setLastName(parts.length > 1 ? parts[1] : "");
+            } else {
+                user.setFirstName("Organization");
+                user.setLastName("Owner");
+            }
             user.setEnabled(true);
             user.setEmailVerified(true);
+            if (phone != null && !phone.isBlank()) {
+                user.singleAttribute("phoneNumber", phone.trim());
+                user.singleAttribute("phone", phone.trim());
+            }
 
             log.info("👤 Step 2.2: Attempting to create user '{}'", username);
             Response response = realmResource.users().create(user);

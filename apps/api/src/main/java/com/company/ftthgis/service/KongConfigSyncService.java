@@ -147,11 +147,14 @@ public class KongConfigSyncService {
                 updatedContent = currentContent + "\n" + newConsumerYaml.toString();
             }
 
-            // 5. Write updated YAML to disk atomically
-            Path tempPath = Files.createTempFile("kong_yml_", ".tmp");
-            Files.writeString(tempPath, updatedContent, StandardCharsets.UTF_8);
-            Files.move(tempPath, configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            log.info("✅ SUCCESS: kong.yml updated on disk with consumer for realm '{}'", realmName);
+            // 5. Write updated YAML to disk if writable
+            try {
+                Files.writeString(configFile.toPath(), updatedContent, StandardCharsets.UTF_8);
+                log.info("✅ SUCCESS: kong.yml updated on disk with consumer for realm '{}'", realmName);
+            } catch (Exception fileEx) {
+                log.warn("⚠️ Could not write updated kong.yml to disk ({}: {}). Proceeding with in-memory Kong reload via Admin API.",
+                        fileEx.getClass().getSimpleName(), fileEx.getMessage());
+            }
 
             // 6. Push to Kong Admin API POST /config
             return reloadKongConfig(updatedContent);

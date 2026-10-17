@@ -48,6 +48,7 @@ public class OrganizationProvisioningService {
     private final KeycloakService keycloakService;
     private final RoleRepository roleRepository;
     private final EntityManager entityManager;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
     private final FileStorageService fileStorageService;
     private final AuditLoggingService auditLoggingService;
     private final LicenseManagementService licenseManagementService;
@@ -149,6 +150,26 @@ public class OrganizationProvisioningService {
         Organization org = orgBuilder.build();
         Organization saved = organizationRepository.saveAndFlush(org);
 
+        // Save Admin & PIC Configurations
+        if (request.getAdminEmail() != null && !request.getAdminEmail().isBlank()) {
+            saveConfig(saved, "admin_email", request.getAdminEmail().trim());
+        }
+        if (request.getAdminUsername() != null && !request.getAdminUsername().isBlank()) {
+            saveConfig(saved, "admin_username", request.getAdminUsername().trim());
+        }
+        if (request.getPicName() != null && !request.getPicName().isBlank()) {
+            saveConfig(saved, "pic_name", request.getPicName().trim());
+        }
+        String effectivePhone = request.getEffectivePhone();
+        if (effectivePhone != null && !effectivePhone.isBlank()) {
+            saveConfig(saved, "admin_phone", effectivePhone);
+            saveConfig(saved, "pic_phone", effectivePhone);
+        }
+        String effectiveJobTitle = request.getEffectiveJobTitle();
+        if (effectiveJobTitle != null && !effectiveJobTitle.isBlank()) {
+            saveConfig(saved, "pic_job_title", effectiveJobTitle);
+        }
+
         // Save LDAP Configurations if enabled
         if (request.isLdapEnabled()) {
             saveLdapConfig(saved, request);
@@ -204,9 +225,18 @@ public class OrganizationProvisioningService {
                 listener.onStageStarted(4, "Register Technical PIC Admin", "Registering technical administrator and binding master access...");
             }
 
-            log.info("👤 Creating Owner User: {} (Email: {})", adminUsername, request.getAdminEmail());
+            log.info("👤 Creating Owner User: {} (Email: {}, Phone: {})", adminUsername, request.getAdminEmail(), effectivePhone);
             String ownerRoleName = "admin";
-            String keycloakId = keycloakService.createOwnerUser(effectiveRealmKey, adminUsername, request.getAdminEmail(), tempPassword, ownerRoleName);
+            String picName = request.getPicName() != null && !request.getPicName().isBlank() ? request.getPicName().trim() : null;
+            String keycloakId;
+            if (picName != null || effectivePhone != null) {
+                keycloakId = keycloakService.createOwnerUser(
+                        effectiveRealmKey, adminUsername, request.getAdminEmail(), tempPassword, ownerRoleName,
+                        picName, effectivePhone);
+            } else {
+                keycloakId = keycloakService.createOwnerUser(
+                        effectiveRealmKey, adminUsername, request.getAdminEmail(), tempPassword, ownerRoleName);
+            }
 
             // Create Local User Record for Internal Mapping
             log.info("💾 Saving local user mapping for Keycloak ID: {}", keycloakId);
@@ -214,6 +244,16 @@ public class OrganizationProvisioningService {
             localUser.setId(UUID.fromString(keycloakId)); // Sync ID with Keycloak
             localUser.setUsername(adminUsername);
             localUser.setEmail(request.getAdminEmail());
+            localUser.setFullName(request.getPicName() != null && !request.getPicName().isBlank()
+                    ? request.getPicName().trim() : adminUsername);
+            localUser.setPhone(effectivePhone);
+            String picJobTitle = request.getEffectiveJobTitle();
+            localUser.setJobTitle(picJobTitle != null && !picJobTitle.isBlank() ? picJobTitle : "Organization Administrator");
+            String timezone = request.getTimezone() != null && !request.getTimezone().isBlank()
+                    ? request.getTimezone() : "Asia/Jakarta";
+            localUser.setTimezone(timezone);
+            localUser.setLocale("id");
+            localUser.setMfaEnabled(false);
             localUser.setOrganization(saved);
             localUser.setStatus("ACTIVE");
 
@@ -227,6 +267,7 @@ public class OrganizationProvisioningService {
 
             // CRITICAL: Use persist() instead of save() because User has a manually-assigned UUID (from Keycloak).
             entityManager.persist(localUser);
+            entityManager.flush();
 
             // Configure LDAP if requested
             if (request.isLdapEnabled()) {
@@ -338,20 +379,31 @@ public class OrganizationProvisioningService {
             return result;
 
         } catch (Exception e) {
-            log.error("❌ CRITICAL: Keycloak provisioning failed for {}. ROLLING BACK database changes.",
-                    saved.getSlug());
+            log.error("❌ CRITICAL: Provisioning failed for {}. ROLLING BACK changes.",
+                    saved != null ? saved.getSlug() : request.getSlug());
             log.error("Error Detail: {}", e.getMessage());
 
             if (listener != null) {
                 listener.onProvisioningFailed(activeStage, e.getMessage());
             }
 
-            try {
-                String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
-                keycloakService.deleteRealm(effectiveRealmKey);
-                log.info("🧹 Cleaned up orphan Keycloak realm '{}' after provisioning failure.", effectiveRealmKey);
-            } catch (Exception cleanupEx) {
-                log.warn("Failed to delete orphan realm '{}' during rollback: {}", saved.getSlug(), cleanupEx.getMessage());
+            if (saved != null) {
+                try {
+                    String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
+                    keycloakService.deleteRealm(effectiveRealmKey);
+                    log.info("🧹 Cleaned up orphan Keycloak realm '{}' after provisioning failure.", effectiveRealmKey);
+                } catch (Exception cleanupEx) {
+                    log.warn("Failed to delete orphan realm during rollback: {}", cleanupEx.getMessage());
+                }
+
+                try {
+                    if (saved.getId() != null && organizationRepository.existsById(saved.getId())) {
+                        organizationRepository.deleteById(saved.getId());
+                        log.info("🧹 Cleaned up orphan organization record from database: {}", saved.getSlug());
+                    }
+                } catch (Exception dbCleanupEx) {
+                    log.warn("Failed to delete orphan organization from database during rollback: {}", dbCleanupEx.getMessage());
+                }
             }
             throw new RuntimeException(
                     "Organization creation failed due to security provisioning error: " + e.getMessage(), e);
@@ -360,6 +412,7 @@ public class OrganizationProvisioningService {
 
     /**
      * Executes the organization provisioning workflow asynchronously on a background worker thread.
+     * Uses TransactionTemplate to ensure the entire execution has an active EntityManager transaction.
      */
     @org.springframework.scheduling.annotation.Async
     public java.util.concurrent.CompletableFuture<Map<String, Object>> executeProvisioningAsync(
@@ -367,7 +420,9 @@ public class OrganizationProvisioningService {
             OrganizationCreateRequest request,
             ProvisioningProgressListener listener) {
         try {
-            Map<String, Object> result = createOrganization(request, listener);
+            org.springframework.transaction.support.TransactionTemplate txTemplate =
+                    new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+            Map<String, Object> result = txTemplate.execute(status -> createOrganization(request, listener));
             return java.util.concurrent.CompletableFuture.completedFuture(result);
         } catch (Exception e) {
             log.error("❌ Asynchronous provisioning failed for job {}: {}", jobId, e.getMessage(), e);
@@ -458,6 +513,18 @@ public class OrganizationProvisioningService {
         // Save temporary admin details in config
         saveConfig(saved, "pending_admin_email", request.getAdminEmail());
         saveConfig(saved, "pending_admin_username", request.getAdminUsername() != null ? request.getAdminUsername() : request.getAdminEmail());
+        if (request.getPicName() != null && !request.getPicName().isBlank()) {
+            saveConfig(saved, "pending_pic_name", request.getPicName().trim());
+        }
+        if (request.getEffectivePhone() != null && !request.getEffectivePhone().isBlank()) {
+            saveConfig(saved, "pending_admin_phone", request.getEffectivePhone());
+        }
+        if (request.getEffectiveJobTitle() != null && !request.getEffectiveJobTitle().isBlank()) {
+            saveConfig(saved, "pending_pic_job_title", request.getEffectiveJobTitle());
+        }
+        if (request.getTimezone() != null && !request.getTimezone().isBlank()) {
+            saveConfig(saved, "timezone", request.getTimezone());
+        }
         if (request.isLdapEnabled()) {
             saveConfig(saved, "ldap_enabled", "true");
             saveConfig(saved, "ldap_url", request.getLdapUrl());
@@ -530,14 +597,45 @@ public class OrganizationProvisioningService {
 
             keycloakService.ensureRealmExists(effectiveRealmKey, hasSso, saved.getName(), planCode, planDisplayName, saved.getLogoUrl());
 
+            String adminPhone = org.getConfigs().stream()
+                    .filter(c -> "pending_admin_phone".equals(c.getConfigKey()) || "admin_phone".equals(c.getConfigKey()))
+                    .map(OrganizationConfig::getConfigValue)
+                    .findFirst().orElse(null);
+            String picName = org.getConfigs().stream()
+                    .filter(c -> "pending_pic_name".equals(c.getConfigKey()) || "pic_name".equals(c.getConfigKey()))
+                    .map(OrganizationConfig::getConfigValue)
+                    .findFirst().orElse(null);
+
             String ownerRoleName = "admin";
-            String keycloakId = keycloakService.createOwnerUser(effectiveRealmKey, adminUsername, adminEmail, tempPassword, ownerRoleName);
+            String keycloakId;
+            if (picName != null || adminPhone != null) {
+                keycloakId = keycloakService.createOwnerUser(
+                        effectiveRealmKey, adminUsername, adminEmail, tempPassword, ownerRoleName, picName, adminPhone);
+            } else {
+                keycloakId = keycloakService.createOwnerUser(
+                        effectiveRealmKey, adminUsername, adminEmail, tempPassword, ownerRoleName);
+            }
+
+            String picJobTitle = org.getConfigs().stream()
+                    .filter(c -> "pending_pic_job_title".equals(c.getConfigKey()) || "pic_job_title".equals(c.getConfigKey()))
+                    .map(OrganizationConfig::getConfigValue)
+                    .findFirst().orElse("Organization Administrator");
+            String timezone = org.getConfigs().stream()
+                    .filter(c -> "timezone".equals(c.getConfigKey()))
+                    .map(OrganizationConfig::getConfigValue)
+                    .findFirst().orElse("Asia/Jakarta");
 
             log.info("💾 Saving local user mapping for approved tenant owner: {}", keycloakId);
             User localUser = new User();
             localUser.setId(UUID.fromString(keycloakId));
             localUser.setUsername(adminUsername);
             localUser.setEmail(adminEmail);
+            localUser.setFullName(picName != null ? picName : adminUsername);
+            localUser.setPhone(adminPhone);
+            localUser.setJobTitle(picJobTitle);
+            localUser.setTimezone(timezone);
+            localUser.setLocale("id");
+            localUser.setMfaEnabled(false);
             localUser.setOrganization(saved);
             localUser.setStatus("ACTIVE");
 

@@ -320,7 +320,9 @@ public class OrganizationDirectoryService {
         List<Map<String, Object>> userList = new ArrayList<>();
 
         // 1. Fetch from local database
-        String sql = "SELECT u.id, u.name, u.username, u.email, u.phone, r.name as role_name, u.status, u.created_at, u.last_login_at " +
+        String sql = "SELECT u.id, u.full_name as name, u.username, u.email, u.phone, u.job_title, " +
+                     "u.last_login_at, u.last_login_ip, u.mfa_enabled, u.timezone, u.locale, " +
+                     "r.name as role_name, u.status, u.created_at " +
                      "FROM users u " +
                      "LEFT JOIN roles r ON u.role_id = r.id " +
                      "WHERE u.organization_id = ? " +
@@ -333,11 +335,18 @@ public class OrganizationDirectoryService {
                 map.put("name", rs.getString("name") != null ? rs.getString("name") : rs.getString("username"));
                 map.put("username", rs.getString("username"));
                 map.put("email", rs.getString("email"));
-                map.put("phone", rs.getString("phone"));
+                map.put("phone", rs.getString("phone") != null && !rs.getString("phone").isBlank() ? rs.getString("phone") : "—");
+                map.put("jobTitle", rs.getString("job_title") != null ? rs.getString("job_title") : "");
                 map.put("role", rs.getString("role_name") != null ? rs.getString("role_name") : "TENANT_ADMIN");
                 map.put("status", rs.getString("status") != null ? rs.getString("status") : "ACTIVE");
                 map.put("createdAt", rs.getString("created_at"));
-                map.put("lastLogin", rs.getString("last_login_at") != null ? rs.getString("last_login_at") : "Active recently");
+                java.sql.Timestamp lastLoginTs = rs.getTimestamp("last_login_at");
+                map.put("lastLoginAt", lastLoginTs != null ? lastLoginTs.toInstant().toString() : null);
+                map.put("lastLoginIp", rs.getString("last_login_ip"));
+                map.put("mfaEnabled", rs.getBoolean("mfa_enabled"));
+                map.put("timezone", rs.getString("timezone"));
+                map.put("locale", rs.getString("locale"));
+                map.put("lastLogin", lastLoginTs != null ? lastLoginTs.toInstant().toString() : "Active recently");
                 map.put("source", "DATABASE");
                 return map;
             }, orgId);
@@ -359,16 +368,35 @@ public class OrganizationDirectoryService {
                         map.put("name", displayName.trim());
                         map.put("username", kc.getUsername());
                         map.put("email", kc.getEmail() != null ? kc.getEmail() : kc.getUsername() + "@" + org.getSlug() + ".kdua.net");
+                        String kcPhone = null;
+                        String kcJobTitle = null;
+                        if (kc.getAttributes() != null) {
+                            if (kc.getAttributes().containsKey("phoneNumber") && !kc.getAttributes().get("phoneNumber").isEmpty()) {
+                                kcPhone = kc.getAttributes().get("phoneNumber").get(0);
+                            } else if (kc.getAttributes().containsKey("phone") && !kc.getAttributes().get("phone").isEmpty()) {
+                                kcPhone = kc.getAttributes().get("phone").get(0);
+                            }
+                            if (kc.getAttributes().containsKey("jobTitle") && !kc.getAttributes().get("jobTitle").isEmpty()) {
+                                kcJobTitle = kc.getAttributes().get("jobTitle").get(0);
+                            }
+                        }
+                        map.put("phone", kcPhone != null ? kcPhone : "—");
+                        map.put("jobTitle", kcJobTitle != null ? kcJobTitle : "");
                         map.put("role", "TENANT_ADMIN");
                         map.put("status", kc.isEnabled() != null && kc.isEnabled() ? "ACTIVE" : "PENDING");
                         map.put("createdAt", "2026-08-20");
+                        map.put("lastLoginAt", null);
+                        map.put("lastLoginIp", null);
+                        map.put("mfaEnabled", false);
+                        map.put("timezone", "Asia/Jakarta");
+                        map.put("locale", "id");
                         map.put("lastLogin", "Active recently");
                         map.put("source", "KEYCLOAK");
                         userList.add(map);
                     }
                 }
             } catch (Exception e) {
-                log.warn("Could not query Keycloak users for realm {}: {}", org.getRealmKey(), e.getMessage());
+                log.warn("Could not fetch Keycloak users for realm {}: {}", org.getRealmKey(), e.getMessage());
             }
         }
 

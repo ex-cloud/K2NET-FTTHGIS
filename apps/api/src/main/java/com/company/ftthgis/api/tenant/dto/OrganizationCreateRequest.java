@@ -28,4 +28,26 @@ public class OrganizationCreateRequest {
     // Admin Account Provisioning
     private String adminEmail;
     private String adminUsername;
+    private String picName;
+    private String picJobTitle;
+    private String adminPhone;
+    private String picPhone;
+    private String timezone;
+
+    public String getEffectivePhone() {
+        if (adminPhone != null && !adminPhone.isBlank()) {
+            return adminPhone.trim();
+        }
+        if (picPhone != null && !picPhone.isBlank()) {
+            return picPhone.trim();
+        }
+        return null;
+    }
+
+    public String getEffectiveJobTitle() {
+        if (picJobTitle != null && !picJobTitle.isBlank()) {
+            return picJobTitle.trim();
+        }
+        return "NOC Lead / Technical Manager";
+    }
 }

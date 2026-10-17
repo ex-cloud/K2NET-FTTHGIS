@@ -6,10 +6,15 @@ export interface TenantUser {
   name: string;
   username: string;
   email: string;
+  phone?: string;
+  jobTitle?: string;
   role: TenantUserRole;
   mfaEnabled: boolean;
   status: TenantUserStatus;
   lastLogin: string;
+  lastLoginAt?: string | null;
+  lastLoginIp?: string | null;
+  timezone?: string;
   source?: string;
 }
 
@@ -18,8 +23,14 @@ export interface RawServerTenantUser {
   name?: string;
   username?: string;
   email?: string;
+  phone?: string;
+  jobTitle?: string;
   role?: string;
   status?: string;
   lastLogin?: string;
+  lastLoginAt?: string | null;
+  lastLoginIp?: string | null;
+  mfaEnabled?: boolean;
+  timezone?: string;
   source?: string;
 }

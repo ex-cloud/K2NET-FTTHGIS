@@ -1,5 +1,5 @@
 import { Badge, Card } from "@k2net/ui";
-import { Zap, AlertTriangle, ExternalLink } from "lucide-react";
+import { Zap, AlertTriangle, ExternalLink, Phone } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
 import { getTenantUrl } from "@/lib/domain";
 import type { EnrichedOrganization } from "../../types";
@@ -102,6 +102,18 @@ export function OverviewIdentityCard({
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.lead_pic")}</span>
             <span className="font-semibold text-foreground truncate block">{org.picName}</span>
+            {org.picPhone && org.picPhone !== "—" && (
+              <a
+                href={`https://wa.me/${org.picPhone.replace(/[^0-9]/g, "")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] font-mono text-primary hover:underline flex items-center gap-1"
+                title={`Chat WhatsApp (${org.picPhone})`}
+              >
+                <Phone className="size-2.5 shrink-0" />
+                <span>{org.picPhone}</span>
+              </a>
+            )}
           </div>
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">{t("organizations.sla_support")}</span>
