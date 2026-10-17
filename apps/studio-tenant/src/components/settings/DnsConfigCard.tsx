@@ -130,7 +130,7 @@ export function DnsConfigCard({
           </div>
         </div>
 
-        {Boolean(formData.customDomain || branding?.customDomain) ? (
+        {formData.customDomain || branding?.customDomain ? (
           <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-3">
             <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
               <ShieldCheck className="size-4 text-primary" />

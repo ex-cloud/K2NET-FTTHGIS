@@ -9,6 +9,10 @@ interface Step4AdminProps {
   isSubmitting?: boolean;
   provisioningStage?: number;
   provisioningStages?: ProvisioningStageInfo[];
+  stageDurations?: Record<number, number>;
+  stageDetails?: Record<number, string>;
+  streamError?: string | null;
+  onRetry?: () => void;
   slugError?: string | null;
   onRegenerateRandomSlug?: () => void;
 }
@@ -19,6 +23,10 @@ export function Step4Admin({
   isSubmitting = false,
   provisioningStage = 1,
   provisioningStages = PROVISIONING_STAGES,
+  stageDurations = {},
+  stageDetails = {},
+  streamError,
+  onRetry,
   slugError,
   onRegenerateRandomSlug,
 }: Step4AdminProps) {
@@ -27,6 +35,10 @@ export function Step4Admin({
       <Step4ProvisioningProgress
         provisioningStage={provisioningStage}
         provisioningStages={provisioningStages}
+        stageDurations={stageDurations}
+        stageDetails={stageDetails}
+        streamError={streamError}
+        onRetry={onRetry}
       />
     );
   }

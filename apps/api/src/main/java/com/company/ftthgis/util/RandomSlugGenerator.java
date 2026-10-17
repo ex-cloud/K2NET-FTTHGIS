@@ -12,8 +12,7 @@ import java.util.Set;
 @Slf4j
 public class RandomSlugGenerator {
 
-    private static final String LOWERCASE_ALPHA = "abcdefghijklmnopqrstuvwxyz";
-    private static final int DEFAULT_SLUG_LENGTH = 20;
+    private static final String ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyz0123456789";
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public static final Set<String> RESERVED_SLUGS = Set.of(
@@ -27,47 +26,82 @@ public class RandomSlugGenerator {
     );
 
     /**
-     * Generates a 20-character cryptographically secure lowercase alphabetical random slug.
+     * Sanitizes an organization name into a DNS-safe base slug.
+     * e.g. "PT Nusantara Fiber Optik" -> "pt-nusantara-fiber"
      */
-    public String generateRawSlug() {
-        return generateRawSlug(DEFAULT_SLUG_LENGTH);
+    public String sanitizeBaseSlug(String name) {
+        if (name == null || name.isBlank()) {
+            return "tenant";
+        }
+        String sanitized = name.toLowerCase().trim()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
+        if (sanitized.isBlank()) {
+            return "tenant";
+        }
+        if (sanitized.length() > 24) {
+            sanitized = sanitized.substring(0, 24).replaceAll("-+$", "");
+        }
+        return sanitized;
     }
 
     /**
-     * Generates an N-character cryptographically secure lowercase alphabetical random slug.
+     * Generates an alphanumeric suffix of specified length.
      */
-    public String generateRawSlug(int length) {
+    public String generateSuffix(int length) {
         StringBuilder sb = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
-            int index = RANDOM.nextInt(LOWERCASE_ALPHA.length());
-            sb.append(LOWERCASE_ALPHA.charAt(index));
+            int index = RANDOM.nextInt(ALPHANUMERIC.length());
+            sb.append(ALPHANUMERIC.charAt(index));
         }
         return sb.toString();
     }
 
     /**
-     * Generates a unique 20-character slug guaranteed not to collide with existing organizations,
-     * historical aliases, or reserved keywords.
+     * Generates a human-readable smart slug based on organization name + unique 4-character suffix.
+     * e.g. "PT Nusantara Fiber" -> "pt-nusantara-fiber-8k2p"
+     * If 4-char suffix encounters heavy collision, cleanly falls back to 6-char suffix.
      */
-    public String generateUniqueSlug(OrganizationRepository organizationRepository,
-                                     OrganizationSlugAliasRepository aliasRepository) {
+    public String generateSmartSlug(String orgName,
+                                    OrganizationRepository organizationRepository,
+                                    OrganizationSlugAliasRepository aliasRepository) {
+        String base = sanitizeBaseSlug(orgName);
         int maxAttempts = 100;
+        // Attempt 1: 4-character alphanumeric suffix
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            String candidate = generateRawSlug(DEFAULT_SLUG_LENGTH);
+            String suffix = generateSuffix(4);
+            String candidate = base + "-" + suffix;
 
             if (isReserved(candidate)) {
                 continue;
             }
 
-            boolean existsInOrgs = organizationRepository.existsBySlug(candidate);
+            boolean existsInOrgs = organizationRepository != null && organizationRepository.existsBySlug(candidate);
             boolean existsInAliases = aliasRepository != null && aliasRepository.existsByOldSlug(candidate);
 
             if (!existsInOrgs && !existsInAliases) {
-                log.info("🎲 Generated unique 20-char random slug: {} (attempt #{})", candidate, attempt);
+                log.info("🎯 Generated smart slug: {} for org '{}' (attempt #{})", candidate, orgName, attempt);
                 return candidate;
             }
         }
-        throw new IllegalStateException("Failed to generate a unique random slug after " + maxAttempts + " attempts");
+        // Fallback: 6-character alphanumeric suffix
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            String suffix = generateSuffix(6);
+            String candidate = base + "-" + suffix;
+
+            if (isReserved(candidate)) {
+                continue;
+            }
+
+            boolean existsInOrgs = organizationRepository != null && organizationRepository.existsBySlug(candidate);
+            boolean existsInAliases = aliasRepository != null && aliasRepository.existsByOldSlug(candidate);
+
+            if (!existsInOrgs && !existsInAliases) {
+                log.warn("🎯 Generated fallback 6-char smart slug: {} for org '{}' (attempt #{})", candidate, orgName, attempt);
+                return candidate;
+            }
+        }
+        return base + "-" + generateSuffix(8);
     }
 
     /**

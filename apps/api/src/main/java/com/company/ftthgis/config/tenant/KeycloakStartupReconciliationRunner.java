@@ -56,10 +56,7 @@ public class KeycloakStartupReconciliationRunner implements ApplicationRunner {
                 try {
                     keycloakService.ensureRealmExists(realmName, hasSso, org.getName(), planCode, planDisplayName, org.getLogoUrl());
                     kongConfigSyncService.syncRealmToKong(realmName);
-                    String readableFolder = org.getName() != null && !org.getName().isBlank()
-                        ? org.getName().toLowerCase().trim().replaceAll("[^a-z0-9_.-]+", "-").replaceAll("^-+|-+$", "")
-                        : org.getSlug();
-                    fileStorageService.initTenantVault(readableFolder);
+                    fileStorageService.initTenantVault(org.getSlug());
                 } catch (Exception ex) {
                     log.warn("⚠️ Failed to reconcile realm/vault '{}' during startup: {}", realmName, ex.getMessage());
                 }

@@ -3,12 +3,15 @@ import type { EnrichedOrganization } from "../../types";
 import type { TenantDocument } from "./types";
 
 export function getTenantStorageFolder(org: { name: string; slug?: string }): string {
+  if (org.slug && org.slug.trim()) {
+    return org.slug.trim().toLowerCase();
+  }
   const cleanName = (org.name || "")
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return cleanName || org.slug || "tenant";
+  return cleanName || "default";
 }
 
 function getInitialDocuments(storageFolder: string, org: EnrichedOrganization): TenantDocument[] {

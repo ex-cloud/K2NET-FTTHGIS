@@ -25,7 +25,6 @@ import java.util.UUID;
  * while delegating domain logic to specialized services.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class OrganizationService {
 
@@ -34,6 +33,32 @@ public class OrganizationService {
     private final OrganizationLifecycleService lifecycleService;
     private final OrganizationDataExportService dataExportService;
     private final OrganizationQuotaService quotaService;
+    private final com.company.ftthgis.service.organization.ProvisioningJobManager provisioningJobManager;
+
+    public OrganizationService(
+            OrganizationDirectoryService directoryService,
+            OrganizationProvisioningService provisioningService,
+            OrganizationLifecycleService lifecycleService,
+            OrganizationDataExportService dataExportService,
+            OrganizationQuotaService quotaService) {
+        this(directoryService, provisioningService, lifecycleService, dataExportService, quotaService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public OrganizationService(
+            OrganizationDirectoryService directoryService,
+            OrganizationProvisioningService provisioningService,
+            OrganizationLifecycleService lifecycleService,
+            OrganizationDataExportService dataExportService,
+            OrganizationQuotaService quotaService,
+            com.company.ftthgis.service.organization.ProvisioningJobManager provisioningJobManager) {
+        this.directoryService = directoryService;
+        this.provisioningService = provisioningService;
+        this.lifecycleService = lifecycleService;
+        this.dataExportService = dataExportService;
+        this.quotaService = quotaService;
+        this.provisioningJobManager = provisioningJobManager;
+    }
 
     // --- Directory & Access ---
 
@@ -66,6 +91,22 @@ public class OrganizationService {
     @Transactional
     public Map<String, Object> createOrganization(OrganizationCreateRequest request) {
         return provisioningService.createOrganization(request);
+    }
+
+    public UUID startProvisioningAsync(OrganizationCreateRequest request) {
+        UUID jobId = provisioningJobManager.registerJob(request);
+        com.company.ftthgis.service.organization.ProvisioningProgressListener listener =
+                provisioningJobManager.createListener(jobId);
+        provisioningService.executeProvisioningAsync(jobId, request, listener);
+        return jobId;
+    }
+
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter subscribeProvisioningStream(UUID jobId) {
+        return provisioningJobManager.subscribe(jobId);
+    }
+
+    public com.company.ftthgis.service.organization.ProvisioningJobManager.ProvisioningJob getProvisioningJobStatus(UUID jobId) {
+        return provisioningJobManager.getJob(jobId);
     }
 
     @Transactional

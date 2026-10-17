@@ -62,6 +62,39 @@ public class OrganizationController {
         }
     }
 
+    @PostMapping("/async")
+    @PreAuthorize("hasAuthority('system.organizations.create') or hasAuthority('system.organizations.manage') or hasAuthority('system.tenants.create')")
+    public ResponseEntity<?> createAsync(@RequestBody OrganizationCreateRequest request) {
+        try {
+            java.util.UUID jobId = organizationService.startProvisioningAsync(request);
+            return ResponseEntity.status(org.springframework.http.HttpStatus.ACCEPTED).body(java.util.Map.of(
+                "jobId", jobId.toString(),
+                "status", "PENDING"
+            ));
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            String slugMsg = request.getSlug() != null ? "'" + request.getSlug() + "'" : "yang dimasukkan";
+            return ResponseEntity.badRequest().body("Subdomain slug " + slugMsg + " sudah terdaftar atau terjadi konflik data.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/provisioning/stream/{jobId}", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize("hasAuthority('system.organizations.create') or hasAuthority('system.organizations.manage') or hasAuthority('system.tenants.create')")
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamProvisioning(@PathVariable java.util.UUID jobId) {
+        return organizationService.subscribeProvisioningStream(jobId);
+    }
+
+    @GetMapping("/provisioning/status/{jobId}")
+    @PreAuthorize("hasAuthority('system.organizations.create') or hasAuthority('system.organizations.manage') or hasAuthority('system.tenants.create')")
+    public ResponseEntity<?> getProvisioningStatus(@PathVariable java.util.UUID jobId) {
+        try {
+            return ResponseEntity.ok(organizationService.getProvisioningJobStatus(jobId));
+        } catch (java.util.NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> registerSelfService(@RequestBody OrganizationCreateRequest request) {
         try {

@@ -55,7 +55,7 @@ public class FileController {
         if (key == null || key.isBlank() || key.contains("..")) {
             return ResponseEntity.badRequest().build();
         }
-        if (!"public-contents".equals(bucket) && !"tenant-assets".equals(bucket)) {
+        if (!"public-contents".equals(bucket)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         try {

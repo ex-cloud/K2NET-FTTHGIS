@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   History,
   Building,
-  PenTool,
   Shield,
   Key,
   Receipt,
@@ -242,8 +241,8 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
         items: [
           {
             id: "general",
-            title: "Organization & Branding",
-            translationKey: "nav.org_profile",
+            title: "General",
+            translationKey: "nav.settings_general",
             href: "/settings/general",
             icon: Building,
             description: "Identity, whitelabel branding & custom domains",

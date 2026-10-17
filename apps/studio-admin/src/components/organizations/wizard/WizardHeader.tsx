@@ -5,10 +5,20 @@ import { useTranslation } from "@k2net/i18n";
 
 interface WizardHeaderProps {
   step: number;
+  plan?: string;
 }
 
-export function WizardHeader({ step }: WizardHeaderProps) {
+const PLAN_BADGES: Record<string, { label: string; className: string }> = {
+  FREE: { label: "Free Trial (14 Days)", className: "border-amber-500/30 text-amber-500 bg-amber-500/10" },
+  STARTER: { label: "Starter ISP", className: "border-blue-500/30 text-blue-500 bg-blue-500/10" },
+  PRO: { label: "Professional", className: "border-primary/30 text-primary bg-primary/10" },
+  ENTERPRISE: { label: "Enterprise SaaS", className: "border-purple-500/30 text-purple-400 bg-purple-500/10" },
+};
+
+export function WizardHeader({ step, plan }: WizardHeaderProps) {
   const { t } = useTranslation();
+
+  const currentPlan = plan ? PLAN_BADGES[plan.toUpperCase()] || PLAN_BADGES.ENTERPRISE : PLAN_BADGES.ENTERPRISE;
 
   const STEP_TITLES: Record<number, { title: string; desc: string }> = {
     1: {
@@ -46,8 +56,8 @@ export function WizardHeader({ step }: WizardHeaderProps) {
             {step <= 4 ? `Step ${step} of 4 • Provisioning Wizard` : "Deployment Ready"}
           </span>
         </div>
-        <Badge variant="outline" className="font-mono text-[10px] border-border text-muted-foreground">
-          Enterprise SaaS
+        <Badge variant="outline" className={`font-mono text-[10px] uppercase font-semibold ${currentPlan.className}`}>
+          {currentPlan.label}
         </Badge>
       </div>
 

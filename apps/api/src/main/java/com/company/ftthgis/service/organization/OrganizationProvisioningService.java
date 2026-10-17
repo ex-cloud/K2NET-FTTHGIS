@@ -55,6 +55,18 @@ public class OrganizationProvisioningService {
 
     @Transactional
     public Map<String, Object> createOrganization(OrganizationCreateRequest request) {
+        return createOrganization(request, null);
+    }
+
+    @Transactional
+    public Map<String, Object> createOrganization(OrganizationCreateRequest request, ProvisioningProgressListener listener) {
+        int activeStage = 1;
+        long startStage1 = System.currentTimeMillis();
+
+        if (listener != null) {
+            listener.onStageStarted(1, "Validate Configuration & Subdomain", "Checking slug uniqueness and system authorization...");
+        }
+
         // Lookup Subscription Plan
         String rawPlan = request.getPlan() != null ? request.getPlan().trim() : "FREE";
         String normalizedPlan = OrganizationQuotaService.normalizePlanName(rawPlan);
@@ -68,39 +80,55 @@ public class OrganizationProvisioningService {
         String slugType;
         if ("FREE".equalsIgnoreCase(targetPlanName)) {
             String candidateSlug = request.getSlug() != null ? request.getSlug().trim().toLowerCase() : "";
-            if (candidateSlug.matches("^[a-z]{20}$") && !randomSlugGenerator.isReserved(candidateSlug)
+            if (!candidateSlug.isBlank() && randomSlugGenerator.isValidCustomSlug(candidateSlug)
+                    && !randomSlugGenerator.isReserved(candidateSlug)
                     && !organizationRepository.existsBySlug(candidateSlug)
                     && (organizationSlugAliasRepository == null || !organizationSlugAliasRepository.existsByOldSlug(candidateSlug))) {
                 finalSlug = candidateSlug;
             } else {
-                finalSlug = randomSlugGenerator.generateUniqueSlug(organizationRepository, organizationSlugAliasRepository);
+                finalSlug = randomSlugGenerator.generateSmartSlug(request.getName(), organizationRepository, organizationSlugAliasRepository);
             }
-            slugType = "RANDOM";
-            log.info("🎲 Assigned 20-char random slug '{}' for organization '{}'", finalSlug, request.getName());
+            slugType = "SMART";
+            log.info("🎯 Assigned smart slug '{}' for organization '{}'", finalSlug, request.getName());
         } else if (request.getSlug() == null || request.getSlug().trim().isBlank()) {
-            finalSlug = randomSlugGenerator.generateUniqueSlug(organizationRepository, organizationSlugAliasRepository);
-            slugType = "RANDOM";
-            log.info("🎲 Auto-assigned 20-char random slug '{}' for organization '{}'", finalSlug, request.getName());
+            finalSlug = randomSlugGenerator.generateSmartSlug(request.getName(), organizationRepository, organizationSlugAliasRepository);
+            slugType = "SMART";
+            log.info("🎯 Auto-assigned smart slug '{}' for organization '{}'", finalSlug, request.getName());
         } else {
             finalSlug = request.getSlug().trim().toLowerCase();
             if (randomSlugGenerator.isReserved(finalSlug)) {
+                if (listener != null) listener.onProvisioningFailed(1, "Subdomain slug '" + finalSlug + "' is a reserved platform keyword.");
                 throw new IllegalArgumentException("Subdomain slug '" + finalSlug + "' is a reserved platform keyword.");
             }
             if (!randomSlugGenerator.isValidCustomSlug(finalSlug)) {
+                if (listener != null) listener.onProvisioningFailed(1, "Invalid subdomain slug format: '" + finalSlug + "'");
                 throw new IllegalArgumentException("Invalid subdomain slug format: '" + finalSlug + "'");
             }
             if (organizationRepository.existsBySlug(finalSlug)) {
+                if (listener != null) listener.onProvisioningFailed(1, "Organization with slug '" + finalSlug + "' already exists!");
                 throw new RuntimeException("Organization with slug '" + finalSlug + "' already exists!");
             }
-            if (organizationSlugAliasRepository.existsByOldSlug(finalSlug)) {
+            if (organizationSlugAliasRepository != null && organizationSlugAliasRepository.existsByOldSlug(finalSlug)) {
+                if (listener != null) listener.onProvisioningFailed(1, "Subdomain slug '" + finalSlug + "' is reserved as a historical alias!");
                 throw new RuntimeException("Subdomain slug '" + finalSlug + "' is reserved as a historical alias!");
             }
             slugType = "CUSTOM";
         }
 
+        long durStage1 = Math.max(1, System.currentTimeMillis() - startStage1);
+        if (listener != null) {
+            listener.onStageCompleted(1, durStage1, "Subdomain slug '" + finalSlug + "' validated and reserved.");
+        }
+
         log.info("🚀 Creating new organization: {} with slug: {} (type: {})", request.getName(), finalSlug, slugType);
 
-        // 1. Save Organization Profile
+        // Stage 2: Initialize Database & PostGIS
+        activeStage = 2;
+        long startStage2 = System.currentTimeMillis();
+        if (listener != null) {
+            listener.onStageStarted(2, "Initialize Database & PostGIS", "Creating organization profile and provisioning isolated data schema...");
+        }
+
         Organization.OrganizationBuilder<?, ?> orgBuilder = Organization.builder()
                 .name(request.getName())
                 .slug(finalSlug)
@@ -121,20 +149,39 @@ public class OrganizationProvisioningService {
         Organization org = orgBuilder.build();
         Organization saved = organizationRepository.saveAndFlush(org);
 
-        // 2. Save LDAP Configurations if enabled
+        // Save LDAP Configurations if enabled
         if (request.isLdapEnabled()) {
             saveLdapConfig(saved, request);
         }
 
+        // Initialize Tenant Vault Folders in MinIO S3 using tenant slug
+        try {
+            fileStorageService.initTenantVault(saved.getSlug());
+        } catch (Exception storageEx) {
+            log.warn("⚠️ Non-fatal: storage vault init warning for {}: {}", saved.getName(), storageEx.getMessage());
+        }
+
+        long durStage2 = Math.max(1, System.currentTimeMillis() - startStage2);
+        if (listener != null) {
+            listener.onStageCompleted(2, durStage2, "Organization profile saved and MinIO vault initialized: tenants/" + saved.getSlug());
+        }
+
         // Generate random password
         String tempPassword = "Temp@" + UUID.randomUUID().toString().substring(0, 8);
+        String adminUsername = request.getAdminUsername() != null ? request.getAdminUsername()
+                : request.getAdminEmail();
 
-        // 3. Provision Keycloak (Realm + Client + Owner + LDAP)
         try {
+            // Stage 3: Setup Keycloak 26 Security Realm
+            activeStage = 3;
+            long startStage3 = System.currentTimeMillis();
+            if (listener != null) {
+                listener.onStageStarted(3, "Setup Keycloak 26 Security Realm", "Generating isolated realm, OIDC client, and auth protocols...");
+            }
+
             String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
             log.info("🔑 Provisioning Keycloak for organization: {} (Realm: {})", saved.getSlug(), effectiveRealmKey);
 
-            // Step 1: Ensure Realm & Default Client
             String planCode = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().getName() != null
                     ? saved.getSubscriptionPlan().getName() : "FREE";
             String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
@@ -145,16 +192,23 @@ public class OrganizationProvisioningService {
 
             keycloakService.ensureRealmExists(effectiveRealmKey, hasSso, saved.getName(), planCode, planDisplayName, saved.getLogoUrl());
 
-            // Step 2: Create Owner Account
-            String adminUsername = request.getAdminUsername() != null ? request.getAdminUsername()
-                    : request.getAdminEmail();
+            long durStage3 = Math.max(1, System.currentTimeMillis() - startStage3);
+            if (listener != null) {
+                listener.onStageCompleted(3, durStage3, "Keycloak realm '" + effectiveRealmKey + "' successfully provisioned.");
+            }
+
+            // Stage 4: Register Technical PIC Admin
+            activeStage = 4;
+            long startStage4 = System.currentTimeMillis();
+            if (listener != null) {
+                listener.onStageStarted(4, "Register Technical PIC Admin", "Registering technical administrator and binding master access...");
+            }
 
             log.info("👤 Creating Owner User: {} (Email: {})", adminUsername, request.getAdminEmail());
-            
             String ownerRoleName = "admin";
             String keycloakId = keycloakService.createOwnerUser(effectiveRealmKey, adminUsername, request.getAdminEmail(), tempPassword, ownerRoleName);
 
-            // Step 3: Create Local User Record for Internal Mapping
+            // Create Local User Record for Internal Mapping
             log.info("💾 Saving local user mapping for Keycloak ID: {}", keycloakId);
             User localUser = new User();
             localUser.setId(UUID.fromString(keycloakId)); // Sync ID with Keycloak
@@ -174,7 +228,7 @@ public class OrganizationProvisioningService {
             // CRITICAL: Use persist() instead of save() because User has a manually-assigned UUID (from Keycloak).
             entityManager.persist(localUser);
 
-            // Step 4: Configure LDAP if requested
+            // Configure LDAP if requested
             if (request.isLdapEnabled()) {
                 log.info("📡 Configuring LDAP Federation for realm: {}", saved.getSlug());
                 com.company.ftthgis.config.tenant.LdapConfig ldapConfig = new com.company.ftthgis.config.tenant.LdapConfig();
@@ -186,17 +240,19 @@ public class OrganizationProvisioningService {
                 keycloakService.configureLdap(saved.getSlug(), ldapConfig);
             }
 
-            // Step 5: Initialize Tenant Vault Folders in MinIO S3 using human-readable tenant name
-            try {
-                String readableFolder = saved.getName() != null && !saved.getName().isBlank()
-                    ? saved.getName().toLowerCase().trim().replaceAll("[^a-z0-9_.-]+", "-").replaceAll("^-+|-+$", "")
-                    : saved.getSlug();
-                fileStorageService.initTenantVault(readableFolder);
-            } catch (Exception storageEx) {
-                log.warn("⚠️ Non-fatal: storage vault init warning for {}: {}", saved.getName(), storageEx.getMessage());
+            long durStage4 = Math.max(1, System.currentTimeMillis() - startStage4);
+            if (listener != null) {
+                listener.onStageCompleted(4, durStage4, "Owner user '" + adminUsername + "' registered with 'admin' role.");
             }
 
-            // Step 6: Automatically Issue Cryptographic Runtime License & Initial Welcome Invoice
+            // Stage 5: Finalize Workspace & Audit Trail
+            activeStage = 5;
+            long startStage5 = System.currentTimeMillis();
+            if (listener != null) {
+                listener.onStageStarted(5, "Finalize Workspace & Audit Trail", "Completing metadata sync and preparing tenant portal...");
+            }
+
+            // Issue Cryptographic Runtime License & Initial Welcome Invoice
             try {
                 String effectivePlanCode = plan != null ? plan.getName().toUpperCase(Locale.ROOT) : "FREE";
                 boolean isFree = "FREE".equalsIgnoreCase(effectivePlanCode);
@@ -240,9 +296,6 @@ public class OrganizationProvisioningService {
                 log.error("⚠️ Failed to issue automatic runtime license / welcome invoice for {}: {}", saved.getName(), licEx.getMessage(), licEx);
             }
 
-            log.info("✅ SUCCESS: Organization '{}' provisioned. Owner: {}, Temp Password: {}",
-                    saved.getName(), adminUsername, tempPassword);
-
             try {
                 Map<String, Object> metadata = new HashMap<>();
                 metadata.put("ownerEmail", request.getAdminEmail());
@@ -261,10 +314,38 @@ public class OrganizationProvisioningService {
                 log.error("Failed to log TENANT_CREATED audit event: {}", auditEx.getMessage());
             }
 
+            long durStage5 = Math.max(1, System.currentTimeMillis() - startStage5);
+            if (listener != null) {
+                listener.onStageCompleted(5, durStage5, "Cryptographic license and welcome invoice issued.");
+            }
+
+            log.info("✅ SUCCESS: Organization '{}' provisioned. Owner: {}, Temp Password: {}",
+                    saved.getName(), adminUsername, tempPassword);
+
+            Map<String, Object> result = Map.of(
+                "organization", saved,
+                "adminPassword", tempPassword,
+                "slug", saved.getSlug(),
+                "adminUsername", adminUsername,
+                "id", saved.getId().toString(),
+                "name", saved.getName()
+            );
+
+            if (listener != null) {
+                listener.onProvisioningSuccess(result);
+            }
+
+            return result;
+
         } catch (Exception e) {
             log.error("❌ CRITICAL: Keycloak provisioning failed for {}. ROLLING BACK database changes.",
                     saved.getSlug());
             log.error("Error Detail: {}", e.getMessage());
+
+            if (listener != null) {
+                listener.onProvisioningFailed(activeStage, e.getMessage());
+            }
+
             try {
                 String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
                 keycloakService.deleteRealm(effectiveRealmKey);
@@ -275,11 +356,25 @@ public class OrganizationProvisioningService {
             throw new RuntimeException(
                     "Organization creation failed due to security provisioning error: " + e.getMessage(), e);
         }
+    }
 
-        return Map.of(
-            "organization", saved,
-            "adminPassword", tempPassword
-        );
+    /**
+     * Executes the organization provisioning workflow asynchronously on a background worker thread.
+     */
+    @org.springframework.scheduling.annotation.Async
+    public java.util.concurrent.CompletableFuture<Map<String, Object>> executeProvisioningAsync(
+            UUID jobId,
+            OrganizationCreateRequest request,
+            ProvisioningProgressListener listener) {
+        try {
+            Map<String, Object> result = createOrganization(request, listener);
+            return java.util.concurrent.CompletableFuture.completedFuture(result);
+        } catch (Exception e) {
+            log.error("❌ Asynchronous provisioning failed for job {}: {}", jobId, e.getMessage(), e);
+            java.util.concurrent.CompletableFuture<Map<String, Object>> future = new java.util.concurrent.CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
+        }
     }
 
     public void saveLdapConfig(Organization org, OrganizationCreateRequest request) {
@@ -325,9 +420,9 @@ public class OrganizationProvisioningService {
         String finalSlug;
         String slugType;
         if ("FREE".equalsIgnoreCase(targetPlanName) || request.getSlug() == null || request.getSlug().trim().isBlank()) {
-            finalSlug = randomSlugGenerator.generateUniqueSlug(organizationRepository, organizationSlugAliasRepository);
-            slugType = "RANDOM";
-            log.info("🎲 Auto-assigned 20-char random slug '{}' for self-registered organization '{}'", finalSlug, request.getName());
+            finalSlug = randomSlugGenerator.generateSmartSlug(request.getName(), organizationRepository, organizationSlugAliasRepository);
+            slugType = "SMART";
+            log.info("🎯 Auto-assigned smart slug '{}' for self-registered organization '{}'", finalSlug, request.getName());
         } else {
             finalSlug = request.getSlug().trim().toLowerCase();
             if (randomSlugGenerator.isReserved(finalSlug)) {

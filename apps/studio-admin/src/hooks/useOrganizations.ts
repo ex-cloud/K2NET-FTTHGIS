@@ -240,6 +240,23 @@ export function useOrganizations() {
     return await Promise.all([refetch(), refetchStats()]);
   };
 
+  const createOrganizationAsync = async (org: Record<string, unknown>) => {
+    if (!session?.accessToken) throw new Error("Not authenticated");
+    const baseUrl = getBackendBaseUrl();
+    const res = await httpClient(`${baseUrl}/organizations/async`, {
+      method: 'POST',
+      body: JSON.stringify(org),
+      token: session.accessToken,
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => '');
+      throw new Error(errorText || 'Failed to start organization provisioning');
+    }
+
+    return (await res.json()) as { jobId: string; status: string };
+  };
+
   return {
     organizations,
     allStats,
@@ -248,6 +265,7 @@ export function useOrganizations() {
     error: error instanceof Error ? error.message : null,
     refresh: refreshAll,
     createOrganization: createMutation.mutateAsync,
+    createOrganizationAsync,
     updateOrganization: updateMutation.mutateAsync,
     deleteOrganization: deleteMutation.mutateAsync,
     deleteOrg: deleteMutation.mutateAsync,

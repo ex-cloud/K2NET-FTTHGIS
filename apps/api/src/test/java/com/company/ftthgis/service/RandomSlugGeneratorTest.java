@@ -32,57 +32,39 @@ class RandomSlugGeneratorTest {
     }
 
     @Test
-    @DisplayName("Should generate 20-character pure lowercase alphabetic slug")
-    void testGenerateRawSlug() {
-        String slug = generator.generateRawSlug();
-        assertThat(slug).hasSize(20);
-        assertThat(slug).matches("^[a-z]{20}$");
+    @DisplayName("Should sanitize organization name to DNS-safe base slug")
+    void testSanitizeBaseSlug() {
+        assertThat(generator.sanitizeBaseSlug("PT Nusantara Fiber")).isEqualTo("pt-nusantara-fiber");
+        assertThat(generator.sanitizeBaseSlug("PT. Max @ Net & Tech!")).isEqualTo("pt-max-net-tech");
+        assertThat(generator.sanitizeBaseSlug("   Spaced   Out   ")).isEqualTo("spaced-out");
+        assertThat(generator.sanitizeBaseSlug("")).isEqualTo("tenant");
+        assertThat(generator.sanitizeBaseSlug(null)).isEqualTo("tenant");
+        // Test 24 char truncation
+        String longName = "PT Perusahaan Jaringan Fiber Optik Terpadu Indonesia";
+        String base = generator.sanitizeBaseSlug(longName);
+        assertThat(base.length()).isLessThanOrEqualTo(24);
+        assertThat(base).doesNotEndWith("-");
     }
 
     @Test
-    @DisplayName("Should identify reserved platform keywords")
-    void testReservedKeywords() {
-        assertThat(generator.isReserved("admin")).isTrue();
-        assertThat(generator.isReserved("api")).isTrue();
-        assertThat(generator.isReserved("auth")).isTrue();
-        assertThat(generator.isReserved("system")).isTrue();
-        assertThat(generator.isReserved("gis")).isTrue();
-        assertThat(generator.isReserved("ftth-realm")).isTrue();
-        assertThat(generator.isReserved("traefik")).isTrue();
-        assertThat(generator.isReserved("kong")).isTrue();
+    @DisplayName("Should generate alphanumeric suffix of specified length")
+    void testGenerateSuffix() {
+        String suffix4 = generator.generateSuffix(4);
+        assertThat(suffix4).hasSize(4);
+        assertThat(suffix4).matches("^[a-z0-9]{4}$");
 
-        assertThat(generator.isReserved("sukarajin")).isFalse();
-        assertThat(generator.isReserved("fiber-nusantara")).isFalse();
-        assertThat(generator.isReserved("citra-net")).isFalse();
+        String suffix6 = generator.generateSuffix(6);
+        assertThat(suffix6).hasSize(6);
+        assertThat(suffix6).matches("^[a-z0-9]{6}$");
     }
 
     @Test
-    @DisplayName("Should validate DNS-safe custom slug format")
-    void testValidCustomSlug() {
-        assertThat(generator.isValidCustomSlug("sukarajin")).isTrue();
-        assertThat(generator.isValidCustomSlug("citra-fiber-net")).isTrue();
-        assertThat(generator.isValidCustomSlug("k2net-isp")).isTrue();
-        assertThat(generator.isValidCustomSlug("pt-solusi-jaringan")).isTrue();
-
-        // Invalid cases
-        assertThat(generator.isValidCustomSlug("ab")).isFalse(); // Too short (< 3)
-        assertThat(generator.isValidCustomSlug("-invalid")).isFalse(); // Starts with hyphen
-        assertThat(generator.isValidCustomSlug("invalid-")).isFalse(); // Ends with hyphen
-        assertThat(generator.isValidCustomSlug("invalid--name")).isFalse(); // Double hyphens
-        assertThat(generator.isValidCustomSlug("admin")).isFalse(); // Reserved
-        assertThat(generator.isValidCustomSlug("Invalid_Upper")).isFalse(); // Underscore and uppercase
-        assertThat(generator.isValidCustomSlug("")).isFalse(); // Empty
-        assertThat(generator.isValidCustomSlug(null)).isFalse(); // Null
-    }
-
-    @Test
-    @DisplayName("Should generate unique slug not colliding with existing organizations or aliases")
-    void testGenerateUniqueSlug() {
+    @DisplayName("Should generate smart slug [name-4char] not colliding with existing orgs or aliases")
+    void testGenerateSmartSlug() {
         when(organizationRepository.existsBySlug(anyString())).thenReturn(false);
         when(aliasRepository.existsByOldSlug(anyString())).thenReturn(false);
 
-        String slug = generator.generateUniqueSlug(organizationRepository, aliasRepository);
-        assertThat(slug).hasSize(20);
-        assertThat(slug).matches("^[a-z]{20}$");
+        String smartSlug = generator.generateSmartSlug("PT Sukarajin Bandung", organizationRepository, aliasRepository);
+        assertThat(smartSlug).matches("^pt-sukarajin-bandung-[a-z0-9]{4}$");
     }
 }

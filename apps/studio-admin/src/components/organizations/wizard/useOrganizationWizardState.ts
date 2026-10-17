@@ -1,17 +1,85 @@
 import * as React from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
+import { useSession } from "@/lib/auth-compat";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { initTenantVaultFolders } from "@/lib/storage-client";
 import { INITIAL_FORM_DATA, PROVISIONING_STAGES, type WizardFormData } from "./types";
 import { useWizardLdap } from "./useWizardLdap";
 import { useWizardProvisioning } from "./useWizardProvisioning";
 
-export const generateRandom20Alpha = () =>
-  Array.from({ length: 20 }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join("");
+export const generateSmartSuffix = (length = 4): string => {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+export const sanitizeOrgNameToSlug = (name: string): string => {
+  if (!name) return "tenant";
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24)
+    .replace(/-+$/g, "") || "tenant";
+};
+
+export const generateSmartSlug = (name: string, suffixLength = 4): string => {
+  const base = sanitizeOrgNameToSlug(name);
+  return `${base}-${generateSmartSuffix(suffixLength)}`;
+};
+
+export const generateRandom20Alpha = (): string => generateSmartSuffix(20);
+
+function buildProvisioningPayload(formData: WizardFormData, targetSlug: string) {
+  return {
+    name: formData.name,
+    slug: targetSlug,
+    description: formData.description,
+    website: formData.website,
+    address: formData.address,
+    plan: formData.plan,
+    ldapEnabled: formData.ldapEnabled,
+    ldapUrl: formData.ldapUrl,
+    ldapBaseDn: formData.ldapBaseDn,
+    ldapBindDn: formData.ldapBindDn,
+    ldapBindPassword: formData.ldapBindPassword,
+    adminEmail: formData.adminEmail,
+    adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
+  };
+}
+
+function resolveSlugErrorMessage(
+  rawMessage: string,
+  targetSlug: string,
+  name: string,
+  t: ReturnType<typeof useTranslation>["t"]
+): { message: string; freshSlug?: string } {
+  if (
+    rawMessage.includes("organizations_slug_key") ||
+    rawMessage.includes("already exists") ||
+    rawMessage.includes("sudah terdaftar") ||
+    rawMessage.includes("in use")
+  ) {
+    const freshSlug = generateSmartSlug(name || "tenant");
+    const userMessage = t("organizations.wizard_slug_taken_fallback", {
+      slug: freshSlug,
+      defaultValue: `Subdomain slug '${targetSlug}' is already taken. System prepared a new smart slug: ${freshSlug}`,
+    });
+    return { message: userMessage, freshSlug };
+  }
+  return { message: rawMessage };
+}
 
 export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: (open: boolean) => void) {
+  const { t } = useTranslation();
+  const { data: session } = useSession();
   const [step, setStep] = React.useState(1);
-  const { createOrganization, checkSlugAvailable, organizations } = useOrganizations();
+  const { createOrganizationAsync, checkSlugAvailable, organizations } = useOrganizations();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const isSubmittingRef = React.useRef(false);
 
@@ -26,9 +94,13 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
 
   const {
     provisioningStage,
-    setProvisioningStage,
-    startProvisioningStageTicker,
-    stopProvisioningStageTicker,
+    stageDurations,
+    stageDetails,
+    isStreaming,
+    streamError,
+    startStreamingProvisioning,
+    abortStreaming,
+    resetProvisioningState,
   } = useWizardProvisioning();
 
   const {
@@ -42,35 +114,32 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
   } = useWizardLdap(formData, setFormData);
 
   const handleRegenerateRandomSlug = () => {
-    const randomSlug = generateRandom20Alpha();
-    setFormData((prev) => ({ ...prev, slug: randomSlug, slugMode: "random" }));
+    const smartSlug = generateSmartSlug(formData.name || "tenant");
+    setFormData((prev) => ({ ...prev, slug: smartSlug }));
     setSlugError(null);
-    toast.info(`Generated 20-char random subdomain: ${randomSlug}`);
+    toast.info(t("organizations.wizard_smart_slug_generated", { slug: smartSlug }));
   };
 
   const nextStep = async () => {
-    if (step === 1) {
-      if (!formData.plan) {
-        toast.error("Silakan pilih paket lisensi terlebih dahulu.");
-        return;
-      }
-      setSlugError(null);
+    if (step === 1 && !formData.plan) {
+      toast.error(t("organizations.wizard_select_plan_error"));
+      return;
     }
     if (step === 2) {
       if (!formData.name || !formData.slug) return;
       const isAvailable = await checkSlugAvailable(formData.slug);
       if (!isAvailable) {
-        setSlugError("Slug ini sudah dipakai organisasi lain. Gunakan nama slug yang unik.");
+        setSlugError(t("organizations.wizard_slug_taken_error"));
         return;
       }
       setSlugError(null);
     }
     if (step === 3 && formData.ldapEnabled && !ldapTestPassed) {
-      toast.error("Silakan uji koneksi LDAP terlebih dahulu sebelum melanjutkan.");
+      toast.error(t("organizations.wizard_ldap_test_required"));
       return;
     }
     if (step === 4 && !formData.adminEmail) {
-      toast.error("Email Admin PIC wajib diisi.");
+      toast.error(t("organizations.wizard_pic_email_required"));
       return;
     }
     setStep((prev) => prev + 1);
@@ -82,15 +151,10 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
   };
 
   const handleSubmit = async () => {
-    if (isSubmittingRef.current) {
-      console.warn("Deploy submission already in-flight, ignoring duplicate trigger.");
-      return;
-    }
-
+    if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     setSlugError(null);
-    startProvisioningStageTicker();
 
     let targetSlug = formData.slug;
 
@@ -98,75 +162,67 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
       if (targetSlug) {
         const isAvailable = await checkSlugAvailable(targetSlug);
         if (!isAvailable) {
-          if (formData.slugMode === "random" || formData.plan === "FREE") {
-            const freshSlug = generateRandom20Alpha();
+          if (formData.plan === "FREE") {
+            const freshSlug = generateSmartSlug(formData.name || "tenant");
             targetSlug = freshSlug;
             setFormData((prev) => ({ ...prev, slug: freshSlug }));
           } else {
-            throw new Error(`Subdomain slug '${targetSlug}' sudah digunakan oleh organisasi lain. Silakan ubah slug.`);
+            throw new Error(
+              t("organizations.wizard_slug_taken_error", {
+                defaultValue: `Subdomain slug '${targetSlug}' is already in use by another organization. Please change the slug.`,
+              })
+            );
           }
         }
       }
 
-      const result = await createOrganization({
-        name: formData.name,
-        slug: targetSlug,
-        description: formData.description,
-        website: formData.website,
-        address: formData.address,
-        plan: formData.plan,
-        ldapEnabled: formData.ldapEnabled,
-        ldapUrl: formData.ldapUrl,
-        ldapBaseDn: formData.ldapBaseDn,
-        ldapBindDn: formData.ldapBindDn,
-        ldapBindPassword: formData.ldapBindPassword,
-        adminEmail: formData.adminEmail,
-        adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
+      const asyncJob = await createOrganizationAsync(buildProvisioningPayload(formData, targetSlug));
+      const token = session?.accessToken || "";
+
+      startStreamingProvisioning({
+        jobId: asyncJob.jobId,
+        token,
+        onSuccess: (result) => {
+          const targetFinalSlug = result?.slug || targetSlug;
+          if (targetFinalSlug) {
+            initTenantVaultFolders(targetFinalSlug).catch((e) =>
+              console.warn("S3 MinIO Vault auto-init warn:", e)
+            );
+          }
+
+          setDeployedData({
+            slug: targetFinalSlug,
+            adminPassword: result?.adminPassword || "K2net@InitialPass2026",
+            adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
+          });
+
+          toast.success("Organization provisioned successfully!", {
+            description: `${formData.name} is now deployed and ready to use.`,
+          });
+
+          isSubmittingRef.current = false;
+          setIsSubmitting(false);
+          setStep(5);
+          onSuccess();
+        },
+        onError: (err) => {
+          isSubmittingRef.current = false;
+          setIsSubmitting(false);
+          setSlugError(err.message);
+          toast.error("Deployment failed", { description: err.message });
+        },
       });
-
-      const targetFinalSlug = result?.slug || targetSlug;
-
-      const readableFolder = formData.name
-        ? formData.name.toLowerCase().trim().replace(/[^a-z0-9_.-]+/g, "-").replace(/^-+|-+$/g, "")
-        : targetFinalSlug;
-      if (readableFolder) {
-        initTenantVaultFolders(readableFolder).catch((e) =>
-          console.warn("S3 MinIO Vault auto-init warn:", e)
-        );
-      }
-
-      setProvisioningStage(5);
-      setDeployedData({
-        slug: targetFinalSlug,
-        adminPassword: result?.adminPassword || "K2net@InitialPass2026",
-        adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
-      });
-
-      toast.success("Organization provisioned successfully!", {
-        description: `${formData.name} is now deployed and ready to use.`,
-      });
-
-      setStep(5);
-      onSuccess();
     } catch (err) {
-      stopProvisioningStageTicker();
-      const rawMessage = err instanceof Error ? err.message : "Gagal membuat organisasi.";
-      
-      let userMessage = rawMessage;
-      if (rawMessage.includes("organizations_slug_key") || rawMessage.includes("already exists") || rawMessage.includes("sudah terdaftar")) {
-        userMessage = `Subdomain slug '${targetSlug}' sudah digunakan. Sistem telah menyiapkan slug acak baru.`;
-        const freshSlug = generateRandom20Alpha();
-        setFormData((prev) => ({ ...prev, slug: freshSlug, slugMode: "random" }));
-      }
-
-      setSlugError(userMessage);
-      toast.error("Deployment failed", {
-        description: userMessage,
-      });
-    } finally {
-      stopProvisioningStageTicker();
+      abortStreaming();
       isSubmittingRef.current = false;
       setIsSubmitting(false);
+
+      const rawMsg = err instanceof Error ? err.message : t("organizations.wizard_deploy_failed");
+      const { message, freshSlug } = resolveSlugErrorMessage(rawMsg, targetSlug, formData.name, t);
+      if (freshSlug) setFormData((prev) => ({ ...prev, slug: freshSlug }));
+
+      setSlugError(message);
+      toast.error("Deployment failed", { description: message });
     }
   };
 
@@ -179,6 +235,7 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
 
   const closeWizard = () => {
     if (isSubmittingRef.current) return;
+    abortStreaming();
     onOpenChange(false);
     setTimeout(() => {
       setStep(1);
@@ -186,7 +243,7 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
       setFormData(INITIAL_FORM_DATA);
       setLdapTestPassed(false);
       setSlugError(null);
-      setProvisioningStage(1);
+      resetProvisioningState();
     }, 300);
   };
 
@@ -194,8 +251,12 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
     step,
     organizations,
     isSubmitting,
+    isStreaming,
+    streamError,
     provisioningStage,
     provisioningStages: PROVISIONING_STAGES,
+    stageDurations,
+    stageDetails,
     testingLdap,
     ldapTestPassed,
     slugError,

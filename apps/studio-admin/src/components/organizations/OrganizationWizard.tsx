@@ -45,7 +45,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           />
         </div>
 
-        <WizardHeader step={state.step} />
+        <WizardHeader step={state.step} plan={state.formData.plan} />
 
         <WizardBody
           step={state.step}
@@ -57,6 +57,10 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           isSubmitting={state.isSubmitting}
           provisioningStage={state.provisioningStage}
           provisioningStages={state.provisioningStages}
+          stageDurations={state.stageDurations}
+          stageDetails={state.stageDetails}
+          streamError={state.streamError}
+          onRetry={state.handleSubmit}
           testingLdap={state.testingLdap}
           ldapTestPassed={state.ldapTestPassed}
           onTestLdap={state.handleTestLdap}

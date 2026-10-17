@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Key, ShieldCheck, AlertCircle, RefreshCw } from "lucide-react";
 import { Badge, Input, Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import type { WizardFormData } from "./types";
 
 interface Step4AdminFormProps {
@@ -18,6 +19,8 @@ export function Step4AdminForm({
   slugError,
   onRegenerateRandomSlug,
 }: Step4AdminFormProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="rounded-xl border border-border/80 bg-card/80 p-3.5 space-y-3">
@@ -87,14 +90,14 @@ export function Step4AdminForm({
               <strong className="text-foreground font-bold">
                 {formData.slug ? `${formData.slug}-realm` : "tenant-realm"}
               </strong>
-              {formData.slugMode === "random" && onRegenerateRandomSlug && (
+              {formData.plan === "FREE" && onRegenerateRandomSlug && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={onRegenerateRandomSlug}
                   className="h-5 w-5 p-0 text-muted-foreground hover:text-primary"
-                  title="Acak ulang subdomain & realm"
+                  title={t("organizations.wizard_slug_reroll_title", { defaultValue: "Reroll smart slug suffix" })}
                 >
                   <RefreshCw className="size-2.5" />
                 </Button>
@@ -108,9 +111,9 @@ export function Step4AdminForm({
             </strong>
           </div>
           <div className="flex justify-between">
-            <span>MinIO S3 Bucket:</span>
+            <span>MinIO S3 Vault:</span>
             <strong className="text-foreground font-bold">
-              tenant-{formData.slug || "bucket"}
+              tenants/{formData.slug || "slug"}/
             </strong>
           </div>
         </div>
@@ -120,7 +123,7 @@ export function Step4AdminForm({
         <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-xs text-destructive flex items-start gap-2 animate-in fade-in">
           <AlertCircle className="size-4 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-semibold">Peringatan Subdomain</p>
+            <p className="font-semibold">{t("organizations.wizard_slug_warning", { defaultValue: "Subdomain Alert" })}</p>
             <p className="text-[11px] opacity-90">{slugError}</p>
           </div>
         </div>

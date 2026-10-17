@@ -58,7 +58,7 @@ export interface WizardFormData {
   // Step 1: Identity & Domains
   name: string;
   slug: string;
-  slugMode: "random" | "custom";
+  slugMode?: "random" | "custom";
   customDomain: string;
   description: string;
   website: string;
@@ -110,10 +110,10 @@ export interface ProvisioningStageInfo {
 }
 
 export const PROVISIONING_STAGES: ProvisioningStageInfo[] = [
-  { id: 1, label: "Validasi Konfigurasi & Subdomain", detail: "Memeriksa keunikan slug dan otorisasi sistem..." },
-  { id: 2, label: "Inisialisasi Database & PostGIS", detail: "Membuat profil organisasi dan menyiapkan skema isolasi data..." },
-  { id: 3, label: "Setup Keycloak 26 Security Realm", detail: "Membuat realm terisolasi, client OIDC, dan protokol otentikasi..." },
-  { id: 4, label: "Registrasi Akun Admin PIC", detail: "Mendaftarkan user pengelola teknis dan binding hak akses master..." },
-  { id: 5, label: "Finalisasi Workspace & Audit Trail", detail: "Menyelesaikan sinkronisasi metadata dan menyiapkan portal tenant..." },
+  { id: 1, label: "Validate Configuration & Subdomain", detail: "Checking slug uniqueness and system authorization..." },
+  { id: 2, label: "Initialize Database & PostGIS", detail: "Creating organization profile and provisioning isolated data schema..." },
+  { id: 3, label: "Setup Keycloak 26 Security Realm", detail: "Generating isolated realm, OIDC client, and auth protocols..." },
+  { id: 4, label: "Register Technical PIC Admin", detail: "Registering technical administrator and binding master access..." },
+  { id: 5, label: "Finalize Workspace & Audit Trail", detail: "Completing metadata sync and preparing tenant portal..." },
 ];
 

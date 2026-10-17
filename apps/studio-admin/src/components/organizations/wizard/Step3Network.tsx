@@ -73,7 +73,7 @@ export function Step3Network({
             <div>
               <p className="text-xs font-bold text-foreground">Enterprise LDAP / Active Directory Sync</p>
               <p className="text-[10px] text-muted-foreground">
-                Integrasi SSO & LDAP tersedia pada tier <strong className="text-foreground">PRO</strong> dan <strong className="text-foreground">ENTERPRISE</strong>.
+                SSO & LDAP integration is available on <strong className="text-foreground">PRO</strong> and <strong className="text-foreground">ENTERPRISE</strong> plans.
               </p>
             </div>
           </div>
@@ -100,7 +100,7 @@ export function Step3Network({
             </div>
             <div>
               <p className="text-xs font-bold text-foreground">Enterprise LDAP / Active Directory Sync</p>
-              <p className="text-[10px] text-muted-foreground">Federasikan otentikasi staf ISP dengan direktori perusahaan.</p>
+              <p className="text-[10px] text-muted-foreground">Federate ISP staff authentication with your corporate directory.</p>
             </div>
           </div>
           <div

@@ -29,6 +29,10 @@ interface WizardBodyProps {
   } | null;
   onCopyPassword: (text: string) => void;
   copied: boolean;
+  stageDurations?: Record<number, number>;
+  stageDetails?: Record<number, string>;
+  streamError?: string | null;
+  onRetry?: () => void;
 }
 
 export function WizardBody({
@@ -50,6 +54,10 @@ export function WizardBody({
   deployedData,
   onCopyPassword,
   copied,
+  stageDurations,
+  stageDetails,
+  streamError,
+  onRetry,
 }: WizardBodyProps) {
   return (
     <div className="p-6 space-y-4 max-h-[68vh] overflow-y-auto custom-scrollbar">
@@ -85,6 +93,10 @@ export function WizardBody({
           isSubmitting={isSubmitting}
           provisioningStage={provisioningStage}
           provisioningStages={provisioningStages}
+          stageDurations={stageDurations}
+          stageDetails={stageDetails}
+          streamError={streamError}
+          onRetry={onRetry}
           slugError={slugError}
           onRegenerateRandomSlug={onRegenerateRandomSlug}
         />

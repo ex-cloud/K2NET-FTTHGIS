@@ -4,6 +4,8 @@ import { Badge } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { PLAN_SPECS, type PlanType, type WizardFormData } from "./types";
 
+import { generateSmartSlug, sanitizeOrgNameToSlug } from "./useOrganizationWizardState";
+
 interface Step1PlanProps {
   formData: WizardFormData;
   setFormData: React.Dispatch<React.SetStateAction<WizardFormData>>;
@@ -15,31 +17,22 @@ export function Step1Plan({ formData, setFormData }: Step1PlanProps) {
   const handleSelectPlan = (tierKey: PlanType) => {
     setFormData((prev) => {
       if (tierKey === "FREE") {
-        const randomSlug =
-          prev.slugMode === "random" && prev.slug && prev.slug.length === 20
-            ? prev.slug
-            : Array.from({ length: 20 }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join("");
+        const smartSlug = prev.name ? generateSmartSlug(prev.name) : "";
         return {
           ...prev,
           plan: tierKey,
-          slugMode: "random",
-          slug: randomSlug,
+          slug: smartSlug,
           customDomain: "",
           ldapEnabled: false,
         };
       }
       
-      const customSlug = prev.name
-        ? prev.name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")
-        : prev.slugMode === "custom"
-        ? prev.slug
-        : "";
+      const customSlug = prev.name ? sanitizeOrgNameToSlug(prev.name) : prev.slug;
 
       return {
         ...prev,
         plan: tierKey,
-        slugMode: "custom",
-        slug: customSlug || prev.slug,
+        slug: customSlug,
         customDomain: tierKey === "ENTERPRISE" ? prev.customDomain : "",
       };
     });

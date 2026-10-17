@@ -28,8 +28,7 @@ export function Step5Success({
         </div>
         <h3 className="text-lg font-bold text-foreground">Infrastructure Online</h3>
         <p className="text-xs text-muted-foreground max-w-md">
-          Organisasi <strong className="text-foreground">{name}</strong> berhasil dideploy dengan Keycloak realm dan
-          kuota hardware aktif.
+          Organization <strong className="text-foreground">{name}</strong> was successfully provisioned with isolated Keycloak realm and active hardware quotas.
         </p>
       </div>
 
