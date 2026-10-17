@@ -16,8 +16,8 @@ import java.util.NoSuchElementException;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(NoSuchElementException ex) {
+    @ExceptionHandler({NoSuchElementException.class, org.springframework.web.servlet.resource.NoResourceFoundException.class})
+    public ResponseEntity<ErrorResponse> handleNotFound(Exception ex) {
         return buildResponse(HttpStatus.NOT_FOUND, "Resource not found", ex.getMessage());
     }
 
