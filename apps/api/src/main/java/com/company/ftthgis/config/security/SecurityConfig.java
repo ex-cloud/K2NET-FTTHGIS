@@ -40,6 +40,7 @@ public class SecurityConfig {
     @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http,
             JwtIssuerAuthenticationManagerResolver authenticationManagerResolver,
+            BearerTokenResolver bearerTokenResolver,
             RateLimitingFilter rateLimitingFilter,
             IpBlockingFilter ipBlockingFilter,
             ScopedTokenAuthenticationFilter scopedTokenAuthenticationFilter,
@@ -88,7 +89,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                     .authenticationManagerResolver(authenticationManagerResolver)
-                    .bearerTokenResolver(bearerTokenResolver()))
+                    .bearerTokenResolver(bearerTokenResolver))
                 .exceptionHandling(ex -> ex.accessDeniedHandler(auditingAccessDeniedHandler));
 
         return http.build();
@@ -101,17 +102,38 @@ public class SecurityConfig {
     private String keycloakInternalUrl;
 
     @Bean
-    public BearerTokenResolver bearerTokenResolver() {
+    public BearerTokenResolver bearerTokenResolver(
+            com.company.ftthgis.service.auth.StreamTicketService streamTicketService) {
         DefaultBearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
-        defaultResolver.setAllowUriQueryParameter(true);
+        defaultResolver.setAllowUriQueryParameter(false);
         return request -> {
+            // 1. Resolve Bearer token from standard Authorization header
             String token = defaultResolver.resolve(request);
-            if (token != null && (token.startsWith(ScopedTokenAuthenticationFilter.SCOPED_TOKEN_PREFIX)
-                    || token.startsWith(ScopedTokenAuthenticationFilter.API_KEY_PREFIX_LIVE)
-                    || token.startsWith(ScopedTokenAuthenticationFilter.API_KEY_PREFIX_TEST))) {
-                return null; // Let ScopedTokenAuthenticationFilter handle it
+            if (token != null) {
+                if (token.startsWith(ScopedTokenAuthenticationFilter.SCOPED_TOKEN_PREFIX)
+                        || token.startsWith(ScopedTokenAuthenticationFilter.API_KEY_PREFIX_LIVE)
+                        || token.startsWith(ScopedTokenAuthenticationFilter.API_KEY_PREFIX_TEST)) {
+                    return null; // Handled by ScopedTokenAuthenticationFilter
+                }
+                return token;
             }
-            return token;
+
+            // 2. Resolve single-use stream ticket (?ticket=st_...) for SSE streams
+            String ticket = request.getParameter("ticket");
+            if (ticket != null && !ticket.isBlank()) {
+                String redeemedToken = streamTicketService.redeemTicket(ticket);
+                if (redeemedToken != null) {
+                    return redeemedToken;
+                }
+            }
+
+            // 3. Fallback for backward compatibility during client migration
+            String legacyToken = request.getParameter("access_token");
+            if (legacyToken != null && !legacyToken.isBlank()) {
+                return legacyToken;
+            }
+
+            return null;
         };
     }
 

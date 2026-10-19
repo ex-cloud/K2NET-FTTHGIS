@@ -18,6 +18,35 @@ import java.util.Map;
 public class AuthController {
 
     private final KeycloakService keycloakService;
+    private final com.company.ftthgis.service.auth.StreamTicketService streamTicketService;
+
+    /**
+     * Issues a short-lived (30s) single-use stream ticket for establishing SSE connections.
+     * Prevents long-lived JWTs from leaking into HTTP proxy/access logs as query strings.
+     */
+    @PostMapping("/stream-ticket")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> createStreamTicket(
+            @AuthenticationPrincipal Jwt jwt,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String tokenValue = jwt != null ? jwt.getTokenValue() : null;
+        if (tokenValue == null || tokenValue.isBlank()) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                tokenValue = authHeader.substring(7);
+            }
+        }
+        if (tokenValue == null || tokenValue.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "No valid authentication token found"));
+        }
+
+        String ticket = streamTicketService.createTicket(tokenValue);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "ticket", ticket,
+                "expiresIn", 30
+        ));
+    }
 
     /**
      * Verifies the current user's password before sensitive operations.

@@ -77,7 +77,8 @@ public class ComprehensiveControllerSecurityCoverageTest {
             "UserController.getSocialIdentities",
             "UserController.disconnectSocial",
             "UserController.linkSocial",
-            "AuthController.verifyPassword"
+            "AuthController.verifyPassword",
+            "AuthController.createStreamTicket"
     );
 
     private static final List<String> FORBIDDEN_PREAUTHORIZE_PATTERNS = List.of(
