@@ -305,12 +305,14 @@ public class ProjectQuotaService {
                 baseLimit = activeLicenseOpt.get().getOverrideMaxProjects();
             } else {
                 SubscriptionPlan plan = org.getSubscriptionPlan();
-                int basePlanLimit = (plan != null && plan.getMaxProjects() != null) ? plan.getMaxProjects() : 2;
+                int basePlanLimit = (plan != null && plan.getMaxOlts() != null) ? plan.getMaxOlts() :
+                        (plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 2);
                 baseLimit = getConfigInt(org, "max_olts", getConfigInt(org, "max_projects", basePlanLimit));
             }
         } else {
             SubscriptionPlan plan = org.getSubscriptionPlan();
-            int basePlanLimit = (plan != null && plan.getMaxProjects() != null) ? plan.getMaxProjects() : 2;
+            int basePlanLimit = (plan != null && plan.getMaxOlts() != null) ? plan.getMaxOlts() :
+                    (plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 2);
             baseLimit = getConfigInt(org, "max_olts", getConfigInt(org, "max_projects", basePlanLimit));
         }
 
@@ -365,16 +367,18 @@ public class ProjectQuotaService {
                 baseLimit = activeLicenseOpt.get().getOverrideMaxStorageGb();
             } else {
                 SubscriptionPlan plan = org.getSubscriptionPlan();
-                int defaultTierStorage = "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
+                int defaultTierStorage = (plan != null && plan.getMaxStorageGb() != null) ? plan.getMaxStorageGb() :
+                        ("ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
                         "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
-                        "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2;
+                        "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2);
                 baseLimit = getConfigInt(org, "max_storage_gb", defaultTierStorage);
             }
         } else {
             SubscriptionPlan plan = org.getSubscriptionPlan();
-            int defaultTierStorage = "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
+            int defaultTierStorage = (plan != null && plan.getMaxStorageGb() != null) ? plan.getMaxStorageGb() :
+                    ("ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
                     "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
-                    "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2;
+                    "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2);
             baseLimit = getConfigInt(org, "max_storage_gb", defaultTierStorage);
         }
 

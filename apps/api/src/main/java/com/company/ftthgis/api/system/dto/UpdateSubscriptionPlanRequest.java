@@ -40,6 +40,15 @@ public class UpdateSubscriptionPlanRequest {
     @Min(value = 0, message = "Maksimum pelanggan minimal 0")
     private Integer maxCustomers;
 
+    @Min(value = 0, message = "Maksimum OLT minimal 0")
+    private Integer maxOlts;
+
+    @Min(value = 0, message = "Maksimum storage minimal 0 GB")
+    private Integer maxStorageGb;
+
+    @Min(value = 0, message = "Batas API rate limit minimal 0 RPM")
+    private Integer apiRateLimitRpm;
+
     private Boolean hasSso;
 
     private Boolean hasApiAccess;

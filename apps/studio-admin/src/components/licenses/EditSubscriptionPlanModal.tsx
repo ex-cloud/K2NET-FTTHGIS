@@ -37,6 +37,12 @@ interface PlanQuotasFormProps {
   setMaxOdcs: (val: string) => void;
   maxCustomers: string;
   setMaxCustomers: (val: string) => void;
+  maxOlts: string;
+  setMaxOlts: (val: string) => void;
+  maxStorageGb: string;
+  setMaxStorageGb: (val: string) => void;
+  apiRateLimitRpm: string;
+  setApiRateLimitRpm: (val: string) => void;
 }
 
 function PlanQuotasFields({
@@ -50,6 +56,12 @@ function PlanQuotasFields({
   setMaxOdcs,
   maxCustomers,
   setMaxCustomers,
+  maxOlts,
+  setMaxOlts,
+  maxStorageGb,
+  setMaxStorageGb,
+  apiRateLimitRpm,
+  setApiRateLimitRpm,
 }: PlanQuotasFormProps) {
   const { t } = useTranslation();
   return (
@@ -63,7 +75,7 @@ function PlanQuotasFields({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">
             {t("license.modal.max_projects_olts")}
@@ -73,6 +85,19 @@ function PlanQuotasFields({
             min={1}
             value={maxProjects}
             onChange={(e) => setMaxProjects(e.target.value)}
+            className="h-7 text-xs bg-background"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">
+            {t("license.modal.max_olts_capacity")}
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            value={maxOlts}
+            onChange={(e) => setMaxOlts(e.target.value)}
             className="h-7 text-xs bg-background"
             required
           />
@@ -129,6 +154,32 @@ function PlanQuotasFields({
             required
           />
         </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">
+            {t("license.modal.max_storage_gb")}
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            value={maxStorageGb}
+            onChange={(e) => setMaxStorageGb(e.target.value)}
+            className="h-7 text-xs bg-background"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">
+            {t("license.modal.api_rate_limit_rpm")}
+          </Label>
+          <Input
+            type="number"
+            min={100}
+            value={apiRateLimitRpm}
+            onChange={(e) => setApiRateLimitRpm(e.target.value)}
+            className="h-7 text-xs bg-background"
+            required
+          />
+        </div>
       </div>
     </div>
   );
@@ -149,6 +200,9 @@ export function EditSubscriptionPlanModal({
   const [maxOdps, setMaxOdps] = React.useState<string>("");
   const [maxOdcs, setMaxOdcs] = React.useState<string>("");
   const [maxCustomers, setMaxCustomers] = React.useState<string>("");
+  const [maxOlts, setMaxOlts] = React.useState<string>("");
+  const [maxStorageGb, setMaxStorageGb] = React.useState<string>("");
+  const [apiRateLimitRpm, setApiRateLimitRpm] = React.useState<string>("");
   const [hasSso, setHasSso] = React.useState<boolean>(false);
   const [hasApiAccess, setHasApiAccess] = React.useState<boolean>(false);
 
@@ -161,6 +215,9 @@ export function EditSubscriptionPlanModal({
     setMaxOdps(String(plan.maxOdps ?? 0));
     setMaxOdcs(String(plan.maxOdcs ?? 0));
     setMaxCustomers(String(plan.maxCustomers ?? 0));
+    setMaxOlts(String(plan.maxOlts ?? plan.maxProjects ?? 1));
+    setMaxStorageGb(String(plan.maxStorageGb ?? 2));
+    setApiRateLimitRpm(String(plan.apiRateLimitRpm ?? 500));
     setHasSso(Boolean(plan.hasSso));
     setHasApiAccess(Boolean(plan.hasApiAccess));
   }, [plan]);
@@ -185,6 +242,9 @@ export function EditSubscriptionPlanModal({
       maxOdps: parseInt(maxOdps, 10) || 0,
       maxOdcs: parseInt(maxOdcs, 10) || 0,
       maxCustomers: parseInt(maxCustomers, 10) || 0,
+      maxOlts: parseInt(maxOlts, 10) || 1,
+      maxStorageGb: parseInt(maxStorageGb, 10) || 2,
+      apiRateLimitRpm: parseInt(apiRateLimitRpm, 10) || 500,
       hasSso,
       hasApiAccess,
     };
@@ -261,6 +321,12 @@ export function EditSubscriptionPlanModal({
             setMaxOdcs={setMaxOdcs}
             maxCustomers={maxCustomers}
             setMaxCustomers={setMaxCustomers}
+            maxOlts={maxOlts}
+            setMaxOlts={setMaxOlts}
+            maxStorageGb={maxStorageGb}
+            setMaxStorageGb={setMaxStorageGb}
+            apiRateLimitRpm={apiRateLimitRpm}
+            setApiRateLimitRpm={setApiRateLimitRpm}
           />
 
           {/* Features */}

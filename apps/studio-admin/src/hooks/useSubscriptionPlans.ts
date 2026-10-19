@@ -13,6 +13,9 @@ export interface SubscriptionPlanMaster {
   maxOdcs: number;
   maxOdps: number;
   maxCustomers: number;
+  maxOlts?: number;
+  maxStorageGb?: number;
+  apiRateLimitRpm?: number;
   hasSso: boolean;
   hasApiAccess: boolean;
 }
@@ -26,6 +29,9 @@ export interface UpdateSubscriptionPlanPayload {
   maxOdcs?: number;
   maxOdps?: number;
   maxCustomers?: number;
+  maxOlts?: number;
+  maxStorageGb?: number;
+  apiRateLimitRpm?: number;
   hasSso?: boolean;
   hasApiAccess?: boolean;
 }

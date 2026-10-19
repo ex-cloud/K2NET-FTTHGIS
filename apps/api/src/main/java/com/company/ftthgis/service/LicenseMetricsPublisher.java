@@ -243,9 +243,7 @@ public class LicenseMetricsPublisher {
 
         // --- Storage Quota ---
         int maxStorageGb = lic.getOverrideMaxStorageGb() != null ? lic.getOverrideMaxStorageGb() :
-                ("ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
-                        "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
-                                "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2);
+                (plan != null && plan.getMaxStorageGb() != null ? plan.getMaxStorageGb() : 2);
         double usedStorageGb = 0.0;
         try {
             usedStorageGb = organizationConfigRepository.findByOrganizationAndConfigKeyIgnoreCase(org, "used_storage_gb")

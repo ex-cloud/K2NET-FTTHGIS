@@ -12,6 +12,8 @@ import {
   Archive,
   Shield,
   Terminal,
+  HardDrive,
+  Activity,
 } from "lucide-react";
 import type { SubscriptionPlanMaster } from "@/hooks/useSubscriptionPlans";
 
@@ -167,6 +169,26 @@ export function PlanTiersGrid({ plans, loading, onEdit }: PlanTiersGridProps) {
                     </span>
                     <span className="font-mono font-medium text-foreground">
                       {plan.maxArchivedProjects ?? 1}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <HardDrive className="size-3.5" />
+                      {t("license.modal.max_storage_gb")}
+                    </span>
+                    <span className="font-mono font-medium text-foreground">
+                      {(plan.maxStorageGb ?? 2)} GB
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <Activity className="size-3.5" />
+                      {t("license.modal.api_rate_limit_rpm")}
+                    </span>
+                    <span className="font-mono font-medium text-foreground">
+                      {(plan.apiRateLimitRpm ?? 500).toLocaleString("id-ID")} RPM
                     </span>
                   </div>
                 </div>

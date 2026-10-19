@@ -50,6 +50,15 @@ public class SubscriptionPlan {
     @Column(name = "max_customers")
     private Integer maxCustomers;
 
+    @Column(name = "max_olts")
+    private Integer maxOlts;
+
+    @Column(name = "max_storage_gb")
+    private Integer maxStorageGb;
+
+    @Column(name = "api_rate_limit_rpm")
+    private Integer apiRateLimitRpm;
+
     @Builder.Default
     @Column(name = "has_sso")
     private boolean hasSso = false;

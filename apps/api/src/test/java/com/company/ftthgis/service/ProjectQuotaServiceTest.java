@@ -65,6 +65,9 @@ class ProjectQuotaServiceTest {
                 .name("PRO")
                 .maxProjects(6)
                 .maxArchivedProjects(6)
+                .maxOlts(6)
+                .maxStorageGb(100)
+                .apiRateLimitRpm(8000)
                 .build();
 
         org = Organization.builder()

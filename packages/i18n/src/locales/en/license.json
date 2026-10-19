@@ -95,6 +95,8 @@
     "max_odcs": "Max ODC Enclosures",
     "max_customers": "Max Subscribers",
     "max_storage_gb": "Storage Limit (GB)",
+    "api_rate_limit_rpm": "API Rate Limit (RPM)",
+    "max_olts_capacity": "Max OLT Hardware",
     "feature_flags": "Feature Entitlements",
     "feature_sso": "Single Sign-On (SSO)",
     "feature_api": "Public REST API Access",

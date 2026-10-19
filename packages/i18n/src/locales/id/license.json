@@ -95,6 +95,8 @@
     "max_odcs": "Batas Enclosure ODC",
     "max_customers": "Batas Pelanggan",
     "max_storage_gb": "Kapasitas Storage (GB)",
+    "api_rate_limit_rpm": "Batas API Rate (RPM)",
+    "max_olts_capacity": "Kapasitas OLT Hardware",
     "feature_flags": "Hak Fitur Tambahan",
     "feature_sso": "Single Sign-On (SSO)",
     "feature_api": "Akses Public REST API",

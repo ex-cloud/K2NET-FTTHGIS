@@ -98,10 +98,11 @@ public class OrganizationSubscriptionService {
 
         int maxStorageGb = projectQuotaService.getEffectiveMaxStorageGb(org);
         double usedStorageGb = getConfigDouble(org, "used_storage_gb", 0.0);
-        int apiRateLimitMax = getConfigInt(org, "api_rate_limit_max",
-                "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 30000 :
+        int defaultApiRateLimit = (plan != null && plan.getApiRateLimitRpm() != null) ? plan.getApiRateLimitRpm() :
+                ("ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 30000 :
                 "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 8000 :
                 "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 2000 : 500);
+        int apiRateLimitMax = getConfigInt(org, "api_rate_limit_max", defaultApiRateLimit);
         int apiRateLimitUsed = getConfigInt(org, "api_rate_limit_used", 0);
 
         // 2. Booster Status
@@ -202,14 +203,11 @@ public class OrganizationSubscriptionService {
         org.setOverQuotaMode(false);
 
         // Update quota configs matching the new plan tier
-        int newMaxOlts = targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 25;
+        int newMaxOlts = targetPlan.getMaxOlts() != null ? targetPlan.getMaxOlts() :
+                (targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 25);
         int newMaxOdps = targetPlan.getMaxOdps() != null ? targetPlan.getMaxOdps() : 12000;
-        int newStorageGb = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 500 :
-                "PRO".equalsIgnoreCase(targetPlan.getName()) ? 100 :
-                "STARTER".equalsIgnoreCase(targetPlan.getName()) ? 15 : 2;
-        int newRateLimit = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 30000 :
-                "PRO".equalsIgnoreCase(targetPlan.getName()) ? 8000 :
-                "STARTER".equalsIgnoreCase(targetPlan.getName()) ? 2000 : 500;
+        int newStorageGb = targetPlan.getMaxStorageGb() != null ? targetPlan.getMaxStorageGb() : 2;
+        int newRateLimit = targetPlan.getApiRateLimitRpm() != null ? targetPlan.getApiRateLimitRpm() : 500;
 
         saveOrUpdateConfig(org, "max_olts", String.valueOf(newMaxOlts));
         saveOrUpdateConfig(org, "max_odps", String.valueOf(newMaxOdps));
@@ -256,7 +254,8 @@ public class OrganizationSubscriptionService {
                         .orElseThrow(() -> new RuntimeException("Target plan not found: " + targetPlanName)));
 
         int usedOlts = (int) projectRepository.countByOrganizationId(org.getId());
-        int targetMaxOlts = targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 1;
+        int targetMaxOlts = targetPlan.getMaxOlts() != null ? targetPlan.getMaxOlts() :
+                (targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 1);
         int targetMaxOdps = targetPlan.getMaxOdps() != null ? targetPlan.getMaxOdps() : 50;
         int usedOdps = getConfigInt(org, "used_odps", usedOlts * 30);
 
@@ -277,12 +276,8 @@ public class OrganizationSubscriptionService {
             org.setGracePeriodUntil(null);
         }
 
-        int targetStorageGb = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 500 :
-                "PRO".equalsIgnoreCase(targetPlan.getName()) ? 100 :
-                "STARTER".equalsIgnoreCase(targetPlan.getName()) ? 15 : 2;
-        int targetRateLimit = "ENTERPRISE".equalsIgnoreCase(targetPlan.getName()) ? 30000 :
-                "PRO".equalsIgnoreCase(targetPlan.getName()) ? 8000 :
-                "STARTER".equalsIgnoreCase(targetPlan.getName()) ? 2000 : 500;
+        int targetStorageGb = targetPlan.getMaxStorageGb() != null ? targetPlan.getMaxStorageGb() : 2;
+        int targetRateLimit = targetPlan.getApiRateLimitRpm() != null ? targetPlan.getApiRateLimitRpm() : 500;
 
         saveOrUpdateConfig(org, "max_olts", String.valueOf(targetMaxOlts));
         saveOrUpdateConfig(org, "max_odps", String.valueOf(targetMaxOdps));

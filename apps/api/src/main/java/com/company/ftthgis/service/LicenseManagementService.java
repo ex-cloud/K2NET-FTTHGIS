@@ -435,9 +435,7 @@ public class LicenseManagementService {
         int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 2500;
         int baseOdcs = plan != null && plan.getMaxOdcs() != null ? plan.getMaxOdcs() : 500;
         int baseCustomers = plan != null && plan.getMaxCustomers() != null ? plan.getMaxCustomers() : 5000;
-        int baseStorage = "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 500 :
-                "PRO".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 100 :
-                "STARTER".equalsIgnoreCase(plan != null ? plan.getName() : "") ? 15 : 2;
+        int baseStorage = (plan != null && plan.getMaxStorageGb() != null) ? plan.getMaxStorageGb() : 2;
 
         boolean isBooster = org.isBoosterActive();
         int boosterOlts = (isBooster && org.getBoosterOlts() != null) ? org.getBoosterOlts() : 0;
@@ -949,6 +947,9 @@ public class LicenseManagementService {
         if (request.getMaxOdcs() != null) plan.setMaxOdcs(request.getMaxOdcs());
         if (request.getMaxOdps() != null) plan.setMaxOdps(request.getMaxOdps());
         if (request.getMaxCustomers() != null) plan.setMaxCustomers(request.getMaxCustomers());
+        if (request.getMaxOlts() != null) plan.setMaxOlts(request.getMaxOlts());
+        if (request.getMaxStorageGb() != null) plan.setMaxStorageGb(request.getMaxStorageGb());
+        if (request.getApiRateLimitRpm() != null) plan.setApiRateLimitRpm(request.getApiRateLimitRpm());
         if (request.getHasSso() != null) plan.setHasSso(request.getHasSso());
         if (request.getHasApiAccess() != null) plan.setHasApiAccess(request.getHasApiAccess());
 

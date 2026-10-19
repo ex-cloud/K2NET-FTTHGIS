@@ -1,6 +1,7 @@
 package com.company.ftthgis.service;
 
 import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.entity.SubscriptionPlan;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,10 +65,8 @@ public class OrganizationAnalyticsService {
         int maxOlts = projectQuotaService.getEffectiveMaxOlts(org);
         int maxOdps = projectQuotaService.getEffectiveMaxOdps(org);
         int maxStorageGb = projectQuotaService.getEffectiveMaxStorageGb(org);
-        String planName = org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "PRO";
-        int apiRateLimitMax = "ENTERPRISE".equalsIgnoreCase(planName) ? 30000 :
-                "PRO".equalsIgnoreCase(planName) ? 8000 :
-                "STARTER".equalsIgnoreCase(planName) ? 2000 : 500;
+        SubscriptionPlan orgPlan = org.getSubscriptionPlan();
+        int apiRateLimitMax = (orgPlan != null && orgPlan.getApiRateLimitRpm() != null) ? orgPlan.getApiRateLimitRpm() : 500;
 
         stats.put("projectCount", projectCount);
         stats.put("usedOlts", projectCount != null ? projectCount : 0);
@@ -122,10 +121,8 @@ public class OrganizationAnalyticsService {
                 int orgMaxOlts = projectQuotaService.getEffectiveMaxOlts(org);
                 int orgMaxOdps = projectQuotaService.getEffectiveMaxOdps(org);
                 int orgMaxStorageGb = projectQuotaService.getEffectiveMaxStorageGb(org);
-                String orgPlanName = org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "PRO";
-                int orgApiRateLimitMax = "ENTERPRISE".equalsIgnoreCase(orgPlanName) ? 30000 :
-                        "PRO".equalsIgnoreCase(orgPlanName) ? 8000 :
-                        "STARTER".equalsIgnoreCase(orgPlanName) ? 2000 : 500;
+                SubscriptionPlan activeOrgPlan = org.getSubscriptionPlan();
+                int orgApiRateLimitMax = (activeOrgPlan != null && activeOrgPlan.getApiRateLimitRpm() != null) ? activeOrgPlan.getApiRateLimitRpm() : 500;
 
                 stats.put("projectCount", projectCount != null ? projectCount : 0);
                 stats.put("usedOlts", resolvedOltCount);
