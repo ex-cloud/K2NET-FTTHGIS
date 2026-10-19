@@ -17,7 +17,7 @@ export function useOrgTeamState(org: EnrichedOrganization) {
 
   // Fetch real tenant users from backend
   const { data: serverUsers = [], isLoading } = useQuery<TenantUser[]>({
-    queryKey: ["tenant-team-users", org.slug, org.picName, session?.accessToken],
+    queryKey: ["tenant-team-users", org.slug, org.picName, org.picPhone, session?.accessToken],
     queryFn: async () => {
       if (!session?.accessToken) return [];
       const baseUrl = getBackendBaseUrl();

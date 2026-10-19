@@ -24,6 +24,58 @@ export interface StreamEventData {
   stageDurations?: Record<number, number>;
 }
 
+async function resolveProvisioningStreamUrl(baseUrl: string, jobId: string, token: string): Promise<string> {
+  let ticket: string | null = null;
+  try {
+    const ticketRes = await fetch(`${baseUrl}/auth/stream-ticket`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (ticketRes.ok) {
+      const ticketData = await ticketRes.json();
+      if (ticketData?.ticket) {
+        ticket = ticketData.ticket;
+      }
+    }
+  } catch (ticketErr) {
+    console.warn("[Provisioning] Could not fetch stream ticket, falling back to direct token:", ticketErr);
+  }
+
+  return ticket
+    ? `${baseUrl}/organizations/provisioning/stream/${jobId}?ticket=${encodeURIComponent(ticket)}`
+    : `${baseUrl}/organizations/provisioning/stream/${jobId}?access_token=${encodeURIComponent(token)}`;
+}
+
+interface PollStatusUpdate {
+  currentStage?: number;
+  stageDurations?: Record<number, number>;
+  status?: string;
+  result?: ProvisioningSuccessResult;
+  error?: string;
+}
+
+function createProvisioningPollTimer(
+  baseUrl: string,
+  jobId: string,
+  token: string,
+  onUpdate: (data: PollStatusUpdate) => void
+): NodeJS.Timeout {
+  return setInterval(async () => {
+    try {
+      const statusRes = await fetch(`${baseUrl}/organizations/provisioning/status/${jobId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!statusRes.ok) return;
+      const statusData: PollStatusUpdate = await statusRes.json();
+      onUpdate(statusData);
+    } catch (pollErr) {
+      console.warn("Polling error:", pollErr);
+    }
+  }, 1500);
+}
+
 export function useWizardProvisioning() {
   const [provisioningStage, setProvisioningStage] = useState(1);
   const [stageDurations, setStageDurations] = useState<Record<number, number>>({});
@@ -61,7 +113,7 @@ export function useWizardProvisioning() {
   }, [abortStreaming]);
 
   const startStreamingProvisioning = useCallback(
-    ({
+    async ({
       jobId,
       token,
       onSuccess,
@@ -80,7 +132,7 @@ export function useWizardProvisioning() {
       setStageDetails({});
 
       const baseUrl = getBackendBaseUrl();
-      const streamUrl = `${baseUrl}/organizations/provisioning/stream/${jobId}?access_token=${encodeURIComponent(token)}`;
+      const streamUrl = await resolveProvisioningStreamUrl(baseUrl, jobId, token);
 
       try {
         const es = new EventSource(streamUrl);
@@ -177,35 +229,25 @@ export function useWizardProvisioning() {
             eventSourceRef.current = null;
           }
 
-          // Polling fallback every 1.5s
           if (!pollTimerRef.current) {
-            pollTimerRef.current = setInterval(async () => {
-              try {
-                const statusRes = await fetch(`${baseUrl}/organizations/provisioning/status/${jobId}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                if (!statusRes.ok) return;
-                const statusData = await statusRes.json();
-                if (statusData.currentStage) {
-                  setProvisioningStage(statusData.currentStage);
-                }
-                if (statusData.stageDurations) {
-                  setStageDurations((prev) => ({ ...prev, ...statusData.stageDurations }));
-                }
-                if (statusData.status === "COMPLETED") {
-                  abortStreaming();
-                  setProvisioningStage(5);
-                  onSuccess(statusData.result || {});
-                } else if (statusData.status === "FAILED") {
-                  abortStreaming();
-                  const errMsg = statusData.error || "Provisioning failed during execution";
-                  setStreamError(errMsg);
-                  onError({ stage: statusData.currentStage || 1, message: errMsg });
-                }
-              } catch (pollErr) {
-                console.warn("Polling error:", pollErr);
+            pollTimerRef.current = createProvisioningPollTimer(baseUrl, jobId, token, (statusData) => {
+              if (statusData.currentStage) {
+                setProvisioningStage(statusData.currentStage);
               }
-            }, 1500);
+              if (statusData.stageDurations) {
+                setStageDurations((prev) => ({ ...prev, ...statusData.stageDurations }));
+              }
+              if (statusData.status === "COMPLETED") {
+                abortStreaming();
+                setProvisioningStage(5);
+                onSuccess(statusData.result || {});
+              } else if (statusData.status === "FAILED") {
+                abortStreaming();
+                const errMsg = statusData.error || "Provisioning failed during execution";
+                setStreamError(errMsg);
+                onError({ stage: statusData.currentStage || 1, message: errMsg });
+              }
+            });
           }
         };
       } catch (err) {

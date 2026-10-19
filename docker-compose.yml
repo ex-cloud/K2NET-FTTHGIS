@@ -19,6 +19,10 @@ services:
       - "--accesslog=true"
       - "--accesslog.filepath=/var/log/traefik/access.log"
       - "--accesslog.format=json"
+      - "--accesslog.fields.headers.defaultmode=keep"
+      - "--accesslog.fields.headers.names.Authorization=redact"
+      - "--accesslog.fields.headers.names.X-Gateway-Token=redact"
+      - "--accesslog.fields.headers.names.Cookie=redact"
     ports:
       - "80:80"
       - "443:443"

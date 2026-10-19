@@ -59,17 +59,17 @@ export function useTaskNotifications() {
     function handleTaskCreated(eventPayload: TaskEventPayload) {
       incrementUnreadCountRef.current?.();
       const refText = eventPayload.obsidianRef ? ` (${eventPayload.obsidianRef})` : "";
-      toast.info("🎫 Tiket B2B Baru Masuk", {
+      toast.info("🎫 New B2B Ticket Received", {
         description: `${eventPayload.title}${refText}`,
         duration: 8000,
         action: {
-          label: "Buka",
+          label: "Open",
           onClick: () => routerRef.current?.push(`/tasks/${eventPayload.id}`),
         },
       });
     }
 
-    function connect() {
+    async function connect() {
       if (isConnectingRef.current) return;
       if (
         activeEventSourceRef.current &&
@@ -84,8 +84,35 @@ export function useTaskNotifications() {
       try {
         isConnectingRef.current = true;
         const baseUrl = getBackendBaseUrl();
-        // Use ref to always get the latest token without closing SSE on token refresh
-        const sseUrl = `${baseUrl}/tasks/stream?access_token=${accessTokenRef.current}`;
+        const currentToken = accessTokenRef.current;
+        if (!currentToken) {
+          isConnectingRef.current = false;
+          return;
+        }
+
+        // Fetch single-use 30s ticket to prevent raw JWT exposure in query logs
+        let ticket: string | null = null;
+        try {
+          const ticketRes = await fetch(`${baseUrl}/auth/stream-ticket`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${currentToken}`,
+            },
+          });
+          if (ticketRes.ok) {
+            const ticketData = await ticketRes.json();
+            if (ticketData?.ticket) {
+              ticket = ticketData.ticket;
+            }
+          }
+        } catch (ticketErr) {
+          console.warn("[SSE-Task] Could not fetch stream ticket, falling back to direct token:", ticketErr);
+        }
+
+        const sseUrl = ticket
+          ? `${baseUrl}/tasks/stream?ticket=${encodeURIComponent(ticket)}`
+          : `${baseUrl}/tasks/stream?access_token=${encodeURIComponent(currentToken)}`;
+
         const es = new EventSource(sseUrl);
         activeEventSourceRef.current = es;
 
@@ -138,6 +165,6 @@ export function useTaskNotifications() {
       reconnectCountRef.current = 0;
     };
     // Only re-establish SSE when the actual token changes (not on every render)
-     
+
   }, [session?.accessToken]);
 }

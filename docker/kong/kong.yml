@@ -30,6 +30,9 @@ _transform: true
 # Consumers (One per Keycloak realm, key = issuer URL)
 # ====================================================
 consumers:
+  # Stream Fallback Anonymous Consumer (Allows ?ticket= redemption in Spring Boot)
+  - username: anonymous-stream-consumer
+
   # Platform Superadmin Realm
   - username: ftth-realm
     jwt_secrets:
@@ -239,6 +242,7 @@ services:
                 - access_token
                 - jwt
                 - token
+              anonymous: anonymous-stream-consumer
               run_on_preflight: false
 
       # --- 4. Protected API Routes (Default Backend Fallback) ---
@@ -622,8 +626,10 @@ plugins:
 
           -- 2. Verify legitimate credential from jwt plugin
           local cred = kong.client.get_credential()
-          if not cred then
-            -- Anonymous / Public Route: Strip client-supplied X-Consumer-* / X-Credential-* headers
+          local consumer = kong.client.get_consumer()
+          local cname = consumer and consumer.username or ""
+          if not cred or cname == "anonymous-stream-consumer" then
+            -- Anonymous / Public Route / Stream Fallback: Strip client-supplied X-Consumer-* / X-Credential-* headers
             for name in pairs(req.get_headers()) do
               local l = name:lower()
               if l:find("^x%-consumer%-") or l:find("^x%-credential%-") or l == "x-anonymous-consumer" then

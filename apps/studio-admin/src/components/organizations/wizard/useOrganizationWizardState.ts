@@ -79,6 +79,32 @@ function resolveSlugErrorMessage(
   return { message: rawMessage };
 }
 
+async function validateWizardStep(
+  step: number,
+  formData: WizardFormData,
+  checkSlugAvailable: (slug: string) => Promise<boolean>,
+  ldapTestPassed: boolean,
+  t: (key: string) => string
+): Promise<{ valid: boolean; slugError?: string; errorMessage?: string }> {
+  if (step === 1 && !formData.plan) {
+    return { valid: false, errorMessage: t("organizations.wizard_select_plan_error") };
+  }
+  if (step === 2) {
+    if (!formData.name || !formData.slug) return { valid: false };
+    const isAvailable = await checkSlugAvailable(formData.slug);
+    if (!isAvailable) {
+      return { valid: false, slugError: t("organizations.wizard_slug_taken_error") };
+    }
+  }
+  if (step === 3 && formData.ldapEnabled && !ldapTestPassed) {
+    return { valid: false, errorMessage: t("organizations.wizard_ldap_test_required") };
+  }
+  if (step === 4 && !formData.adminEmail) {
+    return { valid: false, errorMessage: t("organizations.wizard_pic_email_required") };
+  }
+  return { valid: true };
+}
+
 export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: (open: boolean) => void) {
   const { t } = useTranslation();
   const { data: session } = useSession();
@@ -125,27 +151,13 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
   };
 
   const nextStep = async () => {
-    if (step === 1 && !formData.plan) {
-      toast.error(t("organizations.wizard_select_plan_error"));
+    const check = await validateWizardStep(step, formData, checkSlugAvailable, ldapTestPassed, t);
+    if (!check.valid) {
+      if (check.errorMessage) toast.error(check.errorMessage);
+      if (check.slugError) setSlugError(check.slugError);
       return;
     }
-    if (step === 2) {
-      if (!formData.name || !formData.slug) return;
-      const isAvailable = await checkSlugAvailable(formData.slug);
-      if (!isAvailable) {
-        setSlugError(t("organizations.wizard_slug_taken_error"));
-        return;
-      }
-      setSlugError(null);
-    }
-    if (step === 3 && formData.ldapEnabled && !ldapTestPassed) {
-      toast.error(t("organizations.wizard_ldap_test_required"));
-      return;
-    }
-    if (step === 4 && !formData.adminEmail) {
-      toast.error(t("organizations.wizard_pic_email_required"));
-      return;
-    }
+    setSlugError(null);
     setStep((prev) => prev + 1);
   };
 
