@@ -187,14 +187,17 @@ function LicenseRow({
       {/* Quota Entitlements Pills */}
       <TableCell className="py-2 text-xs">
         <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono">
-          <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_projects_olts")}>
-            OLT: {lic.entitlements?.maxProjects ?? "-"}
+          <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_projects")}>
+            Proj: {lic.overrideMaxProjects ?? lic.entitlements?.maxProjects ?? "-"}
+          </span>
+          <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_olts_capacity")}>
+            OLT: {lic.overrideMaxOlts ?? lic.entitlements?.maxOlts ?? "-"}
           </span>
           <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_odps")}>
-            ODP: {lic.entitlements?.maxOdps ?? "-"}
+            ODP: {lic.overrideMaxOdps ?? lic.entitlements?.maxOdps ?? "-"}
           </span>
           <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_customers")}>
-            Subs: {lic.entitlements?.maxCustomers ?? "-"}
+            Subs: {lic.overrideMaxCustomers ?? lic.entitlements?.maxCustomers ?? "-"}
           </span>
         </div>
       </TableCell>

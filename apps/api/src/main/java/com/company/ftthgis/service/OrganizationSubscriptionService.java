@@ -81,8 +81,8 @@ public class OrganizationSubscriptionService {
         int usedActiveProjects = (int) projectQuotaService.getUsedActiveProjects(org.getId());
         int archivedProjects = (int) projectQuotaService.getUsedArchivedProjects(org.getId());
 
-        int baseProjects = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 6;
-        int maxProjects = getConfigInt(org, "max_projects", getConfigInt(org, "max_olts", baseProjects));
+        int effectiveMaxOlts = projectQuotaService.getEffectiveMaxOlts(org);
+        int usedOlts = (int) projectQuotaService.getUsedOlts(org.getId());
 
         // Real count of billable ODPs from database (excluding PLANNING stage zones)
         long realUsedOdps = 0;
@@ -125,7 +125,7 @@ public class OrganizationSubscriptionService {
         }
 
         boolean isOverQuota = org.getOverQuotaMode() != null && org.getOverQuotaMode() 
-                || (usedActiveProjects > effectiveMaxProjects || usedOdps > effectiveMaxOdps);
+                || (usedActiveProjects > effectiveMaxProjects || usedOlts > effectiveMaxOlts || usedOdps > effectiveMaxOdps);
         boolean isSoftLocked = org.isSoftLocked();
 
         String planName = plan != null ? plan.getName() : "PRO";
@@ -142,15 +142,15 @@ public class OrganizationSubscriptionService {
                 .planName(planName)
                 .planPrice(plan != null && plan.getPrice() != null ? plan.getPrice() : BigDecimal.valueOf(3900000))
                 .planCycle(org.getPlanCycle() != null ? org.getPlanCycle() : "MONTHLY")
-                // New standardized Project & Archive quota fields
-                .maxProjects(maxProjects)
+                // Standardized Project & Archive quota fields
+                .maxProjects(effectiveMaxProjects)
                 .usedProjects(usedActiveProjects)
                 .effectiveMaxProjects(effectiveMaxProjects)
                 .archivedProjects(archivedProjects)
                 .maxArchivedProjects(maxArchivedProjects)
-                // Backward compatible fields for studio-admin
-                .maxOlts(maxProjects)
-                .usedOlts(usedActiveProjects)
+                // Hardware OLT fields (independent from projects)
+                .maxOlts(effectiveMaxOlts)
+                .usedOlts(usedOlts)
                 .maxOdps(maxOdps)
                 .usedOdps(usedOdps)
                 .maxStorageGb(maxStorageGb)
@@ -162,7 +162,7 @@ public class OrganizationSubscriptionService {
                 .boosterOdps(boosterOdps)
                 .boosterExpiresAt(boosterExpiresAt)
                 .boosterDaysRemaining(boosterDaysRemaining)
-                .effectiveMaxOlts(effectiveMaxProjects)
+                .effectiveMaxOlts(effectiveMaxOlts)
                 .effectiveMaxOdps(effectiveMaxOdps)
                 .trialExpiresAt(org.getTrialExpiresAt())
                 .isTrialExpired(isTrialExpired)
@@ -253,16 +253,18 @@ public class OrganizationSubscriptionService {
                 .orElseGet(() -> subscriptionPlanRepository.findByName("FREE")
                         .orElseThrow(() -> new RuntimeException("Target plan not found: " + targetPlanName)));
 
-        int usedOlts = (int) projectRepository.countByOrganizationId(org.getId());
+        int usedProjects = (int) projectQuotaService.getUsedActiveProjects(org.getId());
+        int targetMaxProjects = targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 1;
+        int usedOlts = (int) projectQuotaService.getUsedOlts(org.getId());
         int targetMaxOlts = targetPlan.getMaxOlts() != null ? targetPlan.getMaxOlts() :
                 (targetPlan.getMaxProjects() != null ? targetPlan.getMaxProjects() : 1);
         int targetMaxOdps = targetPlan.getMaxOdps() != null ? targetPlan.getMaxOdps() : 50;
         int usedOdps = getConfigInt(org, "used_odps", usedOlts * 30);
 
-        boolean willBeOverQuota = usedOlts > targetMaxOlts || usedOdps > targetMaxOdps;
+        boolean willBeOverQuota = usedProjects > targetMaxProjects || usedOlts > targetMaxOlts || usedOdps > targetMaxOdps;
 
-        log.info("📉 Downgrading plan for organization '{}' to '{}'. Used: {}/{} OLTs, {}/{} ODPs. OverQuota={}",
-                slug, targetPlan.getName(), usedOlts, targetMaxOlts, usedOdps, targetMaxOdps, willBeOverQuota);
+        log.info("📉 Downgrading plan for organization '{}' to '{}'. Used: {}/{} Projects, {}/{} OLTs, {}/{} ODPs. OverQuota={}",
+                slug, targetPlan.getName(), usedProjects, targetMaxProjects, usedOlts, targetMaxOlts, usedOdps, targetMaxOdps, willBeOverQuota);
 
         org.setSubscriptionPlan(targetPlan);
 
@@ -377,8 +379,8 @@ public class OrganizationSubscriptionService {
         org.setBoosterExpiresAt(LocalDateTime.now().plusDays(durationDays));
 
         // Jika sebelumnya over-quota dan booster mencukupi, buka kembali status ACTIVE
-        int usedOlts = (int) projectRepository.countByOrganizationId(org.getId());
-        int maxOlts = getConfigInt(org, "max_olts", 6);
+        int usedOlts = (int) projectQuotaService.getUsedOlts(org.getId());
+        int maxOlts = projectQuotaService.getEffectiveMaxOlts(org);
         int effectiveMaxOlts = maxOlts + request.getBoosterOlts();
         
         if (org.getStatus() == Organization.OrganizationStatus.OVER_QUOTA && usedOlts <= effectiveMaxOlts) {

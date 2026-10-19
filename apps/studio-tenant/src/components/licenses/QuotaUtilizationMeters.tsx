@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Server, Network, HardDrive, Activity, AlertTriangle, type LucideIcon } from "lucide-react";
+import { Server, Network, HardDrive, Activity, AlertTriangle, Layers, type LucideIcon } from "lucide-react";
 import { Card } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import type { TenantLicenseDetails } from "../../hooks/useTenantLicense";
@@ -19,13 +19,41 @@ interface QuotaMetricItem {
   percent: number;
 }
 
+function calcProjectItem(
+  license: TenantLicenseDetails | null | undefined,
+  summary: SubscriptionSummary | null | undefined,
+  title: string
+): QuotaMetricItem {
+  const max =
+    license?.overrideMaxProjects ??
+    license?.entitlements?.maxProjects ??
+    summary?.effectiveMaxProjects ??
+    summary?.maxProjects ??
+    1;
+  const used = summary?.usedProjects ?? 0;
+  return {
+    id: "projects",
+    title,
+    icon: Layers,
+    used,
+    max,
+    unit: "Proj",
+    percent: Math.min(100, Math.round((used / Math.max(1, max)) * 100)),
+  };
+}
+
 function calcOltItem(
   license: TenantLicenseDetails | null | undefined,
   summary: SubscriptionSummary | null | undefined,
   title: string
 ): QuotaMetricItem {
-  const max = license?.entitlements?.maxProjects ?? summary?.effectiveMaxOlts ?? summary?.maxOlts ?? 1;
-  const used = summary?.usedOlts ?? summary?.usedProjects ?? 0;
+  const max =
+    license?.overrideMaxOlts ??
+    license?.entitlements?.maxOlts ??
+    summary?.effectiveMaxOlts ??
+    summary?.maxOlts ??
+    1;
+  const used = summary?.usedOlts ?? 0;
   return {
     id: "olts",
     title,
@@ -42,7 +70,12 @@ function calcOdpItem(
   summary: SubscriptionSummary | null | undefined,
   title: string
 ): QuotaMetricItem {
-  const max = license?.entitlements?.maxOdps ?? summary?.effectiveMaxOdps ?? summary?.maxOdps ?? 50;
+  const max =
+    license?.overrideMaxOdps ??
+    license?.entitlements?.maxOdps ??
+    summary?.effectiveMaxOdps ??
+    summary?.maxOdps ??
+    50;
   const used = summary?.usedOdps ?? 0;
   return {
     id: "odps",
@@ -60,7 +93,11 @@ function calcStorageItem(
   summary: SubscriptionSummary | null | undefined,
   title: string
 ): QuotaMetricItem {
-  const max = license?.entitlements?.maxStorageGb ?? summary?.maxStorageGb ?? 2;
+  const max =
+    license?.overrideMaxStorageGb ??
+    license?.entitlements?.maxStorageGb ??
+    summary?.maxStorageGb ??
+    2;
   const used = summary?.usedStorageGb ?? 0;
   return {
     id: "storage",
@@ -96,6 +133,7 @@ function resolveQuotaMetrics(
   t: (key: string) => string
 ): QuotaMetricItem[] {
   return [
+    calcProjectItem(license, summary, t("license.tenant.quota_projects")),
     calcOltItem(license, summary, t("license.tenant.quota_olts")),
     calcOdpItem(license, summary, t("license.tenant.quota_odps")),
     calcStorageItem(license, summary, t("license.tenant.quota_storage")),
@@ -173,7 +211,7 @@ export function QuotaUtilizationMeters({ license }: QuotaUtilizationMetersProps)
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
         {quotaItems.map((item) => (
           <QuotaMetricCard key={item.id} item={item} />
         ))}

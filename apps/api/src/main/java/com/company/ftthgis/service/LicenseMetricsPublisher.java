@@ -209,20 +209,28 @@ public class LicenseMetricsPublisher {
     ) {
         SubscriptionPlan plan = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan() : org.getSubscriptionPlan();
 
-        // --- OLT / Projects Quota ---
-        int maxOlts = lic.getOverrideMaxProjects() != null ? lic.getOverrideMaxProjects() :
-                (plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 6);
-        if (org.isBoosterActive() && org.getBoosterOlts() != null && lic.getOverrideMaxProjects() == null) {
-            maxOlts += org.getBoosterOlts();
-        }
+        // --- OLT Hardware Quota ---
+        int maxOlts = projectQuotaService.getEffectiveMaxOlts(org);
         long usedOlts = 0;
         try {
-            usedOlts = projectQuotaService.getUsedActiveProjects(org.getId());
+            usedOlts = projectQuotaService.getUsedOlts(org.getId());
         } catch (Exception ignored) {}
         double oltRatio = maxOlts > 0 ? (double) usedOlts / maxOlts : 0.0;
         quotaRows.add(MultiGauge.Row.of(
                 Tags.of("tenant_slug", slug, "resource", "olt"),
                 Math.round(oltRatio * 1000.0) / 1000.0
+        ));
+
+        // --- Projects Quota ---
+        int maxProjects = projectQuotaService.getEffectiveMaxProjects(org);
+        long usedProjects = 0;
+        try {
+            usedProjects = projectQuotaService.getUsedActiveProjects(org.getId());
+        } catch (Exception ignored) {}
+        double projectRatio = maxProjects > 0 ? (double) usedProjects / maxProjects : 0.0;
+        quotaRows.add(MultiGauge.Row.of(
+                Tags.of("tenant_slug", slug, "resource", "project"),
+                Math.round(projectRatio * 1000.0) / 1000.0
         ));
 
         // --- ODP Quota ---

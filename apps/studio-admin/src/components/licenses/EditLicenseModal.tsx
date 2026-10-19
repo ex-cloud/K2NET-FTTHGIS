@@ -30,6 +30,8 @@ interface EditLicenseModalProps {
 interface QuotaOverridesProps {
   overrideMaxProjects: string;
   setOverrideMaxProjects: (val: string) => void;
+  overrideMaxOlts: string;
+  setOverrideMaxOlts: (val: string) => void;
   overrideMaxOdps: string;
   setOverrideMaxOdps: (val: string) => void;
   overrideMaxOdcs: string;
@@ -43,6 +45,8 @@ interface QuotaOverridesProps {
 function QuotaOverridesFields({
   overrideMaxProjects,
   setOverrideMaxProjects,
+  overrideMaxOlts,
+  setOverrideMaxOlts,
   overrideMaxOdps,
   setOverrideMaxOdps,
   overrideMaxOdcs,
@@ -64,10 +68,10 @@ function QuotaOverridesFields({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">
-            {t("license.modal.max_projects_olts")}
+            {t("license.modal.max_projects")}
           </Label>
           <Input
             type="number"
@@ -75,6 +79,19 @@ function QuotaOverridesFields({
             placeholder={t("license.modal.default_quota_placeholder")}
             value={overrideMaxProjects}
             onChange={(e) => setOverrideMaxProjects(e.target.value)}
+            className="h-7 text-xs bg-background"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">
+            {t("license.modal.max_olts_capacity")}
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            placeholder={t("license.modal.default_quota_placeholder")}
+            value={overrideMaxOlts}
+            onChange={(e) => setOverrideMaxOlts(e.target.value)}
             className="h-7 text-xs bg-background"
           />
         </div>
@@ -308,6 +325,7 @@ export function EditLicenseModal({
 
   // Custom Quota Overrides
   const [overrideMaxProjects, setOverrideMaxProjects] = React.useState<string>("");
+  const [overrideMaxOlts, setOverrideMaxOlts] = React.useState<string>("");
   const [overrideMaxOdps, setOverrideMaxOdps] = React.useState<string>("");
   const [overrideMaxOdcs, setOverrideMaxOdcs] = React.useState<string>("");
   const [overrideMaxCustomers, setOverrideMaxCustomers] = React.useState<string>("");
@@ -343,6 +361,9 @@ export function EditLicenseModal({
 
     setOverrideMaxProjects(
       license.overrideMaxProjects != null ? String(license.overrideMaxProjects) : ""
+    );
+    setOverrideMaxOlts(
+      license.overrideMaxOlts != null ? String(license.overrideMaxOlts) : ""
     );
     setOverrideMaxOdps(
       license.overrideMaxOdps != null ? String(license.overrideMaxOdps) : ""
@@ -390,6 +411,9 @@ export function EditLicenseModal({
       gracePeriodUntil: gracePeriodUntil ? `${gracePeriodUntil}T23:59:59` : undefined,
       overrideMaxProjects: overrideMaxProjects.trim()
         ? parseInt(overrideMaxProjects, 10)
+        : undefined,
+      overrideMaxOlts: overrideMaxOlts.trim()
+        ? parseInt(overrideMaxOlts, 10)
         : undefined,
       overrideMaxOdps: overrideMaxOdps.trim() ? parseInt(overrideMaxOdps, 10) : undefined,
       overrideMaxOdcs: overrideMaxOdcs.trim() ? parseInt(overrideMaxOdcs, 10) : undefined,
@@ -514,6 +538,8 @@ export function EditLicenseModal({
           <QuotaOverridesFields
             overrideMaxProjects={overrideMaxProjects}
             setOverrideMaxProjects={setOverrideMaxProjects}
+            overrideMaxOlts={overrideMaxOlts}
+            setOverrideMaxOlts={setOverrideMaxOlts}
             overrideMaxOdps={overrideMaxOdps}
             setOverrideMaxOdps={setOverrideMaxOdps}
             overrideMaxOdcs={overrideMaxOdcs}

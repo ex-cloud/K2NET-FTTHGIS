@@ -28,6 +28,8 @@ public class UpdateTenantLicenseRequest {
     // Custom Quota Overrides
     private Integer overrideMaxProjects;
 
+    private Integer overrideMaxOlts;
+
     private Integer overrideMaxOdps;
 
     private Integer overrideMaxOdcs;

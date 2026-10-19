@@ -34,6 +34,7 @@ public class LicenseIssueRequest {
 
     // ── Custom Quota Overrides (Opsional untuk Kontrak B2B Khusus) ───────────
     private Integer overrideMaxProjects;
+    private Integer overrideMaxOlts;
     private Integer overrideMaxOdps;
     private Integer overrideMaxOdcs;
     private Integer overrideMaxCustomers;

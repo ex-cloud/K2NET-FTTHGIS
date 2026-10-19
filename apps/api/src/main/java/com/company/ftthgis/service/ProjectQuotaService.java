@@ -301,7 +301,9 @@ public class ProjectQuotaService {
         if (tenantLicenseRepository != null && org.getId() != null) {
             Optional<TenantLicense> activeLicenseOpt = tenantLicenseRepository
                     .findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(org.getId(), LicenseStatus.ACTIVE);
-            if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getOverrideMaxProjects() != null) {
+            if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getOverrideMaxOlts() != null) {
+                baseLimit = activeLicenseOpt.get().getOverrideMaxOlts();
+            } else if (activeLicenseOpt.isPresent() && activeLicenseOpt.get().getOverrideMaxProjects() != null) {
                 baseLimit = activeLicenseOpt.get().getOverrideMaxProjects();
             } else {
                 SubscriptionPlan plan = org.getSubscriptionPlan();

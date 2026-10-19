@@ -6,6 +6,7 @@ import { getCurrentOrgSlug } from "../lib/domain";
 
 export interface LicenseEntitlements {
   maxProjects: number;
+  maxOlts?: number;
   maxOdps: number;
   maxOdcs: number;
   maxCustomers: number;
@@ -35,6 +36,12 @@ export interface TenantLicenseDetails {
   machineFingerprint?: string | null;
   issuedBy?: string | null;
   notes?: string | null;
+  overrideMaxProjects?: number | null;
+  overrideMaxOlts?: number | null;
+  overrideMaxOdps?: number | null;
+  overrideMaxOdcs?: number | null;
+  overrideMaxCustomers?: number | null;
+  overrideMaxStorageGb?: number | null;
   entitlements: LicenseEntitlements;
   createdAt: string;
 }

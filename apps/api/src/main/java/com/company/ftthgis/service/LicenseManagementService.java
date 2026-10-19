@@ -156,6 +156,7 @@ public class LicenseManagementService {
                 .validFrom(now)
                 .validUntil(validUntil)
                 .overrideMaxProjects(request.getOverrideMaxProjects())
+                .overrideMaxOlts(request.getOverrideMaxOlts())
                 .overrideMaxOdps(request.getOverrideMaxOdps())
                 .overrideMaxOdcs(request.getOverrideMaxOdcs())
                 .overrideMaxCustomers(request.getOverrideMaxCustomers())
@@ -988,6 +989,7 @@ public class LicenseManagementService {
 
             // Custom Quota Overrides
             if (request.getOverrideMaxProjects() != null) lic.setOverrideMaxProjects(request.getOverrideMaxProjects());
+            if (request.getOverrideMaxOlts() != null) lic.setOverrideMaxOlts(request.getOverrideMaxOlts());
             if (request.getOverrideMaxOdps() != null) lic.setOverrideMaxOdps(request.getOverrideMaxOdps());
             if (request.getOverrideMaxOdcs() != null) lic.setOverrideMaxOdcs(request.getOverrideMaxOdcs());
             if (request.getOverrideMaxCustomers() != null) lic.setOverrideMaxCustomers(request.getOverrideMaxCustomers());

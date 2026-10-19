@@ -66,6 +66,9 @@ public class TenantLicense extends OrganizationAwareEntity {
     @Column(name = "override_max_projects")
     private Integer overrideMaxProjects;
 
+    @Column(name = "override_max_olts")
+    private Integer overrideMaxOlts;
+
     @Column(name = "override_max_odps")
     private Integer overrideMaxOdps;
 

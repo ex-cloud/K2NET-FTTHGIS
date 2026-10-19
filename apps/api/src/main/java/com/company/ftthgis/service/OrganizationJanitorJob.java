@@ -107,12 +107,11 @@ public class OrganizationJanitorJob {
                     log.info("⏰ JANITOR: Booster expired for '{}'. Re-evaluating base capacity...", org.getSlug());
                     
                     SubscriptionPlan plan = org.getSubscriptionPlan();
-                    int baseOlts = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 6;
-                    int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 2500;
-                    
-                    int maxOlts = getConfigInt(org, "max_olts", baseOlts);
-                    int maxOdps = getConfigInt(org, "max_odps", baseOdps);
-                    int usedOlts = (int) projectRepository.countByOrganizationId(org.getId());
+                    int maxProjects = projectQuotaService.getEffectiveMaxProjects(org);
+                    int usedProjects = (int) projectQuotaService.getUsedActiveProjects(org.getId());
+                    int maxOlts = projectQuotaService.getEffectiveMaxOlts(org);
+                    int usedOlts = (int) projectQuotaService.getUsedOlts(org.getId());
+                    int maxOdps = projectQuotaService.getEffectiveMaxOdps(org);
                     int usedOdps = getConfigInt(org, "used_odps", usedOlts * 30);
 
                     // Clear booster fields
@@ -121,9 +120,9 @@ public class OrganizationJanitorJob {
                     org.setBoosterExpiresAt(null);
 
                     // If used assets exceed base quotas, safely switch to OVER_QUOTA (Read-Only Mode)
-                    if (usedOlts > maxOlts || usedOdps > maxOdps) {
-                        log.warn("🛡️ JANITOR: '{}' usage ({}/{} OLTs, {}/{} ODPs) exceeds base limits. Engaging OVER_QUOTA mode.",
-                                org.getSlug(), usedOlts, maxOlts, usedOdps, maxOdps);
+                    if (usedProjects > maxProjects || usedOlts > maxOlts || usedOdps > maxOdps) {
+                        log.warn("🛡️ JANITOR: '{}' usage ({}/{} Projects, {}/{} OLTs, {}/{} ODPs) exceeds base limits. Engaging OVER_QUOTA mode.",
+                                org.getSlug(), usedProjects, maxProjects, usedOlts, maxOlts, usedOdps, maxOdps);
                         org.setOverQuotaMode(true);
                         org.setStatus(Organization.OrganizationStatus.OVER_QUOTA);
                         org.setGracePeriodUntil(now.plusDays(14));

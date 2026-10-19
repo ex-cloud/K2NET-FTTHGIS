@@ -44,6 +44,7 @@ export function ManualIssueLicenseModal({
   // Custom Quota Overrides
   const [showOverrides, setShowOverrides] = React.useState<boolean>(false);
   const [maxProjects, setMaxProjects] = React.useState<string>("");
+  const [maxOlts, setMaxOlts] = React.useState<string>("");
   const [maxOdps, setMaxOdps] = React.useState<string>("");
   const [maxOdcs, setMaxOdcs] = React.useState<string>("");
   const [maxCustomers, setMaxCustomers] = React.useState<string>("");
@@ -81,6 +82,7 @@ export function ManualIssueLicenseModal({
       durationMonths: Math.max(1, durationMonths),
       activationType,
       overrideMaxProjects: maxProjects ? parseInt(maxProjects, 10) : undefined,
+      overrideMaxOlts: maxOlts ? parseInt(maxOlts, 10) : undefined,
       overrideMaxOdps: maxOdps ? parseInt(maxOdps, 10) : undefined,
       overrideMaxOdcs: maxOdcs ? parseInt(maxOdcs, 10) : undefined,
       overrideMaxCustomers: maxCustomers ? parseInt(maxCustomers, 10) : undefined,
@@ -214,6 +216,18 @@ export function ManualIssueLicenseModal({
                     placeholder="e.g. 10"
                     value={maxProjects}
                     onChange={(e) => setMaxProjects(e.target.value)}
+                    className="h-7 text-xs bg-background mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px] text-muted-foreground">
+                    {t("license.modal.max_olts_capacity")}
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 12"
+                    value={maxOlts}
+                    onChange={(e) => setMaxOlts(e.target.value)}
                     className="h-7 text-xs bg-background mt-1"
                   />
                 </div>

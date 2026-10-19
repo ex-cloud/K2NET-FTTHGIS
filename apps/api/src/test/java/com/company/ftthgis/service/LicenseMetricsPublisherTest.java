@@ -76,6 +76,7 @@ class LicenseMetricsPublisherTest {
                 .name("PRO")
                 .price(BigDecimal.valueOf(3900000))
                 .maxProjects(6)
+                .maxOlts(12)
                 .maxOdps(2500)
                 .build();
 
@@ -100,6 +101,7 @@ class LicenseMetricsPublisherTest {
                 .name("STARTER")
                 .price(BigDecimal.valueOf(1500000))
                 .maxProjects(2)
+                .maxOlts(3)
                 .maxOdps(300)
                 .build();
 
@@ -114,9 +116,15 @@ class LicenseMetricsPublisherTest {
 
         when(tenantLicenseRepository.findAll()).thenReturn(List.of(lic1, lic2));
         when(projectQuotaService.getUsedActiveProjects(orgId1)).thenReturn(3L); // 3 / 6 = 0.5
+        when(projectQuotaService.getUsedOlts(orgId1)).thenReturn(6L); // 6 / 12 = 0.5
+        when(projectQuotaService.getEffectiveMaxProjects(org1)).thenReturn(6);
+        when(projectQuotaService.getEffectiveMaxOlts(org1)).thenReturn(12);
         when(networkNodeRepository.countBillableOdpsByOrganizationId(orgId1)).thenReturn(1250L); // 1250 / 2500 = 0.5
 
         when(projectQuotaService.getUsedActiveProjects(orgId2)).thenReturn(2L); // 2 / 2 = 1.0
+        when(projectQuotaService.getUsedOlts(orgId2)).thenReturn(3L); // 3 / 3 = 1.0
+        when(projectQuotaService.getEffectiveMaxProjects(org2)).thenReturn(2);
+        when(projectQuotaService.getEffectiveMaxOlts(org2)).thenReturn(3);
         when(networkNodeRepository.countBillableOdpsByOrganizationId(orgId2)).thenReturn(150L); // 150 / 300 = 0.5
 
         // Execute publish
@@ -154,6 +162,13 @@ class LicenseMetricsPublisherTest {
                 .gauge()
                 .value();
         assertThat(oltRatioOrg1).isEqualTo(0.5);
+
+        Double projectRatioOrg1 = meterRegistry.get("ftth_hardware_quota_utilization_ratio")
+                .tag("tenant_slug", "isp-mitra")
+                .tag("resource", "project")
+                .gauge()
+                .value();
+        assertThat(projectRatioOrg1).isEqualTo(0.5);
 
         Double oltRatioOrg2 = meterRegistry.get("ftth_hardware_quota_utilization_ratio")
                 .tag("tenant_slug", "cepat-net")

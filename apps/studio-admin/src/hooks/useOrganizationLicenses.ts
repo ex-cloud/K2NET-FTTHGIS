@@ -12,6 +12,7 @@ export type LicenseStatus =
 
 export interface LicenseEntitlements {
   maxProjects: number;
+  maxOlts?: number;
   maxOdps: number;
   maxOdcs: number;
   maxCustomers: number;
@@ -44,6 +45,7 @@ export interface LicenseItem {
   entitlements: LicenseEntitlements;
   // Custom Quota Overrides
   overrideMaxProjects?: number;
+  overrideMaxOlts?: number;
   overrideMaxOdps?: number;
   overrideMaxOdcs?: number;
   overrideMaxCustomers?: number;
@@ -80,6 +82,7 @@ export interface IssueLicensePayload {
   durationMonths: number;
   activationType?: string;
   overrideMaxProjects?: number;
+  overrideMaxOlts?: number;
   overrideMaxOdps?: number;
   overrideMaxOdcs?: number;
   overrideMaxCustomers?: number;
@@ -112,6 +115,7 @@ export interface UpdateLicensePayload {
   validUntil?: string;
   gracePeriodUntil?: string;
   overrideMaxProjects?: number;
+  overrideMaxOlts?: number;
   overrideMaxOdps?: number;
   overrideMaxOdcs?: number;
   overrideMaxCustomers?: number;

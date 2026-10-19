@@ -68,8 +68,11 @@ public class OrganizationAnalyticsService {
         SubscriptionPlan orgPlan = org.getSubscriptionPlan();
         int apiRateLimitMax = (orgPlan != null && orgPlan.getApiRateLimitRpm() != null) ? orgPlan.getApiRateLimitRpm() : 500;
 
-        stats.put("projectCount", projectCount);
-        stats.put("usedOlts", projectCount != null ? projectCount : 0);
+        long usedOlts = projectQuotaService.getUsedOlts(orgId);
+
+        stats.put("projectCount", projectCount != null ? projectCount : 0);
+        stats.put("usedProjects", projectCount != null ? projectCount : 0);
+        stats.put("usedOlts", usedOlts);
         stats.put("maxOlts", maxOlts);
         stats.put("odcCount", odcCount);
         stats.put("odpCount", odpCount);
@@ -117,7 +120,7 @@ public class OrganizationAnalyticsService {
                         "JOIN projects p ON n.project_id = p.id " +
                         "WHERE p.organization_id = ? AND n.type = 'CUSTOMER'", Integer.class, orgId);
 
-                int resolvedOltCount = (oltCount != null && oltCount > 0) ? oltCount : (projectCount != null ? projectCount : 0);
+                int resolvedOltCount = (oltCount != null) ? oltCount : 0;
                 int orgMaxOlts = projectQuotaService.getEffectiveMaxOlts(org);
                 int orgMaxOdps = projectQuotaService.getEffectiveMaxOdps(org);
                 int orgMaxStorageGb = projectQuotaService.getEffectiveMaxStorageGb(org);
