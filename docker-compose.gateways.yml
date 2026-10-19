@@ -279,10 +279,10 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-gemini}
       - ENV_FILE_PATH=/opt/project5/services/.env
-      - DOCS_ROOT_PATH=/opt/project5/docs
+      - DOCS_ROOT_PATH=/opt/project5/knowledge-base
     volumes:
       - /etc/ftth/gateways.env:/opt/project5/services/.env
-      - /opt/project5/docs:/opt/project5/docs
+      - /opt/project5/knowledge-base:/opt/project5/knowledge-base
     expose:
       - "5012"
     deploy:

@@ -121,7 +121,7 @@ def _save_markdown_to_disk(
     sehingga sinkron dua arah dengan Obsidian dan Server.
     Mengembalikan relative file_name (e.g. '04_GIS_Mapping/sop-pemetaan-standar-penamaan-aset.md').
     """
-    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/knowledge-base")
     target_folder = CATEGORY_TO_FOLDER.get(category.upper(), "note")
     folder_path = os.path.join(docs_base, target_folder)
 
@@ -278,7 +278,7 @@ async def get_server_sync_status(
     Mengidentifikasi file baru (unindexed) yang belum terindeks.
     Abaikan direktori non-kanonikal seperti 06_Archive_Dev_History, aset, note, Server, dll.
     """
-    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/knowledge-base")
     if not os.path.exists(docs_base):
         return ServerSyncStatusResponse(
             total_server_files=0,
@@ -379,7 +379,7 @@ async def preview_server_file(
     Membaca dan mempratinjau isi berkas Markdown fisik di server sebelum diindeks atau ditolak.
     Dilengkapi perlindungan anti directory traversal dan parsing frontmatter.
     """
-    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/knowledge-base")
     clean_path = os.path.normpath(path).lstrip("/\\")
     full_path = os.path.abspath(os.path.join(docs_base, clean_path))
 
@@ -438,7 +438,7 @@ async def reject_server_file(
     Menolak / mengabaikan berkas server agar tidak diindeks ke pgvector
     dan tidak lagi muncul pada daftar berkas unindexed.
     """
-    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/knowledge-base")
     clean_path = os.path.normpath(payload.path).lstrip("/\\")
     full_path = os.path.abspath(os.path.join(docs_base, clean_path))
 
@@ -516,7 +516,7 @@ async def index_single_server_file(
     """
     Mengindeks satu berkas spesifik dari server secara instan.
     """
-    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/knowledge-base")
     clean_path = os.path.normpath(payload.path).lstrip("/\\")
     full_path = os.path.abspath(os.path.join(docs_base, clean_path))
 
@@ -882,7 +882,7 @@ async def get_document_detail(
 
     # ── Fallback 1: Jika raw_content kosong di database, baca dari file fisik di server ──
     if not doc_data.get("raw_content") and doc_data.get("file_name"):
-        docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+        docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/knowledge-base")
         fn = doc_data["file_name"]
         candidate_paths = [
             os.path.join(docs_base, fn),
@@ -1235,7 +1235,7 @@ async def sync_server_docs(
     1-Click Server Sync: Memindai direktori /opt/project5/docs di host server
     dan mengindeks seluruh file Markdown SOP dan arsitektur yang belum terindeks.
     """
-    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/knowledge-base")
     if not os.path.exists(docs_base):
         raise HTTPException(
             status_code=404,

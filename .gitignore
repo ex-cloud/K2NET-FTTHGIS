@@ -36,6 +36,8 @@ logs/
 # karena berisi catatan pribadi dan data internal
 # (Gunakan apps/docs/ untuk dokumentasi publik di masa depan)
 /docs/
+/knowledge-base/
+/knowledge/
 .config/
 artifacts/
 AGENTS.md

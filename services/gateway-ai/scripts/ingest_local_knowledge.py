@@ -242,7 +242,7 @@ async def main():
     parser.add_argument(
         "--dir",
         type=str,
-        default="/opt/project5/docs",
+        default="/opt/project5/knowledge-base",
         help="Path direktori dokumen kanonikal yang akan diindeks"
     )
     args = parser.parse_args()
