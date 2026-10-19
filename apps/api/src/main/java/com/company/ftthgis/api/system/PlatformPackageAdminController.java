@@ -56,7 +56,12 @@ public class PlatformPackageAdminController {
      */
     @GetMapping
     @PreAuthorize("hasAuthority('system.packages.view') or hasAuthority('system.packages.manage')")
-    public ResponseEntity<List<PackageResponseDto>> getAllPackages() {
+    public ResponseEntity<List<PackageResponseDto>> getAllPackages(
+            @RequestParam(name = "lifecycle", required = false) String lifecycle
+    ) {
+        if (lifecycle != null && !lifecycle.isBlank()) {
+            return ResponseEntity.ok(packageService.getPackagesByLifecycle(lifecycle));
+        }
         return ResponseEntity.ok(packageService.getAllPackagesAdmin());
     }
 

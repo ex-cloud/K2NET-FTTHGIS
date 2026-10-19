@@ -42,6 +42,7 @@ export interface PlatformPackageItem {
   quotaDeltaOlt?: number;
   quotaDeltaOdp?: number;
   published: boolean;
+  lifecycleStatus?: "PUBLISHED" | "DRAFT" | "CORE_BUNDLED" | "DEPRECATED" | string;
   prerequisiteCodes?: string[];
   conflictCodes?: string[];
   subscriberCount?: number;
@@ -179,6 +180,7 @@ function mapToPlatformPackageItem(item: Record<string, unknown>): PlatformPackag
     quotaDeltaOlt: olt,
     quotaDeltaOdp: odp,
     published: Boolean(item.published ?? item.isPublished ?? true),
+    lifecycleStatus: String(item.lifecycleStatus || (Boolean(item.published ?? item.isPublished) ? "PUBLISHED" : "DRAFT")),
     prerequisiteCodes: Array.isArray(item.prerequisiteCodes) ? (item.prerequisiteCodes as string[]) : [],
     conflictCodes: Array.isArray(item.conflictCodes) ? (item.conflictCodes as string[]) : [],
     subscriberCount: typeof item.subscriberCount === "number" ? item.subscriberCount : undefined,
@@ -187,7 +189,7 @@ function mapToPlatformPackageItem(item: Record<string, unknown>): PlatformPackag
   };
 }
 
-export function usePlatformPackages(filters?: { status?: string; category?: string }) {
+export function usePlatformPackages(filters?: { status?: string; category?: string; lifecycle?: string }) {
   const { data: session, status } = useSession();
   const activeToken =
     session?.accessToken ||
@@ -196,12 +198,13 @@ export function usePlatformPackages(filters?: { status?: string; category?: stri
       : undefined);
 
   return useQuery<PlatformPackageItem[]>({
-    queryKey: ["platform-packages", filters?.status, filters?.category, activeToken],
+    queryKey: ["platform-packages", filters?.status, filters?.category, filters?.lifecycle, activeToken],
     queryFn: async () => {
       const baseUrl = getBackendBaseUrl();
       const params = new URLSearchParams();
       if (filters?.status) params.append("status", filters.status);
       if (filters?.category) params.append("category", filters.category);
+      if (filters?.lifecycle) params.append("lifecycle", filters.lifecycle);
 
       const qs = params.toString() ? `?${params.toString()}` : "";
       const res = await httpClient(`${baseUrl}/system/packages${qs}`, {

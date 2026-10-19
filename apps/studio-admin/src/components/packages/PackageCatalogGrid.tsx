@@ -21,8 +21,10 @@ export interface PackageCatalogGridProps {
   loading?: boolean;
   selectedCategory?: string;
   selectedStatus?: string;
+  selectedLifecycle?: string;
   onSelectCategory: (category: string) => void;
   onSelectStatus: (status: string) => void;
+  onSelectLifecycle?: (lifecycle: string) => void;
   onEditPackage: (pkg: PlatformPackageItem) => void;
   onTogglePublish: (code: string, published: boolean) => void;
   onGrantPackage: (pkg: PlatformPackageItem) => void;
@@ -48,8 +50,10 @@ export function PackageCatalogGrid({
   loading = false,
   selectedCategory = "",
   selectedStatus = "",
+  selectedLifecycle = "",
   onSelectCategory,
   onSelectStatus,
+  onSelectLifecycle,
   onEditPackage,
   onTogglePublish,
   onGrantPackage,
@@ -73,8 +77,16 @@ export function PackageCatalogGrid({
     return t("packages.card.price_per_month", { price: formatted });
   };
 
+  const lifecycleTabs = React.useMemo(() => [
+    { id: "", label: t("packages.tab_all_catalog"), count: packages.length },
+    { id: "PUBLISHED", label: t("packages.tab_marketplace_ready"), count: packages.filter(p => p.lifecycleStatus === "PUBLISHED").length },
+    { id: "DRAFT", label: t("packages.tab_under_development"), count: packages.filter(p => p.lifecycleStatus === "DRAFT").length },
+    { id: "CORE_BUNDLED", label: t("packages.tab_core_bundled"), count: packages.filter(p => p.lifecycleStatus === "CORE_BUNDLED").length },
+  ], [packages, t]);
+
   const filteredPackages = React.useMemo(() => {
     return packages.filter((pkg) => {
+      if (selectedLifecycle && pkg.lifecycleStatus !== selectedLifecycle) return false;
       if (selectedCategory && pkg.category !== selectedCategory) return false;
       if (selectedStatus === "PUBLISHED" && !pkg.published) return false;
       if (selectedStatus === "DRAFT" && pkg.published) return false;
@@ -88,10 +100,42 @@ export function PackageCatalogGrid({
       }
       return true;
     });
-  }, [packages, selectedCategory, selectedStatus, searchQuery]);
+  }, [packages, selectedLifecycle, selectedCategory, selectedStatus, searchQuery]);
 
   return (
     <div className="flex flex-col gap-4 w-full">
+      {/* 5-Layer DoD Lifecycle Status Filter Tabs */}
+      <div className="flex items-center justify-between gap-2 border-b border-border/80 pb-2.5">
+        <div className="flex items-center rounded-md border border-border/80 bg-card p-0.5 shrink-0 overflow-x-auto">
+          {lifecycleTabs.map((tab) => {
+            const isActive = (selectedLifecycle || "") === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onSelectLifecycle?.(tab.id)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                  isActive
+                    ? "bg-foreground text-background shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                    isActive
+                      ? "bg-background/20 text-background"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Toolbar: Search + Category Filters + Status Filters */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Search Bar */}
@@ -184,12 +228,14 @@ export function PackageCatalogGrid({
 
                   <span
                     className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase border ${
-                      pkg.published
+                      pkg.lifecycleStatus === "PUBLISHED"
                         ? "bg-foreground/10 text-foreground border-foreground/20"
-                        : "bg-muted/40 text-muted-foreground border-border"
+                        : pkg.lifecycleStatus === "CORE_BUNDLED"
+                        ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20"
+                        : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                     }`}
                   >
-                    {pkg.published ? t("packages.status.PUBLISHED") : t("packages.status.DRAFT")}
+                    {t(`packages.lifecycle.${pkg.lifecycleStatus || (pkg.published ? "PUBLISHED" : "DRAFT")}`)}
                   </span>
                 </div>
 

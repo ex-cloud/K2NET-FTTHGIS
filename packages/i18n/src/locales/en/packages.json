@@ -6,6 +6,16 @@
   "filter_search_placeholder": "Search packages by code, name, or description...",
   "filter_all_categories": "All Categories",
   "filter_all_statuses": "All Statuses",
+  "tab_marketplace_ready": "Marketplace Ready",
+  "tab_under_development": "In Development",
+  "tab_core_bundled": "Core Bundled",
+  "tab_all_catalog": "All Catalog",
+  "lifecycle": {
+    "PUBLISHED": "Marketplace Ready",
+    "DRAFT": "In Development",
+    "CORE_BUNDLED": "Core Bundled",
+    "DEPRECATED": "Deprecated"
+  },
   "btn_create_package": "Create Package",
   "btn_grant_package": "Manual POC Grant",
   "btn_edit": "Edit",

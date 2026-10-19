@@ -144,4 +144,61 @@ class PlatformPackageServiceTest {
         assertEquals(5L, overview.getDistinctSubscribedTenants());
         assertEquals(BigDecimal.valueOf(500000), overview.getEstimatedAddonMrr());
     }
+
+    @Test
+    @DisplayName("getPublishedPackages should only return packages with lifecycle PUBLISHED and isPublished true")
+    void testGetPublishedPackagesOnly() {
+        PlatformPackage publishedPkg = PlatformPackage.builder()
+                .id(UUID.randomUUID())
+                .code("PKG_BOOSTER_OLT_5")
+                .name("OLT Booster")
+                .category(PackageCategory.CAPACITY_BOOSTER)
+                .isPublished(true)
+                .lifecycleStatus("PUBLISHED")
+                .build();
+
+        PlatformPackage unpublishedPublishedStatus = PlatformPackage.builder()
+                .id(UUID.randomUUID())
+                .code("PKG_DRAFT_PKG")
+                .name("Draft Package")
+                .category(PackageCategory.SPATIAL_AI)
+                .isPublished(false)
+                .lifecycleStatus("PUBLISHED")
+                .build();
+
+        when(packageRepository.findByLifecycleStatusOrderBySortOrderAsc("PUBLISHED"))
+                .thenReturn(List.of(publishedPkg, unpublishedPublishedStatus));
+
+        List<PackageResponseDto> result = packageService.getPublishedPackages();
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("PKG_BOOSTER_OLT_5", result.get(0).getCode());
+    }
+
+    @Test
+    @DisplayName("getPackagesByLifecycle should filter by lifecycle status accurately")
+    void testGetPackagesByLifecycle() {
+        PlatformPackage draftPkg = PlatformPackage.builder()
+                .id(UUID.randomUUID())
+                .code("PKG_AI_OTDR")
+                .name("AI OTDR")
+                .category(PackageCategory.SPATIAL_AI)
+                .isPublished(false)
+                .lifecycleStatus("DRAFT")
+                .build();
+
+        when(packageRepository.findByLifecycleStatusOrderBySortOrderAsc("DRAFT"))
+                .thenReturn(List.of(draftPkg));
+
+        List<PackageResponseDto> draftResult = packageService.getPackagesByLifecycle("DRAFT");
+        assertEquals(1, draftResult.size());
+        assertEquals("PKG_AI_OTDR", draftResult.get(0).getCode());
+
+        when(packageRepository.findAllByOrderBySortOrderAsc())
+                .thenReturn(List.of(samplePackage, draftPkg));
+
+        List<PackageResponseDto> allResult = packageService.getPackagesByLifecycle("ALL");
+        assertEquals(2, allResult.size());
+    }
 }

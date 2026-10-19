@@ -34,6 +34,7 @@ export default function PackagesPage() {
 
   const urlCategory = searchParams.get("category") || "";
   const urlStatus = searchParams.get("status") || "";
+  const urlLifecycle = searchParams.get("lifecycle") || "";
   const urlAction = searchParams.get("action") || "";
   const urlView = searchParams.get("view") || "";
 
@@ -161,6 +162,17 @@ export default function PackagesPage() {
     router.push(`/packages${qs}`);
   };
 
+  const setLifecycleFilter = (lifecycle: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (lifecycle) {
+      params.set("lifecycle", lifecycle);
+    } else {
+      params.delete("lifecycle");
+    }
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    router.push(`/packages${qs}`);
+  };
+
   return (
     <PageLayout variant="workspace" spaceY="space-y-6">
       {/* Command Center Hero Header */}
@@ -225,14 +237,16 @@ export default function PackagesPage() {
         loading={isPackagesLoading || isOverviewLoading}
       />
 
-      {/* Catalog Grid with category & status filters */}
+      {/* Catalog Grid with category, status, and lifecycle tabs */}
       <PackageCatalogGrid
         packages={packages}
         loading={isPackagesLoading}
         selectedCategory={urlCategory}
         selectedStatus={urlStatus}
+        selectedLifecycle={urlLifecycle}
         onSelectCategory={setCategoryFilter}
         onSelectStatus={setStatusFilter}
+        onSelectLifecycle={setLifecycleFilter}
         onEditPackage={handleEdit}
         onTogglePublish={handleTogglePublish}
         onGrantPackage={handleGrant}

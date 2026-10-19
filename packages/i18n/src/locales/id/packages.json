@@ -6,6 +6,16 @@
   "filter_search_placeholder": "Cari paket berdasarkan kode, nama, atau deskripsi...",
   "filter_all_categories": "Semua Kategori",
   "filter_all_statuses": "Semua Status",
+  "tab_marketplace_ready": "Siap Jual (Marketplace)",
+  "tab_under_development": "Dalam Pengembangan",
+  "tab_core_bundled": "Bawaan Master Plan",
+  "tab_all_catalog": "Semua Katalog",
+  "lifecycle": {
+    "PUBLISHED": "Siap Jual (Marketplace)",
+    "DRAFT": "Dalam Pengembangan",
+    "CORE_BUNDLED": "Bawaan Master Plan",
+    "DEPRECATED": "Kedaluwarsa"
+  },
   "btn_create_package": "Buat Paket Baru",
   "btn_grant_package": "Grant Trial POC Manual",
   "btn_edit": "Edit",

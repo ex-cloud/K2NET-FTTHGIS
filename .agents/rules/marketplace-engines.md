@@ -85,22 +85,22 @@ K2NET tidak menggunakan arsitektur satu bahasa untuk semua hal (*one-size-fits-a
 
 ---
 
-## 📊 6. Matriks Alokasi 12 Paket Resmi Layer 3
+## 📊 6. Matriks Alokasi 12 Paket Resmi Layer 3 & Status 5-Lapis DoD (Sprint 3)
 
-| Kode Paket | Nama Paket | Bahasa Engine | Service / Port | Alasan Pemilihan Engine |
-|---|---|---|---|---|
-| `PKG_BOOSTER_OLT_5` | Booster +5 OLT Capacity | ☕ **Java** + 🐹 **Go** | Backend (9090) & Poller (5010) | Java mengelola kuota lisensi; Go mengeksekusi pooling SNMP perangkat. |
-| `PKG_BOOSTER_ODP_100` | Booster +100 ODP Capacity | ☕ **Java** | Backend (9090) | Enforce kuota ACID di `ProjectQuotaService` & `ODPService`. |
-| `PKG_BOOSTER_STORAGE_50` | Booster +50 GB MinIO S3 | ☕ **Java** + 🐹 **Go** | Backend (9090) & Storage (5004) | Java validasi kuota pra-upload; Go streaming ke MinIO S3 bucket. |
-| `PKG_WA_OUTAGE` | WA Outage Broadcast | 🐹 **Golang** | `gateway-whatsapp` (5005) | Go mengelola concurrency pooling blast pesan ke ratusan pelanggan terdampak. |
-| `PKG_OPEN_API` | REST API & Webhooks | ☕ **Java** + 🐹 **Kong** | Backend (9090) & Kong (8000) | Kong rate-limiting edge; Java HMAC SHA-256 signing & PBAC scopes. |
-| `PKG_AI_OTDR` | AI OTDR Localizer (.SOR) | 🐍 **Python** | `ai-gateway` (5012) | Parser Telcordia binary `.SOR` (`pyotdr`) & PostGIS linear interpolation. |
-| `PKG_AI_FTTH_DESIGNER` | Automated Route Planner | 🐍 **Python** + ☕ **Java** | `ai-gateway` (5012) & Backend (9090) | Python worker (Steiner Tree over Roads); Java mengunci hasil BoQ ke proyek. |
-| `PKG_SIEM_AUDIT` | SIEM & Syslog Exporter | 🐹 **Golang** | `gateway-audit` (5009) | Go daemon efisien membaca stream Redis & format RFC-5424 Syslog TLS. |
-| `PKG_IOT_ODC_GUARD` | Smart ODC Microswitch | 🐹 **Go** / 🦀 **Rust** | `gateway-task` (5011) | Listener MQTT / LoRaWAN berkecepatan tinggi dengan buffer memory minim. |
-| `PKG_PLN_ROW_PERMIT` | Utility Pole & RoW Permit | ☕ **Java** | Backend (9090) | CRUD relasional dokumen hukum izin tiang PLN/Pemda & jadwal jatuh tempo. |
-| `PKG_TENANT_BRANDING` | Custom Domain & Whitelabel | 🐹 **Go** + 🌐 **Traefik** | Traefik (80/443) & Backend (9090) | Traefik dynamic file provider (`watch: true`) + Let's Encrypt TLS router. |
-| `PKG_WHOLESALE_LEASED` | Dark Fiber & Duct Leasing | ☕ **Java** | Backend (9090) | Penguncian core fiber relasional spasial, multi-contract billing agreement. |
+| Kode Paket | Nama Paket | Bahasa Engine | Service / Port | Status DoD | Alasan Pemilihan Engine |
+|---|---|---|---|---|---|
+| `PKG_BOOSTER_OLT_5` | Booster +5 OLT Capacity | ☕ **Java** + 🐹 **Go** | Backend (9090) & Poller (5010) | **PUBLISHED** (Lulus DoD) | Java kuota lisensi decoupling V63; Go SNMP poller. |
+| `PKG_BOOSTER_ODP_100` | Booster +100 ODP Capacity | ☕ **Java** | Backend (9090) | **PUBLISHED** (Lulus DoD) | Enforce kuota ACID di `ProjectQuotaService` & `ODPService`. |
+| `PKG_BOOSTER_STORAGE_50` | Booster +50 GB MinIO S3 | ☕ **Java** + 🐹 **Go** | Backend (9090) & Storage (5004) | **PUBLISHED** (Lulus DoD) | Java validasi kuota pra-upload; Go streaming ke MinIO S3 bucket. |
+| `PKG_WA_OUTAGE` | WA Outage Broadcast | 🐹 **Golang** | `gateway-whatsapp` (5005) | **PUBLISHED** (Lulus DoD) | Go mengelola concurrency pooling blast pesan ke pelanggan terdampak. |
+| `PKG_OPEN_API` | REST API & Webhooks | ☕ **Java** + 🐹 **Kong** | Backend (9090) & Kong (8000) | **PUBLISHED** (Lulus DoD) | Kong rate-limiting edge; Java HMAC SHA-256 signing & PBAC scopes. |
+| `PKG_TENANT_BRANDING` | Custom Domain & Whitelabel | 🐹 **Go** + 🌐 **Traefik** | Traefik (80/443) & Backend (9090) | **PUBLISHED** (Lulus DoD) | Dynamic theme & branding V58, Traefik TLS router. |
+| `PKG_AI_OTDR` | AI OTDR Localizer (.SOR) | 🐍 **Python** | `ai-gateway` (5012) | **DRAFT** (Antrean Sprint 5) | Parser Telcordia binary `.SOR` (`pyotdr`) & PostGIS linear interpolation. |
+| `PKG_AI_FTTH_DESIGNER` | Automated Route Planner | 🐍 **Python** + ☕ **Java** | `ai-gateway` (5012) & Backend (9090) | **DRAFT** (Antrean Sprint 5) | Python worker (Steiner Tree over Roads); Java kunci hasil BoQ ke proyek. |
+| `PKG_SIEM_AUDIT` | SIEM & Syslog Exporter | 🐹 **Golang** | `gateway-audit` (5009) | **DRAFT** (Antrean Sprint 5) | Go daemon efisien membaca stream Redis & format RFC-5424 Syslog TLS. |
+| `PKG_IOT_ODC_GUARD` | Smart ODC Microswitch | 🐹 **Go** / 🦀 **Rust** | `gateway-task` (5011) | **DRAFT** (Antrean Sprint 5) | Listener MQTT / LoRaWAN berkecepatan tinggi dengan buffer memory minim. |
+| `PKG_PLN_ROW_PERMIT` | Utility Pole & RoW Permit | ☕ **Java** | Backend (9090) | **DRAFT** (Antrean Sprint 5) | CRUD relasional dokumen hukum izin tiang PLN/Pemda & jadwal jatuh tempo. |
+| `PKG_WHOLESALE_LEASED` | Dark Fiber & Duct Leasing | ☕ **Java** | Backend (9090) | **DRAFT** (Antrean Sprint 5) | Penguncian core fiber relasional spasial, multi-contract billing agreement. |
 
 ---
 

@@ -44,7 +44,18 @@ public class PlatformPackageService {
 
     @Transactional(readOnly = true)
     public List<PackageResponseDto> getPublishedPackages() {
-        return packageRepository.findByIsPublishedTrueOrderBySortOrderAsc().stream()
+        return packageRepository.findByLifecycleStatusOrderBySortOrderAsc("PUBLISHED").stream()
+                .filter(PlatformPackage::isPublished)
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PackageResponseDto> getPackagesByLifecycle(String status) {
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
+            return getAllPackagesAdmin();
+        }
+        return packageRepository.findByLifecycleStatusOrderBySortOrderAsc(status.trim().toUpperCase()).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }

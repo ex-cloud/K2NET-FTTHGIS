@@ -20,7 +20,11 @@ public interface PlatformPackageRepository extends JpaRepository<PlatformPackage
 
     List<PlatformPackage> findByIsPublishedTrueOrderBySortOrderAsc();
 
+    List<PlatformPackage> findByLifecycleStatusOrderBySortOrderAsc(String lifecycleStatus);
+
     List<PlatformPackage> findByCategoryAndIsPublishedTrueOrderBySortOrderAsc(PackageCategory category);
 
     long countByIsPublishedTrue();
+
+    long countByLifecycleStatus(String lifecycleStatus);
 }
