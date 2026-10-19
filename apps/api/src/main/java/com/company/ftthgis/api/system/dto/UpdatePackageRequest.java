@@ -44,7 +44,7 @@ public class UpdatePackageRequest {
     private String metadataJson;
 
     private Boolean isPublished;
-
+    private String lifecycleStatus;
     private String iconName;
 
     private String badgeLabel;

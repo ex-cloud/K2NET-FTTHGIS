@@ -8,8 +8,8 @@ Dokumen ini adalah acuan resmi bagi AI Agent dan Developer untuk memastikan kesi
 
 | Kategori | Nama Container / Modul | Port | Bahasa / Framework | Tanggung Jawab Utama |
 |---|---|---|---|---|
-| **Frontend** | `ftth-frontend-admin` (`apps/studio-admin`) | `3000` | Next.js 16 (React 19) | Admin SaaS Platform, Observability, Tasks, Gateways UI |
-| **Frontend** | `ftth-frontend-tenant` (`apps/studio-tenant`) | `3001` | Next.js 16 (React 19) | Tenant Self-Service GIS Portal |
+| **Frontend** | `ftth-frontend-admin` (`apps/studio-admin`) | `3001` | React 19 + Vite 6 (CSR SPA) | Admin SaaS Platform, Observability, Tasks, Gateways UI |
+| **Frontend** | `ftth-frontend-tenant` (`apps/studio-tenant`) | `3002` | React 19 + Vite 6 (CSR SPA) | Tenant Self-Service GIS Portal |
 | **Backend** | `ftth-backend` (`apps/api`) | `9090` | Spring Boot 3 (Java 21) | Core Business Logic, PostGIS Queries, Auth RBAC |
 | **Go Gateway** | `ftth-notification-gateway` | `5001` | Go 1.25 (Gin) | Twilio SMS, WhatsApp, SMTP Email Dispatcher |
 | **Go Gateway** | `ftth-payment-gateway` | `5002` | Go 1.25 (Gin) | Xendit Payment Links & Webhooks |

@@ -31,6 +31,7 @@ public class PackageResponseDto {
     private String quotaDeltaJson;
     private String metadataJson;
     private boolean isPublished;
+    private String lifecycleStatus;
     private String iconName;
     private String badgeLabel;
     private int sortOrder;

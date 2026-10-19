@@ -52,6 +52,9 @@ public class CreatePackageRequest {
     private boolean isPublished = true;
 
     @Builder.Default
+    private String lifecycleStatus = "PUBLISHED";
+
+    @Builder.Default
     private String iconName = "Package";
 
     private String badgeLabel;

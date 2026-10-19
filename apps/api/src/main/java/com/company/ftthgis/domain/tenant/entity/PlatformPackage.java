@@ -86,6 +86,10 @@ public class PlatformPackage extends AuditableEntity {
     @Builder.Default
     private boolean isPublished = true;
 
+    @Column(name = "lifecycle_status", nullable = false, length = 30)
+    @Builder.Default
+    private String lifecycleStatus = "PUBLISHED";
+
     @Column(name = "icon_name", length = 64)
     @Builder.Default
     private String iconName = "Package";

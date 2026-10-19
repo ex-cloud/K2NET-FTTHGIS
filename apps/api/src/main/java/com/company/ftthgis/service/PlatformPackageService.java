@@ -103,6 +103,7 @@ public class PlatformPackageService {
                 .quotaDeltaJson(request.getQuotaDeltaJson() != null ? request.getQuotaDeltaJson().trim() : "{}")
                 .metadataJson(request.getMetadataJson() != null ? request.getMetadataJson().trim() : "{}")
                 .isPublished(request.isPublished())
+                .lifecycleStatus(request.getLifecycleStatus() != null ? request.getLifecycleStatus().trim() : "PUBLISHED")
                 .iconName(request.getIconName() != null ? request.getIconName().trim() : "Package")
                 .badgeLabel(request.getBadgeLabel() != null ? request.getBadgeLabel().trim() : null)
                 .sortOrder(request.getSortOrder())
@@ -148,6 +149,7 @@ public class PlatformPackageService {
         if (request.getQuotaDeltaJson() != null) pkg.setQuotaDeltaJson(request.getQuotaDeltaJson().trim());
         if (request.getMetadataJson() != null) pkg.setMetadataJson(request.getMetadataJson().trim());
         if (request.getIsPublished() != null) pkg.setPublished(request.getIsPublished());
+        if (request.getLifecycleStatus() != null) pkg.setLifecycleStatus(request.getLifecycleStatus().trim());
         if (request.getIconName() != null) pkg.setIconName(request.getIconName().trim());
         if (request.getBadgeLabel() != null) pkg.setBadgeLabel(request.getBadgeLabel().trim());
         if (request.getSortOrder() != null) pkg.setSortOrder(request.getSortOrder());
@@ -168,6 +170,11 @@ public class PlatformPackageService {
 
         boolean newStatus = (published != null) ? published : !pkg.isPublished();
         pkg.setPublished(newStatus);
+        if (newStatus && "DRAFT".equalsIgnoreCase(pkg.getLifecycleStatus())) {
+            pkg.setLifecycleStatus("PUBLISHED");
+        } else if (!newStatus && "PUBLISHED".equalsIgnoreCase(pkg.getLifecycleStatus())) {
+            pkg.setLifecycleStatus("DRAFT");
+        }
         PlatformPackage updated = packageRepository.save(pkg);
         log.info("📦 PACKAGE TOGGLED: Code '{}' published={}", updated.getCode(), updated.isPublished());
         return mapToDto(updated);
@@ -212,6 +219,7 @@ public class PlatformPackageService {
                 .quotaDeltaJson(pkg.getQuotaDeltaJson())
                 .metadataJson(pkg.getMetadataJson())
                 .isPublished(pkg.isPublished())
+                .lifecycleStatus(pkg.getLifecycleStatus())
                 .iconName(pkg.getIconName())
                 .badgeLabel(pkg.getBadgeLabel())
                 .sortOrder(pkg.getSortOrder())
