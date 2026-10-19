@@ -55,6 +55,9 @@ class SpatialSecurityEvaluatorTest {
     @Mock
     private com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
 
+    @Mock
+    private PlatformRealmValidator platformRealmValidator;
+
     @InjectMocks
     private SpatialSecurityEvaluator evaluator;
 
@@ -66,6 +69,10 @@ class SpatialSecurityEvaluatorTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
+        lenient().when(platformRealmValidator.isPlatformRealm(any())).thenAnswer(inv -> {
+            String iss = inv.getArgument(0);
+            return iss != null && iss.contains("/realms/ftth-realm");
+        });
     }
 
     @AfterEach
@@ -113,10 +120,12 @@ class SpatialSecurityEvaluatorTest {
     }
 
     @Test
-    @DisplayName("hasProjectPermission: User with 'network.manage.all-projects' gets VIP access (Lapis 1)")
+    @DisplayName("hasProjectPermission: User with 'network.manage.all-projects' gets access within tenant organization (Lapis 2)")
     void testHasProjectPermission_allProjectsPermission() {
         setSecurityContext(userId.toString(), List.of("network.manage.all-projects"));
+        when(tenantSecurity.canAccessProject(projectId)).thenReturn(true);
         assertTrue(evaluator.hasProjectPermission(projectId, "network.manage"));
+        verify(tenantSecurity, times(1)).canAccessProject(projectId);
     }
 
     @Test
@@ -155,9 +164,11 @@ class SpatialSecurityEvaluatorTest {
         pm.setRole(projectRole);
 
         when(projectMemberRepository.findByUserIdAndProjectId(userId, projectId)).thenReturn(Optional.of(pm));
+        when(tenantSecurity.canAccessProject(projectId)).thenReturn(true);
 
         assertTrue(evaluator.hasProjectPermission(projectId, "network.manage"));
         verify(projectMemberRepository).findByUserIdAndProjectId(userId, projectId);
+        verify(tenantSecurity, times(1)).canAccessProject(projectId);
     }
 
     @Test

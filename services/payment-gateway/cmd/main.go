@@ -16,6 +16,7 @@ import (
 	"gateways/shared/middleware"
 	"gateways/shared/telemetry"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )
@@ -33,6 +34,22 @@ func main() {
 
 	paymentService := service.NewPaymentService(cfg.XenditAPIKey, cfg.XenditWebhookKey, cfg.CoreAPIURL)
 	audit := auditclient.NewFromEnv()
+
+	var rdb *redis.Client
+	if cfg.RedisAddr != "" {
+		rdb = redis.NewClient(&redis.Options{
+			Addr: cfg.RedisAddr,
+		})
+		pingCtx, pingCancel := context.WithTimeout(ctx, 2*time.Second)
+		if err := rdb.Ping(pingCtx).Err(); err != nil {
+			logger.Warn(ctx, "Redis not reachable for payment idempotency, using in-memory store", zap.Error(err))
+			rdb = nil
+		} else {
+			logger.Info(ctx, "Connected to Redis for payment idempotency store", zap.String("addr", cfg.RedisAddr))
+		}
+		pingCancel()
+	}
+	idempotencyStore := service.NewIdempotencyStore(rdb)
 
 	cJob := cron.New()
 	_, err := cJob.AddFunc("@hourly", func() {
@@ -79,8 +96,44 @@ func main() {
 
 		extID, _ := payload["external_id"].(string)
 		status, _ := payload["status"].(string)
+		invoiceID, _ := payload["id"].(string)
 
-		logger.Info(reqCtx, "Payment webhook received", zap.String("external_id", extID), zap.String("status", status))
+		if extID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing external_id"})
+			return
+		}
+
+		// Idempotency / Anti-Replay Defense: reject duplicated callbacks within 24h
+		idempotencyKey := extID + ":" + status
+		isDuplicate, err := idempotencyStore.IsDuplicateOrMark(reqCtx, idempotencyKey, 24*time.Hour)
+		if err != nil {
+			logger.Warn(reqCtx, "Error during idempotency verification", zap.Error(err))
+		}
+		if isDuplicate {
+			logger.Info(reqCtx, "Duplicate payment webhook ignored via idempotency check",
+				zap.String("external_id", extID),
+				zap.String("status", status))
+			c.JSON(http.StatusOK, gin.H{
+				"status":  "already_processed",
+				"message": "Duplicate payment callback ignored via idempotency store",
+			})
+			return
+		}
+
+		// Active status inquiry against Xendit to prevent payload manipulation
+		if invoiceID != "" {
+			inquiryStatus, err := paymentService.InquireInvoiceStatus(reqCtx, invoiceID)
+			if err == nil && inquiryStatus != "" && inquiryStatus != status {
+				logger.Warn(reqCtx, "Active inquiry status mismatch with webhook payload",
+					zap.String("webhook_status", status),
+					zap.String("inquiry_status", inquiryStatus),
+					zap.String("invoice_id", invoiceID))
+				c.JSON(http.StatusConflict, gin.H{"error": "Status mismatch with upstream gateway"})
+				return
+			}
+		}
+
+		logger.Info(reqCtx, "Payment webhook received and verified", zap.String("external_id", extID), zap.String("status", status))
 
 		if err := paymentService.ReportPaymentToCore(reqCtx, extID, status); err != nil {
 			logger.Error(reqCtx, "Failed to report payment update to Core", zap.Error(err))
@@ -93,7 +146,7 @@ func main() {
 			c.GetHeader("X-Tenant-ID"), "xendit-webhook",
 			"PAYMENT_WEBHOOK_RECEIVED", "PAYMENT", extID,
 			auditclient.GroupOperations, "payment-gateway",
-			map[string]any{"xendit_status": status, "external_id": extID},
+			map[string]any{"xendit_status": status, "external_id": extID, "invoice_id": invoiceID},
 		)
 
 		c.JSON(http.StatusOK, gin.H{"status": "Success"})

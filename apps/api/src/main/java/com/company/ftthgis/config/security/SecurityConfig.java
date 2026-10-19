@@ -169,7 +169,8 @@ public class SecurityConfig {
     public JwtAuthenticationConverter jwtAuthenticationConverter(
             @Lazy com.company.ftthgis.service.UserSyncService userSyncService,
             com.company.ftthgis.domain.user.repository.RoleRepository roleRepository,
-            com.company.ftthgis.domain.user.repository.UserRepository userRepository) {
+            com.company.ftthgis.domain.user.repository.UserRepository userRepository,
+            PlatformRealmValidator platformRealmValidator) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
 
         // Custom converter that combines Role extraction + User Sync
@@ -184,8 +185,8 @@ public class SecurityConfig {
                 System.err.println("Generic error syncing user from JWT: " + e.getMessage());
             }
 
-            // 2. Extract Roles and dynamic Permissions
-            return new KeycloakRoleConverter(roleRepository, userRepository).convert(jwt);
+            // 2. Extract Roles and dynamic Permissions via strict Allowlist
+            return new KeycloakRoleConverter(roleRepository, userRepository, platformRealmValidator).convert(jwt);
         });
 
         return converter;
@@ -213,17 +214,21 @@ public class SecurityConfig {
     /**
      * Converter untuk mengambil Role dari 'realm_access' di token JWT Keycloak,
      * lalu memetakan ke tabel permissions di local Database berdasarkan organisasi.
+     * Menggunakan Strict Allowlist: Role dari tenant realm HANYA diakui jika terdaftar di database organisasi.
      */
     static class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KeycloakRoleConverter.class);
         private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
         private final com.company.ftthgis.domain.user.repository.UserRepository userRepository;
+        private final PlatformRealmValidator platformRealmValidator;
 
         public KeycloakRoleConverter(
                 com.company.ftthgis.domain.user.repository.RoleRepository roleRepository,
-                com.company.ftthgis.domain.user.repository.UserRepository userRepository) {
+                com.company.ftthgis.domain.user.repository.UserRepository userRepository,
+                PlatformRealmValidator platformRealmValidator) {
             this.roleRepository = roleRepository;
             this.userRepository = userRepository;
+            this.platformRealmValidator = platformRealmValidator;
         }
 
         @Override
@@ -267,42 +272,70 @@ public class SecurityConfig {
                 log.warn("Could not extract organization for user {}: {}", jwt.getSubject(), e.getMessage());
             }
 
-            // 3. Map to GrantedAuthorities (Roles + Fine-Grained Permissions)
+            // Check if JWT originates from the dedicated platform realm (ftth-realm) via Exact Match
+            String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
+            boolean isPlatformRealm = platformRealmValidator.isPlatformRealm(issuer);
+
+            // 3. Map to GrantedAuthorities via Strict Allowlist (Roles + Fine-Grained Permissions)
             for (String roleName : roleNames) {
                 if (roleName == null || roleName.isBlank()) continue;
                 String cleanRole = roleName.toLowerCase().replaceFirst("^role_", "");
 
-                // Add the role itself as a standard Spring Security ROLE using canonical lowercase
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
+                java.util.Optional<com.company.ftthgis.domain.user.entity.Role> roleOpt = java.util.Optional.empty();
 
-                // Fetch fine-grained permissions dynamically from DB
-                try {
-                    java.util.Optional<com.company.ftthgis.domain.user.entity.Role> roleOpt = java.util.Optional.empty();
-                    
-                    if (orgId != null) {
-                        // First try finding the tenant-specific role
-                        roleOpt = roleRepository.findByNameAndOrganizationId(cleanRole, orgId);
-                    }
-                    
-                    // Fallback to system role if not found
+                if (isPlatformRealm) {
+                    // Platform Realm Allowlist:
+                    // Only recognize roles that exist as System Roles in DB or general fallback
+                    roleOpt = roleRepository.findByNameAndIsSystemRoleTrue(cleanRole);
                     if (roleOpt.isEmpty()) {
-                        roleOpt = roleRepository.findByNameAndIsSystemRoleTrue(cleanRole);
+                        roleOpt = roleRepository.findByName(cleanRole);
                     }
-                    
-                    // Final fallback to legacy behavior
                     if (roleOpt.isEmpty()) {
                         roleOpt = roleRepository.findByName(roleName);
                     }
 
-                    roleOpt.ifPresent(role -> {
+                    if (roleOpt.isPresent()) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
+                        var role = roleOpt.get();
                         if (role.getPermissions() != null) {
                             role.getPermissions().forEach(permission -> {
+                                if (permission.getCode() != null && !permission.getCode().isBlank()) {
+                                    authorities.add(new SimpleGrantedAuthority(permission.getCode()));
+                                }
+                            });
+                        }
+                    } else {
+                        log.debug("Ignored unmapped platform role [{}] for user {}", cleanRole, jwt.getSubject());
+                    }
+                } else {
+                    // Non-Platform / Tenant Realm Allowlist:
+                    // STRICT ISOLATION: A tenant token can NEVER claim super_admin or any platform role.
+                    // The role MUST exist in this organization's database boundary.
+                    if ("super_admin".equals(cleanRole) || cleanRole.startsWith("system_") || cleanRole.startsWith("platform_")) {
+                        log.warn("🚨 Blocked non-platform realm user {} from claiming privileged role [{}]", jwt.getSubject(), cleanRole);
+                        continue;
+                    }
+
+                    if (orgId != null) {
+                        roleOpt = roleRepository.findByNameAndOrganizationId(cleanRole, orgId);
+                    }
+
+                    if (roleOpt.isPresent()) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
+                        var role = roleOpt.get();
+                        if (role.getPermissions() != null) {
+                            role.getPermissions().forEach(permission -> {
+                                // Double defense: Block any system.* permissions for non-platform realm tokens
+                                if (permission.getCode() != null && permission.getCode().startsWith("system.")) {
+                                    log.warn("🚨 Blocked system permission {} for non-platform realm user {}", permission.getCode(), jwt.getSubject());
+                                    return;
+                                }
                                 authorities.add(new SimpleGrantedAuthority(permission.getCode()));
                             });
                         }
-                    });
-                } catch (Exception e) {
-                    log.error("Failed to load dynamic permissions for role {}: {}", roleName, e.getMessage());
+                    } else {
+                        log.warn("Blocked unregistered role [{}] for non-platform user {} in org {}", cleanRole, jwt.getSubject(), orgId);
+                    }
                 }
             }
 

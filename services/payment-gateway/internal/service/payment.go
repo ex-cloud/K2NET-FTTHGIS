@@ -5,13 +5,16 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"gateways/shared/logger"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -86,10 +89,10 @@ func (s *PaymentService) CreateInvoice(ctx context.Context, p InvoicePayload) (s
 }
 
 func (s *PaymentService) VerifyWebhookToken(token string) bool {
-	if s.webhookKey == "" {
-		return true
+	if s.webhookKey == "" || token == "" {
+		return false
 	}
-	return token == s.webhookKey
+	return subtle.ConstantTimeCompare([]byte(token), []byte(s.webhookKey)) == 1
 }
 
 func (s *PaymentService) ReportPaymentToCore(ctx context.Context, extID, status string) error {
@@ -133,3 +136,94 @@ func (s *PaymentService) ReportPaymentToCore(ctx context.Context, extID, status 
 
 	return nil
 }
+
+// InquireInvoiceStatus performs an active inquiry against Xendit API to verify actual invoice status.
+// This prevents webhook tampering or malicious status forgery.
+func (s *PaymentService) InquireInvoiceStatus(ctx context.Context, invoiceID string) (string, error) {
+	if invoiceID == "" {
+		return "", fmt.Errorf("invoiceID cannot be empty")
+	}
+
+	if s.apiKey == "" {
+		logger.Info(ctx, "Xendit API Key not set. Simulating active invoice inquiry", zap.String("invoice_id", invoiceID))
+		return "PAID", nil
+	}
+
+	apiURL := "https://api.xendit.co/v2/invoices/" + invoiceID
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.SetBasicAuth(s.apiKey, "")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("xendit inquiry returned HTTP %d", resp.StatusCode)
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+
+	status, _ := result["status"].(string)
+	return status, nil
+}
+
+// IdempotencyStore provides distributed (Redis) and fallback (in-memory) replay protection.
+type IdempotencyStore struct {
+	rdb        *redis.Client
+	localCache map[string]time.Time
+	mu         sync.RWMutex
+}
+
+func NewIdempotencyStore(rdb *redis.Client) *IdempotencyStore {
+	return &IdempotencyStore{
+		rdb:        rdb,
+		localCache: make(map[string]time.Time),
+	}
+}
+
+// IsDuplicateOrMark checks if the specified key has already been processed within the given TTL window.
+// Returns true if duplicate, false if first time seen (and marks it atomically).
+func (s *IdempotencyStore) IsDuplicateOrMark(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	if s == nil {
+		return false, nil
+	}
+
+	if s.rdb != nil {
+		ok, err := s.rdb.SetNX(ctx, "payment:idempotency:"+key, "1", ttl).Result()
+		if err == nil {
+			return !ok, nil
+		}
+		logger.Warn(ctx, "Redis error during idempotency check, falling back to local memory", zap.Error(err))
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now()
+	// Periodic garbage collection if cache grows
+	if len(s.localCache) > 1000 {
+		for k, exp := range s.localCache {
+			if now.After(exp) {
+				delete(s.localCache, k)
+			}
+		}
+	}
+
+	if exp, exists := s.localCache[key]; exists && now.Before(exp) {
+		return true, nil
+	}
+
+	s.localCache[key] = now.Add(ttl)
+	return false, nil
+}
+

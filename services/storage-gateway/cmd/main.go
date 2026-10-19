@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"path"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -19,6 +23,34 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
+
+var reservedSlugs = map[string]bool{
+	"tenants": true, "public": true, "system": true, "admin": true,
+	"api": true, "gateway": true, "storage": true, "root": true,
+	"default": true, "null": true,
+}
+
+func isReservedSlug(slug string) bool {
+	return reservedSlugs[strings.ToLower(strings.TrimSpace(slug))]
+}
+
+func sanitizeStorageKey(rawKey string) (string, error) {
+	unescaped, err := url.QueryUnescape(rawKey)
+	if err != nil {
+		unescaped = rawKey
+	}
+	lower := strings.ToLower(unescaped)
+	if strings.Contains(lower, "..") || strings.Contains(lower, "%2e") ||
+		strings.Contains(lower, "\\") || strings.Contains(lower, "//") {
+		return "", fmt.Errorf("malicious key: directory traversal characters not permitted")
+	}
+	cleaned := path.Clean("/" + unescaped)
+	cleaned = strings.TrimPrefix(cleaned, "/")
+	if cleaned == "" || cleaned == "." {
+		return "", fmt.Errorf("invalid empty key")
+	}
+	return cleaned, nil
+}
 
 func main() {
 	logger.InitLogger()
@@ -38,6 +70,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CorrelationIDMiddleware())
+	router.Use(middleware.TenantContextMiddleware())
 	router.Use(telemetry.TelemetryMiddleware())
 
 	router.GET("/metrics", telemetry.GetMetricsHandler())
@@ -84,6 +117,42 @@ func main() {
 				folder = c.DefaultQuery("folder", "")
 			}
 
+			// Sanitize folder path against directory traversal
+			if folder != "" {
+				cleanFolder, err := sanitizeStorageKey(folder)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid upload folder path: " + err.Error()})
+					return
+				}
+				folder = cleanFolder
+			}
+
+			// Multi-Tenant Isolation: Ensure uploaded folder is scoped to tenant
+			if !middleware.IsPlatformScope(c) {
+				callerTenant := middleware.GetTenantID(c)
+				if callerTenant == "" {
+					c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: missing tenant identity"})
+					return
+				}
+				if isReservedSlug(callerTenant) {
+					c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: reserved tenant identifier not permitted"})
+					return
+				}
+
+				if bucket == "tenant-assets" {
+					expectedPrefix := "tenants/" + callerTenant + "/"
+					if folder != "" {
+						cleanFolderWithSlash := strings.TrimPrefix(folder, "/") + "/"
+						if !strings.HasPrefix(cleanFolderWithSlash, expectedPrefix) {
+							c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: cannot upload outside tenant vault folder (" + expectedPrefix + ")"})
+							return
+						}
+					} else {
+						folder = "tenants/" + callerTenant + "/general"
+					}
+				}
+			}
+
 			contentType := header.Header.Get("Content-Type")
 
 			url, err := storageService.UploadFile(c.Request.Context(), file, header.Filename, header.Size, contentType, bucket, folder)
@@ -117,12 +186,45 @@ func main() {
 
 		api.GET("/presigned-url", func(c *gin.Context) {
 			bucket := c.Query("bucket")
-			key := c.Query("key")
+			rawKey := c.Query("key")
 			expiryStr := c.Query("expiry_minutes")
 
-			if bucket == "" || key == "" {
+			if bucket == "" || rawKey == "" {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Params 'bucket' and 'key' are required"})
 				return
+			}
+
+			// Sanitize object key against directory traversal
+			cleanKey, err := sanitizeStorageKey(rawKey)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid object key: " + err.Error()})
+				return
+			}
+			key := cleanKey
+
+			// Multi-Tenant Isolation: Enforce canonical prefix tenants/<callerTenant>/
+			if !middleware.IsPlatformScope(c) {
+				callerTenant := middleware.GetTenantID(c)
+				if callerTenant == "" {
+					c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: missing tenant identity"})
+					return
+				}
+				if isReservedSlug(callerTenant) {
+					c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: reserved tenant identifier not permitted"})
+					return
+				}
+
+				if bucket == "tenant-assets" {
+					expectedPrefix := "tenants/" + callerTenant + "/"
+					if !strings.HasPrefix(key, expectedPrefix) {
+						logger.Warn(c.Request.Context(), "Cross-tenant presigned-url access blocked",
+							zap.String("caller_tenant", callerTenant),
+							zap.String("target_key", key),
+						)
+						c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: cross-tenant storage access prohibited"})
+						return
+					}
+				}
 			}
 
 			expiryMinutes := 15
@@ -163,6 +265,15 @@ func main() {
 				return
 			}
 
+			if isReservedSlug(slug) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Reserved slug cannot be initialized as tenant vault"})
+				return
+			}
+
+			if !middleware.EnforceTenantAccess(c, slug) {
+				return
+			}
+
 			err := storageService.InitTenantVaultFolders(c.Request.Context(), slug)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -190,6 +301,15 @@ func main() {
 				return
 			}
 
+			if isReservedSlug(slug) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Reserved slug cannot be accessed as tenant"})
+				return
+			}
+
+			if !middleware.EnforceTenantAccess(c, slug) {
+				return
+			}
+
 			usage, err := storageService.GetTenantStorageUsage(c.Request.Context(), slug)
 			if err != nil {
 				logger.Error(c.Request.Context(), "Failed to get tenant storage usage", zap.Error(err), zap.String("tenant", slug))
@@ -210,6 +330,15 @@ func main() {
 			}
 			if slug == "" {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "tenant slug or X-Tenant-ID header is required"})
+				return
+			}
+
+			if isReservedSlug(slug) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Reserved slug cannot be purged as tenant"})
+				return
+			}
+
+			if !middleware.EnforceTenantAccess(c, slug) {
 				return
 			}
 
@@ -235,8 +364,13 @@ func main() {
 			})
 		})
 
-
 		api.GET("/bucket-stats", func(c *gin.Context) {
+			// Infrastructure bucket stats restricted to platform scope
+			if !middleware.IsPlatformScope(c) {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: bucket statistics restricted to platform administrators"})
+				return
+			}
+
 			bucket := c.Query("bucket")
 			if bucket == "" {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "bucket query parameter is required"})
@@ -253,6 +387,11 @@ func main() {
 
 		// Endpoint untuk mengambil statistik penyimpanan secara real-time
 		api.GET("/stats", func(c *gin.Context) {
+			// Infrastructure stats restricted to platform scope
+			if !middleware.IsPlatformScope(c) {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: storage infrastructure statistics restricted to platform administrators"})
+				return
+			}
 			stats, err := storageService.GetStats(c.Request.Context())
 			if err != nil {
 				logger.Error(c.Request.Context(), "Failed to get storage stats", zap.Error(err))

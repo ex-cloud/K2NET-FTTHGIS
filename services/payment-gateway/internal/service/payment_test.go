@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 )
 
 func TestPaymentServiceSimulatedInvoice(t *testing.T) {
@@ -38,9 +39,73 @@ func TestVerifyWebhookToken(t *testing.T) {
 		t.Error("expected token verification to fail for mismatched token")
 	}
 
-	// Case 2: Empty token (dev mode fallback)
+	// Case 2: Empty token (fail-closed security)
 	svcEmpty := NewPaymentService("key-1", "", "")
-	if !svcEmpty.VerifyWebhookToken("any-token") {
-		t.Error("expected true when webhook key is empty")
+	if svcEmpty.VerifyWebhookToken("any-token") {
+		t.Error("expected false (fail-closed) when webhook key is empty")
 	}
 }
+
+func TestIdempotencyStore(t *testing.T) {
+	ctx := context.Background()
+	// Test in-memory fallback without redis
+	store := NewIdempotencyStore(nil)
+
+	// First occurrence
+	dup, err := store.IsDuplicateOrMark(ctx, "tx-999:PAID", 100*time.Millisecond)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if dup {
+		t.Errorf("expected first call to be non-duplicate")
+	}
+
+	// Immediate replay -> should be duplicate
+	dupReplay, err := store.IsDuplicateOrMark(ctx, "tx-999:PAID", 100*time.Millisecond)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !dupReplay {
+		t.Errorf("expected immediate replay to be duplicate")
+	}
+
+	// Different status or transaction -> should not be duplicate
+	dupOther, err := store.IsDuplicateOrMark(ctx, "tx-888:PAID", 100*time.Millisecond)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if dupOther {
+		t.Errorf("expected different key to be non-duplicate")
+	}
+
+	// After TTL expiration -> should not be duplicate
+	time.Sleep(120 * time.Millisecond)
+	dupExpired, err := store.IsDuplicateOrMark(ctx, "tx-999:PAID", 100*time.Millisecond)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if dupExpired {
+		t.Errorf("expected expired key to be allowed again")
+	}
+}
+
+func TestInquireInvoiceStatus(t *testing.T) {
+	ctx := context.Background()
+	svc := NewPaymentService("", "my-webhook-secret", "http://localhost:9090")
+
+	// Empty invoice ID should fail
+	_, err := svc.InquireInvoiceStatus(ctx, "")
+	if err == nil {
+		t.Errorf("expected error for empty invoice ID")
+	}
+
+	// Simulated invoice inquiry
+	status, err := svc.InquireInvoiceStatus(ctx, "xen_inv_001")
+	if err != nil {
+		t.Fatalf("unexpected error on simulated inquiry: %v", err)
+	}
+	if status != "PAID" {
+		t.Errorf("expected simulated status 'PAID', got %q", status)
+	}
+}
+

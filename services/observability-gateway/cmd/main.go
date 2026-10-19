@@ -37,6 +37,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CorrelationIDMiddleware())
+	router.Use(middleware.TenantContextMiddleware())
 	router.Use(telemetry.TelemetryMiddleware())
 
 	// Public health check & telemetry metrics

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"gateways/shared/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -71,23 +72,33 @@ func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 		if tenantId == "" {
 			tenantId = claims.TenantSlug
 		}
+		if tenantId == "" {
+			tenantId = middleware.GetTenantID(c)
+		}
 		if tenantId != "" {
 			c.Set("tenant_id", tenantId)
 		}
 
 		userRoles := claims.RealmAccess.Roles
 
-		// Super Admin bypass / God mode
-		for _, r := range userRoles {
-			if r == "super-admin" || r == "super_admin" || r == "ROLE_SUPER_ADMIN" {
-				c.Set("is_super_admin", true)
-				c.Next()
-				return
+		// Multi-Tenant Realm Isolation:
+		// Super Admin bypass is ONLY valid if the token originates from the dedicated platform realm (ftth-realm).
+		isPlatform := middleware.IsPlatformScope(c)
+		if isPlatform {
+			for _, r := range userRoles {
+				if r == "super-admin" || r == "super_admin" || r == "ROLE_SUPER_ADMIN" {
+					c.Set("is_super_admin", true)
+					c.Next()
+					return
+				}
 			}
 		}
 
-		// Check against allowed roles list
+		// Check against allowed roles list (non-platform users can NEVER claim super_admin privileges)
 		for _, r := range userRoles {
+			if r == "super-admin" || r == "super_admin" || r == "ROLE_SUPER_ADMIN" {
+				continue // Ignored for non-platform realm tokens
+			}
 			for _, allowed := range allowedRoles {
 				if r == allowed {
 					c.Next()

@@ -41,7 +41,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: always
-    command: tunnel --no-autoupdate run --token eyJhIjoiMjNhNzQyN2Y1MGVjMTc2MGZlMDEwNDYxNTljYWVhMWQiLCJ0IjoiNGM3MGNjZDctNTI2Yy00MGVhLTk0YTctODVhYjJjZmFkNjExIiwicyI6Ik5Ua3pZVEppWm1NdE5XWm1aUzAwTkRrNExXRTNZV1F0TmpJeFlUbGhPRFZrT0RJMSJ9
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - traefik
     deploy:
@@ -63,9 +63,9 @@ services:
       KONG_ADMIN_LISTEN: "0.0.0.0:8001"
       KONG_LOG_LEVEL: "info"
       KONG_NGINX_WORKER_PROCESSES: "2"
-      KONG_TRUSTED_IPS: "0.0.0.0/0,::/0"
-      KONG_REAL_IP_HEADER: "X-Forwarded-For"
-      KONG_REAL_IP_RECURSIVE: "on"
+      KONG_TRUSTED_IPS: "172.18.0.0/16"
+      KONG_REAL_IP_HEADER: "CF-Connecting-IP"
+      KONG_REAL_IP_RECURSIVE: "off"
       KONG_NGINX_MAIN_ENV: "GATEWAY_TOKEN"
       KONG_UNTRUSTED_LUA_SANDBOX_REQUIRES: "cjson,cjson.safe"
       KONG_UNTRUSTED_LUA_SANDBOX_ENVIRONMENT: "os,os.getenv"
@@ -95,8 +95,8 @@ services:
     container_name: ftth-postgres
     restart: always
     environment:
-      POSTGRES_DB: ftth_gis
-      POSTGRES_USER: postgres
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_USER: "${DB_USER}"
       POSTGRES_PASSWORD: "${DB_PASSWORD}"
     ports:
       - "127.0.0.1:5432:5432"
@@ -106,7 +106,7 @@ services:
       - ./database/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
     command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.max=10000", "-c", "pg_stat_statements.track=all"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ftth_gis"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -137,15 +137,15 @@ services:
     container_name: ftth-keycloak
     restart: always
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: excloud
+      KC_BOOTSTRAP_ADMIN_USERNAME: "${KC_ADMIN_USER}"
       KC_BOOTSTRAP_ADMIN_PASSWORD: "${KC_ADMIN_PASSWORD}" # Sesuai dengan konfigurasi lokal Anda
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME: https://auth-gis.kdua.net
       KC_HTTP_ENABLED: "true"
       KC_HTTP_CHALLENGE_COOKIE_SAME_SITE: "lax"
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
-      KC_DB_USERNAME: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME}
+      KC_DB_USERNAME: "${DB_USER}"
       KC_DB_PASSWORD: "${DB_PASSWORD}"
       JAVA_OPTS_APPEND: "-Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
     command: start-dev --http-port=8081
@@ -173,7 +173,7 @@ services:
     container_name: ftth-martin
     restart: always
     environment:
-      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.martin.rule=(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && (PathPrefix(`/catalog`) || PathPrefix(`/get_mvt_data/`))"
@@ -197,7 +197,7 @@ services:
     container_name: ftth-snmpsim
     restart: always
     ports:
-      - "161:161/udp"
+      - "127.0.0.1:161:161/udp"
     deploy:
       resources:
         limits:
@@ -256,6 +256,7 @@ services:
     ports:
       - "100.110.205.109:3002:3000"
     environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
     deploy:
       resources:
@@ -330,8 +331,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - JAVA_TOOL_OPTIONS=-Xms192m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ftth_gis
-      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379

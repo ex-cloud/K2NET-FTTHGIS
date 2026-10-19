@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"errors"
 	"net/http"
 
 	"gateways/gateway-export/internal/exporter"
@@ -20,13 +21,41 @@ func NewHTTPHandler(worker *exporter.Worker) *HTTPHandler {
 	}
 }
 
+func (h *HTTPHandler) resolveTenantSlug(c *gin.Context, requestedSlug string) (string, error) {
+	tenantRealm := c.GetHeader("X-Tenant-Realm")
+	headerSlug := c.GetHeader("X-Tenant-Slug")
+	if headerSlug == "" {
+		headerSlug = c.GetHeader("X-Tenant-ID")
+	}
+
+	// Platform realm (ftth-realm) can specify any tenantSlug
+	if tenantRealm == "ftth-realm" || tenantRealm == "" {
+		if requestedSlug != "" {
+			return requestedSlug, nil
+		}
+		if headerSlug != "" {
+			return headerSlug, nil
+		}
+		return "", errors.New("tenantSlug is required")
+	}
+
+	// Non-platform realm: enforce matching header
+	if headerSlug == "" {
+		return "", errors.New("missing tenant identification from gateway")
+	}
+	if requestedSlug != "" && requestedSlug != headerSlug {
+		return "", errors.New("cross-tenant export forbidden")
+	}
+	return headerSlug, nil
+}
+
 // POST /export/invoice/:invoiceId
 func (h *HTTPHandler) ExportInvoice(c *gin.Context) {
 	ctx := c.Request.Context()
 	invoiceID := c.Param("invoiceId")
-	tenantSlug := c.Query("tenantSlug")
-	if tenantSlug == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": gin.H{"code": "BAD_REQUEST", "message": "tenantSlug query param is required"}})
+	tenantSlug, err := h.resolveTenantSlug(c, c.Query("tenantSlug"))
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": gin.H{"code": "FORBIDDEN", "message": err.Error()}})
 		return
 	}
 
@@ -73,6 +102,13 @@ func (h *HTTPHandler) ExportBillingReport(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": gin.H{"code": "BAD_REQUEST", "message": err.Error()}})
 		return
 	}
+
+	tenantSlug, err := h.resolveTenantSlug(c, req.TenantSlug)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": gin.H{"code": "FORBIDDEN", "message": err.Error()}})
+		return
+	}
+	req.TenantSlug = tenantSlug
 
 	params := map[string]any{
 		"period": req.Period,
@@ -132,6 +168,13 @@ func (h *HTTPHandler) enqueueGenericReport(c *gin.Context, reportType string) {
 		return
 	}
 
+	tenantSlug, err := h.resolveTenantSlug(c, req.TenantSlug)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": gin.H{"code": "FORBIDDEN", "message": err.Error()}})
+		return
+	}
+	req.TenantSlug = tenantSlug
+
 	params := map[string]any{
 		"period": req.Period,
 		"format": req.Format,
@@ -181,6 +224,21 @@ func (h *HTTPHandler) GetRecentJobs(c *gin.Context) {
 		return
 	}
 
+	tenantRealm := c.GetHeader("X-Tenant-Realm")
+	headerSlug := c.GetHeader("X-Tenant-Slug")
+	if headerSlug == "" {
+		headerSlug = c.GetHeader("X-Tenant-ID")
+	}
+	if tenantRealm != "ftth-realm" && headerSlug != "" {
+		filtered := make([]*exporter.ExportJob, 0)
+		for _, j := range jobs {
+			if j.TenantSlug == headerSlug {
+				filtered = append(filtered, j)
+			}
+		}
+		jobs = filtered
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    jobs,
@@ -198,6 +256,16 @@ func (h *HTTPHandler) GetJobStatus(c *gin.Context) {
 		return
 	}
 
+	tenantRealm := c.GetHeader("X-Tenant-Realm")
+	headerSlug := c.GetHeader("X-Tenant-Slug")
+	if headerSlug == "" {
+		headerSlug = c.GetHeader("X-Tenant-ID")
+	}
+	if tenantRealm != "ftth-realm" && headerSlug != "" && job.TenantSlug != "" && job.TenantSlug != headerSlug {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": gin.H{"code": "FORBIDDEN", "message": "Access to export job for another tenant is forbidden"}})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    job,
@@ -212,6 +280,16 @@ func (h *HTTPHandler) DownloadJob(c *gin.Context) {
 	job, err := h.worker.GetJob(ctx, jobID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"success": false, "error": gin.H{"code": "NOT_FOUND", "message": "Job not found"}})
+		return
+	}
+
+	tenantRealm := c.GetHeader("X-Tenant-Realm")
+	headerSlug := c.GetHeader("X-Tenant-Slug")
+	if headerSlug == "" {
+		headerSlug = c.GetHeader("X-Tenant-ID")
+	}
+	if tenantRealm != "ftth-realm" && headerSlug != "" && job.TenantSlug != "" && job.TenantSlug != headerSlug {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": gin.H{"code": "FORBIDDEN", "message": "Access to export job for another tenant is forbidden"}})
 		return
 	}
 

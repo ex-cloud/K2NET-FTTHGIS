@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -225,7 +226,7 @@ func (h *HTTPHandler) GetWebhook(c *gin.Context) {
 		expectedToken = "ftth-wa-verify-2026"
 	}
 
-	if verifyToken == expectedToken {
+	if verifyToken != "" && subtle.ConstantTimeCompare([]byte(verifyToken), []byte(expectedToken)) == 1 {
 		c.String(http.StatusOK, challenge)
 		return
 	}
@@ -276,7 +277,7 @@ func (h *HTTPHandler) PostWebhook(c *gin.Context) {
 		return
 	}
 
-	// Validate Meta Webhook Signature if WA_APP_SECRET is set
+	// Validate Meta Webhook Signature
 	appSecret := os.Getenv("WA_APP_SECRET")
 	if appSecret != "" {
 		signatureHeader := c.GetHeader("X-Hub-Signature-256")
@@ -285,6 +286,10 @@ func (h *HTTPHandler) PostWebhook(c *gin.Context) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "signature verification failed"})
 			return
 		}
+	} else if gin.Mode() == gin.ReleaseMode {
+		logger.Error(ctx, "WA_APP_SECRET is not configured in production mode; rejecting webhook callback")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "webhook secret not configured"})
+		return
 	}
 
 	var webhookBody MetaWebhookBody

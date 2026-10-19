@@ -53,10 +53,11 @@ func TestRequireRoleMiddleware(t *testing.T) {
 
 	req3 := httptest.NewRequest(http.MethodGet, "/api/v1/metrics", nil)
 	req3.Header.Set("Authorization", "Bearer "+jwtSuper)
+	req3.Header.Set("X-Tenant-Realm", "ftth-realm")
 	w3 := httptest.NewRecorder()
 	r.ServeHTTP(w3, req3)
 	if w3.Code != http.StatusOK {
-		t.Errorf("expected 200 for super_admin role, got %d", w3.Code)
+		t.Errorf("expected 200 for verified platform super_admin role, got %d", w3.Code)
 	}
 
 	// Case 4: Insufficient Role -> 403 Forbidden
@@ -70,5 +71,15 @@ func TestRequireRoleMiddleware(t *testing.T) {
 	r.ServeHTTP(w4, req4)
 	if w4.Code != http.StatusForbidden {
 		t.Errorf("expected 403 for insufficient role, got %d", w4.Code)
+	}
+
+	// Case 5: Non-platform Realm User Claiming super_admin -> 403 Forbidden
+	req5 := httptest.NewRequest(http.MethodGet, "/api/v1/metrics", nil)
+	req5.Header.Set("Authorization", "Bearer "+jwtSuper)
+	req5.Header.Set("X-Tenant-Realm", "tenant-malicious-realm")
+	w5 := httptest.NewRecorder()
+	r.ServeHTTP(w5, req5)
+	if w5.Code != http.StatusForbidden {
+		t.Errorf("expected 403 when non-platform realm claims super_admin, got %d", w5.Code)
 	}
 }

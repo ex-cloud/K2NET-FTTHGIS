@@ -11,6 +11,7 @@ import (
 	"gateways/gateway-task/internal/nextcloud"
 	"gateways/gateway-task/internal/template"
 	"gateways/shared/auditclient"
+	"strings"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -79,6 +80,9 @@ func (w *ObsidianWorker) processTaskWithRetry(ctx context.Context, payload templ
 		case "TENANT_INTERNAL":
 			// Physical FTTH projects from a specific ISP tenant
 			slug := payload.TenantSlug
+			slug = strings.ReplaceAll(slug, "..", "")
+			slug = strings.ReplaceAll(slug, "/", "")
+			slug = strings.ReplaceAll(slug, "\\", "")
 			if slug == "" {
 				slug = "unknown-tenant"
 			}
@@ -98,8 +102,11 @@ func (w *ObsidianWorker) processTaskWithRetry(ctx context.Context, payload templ
 		}
 	}
 
-	// Nextcloud WebDAV destination path
-	filePath := fmt.Sprintf("%s/%s/%s.md", vaultFolder, folder, payload.TaskID)
+	// Nextcloud WebDAV destination path (Sanitized against path traversal)
+	cleanTaskID := strings.ReplaceAll(payload.TaskID, "..", "")
+	cleanTaskID = strings.ReplaceAll(cleanTaskID, "/", "")
+	cleanTaskID = strings.ReplaceAll(cleanTaskID, "\\", "")
+	filePath := fmt.Sprintf("%s/%s/%s.md", vaultFolder, folder, cleanTaskID)
 
 
 	content, err := template.RenderTask(payload)

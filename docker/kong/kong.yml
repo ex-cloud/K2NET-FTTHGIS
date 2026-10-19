@@ -234,7 +234,7 @@ services:
             config:
               claims_to_verify:
                 - exp
-              maximum_expiration: 86400
+              maximum_expiration: 3600
               uri_param_names:
                 - access_token
                 - jwt
@@ -251,7 +251,7 @@ services:
             config:
               claims_to_verify:
                 - exp
-              maximum_expiration: 86400
+              maximum_expiration: 3600
               uri_param_names: []
               run_on_preflight: false
 
@@ -295,7 +295,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: []
           run_on_preflight: false
     routes:
@@ -317,7 +317,7 @@ services:
           - name: jwt
             config:
               claims_to_verify: [exp]
-              maximum_expiration: 86400
+              maximum_expiration: 3600
               uri_param_names: []
               run_on_preflight: false
       - name: payment-webhook-route
@@ -344,7 +344,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: []
           run_on_preflight: false
       - name: rate-limiting
@@ -366,7 +366,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: [access_token, jwt, token]
           run_on_preflight: false
     routes:
@@ -386,7 +386,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: []
           run_on_preflight: false
     routes:
@@ -433,7 +433,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: []
           run_on_preflight: false
     routes:
@@ -449,7 +449,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: [access_token, jwt, token]
           run_on_preflight: false
     routes:
@@ -465,7 +465,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: []
           run_on_preflight: false
     routes:
@@ -482,7 +482,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: []
           run_on_preflight: false
     routes:
@@ -498,7 +498,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: []
           run_on_preflight: false
     routes:
@@ -515,7 +515,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: [access_token, jwt, token]
           run_on_preflight: false
     routes:
@@ -531,7 +531,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: [access_token, jwt, token]
           run_on_preflight: false
       - name: rate-limiting
@@ -556,7 +556,7 @@ services:
       - name: jwt
         config:
           claims_to_verify: [exp]
-          maximum_expiration: 86400
+          maximum_expiration: 3600
           uri_param_names: [access_token, jwt, token]
           run_on_preflight: false
     routes:
@@ -580,8 +580,6 @@ plugins:
     config:
       origins:
         - "https://[a-z0-9.-]+\\.kdua\\.net"
-        - "http://localhost:[0-9]+"
-        - "http://127.0.0.1:[0-9]+"
       methods: [GET, POST, PUT, DELETE, OPTIONS, PATCH]
       headers:
         - Accept

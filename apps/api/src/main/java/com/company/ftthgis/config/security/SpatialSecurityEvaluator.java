@@ -36,6 +36,7 @@ public class SpatialSecurityEvaluator {
     private final TaskRepository taskRepository;
     private final TenantSecurity tenantSecurity;
     private final com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
+    private final PlatformRealmValidator platformRealmValidator;
 
     /**
      * Evaluasi otorisasi tingkat proyek secara mandiri (Pola A).
@@ -64,27 +65,37 @@ public class SpatialSecurityEvaluator {
             return false;
         }
 
-        // Lapis 1: VIP Bypass / All-Projects Tier (super_admin, tenant admin with network.manage.all-projects)
-        if (isAllProjectsTier(auth, projectId)) {
+        // Lapis 1: VIP Bypass for Platform Super Admin
+        if (isPlatformSuperAdmin(auth)) {
             return true;
         }
 
-        // Lapis 2: Base Role Evaluation (staf internal dengan permission global dan akses ke tenant org)
+        // Lapis 2: All-Projects Tier within caller's own tenant organization
+        boolean hasAllProjects = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equalsIgnoreCase("network.manage.all-projects"));
+        if (hasAllProjects) {
+            return tenantSecurity.canAccessProject(projectId);
+        }
+
+        // Lapis 3: Base Role Evaluation (staf internal dengan permission global dan akses ke tenant org)
         boolean hasBaseAuthority = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equalsIgnoreCase(permissionCode));
         if (hasBaseAuthority) {
             return tenantSecurity.canAccessProject(projectId);
         }
 
-        // Lapis 3: Project-Scoped Role (kasus vendor/kontraktor luar — TENT-10 atau teknisi dengan project role)
+        // Lapis 4: Project-Scoped Role (kasus vendor/kontraktor luar — TENT-10 atau teknisi dengan project role)
         UUID userId = extractUserId(auth);
         if (userId != null) {
             Optional<ProjectMember> pmOpt = projectMemberRepository.findByUserIdAndProjectId(userId, projectId);
             if (pmOpt.isPresent()) {
                 ProjectMember pm = pmOpt.get();
                 if (pm.getRole() != null && pm.getRole().getPermissions() != null) {
-                    return pm.getRole().getPermissions().stream()
+                    boolean hasPerm = pm.getRole().getPermissions().stream()
                             .anyMatch(p -> p.getCode().equalsIgnoreCase(permissionCode));
+                    if (hasPerm) {
+                        return tenantSecurity.canAccessProject(projectId);
+                    }
                 }
             }
         }
@@ -118,7 +129,7 @@ public class SpatialSecurityEvaluator {
         }
 
         if (node.getProject() == null) {
-            return isAllProjectsTier(auth, null);
+            return isPlatformSuperAdmin(auth);
         }
 
         return hasProjectPermission(node.getProject().getId(), permissionCode);
@@ -150,25 +161,26 @@ public class SpatialSecurityEvaluator {
         }
 
         if (cable.getProject() == null) {
-            return isAllProjectsTier(auth, null);
+            return isPlatformSuperAdmin(auth);
         }
 
         return hasProjectPermission(cable.getProject().getId(), permissionCode);
     }
 
-    private boolean isAllProjectsTier(Authentication auth, UUID projectId) {
+    private boolean isPlatformSuperAdmin(Authentication auth) {
         if (auth == null) return false;
-
-        // 1. Super Admin
-        boolean isSuperAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().toLowerCase().replaceFirst("^role_", "").equals("super_admin"));
-        if (isSuperAdmin) {
-            return true;
+        if (auth.getPrincipal() instanceof Jwt jwt) {
+            String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
+            if (platformRealmValidator != null) {
+                if (!platformRealmValidator.isPlatformRealm(issuer)) {
+                    return false;
+                }
+            } else if (!issuer.contains("/realms/ftth-realm")) {
+                return false;
+            }
         }
-
-        // 2. Permission all-projects (seeded to admin & supervisor in V34)
         return auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equalsIgnoreCase("network.manage.all-projects"));
+                .anyMatch(a -> a.getAuthority().toLowerCase().replaceFirst("^role_", "").equals("super_admin"));
     }
 
     private UUID extractUserId(Authentication auth) {

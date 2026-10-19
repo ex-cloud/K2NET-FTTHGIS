@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gateways/gateway-audit/internal/audit"
+	"gateways/shared/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
@@ -223,6 +224,17 @@ func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
 	ctx := c.Request.Context()
 	tenant := c.Query("tenantSlug")
+
+	// Multi-Tenant Isolation: Non-platform callers are STRICTLY scoped to their own tenant
+	callerTenant := middleware.GetTenantID(c)
+	if !middleware.IsPlatformScope(c) {
+		if callerTenant == "" {
+			c.JSON(http.StatusForbidden, gin.H{"success": false, "error": gin.H{"code": "FORBIDDEN", "message": "Tenant identity missing"}})
+			return
+		}
+		tenant = callerTenant
+	}
+
 	actor := c.Query("actorId")
 	action := c.Query("action")
 	resource := c.Query("resourceType")
@@ -337,6 +349,11 @@ func (h *HTTPHandler) GetAuditEvent(c *gin.Context) {
 		return
 	}
 
+	// Multi-Tenant Isolation Check
+	if !middleware.EnforceTenantAccess(c, ev.TenantSlug) {
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": ev})
 }
 
@@ -344,6 +361,11 @@ func (h *HTTPHandler) GetAuditEvent(c *gin.Context) {
 func (h *HTTPHandler) GetTenantAuditReport(c *gin.Context) {
 	ctx := c.Request.Context()
 	slug := c.Param("slug")
+
+	// Multi-Tenant Isolation Check
+	if !middleware.EnforceTenantAccess(c, slug) {
+		return
+	}
 
 	report, err := h.repo.GetTenantReport(ctx, slug)
 	if err != nil {
@@ -359,6 +381,11 @@ func (h *HTTPHandler) GetProjectAuditReport(c *gin.Context) {
 	ctx := c.Request.Context()
 	slug := c.Param("slug")
 	projectID := c.Param("projectId")
+
+	// Multi-Tenant Isolation Check
+	if !middleware.EnforceTenantAccess(c, slug) {
+		return
+	}
 
 	report, err := h.repo.GetProjectReport(ctx, slug, projectID)
 	if err != nil {
@@ -475,6 +502,18 @@ func extractActorFromJWT(authHeader string) string {
 
 // GET /api/v1/audit/archives
 func (h *HTTPHandler) GetAuditArchives(c *gin.Context) {
+	// Cold storage system archives are restricted to Platform scope
+	if !middleware.IsPlatformScope(c) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"error": gin.H{
+				"code":    "FORBIDDEN",
+				"message": "Cold storage system archives can only be accessed by platform administrator",
+			},
+		})
+		return
+	}
+
 	ctx := c.Request.Context()
 	table := c.Query("table")
 	search := c.Query("search")

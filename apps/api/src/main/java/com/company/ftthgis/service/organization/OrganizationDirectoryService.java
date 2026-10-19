@@ -1,6 +1,7 @@
 package com.company.ftthgis.service.organization;
 
 import com.company.ftthgis.config.security.TenantSecurity;
+import com.company.ftthgis.config.security.PlatformRealmValidator;
 import com.company.ftthgis.config.tenant.KeycloakService;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.SubscriptionPlan;
@@ -50,6 +51,8 @@ public class OrganizationDirectoryService {
     private final ProjectQuotaService projectQuotaService;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.company.ftthgis.domain.tenant.repository.TenantBrandingRepository tenantBrandingRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private PlatformRealmValidator platformRealmValidator = new PlatformRealmValidator();
 
     @Transactional(readOnly = true)
     public List<Organization> getAllOrganizations() {
@@ -69,7 +72,9 @@ public class OrganizationDirectoryService {
             List<String> roles = (List<String>) realmAccess.get("roles");
 
             boolean isSuperAdmin = roles.stream().anyMatch(r -> r.equalsIgnoreCase("super_admin"));
-            boolean isFromSystemRealm = issuer.contains("/realms/ftth-realm");
+            boolean isFromSystemRealm = platformRealmValidator != null
+                    ? platformRealmValidator.isPlatformRealm(issuer)
+                    : (issuer != null && issuer.contains("/realms/ftth-realm"));
 
             if (isSuperAdmin && isFromSystemRealm) {
                 log.info("👑 Superadmin from system realm detected. Granting global access.");

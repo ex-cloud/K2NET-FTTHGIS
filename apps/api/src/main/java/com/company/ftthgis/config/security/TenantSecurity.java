@@ -21,11 +21,10 @@ public class TenantSecurity {
 
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
     @org.springframework.context.annotation.Lazy
     private final com.company.ftthgis.service.TenantPackageSubscriptionService packageSubscriptionService;
-
-    @Value("${keycloak.server-url}")
-    private String keycloakServerUrl;
+    private final PlatformRealmValidator platformRealmValidator;
 
     /**
      * Checks if the currently authenticated user belongs to the specified organization slug,
@@ -54,8 +53,8 @@ public class TenantSecurity {
             @SuppressWarnings("unchecked")
             List<String> roles = (List<String>) realmAccess.get("roles");
             boolean isSuperAdmin = roles.stream().anyMatch(r -> r.equalsIgnoreCase("super_admin"));
-            // Global realm check (assuming 'ftth-realm' is the system realm)
-            boolean isFromSystemRealm = issuer.contains("/realms/ftth-realm");
+            // Global realm check (strictly validating 'ftth-realm' is the system realm)
+            boolean isFromSystemRealm = platformRealmValidator.isPlatformRealm(issuer);
 
             if (isSuperAdmin && isFromSystemRealm) {
                 log.debug("🛡️ TenantSecurity: Access granted to SUPER_ADMIN from system realm.");
@@ -116,7 +115,7 @@ public class TenantSecurity {
                 @SuppressWarnings("unchecked")
                 List<String> roles = (List<String>) realmAccess.get("roles");
                 boolean isSuperAdmin = roles.stream().anyMatch(r -> r.equalsIgnoreCase("super_admin"));
-                boolean isFromSystemRealm = issuer.contains("/realms/ftth-realm");
+                boolean isFromSystemRealm = platformRealmValidator.isPlatformRealm(issuer);
 
                 if (isSuperAdmin && isFromSystemRealm) {
                     return true;
@@ -168,7 +167,7 @@ public class TenantSecurity {
             @SuppressWarnings("unchecked")
             List<String> roles = (List<String>) realmAccess.get("roles");
             boolean isSuperAdmin = roles.stream().anyMatch(r -> r.equalsIgnoreCase("super_admin"));
-            boolean isFromSystemRealm = issuer.contains("/realms/ftth-realm");
+            boolean isFromSystemRealm = platformRealmValidator.isPlatformRealm(issuer);
 
             if (isSuperAdmin && isFromSystemRealm) {
                 log.debug("🛡️ TenantSecurity: Access granted to SUPER_ADMIN for project: {}", projectId);
@@ -188,17 +187,29 @@ public class TenantSecurity {
                 // Tenant administrator gets access to all projects in their organization
                 if (user.getRole() != null && 
                     ("TENT-01".equals(user.getRole().getCode()) || "admin".equalsIgnoreCase(user.getRole().getName()))) {
-                    log.debug("🛡️ TenantSecurity: Access granted to Tenant Admin for project: {}", projectId);
-                    return true;
+                    var projOpt = projectRepository.findById(projectId);
+                    if (projOpt.isPresent() && user.getOrganization() != null &&
+                        projOpt.get().getOrganization() != null &&
+                        projOpt.get().getOrganization().getId().equals(user.getOrganization().getId())) {
+                        log.debug("🛡️ TenantSecurity: Access granted to Tenant Admin for project in own org: {}", projectId);
+                        return true;
+                    }
+                    log.warn("🛡️ TenantSecurity: Access DENIED. Tenant Admin attempted cross-tenant access to project: {}", projectId);
+                    return false;
                 }
 
-                // Check project membership
+                // Check project membership (and ensure project belongs to user's organization)
                 boolean isMember = projectMemberRepository.existsByUserIdAndProjectId(user.getId(), projectId);
                 if (isMember) {
-                    log.debug("🛡️ TenantSecurity: Access granted. User is a member of project: {}", projectId);
-                    return true;
+                    var projOpt = projectRepository.findById(projectId);
+                    if (projOpt.isPresent() && user.getOrganization() != null &&
+                        projOpt.get().getOrganization() != null &&
+                        projOpt.get().getOrganization().getId().equals(user.getOrganization().getId())) {
+                        log.debug("🛡️ TenantSecurity: Access granted. User is a member of project: {}", projectId);
+                        return true;
+                    }
                 }
-                log.warn("🛡️ TenantSecurity: Access DENIED. User {} is not a member of project: {}", subject, projectId);
+                log.warn("🛡️ TenantSecurity: Access DENIED. User {} is not an authorized member of project: {}", subject, projectId);
             }
         } catch (Exception e) {
             log.error("🛡️ TenantSecurity: Error verifying project access: {}", e.getMessage(), e);

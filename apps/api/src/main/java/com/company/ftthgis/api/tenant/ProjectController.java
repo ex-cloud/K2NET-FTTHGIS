@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import com.company.ftthgis.config.security.PlatformRealmValidator;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,8 @@ public class ProjectController {
     private final ProjectRepository projectRepository;
     private final ProjectService projectService;
     private final UserRepository userRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private PlatformRealmValidator platformRealmValidator = new PlatformRealmValidator();
 
     @GetMapping
     @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and hasAuthority('projects.view')")
@@ -41,7 +44,10 @@ public class ProjectController {
             @SuppressWarnings("unchecked")
             List<String> roles = (List<String>) realmAccess.get("roles");
             boolean isSuperAdmin = roles.stream().anyMatch(r -> r.equalsIgnoreCase("super_admin"));
-            boolean isFromSystemRealm = jwt.getIssuer() != null && jwt.getIssuer().toString().contains("/realms/ftth-realm");
+            String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
+            boolean isFromSystemRealm = platformRealmValidator != null
+                    ? platformRealmValidator.isPlatformRealm(issuer)
+                    : issuer.contains("/realms/ftth-realm");
             if (isSuperAdmin && isFromSystemRealm) {
                 return ResponseEntity.ok(projectRepository.findByOrganizationSlug(orgSlug));
             }
