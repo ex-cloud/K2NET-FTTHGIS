@@ -40,10 +40,12 @@ public class NetworkAnalyticsController {
                         Long odcCountObj = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM network_nodes WHERE node_type = 'ODC'" + projectFilterAndStr, Long.class, args);
                         Long odpCountObj = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM network_nodes WHERE node_type = 'ODP'" + projectFilterAndStr, Long.class, args);
                         Long customerCountObj = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM network_nodes WHERE node_type = 'CUSTOMER'" + projectFilterAndStr, Long.class, args);
+                        Long oltCountObj = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM network_nodes WHERE node_type = 'OLT'" + projectFilterAndStr, Long.class, args);
 
                         long odcCount = odcCountObj != null ? odcCountObj : 0L;
                         long odpCount = odpCountObj != null ? odpCountObj : 0L;
                         long customerCount = customerCountObj != null ? customerCountObj : 0L;
+                        long oltCount = oltCountObj != null ? oltCountObj : 0L;
 
                         // Calculate total cable length in KM from PostGIS
                         Double totalLengthMeters = jdbcTemplate.queryForObject(
@@ -93,9 +95,10 @@ public class NetworkAnalyticsController {
                                         args);
 
                         NetworkStatsDto stats = NetworkStatsDto.builder()
+                                        .totalOlt(oltCount)
                                         .totalOdc(odcCount)
                                         .totalOdp(odpCount)
-                                        .totalNodes(odcCount + odpCount + customerCount)
+                                        .totalNodes(odcCount + odpCount + customerCount + oltCount)
                                         .totalCableLengthKm(lengthKm)
                                         .totalUsers(customerCount) // Showing customers as users for network stats
                                         .growthPercentage(0.0) 

@@ -15,6 +15,15 @@ export function initPMTilesProtocol(): Protocol {
   return pmtilesProtocolInstance;
 }
 
+export const ESRI_BASEMAP_URLS = {
+  light: [
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+  ],
+  dark: [
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+  ],
+};
+
 export const CARTO_BASEMAP_URLS = {
   light: [
     "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
@@ -30,6 +39,9 @@ export const CARTO_BASEMAP_URLS = {
   ],
 };
 
+export const ESRI_ATTRIBUTION =
+  '&copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors';
+
 export const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
 
@@ -38,7 +50,8 @@ export const PROTOMAPS_ATTRIBUTION =
 
 export interface BasemapOptions {
   theme?: "light" | "dark";
-  provider?: "carto" | "pmtiles";
+  provider?: "esri" | "carto" | "pmtiles";
+  cartoApiKey?: string;
   pmtilesUrl?: string;
   glyphsUrl?: string;
   spriteUrl?: string;
@@ -46,14 +59,15 @@ export interface BasemapOptions {
 
 /**
  * Returns a robust, production-grade MapLibre StyleSpecification.
- * Defaults to CARTO Positron (light) and CARTO Dark Matter (dark) which
- * provide high-contrast styling for FTTH fiber cables with zero 403 blocks.
- * Seamlessly switches to PMTiles self-hosted archive if provider is 'pmtiles'.
+ * Defaults to Esri World Dark/Light Gray Canvas which provides high-contrast
+ * styling for FTTH fiber cables with zero watermarks and zero 403 blocks.
+ * Supports CARTO (with optional API key) and self-hosted PMTiles archives.
  */
 export function getBasemapStyle(options: BasemapOptions = {}): StyleSpecification {
   const {
     theme = "dark",
-    provider = "carto",
+    provider = "esri",
+    cartoApiKey,
     pmtilesUrl,
     glyphsUrl = "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
     spriteUrl = "https://demotiles.maplibre.org/sprites/osm-liberty",
@@ -86,28 +100,58 @@ export function getBasemapStyle(options: BasemapOptions = {}): StyleSpecificatio
     };
   }
 
-  // Default: CARTO Positron or Dark Matter
-  const tiles = theme === "dark" ? CARTO_BASEMAP_URLS.dark : CARTO_BASEMAP_URLS.light;
+  if (provider === "carto") {
+    const rawTiles = theme === "dark" ? CARTO_BASEMAP_URLS.dark : CARTO_BASEMAP_URLS.light;
+    const tiles = cartoApiKey
+      ? rawTiles.map((url) => `${url}?api_key=${encodeURIComponent(cartoApiKey)}`)
+      : rawTiles;
+
+    return {
+      version: 8,
+      name: theme === "dark" ? "CARTO Dark Matter" : "CARTO Positron",
+      sources: {
+        "carto-basemap": {
+          type: "raster",
+          tiles,
+          tileSize: 256,
+          attribution: OSM_ATTRIBUTION,
+          maxzoom: 20,
+        },
+      },
+      layers: [
+        {
+          id: "carto-basemap-tiles",
+          type: "raster",
+          source: "carto-basemap",
+          minzoom: 0,
+          maxzoom: 20,
+        },
+      ],
+    };
+  }
+
+  // Default: Esri World Dark / Light Gray Canvas (Zero Watermark, High Performance)
+  const tiles = theme === "dark" ? ESRI_BASEMAP_URLS.dark : ESRI_BASEMAP_URLS.light;
 
   return {
     version: 8,
-    name: theme === "dark" ? "CARTO Dark Matter" : "CARTO Positron",
+    name: theme === "dark" ? "Esri World Dark Gray Canvas" : "Esri World Light Gray Canvas",
     sources: {
-      "carto-basemap": {
+      "esri-basemap": {
         type: "raster",
         tiles,
         tileSize: 256,
-        attribution: OSM_ATTRIBUTION,
-        maxzoom: 20,
+        attribution: ESRI_ATTRIBUTION,
+        maxzoom: 16,
       },
     },
     layers: [
       {
-        id: "carto-basemap-tiles",
+        id: "esri-basemap-tiles",
         type: "raster",
-        source: "carto-basemap",
+        source: "esri-basemap",
         minzoom: 0,
-        maxzoom: 20,
+        maxzoom: 22,
       },
     ],
   };

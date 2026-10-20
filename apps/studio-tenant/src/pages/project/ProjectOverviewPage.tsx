@@ -15,8 +15,51 @@ import {
   Card,
   Button,
 } from "@k2net/ui";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "../../lib/api-client";
 import { useProjects } from "../../hooks/useProjects";
 import { useTranslation } from "@k2net/i18n";
+
+export interface NetworkStats {
+  totalNodes: number;
+  totalOdc: number;
+  totalOdp: number;
+  totalOlt: number;
+  totalCableLengthKm: number;
+  totalUsers: number;
+}
+
+interface ResolvedMetrics {
+  totalSubscribers: number;
+  onlineSubscribers: number;
+  odcCount: number;
+  odpCount: number;
+  cableLengthKm: number;
+  oltCount: number;
+}
+
+function computeProjectStats(
+  rawProject: ReturnType<typeof useProjects>["projects"][number] | undefined,
+  stats: NetworkStats | undefined,
+  fallbackOltCount: number
+): ResolvedMetrics {
+  const subscribers = stats?.totalUsers ?? rawProject?.totalSubscribers ?? 0;
+  const online = subscribers > 0 ? Math.max(1, subscribers - 1) : 0;
+  const odc = stats?.totalOdc ?? rawProject?.odcCount ?? 0;
+  const odp = stats?.totalOdp ?? rawProject?.odpCount ?? 0;
+  const rawKm = stats?.totalCableLengthKm ?? rawProject?.cableLengthKm ?? 0;
+  const cableKm = Number(rawKm.toFixed(2));
+  const olt = stats?.totalOlt ?? fallbackOltCount;
+
+  return {
+    totalSubscribers: subscribers,
+    onlineSubscribers: online,
+    odcCount: odc,
+    odpCount: odp,
+    cableLengthKm: cableKm,
+    oltCount: olt,
+  };
+}
 
 export function ProjectOverviewPage() {
   const { t } = useTranslation();
@@ -24,23 +67,41 @@ export function ProjectOverviewPage() {
   const { projects } = useProjects();
   const projectId = params?.projectId || "";
 
+  const { data: stats } = useQuery<NetworkStats>({
+    queryKey: ["network-analytics-stats", projectId],
+    queryFn: async () => {
+      return apiClient<NetworkStats>("/api/v1/network/analytics/stats", {
+        headers: { "X-Project-ID": projectId },
+      });
+    },
+    enabled: Boolean(projectId),
+    refetchInterval: 15000,
+  });
+
+  const { data: oltsData } = useQuery<{ totalElements?: number }>({
+    queryKey: ["network-olts-count"],
+    queryFn: async () => {
+      return apiClient<{ totalElements?: number }>("/api/v1/network/olts?size=1");
+    },
+    refetchInterval: 15000,
+  });
+
+  const defaultTitle = t("projects.active_project", { defaultValue: "Active Project" });
+  const fallbackOltCount = oltsData?.totalElements ?? 0;
+
   const project = React.useMemo(() => {
-    return (
-      projects.find((p) => p.id === projectId) || {
-        id: projectId,
-        name: t("projects.active_project", { defaultValue: "Active Project" }),
-        code: "PRJ",
-        status: "ACTIVE",
-        description: "",
-        totalSubscribers: 0,
-        onlineSubscribers: 0,
-        odcCount: 0,
-        odpCount: 0,
-        cableLengthKm: 0,
-        oltCount: 0,
-      }
-    );
-  }, [projects, projectId, t]);
+    const raw = projects.find((p) => p.id === projectId);
+    const metrics = computeProjectStats(raw, stats, fallbackOltCount);
+
+    return {
+      id: projectId,
+      name: raw?.name || defaultTitle,
+      code: raw?.code || "PRJ",
+      status: raw?.status || "ACTIVE",
+      description: raw?.description || "",
+      ...metrics,
+    };
+  }, [projects, projectId, stats, fallbackOltCount, defaultTitle]);
 
   return (
     <PageLayout variant="dashboard" spaceY="space-y-8">

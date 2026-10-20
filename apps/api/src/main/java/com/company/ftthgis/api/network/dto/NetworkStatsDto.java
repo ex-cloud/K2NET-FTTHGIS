@@ -10,6 +10,7 @@ public class NetworkStatsDto {
     private long totalNodes;
     private long totalOdc;
     private long totalOdp;
+    private long totalOlt;
     private double totalCableLengthKm;
     private long totalUsers;
     private double growthPercentage;
