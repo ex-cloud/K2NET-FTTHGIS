@@ -26,6 +26,7 @@ import {
 } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 import { useTranslation } from "@k2net/i18n";
+import { useMapStore } from "../store/map-store";
 
 export interface TenantCommandPaletteContentProps {
   query: string;
@@ -52,42 +53,43 @@ export function TenantCommandPaletteContent({
   const { t } = useTranslation();
   const isDark = resolvedTheme === "dark";
 
-  const resolvedProjectId = projectId || "proj-bdg-01";
+  const activeProjectId = useMapStore((s) => s.activeProjectId);
+  const resolvedProjectId = projectId || activeProjectId;
 
   const pages = React.useMemo(() => {
     return [
       {
         id: "nav-dash",
         label: t("nav.operational_dashboard"),
-        path: `/project/${resolvedProjectId}/dashboard`,
+        path: resolvedProjectId ? `/project/${resolvedProjectId}/dashboard` : "/projects",
         icon: LayoutDashboard,
         badge: "Home",
       },
       {
         id: "nav-gis",
         label: t("nav.gis_spatial_map"),
-        path: `/project/${resolvedProjectId}/gis/topology`,
+        path: resolvedProjectId ? `/project/${resolvedProjectId}/infrastructure/topology` : "/projects",
         icon: MapIcon,
         badge: "GIS",
       },
       {
         id: "nav-inv",
         label: t("nav.network_inventory"),
-        path: `/project/${resolvedProjectId}/core/olt`,
+        path: resolvedProjectId ? `/project/${resolvedProjectId}/core/olt` : "/projects",
         icon: Server,
         badge: "Inventory",
       },
       {
         id: "nav-cust",
         label: t("nav.subscribers_pppoe"),
-        path: `/project/${resolvedProjectId}/subscribers/list`,
+        path: resolvedProjectId ? `/project/${resolvedProjectId}/subscribers/list` : "/projects",
         icon: Users,
         badge: "ONU/PPPoE",
       },
       {
         id: "nav-issues",
         label: t("nav.issues_monitoring"),
-        path: `/project/${resolvedProjectId}/issues/tickets`,
+        path: resolvedProjectId ? `/project/${resolvedProjectId}/issues/tickets` : "/projects",
         icon: AlertCircle,
         badge: "Alerts",
       },

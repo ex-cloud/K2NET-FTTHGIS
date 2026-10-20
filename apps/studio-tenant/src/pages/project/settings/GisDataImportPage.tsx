@@ -13,7 +13,7 @@ import { useTranslation } from "@k2net/i18n";
 export function GisDataImportPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const _projectId = params?.projectId || "proj-bdg-01";
+  const _projectId = params?.projectId || "";
 
   const handleUploadKml = () => {
     toast.success(t("projects.import_success"));
@@ -50,11 +50,11 @@ export function GisDataImportPage() {
         </div>
 
         <div className="pt-2 border-t border-border/40 space-y-2">
-          <h4 className="text-xs font-bold text-foreground">Petunjuk Format Layer KML:</h4>
+          <h4 className="text-xs font-bold text-foreground">{t("projects.kml_guide_title")}</h4>
           <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4 leading-relaxed">
-            <li>Folder bernama <code>ODC</code> atau <code>Closure</code> akan otomatis dikonversi menjadi node ODC.</li>
-            <li>Folder bernama <code>ODP</code> atau <code>FAT</code> akan otomatis dikonversi menjadi node ODP.</li>
-            <li>LineString dengan atribut <code>48c</code> atau <code>24c</code> otomatis menjadi kabel optik.</li>
+            <li>{t("projects.kml_guide_odc")}</li>
+            <li>{t("projects.kml_guide_odp")}</li>
+            <li>{t("projects.kml_guide_cable")}</li>
           </ul>
         </div>
       </Card>

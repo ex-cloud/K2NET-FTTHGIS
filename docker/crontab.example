@@ -32,4 +32,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # 8. Pembersihan Mingguan Docker Build Cache & Log Traefik — Setiap Hari Minggu Pukul 05:00 WIB
 00 05 * * 0 /bin/bash /opt/project5/scripts/cleanup.sh >> /opt/project5/backups/cleanup_cron.log 2>&1
 
+# 9. Pembaruan Kuartalan Basemap PMTiles & Penyegaran MV Spasial PostGIS — Tanggal 1 Setiap 3 Bulan Pukul 04:45 WIB
+45 04 1 */3 * /bin/bash /opt/project5/scripts/sync-gis-basemaps.sh >> /opt/project5/backups/gis_basemaps_cron.log 2>&1
+
 # ==============================================================================

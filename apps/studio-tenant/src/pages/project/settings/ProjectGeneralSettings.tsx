@@ -24,15 +24,15 @@ import { useTranslation } from "@k2net/i18n";
 export function ProjectGeneralSettings() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const projectId = params?.projectId || "proj-bdg-01";
+  const projectId = params?.projectId || "";
   const { projects, updateProject, archiveProject, unarchiveProject, deleteProject } = useProjects();
 
   const project = React.useMemo(() => {
     return projects.find((p) => p.id === projectId) || {
-      name: "FTTH Bandung Timur Cluster",
-      code: "BDG-TMR",
+      name: "",
+      code: "",
       status: "ACTIVE" as const,
-      description: "Area deployment fiber optik Bandung Timur & Arcamanik",
+      description: "",
     };
   }, [projects, projectId]);
 

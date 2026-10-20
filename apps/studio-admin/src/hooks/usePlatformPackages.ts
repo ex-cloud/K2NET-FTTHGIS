@@ -180,7 +180,7 @@ function mapToPlatformPackageItem(item: Record<string, unknown>): PlatformPackag
     quotaDeltaOlt: olt,
     quotaDeltaOdp: odp,
     published: Boolean(item.published ?? item.isPublished ?? true),
-    lifecycleStatus: String(item.lifecycleStatus || (Boolean(item.published ?? item.isPublished) ? "PUBLISHED" : "DRAFT")),
+    lifecycleStatus: String(item.lifecycleStatus || (item.published ?? item.isPublished ? "PUBLISHED" : "DRAFT")),
     prerequisiteCodes: Array.isArray(item.prerequisiteCodes) ? (item.prerequisiteCodes as string[]) : [],
     conflictCodes: Array.isArray(item.conflictCodes) ? (item.conflictCodes as string[]) : [],
     subscriberCount: typeof item.subscriberCount === "number" ? item.subscriberCount : undefined,

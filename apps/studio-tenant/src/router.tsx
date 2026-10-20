@@ -932,29 +932,29 @@ const projectSettingsFallbackRoute = createRoute({
   component: ProjectSettingsRedirect,
 });
 
-// Legacy redirects
+// Legacy redirects (Redirect to projects list when no projectId context)
 const legacyMapRoute = createRoute({
   getParentRoute: () => orgAuthenticatedRoute,
   path: "/map",
-  component: () => <Navigate to="/project/$projectId/infrastructure/topology" params={{ projectId: "proj-bdg-01" }} />,
+  component: () => <Navigate to="/projects" />,
 });
 
 const legacyCustomersRoute = createRoute({
   getParentRoute: () => orgAuthenticatedRoute,
   path: "/customers",
-  component: () => <Navigate to="/project/$projectId/inventory/customers" params={{ projectId: "proj-bdg-01" }} />,
+  component: () => <Navigate to="/projects" />,
 });
 
 const legacyInventoryRoute = createRoute({
   getParentRoute: () => orgAuthenticatedRoute,
   path: "/inventory",
-  component: () => <Navigate to="/project/$projectId/inventory/odc" params={{ projectId: "proj-bdg-01" }} />,
+  component: () => <Navigate to="/projects" />,
 });
 
 const legacyIssuesRoute = createRoute({
   getParentRoute: () => orgAuthenticatedRoute,
   path: "/issues",
-  component: () => <Navigate to="/project/$projectId/issues/tickets" params={{ projectId: "proj-bdg-01" }} />,
+  component: () => <Navigate to="/projects" />,
 });
 
 // ================================================================

@@ -11,7 +11,7 @@ import { useTranslation } from "@k2net/i18n";
 export function UserRolesPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const _projectId = params?.projectId || "proj-bdg-01";
+  const _projectId = params?.projectId || "";
 
   return (
     <PageLayout variant="workspace" spaceY="space-y-6">
@@ -29,9 +29,7 @@ export function UserRolesPage() {
           <h3 className="text-sm font-bold text-foreground">Zero-Trust Spatial ABAC Enforcement</h3>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          {t("team.abac_desc", {
-            defaultValue: "Staf dengan peran Teknisi dan Surveyor hanya diizinkan melihat dan mengedit aset di dalam poligon batas geografis proyek ini. Hak akses dievaluasi otomatis oleh Spring Boot Core & Keycloak JWT.",
-          })}
+          {t("team.abac_desc")}
         </p>
       </Card>
     </PageLayout>

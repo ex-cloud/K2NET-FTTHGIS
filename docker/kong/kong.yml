@@ -573,6 +573,34 @@ services:
           - POST
           - OPTIONS
 
+  # ─── 14. Martin MVT Vector Tile Server (Port 3001) ──────────────────────────
+  - name: martin-mvt-service
+    url: http://martin:3001
+    plugins:
+      - name: jwt
+        config:
+          claims_to_verify: [exp]
+          maximum_expiration: 3600
+          uri_param_names: [access_token, jwt, token]
+          anonymous: anonymous-stream-consumer
+          run_on_preflight: false
+      - name: rate-limiting
+        config:
+          minute: 3000
+          policy: local
+          limit_by: ip
+          fault_tolerant: true
+    routes:
+      - name: martin-mvt-function-route
+        paths:
+          - /get_mvt_data
+          - /catalog
+        strip_path: false
+      - name: martin-mvt-tiles-route
+        paths:
+          - /tiles
+        strip_path: true
+
 # ====================================================
 # Global Plugins
 # ====================================================

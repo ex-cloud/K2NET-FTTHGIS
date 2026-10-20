@@ -34,8 +34,8 @@ export function TenantMobileMenuTab({
 }: TenantMobileMenuTabProps) {
   const { t } = useTranslation();
   const { organizationName } = useTenantInfo();
-  const resolvedProjectId = projectId || "proj-bdg-01";
-  const isProjectScope = Boolean(pathname.startsWith(`/project/`));
+  const resolvedProjectId = projectId || "";
+  const isProjectScope = Boolean(pathname.startsWith(`/project/`) && resolvedProjectId);
 
   const [activeSecondaryKey, setActiveSecondaryKey] = React.useState<string | null>(null);
 

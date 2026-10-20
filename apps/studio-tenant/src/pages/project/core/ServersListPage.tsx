@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useParams } from "@tanstack/react-router";
-import { Server } from "lucide-react";
+import { Server, Loader2 } from "lucide-react";
 import {
   PageLayout,
   PageHero,
@@ -11,32 +11,47 @@ import {
   TableHead,
   TableBody,
   TableCell,
+  EmptyState,
 } from "@k2net/ui";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "../../../lib/api-client";
 import { useTranslation } from "@k2net/i18n";
+
+interface ServerItem {
+  id: string;
+  name: string;
+  ip?: string;
+  service?: string;
+  health?: string;
+  status?: string;
+  cycleTime?: string;
+}
 
 export function ServersListPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const _projectId = params?.projectId || "proj-bdg-01";
+  const _projectId = params?.projectId || "";
 
-  const servers = [
-    {
-      id: "srv-01",
-      name: "FTTH Poller Telemetry Engine",
-      ip: "10.200.0.10:5010",
-      service: "Go SNMP Poller + Redis",
-      health: "RUNNING",
-      cycleTime: "30s",
+  const { data: serverData, isLoading } = useQuery<{ content: ServerItem[] } | ServerItem[]>({
+    queryKey: ["project-servers", _projectId],
+    queryFn: async () => {
+      try {
+        return await apiClient<{ content: ServerItem[] } | ServerItem[]>(
+          "/api/v1/network/servers"
+        );
+      } catch {
+        return [];
+      }
     },
-    {
-      id: "srv-02",
-      name: "FreeRADIUS AAA Server",
-      ip: "10.200.0.11:1812",
-      service: "PPPoE Authentication & Accounting",
-      health: "RUNNING",
-      cycleTime: "Real-time",
-    },
-  ];
+    staleTime: 30 * 1000,
+  });
+
+  const servers: ServerItem[] = React.useMemo(() => {
+    if (!serverData) return [];
+    if (Array.isArray(serverData)) return serverData;
+    if (Array.isArray(serverData.content)) return serverData.content;
+    return [];
+  }, [serverData]);
 
   return (
     <PageLayout variant="workspace" spaceY="space-y-6">
@@ -45,6 +60,13 @@ export function ServersListPage() {
         subtitle={t("inventory.servers_subtitle")}
         icon={Server}
       />
+
+      {isLoading ? (
+        <Card className="border-border/60 p-8 flex items-center justify-center text-muted-foreground shadow-xs">
+          <Loader2 className="h-5 w-5 animate-spin mr-2 text-primary" />
+          <span className="text-xs">{t("common.loading", { defaultValue: "Loading..." })}</span>
+        </Card>
+      ) : servers.length > 0 ? (
         <Card className="border-border/60 overflow-hidden shadow-xs">
           <Table>
             <TableHeader>
@@ -52,7 +74,7 @@ export function ServersListPage() {
                 <TableHead className="font-bold">{t("inventory.server_name").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("inventory.ip_address").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("common.description").toUpperCase()}</TableHead>
-                <TableHead className="font-bold">CYCLE</TableHead>
+                <TableHead className="font-bold">{t("inventory.cycle_time", { defaultValue: "CYCLE" }).toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
               </TableRow>
             </TableHeader>
@@ -60,12 +82,12 @@ export function ServersListPage() {
               {servers.map((s) => (
                 <TableRow key={s.id} className="text-xs">
                   <TableCell className="font-bold text-foreground">{s.name}</TableCell>
-                  <TableCell className="font-mono text-muted-foreground">{s.ip}</TableCell>
-                  <TableCell className="font-medium text-foreground">{s.service}</TableCell>
-                  <TableCell className="font-mono text-muted-foreground">{s.cycleTime}</TableCell>
+                  <TableCell className="font-mono text-muted-foreground">{s.ip || "—"}</TableCell>
+                  <TableCell className="font-medium text-foreground">{s.service || "—"}</TableCell>
+                  <TableCell className="font-mono text-muted-foreground">{s.cycleTime || "—"}</TableCell>
                   <TableCell>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                      {s.health}
+                      {s.health || s.status || "RUNNING"}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -73,7 +95,13 @@ export function ServersListPage() {
             </TableBody>
           </Table>
         </Card>
+      ) : (
+        <EmptyState
+          icon={<Server className="h-6 w-6 text-muted-foreground" />}
+          title={t("common.no_results")}
+          description={t("inventory.servers_subtitle")}
+        />
+      )}
     </PageLayout>
   );
 }
-

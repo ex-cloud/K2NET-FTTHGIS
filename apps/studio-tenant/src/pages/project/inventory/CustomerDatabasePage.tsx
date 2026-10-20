@@ -46,7 +46,7 @@ interface CustomerItem {
 export function CustomerDatabasePage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const projectId = params?.projectId || "proj-bdg-01";
+  const projectId = params?.projectId || "";
   const [modalOpen, setModalOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
 

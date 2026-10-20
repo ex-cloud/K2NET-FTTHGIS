@@ -16,15 +16,17 @@ export function CanvasBuilderPage() {
   const { t, formatCurrency } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const navigate = useNavigate();
-  const projectId = params?.projectId || "proj-bdg-01";
+  const projectId = params?.projectId || "";
   const { canAccessCadBuilder, tier } = useTenantSubscription();
 
   const [selectedTool, setSelectedTool] = React.useState<"select" | "feeder" | "distribution" | "drop" | "odc" | "odp">("feeder");
-  const totalLength = 1240; // meters
+  const [totalLength] = React.useState(0); // dynamic drawn meters (starts at 0)
 
   const handleSaveDesign = () => {
     toast.success(t("common.saved_successfully"));
   };
+
+  const estimatedCost = totalLength * 15000;
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden select-none">
@@ -32,7 +34,7 @@ export function CanvasBuilderPage() {
         breadcrumbs={[
           { label: t("nav.projects"), href: "/projects" },
           { label: "GIS Infrastructure", href: `/project/${projectId}/infrastructure/topology` },
-          { label: "Canvas Builder" },
+          { label: t("gis.canvas_builder_title", { defaultValue: "Canvas Builder" }) },
         ]}
         title={t("gis.map_title")}
         badge={
@@ -46,7 +48,7 @@ export function CanvasBuilderPage() {
               <Button
                 size="sm"
                 onClick={handleSaveDesign}
-                className="h-8 px-3 text-xs font-medium gap-1.5 shadow-xs"
+                className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs"
               >
                 <Save className="h-3.5 w-3.5" />
                 {t("common.save")}
@@ -73,7 +75,7 @@ export function CanvasBuilderPage() {
                 size="sm"
                 variant={selectedTool === "select" ? "default" : "outline"}
                 onClick={() => setSelectedTool("select")}
-                className="h-7.5 px-2.5 text-xs gap-1.5"
+                className="h-7 px-2.5 text-xs gap-1.5"
               >
                 <PenTool className="h-3.5 w-3.5" />
                 {t("common.filter")}
@@ -82,7 +84,7 @@ export function CanvasBuilderPage() {
                 size="sm"
                 variant={selectedTool === "feeder" ? "default" : "outline"}
                 onClick={() => setSelectedTool("feeder")}
-                className="h-7.5 px-2.5 text-xs gap-1.5"
+                className="h-7 px-2.5 text-xs gap-1.5"
               >
                 <Network className="h-3.5 w-3.5 text-sky-500" />
                 {t("gis.layer_cables")} (Feeder)
@@ -91,7 +93,7 @@ export function CanvasBuilderPage() {
                 size="sm"
                 variant={selectedTool === "distribution" ? "default" : "outline"}
                 onClick={() => setSelectedTool("distribution")}
-                className="h-7.5 px-2.5 text-xs gap-1.5"
+                className="h-7 px-2.5 text-xs gap-1.5"
               >
                 <Network className="h-3.5 w-3.5 text-amber-500" />
                 {t("gis.layer_cables")} (Dist)
@@ -100,18 +102,18 @@ export function CanvasBuilderPage() {
                 size="sm"
                 variant={selectedTool === "drop" ? "default" : "outline"}
                 onClick={() => setSelectedTool("drop")}
-                className="h-7.5 px-2.5 text-xs gap-1.5"
+                className="h-7 px-2.5 text-xs gap-1.5"
               >
                 <Network className="h-3.5 w-3.5 text-primary" />
-                Drop Cable
+                {t("gis.layer_cables")} (Drop)
               </Button>
             </div>
 
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-7.5 w-7.5 text-muted-foreground hover:text-foreground">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
                 <Undo className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7.5 w-7.5 text-muted-foreground hover:text-foreground">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
                 <Redo className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -142,7 +144,7 @@ export function CanvasBuilderPage() {
               </span>
             </div>
             <span className="text-xs font-mono font-bold text-primary">
-              {t("inventory.total_estimated_cost")}: {formatCurrency(18600000)}
+              {t("inventory.total_estimated_cost")}: {formatCurrency(estimatedCost)}
             </span>
           </div>
         </div>
@@ -150,4 +152,3 @@ export function CanvasBuilderPage() {
     </div>
   );
 }
-

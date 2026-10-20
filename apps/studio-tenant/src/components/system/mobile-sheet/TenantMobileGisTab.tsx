@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Map, Flame, PenTool, Radio, Compass, ExternalLink } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 
 interface TenantMobileGisTabProps {
   onNavigate: (href: string) => void;
@@ -10,32 +11,34 @@ interface TenantMobileGisTabProps {
 export function TenantMobileGisTab({
   onNavigate,
   onClose,
-  projectId = "proj-bdg-01",
+  projectId,
 }: TenantMobileGisTabProps) {
+  const { t } = useTranslation();
+
   const mapTools = [
     {
-      title: "Peta Spasial MapLibre (GIS)",
-      desc: "Visualisasi aset fiber, ODC, ODP, dan kabel",
+      title: t("gis.map_title", { defaultValue: "GIS Spatial Map" }),
+      desc: t("gis.map_subtitle", { defaultValue: "Fiber asset visualization, ODC, ODP, and cables" }),
       icon: Map,
-      href: `/project/${projectId}/gis/topology`,
+      href: projectId ? `/project/${projectId}/infrastructure/topology` : "/projects",
     },
     {
-      title: "Optical Attenuation Heatmap",
-      desc: "Pemetaan redaman optik dan coverage signal",
+      title: t("gis.heatmap_title", { defaultValue: "Optical Attenuation Heatmap" }),
+      desc: t("gis.heatmap_subtitle", { defaultValue: "Optical signal attenuation and coverage mapping" }),
       icon: Flame,
-      href: `/project/${projectId}/gis/heatmap`,
+      href: projectId ? `/project/${projectId}/gis/heatmap` : "/projects",
     },
     {
-      title: "CAD Canvas Builder",
-      desc: "Desain dan plotting jaringan FTTH baru",
+      title: t("gis.canvas_builder_title", { defaultValue: "CAD Canvas Designer" }),
+      desc: t("gis.canvas_builder_subtitle", { defaultValue: "Design and plot new FTTH network routes" }),
       icon: PenTool,
-      href: `/project/${projectId}/gis/canvas`,
+      href: projectId ? `/project/${projectId}/gis/canvas` : "/projects",
     },
     {
-      title: "Live OLT Telemetry",
-      desc: "Monitoring status uplink OLT real-time",
+      title: t("inventory.telemetry_title", { defaultValue: "Live OLT Telemetry" }),
+      desc: t("inventory.olt_subtitle", { defaultValue: "Real-time GPON / EPON uplink monitoring" }),
       icon: Radio,
-      href: `/project/${projectId}/core/olt`,
+      href: projectId ? `/project/${projectId}/core/olt` : "/projects",
     },
   ];
 
@@ -44,7 +47,9 @@ export function TenantMobileGisTab({
       <div className="flex items-center justify-between pb-2 border-b border-border/60">
         <div className="flex items-center gap-2">
           <Compass className="size-4 text-primary" />
-          <span className="text-xs font-bold text-foreground">Akses Cepat Modul Spasial GIS</span>
+          <span className="text-xs font-bold text-foreground">
+            {t("gis.quick_access_gis", { defaultValue: "GIS Spatial Quick Access" })}
+          </span>
         </div>
       </div>
 

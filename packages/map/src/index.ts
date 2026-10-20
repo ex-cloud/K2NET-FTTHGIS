@@ -1,6 +1,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export * from "./types";
+export * from "./basemap";
 export * from "./constants/layers";
 export * from "./utils/attenuation";
 export * from "./utils/tiles";

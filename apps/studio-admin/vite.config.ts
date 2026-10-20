@@ -67,6 +67,18 @@ export default defineConfig({
         target: process.env.VITE_KONG_URL || "http://127.0.0.1:8000",
         changeOrigin: true,
       },
+      "/get_mvt_data": {
+        target: process.env.VITE_MARTIN_URL || process.env.VITE_KONG_URL || "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+      "/catalog": {
+        target: process.env.VITE_MARTIN_URL || process.env.VITE_KONG_URL || "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+      "/tiles": {
+        target: process.env.VITE_MARTIN_URL || process.env.VITE_KONG_URL || "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
     },
   },
   build: {

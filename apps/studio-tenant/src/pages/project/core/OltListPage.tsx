@@ -49,7 +49,7 @@ interface OltItem {
 export function OltListPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const projectId = params?.projectId || "proj-bdg-01";
+  const projectId = params?.projectId || "";
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedTelemetryOlt, setSelectedTelemetryOlt] = React.useState<OltItem | null>(null);
 

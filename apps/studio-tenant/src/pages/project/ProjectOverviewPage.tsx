@@ -22,25 +22,25 @@ export function ProjectOverviewPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
   const { projects } = useProjects();
-  const projectId = params?.projectId || "proj-bdg-01";
+  const projectId = params?.projectId || "";
 
   const project = React.useMemo(() => {
     return (
       projects.find((p) => p.id === projectId) || {
         id: projectId,
-        name: "FTTH Bandung Timur Cluster",
-        code: "BDG-TMR",
+        name: t("projects.active_project", { defaultValue: "Active Project" }),
+        code: "PRJ",
         status: "ACTIVE",
-        description: "Area deployment fiber optik Bandung Timur & Arcamanik",
-        totalSubscribers: 1420,
-        onlineSubscribers: 1398,
-        odcCount: 12,
-        odpCount: 86,
-        cableLengthKm: 48.6,
-        oltCount: 4,
+        description: "",
+        totalSubscribers: 0,
+        onlineSubscribers: 0,
+        odcCount: 0,
+        odpCount: 0,
+        cableLengthKm: 0,
+        oltCount: 0,
       }
     );
-  }, [projects, projectId]);
+  }, [projects, projectId, t]);
 
   return (
     <PageLayout variant="dashboard" spaceY="space-y-8">
@@ -76,10 +76,10 @@ export function ProjectOverviewPage() {
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold font-mono text-foreground">
-                {project.totalSubscribers || 1420}
+                {project.totalSubscribers ?? 0}
               </span>
               <span className="text-[11px] text-muted-foreground font-mono">
-                {project.onlineSubscribers || 1398} {t("projects.stats_online_subscribers")}
+                {project.onlineSubscribers ?? 0} {t("projects.stats_online_subscribers")}
               </span>
             </div>
           </Card>
@@ -95,7 +95,7 @@ export function ProjectOverviewPage() {
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold font-mono text-foreground">
-                {project.odcCount || 12} <span className="text-xs font-normal text-muted-foreground">ODC</span> / {project.odpCount || 86} <span className="text-xs font-normal text-muted-foreground">ODP</span>
+                {project.odcCount ?? 0} <span className="text-xs font-normal text-muted-foreground">ODC</span> / {project.odpCount ?? 0} <span className="text-xs font-normal text-muted-foreground">ODP</span>
               </span>
               <span className="text-[11px] text-primary font-mono">Ports</span>
             </div>
@@ -112,7 +112,7 @@ export function ProjectOverviewPage() {
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold font-mono text-foreground">
-                {project.cableLengthKm || 48.6} <span className="text-xs font-normal text-muted-foreground">Km</span>
+                {project.cableLengthKm ?? 0} <span className="text-xs font-normal text-muted-foreground">Km</span>
               </span>
               <span className="text-[11px] text-muted-foreground font-mono">{t("projects.stats_cable_length")}</span>
             </div>
@@ -126,12 +126,12 @@ export function ProjectOverviewPage() {
                 {t("inventory.olt_title")}
               </span>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20">
-                ALL UP
+                {project.oltCount ? "ALL UP" : "STANDBY"}
               </span>
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-2xl font-bold font-mono text-foreground">
-                {project.oltCount || 4} <span className="text-xs font-normal text-muted-foreground">Unit</span>
+                {project.oltCount ?? 0} <span className="text-xs font-normal text-muted-foreground">Unit</span>
               </span>
               <span className="text-[11px] text-muted-foreground font-mono">{t("projects.stats_olt_count")}</span>
             </div>

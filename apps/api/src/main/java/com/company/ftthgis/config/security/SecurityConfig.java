@@ -342,6 +342,11 @@ public class SecurityConfig {
                         roleOpt = roleRepository.findByNameAndOrganizationId(cleanRole, orgId);
                     }
 
+                    if (roleOpt.isEmpty()) {
+                        roleOpt = roleRepository.findByName(cleanRole)
+                                .filter(r -> "TENANT".equalsIgnoreCase(r.getScope()));
+                    }
+
                     if (roleOpt.isPresent()) {
                         authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
                         var role = roleOpt.get();

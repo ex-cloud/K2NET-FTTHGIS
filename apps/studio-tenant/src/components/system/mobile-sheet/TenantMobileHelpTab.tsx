@@ -10,6 +10,7 @@ import {
   Map,
 } from "lucide-react";
 import { Badge, Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 
 interface TenantMobileHelpTabProps {
   onNavigate: (url: string) => void;
@@ -20,38 +21,40 @@ interface TenantMobileHelpTabProps {
 export function TenantMobileHelpTab({
   onNavigate,
   onOpenAi,
-  projectId = "proj-bdg-01",
+  projectId,
 }: TenantMobileHelpTabProps) {
+  const { t } = useTranslation();
+
   const helpItems = [
     {
-      title: "AI Network Copilot",
-      desc: "Panduan cerdas topologi, parameter redaman, dan diagnosa jaringan FTTH.",
+      title: t("help.copilot_title", { defaultValue: "AI Network Copilot" }),
+      desc: t("help.copilot_desc", { defaultValue: "Intelligent guidance for topology, attenuation parameters, and FTTH diagnostics." }),
       icon: Sparkles,
       action: onOpenAi,
     },
     {
-      title: "Standar Redaman Optik (ITU-T G.652D)",
-      desc: "Batas toleransi loss serat optik, splicing loss (<0.05dB), dan connector (<0.3dB).",
+      title: t("help.optical_standards_title", { defaultValue: "Optical Power Standards (ITU-T G.652D)" }),
+      desc: t("help.optical_standards_desc", { defaultValue: "Fiber loss limits, splice loss (<0.05dB), and connector loss (<0.3dB)." }),
       icon: Activity,
-      action: () => onNavigate(`/project/${projectId}/issues/tickets`),
+      action: () => onNavigate(projectId ? `/project/${projectId}/issues/tickets` : "/projects"),
     },
     {
-      title: "SOP Penarikan Kabel & FAT",
-      desc: "Prosedur baku instalasi drop core, bending radius, dan tagging kode ODP.",
+      title: t("help.sop_title", { defaultValue: "Cable Installation & FAT SOP" }),
+      desc: t("help.sop_desc", { defaultValue: "Drop cable deployment standards, bending radius, and ODP tagging." }),
       icon: FileText,
-      action: () => onNavigate(`/project/${projectId}/gis/canvas`),
+      action: () => onNavigate(projectId ? `/project/${projectId}/gis/canvas` : "/projects"),
     },
     {
-      title: "Panduan Peta Spasial Web-GIS",
-      desc: "Simulasi penarikan kabel baru, identifikasi rute tercepat, dan layer MVT.",
+      title: t("help.gis_guide_title", { defaultValue: "Web-GIS Spatial Map Manual" }),
+      desc: t("help.gis_guide_desc", { defaultValue: "Cable routing simulation, shortest path analysis, and MVT vector layers." }),
       icon: Map,
-      action: () => onNavigate(`/project/${projectId}/gis/topology`),
+      action: () => onNavigate(projectId ? `/project/${projectId}/infrastructure/topology` : "/projects"),
     },
     {
-      title: "Monitoring Telemetri OLT",
-      desc: "Pemantauan uplink PON, status SFP temperatur, dan sinkronisasi poller.",
+      title: t("help.olt_telemetry_title", { defaultValue: "OLT Telemetry Monitoring" }),
+      desc: t("help.olt_telemetry_desc", { defaultValue: "Real-time PON uplink monitoring, SFP temperature, and poller health." }),
       icon: Radio,
-      action: () => onNavigate(`/project/${projectId}/core/olt`),
+      action: () => onNavigate(projectId ? `/project/${projectId}/core/olt` : "/projects"),
     },
   ];
 
@@ -59,10 +62,12 @@ export function TenantMobileHelpTab({
     <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in-0 duration-200">
       {/* Header with Health Badge */}
       <div className="flex items-center justify-between p-3.5 border-b border-border/60 bg-muted/20">
-        <span className="text-xs font-bold text-foreground">Help &amp; Support</span>
+        <span className="text-xs font-bold text-foreground">
+          {t("common.help_support", { defaultValue: "Help & Support" })}
+        </span>
         <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-medium flex items-center gap-1.5">
           <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-          All systems operational
+          {t("common.all_systems_operational", { defaultValue: "All systems operational" })}
         </Badge>
       </div>
 
@@ -97,11 +102,13 @@ export function TenantMobileHelpTab({
         <div className="p-3.5 rounded-lg border border-primary/20 bg-primary/5 mt-4 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-foreground">
-              Bantuan NOC Escalation 24/7
+              {t("help.noc_escalation_title", { defaultValue: "24/7 NOC Escalation Support" })}
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Jika mengalami kendala routing gateway, anomali poller OLT, atau sinkronisasi database, hubungi tim NOC K2NET.
+            {t("help.noc_escalation_desc", {
+              defaultValue: "For gateway routing issues, poller telemetry anomalies, or database synchronization, reach out directly to the K2NET NOC team.",
+            })}
           </p>
           <div className="flex items-center gap-2 pt-1">
             <Button

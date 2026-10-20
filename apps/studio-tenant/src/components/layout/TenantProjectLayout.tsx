@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Outlet, useParams, useRouterState } from "@tanstack/react-router";
+import { Outlet, useParams, useRouterState, Navigate } from "@tanstack/react-router";
 import { ShieldAlert } from "lucide-react";
 import {
   Button,
@@ -43,7 +43,7 @@ function TenantProjectLayoutContent() {
   const projectId = React.useMemo(() => {
     if (params?.projectId) return params.projectId;
     const match = routerState.location.pathname.match(/\/project\/([^/]+)/);
-    return match ? match[1] : "proj-bdg-01";
+    return match ? match[1] : "";
   }, [params?.projectId, routerState.location.pathname]);
 
   React.useEffect(() => {
@@ -70,6 +70,10 @@ function TenantProjectLayoutContent() {
   const [notifOpen, setNotifOpen] = React.useState(false);
   const [createProjectOpen, setCreateProjectOpen] = React.useState(false);
 
+  if (!projectId) {
+    return <Navigate to="/projects" />;
+  }
+
   return (
     <div className="flex flex-col h-screen w-full bg-background overflow-hidden font-sans text-foreground">
       {/* ── 1. Global Dialogs & Drawers ──────────────────────────────────── */}
@@ -84,13 +88,13 @@ function TenantProjectLayoutContent() {
       <TenantHelpDialog open={helpOpen} onOpenChange={setHelpOpen} />
       <TenantNotificationsSheet open={notifOpen} onOpenChange={setNotifOpen} />
 
-      {/* Modal Wizard: Buat Proyek Baru */}
+      {/* Modal Wizard: Create New Project */}
       <ProjectCreateWizard
         open={createProjectOpen}
         onOpenChange={setCreateProjectOpen}
       />
 
-      {/* Modal Dialog: Sesi Impersonasi Berakhir */}
+      {/* Modal Dialog: Impersonation Session Ended */}
       <Dialog open={isSessionEnded}>
         <DialogContent className="sm:max-w-md [&>button]:hidden">
           <DialogHeader className="flex flex-col items-center gap-2 text-center pt-2">
@@ -98,12 +102,10 @@ function TenantProjectLayoutContent() {
               <ShieldAlert className="h-6 w-6" />
             </div>
             <DialogTitle className="text-base font-bold text-foreground">
-              Sesi Bantuan Telah Berakhir
+              {t("common.impersonation_ended_title")}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              Sesi impersonasi untuk tenant{" "}
-              <strong className="text-foreground">{endedTenantName || "ISP Tenant"}</strong>{" "}
-              telah ditutup oleh administrator atau batas waktu operasional telah habis.
+              {t("common.impersonation_ended_desc", { name: endedTenantName || "ISP Tenant" })}
             </DialogDescription>
           </DialogHeader>
 
@@ -155,7 +157,7 @@ function TenantProjectLayoutContent() {
             {/* 1. Root Workspace Logo (Always visible on mobile & desktop) */}
             <TenantLogo href="/projects" />
 
-            {/* 2. Desktop-Only Org Scope (Disembunyikan total di mobile sebagai 1 kesatuan) */}
+            {/* 2. Desktop-Only Org Scope (Hidden completely on mobile as a unit) */}
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <span
                 className="inline-flex items-center justify-center text-muted-foreground/30 font-mono text-xs sm:text-sm select-none shrink-0 w-3"
@@ -176,7 +178,7 @@ function TenantProjectLayoutContent() {
               </span>
             </div>
 
-            {/* 3. Project Switcher (Dropdown proyek) */}
+            {/* 3. Project Switcher (Project dropdown) */}
             <ProjectSwitcher
               activeProjectId={projectId}
               onNewProject={() => setCreateProjectOpen(true)}

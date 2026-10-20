@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useParams } from "@tanstack/react-router";
-import { Plus, Router } from "lucide-react";
+import { Plus, Router, Loader2 } from "lucide-react";
 import {
   PageLayout,
   PageHero,
@@ -13,34 +13,47 @@ import {
   TableHead,
   TableBody,
   TableCell,
+  EmptyState,
 } from "@k2net/ui";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "../../../lib/api-client";
 import { useTranslation } from "@k2net/i18n";
+
+interface RouterItem {
+  id: string;
+  name: string;
+  ip?: string;
+  role?: string;
+  cpuUsage?: string;
+  uptime?: string;
+  status?: string;
+}
 
 export function RoutersListPage() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { projectId?: string };
-  const _projectId = params?.projectId || "proj-bdg-01";
+  const _projectId = params?.projectId || "";
 
-  const routers = [
-    {
-      id: "rtr-01",
-      name: "MikroTik CCR2004 BGP Core",
-      ip: "10.200.0.1",
-      role: "BGP Gateway & NAT",
-      cpuUsage: "18%",
-      uptime: "142d",
-      status: "ACTIVE",
+  const { data: routerData, isLoading } = useQuery<{ content: RouterItem[] } | RouterItem[]>({
+    queryKey: ["project-routers", _projectId],
+    queryFn: async () => {
+      try {
+        return await apiClient<{ content: RouterItem[] } | RouterItem[]>(
+          "/api/v1/network/routers"
+        );
+      } catch {
+        return [];
+      }
     },
-    {
-      id: "rtr-02",
-      name: "Cisco Catalyst 3850 Aggregation",
-      ip: "10.200.0.2",
-      role: "10G Optical Switch",
-      cpuUsage: "8%",
-      uptime: "98d",
-      status: "ACTIVE",
-    },
-  ];
+    staleTime: 30 * 1000,
+  });
+
+  const routers: RouterItem[] = React.useMemo(() => {
+    if (!routerData) return [];
+    if (Array.isArray(routerData)) return routerData;
+    if (Array.isArray(routerData.content)) return routerData.content;
+    return [];
+  }, [routerData]);
 
   return (
     <PageLayout variant="workspace" spaceY="space-y-6">
@@ -55,6 +68,13 @@ export function RoutersListPage() {
           </Button>
         }
       />
+
+      {isLoading ? (
+        <Card className="border-border/60 p-8 flex items-center justify-center text-muted-foreground shadow-xs">
+          <Loader2 className="h-5 w-5 animate-spin mr-2 text-primary" />
+          <span className="text-xs">{t("common.loading", { defaultValue: "Loading..." })}</span>
+        </Card>
+      ) : routers.length > 0 ? (
         <Card className="border-border/60 overflow-hidden shadow-xs">
           <Table>
             <TableHeader>
@@ -63,7 +83,7 @@ export function RoutersListPage() {
                 <TableHead className="font-bold">{t("inventory.ip_address").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("inventory.interfaces").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("inventory.cpu_load").toUpperCase()}</TableHead>
-                <TableHead className="font-bold">UPTIME</TableHead>
+                <TableHead className="font-bold">{t("inventory.uptime", { defaultValue: "UPTIME" }).toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("common.status").toUpperCase()}</TableHead>
               </TableRow>
             </TableHeader>
@@ -71,17 +91,17 @@ export function RoutersListPage() {
               {routers.map((r) => (
                 <TableRow key={r.id} className="text-xs">
                   <TableCell className="font-bold text-foreground">{r.name}</TableCell>
-                  <TableCell className="font-mono text-muted-foreground">{r.ip}</TableCell>
+                  <TableCell className="font-mono text-muted-foreground">{r.ip || "—"}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="font-mono text-[10px]">
-                      {r.role}
+                      {r.role || "CORE"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono">{r.cpuUsage}</TableCell>
-                  <TableCell className="font-mono text-muted-foreground">{r.uptime}</TableCell>
+                  <TableCell className="font-mono">{r.cpuUsage || "—"}</TableCell>
+                  <TableCell className="font-mono text-muted-foreground">{r.uptime || "—"}</TableCell>
                   <TableCell>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                      {r.status}
+                      {r.status || "ACTIVE"}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -89,7 +109,19 @@ export function RoutersListPage() {
             </TableBody>
           </Table>
         </Card>
+      ) : (
+        <EmptyState
+          icon={<Router className="h-6 w-6 text-muted-foreground" />}
+          title={t("common.no_results")}
+          description={t("inventory.routers_subtitle")}
+          action={
+            <Button size="sm" className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs rounded-md">
+              <Plus className="h-3.5 w-3.5" />
+              {t("inventory.add_router")}
+            </Button>
+          }
+        />
+      )}
     </PageLayout>
   );
 }
-

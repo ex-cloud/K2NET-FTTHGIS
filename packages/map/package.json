@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "maplibre-gl": "^5.1.1",
+    "pmtiles": "^4.5.0",
     "react-map-gl": "^8.1.0"
   },
   "peerDependencies": {
