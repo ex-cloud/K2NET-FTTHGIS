@@ -5,6 +5,7 @@ import {
   Sliders,
   Check,
   X,
+  Layers,
   Server,
   Split,
   Box,
@@ -92,7 +93,7 @@ export function PlanTiersGrid({ plans, loading, onEdit }: PlanTiersGridProps) {
                   </Badge>
                 ) : isPro ? (
                   <Badge className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono">
-                    POPULAR
+                    PRO
                   </Badge>
                 ) : isEnterprise ? (
                   <Badge className="bg-foreground/5 text-foreground border-border text-[10px] font-mono">
@@ -124,11 +125,21 @@ export function PlanTiersGrid({ plans, loading, onEdit }: PlanTiersGridProps) {
                 <div className="space-y-1.5 pt-0.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <Server className="size-3.5" />
-                      {t("license.modal.max_projects_olts")}
+                      <Layers className="size-3.5" />
+                      {t("license.modal.max_projects")}
                     </span>
                     <span className="font-mono font-medium text-foreground">
                       {plan.maxProjects?.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <Server className="size-3.5" />
+                      {t("license.modal.max_olts_capacity")}
+                    </span>
+                    <span className="font-mono font-medium text-foreground">
+                      {(plan.maxOlts ?? 1).toLocaleString("id-ID")}
                     </span>
                   </div>
 
@@ -165,7 +176,7 @@ export function PlanTiersGrid({ plans, loading, onEdit }: PlanTiersGridProps) {
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1.5 text-muted-foreground">
                       <Archive className="size-3.5" />
-                      {t("organizations.quotas.archived_projects")}
+                      {t("license.modal.archived_projects")}
                     </span>
                     <span className="font-mono font-medium text-foreground">
                       {plan.maxArchivedProjects ?? 1}

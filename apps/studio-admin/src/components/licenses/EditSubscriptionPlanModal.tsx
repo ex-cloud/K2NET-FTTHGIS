@@ -12,7 +12,20 @@ import {
   Checkbox,
   toast,
 } from "@k2net/ui";
-import { Sliders, Shield, Terminal } from "lucide-react";
+import {
+  Sliders,
+  Shield,
+  Terminal,
+  Layers,
+  Server,
+  Split,
+  Box,
+  Users,
+  Archive,
+  HardDrive,
+  Activity,
+  Info,
+} from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
 import {
   useUpdateSubscriptionPlan,
@@ -65,120 +78,152 @@ function PlanQuotasFields({
 }: PlanQuotasFormProps) {
   const { t } = useTranslation();
   return (
-    <div className="border border-border/70 rounded-md p-3 bg-muted/10 space-y-2.5">
-      <div>
-        <span className="font-semibold text-foreground text-xs block">
-          {t("license.plans.base_quotas_heading")}
-        </span>
-        <span className="text-[10px] text-muted-foreground">
-          {t("license.plans.base_quotas_desc")}
-        </span>
+    <div className="space-y-3">
+      {/* Section A: Workspace & Projects */}
+      <div className="border border-border/70 rounded-md p-3 bg-muted/10 space-y-2.5">
+        <div className="flex items-center gap-1.5 border-b border-border/50 pb-1.5">
+          <Layers className="size-3.5 text-primary" />
+          <span className="font-semibold text-foreground text-xs">
+            {t("license.modal.sec_workspace")}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Layers className="size-3" />
+              <span>{t("license.modal.max_projects")}</span>
+            </Label>
+            <Input
+              type="number"
+              min={1}
+              value={maxProjects}
+              onChange={(e) => setMaxProjects(e.target.value)}
+              className="h-7 text-xs bg-background"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Archive className="size-3" />
+              <span>{t("license.modal.archived_projects")}</span>
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              value={maxArchivedProjects}
+              onChange={(e) => setMaxArchivedProjects(e.target.value)}
+              className="h-7 text-xs bg-background"
+              required
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">
-            {t("license.modal.max_projects_olts")}
-          </Label>
-          <Input
-            type="number"
-            min={1}
-            value={maxProjects}
-            onChange={(e) => setMaxProjects(e.target.value)}
-            className="h-7 text-xs bg-background"
-            required
-          />
+      {/* Section B: FTTH Network Infrastructure */}
+      <div className="border border-border/70 rounded-md p-3 bg-muted/10 space-y-2.5">
+        <div className="flex items-center gap-1.5 border-b border-border/50 pb-1.5">
+          <Server className="size-3.5 text-primary" />
+          <span className="font-semibold text-foreground text-xs">
+            {t("license.modal.sec_infrastructure")}
+          </span>
         </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">
-            {t("license.modal.max_olts_capacity")}
-          </Label>
-          <Input
-            type="number"
-            min={1}
-            value={maxOlts}
-            onChange={(e) => setMaxOlts(e.target.value)}
-            className="h-7 text-xs bg-background"
-            required
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Server className="size-3" />
+              <span>{t("license.modal.max_olts_capacity")}</span>
+            </Label>
+            <Input
+              type="number"
+              min={1}
+              value={maxOlts}
+              onChange={(e) => setMaxOlts(e.target.value)}
+              className="h-7 text-xs bg-background"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Split className="size-3" />
+              <span>{t("license.modal.max_odps")}</span>
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              value={maxOdps}
+              onChange={(e) => setMaxOdps(e.target.value)}
+              className="h-7 text-xs bg-background"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Box className="size-3" />
+              <span>{t("license.modal.max_odcs")}</span>
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              value={maxOdcs}
+              onChange={(e) => setMaxOdcs(e.target.value)}
+              className="h-7 text-xs bg-background"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Users className="size-3" />
+              <span>{t("license.modal.max_customers")}</span>
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              value={maxCustomers}
+              onChange={(e) => setMaxCustomers(e.target.value)}
+              className="h-7 text-xs bg-background"
+              required
+            />
+          </div>
         </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">
-            {t("organizations.quotas.archived_projects")}
-          </Label>
-          <Input
-            type="number"
-            min={0}
-            value={maxArchivedProjects}
-            onChange={(e) => setMaxArchivedProjects(e.target.value)}
-            className="h-7 text-xs bg-background"
-            required
-          />
+      </div>
+
+      {/* Section C: Cloud & API Capacity */}
+      <div className="border border-border/70 rounded-md p-3 bg-muted/10 space-y-2.5">
+        <div className="flex items-center gap-1.5 border-b border-border/50 pb-1.5">
+          <HardDrive className="size-3.5 text-primary" />
+          <span className="font-semibold text-foreground text-xs">
+            {t("license.modal.sec_cloud_api")}
+          </span>
         </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">
-            {t("license.modal.max_odps")}
-          </Label>
-          <Input
-            type="number"
-            min={0}
-            value={maxOdps}
-            onChange={(e) => setMaxOdps(e.target.value)}
-            className="h-7 text-xs bg-background"
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">
-            {t("license.modal.max_odcs")}
-          </Label>
-          <Input
-            type="number"
-            min={0}
-            value={maxOdcs}
-            onChange={(e) => setMaxOdcs(e.target.value)}
-            className="h-7 text-xs bg-background"
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">
-            {t("license.modal.max_customers")}
-          </Label>
-          <Input
-            type="number"
-            min={0}
-            value={maxCustomers}
-            onChange={(e) => setMaxCustomers(e.target.value)}
-            className="h-7 text-xs bg-background"
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">
-            {t("license.modal.max_storage_gb")}
-          </Label>
-          <Input
-            type="number"
-            min={1}
-            value={maxStorageGb}
-            onChange={(e) => setMaxStorageGb(e.target.value)}
-            className="h-7 text-xs bg-background"
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">
-            {t("license.modal.api_rate_limit_rpm")}
-          </Label>
-          <Input
-            type="number"
-            min={100}
-            value={apiRateLimitRpm}
-            onChange={(e) => setApiRateLimitRpm(e.target.value)}
-            className="h-7 text-xs bg-background"
-            required
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <HardDrive className="size-3" />
+              <span>{t("license.modal.max_storage_gb")}</span>
+            </Label>
+            <Input
+              type="number"
+              min={1}
+              value={maxStorageGb}
+              onChange={(e) => setMaxStorageGb(e.target.value)}
+              className="h-7 text-xs bg-background"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Activity className="size-3" />
+              <span>{t("license.modal.api_rate_limit_rpm")}</span>
+            </Label>
+            <Input
+              type="number"
+              min={100}
+              value={apiRateLimitRpm}
+              onChange={(e) => setApiRateLimitRpm(e.target.value)}
+              className="h-7 text-xs bg-background"
+              required
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -261,7 +306,7 @@ export function EditSubscriptionPlanModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto bg-card border-border">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-md bg-muted text-foreground">
@@ -276,6 +321,12 @@ export function EditSubscriptionPlanModal({
               </DialogDescription>
             </div>
           </div>
+          {(plan.activeTenants ?? 0) > 0 && (
+            <div className="flex items-center gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs mt-2">
+              <Info className="size-4 shrink-0" />
+              <span>{t("license.modal.edit_plan_tenants_impact", { count: plan.activeTenants ?? 0 })}</span>
+            </div>
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2 text-xs">

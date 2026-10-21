@@ -67,6 +67,11 @@
   "delete_org_type_confirm": "Ketik nama organisasi di bawah ini:",
   "edit_quotas_title": "Ubah Kuota & Batasan Sumber Daya",
   "edit_quotas_desc": "Sesuaikan batas maksimum perangkat keras OLT, ODP, dan penyimpanan MinIO S3 untuk {orgName}.",
+  "quotas": {
+    "archived_projects": "Batas Proyek Arsip",
+    "workspace_projects": "Workspace Proyek",
+    "olt_hardware": "Kapasitas Hardware OLT"
+  },
   "feature_flags_title": "Kontrol Fitur & Modul Tenant",
   "feature_flags_desc": "Aktifkan atau nonaktifkan fitur tingkat enterprise untuk {orgName}.",
   "custom_domain_title": "Konfigurasi Domain Kustom & SSL",

@@ -56,8 +56,24 @@ public class LicenseNotificationService {
                 stage, orgName, orgSlug, triggeredBy, targetEmail, targetPhone);
 
         // 1. Kirim Email Notifikasi
-        if (license.isNotifyEmailEnabled() && targetEmail != null && !targetEmail.isBlank()) {
-            sendEmailNotification(license, orgName, targetEmail, stage, triggeredBy);
+        if (license.isNotifyEmailEnabled()) {
+            if (targetEmail != null && !targetEmail.isBlank()) {
+                sendEmailNotification(license, orgName, targetEmail, stage, triggeredBy);
+            } else {
+                log.warn("⚠️ [LICENSE NOTIFIER] Skipped email reminder for tenant '{}' - no billing contact email configured", orgSlug);
+                logRepository.save(LicenseNotificationLog.builder()
+                        .organization(license.getOrganization())
+                        .license(license)
+                        .channel("EMAIL")
+                        .stage(stage)
+                        .recipient("UNCONFIGURED")
+                        .subject(buildEmailSubject(stage, orgName))
+                        .status("FAILED")
+                        .errorDetails("No valid billing contact email configured for organization or license")
+                        .triggeredBy(triggeredBy)
+                        .sentAt(LocalDateTime.now())
+                        .build());
+            }
         }
 
         // 2. Kirim WhatsApp Notifikasi
@@ -258,9 +274,17 @@ public class LicenseNotificationService {
             return license.getBillingContactEmail().trim();
         }
         if (org != null) {
-            String configEmail = org.getSettingsMap().get("billing_contact_email");
-            if (configEmail != null && !configEmail.isBlank()) return configEmail.trim();
-            return "billing@" + org.getSlug() + ".kdua.net";
+            java.util.Map<String, String> settings = org.getSettingsMap();
+            if (settings != null) {
+                String configEmail = settings.get("billing_contact_email");
+                if (configEmail != null && !configEmail.isBlank()) return configEmail.trim();
+                String adminEmail = settings.get("admin_email");
+                if (adminEmail != null && !adminEmail.isBlank()) return adminEmail.trim();
+                String contactEmail = settings.get("contact_email");
+                if (contactEmail != null && !contactEmail.isBlank()) return contactEmail.trim();
+                String email = settings.get("email");
+                if (email != null && !email.isBlank()) return email.trim();
+            }
         }
         return null;
     }
@@ -271,7 +295,15 @@ public class LicenseNotificationService {
         }
         Organization org = license.getOrganization();
         if (org != null) {
-            return org.getSettingsMap().get("billing_contact_phone");
+            java.util.Map<String, String> settings = org.getSettingsMap();
+            if (settings != null) {
+                String configPhone = settings.get("billing_contact_phone");
+                if (configPhone != null && !configPhone.isBlank()) return configPhone.trim();
+                String contactPhone = settings.get("contact_phone");
+                if (contactPhone != null && !contactPhone.isBlank()) return contactPhone.trim();
+                String phone = settings.get("phone");
+                if (phone != null && !phone.isBlank()) return phone.trim();
+            }
         }
         return null;
     }

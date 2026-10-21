@@ -32,7 +32,6 @@ import {
   type LicenseItem,
 } from "@/hooks/useOrganizationLicenses";
 import { LicenseRevokeModal } from "@/components/licenses/LicenseRevokeModal";
-import { LicenseExtendModal } from "@/components/licenses/LicenseExtendModal";
 import { EditLicenseModal } from "@/components/licenses/EditLicenseModal";
 
 export default function LicenseRevocationsPage() {
@@ -41,7 +40,6 @@ export default function LicenseRevocationsPage() {
 
   const [search, setSearch] = React.useState<string>("" );
   const [revokeModalOpen, setRevokeModalOpen] = React.useState<boolean>(false);
-  const [extendModalOpen, setExtendModalOpen] = React.useState<boolean>(false);
   const [editModalOpen, setEditModalOpen] = React.useState<boolean>(false);
   const [selectedLicense, setSelectedLicense] = React.useState<LicenseItem | null>(null);
 
@@ -75,11 +73,6 @@ export default function LicenseRevocationsPage() {
     navigator.clipboard.writeText(key).then(() => {
       toast.success(t("license.actions.copied"));
     });
-  };
-
-  const handleOpenExtend = (item: LicenseItem) => {
-    setSelectedLicense(item);
-    setExtendModalOpen(true);
   };
 
   const handleOpenEdit = (item: LicenseItem) => {
@@ -315,15 +308,6 @@ export default function LicenseRevocationsPage() {
                         <Button
                           variant="outline"
                           size="xs"
-                          onClick={() => handleOpenExtend(lic)}
-                          className="h-6 px-2 text-[11px] font-medium gap-1"
-                        >
-                          <Clock className="size-3" />
-                          <span>{t("license.actions.extend_license")}</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="xs"
                           onClick={() => handleOpenEdit(lic)}
                           className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
                           title={t("license.actions.edit_details")}
@@ -345,11 +329,6 @@ export default function LicenseRevocationsPage() {
         license={selectedLicense}
         open={revokeModalOpen}
         onOpenChange={setRevokeModalOpen}
-      />
-      <LicenseExtendModal
-        license={selectedLicense}
-        open={extendModalOpen}
-        onOpenChange={setExtendModalOpen}
       />
       <EditLicenseModal
         license={selectedLicense}

@@ -30,31 +30,28 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
     translationKey: "nav.billing_licenses",
     sections: [
       {
-        title: "Licenses & Contracts",
-        translationKey: "nav.licenses_contracts",
-        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
-        items: [
-          { title: "All Licenses", translationKey: "nav.all_licenses", url: "/licenses", icon: "KeyRound", shortcut: "S then L", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Active Licenses", translationKey: "nav.active_licenses", url: "/licenses?status=ACTIVE", icon: "CheckCircle", shortcut: "S then 1", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Grace & Expiring Soon", translationKey: "nav.expiring_licenses", url: "/licenses?status=GRACE_PERIOD", icon: "Clock", shortcut: "S then 2", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Offline Air-Gapped", translationKey: "nav.offline_licenses", url: "/licenses?type=OFFLINE", icon: "ShieldCheck", shortcut: "S then 3", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-        ],
-      },
-      {
-        title: "Subscriptions & Plans",
-        translationKey: "nav.subscriptions_pricing",
+        title: "Catalog & Plans",
+        translationKey: "nav.catalog_plans",
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
           { title: "Plan Tiers & Quotas", translationKey: "nav.plan_tiers_quotas", url: "/licenses/plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Prorated Calculator", translationKey: "nav.prorated_upgrade_calculator", url: "/licenses/calculator", icon: "Calculator", shortcut: "S then C", requiredPermission: ["system.organizations.manage"] },
         ],
       },
       {
-        title: "Operations & Compliance",
-        translationKey: "nav.operations_security",
+        title: "Billing & Operations",
+        translationKey: "nav.billing_ops",
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
+          { title: "Prorated Calculator", translationKey: "nav.prorated_upgrade_calculator", url: "/licenses/calculator", icon: "Calculator", shortcut: "S then C", requiredPermission: ["system.organizations.manage"] },
           { title: "Reminder Dispatch Logs", translationKey: "nav.license_notifications_log", url: "/licenses/notifications", icon: "Bell", shortcut: "S then N", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+        ],
+      },
+      {
+        title: "Licensing & Integrity",
+        translationKey: "nav.licensing_security",
+        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        items: [
+          { title: "Licenses & Contracts", translationKey: "nav.all_licenses", url: "/licenses", icon: "KeyRound", shortcut: "S then L", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
           { title: "Revocations & Kill-Switch", translationKey: "nav.license_kill_switch", url: "/licenses/revocations", icon: "ShieldAlert", shortcut: "S then R", requiredPermission: ["system.organizations.manage"] },
         ],
       },

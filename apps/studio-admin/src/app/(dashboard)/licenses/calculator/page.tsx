@@ -55,20 +55,24 @@ function CalculatorInputsSection({
   const { t } = useTranslation();
   const [copied, setCopied] = React.useState<boolean>(false);
 
-  // Group unique organizations from licenses
+  // Group unique organizations from licenses, prioritizing active licenses
   const orgOptions = React.useMemo(() => {
-    const map = new Map<string, { id: string; name: string; slug: string; currentPlan: string }>();
+    const map = new Map<string, { id: string; name: string; slug: string; currentPlan: string; isActive: boolean }>();
     for (const lic of licenses) {
-      if (!map.has(lic.organizationId)) {
+      const existing = map.get(lic.organizationId);
+      const isCurrentActive = lic.status === "ACTIVE" || lic.status === "GRACE_PERIOD";
+
+      if (!existing || (!existing.isActive && isCurrentActive)) {
         map.set(lic.organizationId, {
           id: lic.organizationId,
           name: lic.organizationName || lic.organizationSlug,
           slug: lic.organizationSlug,
           currentPlan: lic.planName,
+          isActive: isCurrentActive,
         });
       }
     }
-    return Array.from(map.values());
+    return Array.from(map.values()).map(({ isActive: _unused, ...rest }) => rest);
   }, [licenses]);
 
   const handleCopyEstimate = () => {
@@ -368,7 +372,10 @@ export default function LicenseCalculatorPage() {
   }, [licenses, selectedOrgId]);
 
   const selectedLicense = React.useMemo(() => {
-    return licenses.find((l) => l.organizationId === selectedOrgId);
+    return (
+      licenses.find((l) => l.organizationId === selectedOrgId && (l.status === "ACTIVE" || l.status === "GRACE_PERIOD")) ||
+      licenses.find((l) => l.organizationId === selectedOrgId)
+    );
   }, [licenses, selectedOrgId]);
 
   // Hook estimate

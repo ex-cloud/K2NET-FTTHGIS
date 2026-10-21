@@ -697,16 +697,17 @@ public class LicenseManagementService {
                     if (lic.getSubscriptionPlan() != null && lic.getSubscriptionPlan().getPrice() != null) {
                         mrr += lic.getSubscriptionPlan().getPrice().doubleValue();
                     }
+                    String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
+                    tierDistribution.put(tier, tierDistribution.getOrDefault(tier, 0L) + 1);
                 } else if (status == LicenseStatus.GRACE_PERIOD) {
                     grace++;
+                    String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
+                    tierDistribution.put(tier, tierDistribution.getOrDefault(tier, 0L) + 1);
                 } else if (status == LicenseStatus.RESTRICTED_READ_ONLY) {
                     readOnly++;
                 } else if (status == LicenseStatus.SUSPENDED || status == LicenseStatus.REVOKED) {
                     suspended++;
                 }
-
-                String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
-                tierDistribution.put(tier, tierDistribution.getOrDefault(tier, 0L) + 1);
             }
 
             return LicenseOverviewKpiDto.builder()

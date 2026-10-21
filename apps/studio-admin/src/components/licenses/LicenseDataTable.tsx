@@ -175,18 +175,37 @@ function LicenseRow({
 
       {/* Days Remaining / Validity */}
       <TableCell className="py-2 text-xs">
-        <div className="flex items-center gap-1 text-[11px] text-foreground font-medium">
-          <Clock className="size-3 text-muted-foreground" />
-          <span>{lic.daysRemaining} {t("common.days").toLowerCase()}</span>
-        </div>
-        <div className="text-[10px] text-muted-foreground font-mono">
-          {lic.validUntil ? lic.validUntil.substring(0, 10) : "—"}
-        </div>
+        {lic.status === "REVOKED" ? (
+          <div className="space-y-0.5">
+            <span className="inline-flex items-center gap-1 text-[11px] text-destructive font-medium">
+              <Ban className="size-3" />
+              <span>{t("license.table.revoked_badge")}</span>
+            </span>
+            <div className="text-[10px] text-muted-foreground font-mono">
+              {lic.validUntil ? lic.validUntil.substring(0, 10) : "—"}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-1 text-[11px] text-foreground font-medium">
+              <Clock className="size-3 text-muted-foreground" />
+              <span>{lic.daysRemaining} {t("common.days").toLowerCase()}</span>
+            </div>
+            <div className="text-[10px] text-muted-foreground font-mono">
+              {lic.validUntil ? lic.validUntil.substring(0, 10) : "—"}
+            </div>
+          </div>
+        )}
       </TableCell>
 
       {/* Quota Entitlements Pills */}
       <TableCell className="py-2 text-xs">
         <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono">
+          {(lic.overrideMaxProjects !== undefined || lic.overrideMaxOlts !== undefined || lic.overrideMaxOdps !== undefined || lic.overrideMaxCustomers !== undefined) && (
+            <span className="px-1 py-0.2 rounded-xs border border-primary/30 bg-primary/10 text-primary text-[9px] font-sans font-medium" title={t("license.table.custom_tooltip")}>
+              {t("license.table.custom_badge")}
+            </span>
+          )}
           <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_projects")}>
             Proj: {lic.overrideMaxProjects ?? lic.entitlements?.maxProjects ?? "-"}
           </span>
@@ -217,27 +236,31 @@ function LicenseRow({
           </Button>
 
           {/* Prorate Simulator trigger per license */}
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={() => onProrate(lic)}
-            className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
-            title={t("license.table.simulate_prorate")}
-          >
-            <Calculator className="size-3" />
-          </Button>
+          {lic.status !== "REVOKED" && (
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => onProrate(lic)}
+              className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
+              title={t("license.table.simulate_prorate")}
+            >
+              <Calculator className="size-3" />
+            </Button>
+          )}
 
-          {/* Extend duration */}
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={() => onExtend(lic)}
-            className="h-6 px-2 text-[11px] font-medium gap-1"
-            title={t("license.actions.extend_license")}
-          >
-            <Clock className="size-3" />
-            <span>{t("license.actions.extend_license")}</span>
-          </Button>
+          {/* Extend duration - DILARANG jika status REVOKED */}
+          {lic.status !== "REVOKED" && (
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => onExtend(lic)}
+              className="h-6 px-2 text-[11px] font-medium gap-1"
+              title={t("license.actions.extend_license")}
+            >
+              <Clock className="size-3" />
+              <span>{t("license.actions.extend_license")}</span>
+            </Button>
+          )}
 
           {/* Export offline cert */}
           <Button

@@ -67,6 +67,11 @@
   "delete_org_type_confirm": "Type organization name below:",
   "edit_quotas_title": "Edit Quotas & Resource Limits",
   "edit_quotas_desc": "Adjust maximum hardware OLT, ODP, and MinIO S3 storage limits for {orgName}.",
+  "quotas": {
+    "archived_projects": "Archived Projects",
+    "workspace_projects": "Workspace Projects",
+    "olt_hardware": "OLT Hardware Capacity"
+  },
   "feature_flags_title": "Tenant Features & Modules Control",
   "feature_flags_desc": "Enable or disable enterprise-grade features for {orgName}.",
   "custom_domain_title": "Custom Domain & SSL Configuration",

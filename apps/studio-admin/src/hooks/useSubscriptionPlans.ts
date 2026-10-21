@@ -18,6 +18,7 @@ export interface SubscriptionPlanMaster {
   apiRateLimitRpm?: number;
   hasSso: boolean;
   hasApiAccess: boolean;
+  activeTenants?: number;
 }
 
 export interface UpdateSubscriptionPlanPayload {
