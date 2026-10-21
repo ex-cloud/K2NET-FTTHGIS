@@ -15,11 +15,80 @@ interface UserProfileResponse {
   permissions: string[];
 }
 
+async function fetchUserProfile(
+  isImpersonating: boolean,
+  sessionId: string | null,
+  kcToken?: string | null
+): Promise<UserProfileResponse | null> {
+  // During impersonation, NEVER fall back to kcToken from regular tenant realm
+  const activeToken = isImpersonating ? getApiAuthToken() : (getApiAuthToken() || kcToken);
+  const headers: Record<string, string> = {};
+  if (activeToken) {
+    headers["Authorization"] = `Bearer ${activeToken}`;
+  }
+  if (sessionId) {
+    headers["X-Impersonation-Session-Id"] = sessionId;
+  }
+
+  let res = await fetch("/api/v1/users/me", { headers });
+
+  // Auto-heal 401/403 during active impersonation
+  if ((res.status === 401 || res.status === 403) && isImpersonating && sessionId) {
+    const refreshedToken = await refreshImpersonationToken();
+    if (refreshedToken) {
+      headers["Authorization"] = `Bearer ${refreshedToken}`;
+      res = await fetch("/api/v1/users/me", { headers });
+    }
+  }
+
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      return null;
+    }
+    throw new Error(`Failed to fetch profile: ${res.status}`);
+  }
+  return res.json();
+}
+
+function checkPermissionAccess(
+  permissionCode: string | string[] | undefined,
+  activePermissions: string[],
+  authenticated: boolean,
+  isImpersonating: boolean
+): boolean {
+  if (!permissionCode) return true;
+  if (!authenticated && !isImpersonating) return false;
+
+  if (Array.isArray(permissionCode)) {
+    if (permissionCode.length === 0) return true;
+    return permissionCode.some((code) => activePermissions.includes(code));
+  }
+
+  return activePermissions.includes(permissionCode);
+}
+
+interface CheckIsLoadingOptions {
+  initialized: boolean;
+  isImpersonating: boolean;
+  sessionId: string | null;
+  isEnabled: boolean;
+  isProfileLoading: boolean;
+  hasFetchedPermissions: boolean;
+}
+
+function checkIsLoading(opts: CheckIsLoadingOptions): boolean {
+  if (!opts.initialized && !opts.isImpersonating) return true;
+  if (opts.isImpersonating && !opts.sessionId) return true;
+  return opts.isEnabled && opts.isProfileLoading && !opts.hasFetchedPermissions;
+}
+
 /**
  * Hook to access tenant-scoped PBAC permission checking utilities in studio-tenant.
  *
  * - Server-Authoritative: Fetches dynamic permissions directly from `/api/v1/users/me`
  *   with `X-Impersonation-Session-Id` during support assistance sessions.
+ * - Single Source of Truth (SSOT): Zero hardcoded client permission arrays. Evaluated
+ *   strictly against live database permissions returned by Spring Boot.
  * - Globally Cached: Leverages TanStack Query cache to guarantee instantaneous
  *   permission evaluation across route transitions (zero lock screen flickering).
  * - `canAccess(code)`: Returns true if the active user (or impersonator) has the given permission code.
@@ -35,12 +104,10 @@ export function usePermissions() {
     r.toLowerCase().replace(/^role_/, "")
   );
 
-  // Direct tenant owner/admin bypass (only applies to actual tenant credentials, NOT client-dictated impersonation)
-  const isDirectTenantOwner =
-    !isImpersonating &&
-    (roles.includes("owner") ||
-      roles.includes("tenant_admin") ||
-      roles.includes("admin"));
+  const isOwner =
+    roles.includes("owner") ||
+    roles.includes("tenant_admin") ||
+    roles.includes("admin");
 
   const isEnabled = Boolean(authenticated || (isImpersonating && sessionId));
 
@@ -56,129 +123,43 @@ export function usePermissions() {
       kcToken,
       refreshPermissionsTrigger,
     ],
-    queryFn: async () => {
-      const activeToken = getApiAuthToken() || kcToken;
-      const headers: Record<string, string> = {};
-      if (activeToken) {
-        headers["Authorization"] = `Bearer ${activeToken}`;
-      }
-      if (sessionId) {
-        headers["X-Impersonation-Session-Id"] = sessionId;
-      }
-
-      let res = await fetch("/api/v1/users/me", { headers });
-
-      // Auto-heal 401/403 during active impersonation
-      if ((res.status === 401 || res.status === 403) && isImpersonating && sessionId) {
-        const refreshedToken = await refreshImpersonationToken();
-        if (refreshedToken) {
-          headers["Authorization"] = `Bearer ${refreshedToken}`;
-          res = await fetch("/api/v1/users/me", { headers });
-        }
-      }
-
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          return null;
-        }
-        throw new Error(`Failed to fetch profile: ${res.status}`);
-      }
-      return res.json();
-    },
+    queryFn: () => fetchUserProfile(isImpersonating, sessionId, kcToken),
     enabled: isEnabled,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
     retry: 1,
   });
 
-  const fetchedPermissions: string[] = Array.isArray(userProfile?.permissions)
+  const activePermissions: string[] = Array.isArray(userProfile?.permissions)
     ? userProfile.permissions
     : [];
 
-  const activePermissions: string[] = isDirectTenantOwner
-    ? [
-        "projects.view",
-        "projects.create",
-        "projects.edit",
-        "projects.delete",
-        "projects.export",
-        "network.view",
-        "network.manage",
-        "network.manage.all-projects",
-        "network.nodes",
-        "network.audit",
-        "network.monitor",
-        "inventory.view",
-        "inventory.edit",
-        "inventory.manage",
-        "inventory.report",
-        "customer.view",
-        "coverage.view",
-        "ticket.view",
-        "ticket.create",
-        "ticket.update",
-        "ticket.assign",
-        "team.view",
-        "team.invite",
-        "team.manage",
-        "billing.view",
-        "billing.manage",
-        "organizations.view",
-        "organizations.create",
-        "organizations.update",
-        "organizations.delete",
-        "organizations.webhooks.manage",
-        "map.view",
-        "map.edit",
-        "audit.view",
-        "report.view",
-        "report.export",
-        "approval.manage",
-        "roles.view",
-        "roles.update",
-        "users.view",
-        "users.invite",
-        "users.manage",
-        "dashboard.view",
-        "survey.create",
-        "task.update",
-      ]
-    : fetchedPermissions;
-
-  /**
-   * Check if current user can access a given permission code or array of codes.
-   * Evaluated strictly against the server-verified activePermissions list.
-   */
   function canAccess(permissionCode?: string | string[]): boolean {
-    if (!permissionCode) return true;
-    if (!authenticated && !isImpersonating) return false;
-    if (isDirectTenantOwner) return true;
-
-    if (Array.isArray(permissionCode)) {
-      if (permissionCode.length === 0) return true;
-      return permissionCode.some((code) => activePermissions.includes(code));
-    }
-
-    return activePermissions.includes(permissionCode);
+    return checkPermissionAccess(
+      permissionCode,
+      activePermissions,
+      authenticated,
+      isImpersonating
+    );
   }
 
-  /**
-   * Check if the current user has any of the specified roles.
-   */
   function hasRole(...roleNames: string[]): boolean {
-    if (isDirectTenantOwner) return true;
     return roleNames.some((r) => roles.includes(r.toLowerCase().replace(/^role_/, "")));
   }
 
-  // Loading state: true only when actively resolving initial profile without cached permissions
-  const isLoading =
-    (!initialized && !isImpersonating) ||
-    (isEnabled && isProfileLoading && fetchedPermissions.length === 0 && !isDirectTenantOwner);
+  const isLoading = checkIsLoading({
+    initialized,
+    isImpersonating,
+    sessionId,
+    isEnabled,
+    isProfileLoading,
+    hasFetchedPermissions: activePermissions.length > 0,
+  });
 
   return {
     canAccess,
     hasRole,
-    isOwner: isDirectTenantOwner,
+    isOwner,
     permissions: activePermissions,
     roles,
     isLoading,

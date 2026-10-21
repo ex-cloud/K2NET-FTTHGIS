@@ -17,15 +17,8 @@ export function setApiAuthToken(token: string | null) {
 export function getApiAuthToken(): string | null {
   if (!activeToken && typeof window !== "undefined") {
     activeToken = sessionStorage.getItem("k2net_impersonation_token");
-    // Fallback migrasi satu kali jika ada data lama di localStorage
-    if (!activeToken) {
-      const legacyToken = localStorage.getItem("k2net_impersonation_token");
-      if (legacyToken) {
-        activeToken = legacyToken;
-        sessionStorage.setItem("k2net_impersonation_token", legacyToken);
-        localStorage.removeItem("k2net_impersonation_token");
-      }
-    }
+    // Bersihkan residu legacy localStorage agar tidak bocor lintas tab
+    localStorage.removeItem("k2net_impersonation_token");
   }
   return activeToken;
 }
@@ -46,15 +39,8 @@ export function setImpersonationSessionId(sessionId: string | null) {
 export function getImpersonationSessionId(): string | null {
   if (!activeImpersonationSessionId && typeof window !== "undefined") {
     activeImpersonationSessionId = sessionStorage.getItem("k2net_impersonation_session_id");
-    // Fallback migrasi satu kali jika ada data lama di localStorage
-    if (!activeImpersonationSessionId) {
-      const legacySessionId = localStorage.getItem("k2net_impersonation_session_id");
-      if (legacySessionId) {
-        activeImpersonationSessionId = legacySessionId;
-        sessionStorage.setItem("k2net_impersonation_session_id", legacySessionId);
-        localStorage.removeItem("k2net_impersonation_session_id");
-      }
-    }
+    // Bersihkan residu legacy localStorage agar tidak bocor lintas tab
+    localStorage.removeItem("k2net_impersonation_session_id");
   }
   return activeImpersonationSessionId;
 }
@@ -109,20 +95,42 @@ export interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
 }
 
+function buildRequestUrl(
+  endpoint: string,
+  params?: Record<string, string | number | boolean | undefined>
+): string {
+  if (!params) return endpoint;
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined) query.append(key, String(val));
+  });
+  const queryString = query.toString();
+  return queryString ? `${endpoint}${endpoint.includes("?") ? "&" : "?"}${queryString}` : endpoint;
+}
+
+function resolveTenantSlug(): string | null {
+  if (typeof window === "undefined") return null;
+  const searchParams = new URLSearchParams(window.location.search);
+  const paramSlug = searchParams.get("tenant") || searchParams.get("slug");
+  if (paramSlug) return paramSlug.toLowerCase().trim();
+
+  const host = window.location.hostname;
+  let detectedSlug: string | null = null;
+  if (host.includes("-gis.")) {
+    detectedSlug = host.split("-gis")[0];
+  } else if (host.includes(".gis.")) {
+    detectedSlug = host.split(".")[0];
+  }
+
+  if (detectedSlug && detectedSlug !== "system" && detectedSlug !== "api" && detectedSlug !== "gis") {
+    return detectedSlug.toLowerCase().trim();
+  }
+  return null;
+}
+
 export async function apiClient<T = unknown>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { params, headers = {}, ...customConfig } = options;
-
-  let url = endpoint;
-  if (params) {
-    const query = new URLSearchParams();
-    Object.entries(params).forEach(([key, val]) => {
-      if (val !== undefined) query.append(key, String(val));
-    });
-    const queryString = query.toString();
-    if (queryString) {
-      url += (url.includes("?") ? "&" : "?") + queryString;
-    }
-  }
+  const url = buildRequestUrl(endpoint, params);
 
   const reqHeaders: Record<string, string> = {
     "Content-Type": "application/json",
@@ -139,21 +147,9 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
     reqHeaders["X-Impersonation-Session-Id"] = impersonationSessionId;
   }
 
-  if (typeof window !== "undefined") {
-    const searchParams = new URLSearchParams(window.location.search);
-    const paramSlug = searchParams.get("tenant") || searchParams.get("slug");
-    let detectedSlug = paramSlug;
-    if (!detectedSlug) {
-      const host = window.location.hostname;
-      if (host.includes("-gis.")) {
-        detectedSlug = host.split("-gis")[0];
-      } else if (host.includes(".gis.")) {
-        detectedSlug = host.split(".")[0];
-      }
-    }
-    if (detectedSlug && detectedSlug !== "system" && detectedSlug !== "api" && detectedSlug !== "gis") {
-      reqHeaders["X-Tenant-Slug"] = detectedSlug.toLowerCase().trim();
-    }
+  const tenantSlug = resolveTenantSlug();
+  if (tenantSlug) {
+    reqHeaders["X-Tenant-Slug"] = tenantSlug;
   }
 
   let response = await fetch(url, {
@@ -174,7 +170,7 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
   }
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && !impersonationSessionId) {
       setApiAuthToken(null);
       setImpersonationSessionId(null);
     }

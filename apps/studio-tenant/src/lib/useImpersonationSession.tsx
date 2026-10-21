@@ -75,9 +75,8 @@ function readInitialSession(): {
   }
 
   const savedSessionId = getImpersonationSessionId();
-  const savedMetaStr =
-    sessionStorage.getItem(META_STORAGE_KEY) ||
-    localStorage.getItem(META_STORAGE_KEY);
+  const savedMetaStr = sessionStorage.getItem(META_STORAGE_KEY);
+  localStorage.removeItem(META_STORAGE_KEY);
 
   if (savedSessionId && savedMetaStr) {
     try {
@@ -243,10 +242,8 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       });
 
       if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          clearSession(true);
-          return false;
-        }
+        // Do NOT aggressively kill session on transient proxy errors.
+        // Spring Boot endpoint always returns 200 with { active: false } when session actually ends.
         return false;
       }
 
@@ -319,8 +316,8 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
             expiresAt,
           };
           sessionStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
-          localStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
           sessionStorage.removeItem("k2net_impersonating_in_progress");
+          localStorage.removeItem(META_STORAGE_KEY);
 
           setIsImpersonating(true);
           setSessionId(newSessionId);
@@ -357,9 +354,8 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       })();
     } else {
       const savedSessionId = getImpersonationSessionId();
-      const savedMetaStr =
-        sessionStorage.getItem(META_STORAGE_KEY) ||
-        localStorage.getItem(META_STORAGE_KEY);
+      const savedMetaStr = sessionStorage.getItem(META_STORAGE_KEY);
+      localStorage.removeItem(META_STORAGE_KEY);
 
       if (savedSessionId && savedMetaStr) {
         try {

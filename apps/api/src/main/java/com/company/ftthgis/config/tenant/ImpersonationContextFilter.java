@@ -27,20 +27,33 @@ public class ImpersonationContextFilter extends OncePerRequestFilter {
     private static final String SESSION_CACHE_PREFIX = "impersonation:session:";
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
+    private final com.company.ftthgis.domain.user.repository.PermissionRepository permissionRepository;
 
-    private static final java.util.List<String> TENANT_OPERATIONAL_PERMISSIONS = java.util.List.of(
-            "projects.view", "projects.create", "projects.edit", "projects.delete", "projects.export",
-            "network.view", "network.manage", "network.manage.all-projects", "network.nodes", "network.audit",
-            "team.view", "team.invite", "team.manage",
-            "inventory.view", "inventory.manage", "inventory.report",
-            "billing.view", "billing.manage",
-            "roles.view", "roles.update",
-            "users.view", "users.manage", "users.invite",
-            "organizations.view", "organizations.update",
-            "gis.view", "gis.manage",
-            "ticket.view", "ticket.create", "ticket.update",
-            "customer.view"
-    );
+    private final java.util.concurrent.atomic.AtomicReference<java.util.List<String>> cachedTenantPermissions = new java.util.concurrent.atomic.AtomicReference<>();
+    private volatile long lastCacheRefreshEpoch = 0L;
+    private static final long CACHE_TTL_MS = 60_000L;
+
+    private java.util.List<String> getTenantPermissions() {
+        long now = System.currentTimeMillis();
+        java.util.List<String> cached = cachedTenantPermissions.get();
+        if (cached == null || (now - lastCacheRefreshEpoch > CACHE_TTL_MS)) {
+            try {
+                java.util.List<String> fresh = permissionRepository.findByScopeIgnoreCase("TENANT").stream()
+                        .map(com.company.ftthgis.domain.user.entity.Permission::getCode)
+                        .filter(code -> code != null && !code.isBlank())
+                        .distinct()
+                        .toList();
+                if (!fresh.isEmpty()) {
+                    cachedTenantPermissions.set(fresh);
+                    lastCacheRefreshEpoch = now;
+                    return fresh;
+                }
+            } catch (Exception e) {
+                log.warn("🛡️ [ImpersonationFilter] Gagal mengambil daftar permission tenant dari DB: {}", e.getMessage());
+            }
+        }
+        return cached != null ? cached : java.util.Collections.emptyList();
+    }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -109,7 +122,7 @@ public class ImpersonationContextFilter extends OncePerRequestFilter {
             // Authority Enrichment: Memberikan permission operasional tenant ke sesi impersonator yang sah
             if (originalAuth instanceof org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken jwtAuth) {
                 java.util.Set<org.springframework.security.core.GrantedAuthority> enrichedAuthorities = new java.util.HashSet<>(jwtAuth.getAuthorities());
-                for (String perm : TENANT_OPERATIONAL_PERMISSIONS) {
+                for (String perm : getTenantPermissions()) {
                     enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority(perm));
                 }
 

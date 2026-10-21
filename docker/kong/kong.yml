@@ -208,13 +208,13 @@ services:
       # when the Keycloak access token is specifically expired.
       - name: backend-impersonate-public-routes
         paths:
-          - "~/api/v1/system/impersonate/(exchange|refresh-token|exit)$"
+          - "~/api/v1/system/impersonate/(exchange|refresh-token|status|exit)$"
         regex_priority: 110
         strip_path: false
         plugins:
           - name: rate-limiting
             config:
-              minute: 30
+              minute: 120
               policy: local
               limit_by: ip
               fault_tolerant: true
