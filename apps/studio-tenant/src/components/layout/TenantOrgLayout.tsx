@@ -72,16 +72,14 @@ function TenantOrgLayoutContent() {
               <ShieldAlert className="h-6 w-6" />
             </div>
             <DialogTitle className="text-base font-bold text-foreground">
-              Sesi Bantuan Telah Berakhir
+              {t("common.impersonation_ended_title")}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              Sesi impersonasi untuk tenant{" "}
-              <strong className="text-foreground">{endedTenantName || "ISP Tenant"}</strong>{" "}
-              telah ditutup oleh administrator dari portal utama atau batas waktu operasional telah habis.
+              {t("common.impersonation_ended_desc", { name: endedTenantName || "ISP Tenant" })}
             </DialogDescription>
           </DialogHeader>
 
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">
+          <DialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 sm:space-x-0">
             <Button
               variant="outline"
               size="sm"
@@ -92,7 +90,7 @@ function TenantOrgLayoutContent() {
                   window.location.href = "/login";
                 }, 300);
               }}
-              className="w-full text-xs"
+              className="w-full h-8 text-xs font-medium"
             >
               {t("common.close_tab")}
             </Button>
@@ -103,7 +101,7 @@ function TenantOrgLayoutContent() {
                 sessionStorage.removeItem("k2net_session_ended");
                 window.location.href = "https://system-gis.kdua.net/organizations";
               }}
-              className="w-full text-xs h-8 rounded-md font-medium"
+              className="w-full h-8 text-xs font-medium"
             >
               {t("common.back_to_admin")}
             </Button>
