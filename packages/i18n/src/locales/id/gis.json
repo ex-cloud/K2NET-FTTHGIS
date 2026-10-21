@@ -36,5 +36,10 @@
   "s3_storage": "Kapasitas Storage S3",
   "trace_path_error": "Gagal melakukan trace path fiber",
   "trace_upstream_error": "Gagal melakukan trace upstream ke OLT",
-  "optical_heatmap": "Heatmap Redaman Optik"
+  "optical_heatmap": "Heatmap Redaman Optik",
+  "heatmap_title": "Heatmap Redaman Optik",
+  "heatmap_subtitle": "Pemetaan redaman sinyal optik dan cakupan jaringan",
+  "canvas_builder_title": "Desainer Kanvas CAD",
+  "canvas_builder_subtitle": "Desain dan pemetaan rute jaringan FTTH baru",
+  "quick_access_gis": "Akses Cepat Spasial GIS"
 }

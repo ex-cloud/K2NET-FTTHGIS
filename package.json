@@ -24,6 +24,7 @@
     "audit:design-system": "bash scripts/audit-design-system.sh all",
     "audit:design-system:admin": "bash scripts/audit-design-system.sh admin",
     "audit:design-system:tenant": "bash scripts/audit-design-system.sh tenant",
+    "audit:i18n": "bash scripts/audit-i18n.sh",
     "audit:design-system:ui": "bash scripts/audit-design-system.sh ui"
   },
   "devDependencies": {

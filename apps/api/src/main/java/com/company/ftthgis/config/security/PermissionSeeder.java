@@ -112,6 +112,28 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("system.contracts.upload",     "Upload Tenant Contracts",            "system", "SYSTEM"),
             new PermissionData("system.quotas.manage",        "Manage Tenant Quotas",               "system", "SYSTEM"),
 
+            // catalog — plans & policies (SYSTEM scope)
+            new PermissionData("catalog.plans.read",          "View Catalog Plans & Versions",      "catalog", "SYSTEM"),
+            new PermissionData("catalog.plans.manage",        "Manage Catalog Plan Drafts",         "catalog", "SYSTEM"),
+            new PermissionData("catalog.plans.publish",       "Publish Catalog Plan Versions",      "catalog", "SYSTEM"),
+            new PermissionData("catalog.policies.read",       "View Billing Policies",              "catalog", "SYSTEM"),
+            new PermissionData("catalog.policies.manage",     "Manage Billing Policies",            "catalog", "SYSTEM"),
+
+            // billing — subscriptions & invoices (SYSTEM scope)
+            new PermissionData("billing.read",                 "View Billing Overview & KPIs",       "billing", "SYSTEM"),
+            new PermissionData("billing.subscriptions.read",   "View Tenant Subscriptions",          "billing", "SYSTEM"),
+            new PermissionData("billing.subscriptions.manage", "Manage Tenant Subscriptions",        "billing", "SYSTEM"),
+            new PermissionData("billing.invoices.read",        "View Invoices & Payments",           "billing", "SYSTEM"),
+            new PermissionData("billing.invoices.manage",      "Manage Invoices & Payments",         "billing", "SYSTEM"),
+
+            // licensing — Ed25519 licenses & security killswitch (SYSTEM scope)
+            new PermissionData("licensing.read",               "View Licenses & Revocations",        "licensing", "SYSTEM"),
+            new PermissionData("licensing.issue",              "Issue Licenses From Subscription",   "licensing", "SYSTEM"),
+            new PermissionData("licensing.extend",             "Extend License Duration",            "licensing", "SYSTEM"),
+            new PermissionData("licensing.revoke",             "Revoke Tenant License",              "licensing", "SYSTEM"),
+            new PermissionData("licensing.reinstate",          "Reinstate Revoked License",          "licensing", "SYSTEM"),
+            new PermissionData("licensing.killswitch",         "Execute Emergency Kill-Switch",      "licensing", "SYSTEM"),
+
             // organizations — tenant-scoped organization settings
             new PermissionData("organizations.view",            "View Organization Details",       "organizations"),
             new PermissionData("organizations.update",          "Update Organization Settings",    "organizations"),

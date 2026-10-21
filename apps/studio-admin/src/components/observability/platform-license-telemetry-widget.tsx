@@ -346,7 +346,7 @@ export function PlatformLicenseTelemetryWidget() {
           <Button
             variant="default"
             size="sm"
-            onClick={() => router.push("/licenses")}
+            onClick={() => router.push("/licensing/licenses")}
             className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs bg-foreground text-background"
           >
             <ArrowUpRight className="h-3.5 w-3.5" />

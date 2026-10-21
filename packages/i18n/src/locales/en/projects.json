@@ -1,6 +1,7 @@
 {
   "overview_title": "Project Overview",
   "overview_subtitle": "Monitor fiber topology status, subscriber distribution, and field network metrics.",
+  "active_project": "Active Project",
   "stats_total_subscribers": "Total Subscribers",
   "stats_online_subscribers": "Online Subscribers",
   "stats_odc_count": "Total ODCs",

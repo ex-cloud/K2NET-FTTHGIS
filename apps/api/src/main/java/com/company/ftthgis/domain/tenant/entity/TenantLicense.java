@@ -37,6 +37,10 @@ public class TenantLicense extends OrganizationAwareEntity {
     @JoinColumn(name = "subscription_plan_id", nullable = false)
     private SubscriptionPlan subscriptionPlan;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id")
+    private TenantSubscription subscription;
+
     @Column(name = "license_key", nullable = false, unique = true, length = 64)
     private String licenseKey;
 

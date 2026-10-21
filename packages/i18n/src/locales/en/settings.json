@@ -15,6 +15,8 @@
   "test_connection_btn": "Test Connection",
   "restore_btn": "Restore Object",
   "empty_trash_btn": "Empty Trash",
+  "company_name_hint": "Display name on customer portals. Leave empty to use official organization profile name.",
+  "subdomain_permanent_hint": "Canonical system subdomain. Permanently assigned to your workspace.",
   "general": {
     "title": "General Settings",
     "platform_config_badge": "Platform Config",

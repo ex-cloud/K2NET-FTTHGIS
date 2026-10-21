@@ -130,5 +130,7 @@
   "back_to_tasks_tickets": "Kembali ke Tasks & Tickets",
   "back_to_all_projects": "Kembali ke All Projects",
   "project_not_found": "Project tidak ditemukan.",
-  "milestone_name_placeholder": "Nama target milestone (misal: Phase 1: Integrasi Core Engine)"
+  "milestone_name_placeholder": "Nama target milestone (misal: Phase 1: Integrasi Core Engine)",
+  "operational_notifications": "Notifikasi Operasional",
+  "no_active_alerts": "Tidak ada peringatan operasional aktif untuk ruang kerja ini."
 }

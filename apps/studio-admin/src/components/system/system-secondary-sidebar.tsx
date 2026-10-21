@@ -139,15 +139,29 @@ function getActiveSidebarKey(pathname: string | null): string | null {
   if (!pathname) return null;
   if (pathname.startsWith("/ai")) return "ai";
   if (pathname.startsWith("/tasks")) return "tasks";
-  if (pathname.startsWith("/licenses")) return "licenses";
+  if (pathname.startsWith("/licenses") || pathname.startsWith("/catalog") || pathname.startsWith("/billing") || pathname.startsWith("/licensing")) return "licenses";
   if (pathname.startsWith("/packages")) return "packages";
   if (pathname.startsWith("/system")) return "system";
 
-  const includes = ["users", "security", "gateways", "observability", "settings", "logs", "organizations", "licenses", "packages"];
+  const includes = ["users", "security", "gateways", "observability", "settings", "logs", "organizations", "licenses", "packages", "catalog", "billing", "licensing"];
   for (const key of includes) {
-    if (pathname.includes(`/${key}`)) return key;
+    if (pathname.includes(`/${key}`)) {
+      if (key === "catalog" || key === "billing" || key === "licensing") return "licenses";
+      return key;
+    }
   }
   return null;
+}
+
+function matchesParamUrl(
+  itemUrl: string,
+  pathname: string,
+  searchParams: { get: (key: string) => string | null }
+): boolean {
+  const [itemPath, itemSearch] = itemUrl.split("?");
+  const itemParams = new URLSearchParams(itemSearch);
+  const pathMatch = pathname === itemPath || pathname === `/system${itemPath}`;
+  return pathMatch && Array.from(itemParams.keys()).every((k) => searchParams.get(k) === itemParams.get(k));
 }
 
 function isSidebarItemActive(
@@ -157,10 +171,7 @@ function isSidebarItemActive(
 ): boolean {
   if (!pathname) return false;
   if (itemUrl.includes("?")) {
-    const [itemPath, itemSearch] = itemUrl.split("?");
-    const itemParams = new URLSearchParams(itemSearch);
-    const pathMatch = pathname === itemPath || pathname === `/system${itemPath}`;
-    return pathMatch && Array.from(itemParams.keys()).every((k) => searchParams.get(k) === itemParams.get(k));
+    return matchesParamUrl(itemUrl, pathname, searchParams);
   }
 
   const isProjectsRoute =
@@ -168,26 +179,21 @@ function isSidebarItemActive(
     (pathname.startsWith("/tasks/projects") || pathname.startsWith("/system/tasks/projects"));
   const pathMatch = pathname === itemUrl || pathname === `/system${itemUrl}` || isProjectsRoute;
 
-  const hasTaskFilter =
+  const hasFilter =
+    searchParams.has("status") ||
+    searchParams.has("view") ||
+    searchParams.has("type") ||
     searchParams.has("quick") ||
     searchParams.has("scope") ||
-    searchParams.has("type") ||
     searchParams.has("project");
 
-  const hasOrgFilter = searchParams.has("status") || searchParams.has("view");
-  const hasLicenseFilter =
-    searchParams.has("status") || searchParams.has("view") || searchParams.has("type");
+  const isFilterableRoot =
+    itemUrl === "/organizations" ||
+    itemUrl === "/licensing/licenses" ||
+    itemUrl === "/licenses" ||
+    itemUrl === "/tasks";
 
-  if (itemUrl === "/organizations") {
-    return (pathname === "/organizations" || pathname === "/system/organizations") && !hasOrgFilter;
-  }
-  if (itemUrl === "/licenses") {
-    return (pathname === "/licenses" || pathname === "/system/licenses") && !hasLicenseFilter;
-  }
-  if (itemUrl === "/tasks") {
-    return (pathname === "/tasks" || pathname === "/system/tasks") && !hasTaskFilter;
-  }
-  return pathMatch;
+  return isFilterableRoot ? pathMatch && !hasFilter : pathMatch;
 }
 
 function getOrgBadgeCount(url: string, orgCounts: OrgCounts): number | null {
@@ -200,7 +206,7 @@ function getOrgBadgeCount(url: string, orgCounts: OrgCounts): number | null {
 
 function getLicenseBadge(url: string, overview?: LicenseOverviewKpi): { count: number; style: string } | null {
   if (!overview) return null;
-  if (url === "/licenses") {
+  if (url === "/licensing/licenses" || url === "/licenses") {
     if (typeof overview.totalLicenses === "number" && overview.totalLicenses > 0) {
       return { count: overview.totalLicenses, style: "bg-muted text-muted-foreground border border-border" };
     }

@@ -1,0 +1,14 @@
+{
+  "copilot_title": "Copilot Jaringan AI",
+  "copilot_desc": "Panduan cerdas untuk topologi, parameter redaman, dan diagnostik FTTH.",
+  "optical_standards_title": "Standar Daya Optik (ITU-T G.652D)",
+  "optical_standards_desc": "Batas rugi-rugi serat, redaman sambungan (<0.05dB), dan redaman konektor (<0.3dB).",
+  "sop_title": "SOP Pemasangan Kabel & FAT",
+  "sop_desc": "Standar penggelaran kabel drop, radius tekukan, dan penandaan ODP.",
+  "gis_guide_title": "Panduan Peta Spasial Web-GIS",
+  "gis_guide_desc": "Simulasi perutean kabel, analisis rute terpendek, dan layer vektor MVT.",
+  "olt_telemetry_title": "Pemantauan Telemetri OLT",
+  "olt_telemetry_desc": "Pemantauan uplink PON real-time, suhu SFP, dan kesehatan poller.",
+  "noc_escalation_title": "Dukungan Eskalasi NOC 24/7",
+  "noc_escalation_desc": "Untuk kendala perutean gateway, anomali telemetri poller, atau sinkronisasi database, hubungi langsung tim NOC K2NET."
+}

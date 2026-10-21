@@ -1,6 +1,7 @@
 {
   "boq_title": "Generator Bill of Quantities (BoQ)",
   "boq_subtitle": "Kalkulasi otomatis kebutuhan material kabel, splitter, enclosure, dan aksesoris tiang.",
+  "cycle_time": "Waktu Siklus",
   "generate_boq": "Hitung Ulang BoQ",
   "export_excel": "Ekspor Excel",
   "export_pdf": "Ekspor PDF",

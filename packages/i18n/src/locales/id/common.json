@@ -179,5 +179,11 @@
   "copy_id": "Salin ID",
   "download_csv": "Unduh CSV",
   "open": "Buka",
-  "copied_to_clipboard": "Disalin ke clipboard!"
+  "copied_to_clipboard": "Disalin ke clipboard!",
+  "done": "Selesai",
+  "error_occurred": "Terjadi kesalahan yang tidak terduga",
+  "all_systems_operational": "Semua sistem beroperasi normal",
+  "deleted_successfully": "Berhasil dihapus",
+  "title": "Judul",
+  "priority": "Prioritas"
 }

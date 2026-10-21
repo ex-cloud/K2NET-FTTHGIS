@@ -1,6 +1,7 @@
 {
   "overview_title": "Ringkasan Proyek",
   "overview_subtitle": "Pemantauan status topologi fiber, distribusi pelanggan, dan metrik jaringan lapangan.",
+  "active_project": "Proyek Aktif",
   "stats_total_subscribers": "Total Pelanggan",
   "stats_online_subscribers": "Pelanggan Online",
   "stats_odc_count": "Total ODC",

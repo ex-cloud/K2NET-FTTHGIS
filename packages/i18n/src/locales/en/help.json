@@ -1,0 +1,14 @@
+{
+  "copilot_title": "AI Network Copilot",
+  "copilot_desc": "Intelligent guidance for topology, attenuation parameters, and FTTH diagnostics.",
+  "optical_standards_title": "Optical Power Standards (ITU-T G.652D)",
+  "optical_standards_desc": "Fiber loss limits, splice loss (<0.05dB), and connector loss (<0.3dB).",
+  "sop_title": "Cable Installation & FAT SOP",
+  "sop_desc": "Drop cable deployment standards, bending radius, and ODP tagging.",
+  "gis_guide_title": "Web-GIS Spatial Map Manual",
+  "gis_guide_desc": "Cable routing simulation, shortest path analysis, and MVT vector layers.",
+  "olt_telemetry_title": "OLT Telemetry Monitoring",
+  "olt_telemetry_desc": "Real-time PON uplink monitoring, SFP temperature, and poller health.",
+  "noc_escalation_title": "24/7 NOC Escalation Support",
+  "noc_escalation_desc": "For gateway routing issues, poller telemetry anomalies, or database synchronization, reach out directly to the K2NET NOC team."
+}

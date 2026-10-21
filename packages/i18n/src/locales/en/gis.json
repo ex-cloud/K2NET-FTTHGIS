@@ -36,5 +36,10 @@
   "s3_storage": "S3 Storage Capacity",
   "trace_path_error": "Failed to trace fiber path",
   "trace_upstream_error": "Failed to trace upstream to OLT",
-  "optical_heatmap": "Optical Attenuation Heatmap"
+  "optical_heatmap": "Optical Attenuation Heatmap",
+  "heatmap_title": "Optical Attenuation Heatmap",
+  "heatmap_subtitle": "Optical signal attenuation and coverage mapping",
+  "canvas_builder_title": "CAD Canvas Designer",
+  "canvas_builder_subtitle": "Design and plot new FTTH network routes",
+  "quick_access_gis": "GIS Spatial Quick Access"
 }

@@ -17,6 +17,7 @@ import settingsId from './locales/id/settings.json';
 import licenseId from './locales/id/license.json';
 import packagesId from './locales/id/packages.json';
 import teamId from './locales/id/team.json';
+import helpId from './locales/id/help.json';
 
 
 import commonEn from './locales/en/common.json';
@@ -38,6 +39,7 @@ import settingsEn from './locales/en/settings.json';
 import licenseEn from './locales/en/license.json';
 import packagesEn from './locales/en/packages.json';
 import teamEn from './locales/en/team.json';
+import helpEn from './locales/en/help.json';
 
 
 import { SupportedLocale } from './types';
@@ -63,6 +65,7 @@ export const dictionaries: Record<SupportedLocale, Record<string, Record<string,
     license: licenseId,
     packages: packagesId,
     team: teamId,
+    help: helpId,
   },
   en: {
     common: commonEn,
@@ -84,6 +87,7 @@ export const dictionaries: Record<SupportedLocale, Record<string, Record<string,
     license: licenseEn,
     packages: packagesEn,
     team: teamEn,
+    help: helpEn,
   },
 };
 

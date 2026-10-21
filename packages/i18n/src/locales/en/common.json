@@ -179,5 +179,11 @@
   "copy_id": "Copy ID",
   "download_csv": "Download CSV",
   "open": "Open",
-  "copied_to_clipboard": "Copied to clipboard!"
+  "copied_to_clipboard": "Copied to clipboard!",
+  "done": "Done",
+  "error_occurred": "An unexpected error occurred",
+  "all_systems_operational": "All systems operational",
+  "deleted_successfully": "Deleted successfully",
+  "title": "Title",
+  "priority": "Priority"
 }

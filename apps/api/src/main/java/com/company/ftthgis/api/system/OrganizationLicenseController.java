@@ -266,6 +266,44 @@ public class OrganizationLicenseController {
         return ResponseEntity.ok(licenseNotificationService.getAllNotificationLogs());
     }
 
+    /**
+     * Mengambil daftar langganan aktif komersial tenant (Domain: Billing).
+     */
+    @GetMapping("/subscriptions")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('billing.subscriptions.read') or hasAuthority('billing.read')")
+    public ResponseEntity<List<com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto>> getAllTenantSubscriptions() {
+        return ResponseEntity.ok(licenseManagementService.getAllTenantSubscriptions());
+    }
+
+    /**
+     * Mengambil rincian spesifik satu langganan tenant berdasarkan ID.
+     */
+    @GetMapping("/subscriptions/{id}")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('billing.subscriptions.read') or hasAuthority('billing.read')")
+    public ResponseEntity<com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto> getTenantSubscriptionById(@PathVariable UUID id) {
+        return licenseManagementService.getTenantSubscriptionById(id)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Langganan tidak ditemukan: " + id));
+    }
+
+    /**
+     * Mengambil kebijakan operasional penagihan platform (Domain: Catalog / Billing Policies).
+     */
+    @GetMapping("/billing/policies")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('catalog.policies.read') or hasAuthority('billing.read')")
+    public ResponseEntity<List<com.company.ftthgis.domain.tenant.entity.BillingPolicy>> getAllBillingPolicies() {
+        return ResponseEntity.ok(licenseManagementService.getAllBillingPolicies());
+    }
+
+    /**
+     * Mengambil seluruh versi semantik yang pernah dipublikasikan dari suatu paket plan (Domain: Catalog).
+     */
+    @GetMapping("/plans/{planId}/versions")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('catalog.plans.read')")
+    public ResponseEntity<List<com.company.ftthgis.domain.tenant.entity.PlanVersion>> getPlanVersions(@PathVariable UUID planId) {
+        return ResponseEntity.ok(licenseManagementService.getPlanVersions(planId));
+    }
+
     // ── Internal Helpers ────────────────────────────────────────────────────
 
     private String resolveCurrentUserIdentifier() {

@@ -130,5 +130,7 @@
   "back_to_tasks_tickets": "Back to Tasks & Tickets",
   "back_to_all_projects": "Back to All Projects",
   "project_not_found": "Project not found.",
-  "milestone_name_placeholder": "Target milestone name (e.g. Phase 1: Core Engine Integration)"
+  "milestone_name_placeholder": "Target milestone name (e.g. Phase 1: Core Engine Integration)",
+  "operational_notifications": "Operational Notifications",
+  "no_active_alerts": "No active operational alerts for this workspace."
 }

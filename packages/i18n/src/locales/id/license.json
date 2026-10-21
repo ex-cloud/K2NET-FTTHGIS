@@ -4,6 +4,7 @@
   "hero_eyebrow": "Kontrak B2B & Lisensi Enterprise",
   "cmd_center_title": "Pusat Komando Lisensi & Kontrak",
   "cmd_center_desc": "Siklus hidup lisensi kriptografis Ed25519, pengikatan mesin air-gapped, kepatuhan kuota, dan kalkulasi upgrade prorata.",
+  "refresh_btn": "Muat Ulang",
   "kpi": {
     "total_licenses": "Total Lisensi",
     "active_licenses": "Lisensi Aktif",

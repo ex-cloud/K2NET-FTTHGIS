@@ -37,6 +37,10 @@ public class BillingInvoice extends OrganizationAwareEntity {
     @JoinColumn(name = "license_id")
     private TenantLicense license;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id")
+    private TenantSubscription subscription;
+
     @Column(name = "invoice_number", nullable = false, unique = true, length = 64)
     private String invoiceNumber;
 

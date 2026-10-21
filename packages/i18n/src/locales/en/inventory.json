@@ -1,6 +1,7 @@
 {
   "boq_title": "Bill of Quantities (BoQ) Generator",
   "boq_subtitle": "Automated calculation of fiber cables, optical splitters, closures, and pole hardware.",
+  "cycle_time": "Cycle Time",
   "generate_boq": "Recalculate BoQ",
   "export_excel": "Export Excel",
   "export_pdf": "Export PDF",

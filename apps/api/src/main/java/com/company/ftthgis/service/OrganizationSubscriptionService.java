@@ -37,10 +37,44 @@ public class OrganizationSubscriptionService {
     private final com.company.ftthgis.config.tenant.KeycloakService keycloakService;
     private final LicenseManagementService licenseManagementService;
     private final TenantLicenseRepository tenantLicenseRepository;
+    private final com.company.ftthgis.domain.tenant.repository.TenantSubscriptionRepository tenantSubscriptionRepository;
+    private final com.company.ftthgis.domain.tenant.repository.PlanVersionRepository planVersionRepository;
 
     private void syncLicenseWithPlan(Organization org, SubscriptionPlan newPlan, String action) {
         try {
-            // 1. Revoke existing active licenses
+            // 1. Synchronize or create TenantSubscription record
+            LocalDateTime now = LocalDateTime.now();
+            String cycle = org.getPlanCycle() != null ? org.getPlanCycle() : "MONTHLY";
+            LocalDateTime periodEnd = "YEARLY".equalsIgnoreCase(cycle) ? now.plusYears(1) : now.plusMonths(1);
+
+            Optional<com.company.ftthgis.domain.tenant.entity.PlanVersion> activeVersion = planVersionRepository
+                    .findFirstByPlanIdAndStatusOrderByCreatedAtDesc(newPlan.getId(), "ACTIVE");
+            Optional<com.company.ftthgis.domain.tenant.entity.TenantSubscription> existingSubOpt = tenantSubscriptionRepository
+                    .findActiveSubscriptionByOrganizationId(org.getId());
+
+            com.company.ftthgis.domain.tenant.entity.TenantSubscription subscription;
+            if (existingSubOpt.isPresent()) {
+                subscription = existingSubOpt.get();
+                activeVersion.ifPresent(subscription::setPlanVersion);
+                subscription.setBillingCycle(cycle);
+                subscription.setStatus("ACTIVE");
+                subscription.setCurrentPeriodStart(now);
+                subscription.setCurrentPeriodEnd(periodEnd);
+                subscription = tenantSubscriptionRepository.save(subscription);
+            } else {
+                subscription = com.company.ftthgis.domain.tenant.entity.TenantSubscription.builder()
+                        .organization(org)
+                        .planVersion(activeVersion.orElse(null))
+                        .status("ACTIVE")
+                        .billingCycle(cycle)
+                        .currentPeriodStart(now)
+                        .currentPeriodEnd(periodEnd)
+                        .test(org.getSlug() != null && org.getSlug().toLowerCase().contains("test"))
+                        .build();
+                subscription = tenantSubscriptionRepository.save(subscription);
+            }
+
+            // 2. Revoke existing active licenses
             List<TenantLicense> existing = tenantLicenseRepository.findByOrganizationIdOrderByCreatedAtDesc(org.getId());
             for (TenantLicense lic : existing) {
                 if (lic.getStatus() == LicenseStatus.ACTIVE || lic.getStatus() == LicenseStatus.GRACE_PERIOD) {
@@ -51,12 +85,17 @@ public class OrganizationSubscriptionService {
                 }
             }
 
-            // 2. Automatically issue new cryptographic runtime license
+            // 3. Automatically issue new cryptographic runtime license
             String planCode = newPlan.getName().toUpperCase(Locale.ROOT);
             boolean isFree = "FREE".equalsIgnoreCase(planCode);
-            int durationMonths = isFree ? 1 : 12;
+            int durationMonths = isFree ? 1 : ("YEARLY".equalsIgnoreCase(cycle) ? 12 : 1);
 
-            licenseManagementService.issueOnlineLicense(org, newPlan, durationMonths, "SYSTEM_SUBSCRIPTION_" + action);
+            TenantLicense newLic = licenseManagementService.issueOnlineLicense(org, newPlan, durationMonths, "SYSTEM_SUBSCRIPTION_" + action);
+            if (newLic != null && subscription != null && newLic.getSubscription() == null) {
+                newLic.setSubscription(subscription);
+                tenantLicenseRepository.save(newLic);
+            }
+
             log.info("🔑 LICENSE SYNC COMPLETE: Org '{}' runtime license synchronized to plan '{}' via {}",
                     org.getSlug(), planCode, action);
 

@@ -94,6 +94,125 @@ interface LicenseTableRowProps {
   onProrate: (lic: LicenseItem) => void;
 }
 
+function LicenseQuotaPills({ lic }: { lic: LicenseItem }) {
+  const { t } = useTranslation();
+  const hasOverrides =
+    lic.overrideMaxProjects !== undefined ||
+    lic.overrideMaxOlts !== undefined ||
+    lic.overrideMaxOdps !== undefined ||
+    lic.overrideMaxCustomers !== undefined;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono">
+      {hasOverrides && (
+        <span
+          className="px-1 py-0.2 rounded-xs border border-primary/30 bg-primary/10 text-primary text-[9px] font-sans font-medium"
+          title={t("license.table.custom_tooltip")}
+        >
+          {t("license.table.custom_badge")}
+        </span>
+      )}
+      <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_projects")}>
+        Proj: {lic.overrideMaxProjects ?? lic.entitlements?.maxProjects ?? "-"}
+      </span>
+      <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_olts_capacity")}>
+        OLT: {lic.overrideMaxOlts ?? lic.entitlements?.maxOlts ?? "-"}
+      </span>
+      <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_odps")}>
+        ODP: {lic.overrideMaxOdps ?? lic.entitlements?.maxOdps ?? "-"}
+      </span>
+      <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_customers")}>
+        Subs: {lic.overrideMaxCustomers ?? lic.entitlements?.maxCustomers ?? "-"}
+      </span>
+    </div>
+  );
+}
+
+function LicenseRowActions({
+  lic,
+  onEdit,
+  onExtend,
+  onExport,
+  onNotifications,
+  onRevoke,
+  onProrate,
+}: Omit<LicenseTableRowProps, "onCopyKey">) {
+  const { t } = useTranslation();
+  const isRevoked = lic.status === "REVOKED";
+
+  return (
+    <div className="flex items-center justify-end gap-1.5">
+      <Button
+        variant="outline"
+        size="xs"
+        onClick={() => onEdit(lic)}
+        className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
+        title={t("license.actions.edit_details")}
+      >
+        <Sliders className="size-3" />
+      </Button>
+
+      {!isRevoked && (
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={() => onProrate(lic)}
+          className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
+          title={t("license.table.simulate_prorate")}
+        >
+          <Calculator className="size-3" />
+        </Button>
+      )}
+
+      {!isRevoked && (
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={() => onExtend(lic)}
+          className="h-6 px-2 text-[11px] font-medium gap-1"
+          title={t("license.actions.extend_license")}
+        >
+          <Clock className="size-3" />
+          <span>{t("license.actions.extend_license")}</span>
+        </Button>
+      )}
+
+      <Button
+        variant="outline"
+        size="xs"
+        onClick={() => onExport(lic)}
+        className="h-6 px-2 text-[11px] font-medium gap-1"
+        title={t("license.actions.export_cert")}
+      >
+        <Download className="size-3" />
+        <span>.lic</span>
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="xs"
+        onClick={() => onNotifications(lic)}
+        className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+        title={t("license.notifications.log_title")}
+      >
+        <Bell className="size-3" />
+      </Button>
+
+      {!isRevoked && (
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => onRevoke(lic)}
+          className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-destructive"
+          title={t("license.actions.revoke_license")}
+        >
+          <Ban className="size-3" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function LicenseRow({
   lic,
   onCopyKey,
@@ -200,104 +319,20 @@ function LicenseRow({
 
       {/* Quota Entitlements Pills */}
       <TableCell className="py-2 text-xs">
-        <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono">
-          {(lic.overrideMaxProjects !== undefined || lic.overrideMaxOlts !== undefined || lic.overrideMaxOdps !== undefined || lic.overrideMaxCustomers !== undefined) && (
-            <span className="px-1 py-0.2 rounded-xs border border-primary/30 bg-primary/10 text-primary text-[9px] font-sans font-medium" title={t("license.table.custom_tooltip")}>
-              {t("license.table.custom_badge")}
-            </span>
-          )}
-          <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_projects")}>
-            Proj: {lic.overrideMaxProjects ?? lic.entitlements?.maxProjects ?? "-"}
-          </span>
-          <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_olts_capacity")}>
-            OLT: {lic.overrideMaxOlts ?? lic.entitlements?.maxOlts ?? "-"}
-          </span>
-          <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_odps")}>
-            ODP: {lic.overrideMaxOdps ?? lic.entitlements?.maxOdps ?? "-"}
-          </span>
-          <span className="px-1.5 py-0.5 rounded-xs border border-border/60 bg-muted/20 text-foreground" title={t("license.modal.max_customers")}>
-            Subs: {lic.overrideMaxCustomers ?? lic.entitlements?.maxCustomers ?? "-"}
-          </span>
-        </div>
+        <LicenseQuotaPills lic={lic} />
       </TableCell>
 
       {/* Row Actions (Compact Density: size="xs") */}
       <TableCell className="py-2 text-xs text-right pr-4">
-        <div className="flex items-center justify-end gap-1.5">
-          {/* Edit details & quotas */}
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={() => onEdit(lic)}
-            className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
-            title={t("license.actions.edit_details")}
-          >
-            <Sliders className="size-3" />
-          </Button>
-
-          {/* Prorate Simulator trigger per license */}
-          {lic.status !== "REVOKED" && (
-            <Button
-              variant="outline"
-              size="xs"
-              onClick={() => onProrate(lic)}
-              className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
-              title={t("license.table.simulate_prorate")}
-            >
-              <Calculator className="size-3" />
-            </Button>
-          )}
-
-          {/* Extend duration - DILARANG jika status REVOKED */}
-          {lic.status !== "REVOKED" && (
-            <Button
-              variant="outline"
-              size="xs"
-              onClick={() => onExtend(lic)}
-              className="h-6 px-2 text-[11px] font-medium gap-1"
-              title={t("license.actions.extend_license")}
-            >
-              <Clock className="size-3" />
-              <span>{t("license.actions.extend_license")}</span>
-            </Button>
-          )}
-
-          {/* Export offline cert */}
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={() => onExport(lic)}
-            className="h-6 px-2 text-[11px] font-medium gap-1"
-            title={t("license.actions.export_cert")}
-          >
-            <Download className="size-3" />
-            <span>.lic</span>
-          </Button>
-
-          {/* Notification logs */}
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => onNotifications(lic)}
-            className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-            title={t("license.notifications.log_title")}
-          >
-            <Bell className="size-3" />
-          </Button>
-
-          {/* Revoke Kill-Switch */}
-          {lic.status !== "REVOKED" && (
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => onRevoke(lic)}
-              className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-destructive"
-              title={t("license.actions.revoke_license")}
-            >
-              <Ban className="size-3" />
-            </Button>
-          )}
-        </div>
+        <LicenseRowActions
+          lic={lic}
+          onEdit={onEdit}
+          onExtend={onExtend}
+          onExport={onExport}
+          onNotifications={onNotifications}
+          onRevoke={onRevoke}
+          onProrate={onProrate}
+        />
       </TableCell>
     </TableRow>
   );
@@ -355,11 +390,11 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
   const handleFilterChange = (newFilter: string) => {
     setStatusFilter(newFilter);
     if (newFilter === "ALL") {
-      router.push("/licenses");
+      router.push("/licensing/licenses");
     } else if (newFilter === "OFFLINE") {
-      router.push("/licenses?type=OFFLINE");
+      router.push("/licensing/licenses?type=OFFLINE");
     } else {
-      router.push(`/licenses?status=${newFilter}`);
+      router.push(`/licensing/licenses?status=${newFilter}`);
     }
   };
 

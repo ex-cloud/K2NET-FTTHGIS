@@ -43,6 +43,9 @@ public class LicenseManagementService {
     private final BillingInvoiceRepository billingInvoiceRepository;
     private final OrganizationRepository organizationRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final com.company.ftthgis.domain.tenant.repository.TenantSubscriptionRepository tenantSubscriptionRepository;
+    private final com.company.ftthgis.domain.tenant.repository.BillingPolicyRepository billingPolicyRepository;
+    private final com.company.ftthgis.domain.tenant.repository.PlanVersionRepository planVersionRepository;
     private final LicenseCryptoService licenseCryptoService;
     private final AuditLoggingService auditLoggingService;
     private final EntityManager entityManager;
@@ -86,8 +89,12 @@ public class LicenseManagementService {
         );
 
         boolean isEnt = plan != null && "ENTERPRISE".equalsIgnoreCase(plan.getName());
+        com.company.ftthgis.domain.tenant.entity.TenantSubscription activeSub = tenantSubscriptionRepository != null
+                ? tenantSubscriptionRepository.findActiveSubscriptionByOrganizationId(org.getId()).orElse(null)
+                : null;
         TenantLicense license = TenantLicense.builder()
                 .organization(org)
+                .subscription(activeSub)
                 .subscriptionPlan(plan)
                 .licenseKey(licenseKey)
                 .licenseSignature(signature)
@@ -146,8 +153,13 @@ public class LicenseManagementService {
                 request.getMachineFingerprint()
         );
 
+        com.company.ftthgis.domain.tenant.entity.TenantSubscription activeSub = tenantSubscriptionRepository != null
+                ? tenantSubscriptionRepository.findActiveSubscriptionByOrganizationId(org.getId()).orElse(null)
+                : null;
+
         TenantLicense license = TenantLicense.builder()
                 .organization(org)
+                .subscription(activeSub)
                 .subscriptionPlan(plan)
                 .licenseKey(licenseKey)
                 .licenseSignature(signature)
@@ -694,7 +706,8 @@ public class LicenseManagementService {
                             expiringIn7Days++;
                         }
                     }
-                    if (lic.getSubscriptionPlan() != null && lic.getSubscriptionPlan().getPrice() != null) {
+                    boolean isTestTenant = lic.getSubscription() != null && lic.getSubscription().isTest();
+                    if (!isTestTenant && lic.getSubscriptionPlan() != null && lic.getSubscriptionPlan().getPrice() != null) {
                         mrr += lic.getSubscriptionPlan().getPrice().doubleValue();
                     }
                     String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
@@ -1058,5 +1071,76 @@ public class LicenseManagementService {
         } catch (Exception e) {
             log.warn("Non-critical audit log failure: {}", e.getMessage());
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto> getAllTenantSubscriptions() {
+        unwrapAndDisableOrgFilter();
+        try {
+            return tenantSubscriptionRepository.findAll().stream()
+                    .map(this::mapToSubscriptionDto)
+                    .toList();
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto> getTenantSubscriptionById(UUID id) {
+        unwrapAndDisableOrgFilter();
+        try {
+            return tenantSubscriptionRepository.findById(id).map(this::mapToSubscriptionDto);
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<BillingPolicy> getAllBillingPolicies() {
+        return billingPolicyRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PlanVersion> getPlanVersions(UUID planId) {
+        return planVersionRepository.findByPlanIdOrderByCreatedAtDesc(planId);
+    }
+
+    private com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto mapToSubscriptionDto(TenantSubscription sub) {
+        return com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto.builder()
+                .id(sub.getId())
+                .organizationId(sub.getOrganization() != null ? sub.getOrganization().getId() : null)
+                .organizationName(sub.getOrganization() != null ? sub.getOrganization().getName() : null)
+                .organizationSlug(sub.getOrganization() != null ? sub.getOrganization().getSlug() : null)
+                .planVersionId(sub.getPlanVersion() != null ? sub.getPlanVersion().getId() : null)
+                .planName(sub.getPlanVersion() != null && sub.getPlanVersion().getPlan() != null ? sub.getPlanVersion().getPlan().getName() : null)
+                .version(sub.getPlanVersion() != null ? sub.getPlanVersion().getVersion() : null)
+                .status(sub.getStatus())
+                .billingCycle(sub.getBillingCycle())
+                .currentPeriodStart(sub.getCurrentPeriodStart())
+                .currentPeriodEnd(sub.getCurrentPeriodEnd())
+                .gracePeriodEnd(sub.getGracePeriodEnd())
+                .test(sub.isTest())
+                .priceMonthly(sub.getPlanVersion() != null ? sub.getPlanVersion().getPriceMonthly() : null)
+                .priceYearly(sub.getPlanVersion() != null ? sub.getPlanVersion().getPriceYearly() : null)
+                .currency(sub.getPlanVersion() != null ? sub.getPlanVersion().getCurrency() : "IDR")
+                .billingContactName(sub.getBillingContactName())
+                .billingContactEmail(sub.getBillingContactEmail())
+                .billingContactPhone(sub.getBillingContactPhone())
+                .overrideMaxProjects(sub.getOverrideMaxProjects())
+                .overrideMaxArchivedProjects(sub.getOverrideMaxArchivedProjects())
+                .overrideMaxOlts(sub.getOverrideMaxOlts())
+                .overrideMaxOdcs(sub.getOverrideMaxOdcs())
+                .overrideMaxOdps(sub.getOverrideMaxOdps())
+                .overrideMaxCustomers(sub.getOverrideMaxCustomers())
+                .overrideMaxStorageGb(sub.getOverrideMaxStorageGb())
+                .overrideApiRateLimitRpm(sub.getOverrideApiRateLimitRpm())
+                .featureSsoEnabled(sub.isFeatureSsoEnabled())
+                .featureApiEnabled(sub.isFeatureApiEnabled())
+                .featureAiCopilotEnabled(sub.isFeatureAiCopilotEnabled())
+                .featureCustomDomainEnabled(sub.isFeatureCustomDomainEnabled())
+                .notes(sub.getNotes())
+                .createdAt(sub.getCreatedAt())
+                .updatedAt(sub.getUpdatedAt())
+                .build();
     }
 }

@@ -4,6 +4,7 @@
   "hero_eyebrow": "B2B Contracts & Enterprise Licensing",
   "cmd_center_title": "Licenses & Contracts Command Center",
   "cmd_center_desc": "Cryptographic Ed25519 license lifecycle, air-gapped machine bindings, quota compliance, and prorated mid-cycle upgrades.",
+  "refresh_btn": "Refresh",
   "kpi": {
     "total_licenses": "Total Licenses",
     "active_licenses": "Active Licenses",

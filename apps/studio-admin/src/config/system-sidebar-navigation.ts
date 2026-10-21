@@ -34,7 +34,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.catalog_plans",
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
-          { title: "Plan Tiers & Quotas", translationKey: "nav.plan_tiers_quotas", url: "/licenses/plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Plan Tiers & Quotas", translationKey: "nav.plan_tiers_quotas", url: "/catalog/plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
         ],
       },
       {
@@ -42,8 +42,8 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.billing_ops",
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
-          { title: "Prorated Calculator", translationKey: "nav.prorated_upgrade_calculator", url: "/licenses/calculator", icon: "Calculator", shortcut: "S then C", requiredPermission: ["system.organizations.manage"] },
-          { title: "Reminder Dispatch Logs", translationKey: "nav.license_notifications_log", url: "/licenses/notifications", icon: "Bell", shortcut: "S then N", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Tenant Subscriptions", translationKey: "nav.tenant_subscriptions", url: "/billing/subscriptions", icon: "CreditCard", shortcut: "S then S", requiredPermission: ["system.organizations.manage"] },
+          { title: "Reminder Dispatch Logs", translationKey: "nav.license_notifications_log", url: "/billing/renewals", icon: "Bell", shortcut: "S then N", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
         ],
       },
       {
@@ -51,8 +51,8 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.licensing_security",
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
-          { title: "Licenses & Contracts", translationKey: "nav.all_licenses", url: "/licenses", icon: "KeyRound", shortcut: "S then L", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Revocations & Kill-Switch", translationKey: "nav.license_kill_switch", url: "/licenses/revocations", icon: "ShieldAlert", shortcut: "S then R", requiredPermission: ["system.organizations.manage"] },
+          { title: "Licenses & Contracts", translationKey: "nav.all_licenses", url: "/licensing/licenses", icon: "KeyRound", shortcut: "S then L", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Revocations & Kill-Switch", translationKey: "nav.license_kill_switch", url: "/licensing/revocations", icon: "ShieldAlert", shortcut: "S then R", requiredPermission: ["system.organizations.manage"] },
         ],
       },
     ],
@@ -66,7 +66,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.packages_catalog_governance",
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
-          { title: "All Packages (12 Categories)", translationKey: "nav.packages_all", url: "/packages", icon: "Boxes", shortcut: "S then A", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "All Packages", translationKey: "nav.packages_all", url: "/packages", icon: "Boxes", shortcut: "S then A", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
           { title: "Published & Live", translationKey: "nav.packages_published", url: "/packages?status=PUBLISHED", icon: "CheckCircle", shortcut: "S then 1", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
           { title: "Drafts & In-Review", translationKey: "nav.packages_drafts", url: "/packages?status=DRAFT", icon: "Clock", shortcut: "S then 2", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
         ],

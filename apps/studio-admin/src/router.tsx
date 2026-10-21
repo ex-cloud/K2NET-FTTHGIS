@@ -61,8 +61,8 @@ const LicensesPage = lazyWithRetry(() =>
 const LicensePlansPage = lazyWithRetry(() =>
   import("./app/(dashboard)/licenses/plans/page").then((m) => ({ default: m.default }))
 );
-const LicenseCalculatorPage = lazyWithRetry(() =>
-  import("./app/(dashboard)/licenses/calculator/page").then((m) => ({ default: m.default }))
+const TenantSubscriptionsPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/billing/subscriptions/page").then((m) => ({ default: m.default }))
 );
 const LicenseNotificationsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/licenses/notifications/page").then((m) => ({ default: m.default }))
@@ -402,12 +402,27 @@ const orgDomainsRoute = createRoute({ getParentRoute: () => authenticatedLayoutR
 const orgVpnRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/vpn", component: () => <Lazy><OrganizationVpnPage /></Lazy> });
 const orgImpersonationRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/impersonation", component: () => <Lazy><OrganizationImpersonationPage /></Lazy> });
 
-// Billing & Licenses
-const licensesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses", component: () => <Lazy><LicensesPage /></Lazy> });
-const licensePlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/plans", component: () => <Lazy><LicensePlansPage /></Lazy> });
-const licenseCalculatorRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/calculator", component: () => <Lazy><LicenseCalculatorPage /></Lazy> });
-const licenseNotificationsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/notifications", component: () => <Lazy><LicenseNotificationsPage /></Lazy> });
-const licenseRevocationsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/revocations", component: () => <Lazy><LicenseRevocationsPage /></Lazy> });
+// ── 3-Domain Data Model Architecture (Catalog, Billing, Licensing) ──────
+// 1. Catalog Domain
+const catalogPlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog/plans", component: () => <Lazy><LicensePlansPage /></Lazy> });
+const catalogRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog", component: () => <Navigate to="/catalog/plans" /> });
+
+// 2. Billing Domain
+const billingSubscriptionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/subscriptions", component: () => <Lazy><TenantSubscriptionsPage /></Lazy> });
+const billingRenewalsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/renewals", component: () => <Lazy><LicenseNotificationsPage /></Lazy> });
+const billingRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing", component: () => <Navigate to="/billing/subscriptions" /> });
+
+// 3. Licensing Domain
+const licensingLicensesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licensing/licenses", component: () => <Lazy><LicensesPage /></Lazy> });
+const licensingRevocationsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licensing/revocations", component: () => <Lazy><LicenseRevocationsPage /></Lazy> });
+const licensingRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licensing", component: () => <Navigate to="/licensing/licenses" /> });
+
+// 4. Legacy Aliases & Safety Net Redirects (Sheet 3)
+const licensesLegacyRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses", component: () => <Navigate to="/licensing/licenses" /> });
+const licensePlansLegacyRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/plans", component: () => <Navigate to="/catalog/plans" /> });
+const licenseCalculatorLegacyRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/calculator", component: () => <Navigate to="/billing/subscriptions" /> });
+const licenseNotificationsLegacyRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/notifications", component: () => <Navigate to="/billing/renewals" /> });
+const licenseRevocationsLegacyRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/revocations", component: () => <Navigate to="/licensing/revocations" /> });
 
 // Packages & Add-ons
 const packagesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/packages", component: () => <Lazy><PackagesPage /></Lazy> });
@@ -507,8 +522,14 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   overviewRoute,
   // Orgs
   orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
-  // Billing & Licenses
-  licensesRoute, licensePlansRoute, licenseCalculatorRoute, licenseNotificationsRoute, licenseRevocationsRoute,
+  // 3-Domain Architecture: Catalog, Billing, Licensing
+  catalogPlansRoute, catalogRedirectRoute,
+  billingSubscriptionsRoute, billingRenewalsRoute, billingRedirectRoute,
+  licensingLicensesRoute, licensingRevocationsRoute, licensingRedirectRoute,
+  // Backwards Compatibility Redirects & Aliases (Sheet 3)
+  licensesLegacyRedirectRoute, licensePlansLegacyRedirectRoute,
+  licenseCalculatorLegacyRedirectRoute, licenseNotificationsLegacyRedirectRoute,
+  licenseRevocationsLegacyRedirectRoute,
   // Packages & Add-ons
   packagesRoute, packagesSubscriptionsRoute,
   // Users
