@@ -24,7 +24,9 @@ Memastikan setiap temuan memiliki tiket terdokumentasi rapi, tidak ada berkas ac
 ### Langkah 1: Inisialisasi Direktori Lifecycle
 Pastikan seluruh direktori lifecycle telah siap di host server:
 ```bash
-mkdir -p /opt/project5/docs/bug \
+mkdir -p /opt/project5/docs/bug/pending \
+         /opt/project5/docs/bug/active \
+         /opt/project5/docs/bug/resolved \
          /opt/project5/docs/plans/active \
          /opt/project5/docs/plans/completed \
          /opt/project5/docs/reports
@@ -126,15 +128,19 @@ Sebelum menyatakan perbaikan selesai, wajib menjalankan perintah verifikasi yang
 
 ---
 
-### Langkah 6: Pemindahan Plan ke Status Selesai (`docs/plans/completed/`)
+### Langkah 6: Pemindahan Plan & Bug ke Status Selesai
 Setelah seluruh Quality Gate lulus 100%:
 1. Pindahkan berkas rencana kerja secara otomatis menggunakan shell command:
    ```bash
    mv /opt/project5/docs/plans/active/YYYY-MM-DD-<slug>.md /opt/project5/docs/plans/completed/
    ```
-2. Perbarui header pada berkas yang telah dipindahkan:
+2. Perbarui header pada berkas plan yang telah dipindahkan:
    - Ubah `- **Status**: [IN PROGRESS]` menjadi `- **Status**: [COMPLETED ✅]`
-3. Perbarui tiket bug di `/opt/project5/docs/bug/YYYY-MM-DD-<slug>.md`:
+3. Pindahkan berkas tiket bug ke folder resolved:
+   ```bash
+   mv /opt/project5/docs/bug/active/YYYY-MM-DD-<slug>.md /opt/project5/docs/bug/resolved/
+   ```
+4. Perbarui tiket bug di `/opt/project5/docs/bug/resolved/YYYY-MM-DD-<slug>.md`:
    - Ubah `- **Status**: [OPEN]` menjadi `- **Status**: [RESOLVED ✅]`
    - Tambahkan bagian **Resolusi & Commit Hash**:
      ```markdown
@@ -147,10 +153,14 @@ Setelah seluruh Quality Gate lulus 100%:
 
 ---
 
-### Langkah 7: Laporan Akhir & Rekomendasi Selanjutnya
-Sajikan kepada developer:
-1. **Ringkasan Masalah & RCA Singkat**
-2. **Daftar Berkas yang Diubah**
-3. **Hasil Quality Gate** (100% Passed)
-4. **Tautan Berkas Dokumentasi** (Tiket Bug di `docs/bug/` & Plan di `docs/plans/completed/`)
-5. **Rekomendasi Langkah Strategis Selanjutnya**
+### Langkah 7: Penyusunan Laporan Akhir Resmi (`docs/reports/`)
+Setelah bug dan plan diarsipkan, Agent WAJIB membuat laporan resmi komprehensif di:
+`/opt/project5/docs/reports/YYYY-MM-DD-<slug-laporan>.md`
+
+Laporan memuat:
+1. **Ringkasan Eksekutif & Sasaran**
+2. **Matriks Bug, Gejala & Root Cause Analysis (RCA)**
+3. **Solusi Rekayasa & Rincian Perubahan Kode Sumber**
+4. **Tabel Verifikasi Quality Gate Monorepo (100% Pass)**
+5. **Bukti Pengujian Penerimaan Pengguna (Acceptance Test)**
+6. **Hash Commit Git, Status Pipeline CI/CD & Rekomendasi Selanjutnya**

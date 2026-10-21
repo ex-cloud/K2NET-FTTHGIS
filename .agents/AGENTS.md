@@ -65,12 +65,12 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 14. [rules/dev-history-platform.md](file:///opt/project5/.agents/rules/dev-history-platform.md): Riwayat Linear task management, TipTap, AI assistant, PBAC CI gate.
 15. [rules/marketplace-package-standard.md](file:///opt/project5/.agents/rules/marketplace-package-standard.md): Standar 6-Pilar pembuatan paket marketplace, pola audit Envers Flyway, dan evaluasi kartu UI.
 16. [rules/marketplace-engines.md](file:///opt/project5/.agents/rules/marketplace-engines.md): Panduan pemilihan bahasa engine polyglot (Java, Go, Python, Rust) & pemetaan port 12 paket resmi.
-17. [rules/lifecycle-and-documentation.md](file:///opt/project5/.agents/rules/lifecycle-and-documentation.md): Standar siklus hidup dokumen, pencatatan bug `docs/bug/`, pemindahan plan `docs/plans/active/` ke `docs/plans/completed/`, dan larangan chaos.
+17. [rules/lifecycle-and-documentation.md](file:///opt/project5/.agents/rules/lifecycle-and-documentation.md): Standar siklus hidup dokumen, pencatatan bug `docs/bug/{pending,active,resolved}`, pemindahan plan `docs/plans/active/` ke `docs/plans/completed/`, dan laporan resmi `docs/reports/`.
 
 ---
 
 ## ⚡ Skills AI Otomatisasi (Custom Skills)
-- [skills/bug-triage-and-plan](file:///opt/project5/.agents/skills/bug-triage-and-plan/SKILL.md): Prosedur terautomasi pembuatan tiket bug `docs/bug/`, rencana aksi `docs/plans/active/`, checklist todo, quality gate monorepo, pengarsipan otomatis ke `docs/plans/completed/`, dan laporan rekomendasi.
+- [skills/bug-triage-and-plan](file:///opt/project5/.agents/skills/bug-triage-and-plan/SKILL.md): Prosedur terautomasi pembuatan tiket bug `docs/bug/{pending,active,resolved}`, rencana aksi `docs/plans/{active,completed}`, checklist todo, quality gate monorepo, pengarsipan otomatis, dan laporan akhir resmi `docs/reports/`.
 
 ---
 
