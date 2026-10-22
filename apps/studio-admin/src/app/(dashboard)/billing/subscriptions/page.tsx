@@ -19,15 +19,7 @@ import { useSubscriptionPlans, type SubscriptionPlanMaster } from "@/hooks/useSu
 import { ChangePlanWizardModal } from "@/components/subscriptions/ChangePlanWizardModal";
 import { TenantSubscriptionsTable } from "@/components/subscriptions/TenantSubscriptionsTable";
 import { TenantProratedSimulatorCard } from "@/components/subscriptions/TenantProratedSimulatorCard";
-
-function formatIdr(val?: number): string {
-  if (typeof val !== "number" || isNaN(val) || val <= 0) return "Rp 0";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(val);
-}
+import { formatIdr } from "@/lib/formatters";
 
 export default function TenantSubscriptionsPage() {
   const { t } = useTranslation();
@@ -49,14 +41,19 @@ export default function TenantSubscriptionsPage() {
 
   const { data: dbPlans = [] } = useSubscriptionPlans();
 
+  // Helper: check if subscription is genuinely paying commercial tenant
+  const isPayingSub = (s: TenantSubscriptionItem) =>
+    (s.status === "ACTIVE" || s.status === "GRACE_PERIOD") &&
+    !s.test &&
+    s.organizationSlug !== "default" &&
+    Number(s.priceMonthly || 0) > 0;
+
   // Metrics Calculation
   const totalCount = subscriptions.length;
-  const activePayingCount = subscriptions.filter(
-    (s) => (s.status === "ACTIVE" || s.status === "GRACE_PERIOD") && !s.test
-  ).length;
+  const activePayingCount = subscriptions.filter(isPayingSub).length;
 
   const productionMrr = subscriptions
-    .filter((s) => (s.status === "ACTIVE" || s.status === "GRACE_PERIOD") && !s.test)
+    .filter(isPayingSub)
     .reduce((sum, s) => {
       const price = s.priceMonthly ? Number(s.priceMonthly) : 0;
       return sum + price;

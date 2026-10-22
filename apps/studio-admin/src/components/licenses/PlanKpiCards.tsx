@@ -4,19 +4,11 @@ import { useTranslation } from "@k2net/i18n";
 import { Layers, CreditCard, Network, ShieldCheck } from "lucide-react";
 import type { SubscriptionPlanMaster } from "@/hooks/useSubscriptionPlans";
 
+import { formatIdrCompact } from "@/lib/formatters";
+
 interface PlanKpiCardsProps {
   plans: SubscriptionPlanMaster[];
   loading?: boolean;
-}
-
-function formatPriceShort(val: number): string {
-  if (val >= 1_000_000) {
-    return `Rp ${(val / 1_000_000).toLocaleString("id-ID")}M`;
-  }
-  if (val >= 1_000) {
-    return `Rp ${(val / 1_000).toLocaleString("id-ID")}K`;
-  }
-  return `Rp ${val.toLocaleString("id-ID")}`;
 }
 
 export function PlanKpiCards({ plans, loading }: PlanKpiCardsProps) {
@@ -29,15 +21,15 @@ export function PlanKpiCards({ plans, loading }: PlanKpiCardsProps) {
     const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
 
     const enterprisePlan = plans.find((p) => p.name.toUpperCase() === "ENTERPRISE");
-    const entOlts = enterprisePlan?.maxProjects ?? 50;
-    const entOdps = enterprisePlan?.maxOdps ?? 10000;
+    const entOlts = enterprisePlan?.maxOlts ?? 0;
+    const entOdps = enterprisePlan?.maxOdps ?? 0;
 
     const ssoCount = plans.filter((p) => p.hasSso).length;
     const apiCount = plans.filter((p) => p.hasApiAccess).length;
 
     return {
       totalPlans,
-      priceRange: `${formatPriceShort(minPrice)} – ${formatPriceShort(maxPrice)}`,
+      priceRange: `${formatIdrCompact(minPrice)} – ${formatIdrCompact(maxPrice)}`,
       entOlts,
       entOdps,
       ssoCount,

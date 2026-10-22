@@ -169,6 +169,7 @@ public class LicenseCryptoService {
                     .validUntil(license.getValidUntil().format(ISO_FORMATTER))
                     .machineFingerprint(license.getMachineFingerprint())
                     .maxProjects(license.getOverrideMaxProjects())
+                    .maxOlts(license.getOverrideMaxOlts())
                     .maxOdps(license.getOverrideMaxOdps())
                     .maxOdcs(license.getOverrideMaxOdcs())
                     .maxCustomers(license.getOverrideMaxCustomers())
@@ -325,6 +326,7 @@ public class LicenseCryptoService {
 
         // Quotas
         private Integer maxProjects;
+        private Integer maxOlts;
         private Integer maxOdps;
         private Integer maxOdcs;
         private Integer maxCustomers;

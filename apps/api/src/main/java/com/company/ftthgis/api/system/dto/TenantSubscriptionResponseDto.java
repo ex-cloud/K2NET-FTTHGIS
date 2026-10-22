@@ -42,6 +42,7 @@ public class TenantSubscriptionResponseDto {
     private Integer overrideMaxCustomers;
     private Integer overrideMaxStorageGb;
     private Integer overrideApiRateLimitRpm;
+    private Boolean custom;
 
     // Entitlements
     private boolean featureSsoEnabled;

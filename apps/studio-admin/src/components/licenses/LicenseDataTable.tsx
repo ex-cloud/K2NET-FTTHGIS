@@ -20,93 +20,40 @@ import {
   Building2,
   Bell,
   Cpu,
-  Calculator,
   Sliders,
 } from "lucide-react";
 import { useSearchParams, useRouter } from "@/lib/navigation-compat";
-import type { LicenseItem, LicenseStatus } from "@/hooks/useOrganizationLicenses";
+import type { LicenseItem } from "@/hooks/useOrganizationLicenses";
+import { LifecycleStatusBadge } from "@/components/common/LifecycleStatusBadge";
+import { formatRemainingDays } from "@/lib/formatters";
 import { EditLicenseModal } from "./EditLicenseModal";
-import { LicenseExtendModal } from "./LicenseExtendModal";
 import { LicenseRevokeModal } from "./LicenseRevokeModal";
 import { OfflineCertExportModal } from "./OfflineCertExportModal";
 import { LicenseNotificationLogsModal } from "./LicenseNotificationLogsModal";
-import { AdminProrateCalculatorModal } from "./AdminProrateCalculatorModal";
 
 interface LicenseDataTableProps {
   licenses: LicenseItem[];
   loading?: boolean;
 }
 
-function LicenseStatusBadge({ status }: { status: LicenseStatus }) {
-  const { t } = useTranslation();
-
-  if (status === "ACTIVE") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-border bg-foreground/5 text-foreground text-[11px] font-medium">
-        <span className="size-1.5 rounded-full bg-foreground" />
-        {t("license.status.active")}
-      </span>
-    );
-  }
-
-  if (status === "GRACE_PERIOD") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-border/80 bg-muted/40 text-foreground/80 text-[11px] font-medium">
-        <span className="size-1.5 rounded-full bg-foreground/60 animate-pulse" />
-        {t("license.status.grace_period")}
-      </span>
-    );
-  }
-
-  if (status === "RESTRICTED_READ_ONLY") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-border bg-muted/30 text-muted-foreground text-[11px] font-medium">
-        <span className="size-1.5 rounded-full bg-muted-foreground" />
-        {t("license.status.restricted_read_only")}
-      </span>
-    );
-  }
-
-  if (status === "REVOKED" || status === "SUSPENDED") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-border text-muted-foreground line-through text-[11px] font-medium">
-        <span className="size-1.5 rounded-full bg-muted-foreground" />
-        {status === "REVOKED" ? t("license.status.revoked") : t("license.status.suspended")}
-      </span>
-    );
-  }
-
-  return (
-    <span className="px-2 py-0.5 rounded-sm border border-border text-[11px]">
-      {status}
-    </span>
-  );
-}
-
 interface LicenseTableRowProps {
   lic: LicenseItem;
   onCopyKey: (key: string) => void;
   onEdit: (lic: LicenseItem) => void;
-  onExtend: (lic: LicenseItem) => void;
   onExport: (lic: LicenseItem) => void;
   onNotifications: (lic: LicenseItem) => void;
   onRevoke: (lic: LicenseItem) => void;
-  onProrate: (lic: LicenseItem) => void;
 }
 
 function LicenseQuotaPills({ lic }: { lic: LicenseItem }) {
   const { t } = useTranslation();
-  const hasOverrides =
-    lic.overrideMaxProjects !== undefined ||
-    lic.overrideMaxOlts !== undefined ||
-    lic.overrideMaxOdps !== undefined ||
-    lic.overrideMaxCustomers !== undefined;
+  const isCustom = lic.custom ?? false;
 
   return (
     <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono">
-      {hasOverrides && (
+      {isCustom && (
         <span
-          className="px-1 py-0.2 rounded-xs border border-primary/30 bg-primary/10 text-primary text-[9px] font-sans font-medium"
+          className="px-1 py-0.2 rounded-xs border border-primary/40 bg-primary/10 text-primary text-[9px] font-sans font-medium"
           title={t("license.table.custom_tooltip")}
         >
           {t("license.table.custom_badge")}
@@ -131,52 +78,15 @@ function LicenseQuotaPills({ lic }: { lic: LicenseItem }) {
 function LicenseRowActions({
   lic,
   onEdit,
-  onExtend,
   onExport,
   onNotifications,
   onRevoke,
-  onProrate,
 }: Omit<LicenseTableRowProps, "onCopyKey">) {
   const { t } = useTranslation();
   const isRevoked = lic.status === "REVOKED";
 
   return (
-    <div className="flex items-center justify-end gap-1.5">
-      <Button
-        variant="outline"
-        size="xs"
-        onClick={() => onEdit(lic)}
-        className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
-        title={t("license.actions.edit_details")}
-      >
-        <Sliders className="size-3" />
-      </Button>
-
-      {!isRevoked && (
-        <Button
-          variant="outline"
-          size="xs"
-          onClick={() => onProrate(lic)}
-          className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
-          title={t("license.table.simulate_prorate")}
-        >
-          <Calculator className="size-3" />
-        </Button>
-      )}
-
-      {!isRevoked && (
-        <Button
-          variant="outline"
-          size="xs"
-          onClick={() => onExtend(lic)}
-          className="h-6 px-2 text-[11px] font-medium gap-1"
-          title={t("license.actions.extend_license")}
-        >
-          <Clock className="size-3" />
-          <span>{t("license.actions.extend_license")}</span>
-        </Button>
-      )}
-
+    <div className="flex items-center justify-end gap-1">
       <Button
         variant="outline"
         size="xs"
@@ -186,6 +96,16 @@ function LicenseRowActions({
       >
         <Download className="size-3" />
         <span>.lic</span>
+      </Button>
+
+      <Button
+        variant="outline"
+        size="xs"
+        onClick={() => onEdit(lic)}
+        className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
+        title={t("license.actions.edit_details")}
+      >
+        <Sliders className="size-3" />
       </Button>
 
       <Button
@@ -217,11 +137,9 @@ function LicenseRow({
   lic,
   onCopyKey,
   onEdit,
-  onExtend,
   onExport,
   onNotifications,
   onRevoke,
-  onProrate,
 }: LicenseTableRowProps) {
   const { t } = useTranslation();
   const isOffline =
@@ -289,7 +207,7 @@ function LicenseRow({
 
       {/* Status Badge */}
       <TableCell className="py-2 text-xs">
-        <LicenseStatusBadge status={lic.status} />
+        <LifecycleStatusBadge status={lic.status} />
       </TableCell>
 
       {/* Days Remaining / Validity */}
@@ -306,10 +224,25 @@ function LicenseRow({
           </div>
         ) : (
           <div>
-            <div className="flex items-center gap-1 text-[11px] text-foreground font-medium">
-              <Clock className="size-3 text-muted-foreground" />
-              <span>{lic.daysRemaining} {t("common.days").toLowerCase()}</span>
-            </div>
+            {(() => {
+              const remainingInfo = formatRemainingDays(lic.daysRemaining, t);
+              return (
+                <div className="flex items-center gap-1 text-[11px] font-medium">
+                  <Clock className="size-3 text-muted-foreground" />
+                  <span
+                    className={
+                      remainingInfo.isExpired
+                        ? "text-destructive font-semibold"
+                        : remainingInfo.isWarning
+                        ? "text-amber-500 font-medium"
+                        : "text-foreground"
+                    }
+                  >
+                    {remainingInfo.text}
+                  </span>
+                </div>
+              );
+            })()}
             <div className="text-[10px] text-muted-foreground font-mono">
               {lic.validUntil ? lic.validUntil.substring(0, 10) : "—"}
             </div>
@@ -327,11 +260,9 @@ function LicenseRow({
         <LicenseRowActions
           lic={lic}
           onEdit={onEdit}
-          onExtend={onExtend}
           onExport={onExport}
           onNotifications={onNotifications}
           onRevoke={onRevoke}
-          onProrate={onProrate}
         />
       </TableCell>
     </TableRow>
@@ -380,11 +311,9 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
 
   // Operational Modals State
   const [editModalOpen, setEditModalOpen] = React.useState<boolean>(false);
-  const [extendModalOpen, setExtendModalOpen] = React.useState<boolean>(false);
   const [revokeModalOpen, setRevokeModalOpen] = React.useState<boolean>(false);
   const [exportModalOpen, setExportModalOpen] = React.useState<boolean>(false);
   const [notificationsModalOpen, setNotificationsModalOpen] = React.useState<boolean>(false);
-  const [prorateModalOpen, setProrateModalOpen] = React.useState<boolean>(false);
   const [selectedLicense, setSelectedLicense] = React.useState<LicenseItem | null>(null);
 
   const handleFilterChange = (newFilter: string) => {
@@ -431,11 +360,6 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
     setEditModalOpen(true);
   };
 
-  const handleOpenExtend = (item: LicenseItem) => {
-    setSelectedLicense(item);
-    setExtendModalOpen(true);
-  };
-
   const handleOpenRevoke = (item: LicenseItem) => {
     setSelectedLicense(item);
     setRevokeModalOpen(true);
@@ -449,11 +373,6 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
   const handleOpenNotifications = (item: LicenseItem) => {
     setSelectedLicense(item);
     setNotificationsModalOpen(true);
-  };
-
-  const handleOpenProrate = (item: LicenseItem) => {
-    setSelectedLicense(item);
-    setProrateModalOpen(true);
   };
 
   const filterTabs = [
@@ -505,21 +424,6 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
               </button>
             ))}
           </div>
-
-          {/* Quick Action: Simulate Prorate Modal Trigger */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSelectedLicense(null);
-              setProrateModalOpen(true);
-            }}
-            className="h-7 px-2.5 text-xs font-medium gap-1.5 border-border/80 bg-background/80 hover:bg-muted shrink-0"
-            title={t("license.table.simulate_prorate")}
-          >
-            <Calculator className="size-3.5" />
-            <span>{t("license.table.simulate_prorate")}</span>
-          </Button>
         </div>
       </div>
 
@@ -574,11 +478,9 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
                   lic={lic}
                   onCopyKey={handleCopyKey}
                   onEdit={handleOpenEdit}
-                  onExtend={handleOpenExtend}
                   onExport={handleOpenExport}
                   onNotifications={handleOpenNotifications}
                   onRevoke={handleOpenRevoke}
-                  onProrate={handleOpenProrate}
                 />
               ))
             )}
@@ -591,11 +493,6 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
         license={selectedLicense}
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-      />
-      <LicenseExtendModal
-        license={selectedLicense}
-        open={extendModalOpen}
-        onOpenChange={setExtendModalOpen}
       />
       <LicenseRevokeModal
         license={selectedLicense}
@@ -611,12 +508,6 @@ export function LicenseDataTable({ licenses, loading }: LicenseDataTableProps) {
         license={selectedLicense}
         open={notificationsModalOpen}
         onOpenChange={setNotificationsModalOpen}
-      />
-      <AdminProrateCalculatorModal
-        open={prorateModalOpen}
-        onOpenChange={setProrateModalOpen}
-        licenses={licenses}
-        initialLicense={selectedLicense}
       />
     </div>
   );

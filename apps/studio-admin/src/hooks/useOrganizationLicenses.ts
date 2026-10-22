@@ -43,6 +43,7 @@ export interface LicenseItem {
   issuedBy: string;
   notes?: string;
   entitlements: LicenseEntitlements;
+  custom?: boolean;
   // Custom Quota Overrides
   overrideMaxProjects?: number;
   overrideMaxOlts?: number;

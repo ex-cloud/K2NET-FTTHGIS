@@ -22,6 +22,7 @@ export interface TenantSubscriptionItem {
   currentPeriodEnd: string;
   gracePeriodEnd?: string;
   test: boolean;
+  custom?: boolean;
   priceMonthly?: number;
   priceYearly?: number;
   currency?: string;

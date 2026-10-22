@@ -25,6 +25,7 @@
   "import": "Import",
   "details": "Details",
   "view_details": "View Details",
+  "view_all": "View All",
   "rows_per_page": "Rows per page",
   "no_results": "No results found",
   "select_option": "Select an option...",

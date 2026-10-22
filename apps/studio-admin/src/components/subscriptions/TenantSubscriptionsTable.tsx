@@ -9,6 +9,8 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import type { TenantSubscriptionItem } from "@/hooks/useBillingSubscriptions";
+import { LifecycleStatusBadge } from "@/components/common/LifecycleStatusBadge";
+import { formatRemainingDays } from "@/lib/formatters";
 
 export interface TenantSubscriptionsTableProps {
   filteredSubs: TenantSubscriptionItem[];
@@ -61,11 +63,7 @@ export function TenantSubscriptionsTable({
               </tr>
             ) : (
               filteredSubs.map((sub) => {
-                const hasCustomOverrides =
-                  sub.overrideMaxProjects != null ||
-                  sub.overrideMaxOlts != null ||
-                  sub.overrideMaxOdps != null ||
-                  sub.overrideMaxStorageGb != null;
+                const isCustom = sub.custom ?? false;
 
                 const daysLeft = sub.currentPeriodEnd
                   ? Math.ceil(
@@ -73,6 +71,8 @@ export function TenantSubscriptionsTable({
                         (1000 * 60 * 60 * 24)
                     )
                   : null;
+
+                const remainingInfo = formatRemainingDays(daysLeft, t);
 
                 return (
                   <tr key={sub.id} className="hover:bg-muted/20 transition-colors">
@@ -112,25 +112,16 @@ export function TenantSubscriptionsTable({
 
                     {/* Billing Cycle */}
                     <td className="py-2.5 px-3">
-                      <span className="text-[11px] font-mono uppercase text-muted-foreground">
-                        {sub.billingCycle}
+                      <span className="text-[11px] font-mono capitalize text-muted-foreground">
+                        {sub.billingCycle?.toLowerCase() === "yearly" || sub.billingCycle?.toLowerCase() === "annual"
+                          ? t("billing.annual")
+                          : t("billing.monthly")}
                       </span>
                     </td>
 
                     {/* Status */}
                     <td className="py-2.5 px-3">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] font-mono ${
-                          sub.status === "ACTIVE"
-                            ? "border-primary/40 bg-primary/10 text-primary"
-                            : sub.status === "GRACE_PERIOD"
-                            ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
-                            : "border-destructive/40 bg-destructive/10 text-destructive"
-                        }`}
-                      >
-                        {sub.status}
-                      </Badge>
+                      <LifecycleStatusBadge status={sub.status} />
                     </td>
 
                     {/* Period */}
@@ -141,8 +132,16 @@ export function TenantSubscriptionsTable({
                           {sub.currentPeriodEnd ? sub.currentPeriodEnd.substring(0, 10) : "—"}
                         </span>
                         {daysLeft != null && (
-                          <span className={`text-[10px] font-mono block ${daysLeft <= 14 ? "text-amber-500 font-medium" : "text-muted-foreground"}`}>
-                            {t("billing.days_remaining_badge", { count: daysLeft })}
+                          <span
+                            className={`text-[10px] font-mono block ${
+                              remainingInfo.isExpired
+                                ? "text-destructive font-medium"
+                                : remainingInfo.isWarning
+                                ? "text-amber-500 font-medium"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {remainingInfo.text}
                           </span>
                         )}
                       </div>
@@ -155,8 +154,8 @@ export function TenantSubscriptionsTable({
 
                     {/* Overrides Badge */}
                     <td className="py-2.5 px-3 text-center">
-                      {hasCustomOverrides ? (
-                        <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40">
+                      {isCustom ? (
+                        <Badge variant="outline" className="text-[9px] font-mono border-primary/40 bg-primary/10 text-primary">
                           {t("billing.badge_custom")}
                         </Badge>
                       ) : (

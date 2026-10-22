@@ -73,8 +73,11 @@ const LicenseRevocationsPage = lazyWithRetry(() =>
 const PackagesPage = lazyWithRetry(() =>
   import("./app/(dashboard)/packages/page").then((m) => ({ default: m.default }))
 );
-const PackageSubscriptionsPage = lazyWithRetry(() =>
-  import("./app/(dashboard)/packages/subscriptions/page").then((m) => ({ default: m.default }))
+const BillingOverviewPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/billing/page").then((m) => ({ default: m.default }))
+);
+const BillingPoliciesPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/catalog/policies/page").then((m) => ({ default: m.default }))
 );
 const OrganizationSlugPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/[slug]/page").then((m) => ({ default: m.default }))
@@ -405,12 +408,14 @@ const orgImpersonationRoute = createRoute({ getParentRoute: () => authenticatedL
 // ── 3-Domain Data Model Architecture (Catalog, Billing, Licensing) ──────
 // 1. Catalog Domain
 const catalogPlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog/plans", component: () => <Lazy><LicensePlansPage /></Lazy> });
+const catalogPackagesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog/packages", component: () => <Lazy><PackagesPage /></Lazy> });
+const catalogPoliciesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog/policies", component: () => <Lazy><BillingPoliciesPage /></Lazy> });
 const catalogRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog", component: () => <Navigate to="/catalog/plans" /> });
 
 // 2. Billing Domain
+const billingOverviewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing", component: () => <Lazy><BillingOverviewPage /></Lazy> });
 const billingSubscriptionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/subscriptions", component: () => <Lazy><TenantSubscriptionsPage /></Lazy> });
 const billingRenewalsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/renewals", component: () => <Lazy><LicenseNotificationsPage /></Lazy> });
-const billingRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing", component: () => <Navigate to="/billing/subscriptions" /> });
 
 // 3. Licensing Domain
 const licensingLicensesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licensing/licenses", component: () => <Lazy><LicensesPage /></Lazy> });
@@ -426,7 +431,8 @@ const licenseRevocationsLegacyRedirectRoute = createRoute({ getParentRoute: () =
 
 // Packages & Add-ons
 const packagesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/packages", component: () => <Lazy><PackagesPage /></Lazy> });
-const packagesSubscriptionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/packages/subscriptions", component: () => <Lazy><PackageSubscriptionsPage /></Lazy> });
+// Resolusi Konflik SSOT: URL legacy /packages/subscriptions dialihkan resmi ke /billing/subscriptions
+const packagesSubscriptionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/packages/subscriptions", component: () => <Navigate to="/billing/subscriptions" /> });
 
 // Users
 const usersRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users", component: () => <Lazy><UsersPage /></Lazy> });
@@ -523,8 +529,8 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   // Orgs
   orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
   // 3-Domain Architecture: Catalog, Billing, Licensing
-  catalogPlansRoute, catalogRedirectRoute,
-  billingSubscriptionsRoute, billingRenewalsRoute, billingRedirectRoute,
+  catalogPlansRoute, catalogPackagesRoute, catalogPoliciesRoute, catalogRedirectRoute,
+  billingOverviewRoute, billingSubscriptionsRoute, billingRenewalsRoute,
   licensingLicensesRoute, licensingRevocationsRoute, licensingRedirectRoute,
   // Backwards Compatibility Redirects & Aliases (Sheet 3)
   licensesLegacyRedirectRoute, licensePlansLegacyRedirectRoute,

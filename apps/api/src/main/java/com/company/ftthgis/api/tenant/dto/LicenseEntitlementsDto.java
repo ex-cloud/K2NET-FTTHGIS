@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class LicenseEntitlementsDto {
 
     private int maxProjects;
+    private int maxOlts;
     private int maxOdps;
     private int maxOdcs;
     private int maxCustomers;

@@ -445,6 +445,7 @@ public class LicenseManagementService {
         }
 
         int baseProjects = plan != null && plan.getMaxProjects() != null ? plan.getMaxProjects() : 6;
+        int baseOlts = plan != null && plan.getMaxOlts() != null ? plan.getMaxOlts() : 12;
         int baseOdps = plan != null && plan.getMaxOdps() != null ? plan.getMaxOdps() : 2500;
         int baseOdcs = plan != null && plan.getMaxOdcs() != null ? plan.getMaxOdcs() : 500;
         int baseCustomers = plan != null && plan.getMaxCustomers() != null ? plan.getMaxCustomers() : 5000;
@@ -455,6 +456,7 @@ public class LicenseManagementService {
         int boosterOdps = (isBooster && org.getBoosterOdps() != null) ? org.getBoosterOdps() : 0;
 
         int effectiveProjects;
+        int effectiveOlts = baseOlts;
         int effectiveOdps;
         int effectiveOdcs = baseOdcs;
         int effectiveCustomers = baseCustomers;
@@ -476,6 +478,13 @@ public class LicenseManagementService {
                 if (boosterOlts > 0) source = "EMERGENCY_BOOSTER";
             }
 
+            if (lic.getOverrideMaxOlts() != null) {
+                effectiveOlts = lic.getOverrideMaxOlts();
+                source = "LICENSE_OVERRIDE";
+            } else if (boosterOlts > 0) {
+                effectiveOlts = baseOlts + boosterOlts;
+            }
+
             if (lic.getOverrideMaxOdps() != null) {
                 effectiveOdps = lic.getOverrideMaxOdps();
                 source = "LICENSE_OVERRIDE";
@@ -495,6 +504,7 @@ public class LicenseManagementService {
             customDomain = lic.isFeatureCustomDomainEnabled() || isEnt;
         } else {
             effectiveProjects = baseProjects + boosterOlts;
+            effectiveOlts = baseOlts + boosterOlts;
             effectiveOdps = baseOdps + boosterOdps;
             if (boosterOlts > 0 || boosterOdps > 0) {
                 source = "EMERGENCY_BOOSTER";
@@ -503,6 +513,7 @@ public class LicenseManagementService {
 
         return LicenseEntitlementsDto.builder()
                 .maxProjects(effectiveProjects)
+                .maxOlts(effectiveOlts)
                 .maxOdps(effectiveOdps)
                 .maxOdcs(effectiveOdcs)
                 .maxCustomers(effectiveCustomers)
@@ -706,16 +717,26 @@ public class LicenseManagementService {
                             expiringIn7Days++;
                         }
                     }
-                    boolean isTestTenant = lic.getSubscription() != null && lic.getSubscription().isTest();
-                    if (!isTestTenant && lic.getSubscriptionPlan() != null && lic.getSubscriptionPlan().getPrice() != null) {
+                    boolean isInternal = lic.getOrganization() != null && "default".equalsIgnoreCase(lic.getOrganization().getSlug());
+                    boolean isTestTenant = (lic.getSubscription() != null && lic.getSubscription().isTest())
+                            || (lic.getOrganization() != null && lic.getOrganization().getName() != null && lic.getOrganization().getName().toLowerCase().contains("uji coba"));
+                    boolean isPaying = lic.getSubscriptionPlan() != null && lic.getSubscriptionPlan().getPrice() != null && lic.getSubscriptionPlan().getPrice().doubleValue() > 0.0;
+                    if (!isTestTenant && !isInternal && isPaying) {
                         mrr += lic.getSubscriptionPlan().getPrice().doubleValue();
                     }
-                    String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
-                    tierDistribution.put(tier, tierDistribution.getOrDefault(tier, 0L) + 1);
+                    if (!isInternal && !isTestTenant) {
+                        String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
+                        tierDistribution.put(tier, tierDistribution.getOrDefault(tier, 0L) + 1);
+                    }
                 } else if (status == LicenseStatus.GRACE_PERIOD) {
                     grace++;
-                    String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
-                    tierDistribution.put(tier, tierDistribution.getOrDefault(tier, 0L) + 1);
+                    boolean isInternal = lic.getOrganization() != null && "default".equalsIgnoreCase(lic.getOrganization().getSlug());
+                    boolean isTestTenant = (lic.getSubscription() != null && lic.getSubscription().isTest())
+                            || (lic.getOrganization() != null && lic.getOrganization().getName() != null && lic.getOrganization().getName().toLowerCase().contains("uji coba"));
+                    if (!isInternal && !isTestTenant) {
+                        String tier = lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "PRO";
+                        tierDistribution.put(tier, tierDistribution.getOrDefault(tier, 0L) + 1);
+                    }
                 } else if (status == LicenseStatus.RESTRICTED_READ_ONLY) {
                     readOnly++;
                 } else if (status == LicenseStatus.SUSPENDED || status == LicenseStatus.REVOKED) {
@@ -813,6 +834,16 @@ public class LicenseManagementService {
         long graceDaysRemaining = (lic.getGracePeriodUntil() != null && lic.getGracePeriodUntil().isAfter(now))
                 ? Duration.between(now, lic.getGracePeriodUntil()).toDays() : 0;
 
+        SubscriptionPlan plan = lic.getSubscriptionPlan();
+        boolean isCustom = isQuotaCustom(
+                lic.getOverrideMaxProjects(), plan != null ? plan.getMaxProjects() : null,
+                lic.getOverrideMaxOlts(), plan != null ? plan.getMaxOlts() : null,
+                lic.getOverrideMaxOdps(), plan != null ? plan.getMaxOdps() : null,
+                lic.getOverrideMaxOdcs(), plan != null ? plan.getMaxOdcs() : null,
+                lic.getOverrideMaxCustomers(), plan != null ? plan.getMaxCustomers() : null,
+                lic.getOverrideMaxStorageGb(), plan != null ? plan.getMaxStorageGb() : null
+        );
+
         return LicenseResponseDto.builder()
                 .id(lic.getId())
                 .organizationId(org != null ? org.getId() : null)
@@ -833,10 +864,12 @@ public class LicenseManagementService {
                 .notes(lic.getNotes())
                 .entitlements(getEffectiveLicenseEntitlements(org != null ? org.getId() : lic.getOrganization().getId()))
                 .overrideMaxProjects(lic.getOverrideMaxProjects())
+                .overrideMaxOlts(lic.getOverrideMaxOlts())
                 .overrideMaxOdps(lic.getOverrideMaxOdps())
                 .overrideMaxOdcs(lic.getOverrideMaxOdcs())
                 .overrideMaxCustomers(lic.getOverrideMaxCustomers())
                 .overrideMaxStorageGb(lic.getOverrideMaxStorageGb())
+                .custom(isCustom)
                 .featureSsoEnabled(lic.isFeatureSsoEnabled())
                 .featureApiEnabled(lic.isFeatureApiEnabled())
                 .featureAiCopilotEnabled(lic.isFeatureAiCopilotEnabled())
@@ -1106,6 +1139,16 @@ public class LicenseManagementService {
     }
 
     private com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto mapToSubscriptionDto(TenantSubscription sub) {
+        SubscriptionPlan basePlan = sub.getPlanVersion() != null ? sub.getPlanVersion().getPlan() : null;
+        boolean isCustom = isQuotaCustom(
+                sub.getOverrideMaxProjects(), basePlan != null ? basePlan.getMaxProjects() : null,
+                sub.getOverrideMaxOlts(), basePlan != null ? basePlan.getMaxOlts() : null,
+                sub.getOverrideMaxOdps(), basePlan != null ? basePlan.getMaxOdps() : null,
+                sub.getOverrideMaxOdcs(), basePlan != null ? basePlan.getMaxOdcs() : null,
+                sub.getOverrideMaxCustomers(), basePlan != null ? basePlan.getMaxCustomers() : null,
+                sub.getOverrideMaxStorageGb(), basePlan != null ? basePlan.getMaxStorageGb() : null
+        );
+
         return com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto.builder()
                 .id(sub.getId())
                 .organizationId(sub.getOrganization() != null ? sub.getOrganization().getId() : null)
@@ -1134,6 +1177,7 @@ public class LicenseManagementService {
                 .overrideMaxCustomers(sub.getOverrideMaxCustomers())
                 .overrideMaxStorageGb(sub.getOverrideMaxStorageGb())
                 .overrideApiRateLimitRpm(sub.getOverrideApiRateLimitRpm())
+                .custom(isCustom)
                 .featureSsoEnabled(sub.isFeatureSsoEnabled())
                 .featureApiEnabled(sub.isFeatureApiEnabled())
                 .featureAiCopilotEnabled(sub.isFeatureAiCopilotEnabled())
@@ -1142,5 +1186,22 @@ public class LicenseManagementService {
                 .createdAt(sub.getCreatedAt())
                 .updatedAt(sub.getUpdatedAt())
                 .build();
+    }
+
+    private boolean isQuotaCustom(
+            Integer ovProjects, Integer baseProjects,
+            Integer ovOlts, Integer baseOlts,
+            Integer ovOdps, Integer baseOdps,
+            Integer ovOdcs, Integer baseOdcs,
+            Integer ovCust, Integer baseCust,
+            Integer ovStorage, Integer baseStorage
+    ) {
+        if (ovProjects != null && baseProjects != null && !ovProjects.equals(baseProjects)) return true;
+        if (ovOlts != null && baseOlts != null && !ovOlts.equals(baseOlts)) return true;
+        if (ovOdps != null && baseOdps != null && !ovOdps.equals(baseOdps)) return true;
+        if (ovOdcs != null && baseOdcs != null && !ovOdcs.equals(baseOdcs)) return true;
+        if (ovCust != null && baseCust != null && !ovCust.equals(baseCust)) return true;
+        if (ovStorage != null && baseStorage != null && !ovStorage.equals(baseStorage)) return true;
+        return false;
     }
 }

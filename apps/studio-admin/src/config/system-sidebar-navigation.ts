@@ -35,6 +35,8 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
           { title: "Plan Tiers & Quotas", translationKey: "nav.plan_tiers_quotas", url: "/catalog/plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Packages & Add-ons", translationKey: "nav.catalog_packages", url: "/catalog/packages", icon: "Boxes", shortcut: "S then K", requiredPermission: ["system.organizations.view"] },
+          { title: "Billing Policies", translationKey: "nav.billing_policies", url: "/catalog/policies", icon: "ScrollText", shortcut: "S then O", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
         ],
       },
       {
@@ -42,6 +44,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.billing_ops",
         requiredPermission: ["system.organizations.view", "system.organizations.manage"],
         items: [
+          { title: "Billing Overview", translationKey: "nav.billing_overview", url: "/billing", icon: "BarChart3", shortcut: "S then B", requiredPermission: ["system.organizations.view"] },
           { title: "Tenant Subscriptions", translationKey: "nav.tenant_subscriptions", url: "/billing/subscriptions", icon: "CreditCard", shortcut: "S then S", requiredPermission: ["system.organizations.manage"] },
           { title: "Reminder Dispatch Logs", translationKey: "nav.license_notifications_log", url: "/billing/renewals", icon: "Bell", shortcut: "S then N", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
         ],
@@ -82,15 +85,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
           { title: "Security, SIEM & Forensic", translationKey: "packages.category.SECURITY_GOV", url: "/packages?category=SECURITY_GOV", icon: "ShieldCheck", shortcut: "S then S", requiredPermission: ["system.organizations.view"] },
           { title: "Civil Infra & IoT Handhole", translationKey: "packages.category.CIVIL_INFRA", url: "/packages?category=CIVIL_INFRA", icon: "Radio", shortcut: "S then I", requiredPermission: ["system.organizations.view"] },
           { title: "AI Copilot & Diagnostics", translationKey: "packages.category.AI_COPILOT", url: "/packages?category=AI_COPILOT", icon: "Sparkles", shortcut: "S then X", requiredPermission: ["system.organizations.view"] },
-        ],
-      },
-      {
-        title: "Tenant Subscriptions & Trials",
-        translationKey: "nav.packages_tenant_subscriptions",
-        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
-        items: [
-          { title: "Active Subscriptions", translationKey: "nav.packages_active_subs", url: "/packages/subscriptions", icon: "FolderKanban", shortcut: "S then U", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "POC Trials & Grants", translationKey: "nav.packages_poc_grants", url: "/packages?action=grant", icon: "FlaskConical", shortcut: "S then G", requiredPermission: ["system.organizations.manage"] },
         ],
       },
       {

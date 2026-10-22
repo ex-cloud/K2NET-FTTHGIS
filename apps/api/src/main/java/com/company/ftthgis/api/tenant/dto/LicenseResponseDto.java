@@ -45,10 +45,12 @@ public class LicenseResponseDto {
 
     // Custom Quota Overrides
     private Integer overrideMaxProjects;
+    private Integer overrideMaxOlts;
     private Integer overrideMaxOdps;
     private Integer overrideMaxOdcs;
     private Integer overrideMaxCustomers;
     private Integer overrideMaxStorageGb;
+    private Boolean custom;
 
     // Feature Entitlements
     private Boolean featureSsoEnabled;

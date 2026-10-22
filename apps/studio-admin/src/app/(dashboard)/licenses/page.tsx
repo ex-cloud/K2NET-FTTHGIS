@@ -1,18 +1,16 @@
 import * as React from "react";
 import { PageHero, Button, PageLayout } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
-import { Plus, RefreshCcw, KeyRound } from "lucide-react";
+import { RefreshCcw, KeyRound } from "lucide-react";
 import {
   useLicenseOverview,
   useAllLicenses,
 } from "@/hooks/useOrganizationLicenses";
 import { LicenseKpiCards } from "@/components/licenses/LicenseKpiCards";
 import { LicenseDataTable } from "@/components/licenses/LicenseDataTable";
-import { ManualIssueLicenseModal } from "@/components/licenses/ManualIssueLicenseModal";
 
 export default function LicensesPage() {
   const { t } = useTranslation();
-  const [issueModalOpen, setIssueModalOpen] = React.useState<boolean>(false);
 
   const {
     data: overview,
@@ -91,15 +89,6 @@ export default function LicensesPage() {
                 />
                 <span>{t("common.refresh")}</span>
               </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setIssueModalOpen(true)}
-                className="gap-1.5 h-7 px-2.5 text-xs font-medium shadow-xs"
-              >
-                <Plus className="size-3.5" />
-                <span>{t("license.actions.issue_manual")}</span>
-              </Button>
             </div>
           }
         />
@@ -122,11 +111,6 @@ export default function LicensesPage() {
           />
         </div>
       </div>
-
-      <ManualIssueLicenseModal
-        open={issueModalOpen}
-        onOpenChange={setIssueModalOpen}
-      />
     </PageLayout>
   );
 }
