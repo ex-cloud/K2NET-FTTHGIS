@@ -1140,6 +1140,94 @@ public class LicenseManagementService {
         return planVersionRepository.findByPlanIdOrderByCreatedAtDesc(planId);
     }
 
+    @Transactional
+    public PlanVersion createPlanVersion(UUID planId, com.company.ftthgis.api.system.dto.CreatePlanVersionRequest req, String actor) {
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Subscription plan not found: " + planId));
+
+        planVersionRepository.findByPlanIdAndVersion(planId, req.getVersion()).ifPresent(v -> {
+            throw new IllegalArgumentException("Version '" + req.getVersion() + "' already exists for plan: " + plan.getName());
+        });
+
+        BigDecimal priceYearly = req.getPriceYearly() != null
+                ? req.getPriceYearly()
+                : req.getPriceMonthly().multiply(BigDecimal.valueOf(10));
+
+        PlanVersion version = PlanVersion.builder()
+                .plan(plan)
+                .version(req.getVersion())
+                .status(req.getStatus() != null ? req.getStatus() : "DRAFT")
+                .priceMonthly(req.getPriceMonthly())
+                .priceYearly(priceYearly)
+                .currency(req.getCurrency() != null ? req.getCurrency() : "IDR")
+                .maxProjects(req.getMaxProjects() != null ? req.getMaxProjects() : plan.getMaxProjects())
+                .maxArchivedProjects(req.getMaxArchivedProjects() != null ? req.getMaxArchivedProjects() : plan.getMaxArchivedProjects())
+                .maxOlts(req.getMaxOlts() != null ? req.getMaxOlts() : plan.getMaxOlts())
+                .maxOdcs(req.getMaxOdcs() != null ? req.getMaxOdcs() : plan.getMaxOdcs())
+                .maxOdps(req.getMaxOdps() != null ? req.getMaxOdps() : plan.getMaxOdps())
+                .maxCustomers(req.getMaxCustomers() != null ? req.getMaxCustomers() : plan.getMaxCustomers())
+                .maxStorageGb(req.getMaxStorageGb() != null ? req.getMaxStorageGb() : plan.getMaxStorageGb())
+                .apiRateLimitRpm(req.getApiRateLimitRpm() != null ? req.getApiRateLimitRpm() : plan.getApiRateLimitRpm())
+                .hasSso(req.getHasSso() != null ? req.getHasSso() : plan.isHasSso())
+                .hasApiAccess(req.getHasApiAccess() != null ? req.getHasApiAccess() : plan.isHasApiAccess())
+                .hasAiCopilot(req.getHasAiCopilot() != null ? req.getHasAiCopilot() : false)
+                .hasCustomDomain(req.getHasCustomDomain() != null ? req.getHasCustomDomain() : false)
+                .graceDays(req.getGraceDays() != null ? req.getGraceDays() : 14)
+                .readonlyDays(req.getReadonlyDays() != null ? req.getReadonlyDays() : 14)
+                .publishedBy(actor)
+                .changelog(req.getChangelog())
+                .build();
+
+        PlanVersion saved = planVersionRepository.save(version);
+        log.info("📦 PLAN VERSION CREATED: '{}' ({}) for plan '{}' by '{}'",
+                saved.getVersion(), saved.getStatus(), plan.getName(), actor);
+        return saved;
+    }
+
+    @Transactional
+    public PlanVersion publishPlanVersion(UUID planId, UUID versionId, String actor) {
+        PlanVersion version = planVersionRepository.findById(versionId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Plan version not found: " + versionId));
+
+        if (!version.getPlan().getId().equals(planId)) {
+            throw new IllegalArgumentException("Version does not belong to specified plan: " + planId);
+        }
+
+        // Archive previous active version if any
+        planVersionRepository.findByPlanIdOrderByCreatedAtDesc(planId).stream()
+                .filter(v -> "ACTIVE".equalsIgnoreCase(v.getStatus()) && !v.getId().equals(versionId))
+                .forEach(oldActive -> {
+                    oldActive.setStatus("ARCHIVED");
+                    oldActive.setEffectiveTo(LocalDateTime.now());
+                    planVersionRepository.save(oldActive);
+                });
+
+        version.setStatus("ACTIVE");
+        version.setEffectiveFrom(LocalDateTime.now());
+        version.setPublishedBy(actor);
+        PlanVersion published = planVersionRepository.save(version);
+
+        // Update baseline master plan price and quota references
+        SubscriptionPlan plan = version.getPlan();
+        if (plan != null) {
+            plan.setPrice(version.getPriceMonthly());
+            plan.setMaxProjects(version.getMaxProjects());
+            plan.setMaxArchivedProjects(version.getMaxArchivedProjects());
+            plan.setMaxOlts(version.getMaxOlts());
+            plan.setMaxOdcs(version.getMaxOdcs());
+            plan.setMaxOdps(version.getMaxOdps());
+            plan.setMaxCustomers(version.getMaxCustomers());
+            plan.setMaxStorageGb(version.getMaxStorageGb());
+            plan.setHasSso(version.isHasSso());
+            plan.setHasApiAccess(version.isHasApiAccess());
+            subscriptionPlanRepository.save(plan);
+        }
+
+        log.info("🚀 PLAN VERSION PUBLISHED: '{}' for plan '{}' by '{}' - Baseline price & quotas synced",
+                published.getVersion(), plan != null ? plan.getName() : "Unknown", actor);
+        return published;
+    }
+
     private com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto mapToSubscriptionDto(TenantSubscription sub) {
         SubscriptionPlan basePlan = sub.getPlanVersion() != null ? sub.getPlanVersion().getPlan() : null;
         boolean isCustom = isQuotaCustom(

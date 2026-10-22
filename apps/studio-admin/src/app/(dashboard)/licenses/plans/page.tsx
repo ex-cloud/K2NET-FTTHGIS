@@ -9,6 +9,7 @@ import {
 import { PlanKpiCards } from "@/components/licenses/PlanKpiCards";
 import { PlanTiersGrid } from "@/components/licenses/PlanTiersGrid";
 import { EditSubscriptionPlanModal } from "@/components/licenses/EditSubscriptionPlanModal";
+import { PlanVersionsModal } from "@/components/licenses/PlanVersionsModal";
 
 export default function LicensePlansPage() {
   const { t } = useTranslation();
@@ -16,10 +17,16 @@ export default function LicensePlansPage() {
 
   const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlanMaster | null>(null);
   const [editModalOpen, setEditModalOpen] = React.useState<boolean>(false);
+  const [versionsModalOpen, setVersionsModalOpen] = React.useState<boolean>(false);
 
   const handleOpenEdit = (plan: SubscriptionPlanMaster) => {
     setSelectedPlan(plan);
     setEditModalOpen(true);
+  };
+
+  const handleOpenVersions = (plan: SubscriptionPlanMaster) => {
+    setSelectedPlan(plan);
+    setVersionsModalOpen(true);
   };
 
   return (
@@ -65,13 +72,25 @@ export default function LicensePlansPage() {
 
       {/* Main Content Area */}
       <PlanKpiCards plans={plans} loading={isLoading} />
-      <PlanTiersGrid plans={plans} loading={isLoading} onEdit={handleOpenEdit} />
+      <PlanTiersGrid
+        plans={plans}
+        loading={isLoading}
+        onEdit={handleOpenEdit}
+        onManageVersions={handleOpenVersions}
+      />
 
       {/* Edit Plan Modal */}
       <EditSubscriptionPlanModal
         plan={selectedPlan}
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
+      />
+
+      {/* Plan Versions Modal */}
+      <PlanVersionsModal
+        plan={selectedPlan}
+        open={versionsModalOpen}
+        onOpenChange={setVersionsModalOpen}
       />
     </PageLayout>
   );

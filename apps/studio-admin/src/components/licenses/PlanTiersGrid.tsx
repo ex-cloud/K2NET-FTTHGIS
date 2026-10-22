@@ -15,6 +15,7 @@ import {
   Terminal,
   HardDrive,
   Activity,
+  GitBranch,
 } from "lucide-react";
 import type { SubscriptionPlanMaster } from "@/hooks/useSubscriptionPlans";
 
@@ -22,6 +23,7 @@ interface PlanTiersGridProps {
   plans: SubscriptionPlanMaster[];
   loading?: boolean;
   onEdit: (plan: SubscriptionPlanMaster) => void;
+  onManageVersions?: (plan: SubscriptionPlanMaster) => void;
 }
 
 function formatIdr(val?: number): string {
@@ -33,7 +35,7 @@ function formatIdr(val?: number): string {
   }).format(val);
 }
 
-export function PlanTiersGrid({ plans, loading, onEdit }: PlanTiersGridProps) {
+export function PlanTiersGrid({ plans, loading, onEdit, onManageVersions }: PlanTiersGridProps) {
   const { t } = useTranslation();
 
   // Sort plans standard order: FREE -> STARTER -> PRO -> ENTERPRISE
@@ -249,16 +251,25 @@ export function PlanTiersGrid({ plans, loading, onEdit }: PlanTiersGridProps) {
               </div>
             </div>
 
-            {/* Footer Action */}
-            <div className="pt-4 mt-4 border-t border-border/60">
+            {/* Footer Actions */}
+            <div className="pt-4 mt-4 border-t border-border/60 flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => onManageVersions?.(plan)}
+                className="flex-1 gap-1.5 text-xs font-medium"
+              >
+                <GitBranch className="size-3.5" />
+                <span>{t("license.plans.manage_versions")}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => onEdit(plan)}
-                className="w-full gap-1.5 text-xs font-medium"
+                className="gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                title={t("license.plans.edit_plan_title")}
               >
                 <Sliders className="size-3.5" />
-                <span>{t("license.plans.edit_plan_title")}</span>
               </Button>
             </div>
           </Card>

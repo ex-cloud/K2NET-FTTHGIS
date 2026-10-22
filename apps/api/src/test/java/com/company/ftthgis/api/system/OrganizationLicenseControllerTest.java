@@ -634,5 +634,63 @@ public class OrganizationLicenseControllerTest {
 
         verify(licenseNotificationService, times(1)).retryFailedNotification(eq(logId), anyString());
     }
+
+    @Test
+    @DisplayName("POST /plans/{planId}/versions - Sukses membuat draft versi paket baru")
+    public void testCreatePlanVersion_Success() throws Exception {
+        UUID planId = UUID.randomUUID();
+        com.company.ftthgis.api.system.dto.CreatePlanVersionRequest req = com.company.ftthgis.api.system.dto.CreatePlanVersionRequest.builder()
+                .version("v2.0.0")
+                .status("DRAFT")
+                .priceMonthly(java.math.BigDecimal.valueOf(1500000))
+                .priceYearly(java.math.BigDecimal.valueOf(15000000))
+                .changelog("Upgrade kuota OLT 2x lipat")
+                .build();
+
+        com.company.ftthgis.domain.tenant.entity.PlanVersion mockVersion = com.company.ftthgis.domain.tenant.entity.PlanVersion.builder()
+                .id(UUID.randomUUID())
+                .version("v2.0.0")
+                .status("DRAFT")
+                .priceMonthly(java.math.BigDecimal.valueOf(1500000))
+                .priceYearly(java.math.BigDecimal.valueOf(15000000))
+                .changelog("Upgrade kuota OLT 2x lipat")
+                .build();
+
+        when(licenseManagementService.createPlanVersion(eq(planId), any(com.company.ftthgis.api.system.dto.CreatePlanVersionRequest.class), anyString()))
+                .thenReturn(mockVersion);
+
+        mockMvc.perform(post("/api/v1/system/plans/" + planId + "/versions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.version").value("v2.0.0"))
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+
+        verify(licenseManagementService, times(1)).createPlanVersion(eq(planId), any(com.company.ftthgis.api.system.dto.CreatePlanVersionRequest.class), anyString());
+    }
+
+    @Test
+    @DisplayName("POST /plans/{planId}/versions/{versionId}/publish - Sukses mempublikasikan versi paket")
+    public void testPublishPlanVersion_Success() throws Exception {
+        UUID planId = UUID.randomUUID();
+        UUID versionId = UUID.randomUUID();
+
+        com.company.ftthgis.domain.tenant.entity.PlanVersion mockVersion = com.company.ftthgis.domain.tenant.entity.PlanVersion.builder()
+                .id(versionId)
+                .version("v2.0.0")
+                .status("ACTIVE")
+                .priceMonthly(java.math.BigDecimal.valueOf(1500000))
+                .build();
+
+        when(licenseManagementService.publishPlanVersion(eq(planId), eq(versionId), anyString()))
+                .thenReturn(mockVersion);
+
+        mockMvc.perform(post("/api/v1/system/plans/" + planId + "/versions/" + versionId + "/publish"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(versionId.toString()))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+        verify(licenseManagementService, times(1)).publishPlanVersion(eq(planId), eq(versionId), anyString());
+    }
 }
 

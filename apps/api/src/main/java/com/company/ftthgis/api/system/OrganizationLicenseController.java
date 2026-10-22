@@ -1,12 +1,14 @@
 package com.company.ftthgis.api.system;
 
 import com.company.ftthgis.api.system.dto.CreateBillingInvoiceRequest;
+import com.company.ftthgis.api.system.dto.CreatePlanVersionRequest;
 import com.company.ftthgis.api.system.dto.LicenseExtendRequest;
 import com.company.ftthgis.api.system.dto.LicenseOverviewKpiDto;
 import com.company.ftthgis.api.system.dto.LicenseRevokeRequest;
 import com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
+import com.company.ftthgis.domain.tenant.entity.PlanVersion;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
 import com.company.ftthgis.service.LicenseManagementService;
 import jakarta.validation.Valid;
@@ -302,8 +304,34 @@ public class OrganizationLicenseController {
      */
     @GetMapping("/plans/{planId}/versions")
     @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('catalog.plans.read')")
-    public ResponseEntity<List<com.company.ftthgis.domain.tenant.entity.PlanVersion>> getPlanVersions(@PathVariable UUID planId) {
+    public ResponseEntity<List<PlanVersion>> getPlanVersions(@PathVariable UUID planId) {
         return ResponseEntity.ok(licenseManagementService.getPlanVersions(planId));
+    }
+
+    /**
+     * Membuat draft versi semantik baru untuk paket plan (Domain: Catalog / Master Plans).
+     */
+    @PostMapping("/plans/{planId}/versions")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('catalog.plans.manage')")
+    public ResponseEntity<PlanVersion> createPlanVersion(
+            @PathVariable UUID planId,
+            @Valid @RequestBody CreatePlanVersionRequest request
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        return ResponseEntity.status(HttpStatus.CREATED).body(licenseManagementService.createPlanVersion(planId, request, actor));
+    }
+
+    /**
+     * Mempublikasikan versi paket plan dan menyelaraskan baseline harga/kuota katalog (Domain: Catalog / Master Plans).
+     */
+    @PostMapping("/plans/{planId}/versions/{versionId}/publish")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('catalog.plans.manage')")
+    public ResponseEntity<PlanVersion> publishPlanVersion(
+            @PathVariable UUID planId,
+            @PathVariable UUID versionId
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        return ResponseEntity.ok(licenseManagementService.publishPlanVersion(planId, versionId, actor));
     }
 
     /**
