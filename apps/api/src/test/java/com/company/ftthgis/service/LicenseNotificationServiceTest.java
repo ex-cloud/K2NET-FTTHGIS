@@ -45,6 +45,12 @@ class LicenseNotificationServiceTest {
     @Mock
     private OrganizationRepository organizationRepository;
 
+    @Mock
+    private com.company.ftthgis.domain.tenant.repository.MessageTemplateRepository messageTemplateRepository;
+
+    @Mock
+    private com.company.ftthgis.domain.tenant.repository.BillingPolicyRepository billingPolicyRepository;
+
     @InjectMocks
     private LicenseNotificationService notificationService;
 

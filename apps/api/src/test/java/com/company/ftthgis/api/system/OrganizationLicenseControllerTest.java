@@ -692,5 +692,92 @@ public class OrganizationLicenseControllerTest {
 
         verify(licenseManagementService, times(1)).publishPlanVersion(eq(planId), eq(versionId), anyString());
     }
+
+    @Test
+    @DisplayName("GET /catalog/templates - Sukses mengambil seluruh template pesan")
+    public void testGetAllMessageTemplates_Success() throws Exception {
+        com.company.ftthgis.domain.tenant.entity.MessageTemplate tpl = com.company.ftthgis.domain.tenant.entity.MessageTemplate.builder()
+                .id(UUID.randomUUID())
+                .code("EXPIRING_7D")
+                .name("Pengingat H-7 Lisensi")
+                .channel("EMAIL")
+                .category("DUNNING")
+                .subjectTemplate("Subjek H-7 {{tenant_name}}")
+                .bodyTemplate("Halo {{tenant_name}}")
+                .active(true)
+                .build();
+
+        when(licenseManagementService.getAllMessageTemplates()).thenReturn(List.of(tpl));
+
+        mockMvc.perform(get("/api/v1/system/catalog/templates"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].code").value("EXPIRING_7D"))
+                .andExpect(jsonPath("$[0].channel").value("EMAIL"));
+
+        verify(licenseManagementService, times(1)).getAllMessageTemplates();
+    }
+
+    @Test
+    @DisplayName("POST /catalog/templates - Sukses membuat template pesan baru")
+    public void testCreateMessageTemplate_Success() throws Exception {
+        com.company.ftthgis.api.system.dto.CreateMessageTemplateRequest req = com.company.ftthgis.api.system.dto.CreateMessageTemplateRequest.builder()
+                .code("CUSTOM_PROMO")
+                .name("Pemberitahuan Promo")
+                .channel("EMAIL")
+                .category("SYSTEM")
+                .subjectTemplate("Promo Diskon {{tenant_name}}")
+                .bodyTemplate("Dapatkan diskon upgrade plan.")
+                .active(true)
+                .build();
+
+        com.company.ftthgis.domain.tenant.entity.MessageTemplate created = com.company.ftthgis.domain.tenant.entity.MessageTemplate.builder()
+                .id(UUID.randomUUID())
+                .code("CUSTOM_PROMO")
+                .name("Pemberitahuan Promo")
+                .channel("EMAIL")
+                .category("SYSTEM")
+                .bodyTemplate("Dapatkan diskon upgrade plan.")
+                .active(true)
+                .build();
+
+        when(licenseManagementService.createMessageTemplate(any(com.company.ftthgis.api.system.dto.CreateMessageTemplateRequest.class), anyString()))
+                .thenReturn(created);
+
+        mockMvc.perform(post("/api/v1/system/catalog/templates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("CUSTOM_PROMO"));
+
+        verify(licenseManagementService, times(1)).createMessageTemplate(any(com.company.ftthgis.api.system.dto.CreateMessageTemplateRequest.class), anyString());
+    }
+
+    @Test
+    @DisplayName("POST /catalog/templates/preview - Sukses simulasi preview pesan render")
+    public void testPreviewMessageTemplate_Success() throws Exception {
+        com.company.ftthgis.api.system.dto.PreviewMessageTemplateRequest req = com.company.ftthgis.api.system.dto.PreviewMessageTemplateRequest.builder()
+                .subjectTemplate("Halo {{tenant_name}}")
+                .bodyTemplate("Paket Anda adalah {{plan_name}}")
+                .build();
+
+        com.company.ftthgis.api.system.dto.PreviewMessageTemplateResponse mockRes = com.company.ftthgis.api.system.dto.PreviewMessageTemplateResponse.builder()
+                .subject("Halo PT Fiber")
+                .body("Paket Anda adalah ENTERPRISE")
+                .appliedVariables(Map.of("tenant_name", "PT Fiber", "plan_name", "ENTERPRISE"))
+                .build();
+
+        when(licenseManagementService.previewMessageTemplate(any(com.company.ftthgis.api.system.dto.PreviewMessageTemplateRequest.class)))
+                .thenReturn(mockRes);
+
+        mockMvc.perform(post("/api/v1/system/catalog/templates/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subject").value("Halo PT Fiber"))
+                .andExpect(jsonPath("$.body").value("Paket Anda adalah ENTERPRISE"))
+                .andExpect(jsonPath("$.appliedVariables.tenant_name").value("PT Fiber"));
+
+        verify(licenseManagementService, times(1)).previewMessageTemplate(any(com.company.ftthgis.api.system.dto.PreviewMessageTemplateRequest.class));
+    }
 }
 

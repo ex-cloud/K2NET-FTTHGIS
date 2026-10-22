@@ -112,12 +112,14 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("system.contracts.upload",     "Upload Tenant Contracts",            "system", "SYSTEM"),
             new PermissionData("system.quotas.manage",        "Manage Tenant Quotas",               "system", "SYSTEM"),
 
-            // catalog — plans & policies (SYSTEM scope)
+            // catalog — plans, policies & templates (SYSTEM scope)
             new PermissionData("catalog.plans.read",          "View Catalog Plans & Versions",      "catalog", "SYSTEM"),
             new PermissionData("catalog.plans.manage",        "Manage Catalog Plan Drafts",         "catalog", "SYSTEM"),
             new PermissionData("catalog.plans.publish",       "Publish Catalog Plan Versions",      "catalog", "SYSTEM"),
             new PermissionData("catalog.policies.read",       "View Billing Policies",              "catalog", "SYSTEM"),
             new PermissionData("catalog.policies.manage",     "Manage Billing Policies",            "catalog", "SYSTEM"),
+            new PermissionData("catalog.templates.read",      "View Catalog Message Templates",     "catalog", "SYSTEM"),
+            new PermissionData("catalog.templates.manage",    "Manage Catalog Message Templates",   "catalog", "SYSTEM"),
 
             // billing — subscriptions & invoices (SYSTEM scope)
             new PermissionData("billing.read",                 "View Billing Overview & KPIs",       "billing", "SYSTEM"),

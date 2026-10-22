@@ -7,7 +7,11 @@ import com.company.ftthgis.domain.tenant.entity.LicenseNotificationStage;
 import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.entity.MessageTemplate;
+import com.company.ftthgis.domain.tenant.entity.BillingPolicy;
+import com.company.ftthgis.domain.tenant.repository.BillingPolicyRepository;
 import com.company.ftthgis.domain.tenant.repository.LicenseNotificationLogRepository;
+import com.company.ftthgis.domain.tenant.repository.MessageTemplateRepository;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,6 +41,8 @@ public class LicenseNotificationService {
     private final LicenseNotificationLogRepository logRepository;
     private final TenantLicenseRepository licenseRepository;
     private final OrganizationRepository organizationRepository;
+    private final MessageTemplateRepository messageTemplateRepository;
+    private final BillingPolicyRepository billingPolicyRepository;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
 
@@ -89,8 +97,32 @@ public class LicenseNotificationService {
 
     private void sendEmailNotification(TenantLicense license, String orgName, String targetEmail,
                                         LicenseNotificationStage stage, String triggeredBy) {
-        String subject = buildEmailSubject(stage, orgName);
-        String body = buildEmailHtmlBody(license, orgName, stage);
+        String subject = null;
+        String body = null;
+
+        // 1. Cek dynamic template aktif dari catalog/templates di database
+        if (messageTemplateRepository != null) {
+            try {
+                MessageTemplate tpl = messageTemplateRepository.findByCode(stage.name())
+                        .filter(MessageTemplate::isActive)
+                        .orElse(null);
+
+                if (tpl != null && ("EMAIL".equalsIgnoreCase(tpl.getChannel()) || "ALL".equalsIgnoreCase(tpl.getChannel()))) {
+                    subject = renderTemplateString(tpl.getSubjectTemplate(), license, orgName, stage);
+                    body = renderTemplateString(tpl.getBodyTemplate(), license, orgName, stage);
+                }
+            } catch (Exception ex) {
+                log.warn("⚠️ Failed to load message template for email stage '{}': {}", stage, ex.getMessage());
+            }
+        }
+
+        // Fallback jika tidak ada template kustom aktif
+        if (subject == null || subject.isBlank()) {
+            subject = buildEmailSubject(stage, orgName);
+        }
+        if (body == null || body.isBlank()) {
+            body = buildEmailHtmlBody(license, orgName, stage);
+        }
 
         try {
             boolean sent = emailService.sendEmail(targetEmail, subject, body);
@@ -127,7 +159,29 @@ public class LicenseNotificationService {
 
     private void sendWhatsAppNotification(TenantLicense license, String orgName, String targetPhone,
                                            LicenseNotificationStage stage, String triggeredBy) {
-        String message = buildWhatsAppMessage(license, orgName, stage);
+        String message = null;
+
+        // 1. Cek dynamic template aktif dari catalog/templates di database
+        if (messageTemplateRepository != null) {
+            try {
+                MessageTemplate tpl = messageTemplateRepository.findByCode("WHATSAPP_" + stage.name())
+                        .filter(MessageTemplate::isActive)
+                        .orElseGet(() -> messageTemplateRepository.findByCode(stage.name())
+                                .filter(t -> t.isActive() && ("WHATSAPP".equalsIgnoreCase(t.getChannel()) || "ALL".equalsIgnoreCase(t.getChannel())))
+                                .orElse(null));
+
+                if (tpl != null) {
+                    message = renderTemplateString(tpl.getBodyTemplate(), license, orgName, stage);
+                }
+            } catch (Exception ex) {
+                log.warn("⚠️ Failed to load message template for WhatsApp stage '{}': {}", stage, ex.getMessage());
+            }
+        }
+
+        // Fallback jika tidak ada template kustom aktif
+        if (message == null || message.isBlank()) {
+            message = buildWhatsAppMessage(license, orgName, stage);
+        }
 
         try {
             boolean sent = whatsAppService.sendMessage(targetPhone, message);
@@ -160,6 +214,39 @@ public class LicenseNotificationService {
                     .sentAt(LocalDateTime.now())
                     .build());
         }
+    }
+
+    private String renderTemplateString(String templateStr, TenantLicense license, String orgName, LicenseNotificationStage stage) {
+        if (templateStr == null) return "";
+
+        String validUntilStr = license.getValidUntil() != null ? license.getValidUntil().format(DATE_FMT) : "-";
+        String tier = license.getSubscriptionPlan() != null ? license.getSubscriptionPlan().getName() : "Enterprise";
+        String licenseKey = license.getLicenseKey() != null ? license.getLicenseKey() : "-";
+        String graceDays = "14";
+        if (billingPolicyRepository != null) {
+            graceDays = billingPolicyRepository.findByPolicyKey("grace_period_days")
+                    .map(BillingPolicy::getPolicyValue)
+                    .orElse("14");
+        }
+        String paymentLink = "https://app.kdua.net/billing";
+        if (license.getOrganization() != null && license.getOrganization().getSlug() != null) {
+            paymentLink = "https://" + license.getOrganization().getSlug() + ".kdua.net/billing/invoices";
+        }
+
+        Map<String, String> replacements = new HashMap<>();
+        replacements.put("tenant_name", orgName);
+        replacements.put("plan_name", tier);
+        replacements.put("due_date", validUntilStr);
+        replacements.put("license_key", licenseKey);
+        replacements.put("grace_days_remaining", graceDays);
+        replacements.put("payment_link", paymentLink);
+
+        String result = templateStr;
+        for (Map.Entry<String, String> entry : replacements.entrySet()) {
+            result = result.replace("{{" + entry.getKey() + "}}", entry.getValue())
+                           .replace("{" + entry.getKey() + "}", entry.getValue());
+        }
+        return result;
     }
 
     private String buildEmailSubject(LicenseNotificationStage stage, String orgName) {

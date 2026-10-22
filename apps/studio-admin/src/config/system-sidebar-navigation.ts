@@ -37,6 +37,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
           { title: "Plan Tiers & Quotas", translationKey: "nav.plan_tiers_quotas", url: "/catalog/plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
           { title: "Packages & Add-ons", translationKey: "nav.catalog_packages", url: "/catalog/packages", icon: "Boxes", shortcut: "S then K", requiredPermission: ["system.organizations.view"] },
           { title: "Billing Policies", translationKey: "nav.billing_policies", url: "/catalog/policies", icon: "ScrollText", shortcut: "S then O", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Message Templates", translationKey: "nav.message_templates", url: "/catalog/templates", icon: "MessageSquare", shortcut: "S then T", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
         ],
       },
       {

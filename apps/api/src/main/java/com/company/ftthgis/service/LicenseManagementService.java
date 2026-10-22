@@ -48,6 +48,7 @@ public class LicenseManagementService {
     private final com.company.ftthgis.domain.tenant.repository.TenantSubscriptionRepository tenantSubscriptionRepository;
     private final com.company.ftthgis.domain.tenant.repository.BillingPolicyRepository billingPolicyRepository;
     private final com.company.ftthgis.domain.tenant.repository.PlanVersionRepository planVersionRepository;
+    private final com.company.ftthgis.domain.tenant.repository.MessageTemplateRepository messageTemplateRepository;
     private final LicenseCryptoService licenseCryptoService;
     private final AuditLoggingService auditLoggingService;
     private final EntityManager entityManager;
@@ -1226,6 +1227,156 @@ public class LicenseManagementService {
         log.info("🚀 PLAN VERSION PUBLISHED: '{}' for plan '{}' by '{}' - Baseline price & quotas synced",
                 published.getVersion(), plan != null ? plan.getName() : "Unknown", actor);
         return published;
+    }
+
+    // ── Message Templates Management (Domain: Catalog / C4) ─────────────────
+
+    public List<MessageTemplate> getAllMessageTemplates() {
+        return messageTemplateRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    public MessageTemplate getMessageTemplateById(UUID id) {
+        return messageTemplateRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Message template not found: " + id));
+    }
+
+    @Transactional
+    public MessageTemplate createMessageTemplate(com.company.ftthgis.api.system.dto.CreateMessageTemplateRequest req, String actor) {
+        messageTemplateRepository.findByCode(req.getCode().toUpperCase().trim()).ifPresent(t -> {
+            throw new IllegalArgumentException("Template with code '" + req.getCode() + "' already exists");
+        });
+
+        MessageTemplate template = MessageTemplate.builder()
+                .code(req.getCode().toUpperCase().trim())
+                .name(req.getName().trim())
+                .channel(req.getChannel().toUpperCase().trim())
+                .category(req.getCategory() != null ? req.getCategory().toUpperCase().trim() : "DUNNING")
+                .subjectTemplate(req.getSubjectTemplate())
+                .bodyTemplate(req.getBodyTemplate())
+                .variablesDescription(req.getVariablesDescription())
+                .active(req.getActive() != null ? req.getActive() : true)
+                .build();
+
+        MessageTemplate saved = messageTemplateRepository.save(template);
+        log.info("📝 MESSAGE TEMPLATE CREATED: '{}' ({}) by '{}'", saved.getCode(), saved.getName(), actor);
+        return saved;
+    }
+
+    @Transactional
+    public MessageTemplate updateMessageTemplate(UUID id, com.company.ftthgis.api.system.dto.UpdateMessageTemplateRequest req, String actor) {
+        MessageTemplate template = getMessageTemplateById(id);
+
+        template.setName(req.getName().trim());
+        template.setChannel(req.getChannel().toUpperCase().trim());
+        if (req.getCategory() != null) {
+            template.setCategory(req.getCategory().toUpperCase().trim());
+        }
+        template.setSubjectTemplate(req.getSubjectTemplate());
+        template.setBodyTemplate(req.getBodyTemplate());
+        template.setVariablesDescription(req.getVariablesDescription());
+        if (req.getActive() != null) {
+            template.setActive(req.getActive());
+        }
+
+        MessageTemplate saved = messageTemplateRepository.save(template);
+        log.info("📝 MESSAGE TEMPLATE UPDATED: '{}' by '{}'", saved.getCode(), actor);
+        return saved;
+    }
+
+    @Transactional
+    public void deleteMessageTemplate(UUID id, String actor) {
+        MessageTemplate template = getMessageTemplateById(id);
+        messageTemplateRepository.delete(template);
+        log.info("🗑️ MESSAGE TEMPLATE DELETED: '{}' by '{}'", template.getCode(), actor);
+    }
+
+    public com.company.ftthgis.api.system.dto.PreviewMessageTemplateResponse previewMessageTemplate(com.company.ftthgis.api.system.dto.PreviewMessageTemplateRequest req) {
+        Map<String, String> vars = new LinkedHashMap<>();
+
+        if (req.getVariables() != null && !req.getVariables().isEmpty()) {
+            vars.putAll(req.getVariables());
+        } else {
+            // Ambil sample dinamis dari tenant & lisensi aktif yang ada di live database
+            unwrapAndDisableOrgFilter();
+            TenantLicense sampleLic = tenantLicenseRepository.findAll().stream()
+                    .filter(l -> l.getStatus() == LicenseStatus.ACTIVE || l.getStatus() == LicenseStatus.GRACE_PERIOD)
+                    .findFirst()
+                    .orElseGet(() -> tenantLicenseRepository.findAll().stream().findFirst().orElse(null));
+
+            Organization sampleOrg = (sampleLic != null && sampleLic.getOrganization() != null)
+                    ? sampleLic.getOrganization()
+                    : organizationRepository.findAll().stream().findFirst().orElse(null);
+
+            SubscriptionPlan samplePlan = (sampleLic != null && sampleLic.getSubscriptionPlan() != null)
+                    ? sampleLic.getSubscriptionPlan()
+                    : subscriptionPlanRepository.findAll().stream().findFirst().orElse(null);
+
+            String tenantName = sampleOrg != null ? sampleOrg.getName() : "Tenant FTTH";
+            String planName = samplePlan != null ? samplePlan.getName() : "Standard";
+            String dueDate = (sampleLic != null && sampleLic.getValidUntil() != null)
+                    ? sampleLic.getValidUntil().format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
+                    : LocalDateTime.now().plusDays(7).format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
+            String licenseKey = (sampleLic != null && sampleLic.getLicenseKey() != null)
+                    ? sampleLic.getLicenseKey()
+                    : "K2NET-ACTIVE-KEY";
+            String invoiceNumber = "INV-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM")) + "-0001";
+            String invoiceAmount = samplePlan != null ? formatCurrencyIdr(samplePlan.getPrice()) : "Rp 0";
+            String paymentLink = sampleOrg != null
+                    ? "https://" + sampleOrg.getSlug() + ".kdua.net/billing/invoices"
+                    : "https://app.kdua.net/billing";
+            String graceDays = "14";
+
+            if (sampleOrg != null) {
+                billingInvoiceRepository.findByOrganizationIdOrderByCreatedAtDesc(sampleOrg.getId())
+                        .stream()
+                        .findFirst()
+                        .ifPresent(inv -> {
+                            vars.put("invoice_number", inv.getInvoiceNumber());
+                            vars.put("invoice_amount", formatCurrencyIdr(inv.getAmount()));
+                            if (inv.getExternalInvoiceUrl() != null && !inv.getExternalInvoiceUrl().isBlank()) {
+                                vars.put("payment_link", inv.getExternalInvoiceUrl());
+                            }
+                        });
+            }
+
+            // Ambil toleransi grace period dari kebijakan aktif di DB
+            billingPolicyRepository.findByPolicyKey("grace_period_days")
+                    .ifPresent(p -> vars.put("grace_days_remaining", p.getPolicyValue()));
+
+            vars.putIfAbsent("tenant_name", tenantName);
+            vars.putIfAbsent("plan_name", planName);
+            vars.putIfAbsent("due_date", dueDate);
+            vars.putIfAbsent("license_key", licenseKey);
+            vars.putIfAbsent("invoice_number", invoiceNumber);
+            vars.putIfAbsent("invoice_amount", invoiceAmount);
+            vars.putIfAbsent("payment_link", paymentLink);
+            vars.putIfAbsent("grace_days_remaining", graceDays);
+        }
+
+        String renderedSubject = req.getSubjectTemplate();
+        String renderedBody = req.getBodyTemplate();
+
+        for (Map.Entry<String, String> entry : vars.entrySet()) {
+            String keyDouble = "{{" + entry.getKey() + "}}";
+            String keySingle = "{" + entry.getKey() + "}";
+            if (renderedSubject != null) {
+                renderedSubject = renderedSubject.replace(keyDouble, entry.getValue()).replace(keySingle, entry.getValue());
+            }
+            if (renderedBody != null) {
+                renderedBody = renderedBody.replace(keyDouble, entry.getValue()).replace(keySingle, entry.getValue());
+            }
+        }
+
+        return com.company.ftthgis.api.system.dto.PreviewMessageTemplateResponse.builder()
+                .subject(renderedSubject != null ? renderedSubject : "")
+                .body(renderedBody != null ? renderedBody : "")
+                .appliedVariables(vars)
+                .build();
+    }
+
+    private String formatCurrencyIdr(BigDecimal amount) {
+        if (amount == null) return "Rp 0";
+        return "Rp " + java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("id-ID")).format(amount);
     }
 
     private com.company.ftthgis.api.system.dto.TenantSubscriptionResponseDto mapToSubscriptionDto(TenantSubscription sub) {

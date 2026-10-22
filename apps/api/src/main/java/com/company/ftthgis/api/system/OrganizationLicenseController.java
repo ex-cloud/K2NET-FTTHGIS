@@ -1,13 +1,18 @@
 package com.company.ftthgis.api.system;
 
 import com.company.ftthgis.api.system.dto.CreateBillingInvoiceRequest;
+import com.company.ftthgis.api.system.dto.CreateMessageTemplateRequest;
 import com.company.ftthgis.api.system.dto.CreatePlanVersionRequest;
 import com.company.ftthgis.api.system.dto.LicenseExtendRequest;
 import com.company.ftthgis.api.system.dto.LicenseOverviewKpiDto;
 import com.company.ftthgis.api.system.dto.LicenseRevokeRequest;
+import com.company.ftthgis.api.system.dto.PreviewMessageTemplateRequest;
+import com.company.ftthgis.api.system.dto.PreviewMessageTemplateResponse;
+import com.company.ftthgis.api.system.dto.UpdateMessageTemplateRequest;
 import com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
+import com.company.ftthgis.domain.tenant.entity.MessageTemplate;
 import com.company.ftthgis.domain.tenant.entity.PlanVersion;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
 import com.company.ftthgis.service.LicenseManagementService;
@@ -332,6 +337,65 @@ public class OrganizationLicenseController {
     ) {
         String actor = resolveCurrentUserIdentifier();
         return ResponseEntity.ok(licenseManagementService.publishPlanVersion(planId, versionId, actor));
+    }
+
+    /**
+     * Mengambil seluruh template pesan notifikasi multi-channel penagihan (Domain: Catalog / C4).
+     */
+    @GetMapping("/catalog/templates")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('catalog.templates.read') or hasAuthority('catalog.plans.read')")
+    public ResponseEntity<List<MessageTemplate>> getAllMessageTemplates() {
+        return ResponseEntity.ok(licenseManagementService.getAllMessageTemplates());
+    }
+
+    /**
+     * Membuat template pesan penagihan/dunning baru (Domain: Catalog / C4).
+     */
+    @PostMapping("/catalog/templates")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('catalog.templates.manage')")
+    public ResponseEntity<MessageTemplate> createMessageTemplate(
+            @Valid @RequestBody CreateMessageTemplateRequest request
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        return ResponseEntity.status(HttpStatus.CREATED).body(licenseManagementService.createMessageTemplate(request, actor));
+    }
+
+    /**
+     * Memperbarui konten template pesan penagihan (Domain: Catalog / C4).
+     */
+    @PutMapping("/catalog/templates/{id}")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('catalog.templates.manage')")
+    public ResponseEntity<MessageTemplate> updateMessageTemplate(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateMessageTemplateRequest request
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        return ResponseEntity.ok(licenseManagementService.updateMessageTemplate(id, request, actor));
+    }
+
+    /**
+     * Menghapus template pesan penagihan (Domain: Catalog / C4).
+     */
+    @DeleteMapping("/catalog/templates/{id}")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('catalog.templates.manage')")
+    public ResponseEntity<Map<String, Object>> deleteMessageTemplate(@PathVariable UUID id) {
+        String actor = resolveCurrentUserIdentifier();
+        licenseManagementService.deleteMessageTemplate(id, actor);
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("success", true);
+        res.put("id", id);
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * Menyimulasikan preview render template pesan dengan variabel dinamis (Domain: Catalog / C4).
+     */
+    @PostMapping("/catalog/templates/preview")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('catalog.templates.read') or hasAuthority('catalog.plans.read')")
+    public ResponseEntity<PreviewMessageTemplateResponse> previewMessageTemplate(
+            @Valid @RequestBody PreviewMessageTemplateRequest request
+    ) {
+        return ResponseEntity.ok(licenseManagementService.previewMessageTemplate(request));
     }
 
     /**

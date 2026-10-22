@@ -82,6 +82,9 @@ const BillingInvoicesPage = lazyWithRetry(() =>
 const BillingPoliciesPage = lazyWithRetry(() =>
   import("./app/(dashboard)/catalog/policies/page").then((m) => ({ default: m.default }))
 );
+const MessageTemplatesPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/catalog/templates/page").then((m) => ({ default: m.default }))
+);
 const OrganizationSlugPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/[slug]/page").then((m) => ({ default: m.default }))
 );
@@ -413,6 +416,7 @@ const orgImpersonationRoute = createRoute({ getParentRoute: () => authenticatedL
 const catalogPlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog/plans", component: () => <Lazy><LicensePlansPage /></Lazy> });
 const catalogPackagesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog/packages", component: () => <Lazy><PackagesPage /></Lazy> });
 const catalogPoliciesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog/policies", component: () => <Lazy><BillingPoliciesPage /></Lazy> });
+const catalogTemplatesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog/templates", component: () => <Lazy><MessageTemplatesPage /></Lazy> });
 const catalogRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/catalog", component: () => <Navigate to="/catalog/plans" /> });
 
 // 2. Billing Domain
@@ -533,7 +537,7 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   // Orgs
   orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
   // 3-Domain Architecture: Catalog, Billing, Licensing
-  catalogPlansRoute, catalogPackagesRoute, catalogPoliciesRoute, catalogRedirectRoute,
+  catalogPlansRoute, catalogPackagesRoute, catalogPoliciesRoute, catalogTemplatesRoute, catalogRedirectRoute,
   billingOverviewRoute, billingSubscriptionsRoute, billingInvoicesRoute, billingRenewalsRoute,
   licensingLicensesRoute, licensingRevocationsRoute, licensingRedirectRoute,
   // Backwards Compatibility Redirects & Aliases (Sheet 3)
