@@ -1,7 +1,7 @@
 import * as React from "react";
 import {
   PageHero,
-  Card,
+  MetricCard,
   Button,
   Badge,
   Input,
@@ -25,20 +25,23 @@ import {
   Sliders,
   AlertOctagon,
   CheckCircle2,
+  RotateCcw,
 } from "lucide-react";
 import {
   useAllLicenses,
   type LicenseItem,
 } from "@/hooks/useOrganizationLicenses";
 import { LicenseRevokeModal } from "@/components/licenses/LicenseRevokeModal";
+import { LicenseReinstateModal } from "@/components/licenses/LicenseReinstateModal";
 import { EditLicenseModal } from "@/components/licenses/EditLicenseModal";
 
 export default function LicenseRevocationsPage() {
   const { t } = useTranslation();
   const { data: licenses = [], isLoading, isFetching, refetch } = useAllLicenses();
 
-  const [search, setSearch] = React.useState<string>("" );
+  const [search, setSearch] = React.useState<string>("");
   const [revokeModalOpen, setRevokeModalOpen] = React.useState<boolean>(false);
+  const [reinstateModalOpen, setReinstateModalOpen] = React.useState<boolean>(false);
   const [editModalOpen, setEditModalOpen] = React.useState<boolean>(false);
   const [selectedLicense, setSelectedLicense] = React.useState<LicenseItem | null>(null);
 
@@ -79,6 +82,11 @@ export default function LicenseRevocationsPage() {
     setEditModalOpen(true);
   };
 
+  const handleOpenReinstate = (item: LicenseItem) => {
+    setSelectedLicense(item);
+    setReinstateModalOpen(true);
+  };
+
   const handleTriggerKillSwitch = () => {
     // If no license preselected, take first active license or null
     const firstActive = licenses.find((l) => l.status === "ACTIVE") || null;
@@ -92,113 +100,81 @@ export default function LicenseRevocationsPage() {
       <PageHero
         bordered={false}
         className="pb-0"
-          eyebrow={t("license.hero_eyebrow")}
-          title={t("license.revocations.title")}
-          icon={Ban}
-          subtitle={t("license.revocations.desc")}
-          meta={
-            <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground/90 font-medium">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-foreground font-mono">{totalRevoked}</span>
-                <span>{t("license.revocations.total_revoked")}</span>
-              </div>
-              <span className="text-muted-foreground/30 px-1">/</span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-foreground font-mono">{totalSuspended}</span>
-                <span>{t("license.revocations.total_suspended")}</span>
-              </div>
-              <span className="text-muted-foreground/30 px-1">/</span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-foreground font-mono">{totalActive}</span>
-                <span>{t("license.revocations.active_compliant")}</span>
-              </div>
+        eyebrow={t("license.hero_eyebrow")}
+        title={t("license.revocations.title")}
+        icon={Ban}
+        subtitle={t("license.revocations.desc")}
+        meta={
+          <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground/90 font-medium">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-foreground font-mono">{totalRevoked}</span>
+              <span>{t("license.revocations.total_revoked")}</span>
             </div>
-          }
-          actions={
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-                disabled={isFetching}
-                className="gap-1.5 text-xs font-medium"
-              >
-                <RefreshCcw className={`size-3.5 ${isFetching ? "animate-spin" : ""}`} />
-                <span>{t("common.refresh")}</span>
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleTriggerKillSwitch}
-                className="gap-1.5 text-xs font-medium"
-              >
-                <ShieldAlert className="size-3.5" />
-                <span>{t("license.revocations.trigger_killswitch")}</span>
-              </Button>
+            <span className="text-muted-foreground/30 px-1">/</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-foreground font-mono">{totalSuspended}</span>
+              <span>{t("license.revocations.total_suspended")}</span>
             </div>
-          }
-        />
+            <span className="text-muted-foreground/30 px-1">/</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-foreground font-mono">{totalActive}</span>
+              <span>{t("license.revocations.active_compliant")}</span>
+            </div>
+          </div>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="gap-1.5 text-xs font-medium"
+            >
+              <RefreshCcw className={`size-3.5 ${isFetching ? "animate-spin" : ""}`} />
+              <span>{t("common.refresh")}</span>
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleTriggerKillSwitch}
+              className="gap-1.5 text-xs font-medium"
+            >
+              <ShieldAlert className="size-3.5" />
+              <span>{t("license.revocations.trigger_killswitch")}</span>
+            </Button>
+          </div>
+        }
+      />
 
       {/* Main Content Area */}
       <div className="w-full space-y-5">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card glowingEffect className="p-4 flex flex-col justify-between gap-3 bg-card border-border">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
-                {t("license.revocations.total_revoked")}
-              </span>
-              <div className="h-6 w-6 rounded-lg bg-foreground/5 border border-border flex items-center justify-center text-foreground">
-                <AlertOctagon className="h-3.5 w-3.5" />
-              </div>
-            </div>
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
-                {isLoading ? "—" : totalRevoked}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                Permanent runtime revocation
-              </p>
-            </div>
-          </Card>
-
-          <Card glowingEffect className="p-4 flex flex-col justify-between gap-3 bg-card border-border">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
-                {t("license.revocations.total_suspended")}
-              </span>
-              <div className="h-6 w-6 rounded-lg bg-foreground/5 border border-border flex items-center justify-center text-foreground">
-                <Ban className="h-3.5 w-3.5" />
-              </div>
-            </div>
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
-                {isLoading ? "—" : totalSuspended}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                Temporary non-payment lock
-              </p>
-            </div>
-          </Card>
-
-          <Card glowingEffect className="p-4 flex flex-col justify-between gap-3 bg-card border-border">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
-                {t("license.revocations.active_compliant")}
-              </span>
-              <div className="h-6 w-6 rounded-lg bg-foreground/5 border border-border flex items-center justify-center text-foreground">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              </div>
-            </div>
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
-                {isLoading ? "—" : totalActive}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                Healthy enterprise tenant contracts
-              </p>
-            </div>
-          </Card>
+          <MetricCard
+            variant="groove"
+            loading={isLoading}
+            label={t("license.revocations.total_revoked")}
+            value={totalRevoked}
+            icon={AlertOctagon}
+            description={t("license.revocations.kpi_revoked_desc")}
+          />
+          <MetricCard
+            variant="groove"
+            loading={isLoading}
+            label={t("license.revocations.total_suspended")}
+            value={totalSuspended}
+            icon={Ban}
+            description={t("license.revocations.kpi_suspended_desc")}
+          />
+          <MetricCard
+            variant="groove"
+            loading={isLoading}
+            label={t("license.revocations.active_compliant")}
+            value={totalActive}
+            icon={CheckCircle2}
+            description={t("license.revocations.kpi_active_desc")}
+          />
         </div>
 
         {/* Search Toolbar */}
@@ -307,6 +283,16 @@ export default function LicenseRevocationsPage() {
                         <Button
                           variant="outline"
                           size="xs"
+                          onClick={() => handleOpenReinstate(lic)}
+                          className="h-6 px-2 text-[11px] font-medium gap-1 text-primary hover:text-primary hover:bg-primary/10 border-primary/30"
+                          title={t("license.actions.reinstate_license")}
+                        >
+                          <RotateCcw className="size-3" />
+                          <span>{t("license.actions.reinstate_license")}</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="xs"
                           onClick={() => handleOpenEdit(lic)}
                           className="h-6 px-1.5 text-[11px] font-medium gap-1 text-muted-foreground hover:text-foreground"
                           title={t("license.actions.edit_details")}
@@ -328,6 +314,13 @@ export default function LicenseRevocationsPage() {
         license={selectedLicense}
         open={revokeModalOpen}
         onOpenChange={setRevokeModalOpen}
+        onSuccess={() => refetch()}
+      />
+      <LicenseReinstateModal
+        license={selectedLicense}
+        open={reinstateModalOpen}
+        onOpenChange={setReinstateModalOpen}
+        onSuccess={() => refetch()}
       />
       <EditLicenseModal
         license={selectedLicense}

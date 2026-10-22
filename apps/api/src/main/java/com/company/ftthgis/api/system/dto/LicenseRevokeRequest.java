@@ -17,4 +17,6 @@ public class LicenseRevokeRequest {
 
     @NotBlank(message = "Alasan pencabutan lisensi wajib diisi")
     private String reason;
+
+    private String secondApprover;
 }

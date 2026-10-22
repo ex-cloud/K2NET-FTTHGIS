@@ -261,7 +261,7 @@ public class OrganizationLicenseControllerTest {
                 .andExpect(jsonPath("$.reason").value("Wanprestasi kontrak tagihan tertunggak > 90 hari"));
 
         verify(licenseManagementService, times(1))
-                .revokeLicense(eq(testLicenseId), eq("Wanprestasi kontrak tagihan tertunggak > 90 hari"), any());
+                .revokeLicense(eq(testLicenseId), eq("Wanprestasi kontrak tagihan tertunggak > 90 hari"), any(), any());
     }
 
     @Test
@@ -274,7 +274,48 @@ public class OrganizationLicenseControllerTest {
                         .content(invalidPayload))
                 .andExpect(status().isBadRequest());
 
-        verify(licenseManagementService, never()).revokeLicense(any(), any(), any());
+        verify(licenseManagementService, never()).revokeLicense(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("POST /organizations/{orgId}/licenses/{licenseId}/reinstate - Sukses memulihkan lisensi (Reinstate)")
+    public void testReinstateLicense_Success() throws Exception {
+        TenantLicense reinstatedLicense = TenantLicense.builder()
+                .id(testLicenseId)
+                .licenseKey("K2NET-REINSTATED-KEY-1234")
+                .validUntil(LocalDateTime.now().plusDays(30))
+                .status(com.company.ftthgis.domain.tenant.entity.LicenseStatus.ACTIVE)
+                .build();
+
+        when(licenseManagementService.reinstateLicense(eq(testLicenseId), anyString(), any()))
+                .thenReturn(reinstatedLicense);
+
+        String payload = "{\"reason\":\"Sengketa tagihan selesai dibayar penuh via transfer manual\"}";
+
+        mockMvc.perform(post("/api/v1/system/organizations/" + testOrgId + "/licenses/" + testLicenseId + "/reinstate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.licenseId").value(testLicenseId.toString()))
+                .andExpect(jsonPath("$.licenseKey").value("K2NET-REINSTATED-KEY-1234"))
+                .andExpect(jsonPath("$.reason").value("Sengketa tagihan selesai dibayar penuh via transfer manual"));
+
+        verify(licenseManagementService, times(1))
+                .reinstateLicense(eq(testLicenseId), eq("Sengketa tagihan selesai dibayar penuh via transfer manual"), any());
+    }
+
+    @Test
+    @DisplayName("POST /organizations/{orgId}/licenses/{licenseId}/reinstate - Ditolak jika alasan kosong (400 Bad Request)")
+    public void testReinstateLicense_BlankReason() throws Exception {
+        String invalidPayload = "{\"reason\":\"\"}";
+
+        mockMvc.perform(post("/api/v1/system/organizations/" + testOrgId + "/licenses/" + testLicenseId + "/reinstate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidPayload))
+                .andExpect(status().isBadRequest());
+
+        verify(licenseManagementService, never()).reinstateLicense(any(), any(), any());
     }
 
     @Test

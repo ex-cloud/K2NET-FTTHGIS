@@ -107,6 +107,13 @@ export interface RevokeLicensePayload {
   organizationId: string;
   licenseId: string;
   reason: string;
+  secondApprover?: string;
+}
+
+export interface ReinstateLicensePayload {
+  organizationId: string;
+  licenseId: string;
+  reason: string;
 }
 
 export interface UpdateLicensePayload {
@@ -290,7 +297,10 @@ export function useRevokeLicense() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reason: payload.reason }),
+          body: JSON.stringify({
+            reason: payload.reason,
+            secondApprover: payload.secondApprover,
+          }),
           token: session?.accessToken ?? undefined,
         }
       );
@@ -298,6 +308,37 @@ export function useRevokeLicense() {
       if (!res.ok) {
         const errorText = await res.text().catch(() => "Unknown error");
         throw new Error(`Failed to revoke license: ${res.status} - ${errorText}`);
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["license-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["all-licenses"] });
+      queryClient.invalidateQueries({ queryKey: ["org-licenses", variables.organizationId] });
+    },
+  });
+}
+
+export function useReinstateLicense() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: ReinstateLicensePayload) => {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(
+        `${baseUrl}/system/organizations/${payload.organizationId}/licenses/${payload.licenseId}/reinstate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: payload.reason }),
+          token: session?.accessToken ?? undefined,
+        }
+      );
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "Unknown error");
+        throw new Error(`Failed to reinstate license: ${res.status} - ${errorText}`);
       }
       return res.json();
     },

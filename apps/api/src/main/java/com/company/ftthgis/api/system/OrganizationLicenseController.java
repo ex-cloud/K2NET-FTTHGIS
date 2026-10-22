@@ -5,6 +5,7 @@ import com.company.ftthgis.api.system.dto.CreateMessageTemplateRequest;
 import com.company.ftthgis.api.system.dto.CreatePlanVersionRequest;
 import com.company.ftthgis.api.system.dto.LicenseExtendRequest;
 import com.company.ftthgis.api.system.dto.LicenseOverviewKpiDto;
+import com.company.ftthgis.api.system.dto.LicenseReinstateRequest;
 import com.company.ftthgis.api.system.dto.LicenseRevokeRequest;
 import com.company.ftthgis.api.system.dto.PreviewMessageTemplateRequest;
 import com.company.ftthgis.api.system.dto.PreviewMessageTemplateResponse;
@@ -127,7 +128,7 @@ public class OrganizationLicenseController {
     }
 
     /**
-     * Mencabut lisensi tenant secara darurat (Emergency Kill-Switch).
+     * Mencabut lisensi tenant secara darurat (Emergency Kill-Switch dengan Two-Person Approval Gate).
      */
     @PostMapping("/organizations/{orgId}/licenses/{licenseId}/revoke")
     @PreAuthorize("hasAuthority('system.organizations.manage')")
@@ -137,10 +138,10 @@ public class OrganizationLicenseController {
             @Valid @RequestBody LicenseRevokeRequest request
     ) {
         String revokedBy = resolveCurrentUserIdentifier();
-        log.warn("🚨 SUPER ADMIN ACTION: Revoking license '{}' for org '{}' by '{}'. Reason: {}",
-                licenseId, orgId, revokedBy, request.getReason());
+        log.warn("🚨 SUPER ADMIN ACTION: Revoking license '{}' for org '{}' by '{}' (Second Approver: '{}'). Reason: {}",
+                licenseId, orgId, revokedBy, request.getSecondApprover(), request.getReason());
 
-        licenseManagementService.revokeLicense(licenseId, request.getReason(), revokedBy);
+        licenseManagementService.revokeLicense(licenseId, request.getReason(), revokedBy, request.getSecondApprover());
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("status", "REVOKED");
@@ -148,6 +149,37 @@ public class OrganizationLicenseController {
         result.put("organizationId", orgId.toString());
         result.put("reason", request.getReason());
         result.put("revokedBy", Objects.requireNonNullElse(revokedBy, "SUPER_ADMIN"));
+        if (request.getSecondApprover() != null && !request.getSecondApprover().isBlank()) {
+            result.put("secondApprover", request.getSecondApprover());
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Memulihkan lisensi yang dicabut atau disuspend kembali ke status ACTIVE (Reinstate License).
+     */
+    @PostMapping("/organizations/{orgId}/licenses/{licenseId}/reinstate")
+    @PreAuthorize("hasAuthority('system.organizations.manage')")
+    public ResponseEntity<Map<String, Object>> reinstateLicense(
+            @PathVariable UUID orgId,
+            @PathVariable UUID licenseId,
+            @Valid @RequestBody LicenseReinstateRequest request
+    ) {
+        String reinstatedBy = resolveCurrentUserIdentifier();
+        log.info("🛡️ SUPER ADMIN ACTION: Reinstating license '{}' for org '{}' by '{}'. Reason: {}",
+                licenseId, orgId, reinstatedBy, request.getReason());
+
+        TenantLicense license = licenseManagementService.reinstateLicense(licenseId, request.getReason(), reinstatedBy);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("status", "ACTIVE");
+        result.put("licenseId", licenseId.toString());
+        result.put("organizationId", orgId.toString());
+        result.put("licenseKey", license.getLicenseKey());
+        result.put("validUntil", license.getValidUntil());
+        result.put("reason", request.getReason());
+        result.put("reinstatedBy", Objects.requireNonNullElse(reinstatedBy, "SUPER_ADMIN"));
 
         return ResponseEntity.ok(result);
     }

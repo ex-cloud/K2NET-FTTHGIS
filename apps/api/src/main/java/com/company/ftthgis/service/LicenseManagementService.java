@@ -616,25 +616,78 @@ public class LicenseManagementService {
     }
 
     /**
-     * Mencabut lisensi secara permanen (Kill Switch) oleh Super Admin.
+     * Mencabut lisensi secara permanen (Kill Switch) oleh Super Admin dengan Two-Person Approval Gate.
      */
     @Transactional
     public void revokeLicense(UUID licenseId, String reason, String revokedBy) {
+        revokeLicense(licenseId, reason, revokedBy, null);
+    }
+
+    @Transactional
+    public void revokeLicense(UUID licenseId, String reason, String revokedBy, String secondApprover) {
         unwrapAndDisableOrgFilter();
         try {
             TenantLicense license = tenantLicenseRepository.findById(licenseId)
                     .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
 
             license.setStatus(LicenseStatus.REVOKED);
+            String approverInfo = (secondApprover != null && !secondApprover.isBlank())
+                    ? " [Two-Person Approval Gate: Authorized by " + secondApprover + "]"
+                    : "";
             license.setNotes((license.getNotes() != null ? license.getNotes() + "\n" : "") +
-                    "REVOKED by " + revokedBy + ": " + reason + " at " + LocalDateTime.now());
+                    "REVOKED by " + revokedBy + approverInfo + ": " + reason + " at " + LocalDateTime.now());
 
             tenantLicenseRepository.save(license);
-            log.warn("🚨 LICENSE REVOKED: License '{}' revoked by {}: {}",
-                    license.getLicenseKey(), revokedBy, reason);
+            log.warn("🚨 LICENSE REVOKED: License '{}' revoked by {}{}: {}",
+                    license.getLicenseKey(), revokedBy, approverInfo, reason);
 
             auditLog(license.getOrganization().getSlug(), "LICENSE_REVOKED", license.getOrganization().getId().toString(),
-                    "License " + maskKey(license.getLicenseKey()) + " revoked: " + reason);
+                    "License " + maskKey(license.getLicenseKey()) + " revoked by " + revokedBy + approverInfo + ": " + reason);
+        } finally {
+            OrganizationContext.setFilterBypassed(false);
+        }
+    }
+
+    /**
+     * Memulihkan lisensi yang dicabut (REVOKED) atau ditangguhkan (SUSPENDED) kembali menjadi ACTIVE.
+     */
+    @Transactional
+    public TenantLicense reinstateLicense(UUID licenseId, String reason, String reinstatedBy) {
+        unwrapAndDisableOrgFilter();
+        try {
+            TenantLicense license = tenantLicenseRepository.findById(licenseId)
+                    .orElseThrow(() -> new NoSuchElementException("Lisensi tidak ditemukan: " + licenseId));
+
+            LicenseStatus prevStatus = license.getStatus();
+            license.setStatus(LicenseStatus.ACTIVE);
+
+            // Jika validUntil sudah lewat, perpanjang minimal 30 hari ke depan agar aktif operasional
+            if (license.getValidUntil() == null || license.getValidUntil().isBefore(LocalDateTime.now())) {
+                license.setValidUntil(LocalDateTime.now().plusDays(30));
+            }
+
+            // Buat ulang tanda tangan kriptografi digital HMAC-SHA256 yang valid
+            String newSig = licenseCryptoService.signLicenseMetadata(
+                    license.getOrganization() != null ? license.getOrganization().getId() : null,
+                    license.getSubscriptionPlan() != null ? license.getSubscriptionPlan().getName() : "Enterprise",
+                    license.getLicenseKey(),
+                    license.getValidFrom(),
+                    license.getValidUntil(),
+                    license.getMachineFingerprint()
+            );
+            license.setLicenseSignature(newSig);
+
+            license.setNotes((license.getNotes() != null ? license.getNotes() + "\n" : "") +
+                    "REINSTATED from " + prevStatus + " by " + reinstatedBy + ": " + reason + " at " + LocalDateTime.now());
+
+            TenantLicense saved = tenantLicenseRepository.save(license);
+            log.info("🛡️ LICENSE REINSTATED: License '{}' reinstated to ACTIVE from {} by {}: {}",
+                    license.getLicenseKey(), prevStatus, reinstatedBy, reason);
+
+            auditLog(license.getOrganization().getSlug(), "LICENSE_REINSTATED", license.getOrganization().getId().toString(),
+                    "License " + maskKey(license.getLicenseKey()) + " reinstated from " + prevStatus + ": " + reason + " by " + reinstatedBy);
+
+            return saved;
         } finally {
             OrganizationContext.setFilterBypassed(false);
         }
