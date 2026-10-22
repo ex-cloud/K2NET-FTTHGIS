@@ -305,9 +305,9 @@ function PackageActionToolbar({
 
         <Button
           size="sm"
-          variant="ghost"
+          variant="outline"
           onClick={() => onSelectForDetail(pkg)}
-          className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-foreground"
+          className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted/50"
           title={t("packages.btn_view_details")}
         >
           <Info className="h-3.5 w-3.5" />

@@ -92,6 +92,7 @@ public class LicenseMetricsPublisher {
     }
 
     @EventListener(ApplicationReadyEvent.class)
+    @Transactional(readOnly = true)
     public void onStartup() {
         log.info("📊 LICENSE TELEMETRY: Initializing Micrometer gauges on application startup...");
         publishMetrics();

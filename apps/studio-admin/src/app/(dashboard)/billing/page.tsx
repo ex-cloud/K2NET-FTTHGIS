@@ -1,5 +1,5 @@
 import * as React from "react";
-import { PageHero, Card, Button, PageLayout } from "@k2net/ui";
+import { PageHero, Card, Button, PageLayout, Badge } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import {
   DollarSign,
@@ -327,9 +327,16 @@ export default function BillingOverviewPage() {
                         <div className="font-semibold text-foreground">
                           {sub.organizationName || sub.organizationSlug}
                         </div>
-                        <span className="font-mono text-[10px] text-muted-foreground">
-                          {sub.organizationSlug}
-                        </span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="font-mono text-[10px] text-muted-foreground">
+                            {sub.organizationSlug}
+                          </span>
+                          {sub.test && (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 border-amber-500/40 text-amber-500 bg-amber-500/10">
+                              {t("billing.badge_test")}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2 px-2.5 font-mono text-foreground font-medium">
                         {sub.planName}

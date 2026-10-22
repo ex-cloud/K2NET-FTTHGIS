@@ -39,6 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.hasSize;
 
 @ExtendWith(MockitoExtension.class)
 public class OrganizationLicenseControllerTest {
@@ -674,6 +675,28 @@ public class OrganizationLicenseControllerTest {
                 .andExpect(jsonPath("$.status").value("SENT"));
 
         verify(licenseNotificationService, times(1)).retryFailedNotification(eq(logId), anyString());
+    }
+
+    @Test
+    @DisplayName("GET /plans/{planId}/versions - Sukses mengambil riwayat versi paket")
+    public void testGetPlanVersions_Success() throws Exception {
+        UUID planId = UUID.randomUUID();
+        com.company.ftthgis.domain.tenant.entity.PlanVersion mockVersion = com.company.ftthgis.domain.tenant.entity.PlanVersion.builder()
+                .id(UUID.randomUUID())
+                .version("v1.0.0")
+                .status("ACTIVE")
+                .priceMonthly(java.math.BigDecimal.valueOf(2500000))
+                .build();
+
+        when(licenseManagementService.getPlanVersions(eq(planId))).thenReturn(List.of(mockVersion));
+
+        mockMvc.perform(get("/api/v1/system/plans/" + planId + "/versions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].version").value("v1.0.0"))
+                .andExpect(jsonPath("$[0].status").value("ACTIVE"));
+
+        verify(licenseManagementService, times(1)).getPlanVersions(eq(planId));
     }
 
     @Test

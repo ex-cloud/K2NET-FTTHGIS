@@ -13,6 +13,7 @@ import { useTranslation } from "@k2net/i18n";
 import { Receipt, Building2, Calendar, CreditCard, DollarSign } from "lucide-react";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 import { useCreateBillingInvoice } from "@/hooks/useBillingInvoices";
+import { formatIdr } from "@/lib/formatters";
 
 export interface CreateInvoiceModalProps {
   open: boolean;
@@ -168,6 +169,9 @@ export function CreateInvoiceModal({
                 disabled={createInvoiceMutation.isPending}
                 className="w-full h-8 px-2.5 rounded-md border border-input bg-background text-xs text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-ring"
               />
+              <span className="text-[11px] font-mono font-medium text-primary block mt-0.5">
+                {formatIdr(amount)}
+              </span>
             </div>
 
             <div className="space-y-1.5">

@@ -99,7 +99,7 @@ export default function TenantSubscriptionsPage() {
       <PageHero
         bordered={false}
         className="pb-0"
-        eyebrow={t("billing.subscriptions_eyebrow")}
+        eyebrow="BILLING"
         title={t("billing.subscriptions_title")}
         icon={Layers}
         subtitle={t("billing.subscriptions_desc")}

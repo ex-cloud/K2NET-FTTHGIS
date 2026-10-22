@@ -35,8 +35,8 @@ export default function LicensePlansPage() {
       <PageHero
         bordered={false}
         className="pb-0"
-          eyebrow={t("license.hero_eyebrow")}
-          title={t("nav.plan_tiers_quotas")}
+        eyebrow="CATALOG"
+        title={t("nav.plan_tiers_quotas")}
           icon={Sliders}
           subtitle={t("license.plans.subtitle")}
           meta={

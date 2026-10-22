@@ -145,7 +145,7 @@ export default function BillingInvoicesPage() {
       <PageHero
         bordered={false}
         className="pb-0"
-        eyebrow={t("nav.billing_ops", { ns: "nav" })}
+        eyebrow="BILLING"
         title={t("billing.invoices_title")}
         icon={Receipt}
         subtitle={t("billing.invoices_page_desc")}

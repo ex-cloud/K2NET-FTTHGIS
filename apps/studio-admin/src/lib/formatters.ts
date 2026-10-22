@@ -5,13 +5,13 @@
 
 export function formatIdr(val?: number | null): string {
   if (typeof val !== "number" || isNaN(val) || val <= 0) return "Rp 0";
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
   })
     .format(val)
-    .replace("IDR", "Rp");
+    .replace(/\s+/g, " ");
 }
 
 /**

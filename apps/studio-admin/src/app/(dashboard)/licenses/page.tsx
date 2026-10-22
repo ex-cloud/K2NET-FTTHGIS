@@ -41,8 +41,8 @@ export default function LicensesPage() {
       <PageHero
         bordered={false}
         className="pb-0"
-          eyebrow={t("license.hero_eyebrow")}
-          title={t("license.cmd_center_title")}
+        eyebrow="LICENSING"
+        title={t("license.cmd_center_title")}
           icon={KeyRound}
           subtitle={t("license.cmd_center_desc")}
           meta={

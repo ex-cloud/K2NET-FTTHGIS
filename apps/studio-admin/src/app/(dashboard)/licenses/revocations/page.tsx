@@ -100,7 +100,7 @@ export default function LicenseRevocationsPage() {
       <PageHero
         bordered={false}
         className="pb-0"
-        eyebrow={t("license.hero_eyebrow")}
+        eyebrow="LICENSING"
         title={t("license.revocations.title")}
         icon={Ban}
         subtitle={t("license.revocations.desc")}

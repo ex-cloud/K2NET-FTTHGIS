@@ -152,7 +152,7 @@ export default function BillingRenewalsPage() {
       <PageHero
         bordered={false}
         className="pb-0"
-        eyebrow={t("nav.billing_ops", { ns: "nav" })}
+        eyebrow="BILLING"
         title={t("billing.renewals_title")}
         icon={Bell}
         subtitle={t("billing.renewals_page_desc")}

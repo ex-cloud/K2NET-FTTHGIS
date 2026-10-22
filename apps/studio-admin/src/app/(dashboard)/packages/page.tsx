@@ -179,8 +179,8 @@ export default function PackagesPage() {
       <PageHero
         bordered={false}
         className="pb-0"
-          eyebrow={t("packages.hero_eyebrow")}
-          title={t("packages.cmd_center_title")}
+        eyebrow="CATALOG"
+        title={t("packages.cmd_center_title")}
           icon={Boxes}
           subtitle={t("packages.cmd_center_desc")}
           actions={

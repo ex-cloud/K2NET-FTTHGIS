@@ -53,7 +53,7 @@ export default function MessageTemplatesPage() {
       <PageHero
         bordered={false}
         className="pb-0"
-        eyebrow={t("license.hero_eyebrow")}
+        eyebrow="CATALOG"
         title={t("nav.message_templates")}
         icon={MessageSquare}
         subtitle={t("billing.templates_subtitle")}
