@@ -42,6 +42,7 @@ public class PlanVersion extends AuditableEntity {
     @JoinColumn(name = "plan_id", nullable = false)
     private SubscriptionPlan plan;
 
+    @Transient
     @com.fasterxml.jackson.annotation.JsonProperty("planId")
     public UUID getPlanId() {
         return plan != null ? plan.getId() : null;
