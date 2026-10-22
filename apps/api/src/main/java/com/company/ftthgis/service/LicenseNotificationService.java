@@ -406,4 +406,107 @@ public class LicenseNotificationService {
         }
         return key.substring(0, 8) + "-****-" + key.substring(key.length() - 4);
     }
+
+    /**
+     * Mengambil daftar tenant yang berada dalam antrean dunning & renewal (Super Admin).
+     */
+    @Transactional(readOnly = true)
+    public List<com.company.ftthgis.api.system.dto.RenewalQueueItemDto> getRenewalQueue() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime threshold = now.plusDays(30);
+
+        List<TenantLicense> candidates = licenseRepository.findAll().stream()
+                .filter(lic -> {
+                    if (lic.getOrganization() != null && "default".equalsIgnoreCase(lic.getOrganization().getSlug())) {
+                        return false;
+                    }
+                    if (lic.getStatus() == LicenseStatus.GRACE_PERIOD || lic.getStatus() == LicenseStatus.RESTRICTED_READ_ONLY) {
+                        return true;
+                    }
+                    if (lic.getStatus() == LicenseStatus.ACTIVE && lic.getValidUntil() != null && lic.getValidUntil().isBefore(threshold)) {
+                        return true;
+                    }
+                    return false;
+                })
+                .sorted((a, b) -> {
+                    if (a.getValidUntil() == null) return 1;
+                    if (b.getValidUntil() == null) return -1;
+                    return a.getValidUntil().compareTo(b.getValidUntil());
+                })
+                .toList();
+
+        return candidates.stream().map(lic -> {
+            Organization org = lic.getOrganization();
+            long daysRemaining = lic.getValidUntil() != null 
+                    ? java.time.temporal.ChronoUnit.DAYS.between(now, lic.getValidUntil())
+                    : 0;
+
+            String stage;
+            if (lic.getStatus() == LicenseStatus.RESTRICTED_READ_ONLY) {
+                stage = "RESTRICTED_READ_ONLY";
+            } else if (lic.getStatus() == LicenseStatus.GRACE_PERIOD || daysRemaining < 0) {
+                stage = "GRACE_PERIOD";
+            } else if (daysRemaining <= 1) {
+                stage = "EXPIRING_1D";
+            } else if (daysRemaining <= 7) {
+                stage = "EXPIRING_7D";
+            } else {
+                stage = "EXPIRING_30D";
+            }
+
+            return com.company.ftthgis.api.system.dto.RenewalQueueItemDto.builder()
+                    .licenseId(lic.getId())
+                    .organizationId(org != null ? org.getId() : null)
+                    .organizationName(org != null ? org.getName() : "Unknown")
+                    .organizationSlug(org != null ? org.getSlug() : null)
+                    .planName(lic.getSubscriptionPlan() != null ? lic.getSubscriptionPlan().getName() : "STANDARD")
+                    .status(lic.getStatus())
+                    .validUntil(lic.getValidUntil())
+                    .daysRemaining(daysRemaining)
+                    .dunningStage(stage)
+                    .lastNotifiedStage(lic.getLastNotifiedStage())
+                    .lastNotifiedAt(lic.getLastNotifiedAt())
+                    .billingContactEmail(resolveRecipientEmail(lic, org))
+                    .billingContactPhone(resolveRecipientPhone(lic))
+                    .build();
+        }).toList();
+    }
+
+    /**
+     * Melakukan pengiriman ulang secara manual atas notifikasi pengingat yang berstatus GAGAL (Super Admin).
+     */
+    @Transactional
+    public LicenseNotificationLogDto retryFailedNotification(UUID logId, String actor) {
+        LicenseNotificationLog oldLog = logRepository.findById(logId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Notification log not found: " + logId));
+
+        TenantLicense lic = oldLog.getLicense();
+        if (lic == null) {
+            throw new IllegalStateException("Cannot retry notification without associated license");
+        }
+
+        Organization org = lic.getOrganization();
+        String orgName = org != null ? org.getName() : "Tenant FTTH";
+        LicenseNotificationStage stage = oldLog.getStage() != null ? oldLog.getStage() : LicenseNotificationStage.MANUAL_REMINDER;
+
+        if ("EMAIL".equalsIgnoreCase(oldLog.getChannel())) {
+            String targetEmail = resolveRecipientEmail(lic, org);
+            if (targetEmail != null && !targetEmail.isBlank()) {
+                sendEmailNotification(lic, orgName, targetEmail, stage, "RETRY:" + actor);
+            } else {
+                throw new IllegalStateException("Recipient email not configured for organization");
+            }
+        } else if ("WHATSAPP".equalsIgnoreCase(oldLog.getChannel())) {
+            String targetPhone = resolveRecipientPhone(lic);
+            if (targetPhone != null && !targetPhone.isBlank()) {
+                sendWhatsAppNotification(lic, orgName, targetPhone, stage, "RETRY:" + actor);
+            } else {
+                throw new IllegalStateException("Recipient phone not configured for organization");
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported notification channel: " + oldLog.getChannel());
+        }
+
+        return logRepository.findAllByOrderBySentAtDesc().stream().findFirst().map(this::mapToDto).orElse(mapToDto(oldLog));
+    }
 }

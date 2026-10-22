@@ -354,6 +354,28 @@ public class OrganizationLicenseController {
         return ResponseEntity.ok(licenseManagementService.cancelInvoice(id, actor, reason));
     }
 
+    /**
+     * Mengambil daftar tenant dalam antrean renewal dan risiko dunning (Super Admin).
+     */
+    @GetMapping("/billing/dunning/queue")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('billing.read')")
+    public ResponseEntity<List<com.company.ftthgis.api.system.dto.RenewalQueueItemDto>> getRenewalQueue() {
+        return ResponseEntity.ok(licenseNotificationService.getRenewalQueue());
+    }
+
+    /**
+     * Mengirim ulang notifikasi pengingat lisensi/dunning yang gagal (Super Admin).
+     */
+    @PostMapping("/billing/dunning/retry/{logId}")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('billing.manage')")
+    public ResponseEntity<com.company.ftthgis.api.system.dto.LicenseNotificationLogDto> retryFailedNotification(
+            @PathVariable UUID logId
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        log.info("🔁 SUPER ADMIN ACTION: Retrying failed notification '{}' by '{}'", logId, actor);
+        return ResponseEntity.ok(licenseNotificationService.retryFailedNotification(logId, actor));
+    }
+
     // ── Internal Helpers ────────────────────────────────────────────────────
 
     private String resolveCurrentUserIdentifier() {

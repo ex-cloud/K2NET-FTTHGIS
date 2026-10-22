@@ -587,5 +587,52 @@ public class OrganizationLicenseControllerTest {
 
         verify(licenseManagementService, times(1)).cancelInvoice(eq(invoiceId), any(), any());
     }
+
+    @Test
+    @DisplayName("GET /billing/dunning/queue - Sukses mengambil antrean dunning & perpanjangan")
+    public void testGetRenewalQueue_Success() throws Exception {
+        com.company.ftthgis.api.system.dto.RenewalQueueItemDto item = com.company.ftthgis.api.system.dto.RenewalQueueItemDto.builder()
+                .licenseId(UUID.randomUUID())
+                .organizationId(testOrgId)
+                .organizationName("ISP Maju Bersama")
+                .planName("ENTERPRISE")
+                .daysRemaining(5)
+                .dunningStage("EXPIRING_7D")
+                .billingContactEmail("finance@isp.net")
+                .build();
+
+        when(licenseNotificationService.getRenewalQueue()).thenReturn(List.of(item));
+
+        mockMvc.perform(get("/api/v1/system/billing/dunning/queue"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].organizationName").value("ISP Maju Bersama"))
+                .andExpect(jsonPath("$[0].dunningStage").value("EXPIRING_7D"))
+                .andExpect(jsonPath("$[0].daysRemaining").value(5));
+
+        verify(licenseNotificationService, times(1)).getRenewalQueue();
+    }
+
+    @Test
+    @DisplayName("POST /billing/dunning/retry/{logId} - Sukses retry notifikasi pengingat yang gagal")
+    public void testRetryFailedNotification_Success() throws Exception {
+        UUID logId = UUID.randomUUID();
+        com.company.ftthgis.api.system.dto.LicenseNotificationLogDto res = com.company.ftthgis.api.system.dto.LicenseNotificationLogDto.builder()
+                .id(logId)
+                .organizationId(testOrgId)
+                .organizationName("ISP Maju Bersama")
+                .channel("EMAIL")
+                .recipient("finance@isp.net")
+                .status("SENT")
+                .build();
+
+        when(licenseNotificationService.retryFailedNotification(eq(logId), anyString())).thenReturn(res);
+
+        mockMvc.perform(post("/api/v1/system/billing/dunning/retry/" + logId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(logId.toString()))
+                .andExpect(jsonPath("$.status").value("SENT"));
+
+        verify(licenseNotificationService, times(1)).retryFailedNotification(eq(logId), anyString());
+    }
 }
 

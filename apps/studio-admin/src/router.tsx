@@ -64,8 +64,8 @@ const LicensePlansPage = lazyWithRetry(() =>
 const TenantSubscriptionsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/billing/subscriptions/page").then((m) => ({ default: m.default }))
 );
-const LicenseNotificationsPage = lazyWithRetry(() =>
-  import("./app/(dashboard)/licenses/notifications/page").then((m) => ({ default: m.default }))
+const BillingRenewalsPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/billing/renewals/page").then((m) => ({ default: m.default }))
 );
 const LicenseRevocationsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/licenses/revocations/page").then((m) => ({ default: m.default }))
@@ -419,7 +419,7 @@ const catalogRedirectRoute = createRoute({ getParentRoute: () => authenticatedLa
 const billingOverviewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing", component: () => <Lazy><BillingOverviewPage /></Lazy> });
 const billingSubscriptionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/subscriptions", component: () => <Lazy><TenantSubscriptionsPage /></Lazy> });
 const billingInvoicesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/invoices", component: () => <Lazy><BillingInvoicesPage /></Lazy> });
-const billingRenewalsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/renewals", component: () => <Lazy><LicenseNotificationsPage /></Lazy> });
+const billingRenewalsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/renewals", component: () => <Lazy><BillingRenewalsPage /></Lazy> });
 
 // 3. Licensing Domain
 const licensingLicensesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licensing/licenses", component: () => <Lazy><LicensesPage /></Lazy> });
