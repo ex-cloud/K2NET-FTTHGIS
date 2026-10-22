@@ -46,6 +46,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         items: [
           { title: "Billing Overview", translationKey: "nav.billing_overview", url: "/billing", icon: "BarChart3", shortcut: "S then B", requiredPermission: ["system.organizations.view"] },
           { title: "Tenant Subscriptions", translationKey: "nav.tenant_subscriptions", url: "/billing/subscriptions", icon: "CreditCard", shortcut: "S then S", requiredPermission: ["system.organizations.manage"] },
+          { title: "Invoices & Payments", translationKey: "nav.invoices_payments", url: "/billing/invoices", icon: "Receipt", shortcut: "S then I", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
           { title: "Reminder Dispatch Logs", translationKey: "nav.license_notifications_log", url: "/billing/renewals", icon: "Bell", shortcut: "S then N", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
         ],
       },

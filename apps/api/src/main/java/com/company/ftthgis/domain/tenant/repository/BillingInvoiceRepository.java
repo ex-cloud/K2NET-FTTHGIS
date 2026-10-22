@@ -33,4 +33,7 @@ public interface BillingInvoiceRepository extends JpaRepository<BillingInvoice, 
     List<BillingInvoice> findTop10ByOrganizationIdOrderByCreatedAtDesc(@Param("orgId") UUID orgId);
 
     long countByStatus(InvoiceStatus status);
+
+    @Query("SELECT b FROM BillingInvoice b LEFT JOIN FETCH b.organization ORDER BY b.createdAt DESC")
+    List<BillingInvoice> findAllWithOrganizationOrderByCreatedAtDesc();
 }

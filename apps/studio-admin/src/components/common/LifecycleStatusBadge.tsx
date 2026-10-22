@@ -66,9 +66,27 @@ export function LifecycleStatusBadge({
           dotColor: "bg-destructive/80",
           classes: "border-destructive/30 bg-destructive/5 text-destructive/80",
         };
+      case "PAID":
+        return {
+          label: t("billing.filter_paid"),
+          dotColor: "bg-primary",
+          classes: "border-primary/40 bg-primary/10 text-primary",
+        };
+      case "PENDING":
+        return {
+          label: t("billing.filter_pending"),
+          dotColor: "bg-blue-500 animate-pulse",
+          classes: "border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400",
+        };
+      case "OVERDUE":
+        return {
+          label: t("billing.filter_overdue"),
+          dotColor: "bg-destructive animate-pulse",
+          classes: "border-destructive/40 bg-destructive/10 text-destructive",
+        };
       case "CANCELLED":
         return {
-          label: status,
+          label: t("billing.filter_cancelled"),
           dotColor: "bg-muted-foreground",
           classes: "border-border text-muted-foreground bg-muted/20",
         };

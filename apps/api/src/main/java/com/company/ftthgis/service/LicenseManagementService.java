@@ -1,8 +1,10 @@
 package com.company.ftthgis.service;
 
+import com.company.ftthgis.api.system.dto.CreateBillingInvoiceRequest;
 import com.company.ftthgis.api.system.dto.LicenseOverviewKpiDto;
 import com.company.ftthgis.api.system.dto.UpdateSubscriptionPlanRequest;
 import com.company.ftthgis.api.system.dto.UpdateTenantLicenseRequest;
+import com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto;
 import com.company.ftthgis.api.tenant.dto.LicenseEntitlementsDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
@@ -1203,5 +1205,124 @@ public class LicenseManagementService {
         if (ovCust != null && baseCust != null && !ovCust.equals(baseCust)) return true;
         if (ovStorage != null && baseStorage != null && !ovStorage.equals(baseStorage)) return true;
         return false;
+    }
+
+    // ── Billing Invoices (Commercial Domain) ────────────────────────────────
+
+    public List<BillingInvoiceResponseDto> getAllBillingInvoices() {
+        return billingInvoiceRepository.findAllWithOrganizationOrderByCreatedAtDesc().stream()
+                .map(this::mapToInvoiceDto)
+                .toList();
+    }
+
+    public Optional<BillingInvoiceResponseDto> getBillingInvoiceById(UUID id) {
+        return billingInvoiceRepository.findById(id).map(this::mapToInvoiceDto);
+    }
+
+    @Transactional
+    public BillingInvoiceResponseDto createManualInvoice(CreateBillingInvoiceRequest req, String actor) {
+        Organization org = organizationRepository.findById(req.getOrganizationId())
+                .orElseThrow(() -> new NoSuchElementException("Organisasi tidak ditemukan untuk ID: " + req.getOrganizationId()));
+
+        TenantSubscription subscription = null;
+        if (req.getSubscriptionId() != null) {
+            subscription = tenantSubscriptionRepository.findById(req.getSubscriptionId()).orElse(null);
+        } else {
+            subscription = tenantSubscriptionRepository.findActiveSubscriptionByOrganizationId(org.getId()).orElse(null);
+        }
+
+        long count = billingInvoiceRepository.count() + 1;
+        String invNumber = String.format("INV/%d/%02d/%05d",
+                LocalDateTime.now().getYear(),
+                LocalDateTime.now().getMonthValue(),
+                count
+        );
+
+        int dueDays = req.getDueDays() != null && req.getDueDays() > 0 ? req.getDueDays() : 14;
+
+        BillingInvoice invoice = BillingInvoice.builder()
+                .organization(org)
+                .subscription(subscription)
+                .invoiceNumber(invNumber)
+                .description(req.getDescription())
+                .amount(req.getAmount())
+                .currency("IDR")
+                .status(InvoiceStatus.PENDING)
+                .dueDate(LocalDateTime.now().plusDays(dueDays))
+                .paymentMethod(req.getPaymentMethod() != null ? req.getPaymentMethod() : "XENDIT_VA")
+                .paymentChannel("BCA")
+                .createdBy(actor)
+                .build();
+
+        BillingInvoice saved = billingInvoiceRepository.save(invoice);
+        log.info("🧾 INVOICE CREATED: '{}' for tenant '{}' ({}) by '{}', amount={}",
+                invNumber, org.getName(), org.getSlug(), actor, req.getAmount());
+
+        return mapToInvoiceDto(saved);
+    }
+
+    @Transactional
+    public BillingInvoiceResponseDto settleInvoiceManually(UUID id, String actor, String paymentMethod, String paymentChannel) {
+        BillingInvoice inv = billingInvoiceRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Faktur tagihan tidak ditemukan: " + id));
+
+        inv.setStatus(InvoiceStatus.PAID);
+        inv.setPaidAt(LocalDateTime.now());
+        if (paymentMethod != null && !paymentMethod.isBlank()) inv.setPaymentMethod(paymentMethod);
+        if (paymentChannel != null && !paymentChannel.isBlank()) inv.setPaymentChannel(paymentChannel);
+        inv.setUpdatedBy(actor);
+
+        BillingInvoice saved = billingInvoiceRepository.save(inv);
+
+        Organization org = inv.getOrganization();
+        if (org != null) {
+            org.setStatus(Organization.OrganizationStatus.ACTIVE);
+            org.setDunningLevel(0);
+            org.setOverQuotaMode(false);
+            organizationRepository.save(org);
+
+            tenantLicenseRepository.findFirstByOrganizationIdAndStatusOrderByCreatedAtDesc(org.getId(), LicenseStatus.ACTIVE)
+                    .ifPresent(lic -> extendLicense(lic.getId(), 1, "MANUAL_INVOICE_SETTLEMENT:" + actor));
+        }
+
+        log.info("✅ INVOICE SETTLED: '{}' manually marked as PAID by '{}'", inv.getInvoiceNumber(), actor);
+        return mapToInvoiceDto(saved);
+    }
+
+    @Transactional
+    public BillingInvoiceResponseDto cancelInvoice(UUID id, String actor, String reason) {
+        BillingInvoice inv = billingInvoiceRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Faktur tagihan tidak ditemukan: " + id));
+
+        inv.setStatus(InvoiceStatus.CANCELLED);
+        inv.setUpdatedBy(actor);
+        BillingInvoice saved = billingInvoiceRepository.save(inv);
+
+        log.info("🚫 INVOICE CANCELLED: '{}' by '{}', reason: {}", inv.getInvoiceNumber(), actor, reason);
+        return mapToInvoiceDto(saved);
+    }
+
+    public BillingInvoiceResponseDto mapToInvoiceDto(BillingInvoice inv) {
+        if (inv == null) return null;
+        Organization org = inv.getOrganization();
+        return BillingInvoiceResponseDto.builder()
+                .id(inv.getId())
+                .organizationId(org != null ? org.getId() : null)
+                .organizationName(org != null ? org.getName() : null)
+                .organizationSlug(org != null ? org.getSlug() : null)
+                .subscriptionId(inv.getSubscription() != null ? inv.getSubscription().getId() : null)
+                .invoiceNumber(inv.getInvoiceNumber())
+                .description(inv.getDescription())
+                .amount(inv.getAmount())
+                .currency(inv.getCurrency())
+                .status(inv.getStatus())
+                .dueDate(inv.getDueDate())
+                .paidAt(inv.getPaidAt())
+                .paymentMethod(inv.getPaymentMethod())
+                .paymentChannel(inv.getPaymentChannel())
+                .externalInvoiceUrl(inv.getExternalInvoiceUrl())
+                .externalReferenceId(inv.getExternalReferenceId())
+                .createdAt(inv.getCreatedAt())
+                .build();
     }
 }

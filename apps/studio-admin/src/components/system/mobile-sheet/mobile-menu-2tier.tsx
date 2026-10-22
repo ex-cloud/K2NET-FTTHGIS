@@ -77,6 +77,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   FolderKanban: ClipboardList,
   UserCheck: Users,
   DatabaseZap: Database,
+  Receipt: FileText,
 };
 
 export function getSecondaryKey(href: string): string | null {

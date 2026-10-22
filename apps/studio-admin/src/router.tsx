@@ -76,6 +76,9 @@ const PackagesPage = lazyWithRetry(() =>
 const BillingOverviewPage = lazyWithRetry(() =>
   import("./app/(dashboard)/billing/page").then((m) => ({ default: m.default }))
 );
+const BillingInvoicesPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/billing/invoices/page").then((m) => ({ default: m.default }))
+);
 const BillingPoliciesPage = lazyWithRetry(() =>
   import("./app/(dashboard)/catalog/policies/page").then((m) => ({ default: m.default }))
 );
@@ -415,6 +418,7 @@ const catalogRedirectRoute = createRoute({ getParentRoute: () => authenticatedLa
 // 2. Billing Domain
 const billingOverviewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing", component: () => <Lazy><BillingOverviewPage /></Lazy> });
 const billingSubscriptionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/subscriptions", component: () => <Lazy><TenantSubscriptionsPage /></Lazy> });
+const billingInvoicesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/invoices", component: () => <Lazy><BillingInvoicesPage /></Lazy> });
 const billingRenewalsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/billing/renewals", component: () => <Lazy><LicenseNotificationsPage /></Lazy> });
 
 // 3. Licensing Domain
@@ -530,7 +534,7 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
   // 3-Domain Architecture: Catalog, Billing, Licensing
   catalogPlansRoute, catalogPackagesRoute, catalogPoliciesRoute, catalogRedirectRoute,
-  billingOverviewRoute, billingSubscriptionsRoute, billingRenewalsRoute,
+  billingOverviewRoute, billingSubscriptionsRoute, billingInvoicesRoute, billingRenewalsRoute,
   licensingLicensesRoute, licensingRevocationsRoute, licensingRedirectRoute,
   // Backwards Compatibility Redirects & Aliases (Sheet 3)
   licensesLegacyRedirectRoute, licensePlansLegacyRedirectRoute,

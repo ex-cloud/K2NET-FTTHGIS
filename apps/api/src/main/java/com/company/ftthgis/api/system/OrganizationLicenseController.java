@@ -1,8 +1,10 @@
 package com.company.ftthgis.api.system;
 
+import com.company.ftthgis.api.system.dto.CreateBillingInvoiceRequest;
 import com.company.ftthgis.api.system.dto.LicenseExtendRequest;
 import com.company.ftthgis.api.system.dto.LicenseOverviewKpiDto;
 import com.company.ftthgis.api.system.dto.LicenseRevokeRequest;
+import com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
@@ -302,6 +304,54 @@ public class OrganizationLicenseController {
     @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('catalog.plans.read')")
     public ResponseEntity<List<com.company.ftthgis.domain.tenant.entity.PlanVersion>> getPlanVersions(@PathVariable UUID planId) {
         return ResponseEntity.ok(licenseManagementService.getPlanVersions(planId));
+    }
+
+    /**
+     * Mengambil seluruh faktur penagihan komersial tenant (Domain: Billing / Invoices).
+     */
+    @GetMapping("/billing/invoices")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('billing.invoices.read') or hasAuthority('billing.read')")
+    public ResponseEntity<List<BillingInvoiceResponseDto>> getAllBillingInvoices() {
+        return ResponseEntity.ok(licenseManagementService.getAllBillingInvoices());
+    }
+
+    /**
+     * Menerbitkan faktur penagihan komersial baru untuk tenant (Super Admin).
+     */
+    @PostMapping("/billing/invoices")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('billing.invoices.manage')")
+    public ResponseEntity<BillingInvoiceResponseDto> createBillingInvoice(
+            @Valid @RequestBody CreateBillingInvoiceRequest request
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        return ResponseEntity.ok(licenseManagementService.createManualInvoice(request, actor));
+    }
+
+    /**
+     * Menandai pelunasan faktur tagihan secara manual/offline (Super Admin).
+     */
+    @PostMapping("/billing/invoices/{id}/settle")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('billing.invoices.manage')")
+    public ResponseEntity<BillingInvoiceResponseDto> settleInvoiceManually(
+            @PathVariable UUID id,
+            @RequestParam(value = "paymentMethod", required = false) String paymentMethod,
+            @RequestParam(value = "paymentChannel", required = false) String paymentChannel
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        return ResponseEntity.ok(licenseManagementService.settleInvoiceManually(id, actor, paymentMethod, paymentChannel));
+    }
+
+    /**
+     * Membatalkan faktur tagihan tenant (Super Admin).
+     */
+    @PostMapping("/billing/invoices/{id}/cancel")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('billing.invoices.manage')")
+    public ResponseEntity<BillingInvoiceResponseDto> cancelInvoice(
+            @PathVariable UUID id,
+            @RequestParam(value = "reason", required = false, defaultValue = "Cancelled by Administrator") String reason
+    ) {
+        String actor = resolveCurrentUserIdentifier();
+        return ResponseEntity.ok(licenseManagementService.cancelInvoice(id, actor, reason));
     }
 
     // ── Internal Helpers ────────────────────────────────────────────────────

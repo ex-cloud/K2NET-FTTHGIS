@@ -490,5 +490,102 @@ public class OrganizationLicenseControllerTest {
 
         verify(licenseNotificationService, times(1)).getAllNotificationLogs();
     }
+
+    @Test
+    @DisplayName("GET /billing/invoices - Sukses mengambil seluruh faktur komersial tenant")
+    public void testGetAllBillingInvoices_Success() throws Exception {
+        com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto inv = com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto.builder()
+                .id(UUID.randomUUID())
+                .organizationId(testOrgId)
+                .organizationName("ISP Maju Bersama")
+                .invoiceNumber("INV/2026/10/00001")
+                .amount(java.math.BigDecimal.valueOf(2500000))
+                .status(com.company.ftthgis.domain.tenant.entity.InvoiceStatus.PENDING)
+                .build();
+
+        when(licenseManagementService.getAllBillingInvoices()).thenReturn(List.of(inv));
+
+        mockMvc.perform(get("/api/v1/system/billing/invoices"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].invoiceNumber").value("INV/2026/10/00001"))
+                .andExpect(jsonPath("$[0].organizationName").value("ISP Maju Bersama"))
+                .andExpect(jsonPath("$[0].amount").value(2500000));
+
+        verify(licenseManagementService, times(1)).getAllBillingInvoices();
+    }
+
+    @Test
+    @DisplayName("POST /billing/invoices - Sukses menerbitkan faktur tagihan komersial baru")
+    public void testCreateBillingInvoice_Success() throws Exception {
+        com.company.ftthgis.api.system.dto.CreateBillingInvoiceRequest req = com.company.ftthgis.api.system.dto.CreateBillingInvoiceRequest.builder()
+                .organizationId(testOrgId)
+                .description("Tahunan Enterprise Plan")
+                .amount(java.math.BigDecimal.valueOf(15000000))
+                .dueDays(14)
+                .paymentMethod("XENDIT_INVOICE")
+                .build();
+
+        com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto res = com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto.builder()
+                .id(UUID.randomUUID())
+                .organizationId(testOrgId)
+                .organizationName("ISP Maju Bersama")
+                .invoiceNumber("INV/2026/10/00002")
+                .amount(java.math.BigDecimal.valueOf(15000000))
+                .status(com.company.ftthgis.domain.tenant.entity.InvoiceStatus.PENDING)
+                .build();
+
+        when(licenseManagementService.createManualInvoice(any(), any())).thenReturn(res);
+
+        mockMvc.perform(post("/api/v1/system/billing/invoices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.invoiceNumber").value("INV/2026/10/00002"))
+                .andExpect(jsonPath("$.amount").value(15000000));
+
+        verify(licenseManagementService, times(1)).createManualInvoice(any(), any());
+    }
+
+    @Test
+    @DisplayName("POST /billing/invoices/{id}/settle - Sukses pelunasan faktur manual")
+    public void testSettleInvoiceManually_Success() throws Exception {
+        UUID invoiceId = UUID.randomUUID();
+        com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto res = com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto.builder()
+                .id(invoiceId)
+                .invoiceNumber("INV/2026/10/00002")
+                .status(com.company.ftthgis.domain.tenant.entity.InvoiceStatus.PAID)
+                .build();
+
+        when(licenseManagementService.settleInvoiceManually(eq(invoiceId), any(), any(), any())).thenReturn(res);
+
+        mockMvc.perform(post("/api/v1/system/billing/invoices/" + invoiceId + "/settle")
+                        .param("paymentMethod", "MANUAL_SETTLEMENT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(invoiceId.toString()))
+                .andExpect(jsonPath("$.status").value("PAID"));
+
+        verify(licenseManagementService, times(1)).settleInvoiceManually(eq(invoiceId), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("POST /billing/invoices/{id}/cancel - Sukses pembatalan faktur")
+    public void testCancelInvoice_Success() throws Exception {
+        UUID invoiceId = UUID.randomUUID();
+        com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto res = com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto.builder()
+                .id(invoiceId)
+                .invoiceNumber("INV/2026/10/00003")
+                .status(com.company.ftthgis.domain.tenant.entity.InvoiceStatus.CANCELLED)
+                .build();
+
+        when(licenseManagementService.cancelInvoice(eq(invoiceId), any(), any())).thenReturn(res);
+
+        mockMvc.perform(post("/api/v1/system/billing/invoices/" + invoiceId + "/cancel")
+                        .param("reason", "Administrative cancellation"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(invoiceId.toString()))
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        verify(licenseManagementService, times(1)).cancelInvoice(eq(invoiceId), any(), any());
+    }
 }
 

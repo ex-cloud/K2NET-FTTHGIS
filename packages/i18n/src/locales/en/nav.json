@@ -30,6 +30,7 @@
   "offline_licenses": "Offline Air-Gapped",
   "plan_tiers_quotas": "Plan Tiers & Quotas",
   "tenant_subscriptions": "Tenant Subscriptions",
+  "invoices_payments": "Invoices & Payments",
   "prorated_upgrade_calculator": "Prorated Calculator",
   "license_notifications_log": "Reminder Dispatch Logs",
   "license_kill_switch": "Revocations & Kill-Switch",

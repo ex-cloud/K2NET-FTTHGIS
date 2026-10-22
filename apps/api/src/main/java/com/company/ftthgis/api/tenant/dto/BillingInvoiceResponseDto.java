@@ -22,6 +22,8 @@ public class BillingInvoiceResponseDto {
     private UUID id;
     private UUID organizationId;
     private String organizationName;
+    private String organizationSlug;
+    private UUID subscriptionId;
     private String invoiceNumber;
     private String description;
     private BigDecimal amount;
