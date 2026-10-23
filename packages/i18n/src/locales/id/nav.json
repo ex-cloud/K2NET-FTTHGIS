@@ -215,5 +215,22 @@
   "logout_session": "Keluar dari Sesi Portal",
   "developer_api_keys": "API Key",
   "developer_webhooks": "Webhook",
-  "developer_gateways": "Gateway Terhubung"
+  "developer_gateways": "Gateway Terhubung",
+  "inbox_approvals": "Kotak Masuk & Persetujuan",
+  "tenants": "Tenant",
+  "billing": "Penagihan",
+  "licensing_entitlements": "Lisensi & Hak Pakai",
+  "product_catalog": "Katalog Produk",
+  "integrations_comms": "Integrasi & Komunikasi",
+  "ai_spatial_assets": "AI & Aset Spasial",
+  "data_protection": "Proteksi Data",
+  "identity_access": "Identitas & Akses",
+  "security_compliance": "Keamanan & Kepatuhan",
+  "configuration_center": "Pusat Konfigurasi",
+  "plane_home": "HOME",
+  "plane_operations": "OPERASI",
+  "plane_product": "PRODUK",
+  "plane_platform": "PLATFORM",
+  "plane_governance": "TATA KELOLA",
+  "plane_bottom": "SISTEM"
 }

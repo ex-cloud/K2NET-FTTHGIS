@@ -52,6 +52,9 @@ function lazyWithRetry(
 const SystemOverviewPage = lazyWithRetry(() =>
   import("./app/(dashboard)/overview/page").then((m) => ({ default: m.default }))
 );
+const InboxPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/inbox/page").then((m) => ({ default: m.default }))
+);
 const OrganizationsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/page").then((m) => ({ default: m.default }))
 );
@@ -105,9 +108,6 @@ const OrganizationImpersonationPage = lazyWithRetry(() =>
 );
 const UsersPage = lazyWithRetry(() =>
   import("./app/(dashboard)/users/page").then((m) => ({ default: m.default }))
-);
-const UsersRolesPage = lazyWithRetry(() =>
-  import("./app/(dashboard)/users/roles/page").then((m) => ({ default: m.default }))
 );
 const UsersSessionsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/users/sessions/page").then((m) => ({ default: m.default }))
@@ -402,6 +402,12 @@ const overviewRoute = createRoute({
   component: () => <Lazy><SystemOverviewPage /></Lazy>,
 });
 
+const inboxRoute = createRoute({
+  getParentRoute: () => authenticatedLayoutRoute,
+  path: "/inbox",
+  component: () => <Lazy><InboxPage /></Lazy>,
+});
+
 // Organizations
 const orgsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations", component: () => <Lazy><OrganizationsPage /></Lazy> });
 const orgSlugRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/$slug", component: () => <Lazy><OrganizationSlugPage /></Lazy> });
@@ -438,13 +444,13 @@ const licenseNotificationsLegacyRedirectRoute = createRoute({ getParentRoute: ()
 const licenseRevocationsLegacyRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/licenses/revocations", component: () => <Navigate to="/licensing/revocations" /> });
 
 // Packages & Add-ons
-const packagesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/packages", component: () => <Lazy><PackagesPage /></Lazy> });
+const packagesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/packages", component: () => <Navigate to="/catalog/packages" /> });
 // Resolusi Konflik SSOT: URL legacy /packages/subscriptions dialihkan resmi ke /billing/subscriptions
 const packagesSubscriptionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/packages/subscriptions", component: () => <Navigate to="/billing/subscriptions" /> });
 
 // Users
 const usersRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users", component: () => <Lazy><UsersPage /></Lazy> });
-const usersRolesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users/roles", component: () => <Lazy><UsersRolesPage /></Lazy> });
+const usersRolesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users/roles", component: () => <Navigate to="/security/roles" /> });
 const usersSessionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users/sessions", component: () => <Lazy><UsersSessionsPage /></Lazy> });
 
 // Observability
@@ -534,6 +540,7 @@ const systemSettingsRedirectRoute = createRoute({ getParentRoute: () => authenti
 const authenticatedTree = authenticatedLayoutRoute.addChildren([
   indexRoute,
   overviewRoute,
+  inboxRoute,
   // Orgs
   orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
   // 3-Domain Architecture: Catalog, Billing, Licensing

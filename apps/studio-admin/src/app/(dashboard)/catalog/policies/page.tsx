@@ -26,11 +26,12 @@ export default function BillingPoliciesPage() {
     return map;
   }, [policies]);
 
-  const graceDays = policyMap.get("grace_period_days") ?? "14";
-  const readOnlyDays = policyMap.get("readonly_lockout_days") ?? "30";
-  const dunningCadence = policyMap.get("dunning_schedule_days") ?? "7, 3, 1, 0";
-  const taxRate = policyMap.get("tax_rate_percent") ?? "11";
-  const invoiceFormat = policyMap.get("invoice_number_format") ?? "INV/{YYYY}/{MM}/{SEQ:5}";
+  const graceDays = policyMap.get("billing.grace_days") ?? policyMap.get("grace_period_days") ?? "14";
+  const readOnlyDays = policyMap.get("billing.readonly_days") ?? policyMap.get("readonly_lockout_days") ?? "14";
+  const dunningCadence = policyMap.get("billing.reminder_schedule_days") ?? policyMap.get("dunning_schedule_days") ?? "30,14,7,1";
+  const taxRate = policyMap.get("billing.tax_rate_percentage") ?? policyMap.get("tax_rate_percent") ?? "11.0";
+  const timezone = policyMap.get("billing.timezone") ?? "Asia/Jakarta (WIB)";
+  const invoiceFormat = policyMap.get("billing.invoice_number_format") ?? policyMap.get("invoice_number_format") ?? "INV/{YYYY}/{MM}/{SEQ:5}";
 
   return (
     <PageLayout variant="workspace" spaceY="space-y-6">
@@ -200,7 +201,7 @@ export default function BillingPoliciesPage() {
           <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
             <span>{t("billing.policy_timezone")}</span>
             <span className="font-mono text-foreground font-medium text-[11px]">
-              Asia/Jakarta (WIB)
+              {timezone}
             </span>
           </div>
         </Card>

@@ -137,22 +137,38 @@ interface OrgCounts {
   suspended: number;
 }
 
+const SIDEBAR_ROUTE_MAP: { prefixes: string[]; key: string | null }[] = [
+  { prefixes: ["/overview", "/inbox"], key: null },
+  { prefixes: ["/ai", "/assets-3d"], key: "ai" },
+  { prefixes: ["/tasks"], key: "tasks" },
+  { prefixes: ["/catalog", "/packages"], key: "catalog" },
+  { prefixes: ["/billing"], key: "billing" },
+  { prefixes: ["/licensing", "/licenses"], key: "licensing" },
+  { prefixes: ["/organizations", "/vpn"], key: "organizations" },
+  {
+    prefixes: [
+      "/users",
+      "/security/roles",
+      "/security/permissions",
+      "/security/auth",
+      "/security/sso",
+    ],
+    key: "identity",
+  },
+  { prefixes: ["/security"], key: "security" },
+  { prefixes: ["/gateways"], key: "gateways" },
+  { prefixes: ["/observability"], key: "observability" },
+  { prefixes: ["/logs"], key: "logs" },
+  { prefixes: ["/settings"], key: "settings" },
+  { prefixes: ["/system/trash", "/trash"], key: "system" },
+];
+
 function getActiveSidebarKey(pathname: string | null): string | null {
   if (!pathname) return null;
-  if (pathname.startsWith("/ai")) return "ai";
-  if (pathname.startsWith("/tasks")) return "tasks";
-  if (pathname.startsWith("/licenses") || pathname.startsWith("/catalog") || pathname.startsWith("/billing") || pathname.startsWith("/licensing")) return "licenses";
-  if (pathname.startsWith("/packages")) return "packages";
-  if (pathname.startsWith("/system")) return "system";
-
-  const includes = ["users", "security", "gateways", "observability", "settings", "logs", "organizations", "licenses", "packages", "catalog", "billing", "licensing"];
-  for (const key of includes) {
-    if (pathname.includes(`/${key}`)) {
-      if (key === "catalog" || key === "billing" || key === "licensing") return "licenses";
-      return key;
-    }
-  }
-  return null;
+  const match = SIDEBAR_ROUTE_MAP.find((entry) =>
+    entry.prefixes.some((prefix) => pathname.startsWith(prefix))
+  );
+  return match ? match.key : null;
 }
 
 function matchesParamUrl(
@@ -351,7 +367,7 @@ export function SystemSecondarySidebar() {
   const { organizations } = useOrganizations();
   const { data: licenseOverview } = useLicenseOverview();
   const activeKey = getActiveSidebarKey(pathname);
-  const isPackagesPage = activeKey === "packages";
+  const isPackagesPage = activeKey === "packages" || activeKey === "catalog";
   const { data: packageOverview } = usePackageKpiOverview({ enabled: isPackagesPage });
   const { canAccess } = usePermissions();
 

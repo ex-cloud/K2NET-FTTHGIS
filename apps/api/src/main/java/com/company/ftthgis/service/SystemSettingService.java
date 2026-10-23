@@ -27,6 +27,21 @@ public class SystemSettingService {
     private final SystemSettingRepository settingRepository;
     private final KeycloakAdminService keycloakAdminService;
     private final OrganizationRepository organizationRepository;
+    private final com.company.ftthgis.util.SecretEncryptionUtil encryptionUtil;
+
+    public static final java.util.Set<String> SENSITIVE_KEYS = java.util.Set.of(
+            "smtp_password",
+            "wa_gateway_token"
+    );
+
+    public static boolean isSensitiveKey(String key) {
+        if (key == null) return false;
+        String lower = key.toLowerCase();
+        return SENSITIVE_KEYS.contains(lower)
+                || (lower.endsWith("_password") && !lower.startsWith("password_"))
+                || lower.endsWith("_secret")
+                || (lower.endsWith("_token") && !lower.contains("duration") && !lower.contains("ttl"));
+    }
 
     @PostConstruct
     public void initDefaultSettings() {
@@ -49,16 +64,18 @@ public class SystemSettingService {
         defaults.put("enforce_mfa", new String[]{"false", "SECURITY", "Forces all global and tenant users to set up 2FA/MFA"});
         defaults.put("session_idle_timeout", new String[]{"15", "SECURITY", "Idle timeout in minutes before user session is auto-locked or logged out"});
         defaults.put("map_auto_lock_duration", new String[]{"10", "SECURITY", "Inactive duration in minutes before mapping canvas is auto-locked for security"});
-        defaults.put("wa_gateway_enabled", new String[]{"false", "SECURITY", "Enables or disables WhatsApp notification gateway integration"});
-        defaults.put("wa_gateway_api_url", new String[]{"https://api.whatsapp-gateway.com/send", "SECURITY", "Base API endpoint for sending WhatsApp messages"});
-        defaults.put("wa_gateway_token", new String[]{"token_secret_placeholder", "SECURITY", "Secret token/credential key for WhatsApp Notification Gateway authorization"});
-        defaults.put("wa_otp_enabled", new String[]{"false", "SECURITY", "Enables global WhatsApp OTP multi-factor authentication check upon login"});
         defaults.put("password_min_length", new String[]{"8", "SECURITY", "Minimum password length requirement"});
         defaults.put("password_require_symbols", new String[]{"true", "SECURITY", "Require at least one special character"});
         defaults.put("password_require_numbers", new String[]{"true", "SECURITY", "Require at least one numeric digit"});
         defaults.put("password_require_uppercase", new String[]{"true", "SECURITY", "Require at least one uppercase letter"});
         defaults.put("password_history_limit", new String[]{"3", "SECURITY", "Number of unique previous passwords to remember"});
         defaults.put("password_expiry_days", new String[]{"90", "SECURITY", "Password validity duration in days"});
+
+        // COMMUNICATIONS
+        defaults.put("wa_gateway_enabled", new String[]{"false", "COMMUNICATIONS", "Enables or disables WhatsApp notification gateway integration"});
+        defaults.put("wa_gateway_api_url", new String[]{"https://api.whatsapp-gateway.com/send", "COMMUNICATIONS", "Base API endpoint for sending WhatsApp messages"});
+        defaults.put("wa_gateway_token", new String[]{"token_secret_placeholder", "COMMUNICATIONS", "Secret token/credential key for WhatsApp Notification Gateway authorization"});
+        defaults.put("wa_otp_enabled", new String[]{"false", "COMMUNICATIONS", "Enables global WhatsApp OTP multi-factor authentication check upon login"});
 
         // GIS
         defaults.put("default_map_lat", new String[]{"-6.9175", "GIS", "Default center Latitude of the GIS Map"});
@@ -75,45 +92,109 @@ public class SystemSettingService {
             String key = entry.getKey();
             if (!settingRepository.existsById(key)) {
                 String[] details = entry.getValue();
+                String rawVal = details[0];
+                String storedVal = isSensitiveKey(key) ? encryptionUtil.encrypt(rawVal) : rawVal;
                 SystemSetting setting = SystemSetting.builder()
                         .key(key)
-                        .value(details[0])
+                        .value(storedVal)
                         .category(details[1])
                         .description(details[2])
                         .build();
                 settingRepository.save(setting);
-                log.info("Saved default setting: {} -> {}", key, details[0]);
+                log.info("Saved default setting: {} -> [stored]", key);
             }
+        }
+
+        // P0 Security: One-time migration to encrypt existing plaintext secrets
+        migratePlaintextSecrets();
+    }
+
+    private void migratePlaintextSecrets() {
+        for (String sensitiveKey : SENSITIVE_KEYS) {
+            settingRepository.findById(sensitiveKey).ifPresent(setting -> {
+                String val = setting.getValue();
+                if (val != null && !val.isBlank()) {
+                    try {
+                        encryptionUtil.decrypt(val);
+                        // Already encrypted!
+                    } catch (Exception e) {
+                        log.info("🔒 One-time AES-256-GCM encrypting plaintext system setting: {}", sensitiveKey);
+                        setting.setValue(encryptionUtil.encrypt(val));
+                        settingRepository.save(setting);
+                    }
+                }
+            });
         }
     }
 
     public List<SystemSetting> getAllSettings() {
-        return settingRepository.findAll();
+        return settingRepository.findAll().stream()
+                .map(setting -> {
+                    if (isSensitiveKey(setting.getKey()) && setting.getValue() != null && !setting.getValue().isBlank()) {
+                        return SystemSetting.builder()
+                                .key(setting.getKey())
+                                .value("********")
+                                .category(setting.getCategory())
+                                .description(setting.getDescription())
+                                .createdAt(setting.getCreatedAt())
+                                .createdBy(setting.getCreatedBy())
+                                .updatedAt(setting.getUpdatedAt())
+                                .updatedBy(setting.getUpdatedBy())
+                                .build();
+                    }
+                    return setting;
+                })
+                .toList();
     }
 
     @Transactional
     @AuditRequired(action = "GLOBAL_SETTINGS_UPDATED", resourceType = "SYSTEM_SETTING")
     public List<SystemSetting> updateSettings(Map<String, String> newSettings) {
-        log.info("⚙️ Updating system settings: {}", newSettings);
+        log.info("⚙️ Updating system settings: {}", newSettings.keySet());
         boolean passwordPoliciesChanged = false;
         for (Map.Entry<String, String> entry : newSettings.entrySet()) {
             String key = entry.getKey();
+            String value = entry.getValue();
+
+            // P0 Security: Do not overwrite secret if mask placeholder or empty
+            if (isSensitiveKey(key) && (value == null || value.isBlank() || "********".equals(value))) {
+                log.debug("Preserving existing encrypted secret for key: {}", key);
+                continue;
+            }
+
             if (key.startsWith("password_")) {
                 passwordPoliciesChanged = true;
             }
+
             SystemSetting setting = settingRepository.findById(key)
                     .orElseGet(() -> SystemSetting.builder()
                             .key(key)
-                            .category("SECURITY")
+                            .category(determineCategory(key))
                             .description("Dynamically updated system setting")
                             .build());
-            setting.setValue(entry.getValue());
+
+            if (isSensitiveKey(key)) {
+                setting.setValue(encryptionUtil.encrypt(value));
+            } else {
+                setting.setValue(value);
+            }
             settingRepository.save(setting);
         }
         if (passwordPoliciesChanged) {
             syncPasswordPoliciesToKeycloak();
         }
-        return settingRepository.findAll();
+        return getAllSettings();
+    }
+
+    private String determineCategory(String key) {
+        if (key == null) return "GENERAL";
+        String lower = key.toLowerCase();
+        if (lower.startsWith("wa_")) return "COMMUNICATIONS";
+        if (lower.startsWith("smtp_")) return "SMTP";
+        if (lower.startsWith("brand_") || lower.equals("app_name") || lower.equals("logo_url") || lower.equals("footer_copyright")) return "BRANDING";
+        if (lower.startsWith("default_map_") || lower.equals("vector_tile_source")) return "GIS";
+        if (lower.startsWith("password_") || lower.equals("enforce_mfa") || lower.equals("allow_self_registration") || lower.equals("session_idle_timeout") || lower.equals("map_auto_lock_duration")) return "SECURITY";
+        return "GENERAL";
     }
 
     private void syncPasswordPoliciesToKeycloak() {
@@ -193,15 +274,29 @@ public class SystemSettingService {
     }
 
     public String getSettingValue(String key) {
-        return settingRepository.findById(key)
-                .map(SystemSetting::getValue)
-                .orElse("");
+        return getSettingValue(key, "");
     }
 
     public String getSettingValue(String key, String defaultValue) {
         return settingRepository.findById(key)
-                .map(SystemSetting::getValue)
+                .map(setting -> {
+                    String raw = setting.getValue();
+                    if (isSensitiveKey(key)) {
+                        return decryptIfEncrypted(raw);
+                    }
+                    return raw;
+                })
                 .orElse(defaultValue);
+    }
+
+    private String decryptIfEncrypted(String value) {
+        if (value == null || value.isBlank()) return value;
+        try {
+            return encryptionUtil.decrypt(value);
+        } catch (Exception e) {
+            // Fallback to raw if not yet encrypted or legacy plaintext
+            return value;
+        }
     }
 
     public boolean getSettingBoolean(String key, boolean defaultValue) {

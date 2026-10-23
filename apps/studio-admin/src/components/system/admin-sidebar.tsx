@@ -1,22 +1,4 @@
-
-
 import * as React from "react";
-import {
-  Settings,
-  Building2,
-  Users,
-  ScanLine,
-  Lock,
-  Cpu,
-  LayoutDashboard,
-  Terminal,
-  ClipboardList,
-  Sparkles,
-  Box,
-  Boxes,
-  Trash2,
-  CreditCard,
-} from "lucide-react";
 import {
   ActionTooltip,
   PrimarySidebarShell,
@@ -28,58 +10,38 @@ import { Link, usePathname } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
 import { useTaskStore } from "@/store/task-store";
 import { usePermissions } from "@/hooks/use-permissions";
+import {
+  NAVIGATION_MANIFEST,
+  NAVIGATION_PLANES,
+  isNavItemActive,
+  type ManifestNavItem,
+  type NavigationPlane,
+} from "@/config/navigation-manifest";
 
-export type NavItem = {
-  title: string;
-  translationKey?: TranslationKey;
-  icon: React.ElementType;
-  href: string;
-  shortcut?: string;
-  requiredPermission?: string | string[];
-};
+export type NavItem = ManifestNavItem;
 
-export const ADMIN_CORE_NAV_ITEMS: NavItem[] = [
-  { title: "Overview", translationKey: "nav.overview", icon: LayoutDashboard, href: "/overview", shortcut: "G then O" },
-  { title: "Organizations", translationKey: "nav.organizations", icon: Building2, href: "/organizations", shortcut: "G then T", requiredPermission: ["system.organizations.view", "orgs.view"] },
-  { title: "Billing & Licenses", translationKey: "nav.billing_licenses", icon: CreditCard, href: "/licensing/licenses", shortcut: "G then B", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-  { title: "Packages & Add-ons", translationKey: "nav.packages_marketplace", icon: Boxes, href: "/packages", shortcut: "G then K", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-  { title: "Global Users", translationKey: "nav.global_users", icon: Users, href: "/users", shortcut: "G then U", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
-  { title: "Projects & Issues", translationKey: "nav.projects_issues", icon: ClipboardList, href: "/tasks", shortcut: "G then P", requiredPermission: ["system.task.manage", "system.observability.view"] },
-];
+// ── Backwards-Compatible Exports (Used by mobile drawers & external tools) ────
+export const ADMIN_NAV_ITEMS: ManifestNavItem[] = NAVIGATION_MANIFEST.filter(
+  (item) => item.plane !== "BOTTOM"
+);
 
-export const ADMIN_PLATFORM_NAV_ITEMS: NavItem[] = [
-  { title: "Observability", translationKey: "nav.observability", icon: ScanLine, href: "/observability", shortcut: "G then V", requiredPermission: "system.observability.view" },
-  { title: "Global Logs", translationKey: "nav.global_logs", icon: Terminal, href: "/logs", shortcut: "G then L", requiredPermission: "system.audit.view" },
-  { title: "Security", translationKey: "nav.security", icon: Lock, href: "/security/roles", shortcut: "G then S", requiredPermission: "system.security.manage" },
-  { title: "Gateways", translationKey: "nav.gateways", icon: Cpu, href: "/gateways/overview", shortcut: "G then G", requiredPermission: ["system.observability.view", "system.gateway.manage"] },
-  { title: "AI Assistant", translationKey: "nav.ai_assistant", icon: Sparkles, href: "/ai", shortcut: "G then A", requiredPermission: ["system.ai.manage", "system.settings.manage"] },
-  { title: "3D Assets", translationKey: "nav.three_d_assets", icon: Box, href: "/assets-3d", shortcut: "G then 3", requiredPermission: "system.settings.manage" },
-];
+export const ADMIN_BOTTOM_NAV_ITEMS: ManifestNavItem[] = NAVIGATION_MANIFEST.filter(
+  (item) => item.plane === "BOTTOM"
+);
 
-export const ADMIN_NAV_ITEMS: NavItem[] = [
-  ...ADMIN_CORE_NAV_ITEMS,
-  ...ADMIN_PLATFORM_NAV_ITEMS,
-];
+export const ADMIN_CORE_NAV_ITEMS: ManifestNavItem[] = NAVIGATION_MANIFEST.filter(
+  (item) => item.plane === "HOME" || item.plane === "OPERATIONS"
+);
 
-export const ADMIN_SYSTEM_NAV_ITEMS: NavItem[] = [
-  { title: "Recycle Bin", translationKey: "nav.recycle_bin", icon: Trash2, href: "/system/trash", shortcut: "G then R", requiredPermission: "system.trash.manage" },
-  { title: "Settings", translationKey: "nav.settings", icon: Settings, href: "/settings", shortcut: "G then ,", requiredPermission: "system.settings.manage" },
-];
+export const ADMIN_PLATFORM_NAV_ITEMS: ManifestNavItem[] = NAVIGATION_MANIFEST.filter(
+  (item) => item.plane === "PRODUCT" || item.plane === "PLATFORM" || item.plane === "GOVERNANCE"
+);
 
-export const ADMIN_BOTTOM_NAV_ITEMS: NavItem[] = [];
+export const ADMIN_SYSTEM_NAV_ITEMS: ManifestNavItem[] = ADMIN_BOTTOM_NAV_ITEMS;
 
-export const checkIsActive = (href: string, pathname: string) => {
-  if (href === "/overview") return pathname === "/overview";
-  if (href === "/licensing/licenses" || href === "/licenses") {
-    return pathname.startsWith("/licenses") || pathname.startsWith("/catalog") || pathname.startsWith("/billing") || pathname.startsWith("/licensing");
-  }
-  if (href === "/packages") return pathname.startsWith("/packages");
-  if (href.startsWith("/ai")) return pathname.startsWith("/ai");
-  if (href.startsWith("/gateways")) return pathname.startsWith("/gateways");
-  if (href.startsWith("/security")) return pathname.startsWith("/security");
-  if (href === "/observability") return pathname.startsWith("/observability");
-  if (href === "/tasks") return pathname === "/tasks" || pathname.startsWith("/tasks/");
-  if (href === "/system/trash") return pathname.startsWith("/system/trash");
+export const checkIsActive = (href: string, pathname: string): boolean => {
+  const item = NAVIGATION_MANIFEST.find((i) => i.href === href);
+  if (item) return isNavItemActive(item, pathname);
   return pathname === href || pathname.startsWith(href);
 };
 
@@ -91,30 +53,43 @@ export function AdminSidebar() {
   const unreadB2BCount = useTaskStore((state) => state.unreadB2BCount);
   const { canAccess } = usePermissions();
 
-  const visibleCoreItems = React.useMemo(
-    () => ADMIN_CORE_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
-    [canAccess]
-  );
-
-  const visiblePlatformItems = React.useMemo(
-    () => ADMIN_PLATFORM_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
-    [canAccess]
-  );
-
-  const visibleSystemItems = React.useMemo(
-    () => ADMIN_SYSTEM_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
-    [canAccess]
-  );
-
   // Determine visual expansion
   const isExpanded =
     sidebarMode === "expanded" || (sidebarMode === "hover" && isHovering);
 
   const isFloating = sidebarMode === "hover";
 
-  const renderNavButton = (item: NavItem) => {
+  // Filter accessible items per plane
+  const planeItems = React.useMemo(() => {
+    const planes: { plane: NavigationPlane; labelKey?: TranslationKey; items: ManifestNavItem[] }[] = [];
+
+    for (const p of NAVIGATION_PLANES) {
+      if (p.plane === "BOTTOM") continue;
+      const visible = NAVIGATION_MANIFEST.filter(
+        (item) => item.plane === p.plane && canAccess(item.requiredPermission)
+      );
+      if (visible.length > 0) {
+        planes.push({
+          plane: p.plane,
+          labelKey: p.labelKey,
+          items: visible,
+        });
+      }
+    }
+    return planes;
+  }, [canAccess]);
+
+  const visibleBottomItems = React.useMemo(
+    () =>
+      NAVIGATION_MANIFEST.filter(
+        (item) => item.plane === "BOTTOM" && canAccess(item.requiredPermission)
+      ),
+    [canAccess]
+  );
+
+  const renderNavButton = (item: ManifestNavItem) => {
     const Icon = item.icon;
-    const isActive = checkIsActive(item.href, pathname);
+    const isActive = isNavItemActive(item, pathname);
     const label = item.translationKey ? t(item.translationKey) : item.title;
     const tooltipLabel = t("nav.go_to_item", { name: label });
 
@@ -129,7 +104,7 @@ export function AdminSidebar() {
       >
         <div className="relative flex items-center justify-center shrink-0">
           <Icon className="h-4 w-4" />
-          {item.href === "/tasks" && unreadB2BCount > 0 && !isExpanded && (
+          {item.badgeKey === "unreadB2B" && unreadB2BCount > 0 && !isExpanded && (
             <>
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full animate-ping" />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full" />
@@ -145,7 +120,7 @@ export function AdminSidebar() {
         >
           {label}
         </span>
-        {item.href === "/tasks" && unreadB2BCount > 0 && isExpanded && (
+        {item.badgeKey === "unreadB2B" && unreadB2BCount > 0 && isExpanded && (
           <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse">
             {unreadB2BCount}
           </span>
@@ -154,14 +129,14 @@ export function AdminSidebar() {
     );
 
     const wrapped = (
-      <Link key={item.title} href={item.href}>
+      <Link key={item.id} href={item.href}>
         {button}
       </Link>
     );
 
     return (
       <ActionTooltip
-        key={item.title}
+        key={item.id}
         label={tooltipLabel}
         shortcut={item.shortcut}
         side="right"
@@ -180,28 +155,38 @@ export function AdminSidebar() {
       onMouseLeave={() => setIsHovering(false)}
       topSection={
         <TooltipProvider delayDuration={0}>
-          {/* Top Primary Navigation Items — grouped semantically */}
+          {/* Top Primary Navigation Items — 5 Semantic Planes */}
           <nav className="flex flex-col gap-1 px-2">
-            {/* Group 1: Core Workspace Navigation */}
-            <div className="flex flex-col gap-1">
-              {visibleCoreItems.map(renderNavButton)}
-            </div>
-
-            {/* Group 2: Platform & Telemetry Operations */}
-            {visiblePlatformItems.length > 0 && (
-              <div className="pt-2 mt-1.5 border-groove-t flex flex-col gap-1">
-                {visiblePlatformItems.map(renderNavButton)}
-              </div>
-            )}
-
-            {/* Group 3: System Management & Settings (dibawah 3D Assets dengan pembatas groove) */}
-            {visibleSystemItems.length > 0 && (
-              <div className="pt-2 mt-1.5 border-groove-t flex flex-col gap-1">
-                {visibleSystemItems.map(renderNavButton)}
-              </div>
-            )}
+            {planeItems.map((group, gIdx) => {
+              const planeLabel = group.labelKey ? t(group.labelKey) : group.plane;
+              return (
+                <div
+                  key={group.plane}
+                  className={cn(
+                    "flex flex-col gap-1",
+                    gIdx > 0 && "pt-2 mt-1.5 border-groove-t"
+                  )}
+                >
+                  {isExpanded && planeLabel && (
+                    <div className="px-2 pt-0.5 pb-0.5">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60 font-semibold select-none">
+                        {planeLabel}
+                      </span>
+                    </div>
+                  )}
+                  {group.items.map(renderNavButton)}
+                </div>
+              );
+            })}
           </nav>
         </TooltipProvider>
+      }
+      bottomNav={
+        visibleBottomItems.length > 0 ? (
+          <TooltipProvider delayDuration={0}>
+            {visibleBottomItems.map(renderNavButton)}
+          </TooltipProvider>
+        ) : undefined
       }
     />
   );

@@ -31,11 +31,15 @@ public class SystemSettingController {
     @PostMapping("/test-email")
     public ResponseEntity<?> testEmailConnection(@RequestBody TestEmailRequest request) {
         try {
+            String password = request.password();
+            if (password == null || password.isBlank() || "********".equals(password)) {
+                password = settingService.getSettingValue("smtp_password", "");
+            }
             settingService.testSmtpConnection(
                     request.host(),
                     request.port(),
                     request.username(),
-                    request.password()
+                    password
             );
             return ResponseEntity.ok(Map.of("success", true, "message", "SMTP Connection successful!"));
         } catch (Exception e) {

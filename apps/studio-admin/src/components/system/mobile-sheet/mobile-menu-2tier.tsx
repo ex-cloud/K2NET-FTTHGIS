@@ -81,16 +81,28 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 export function getSecondaryKey(href: string): string | null {
-  if (href.startsWith("/observability")) return "observability";
+  if (href.startsWith("/overview") || href.startsWith("/inbox")) return null;
+  if (href.startsWith("/ai") || href.startsWith("/assets-3d")) return "ai";
+  if (href.startsWith("/tasks")) return "tasks";
+  if (href.startsWith("/catalog") || href.startsWith("/packages")) return "catalog";
+  if (href.startsWith("/billing")) return "billing";
+  if (href.startsWith("/licensing") || href.startsWith("/licenses")) return "licensing";
+  if (href.startsWith("/organizations") || href.startsWith("/vpn")) return "organizations";
+  if (
+    href.startsWith("/users") ||
+    href.startsWith("/security/roles") ||
+    href.startsWith("/security/permissions") ||
+    href.startsWith("/security/auth") ||
+    href.startsWith("/security/sso")
+  ) {
+    return "identity";
+  }
   if (href.startsWith("/security")) return "security";
   if (href.startsWith("/gateways")) return "gateways";
-  if (href.startsWith("/settings")) return "settings";
-  if (href.startsWith("/tasks")) return "tasks";
-  if (href.startsWith("/organizations")) return "organizations";
-  if (href.startsWith("/users")) return "users";
+  if (href.startsWith("/observability")) return "observability";
   if (href.startsWith("/logs")) return "logs";
-  if (href.startsWith("/ai")) return "ai";
-  if (href.startsWith("/system/trash")) return "system";
+  if (href.startsWith("/settings")) return "settings";
+  if (href.startsWith("/system/trash") || href.startsWith("/trash")) return "system";
   return null;
 }
 

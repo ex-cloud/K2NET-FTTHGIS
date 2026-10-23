@@ -215,5 +215,22 @@
   "logout_session": "Sign Out from Portal Session",
   "developer_api_keys": "API Keys",
   "developer_webhooks": "Webhooks",
-  "developer_gateways": "Connected Gateways"
+  "developer_gateways": "Connected Gateways",
+  "inbox_approvals": "Inbox & Approvals",
+  "tenants": "Tenants",
+  "billing": "Billing",
+  "licensing_entitlements": "Licensing & Entitlements",
+  "product_catalog": "Product Catalog",
+  "integrations_comms": "Integrations & Comms",
+  "ai_spatial_assets": "AI & Spatial Assets",
+  "data_protection": "Data Protection",
+  "identity_access": "Identity & Access",
+  "security_compliance": "Security & Compliance",
+  "configuration_center": "Configuration Center",
+  "plane_home": "HOME",
+  "plane_operations": "OPERATIONS",
+  "plane_product": "PRODUCT",
+  "plane_platform": "PLATFORM",
+  "plane_governance": "GOVERNANCE",
+  "plane_bottom": "SYSTEM"
 }

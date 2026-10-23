@@ -25,80 +25,82 @@ export type SidebarConfig = {
 };
 
 export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
-  licenses: {
-    title: "Billing & Licenses",
-    translationKey: "nav.billing_licenses",
+  // ── Operations: Billing ──────────────────────────────────────────────────
+  billing: {
+    title: "Billing & Invoices",
+    translationKey: "nav.billing",
     sections: [
-      {
-        title: "Catalog & Plans",
-        translationKey: "nav.catalog_plans",
-        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
-        items: [
-          { title: "Master Plans", translationKey: "nav.plan_tiers_quotas", url: "/catalog/plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Packages & Add-ons", translationKey: "nav.catalog_packages", url: "/catalog/packages", icon: "Boxes", shortcut: "S then K", requiredPermission: ["system.organizations.view"] },
-          { title: "Billing Policies", translationKey: "nav.billing_policies", url: "/catalog/policies", icon: "ScrollText", shortcut: "S then O", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Message Templates", translationKey: "nav.message_templates", url: "/catalog/templates", icon: "MessageSquare", shortcut: "S then T", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-        ],
-      },
       {
         title: "Billing & Operations",
         translationKey: "nav.billing_ops",
-        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        requiredPermission: ["billing.read", "system.organizations.view"],
         items: [
-          { title: "Billing Overview", translationKey: "nav.billing_overview", url: "/billing", icon: "BarChart3", shortcut: "S then B", requiredPermission: ["system.organizations.view"] },
-          { title: "Tenant Subscriptions", translationKey: "nav.tenant_subscriptions", url: "/billing/subscriptions", icon: "CreditCard", shortcut: "S then S", requiredPermission: ["system.organizations.manage"] },
-          { title: "Invoices & Payments", translationKey: "nav.invoices_payments", url: "/billing/invoices", icon: "Receipt", shortcut: "S then I", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Renewals & Dunning", translationKey: "nav.license_notifications_log", url: "/billing/renewals", icon: "Bell", shortcut: "S then N", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-        ],
-      },
-      {
-        title: "Licensing & Integrity",
-        translationKey: "nav.licensing_security",
-        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
-        items: [
-          { title: "Licenses & Contracts", translationKey: "nav.all_licenses", url: "/licensing/licenses", icon: "KeyRound", shortcut: "S then L", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Revocations & Kill-Switch", translationKey: "nav.license_kill_switch", url: "/licensing/revocations", icon: "ShieldAlert", shortcut: "S then R", requiredPermission: ["system.organizations.manage"] },
+          { title: "Billing Overview", translationKey: "nav.billing_overview", url: "/billing", icon: "BarChart3", shortcut: "S then B", requiredPermission: ["billing.read", "system.organizations.view"] },
+          { title: "Tenant Subscriptions", translationKey: "nav.tenant_subscriptions", url: "/billing/subscriptions", icon: "CreditCard", shortcut: "S then S", requiredPermission: ["billing.read", "system.organizations.manage"] },
+          { title: "Invoices & Payments", translationKey: "nav.invoices_payments", url: "/billing/invoices", icon: "Receipt", shortcut: "S then I", requiredPermission: ["billing.read", "system.organizations.view"] },
+          { title: "Renewals & Dunning", translationKey: "nav.license_notifications_log", url: "/billing/renewals", icon: "Bell", shortcut: "S then N", requiredPermission: ["billing.read", "system.organizations.view"] },
         ],
       },
     ],
   },
-  packages: {
-    title: "Packages & Add-ons",
-    translationKey: "nav.packages_marketplace",
+
+  // ── Operations: Licensing & Entitlements ──────────────────────────────────
+  licensing: {
+    title: "Licensing & Entitlements",
+    translationKey: "nav.licensing_entitlements",
     sections: [
       {
-        title: "Catalog Governance",
-        translationKey: "nav.packages_catalog_governance",
-        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        title: "Licensing & Integrity",
+        translationKey: "nav.licensing_security",
+        requiredPermission: ["licensing.read", "system.organizations.view"],
         items: [
-          { title: "All Packages", translationKey: "nav.packages_all", url: "/packages", icon: "Boxes", shortcut: "S then A", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Published & Live", translationKey: "nav.packages_published", url: "/packages?status=PUBLISHED", icon: "CheckCircle", shortcut: "S then 1", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
-          { title: "Drafts & In-Review", translationKey: "nav.packages_drafts", url: "/packages?status=DRAFT", icon: "Clock", shortcut: "S then 2", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "Licenses & Contracts", translationKey: "nav.all_licenses", url: "/licensing/licenses", icon: "KeyRound", shortcut: "S then L", requiredPermission: ["licensing.read", "system.organizations.view"] },
+          { title: "Revocations & Kill-Switch", translationKey: "nav.license_kill_switch", url: "/licensing/revocations", icon: "ShieldAlert", shortcut: "S then R", requiredPermission: ["licensing.killswitch", "system.organizations.manage"] },
+        ],
+      },
+    ],
+  },
+
+  // ── Product: Product Catalog ──────────────────────────────────────────────
+  catalog: {
+    title: "Product Catalog",
+    translationKey: "nav.product_catalog",
+    sections: [
+      {
+        title: "Master Catalog",
+        translationKey: "nav.catalog_plans",
+        requiredPermission: ["catalog.plans.read", "system.packages.view", "system.organizations.view"],
+        items: [
+          { title: "Master Plans", translationKey: "nav.plan_tiers_quotas", url: "/catalog/plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["catalog.plans.read", "system.organizations.manage"] },
+          { title: "Packages & Add-ons", translationKey: "nav.catalog_packages", url: "/catalog/packages", icon: "Boxes", shortcut: "S then K", requiredPermission: ["system.packages.view", "system.organizations.view"] },
+          { title: "Billing Policies", translationKey: "nav.billing_policies", url: "/catalog/policies", icon: "ScrollText", shortcut: "S then O", requiredPermission: ["billing.read", "system.organizations.view"] },
         ],
       },
       {
         title: "Domain Taxonomy",
         translationKey: "nav.packages_domain_taxonomy",
-        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        requiredPermission: ["system.packages.view", "system.organizations.view"],
         items: [
-          { title: "Telemetry & OLT Polling", translationKey: "packages.category.TELEMETRY", url: "/packages?category=TELEMETRY", icon: "Activity", shortcut: "S then T", requiredPermission: ["system.organizations.view"] },
-          { title: "Field Operations & Workforce", translationKey: "packages.category.FIELD_OPS", url: "/packages?category=FIELD_OPS", icon: "Wrench", shortcut: "S then F", requiredPermission: ["system.organizations.view"] },
-          { title: "Capacity Boosters & Quotas", translationKey: "packages.category.CAPACITY_BOOSTER", url: "/packages?category=CAPACITY_BOOSTER", icon: "DatabaseZap", shortcut: "S then C", requiredPermission: ["system.organizations.view"] },
-          { title: "Security, SIEM & Forensic", translationKey: "packages.category.SECURITY_GOV", url: "/packages?category=SECURITY_GOV", icon: "ShieldCheck", shortcut: "S then S", requiredPermission: ["system.organizations.view"] },
-          { title: "Civil Infra & IoT Handhole", translationKey: "packages.category.CIVIL_INFRA", url: "/packages?category=CIVIL_INFRA", icon: "Radio", shortcut: "S then I", requiredPermission: ["system.organizations.view"] },
-          { title: "AI Copilot & Diagnostics", translationKey: "packages.category.AI_COPILOT", url: "/packages?category=AI_COPILOT", icon: "Sparkles", shortcut: "S then X", requiredPermission: ["system.organizations.view"] },
+          { title: "Telemetry & OLT Polling", translationKey: "packages.category.TELEMETRY", url: "/catalog/packages?category=TELEMETRY", icon: "Activity", shortcut: "S then T", requiredPermission: ["system.packages.view"] },
+          { title: "Field Operations & Workforce", translationKey: "packages.category.FIELD_OPS", url: "/catalog/packages?category=FIELD_OPS", icon: "Wrench", shortcut: "S then F", requiredPermission: ["system.packages.view"] },
+          { title: "Capacity Boosters & Quotas", translationKey: "packages.category.CAPACITY_BOOSTER", url: "/catalog/packages?category=CAPACITY_BOOSTER", icon: "DatabaseZap", shortcut: "S then C", requiredPermission: ["system.packages.view"] },
+          { title: "Security, SIEM & Forensic", translationKey: "packages.category.SECURITY_GOV", url: "/catalog/packages?category=SECURITY_GOV", icon: "ShieldCheck", shortcut: "S then S", requiredPermission: ["system.packages.view"] },
+          { title: "Civil Infra & IoT Handhole", translationKey: "packages.category.CIVIL_INFRA", url: "/catalog/packages?category=CIVIL_INFRA", icon: "Radio", shortcut: "S then I", requiredPermission: ["system.packages.view"] },
+          { title: "AI Copilot & Diagnostics", translationKey: "packages.category.AI_COPILOT", url: "/catalog/packages?category=AI_COPILOT", icon: "Sparkles", shortcut: "S then X", requiredPermission: ["system.packages.view"] },
         ],
       },
       {
         title: "Dependency Rules",
         translationKey: "nav.packages_rules_matrix",
-        requiredPermission: ["system.organizations.view", "system.organizations.manage"],
+        requiredPermission: ["system.packages.view", "system.organizations.manage"],
         items: [
-          { title: "3-Layer Compatibility Matrix", translationKey: "nav.packages_compatibility", url: "/packages?view=rules", icon: "Network", shortcut: "S then M", requiredPermission: ["system.organizations.view", "system.organizations.manage"] },
+          { title: "3-Layer Compatibility Matrix", translationKey: "nav.packages_compatibility", url: "/catalog/packages?view=rules", icon: "Network", shortcut: "S then M", requiredPermission: ["system.packages.view", "system.organizations.manage"] },
         ],
       },
     ],
   },
+
+  // ── Operations: Organizations / Tenants ──────────────────────────────────
   organizations: {
     title: "Organizations",
     translationKey: "nav.organizations",
@@ -143,130 +145,48 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
     ],
   },
-  logs: {
-    title: "Global Logs",
-    translationKey: "nav.global_logs",
+
+  // ── Operations: Projects & Issues ────────────────────────────────────────
+  tasks: {
+    title: "Support & Issues",
+    translationKey: "nav.projects_issues",
     sections: [
       {
-        title: "Forensics & Stream",
-        translationKey: "nav.global_logs",
-        requiredPermission: "system.audit.view",
+        title: "Workspace",
+        translationKey: "nav.projects_plans",
+        requiredPermission: "system.task.manage",
         items: [
-          { title: "Logs Explorer", translationKey: "nav.logs_explorer", url: "/logs", icon: "Terminal", shortcut: "S then L", requiredPermission: "system.audit.view" },
+          { title: "Projects & Plans", translationKey: "nav.projects_plans", url: "/tasks/projects", icon: "FolderKanban", shortcut: "S then P", requiredPermission: "system.task.manage" },
+          { title: "Internal Platform Issues", translationKey: "nav.internal_platform_issues", url: "/tasks?scope=PLATFORM_INTERNAL", icon: "Server", shortcut: "S then I", requiredPermission: "system.task.manage" },
+          { title: "B2B Mitra Escalations", translationKey: "nav.b2b_escalations", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Building2", shortcut: "S then B", requiredPermission: "system.task.manage" },
         ],
       },
       {
-        title: "System Operations",
-        translationKey: "nav.operations_feed",
-        requiredPermission: "system.observability.view",
+        title: "Views",
+        translationKey: "nav.all_issues",
+        requiredPermission: "system.task.manage",
         items: [
-          { title: "Operations Feed", translationKey: "nav.operations_feed", url: "/observability/operations", icon: "History", shortcut: "S then O", requiredPermission: "system.observability.view" },
+          { title: "All Issues", translationKey: "nav.all_issues", url: "/tasks", icon: "LayoutDashboard", shortcut: "S then A", requiredPermission: "system.task.manage" },
+          { title: "Active Issues", translationKey: "nav.active_issues", url: "/tasks?quick=active", icon: "Activity", shortcut: "S then 1", requiredPermission: "system.task.manage" },
+          { title: "Overdue", translationKey: "nav.overdue_issues", url: "/tasks?quick=overdue", icon: "CalendarClock", shortcut: "S then 2", requiredPermission: "system.task.manage" },
+          { title: "Unassigned", translationKey: "nav.unassigned_issues", url: "/tasks?quick=no-assignee", icon: "UserX", shortcut: "S then 3", requiredPermission: "system.task.manage" },
+          { title: "Upcoming 7d", translationKey: "nav.upcoming_7d", url: "/tasks?quick=upcoming", icon: "Clock", shortcut: "S then 4", requiredPermission: "system.task.manage" },
+          { title: "Resolved", translationKey: "nav.resolved_issues", url: "/tasks?quick=resolved", icon: "CheckCircle", shortcut: "S then 5", requiredPermission: "system.task.manage" },
+        ],
+      },
+      {
+        title: "Personal",
+        translationKey: "nav.my_assigned_issues",
+        requiredPermission: "system.task.manage",
+        items: [
+          { title: "My Assigned Issues", translationKey: "nav.my_assigned_issues", url: "/tasks?quick=my-issues", icon: "ClipboardList", shortcut: "S then M", requiredPermission: "system.task.manage" },
+          { title: "Created by Me", translationKey: "nav.created_by_me", url: "/tasks?quick=created-by-me", icon: "UserCheck", shortcut: "S then C", requiredPermission: "system.task.manage" },
         ],
       },
     ],
   },
-  users: {
-    title: "User Registry",
-    translationKey: "nav.user_registry",
-    sections: [
-      {
-        title: "User Management",
-        translationKey: "nav.user_management",
-        requiredPermission: ["system.security.manage", "users.view", "roles.view"],
-        items: [
-          { title: "Global Users", translationKey: "nav.global_users", url: "/users", icon: "Users", shortcut: "S then U", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
-        ],
-      },
-      {
-        title: "Access Control",
-        translationKey: "security.roles_matrix",
-        requiredPermission: ["system.security.manage", "roles.update", "users.manage"],
-        items: [
-          { title: "Global Roles", translationKey: "nav.global_roles", url: "/users/roles", icon: "ShieldCheck", shortcut: "S then R", requiredPermission: ["system.security.manage", "roles.update", "users.manage"] },
-        ],
-      },
-      {
-        title: "Activity",
-        translationKey: "nav.user_sessions",
-        requiredPermission: "system.security.manage",
-        items: [
-          { title: "User Sessions", translationKey: "nav.user_sessions", url: "/users/sessions", icon: "History", shortcut: "S then S", requiredPermission: "system.security.manage" },
-        ],
-      },
-    ],
-  },
-  security: {
-    title: "Security Settings",
-    translationKey: "nav.security",
-    sections: [
-      {
-        title: "Access Control",
-        translationKey: "security.roles_matrix",
-        requiredPermission: "system.security.manage",
-        items: [
-          { title: "Role Templates", translationKey: "nav.role_templates", url: "/security/roles", icon: "UserCog", shortcut: "S then R", requiredPermission: "system.security.manage" },
-          { title: "Permissions", translationKey: "nav.permissions", url: "/security/permissions", icon: "KeyRound", shortcut: "S then P", requiredPermission: "system.security.manage" },
-        ],
-      },
-      {
-        title: "Identity & Auth",
-        translationKey: "nav.authentication",
-        requiredPermission: "system.security.manage",
-        items: [
-          { title: "Authentication", translationKey: "nav.authentication", url: "/security/auth", icon: "ShieldCheck", shortcut: "S then A", requiredPermission: "system.security.manage" },
-          { title: "SSO Providers", translationKey: "nav.sso_providers", url: "/security/sso", icon: "Fingerprint", shortcut: "S then S", requiredPermission: "system.security.manage" },
-        ],
-      },
-      {
-        title: "Monitoring",
-        translationKey: "nav.sec_monitoring",
-        items: [
-          { title: "Security Alerts", translationKey: "nav.security_alerts", url: "/security/alerts", icon: "ShieldAlert", shortcut: "S then M", requiredPermission: "system.security.manage" },
-        ],
-      },
-      {
-        title: "Policies",
-        translationKey: "nav.sec_policies",
-        requiredPermission: "system.security.manage",
-        items: [
-          { title: "Password Policy", translationKey: "nav.password_policy", url: "/security/password-policy", icon: "ScrollText", shortcut: "S then W", requiredPermission: "system.security.manage" },
-          { title: "Compliance", translationKey: "nav.compliance", url: "/security/compliance", icon: "FileText", shortcut: "S then C", requiredPermission: "system.security.manage" },
-          { title: "Audit Policy & Retention", translationKey: "nav.audit_policy", url: "/security/audit", icon: "ArchiveRestore", shortcut: "S then L", requiredPermission: "system.audit.view" },
-        ],
-      },
-    ],
-  },
-  gateways: {
-    title: "Gateways & Integration",
-    translationKey: "nav.gateways",
-    sections: [
-      {
-        title: "Overview",
-        translationKey: "nav.overview",
-        requiredPermission: "system.observability.view",
-        items: [
-          { title: "Status & Metrics", translationKey: "nav.status_metrics", url: "/gateways/overview", icon: "BarChart3", shortcut: "S then O", requiredPermission: "system.observability.view" },
-        ],
-      },
-      {
-        title: "Services Control",
-        translationKey: "nav.services_control",
-        requiredPermission: "system.gateway.manage",
-        items: [
-          { title: "Notification Gateway", translationKey: "nav.notification_gateway", url: "/gateways/notification", icon: "MessageSquare", shortcut: "S then N", requiredPermission: "system.gateway.manage" },
-          { title: "Payment Gateway", translationKey: "nav.payment_gateway", url: "/gateways/payment", icon: "CreditCard", shortcut: "S then P", requiredPermission: "system.gateway.manage" },
-          { title: "Map Gateway", translationKey: "nav.map_gateway", url: "/gateways/map", icon: "Map", shortcut: "S then M", requiredPermission: "system.gateway.manage" },
-          { title: "Storage Gateway", translationKey: "nav.storage_gateway", url: "/gateways/storage", icon: "Database", shortcut: "S then S", requiredPermission: "system.gateway.manage" },
-          { title: "WhatsApp Gateway", translationKey: "nav.whatsapp_gateway", url: "/gateways/whatsapp", icon: "MessageCircle", shortcut: "S then W", requiredPermission: "system.gateway.manage" },
-          { title: "Scheduler Gateway", translationKey: "nav.scheduler_gateway", url: "/gateways/scheduler", icon: "Clock", shortcut: "S then C", requiredPermission: "system.gateway.manage" },
-          { title: "Export Gateway", translationKey: "nav.export_gateway", url: "/gateways/export", icon: "Download", shortcut: "S then E", requiredPermission: "system.gateway.manage" },
-          { title: "OLT Gateway", translationKey: "nav.olt_gateway", url: "/gateways/olt", icon: "Network", shortcut: "S then T", requiredPermission: "system.gateway.manage" },
-          { title: "Audit Gateway", translationKey: "nav.audit_gateway", url: "/gateways/audit", icon: "FileText", shortcut: "S then A", requiredPermission: "system.gateway.manage" },
-          { title: "Poller Gateway", translationKey: "nav.poller_gateway", url: "/gateways/poller", icon: "Activity", shortcut: "S then L", requiredPermission: "system.gateway.manage" },
-        ],
-      },
-    ],
-  },
+
+  // ── Platform: Observability ──────────────────────────────────────────────
   observability: {
     title: "Observability",
     translationKey: "nav.observability",
@@ -304,9 +224,52 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
     ],
   },
+
+  // ── Platform: Integrations & Comms ───────────────────────────────────────
+  gateways: {
+    title: "Integrations & Comms",
+    translationKey: "nav.integrations_comms",
+    sections: [
+      {
+        title: "Overview",
+        translationKey: "nav.overview",
+        requiredPermission: "system.observability.view",
+        items: [
+          { title: "Status & Metrics", translationKey: "nav.status_metrics", url: "/gateways/overview", icon: "BarChart3", shortcut: "S then O", requiredPermission: "system.observability.view" },
+        ],
+      },
+      {
+        title: "Communications & Templates",
+        translationKey: "nav.message_templates",
+        requiredPermission: ["system.organizations.manage", "system.gateway.manage"],
+        items: [
+          { title: "Message Templates", translationKey: "nav.message_templates", url: "/catalog/templates", icon: "MessageSquare", shortcut: "S then T", requiredPermission: ["system.organizations.manage", "system.gateway.manage"] },
+        ],
+      },
+      {
+        title: "Services Control",
+        translationKey: "nav.services_control",
+        requiredPermission: "system.gateway.manage",
+        items: [
+          { title: "Notification Gateway", translationKey: "nav.notification_gateway", url: "/gateways/notification", icon: "MessageSquare", shortcut: "S then N", requiredPermission: "system.gateway.manage" },
+          { title: "Payment Gateway", translationKey: "nav.payment_gateway", url: "/gateways/payment", icon: "CreditCard", shortcut: "S then P", requiredPermission: "system.gateway.manage" },
+          { title: "Map Gateway", translationKey: "nav.map_gateway", url: "/gateways/map", icon: "Map", shortcut: "S then M", requiredPermission: "system.gateway.manage" },
+          { title: "Storage Gateway", translationKey: "nav.storage_gateway", url: "/gateways/storage", icon: "Database", shortcut: "S then S", requiredPermission: "system.gateway.manage" },
+          { title: "WhatsApp Gateway", translationKey: "nav.whatsapp_gateway", url: "/gateways/whatsapp", icon: "MessageCircle", shortcut: "S then W", requiredPermission: "system.gateway.manage" },
+          { title: "Scheduler Gateway", translationKey: "nav.scheduler_gateway", url: "/gateways/scheduler", icon: "Clock", shortcut: "S then C", requiredPermission: "system.gateway.manage" },
+          { title: "Export Gateway", translationKey: "nav.export_gateway", url: "/gateways/export", icon: "Download", shortcut: "S then E", requiredPermission: "system.gateway.manage" },
+          { title: "OLT Gateway", translationKey: "nav.olt_gateway", url: "/gateways/olt", icon: "Network", shortcut: "S then H", requiredPermission: "system.gateway.manage" },
+          { title: "Audit Gateway", translationKey: "nav.audit_gateway", url: "/gateways/audit", icon: "FileText", shortcut: "S then A", requiredPermission: "system.gateway.manage" },
+          { title: "Poller Gateway", translationKey: "nav.poller_gateway", url: "/gateways/poller", icon: "Activity", shortcut: "S then L", requiredPermission: "system.gateway.manage" },
+        ],
+      },
+    ],
+  },
+
+  // ── Platform: AI & Spatial Assets ─────────────────────────────────────────
   ai: {
-    title: "AI Assistant & Copilot",
-    translationKey: "nav.ai_assistant",
+    title: "AI & Spatial Assets",
+    translationKey: "nav.ai_spatial_assets",
     sections: [
       {
         title: "Basis Pengetahuan (RAG)",
@@ -329,53 +292,119 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         ],
       },
       {
-        title: "Engine & Orkestrasi",
+        title: "Engine & Spatial Assets",
         translationKey: "nav.multi_provider_hub",
-        requiredPermission: "system.ai.manage",
+        requiredPermission: ["system.ai.manage", "system.settings.manage"],
         items: [
           { title: "Multi-Provider Hub", translationKey: "nav.multi_provider_hub", url: "/ai/config", icon: "Cpu", shortcut: "S then M", requiredPermission: "system.ai.manage" },
+          { title: "3D Spatial Assets", translationKey: "nav.three_d_assets", url: "/assets-3d", icon: "Box", shortcut: "S then 3", requiredPermission: "system.settings.manage" },
         ],
       },
     ],
   },
-  tasks: {
-    title: "Projects & Issues",
-    translationKey: "nav.projects_issues",
+
+  // ── Platform: Data Protection ─────────────────────────────────────────────
+  system: {
+    title: "Data Protection",
+    translationKey: "nav.data_protection",
     sections: [
       {
-        title: "Workspace",
-        translationKey: "nav.projects_plans",
-        requiredPermission: "system.task.manage",
+        title: "Data Recovery",
+        translationKey: "nav.recycle_bin",
+        requiredPermission: "system.trash.manage",
         items: [
-          { title: "Projects & Plans", translationKey: "nav.projects_plans", url: "/tasks/projects", icon: "FolderKanban", shortcut: "S then P", requiredPermission: "system.task.manage" },
-          { title: "Internal Platform Issues", translationKey: "nav.internal_platform_issues", url: "/tasks?scope=PLATFORM_INTERNAL", icon: "Server", shortcut: "S then I", requiredPermission: "system.task.manage" },
-          { title: "B2B Mitra Escalations", translationKey: "nav.b2b_escalations", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Building2", shortcut: "S then B", requiredPermission: "system.task.manage" },
-        ],
-      },
-      {
-        title: "Views",
-        translationKey: "nav.all_issues",
-        requiredPermission: "system.task.manage",
-        items: [
-          { title: "All Issues", translationKey: "nav.all_issues", url: "/tasks", icon: "LayoutDashboard", shortcut: "S then A", requiredPermission: "system.task.manage" },
-          { title: "Active Issues", translationKey: "nav.active_issues", url: "/tasks?quick=active", icon: "Activity", shortcut: "S then 1", requiredPermission: "system.task.manage" },
-          { title: "Overdue", translationKey: "nav.overdue_issues", url: "/tasks?quick=overdue", icon: "CalendarClock", shortcut: "S then 2", requiredPermission: "system.task.manage" },
-          { title: "Unassigned", translationKey: "nav.unassigned_issues", url: "/tasks?quick=no-assignee", icon: "UserX", shortcut: "S then 3", requiredPermission: "system.task.manage" },
-          { title: "Upcoming 7d", translationKey: "nav.upcoming_7d", url: "/tasks?quick=upcoming", icon: "Clock", shortcut: "S then 4", requiredPermission: "system.task.manage" },
-          { title: "Resolved", translationKey: "nav.resolved_issues", url: "/tasks?quick=resolved", icon: "CheckCircle", shortcut: "S then 5", requiredPermission: "system.task.manage" },
-        ],
-      },
-      {
-        title: "Personal",
-        translationKey: "nav.my_assigned_issues",
-        requiredPermission: "system.task.manage",
-        items: [
-          { title: "My Assigned Issues", translationKey: "nav.my_assigned_issues", url: "/tasks?quick=my-issues", icon: "ClipboardList", shortcut: "S then M", requiredPermission: "system.task.manage" },
-          { title: "Created by Me", translationKey: "nav.created_by_me", url: "/tasks?quick=created-by-me", icon: "UserCheck", shortcut: "S then C", requiredPermission: "system.task.manage" },
+          { title: "Recycle Bin", translationKey: "nav.recycle_bin", url: "/system/trash", icon: "Trash2", shortcut: "S then R", requiredPermission: "system.trash.manage" },
         ],
       },
     ],
   },
+
+  // ── Governance: Identity & Access ─────────────────────────────────────────
+  identity: {
+    title: "Identity & Access",
+    translationKey: "nav.identity_access",
+    sections: [
+      {
+        title: "User Management",
+        translationKey: "nav.user_management",
+        requiredPermission: ["system.security.manage", "users.view", "roles.view"],
+        items: [
+          { title: "Global Users", translationKey: "nav.global_users", url: "/users", icon: "Users", shortcut: "S then U", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
+          { title: "User Sessions", translationKey: "nav.user_sessions", url: "/users/sessions", icon: "History", shortcut: "S then S", requiredPermission: "system.security.manage" },
+        ],
+      },
+      {
+        title: "Access Control",
+        translationKey: "security.roles_matrix",
+        requiredPermission: "system.security.manage",
+        items: [
+          { title: "Role Templates", translationKey: "nav.role_templates", url: "/security/roles", icon: "UserCog", shortcut: "S then R", requiredPermission: "system.security.manage" },
+          { title: "Permissions", translationKey: "nav.permissions", url: "/security/permissions", icon: "KeyRound", shortcut: "S then P", requiredPermission: "system.security.manage" },
+        ],
+      },
+      {
+        title: "Identity & Auth",
+        translationKey: "nav.authentication",
+        requiredPermission: "system.security.manage",
+        items: [
+          { title: "Authentication", translationKey: "nav.authentication", url: "/security/auth", icon: "ShieldCheck", shortcut: "S then A", requiredPermission: "system.security.manage" },
+          { title: "SSO Providers", translationKey: "nav.sso_providers", url: "/security/sso", icon: "Fingerprint", shortcut: "S then F", requiredPermission: "system.security.manage" },
+        ],
+      },
+    ],
+  },
+
+  // ── Governance: Security & Compliance ─────────────────────────────────────
+  security: {
+    title: "Security & Compliance",
+    translationKey: "nav.security_compliance",
+    sections: [
+      {
+        title: "Threat & Alerts",
+        translationKey: "nav.sec_monitoring",
+        requiredPermission: "system.security.manage",
+        items: [
+          { title: "Security Alerts", translationKey: "nav.security_alerts", url: "/security/alerts", icon: "ShieldAlert", shortcut: "S then M", requiredPermission: "system.security.manage" },
+        ],
+      },
+      {
+        title: "Governance & Policies",
+        translationKey: "nav.sec_policies",
+        requiredPermission: "system.security.manage",
+        items: [
+          { title: "Password Policy", translationKey: "nav.password_policy", url: "/security/password-policy", icon: "ScrollText", shortcut: "S then W", requiredPermission: "system.security.manage" },
+          { title: "Compliance", translationKey: "nav.compliance", url: "/security/compliance", icon: "FileText", shortcut: "S then C", requiredPermission: "system.security.manage" },
+          { title: "Audit Policy & Retention", translationKey: "nav.audit_policy", url: "/security/audit", icon: "ArchiveRestore", shortcut: "S then L", requiredPermission: "system.audit.view" },
+        ],
+      },
+    ],
+  },
+
+  // ── Platform: Logs (Forensics) ───────────────────────────────────────────
+  logs: {
+    title: "Global Logs",
+    translationKey: "nav.global_logs",
+    sections: [
+      {
+        title: "Forensics & Stream",
+        translationKey: "nav.global_logs",
+        requiredPermission: "system.audit.view",
+        items: [
+          { title: "Logs Explorer", translationKey: "nav.logs_explorer", url: "/logs", icon: "Terminal", shortcut: "S then L", requiredPermission: "system.audit.view" },
+        ],
+      },
+      {
+        title: "System Operations",
+        translationKey: "nav.operations_feed",
+        requiredPermission: "system.observability.view",
+        items: [
+          { title: "Operations Feed", translationKey: "nav.operations_feed", url: "/observability/operations", icon: "History", shortcut: "S then O", requiredPermission: "system.observability.view" },
+        ],
+      },
+    ],
+  },
+
+  // ── Bottom: Configuration Center ──────────────────────────────────────────
   settings: {
     title: "Global Settings",
     translationKey: "nav.settings",
@@ -394,18 +423,10 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
     ],
   },
-  system: {
-    title: "System Recovery",
-    translationKey: "nav.recycle_bin",
-    sections: [
-      {
-        title: "Data Recovery",
-        translationKey: "nav.recycle_bin",
-        requiredPermission: "system.trash.manage",
-        items: [
-          { title: "Recycle Bin", translationKey: "nav.recycle_bin", url: "/system/trash", icon: "Trash2", shortcut: "S then R", requiredPermission: "system.trash.manage" },
-        ],
-      },
-    ],
-  },
 };
+
+// ── Backwards-Compatibility Aliases ─────────────────────────────────────────
+SYSTEM_SIDEBAR_NAVIGATION.licenses = SYSTEM_SIDEBAR_NAVIGATION.licensing;
+SYSTEM_SIDEBAR_NAVIGATION.packages = SYSTEM_SIDEBAR_NAVIGATION.catalog;
+SYSTEM_SIDEBAR_NAVIGATION.users = SYSTEM_SIDEBAR_NAVIGATION.identity;
+SYSTEM_SIDEBAR_NAVIGATION.data_protection = SYSTEM_SIDEBAR_NAVIGATION.system;
