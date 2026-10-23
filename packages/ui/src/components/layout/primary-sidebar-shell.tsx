@@ -6,6 +6,7 @@ import { AppVersionBadge } from "./app-version-badge";
 export interface PrimarySidebarShellProps extends React.HTMLAttributes<HTMLElement> {
   isExpanded?: boolean;
   isFloating?: boolean;
+  expandedWidth?: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   topSection?: React.ReactNode;
@@ -19,6 +20,7 @@ export const PrimarySidebarShell = React.forwardRef<HTMLElement, PrimarySidebarS
     {
       isExpanded = false,
       isFloating = false,
+      expandedWidth,
       onMouseEnter,
       onMouseLeave,
       topSection,
@@ -58,7 +60,7 @@ export const PrimarySidebarShell = React.forwardRef<HTMLElement, PrimarySidebarS
           className={cn(
             "hidden md:flex border-r border-border/80 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden select-none",
             isFloating ? "" : "z-50",
-            isExpanded ? "w-[200px]" : "w-[50px]",
+            isExpanded ? (expandedWidth ?? "w-[240px]") : "w-[50px]",
             className
           )}
           {...props}

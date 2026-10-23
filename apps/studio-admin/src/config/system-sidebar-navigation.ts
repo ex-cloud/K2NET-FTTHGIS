@@ -74,6 +74,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
           { title: "Master Plans", translationKey: "nav.plan_tiers_quotas", url: "/catalog/plans", icon: "Sliders", shortcut: "S then P", requiredPermission: ["catalog.plans.read", "system.organizations.manage"] },
           { title: "Packages & Add-ons", translationKey: "nav.catalog_packages", url: "/catalog/packages", icon: "Boxes", shortcut: "S then K", requiredPermission: ["system.packages.view", "system.organizations.view"] },
           { title: "Billing Policies", translationKey: "nav.billing_policies", url: "/catalog/policies", icon: "ScrollText", shortcut: "S then O", requiredPermission: ["billing.read", "system.organizations.view"] },
+          { title: "Message Templates", translationKey: "nav.message_templates", url: "/catalog/templates", icon: "MessageSquare", shortcut: "S then T", requiredPermission: ["system.organizations.manage", "system.gateway.manage"] },
         ],
       },
       {
@@ -202,6 +203,15 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         ],
       },
       {
+        title: "Forensics & Stream",
+        translationKey: "nav.global_logs",
+        requiredPermission: ["system.audit.view", "system.observability.view"],
+        items: [
+          { title: "Logs Explorer", translationKey: "nav.logs_explorer", url: "/logs", icon: "Terminal", shortcut: "S then L", requiredPermission: "system.audit.view" },
+          { title: "Operations Feed", translationKey: "nav.operations_feed", url: "/observability/operations", icon: "History", shortcut: "S then O", requiredPermission: "system.observability.view" },
+        ],
+      },
+      {
         title: "Infrastructure & Core",
         translationKey: "nav.compute_host",
         requiredPermission: "system.observability.view",
@@ -236,14 +246,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         requiredPermission: "system.observability.view",
         items: [
           { title: "Status & Metrics", translationKey: "nav.status_metrics", url: "/gateways/overview", icon: "BarChart3", shortcut: "S then O", requiredPermission: "system.observability.view" },
-        ],
-      },
-      {
-        title: "Communications & Templates",
-        translationKey: "nav.message_templates",
-        requiredPermission: ["system.organizations.manage", "system.gateway.manage"],
-        items: [
-          { title: "Message Templates", translationKey: "nav.message_templates", url: "/catalog/templates", icon: "MessageSquare", shortcut: "S then T", requiredPermission: ["system.organizations.manage", "system.gateway.manage"] },
         ],
       },
       {

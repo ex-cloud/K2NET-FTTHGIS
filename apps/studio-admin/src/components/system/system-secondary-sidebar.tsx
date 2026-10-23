@@ -57,6 +57,7 @@ import {
   Layers,
   Package,
   Receipt,
+  Terminal,
 } from "lucide-react";
 import {
   Collapsible,
@@ -128,6 +129,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Layers,
   Package,
   Receipt,
+  Terminal,
 };
 
 interface OrgCounts {
