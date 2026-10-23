@@ -1,23 +1,25 @@
 FROM golang:1.25-alpine AS builder
 WORKDIR /app
-COPY go.work go.work.sum ./
+
+# 1. Copy only shared and gateway-export dependency definitions
 COPY shared/go.mod shared/go.sum ./shared/
-COPY gateway-audit/go.mod gateway-audit/go.sum ./gateway-audit/
 COPY gateway-export/go.mod gateway-export/go.sum ./gateway-export/
-COPY gateway-olt/go.mod gateway-olt/go.sum ./gateway-olt/
-COPY gateway-scheduler/go.mod gateway-scheduler/go.sum ./gateway-scheduler/
-COPY gateway-whatsapp/go.mod gateway-whatsapp/go.sum ./gateway-whatsapp/
-COPY map-gateway/go.mod map-gateway/go.sum ./map-gateway/
-COPY notification-gateway/go.mod notification-gateway/go.sum ./notification-gateway/
-COPY payment-gateway/go.mod payment-gateway/go.sum ./payment-gateway/
-COPY poller/go.mod poller/go.sum ./poller/
-COPY storage-gateway/go.mod storage-gateway/go.sum ./storage-gateway/
-COPY gateway-task/go.mod gateway-task/go.sum ./gateway-task/
-COPY observability-gateway/go.mod ./observability-gateway/
-RUN go work sync
+
+# 2. Initialize isolated Go workspace for just shared + gateway-export
+RUN go work init ./shared ./gateway-export
+
+# 3. Download dependencies with BuildKit module cache
+RUN --mount=type=cache,target=/go/pkg/mod \
+    cd gateway-export && go mod download
+
+# 4. Copy source code
 COPY shared/ ./shared/
 COPY gateway-export/ ./gateway-export/
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/bin/service ./gateway-export/cmd/main.go
+
+# 5. Build binary with BuildKit module cache and Go compiler build cache
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/bin/service ./gateway-export/cmd/main.go
 
 FROM alpine:3.20
 RUN apk --no-cache add ca-certificates curl
