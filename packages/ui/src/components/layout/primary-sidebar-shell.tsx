@@ -36,14 +36,14 @@ export const PrimarySidebarShell = React.forwardRef<HTMLElement, PrimarySidebarS
   ) => {
     const floatingStyle: React.CSSProperties = isFloating
       ? {
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 50,
-          boxShadow: "none",
-          ...style,
-        }
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        zIndex: 50,
+        boxShadow: "none",
+        ...style,
+      }
       : { ...style };
 
     return (
@@ -60,7 +60,7 @@ export const PrimarySidebarShell = React.forwardRef<HTMLElement, PrimarySidebarS
           className={cn(
             "hidden md:flex border-r border-border/80 flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden select-none",
             isFloating ? "" : "z-50",
-            isExpanded ? (expandedWidth ?? "w-[240px]") : "w-[50px]",
+            isExpanded ? (expandedWidth ?? "w-[220px]") : "w-[50px]",
             className
           )}
           {...props}
