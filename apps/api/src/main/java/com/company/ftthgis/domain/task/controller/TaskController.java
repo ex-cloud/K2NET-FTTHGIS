@@ -27,14 +27,20 @@ import java.util.UUID;
  *
  * <h3>Authorization</h3>
  * <ul>
- *   <li>All read and write endpoints require {@code isAuthenticated()} (Keycloak JWT)</li>
+ *   <li>All read and write endpoints require PBAC permissions (Keycloak JWT)</li>
  *   <li>DELETE is restricted to {@code ROLE_SUPER_ADMIN} only</li>
  * </ul>
  *
  * <h3>Multi-tenancy</h3>
  * The controller activates the Hibernate organization filter for non-super-admin
  * callers before delegating to TaskService, ensuring data isolation per tenant.
+ *
+ * @deprecated Since v3.0.0. Platform Admin operations are partitioned into
+ * {@link com.company.ftthgis.api.system.WorkspaceController} (/api/v1/system/workspace/**) for internal planning
+ * and {@link com.company.ftthgis.api.system.SupportTicketController} (/api/v1/system/support/**) for B2B escalations.
+ * This controller remains active for backward-compatibility with studio-tenant and legacy clients.
  */
+@Deprecated
 @RestController
 @RequestMapping("/api/v1/tasks")
 @RequiredArgsConstructor
@@ -54,20 +60,27 @@ public class TaskController {
             @RequestParam(defaultValue = "DESC") Sort.Direction direction,
             @RequestParam(required = false) String scope
     ) {
-        applyTenantFilter(jwt);
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
+        boolean superAdmin = isSuperAdmin(jwt);
 
         // scope filter: if provided, filter by that scope; otherwise return all
         if (scope != null && !scope.isBlank()) {
             try {
                 TaskScope taskScope = TaskScope.valueOf(scope.toUpperCase());
+                // Cross-tenant support bridge: platform super admin viewing tenant escalations
+                if (superAdmin && taskScope == TaskScope.TENANT_TO_PLATFORM) {
+                    return ResponseEntity.ok(taskService.findCrossTenantSupportTickets(pageable));
+                }
+                applyTenantFilter(jwt);
                 return ResponseEntity.ok(taskService.findByScope(taskScope, pageable));
             } catch (IllegalArgumentException ignored) {
                 // fall through to default
             }
         }
+
+        applyTenantFilter(jwt);
         // Super Admin default: show PLATFORM_INTERNAL + TENANT_TO_PLATFORM combined
-        if (isSuperAdmin(jwt)) {
+        if (superAdmin) {
             return ResponseEntity.ok(taskService.findByScopeIn(
                     List.of(TaskScope.PLATFORM_INTERNAL, TaskScope.TENANT_TO_PLATFORM), pageable));
         }
@@ -118,8 +131,23 @@ public class TaskController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id
     ) {
+        boolean superAdmin = isSuperAdmin(jwt);
+        if (superAdmin) {
+            Task task = taskService.findByIdUnfiltered(id);
+            // Strict IDOR Air-Gap Guard: Super Admin cannot read TENANT_INTERNAL tasks directly (impersonation required)
+            if (task.getScope() == TaskScope.TENANT_INTERNAL) {
+                throw new jakarta.persistence.EntityNotFoundException("Task tidak ditemukan: " + id);
+            }
+            return ResponseEntity.ok(task);
+        }
+
         applyTenantFilter(jwt);
-        return ResponseEntity.ok(taskService.findById(id));
+        Task task = taskService.findById(id);
+        // Strict IDOR Guard: Tenant user cannot read PLATFORM_INTERNAL tasks
+        if (task.getScope() == TaskScope.PLATFORM_INTERNAL) {
+            throw new jakarta.persistence.EntityNotFoundException("Task tidak ditemukan: " + id);
+        }
+        return ResponseEntity.ok(task);
     }
 
     // ─── Get sub-tasks of a task ────────────────────────────────────────────────
@@ -138,9 +166,24 @@ public class TaskController {
 
     @GetMapping("/summary")
     @PreAuthorize("hasAuthority('ticket.view') or @tenantSecurity.hasEffectivePermission('ticket.view')")
-    public ResponseEntity<TaskSummaryDTO> summary(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<TaskSummaryDTO> summary(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(required = false) String scope
+    ) {
+        boolean superAdmin = isSuperAdmin(jwt);
+        TaskScope taskScope = null;
+        if (scope != null && !scope.isBlank()) {
+            try {
+                taskScope = TaskScope.valueOf(scope.toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+
+        if (superAdmin && taskScope == TaskScope.TENANT_TO_PLATFORM) {
+            return ResponseEntity.ok(taskService.getSupportTicketsSummary());
+        }
+
         applyTenantFilter(jwt);
-        return ResponseEntity.ok(taskService.getSummary());
+        return ResponseEntity.ok(taskService.getSummary(taskScope));
     }
 
     // ─── Create task ────────────────────────────────────────────────────────────

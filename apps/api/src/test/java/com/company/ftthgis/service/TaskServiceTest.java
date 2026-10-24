@@ -181,4 +181,144 @@ class TaskServiceTest {
         assertEquals("user-author-999", result.getAuthorId());
         verify(commentRepository).save(any(TaskComment.class));
     }
+
+    @Test
+    void getSummaryWithScopeShouldCallScopeAwareRepositoryMethods() {
+        when(taskRepository.countOpenTasksByScope(eq(TaskScope.PLATFORM_INTERNAL), any())).thenReturn(4L);
+        when(taskRepository.countByScopeAndPriorityAndStatusNotIn(eq(TaskScope.PLATFORM_INTERNAL), eq(com.company.ftthgis.domain.task.entity.TaskPriority.URGENT), any())).thenReturn(1L);
+        when(taskRepository.countResolvedTodayByScope(eq(TaskScope.PLATFORM_INTERNAL), any())).thenReturn(2L);
+
+        var summary = taskService.getSummary(TaskScope.PLATFORM_INTERNAL);
+
+        assertEquals(4L, summary.totalOpen());
+        assertEquals(1L, summary.urgentCount());
+        assertEquals(2L, summary.resolvedToday());
+        verify(taskRepository).countOpenTasksByScope(eq(TaskScope.PLATFORM_INTERNAL), any());
+    }
+
+    @Test
+    void getSupportTicketsSummaryShouldQueryTenantToPlatform() {
+        org.hibernate.Session mockSession = org.mockito.Mockito.mock(org.hibernate.Session.class);
+        when(entityManager.unwrap(org.hibernate.Session.class)).thenReturn(mockSession);
+        when(taskRepository.countOpenTasksByScope(eq(TaskScope.TENANT_TO_PLATFORM), any())).thenReturn(0L);
+        when(taskRepository.countByScopeAndPriorityAndStatusNotIn(eq(TaskScope.TENANT_TO_PLATFORM), eq(com.company.ftthgis.domain.task.entity.TaskPriority.URGENT), any())).thenReturn(0L);
+        when(taskRepository.countResolvedTodayByScope(eq(TaskScope.TENANT_TO_PLATFORM), any())).thenReturn(0L);
+
+        var summary = taskService.getSupportTicketsSummary();
+
+        assertEquals(0L, summary.totalOpen());
+        assertEquals(0L, summary.urgentCount());
+        assertEquals(0L, summary.resolvedToday());
+        verify(mockSession).disableFilter("organizationFilter");
+        verify(taskRepository).countOpenTasksByScope(eq(TaskScope.TENANT_TO_PLATFORM), any());
+    }
+
+    @Test
+    void findCrossTenantSupportTicketsShouldDisableFilterAndQueryTenantToPlatform() {
+        org.hibernate.Session mockSession = org.mockito.Mockito.mock(org.hibernate.Session.class);
+        when(entityManager.unwrap(org.hibernate.Session.class)).thenReturn(mockSession);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        when(taskRepository.findByScope(eq(TaskScope.TENANT_TO_PLATFORM), eq(pageable)))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        var result = taskService.findCrossTenantSupportTickets(pageable);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(mockSession).disableFilter("organizationFilter");
+        verify(taskRepository).findByScope(eq(TaskScope.TENANT_TO_PLATFORM), eq(pageable));
+    }
+
+    @Test
+    void findByIdUnfilteredShouldDisableFilterAndReturnTask() {
+        UUID taskId = UUID.randomUUID();
+        Task task = new Task();
+        task.setId(taskId);
+        task.setScope(TaskScope.TENANT_TO_PLATFORM);
+
+        org.hibernate.Session mockSession = org.mockito.Mockito.mock(org.hibernate.Session.class);
+        when(entityManager.unwrap(org.hibernate.Session.class)).thenReturn(mockSession);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        Task result = taskService.findByIdUnfiltered(taskId);
+
+        assertNotNull(result);
+        assertEquals(taskId, result.getId());
+        verify(mockSession).disableFilter("organizationFilter");
+        verify(taskRepository).findById(taskId);
+    }
+
+    @Test
+    void escalateTicketToIssueShouldCreatePlatformInternalIssueAndAddComment() {
+        UUID ticketId = UUID.randomUUID();
+        Organization mockOrg = new Organization();
+        mockOrg.setId(UUID.randomUUID());
+        mockOrg.setName("ISP Nusantara");
+
+        Task ticket = Task.builder()
+                .type(TaskType.TICKET)
+                .scope(TaskScope.TENANT_TO_PLATFORM)
+                .title("Internet Down in BDG")
+                .description("Fiber cut on ODC-01")
+                .priority(com.company.ftthgis.domain.task.entity.TaskPriority.HIGH)
+                .organization(mockOrg)
+                .obsidianRef("TKT-2026-0001")
+                .build();
+        ticket.setId(ticketId);
+
+        org.hibernate.Session mockSession = org.mockito.Mockito.mock(org.hibernate.Session.class);
+        org.hibernate.Filter mockFilter = org.mockito.Mockito.mock(org.hibernate.Filter.class);
+        when(entityManager.unwrap(org.hibernate.Session.class)).thenReturn(mockSession);
+        when(mockSession.enableFilter(anyString())).thenReturn(mockFilter);
+        when(taskRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
+
+        UUID sentinelId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        Organization sentinelOrg = new Organization();
+        sentinelOrg.setId(sentinelId);
+        sentinelOrg.setName("FTTH GIS Platform Core");
+        when(organizationRepository.findById(sentinelId)).thenReturn(Optional.of(sentinelOrg));
+
+        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> {
+            Task t = inv.getArgument(0);
+            t.setId(UUID.randomUUID());
+            return t;
+        });
+
+        Task createdIssue = taskService.escalateTicketToIssue(
+                ticketId,
+                "Investigate ODC-01 Fiber Cut",
+                "Internal engineering ticket",
+                com.company.ftthgis.domain.task.entity.TaskPriority.URGENT,
+                "eng-assignee-1",
+                "support-agent-9"
+        );
+
+        assertNotNull(createdIssue);
+        assertEquals(TaskScope.PLATFORM_INTERNAL, createdIssue.getScope());
+        assertEquals("Investigate ODC-01 Fiber Cut", createdIssue.getTitle());
+        assertEquals(com.company.ftthgis.domain.task.entity.TaskPriority.URGENT, createdIssue.getPriority());
+        assertEquals("TICKET", createdIssue.getReferenceType());
+        verify(commentRepository).save(any(TaskComment.class));
+    }
+
+    @Test
+    void getSupportSlaMetricsShouldCalculateMetricsCorrectly() {
+        org.hibernate.Session mockSession = org.mockito.Mockito.mock(org.hibernate.Session.class);
+        when(entityManager.unwrap(org.hibernate.Session.class)).thenReturn(mockSession);
+
+        when(taskRepository.countByScope(eq(TaskScope.TENANT_TO_PLATFORM))).thenReturn(10L);
+        when(taskRepository.countOpenTasksByScope(eq(TaskScope.TENANT_TO_PLATFORM), any())).thenReturn(4L);
+        when(taskRepository.countByScopeAndPriorityAndStatusNotIn(eq(TaskScope.TENANT_TO_PLATFORM), eq(com.company.ftthgis.domain.task.entity.TaskPriority.URGENT), any())).thenReturn(1L);
+        when(taskRepository.countByScopeAndStatusIn(eq(TaskScope.TENANT_TO_PLATFORM), any())).thenReturn(6L);
+
+        var metrics = taskService.getSupportSlaMetrics();
+
+        assertNotNull(metrics);
+        assertEquals(10L, metrics.totalTickets());
+        assertEquals(4L, metrics.openTickets());
+        assertEquals(6L, metrics.resolvedTickets());
+        assertEquals(1L, metrics.urgentBreachRisk());
+        assertEquals(90.0, metrics.slaComplianceRate());
+        verify(mockSession).disableFilter("organizationFilter");
+    }
 }

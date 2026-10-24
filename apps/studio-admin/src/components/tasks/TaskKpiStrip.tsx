@@ -7,7 +7,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Card } from "@k2net/ui";
-import { useTaskSummary } from "@/hooks/useTaskSummary";
+import { useTaskSummary, type TaskSummary } from "@/hooks/useTaskSummary";
 import { cn } from "@/lib/utils";
 
 // ─── MetricCard: Compute-style vertical card with progress bar ─────────────────
@@ -47,12 +47,14 @@ function MetricCard({
     },
   };
   const c = colorMap[color];
-  const barColor =
-    color === "primary" && percent > 90
-      ? "bg-rose-500"
-      : color === "primary" && percent > 75
-      ? "bg-amber-500"
-      : c.bar;
+  const barColor = c.bar;
+
+  const ratioLabel =
+    label === "Active Tasks"
+      ? "Active Share"
+      : label === "Urgent"
+      ? "Urgent Share"
+      : "Resolution Rate";
 
   return (
     <Card glowingEffect className="p-5 flex flex-col gap-3">
@@ -81,7 +83,7 @@ function MetricCard({
       {/* Progress bar */}
       <div>
         <div className="flex justify-between text-xs text-muted-foreground mb-1">
-          <span>Utilization</span>
+          <span>{ratioLabel}</span>
           <span>{Math.min(Math.round(percent), 100)}%</span>
         </div>
         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -96,8 +98,14 @@ function MetricCard({
 }
 
 // ─── Main TaskKpiStrip ─────────────────────────────────────────────────────────
-export function TaskKpiStrip() {
-  const { summary, loading } = useTaskSummary();
+interface TaskKpiStripProps {
+  summaryProp?: TaskSummary | null;
+}
+
+export function TaskKpiStrip({ summaryProp }: TaskKpiStripProps = {}) {
+  const { summary: fetchedSummary, loading: hookLoading } = useTaskSummary();
+  const summary = summaryProp !== undefined ? summaryProp : fetchedSummary;
+  const loading = summaryProp !== undefined ? false : hookLoading;
 
   const totalOpen = summary?.totalOpen ?? 0;
   const urgentCount = summary?.urgentCount ?? 0;

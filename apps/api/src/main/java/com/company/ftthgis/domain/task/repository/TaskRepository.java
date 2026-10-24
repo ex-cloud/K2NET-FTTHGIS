@@ -25,9 +25,24 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("SELECT COUNT(t) FROM Task t WHERE t.status NOT IN :terminalStatuses")
     long countOpenTasks(@Param("terminalStatuses") List<TaskStatus> terminalStatuses);
 
+    /** Count tasks by scope not in terminal states — for scope-isolated KPI card. */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.status NOT IN :terminalStatuses")
+    long countOpenTasksByScope(
+            @Param("scope") TaskScope scope,
+            @Param("terminalStatuses") List<TaskStatus> terminalStatuses
+    );
+
     /** Count URGENT tasks not in terminal states — for KPI alert badge. */
     @Query("SELECT COUNT(t) FROM Task t WHERE t.priority = :priority AND t.status NOT IN :terminalStatuses")
     long countByPriorityAndStatusNotIn(
+            @Param("priority") TaskPriority priority,
+            @Param("terminalStatuses") List<TaskStatus> terminalStatuses
+    );
+
+    /** Count URGENT tasks by scope not in terminal states. */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.priority = :priority AND t.status NOT IN :terminalStatuses")
+    long countByScopeAndPriorityAndStatusNotIn(
+            @Param("scope") TaskScope scope,
             @Param("priority") TaskPriority priority,
             @Param("terminalStatuses") List<TaskStatus> terminalStatuses
     );
@@ -36,6 +51,13 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("SELECT COUNT(t) FROM Task t WHERE t.status = 'RESOLVED' AND t.resolvedAt >= :startOfDay")
     long countResolvedToday(@Param("startOfDay") LocalDateTime startOfDay);
 
+    /** Count tasks by scope resolved today. */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.status = 'RESOLVED' AND t.resolvedAt >= :startOfDay")
+    long countResolvedTodayByScope(
+            @Param("scope") TaskScope scope,
+            @Param("startOfDay") LocalDateTime startOfDay
+    );
+
     /** Count per-org and per-type for sequence generation (obsidianRef). */
     @Query("SELECT COUNT(t) FROM Task t WHERE t.organization.id = :orgId AND t.type = :type AND YEAR(t.createdAt) = :year AND MONTH(t.createdAt) = :month")
     long countTasksForMonth(
@@ -43,6 +65,13 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             @Param("type") com.company.ftthgis.domain.task.entity.TaskType type,
             @Param("year") int year,
             @Param("month") int month
+    );
+
+    /** Count per-year and per-scope for sequence generation (ISS-YYYY-XXXX, TKT-YYYY-XXXX). */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND YEAR(t.createdAt) = :year")
+    long countTasksForYear(
+            @Param("scope") TaskScope scope,
+            @Param("year") int year
     );
 
     /** Fetch all tasks having non-null geometry for spatial map integration. */
@@ -57,12 +86,24 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     /** Filter tasks matching any of the given scopes — used by studio-admin combined view. */
     Page<Task> findByScopeIn(List<TaskScope> scopes, Pageable pageable);
 
+    /** Filter tasks by scope and specific task type (e.g. Workspace Projects). */
+    Page<Task> findByScopeAndType(TaskScope scope, com.company.ftthgis.domain.task.entity.TaskType type, Pageable pageable);
+
+    /** Filter tasks by scope excluding a task type (e.g. Engineering Issues excluding Projects). */
+    Page<Task> findByScopeAndTypeNot(TaskScope scope, com.company.ftthgis.domain.task.entity.TaskType type, Pageable pageable);
+
     /** Find all sub-tasks belonging to a parent task. */
     List<Task> findByParentTaskId(UUID parentTaskId);
 
     /** JIT emergency access check for spatial asset modifications. */
     @Query("SELECT COUNT(t) > 0 FROM Task t WHERE t.assigneeId = :assigneeId AND t.referenceId = :referenceId AND t.status NOT IN ('RESOLVED', 'CLOSED')")
     boolean existsActiveAssignment(@Param("assigneeId") String assigneeId, @Param("referenceId") String referenceId);
+
+    /** Count total tasks by scope (across all tenants when org filter is disabled). */
+    long countByScope(TaskScope scope);
+
+    /** Count total tasks by scope matching given status list. */
+    long countByScopeAndStatusIn(TaskScope scope, List<TaskStatus> statuses);
 }
 
 

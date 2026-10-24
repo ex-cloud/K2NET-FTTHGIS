@@ -144,7 +144,17 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("organizations.webhooks.manage", "Manage Tenant Webhooks & Keys",   "organizations", "TENANT"),
 
             // integration — developer open API and webhooks
-            new PermissionData("feature.integration.open_api",  "Developer REST API & Webhooks Access", "integration", "TENANT")
+            new PermissionData("feature.integration.open_api",  "Developer REST API & Webhooks Access", "integration", "TENANT"),
+
+            // platform — workspace, engineering issues & specifications (SYSTEM scope)
+            new PermissionData("platform.projects.view",   "View Workspace Projects & Specs",   "platform", "SYSTEM"),
+            new PermissionData("platform.projects.manage", "Manage Workspace Projects & Specs", "platform", "SYSTEM"),
+            new PermissionData("platform.issues.view",     "View Engineering Issues Backlog",   "platform", "SYSTEM"),
+            new PermissionData("platform.issues.manage",   "Manage Engineering Issues Backlog", "platform", "SYSTEM"),
+
+            // support — B2B tenant escalations & customer support (SYSTEM scope)
+            new PermissionData("support.tickets.view",     "View B2B Tenant Support Tickets",   "support", "SYSTEM"),
+            new PermissionData("support.tickets.manage",   "Manage B2B Tenant Support Tickets", "support", "SYSTEM")
         );
 
         // 2. Ensure all permissions exist in DB and load full catalog
@@ -196,14 +206,17 @@ public class PermissionSeeder implements CommandLineRunner {
         // Scope SYSTEM roles
         syncSystemRole("super_admin", allPermissionsInDb, ""); // Super Admin gets everything
         syncSystemRole("platform_engineer", allPermissionsInDb, 
+            "platform.",
             "system.gis.manage", "system.gateway.manage", "system.backup.manage", 
             "system.observability.view", "system.integration.manage", 
             "system.organizations.view", "system.organizations.webhooks.manage");
         syncSystemRole("account_manager", allPermissionsInDb, 
+            "support.tickets.view",
             "system.tenants.create", "system.tenants.approve", "system.tenants.suspend", 
             "system.contracts.view", "system.contracts.upload", "system.quotas.manage", 
             "system.organizations.view", "system.organizations.create", "system.organizations.update", "orgs.view");
         syncSystemRole("system_support", allPermissionsInDb, 
+            "support.", "platform.issues.view",
             "system.support.impersonate", "system.security.manage", "system.observability.view", 
             "system.organizations.view", "orgs.view");
         syncSystemRole("system_billing", allPermissionsInDb, 

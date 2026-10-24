@@ -27,7 +27,7 @@ const POLL_INTERVAL_MS = 30_000;
  * Returns: totalOpen (all non-terminal tasks), urgentCount, resolvedToday.
  * Tenant-scoped automatically by the backend Hibernate Filter.
  */
-export function useTaskSummary(): UseTaskSummaryResult {
+export function useTaskSummary(scope?: string): UseTaskSummaryResult {
   const { data: session } = useSession();
   const [summary, setSummary] = useState<TaskSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,8 @@ export function useTaskSummary(): UseTaskSummaryResult {
     try {
       setError(null);
       const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/tasks/summary`, { token: session.accessToken });
+      const url = scope ? `${baseUrl}/tasks/summary?scope=${encodeURIComponent(scope)}` : `${baseUrl}/tasks/summary`;
+      const res = await httpClient(url, { token: session.accessToken });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: TaskSummary = await res.json();
       setSummary(data);
@@ -49,7 +50,7 @@ export function useTaskSummary(): UseTaskSummaryResult {
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken]);
+  }, [session?.accessToken, scope]);
 
   useEffect(() => {
     fetchSummary();

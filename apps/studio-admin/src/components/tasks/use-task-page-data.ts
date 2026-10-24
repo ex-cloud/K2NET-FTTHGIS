@@ -21,7 +21,7 @@ export function useTaskPageData(scopeParam: TaskScope | null) {
     fetchMore,
   } = useTasksQuery(undefined, scopeParam ?? undefined);
 
-  const { summary } = useTaskSummary();
+  const { summary } = useTaskSummary(scopeParam ?? undefined);
 
   // B2B badge sync
   const { tasks: b2bTasks } = useTasksQuery(undefined, "TENANT_TO_PLATFORM");

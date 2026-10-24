@@ -44,7 +44,7 @@ export function TaskDensityHeader({
 
       {showKpiCards && (
         <div className="px-4 md:px-6 shrink-0 animate-in fade-in-50 duration-150">
-          <TaskKpiStrip />
+          <TaskKpiStrip summaryProp={summary} />
         </div>
       )}
     </>
