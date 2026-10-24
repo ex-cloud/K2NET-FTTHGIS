@@ -18,10 +18,13 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.redis.core.RedisTemplate;
+import java.util.ArrayList;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.domain.task.event.TaskCreatedEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -167,6 +170,28 @@ public class TaskService {
         return new TaskSummaryDTO(totalOpen, urgentCount, resolvedToday);
     }
 
+    /**
+     * Isolated KPI summary for platform engineering issues (strictly excluding PROJECT container types).
+     */
+    public TaskSummaryDTO getEngineeringIssuesSummary() {
+        long totalOpen = taskRepository.countOpenIssuesByScope(TaskScope.PLATFORM_INTERNAL, TERMINAL_STATUSES);
+        long urgentCount = taskRepository.countUrgentIssuesByScope(TaskScope.PLATFORM_INTERNAL, TaskPriority.URGENT, TERMINAL_STATUSES);
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        long resolvedToday = taskRepository.countResolvedIssuesTodayByScope(TaskScope.PLATFORM_INTERNAL, startOfDay);
+        return new TaskSummaryDTO(totalOpen, urgentCount, resolvedToday);
+    }
+
+    /**
+     * Isolated KPI summary for workspace plans, ideas & projects.
+     */
+    public WorkspacePlansSummaryDTO getWorkspacePlansSummary() {
+        long totalPlans = taskRepository.countTotalPlansByScope(TaskScope.PLATFORM_INTERNAL);
+        long activeInitiatives = taskRepository.countActivePlansByScope(TaskScope.PLATFORM_INTERNAL, TERMINAL_STATUSES);
+        long completedPlans = taskRepository.countCompletedPlansByScope(TaskScope.PLATFORM_INTERNAL, TERMINAL_STATUSES);
+        long atRiskCount = taskRepository.countAtRiskPlansByScope(TaskScope.PLATFORM_INTERNAL, LocalDateTime.now(), TERMINAL_STATUSES);
+        return new WorkspacePlansSummaryDTO(totalPlans, activeInitiatives, completedPlans, atRiskCount);
+    }
+
     // ─── Mutating operations ────────────────────────────────────────────────────
 
     @Transactional
@@ -213,7 +238,7 @@ public class TaskService {
             });
         }
         if (task.getObsidianRef() == null || task.getObsidianRef().isBlank()) {
-            task.setObsidianRef(generateReferenceCode(task.getType(), task.getScope(), organizationId));
+            task.setObsidianRef(generateReferenceCode(task.getType(), task.getScope(), organizationId, task.getReferenceType()));
         }
 
         Task saved = taskRepository.save(task);
@@ -368,15 +393,31 @@ public class TaskService {
     /**
      * Generate canonical reference codes:
      * - Projects: {@code PRJ-YYYY-MM-NNN} (e.g. PRJ-2026-10-001)
+     * - Plans: {@code PLN-YYYY-MM-NNN}
+     * - Ideas: {@code IDEA-YYYY-MM-NNN}
+     * - Docs: {@code DOC-YYYY-MM-NNN}
      * - B2B Tenant Support Tickets: {@code TKT-YYYY-NNNN} (e.g. TKT-2026-0001)
      * - Platform Engineering Issues: {@code ISS-YYYY-NNNN} (e.g. ISS-2026-0001)
      */
     public String generateReferenceCode(TaskType type, TaskScope scope, UUID orgId) {
+        return generateReferenceCode(type, scope, orgId, null);
+    }
+
+    public String generateReferenceCode(TaskType type, TaskScope scope, UUID orgId, String referenceType) {
         int year = LocalDate.now().getYear();
         if (type == TaskType.PROJECT) {
             int month = LocalDate.now().getMonthValue();
             long seq = taskRepository.countTasksForMonth(orgId, TaskType.PROJECT, year, month) + 1;
-            return String.format("PRJ-%d-%s-%03d", year, OBS_MONTH_FMT.format(LocalDate.now()), seq);
+            String prefix = "PRJ";
+            if (referenceType != null && !referenceType.isBlank()) {
+                switch (referenceType.trim().toUpperCase()) {
+                    case "IDEA" -> prefix = "IDEA";
+                    case "PLAN" -> prefix = "PLN";
+                    case "DOC" -> prefix = "DOC";
+                    default -> prefix = "PRJ";
+                }
+            }
+            return String.format("%s-%d-%s-%03d", prefix, year, OBS_MONTH_FMT.format(LocalDate.now()), seq);
         } else if (scope == TaskScope.TENANT_TO_PLATFORM) {
             long seq = taskRepository.countTasksForYear(TaskScope.TENANT_TO_PLATFORM, year) + 1;
             return String.format("TKT-%d-%04d", year, seq);
@@ -391,9 +432,124 @@ public class TaskService {
         return taskRepository.findByScopeAndType(TaskScope.PLATFORM_INTERNAL, TaskType.PROJECT, pageable);
     }
 
+    /** Dynamic filter for Workspace Plans, Ideas & Specs with query parameters. */
+    public Page<Task> findWorkspacePlans(
+            String search,
+            TaskStatus status,
+            TaskPriority priority,
+            String type,
+            String view,
+            Pageable pageable
+    ) {
+        Specification<Task> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("scope"), TaskScope.PLATFORM_INTERNAL));
+            predicates.add(cb.equal(root.get("type"), TaskType.PROJECT));
+
+            if (search != null && !search.isBlank()) {
+                String pattern = "%" + search.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("title")), pattern),
+                        cb.like(cb.lower(root.get("obsidianRef")), pattern)
+                ));
+            }
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            if (priority != null) {
+                predicates.add(cb.equal(root.get("priority"), priority));
+            }
+
+            if (type != null && !type.isBlank() && !"ALL".equalsIgnoreCase(type)) {
+                predicates.add(cb.equal(cb.upper(root.get("referenceType")), type.trim().toUpperCase()));
+            }
+
+            if (view != null && !view.isBlank()) {
+                switch (view.toLowerCase()) {
+                    case "active", "projects" -> predicates.add(root.get("status").in(TERMINAL_STATUSES).not());
+                    case "plans" -> predicates.add(cb.equal(cb.upper(root.get("referenceType")), "PLAN"));
+                    case "ideas" -> predicates.add(cb.equal(cb.upper(root.get("referenceType")), "IDEA"));
+                    case "docs" -> predicates.add(cb.equal(cb.upper(root.get("referenceType")), "DOC"));
+                    case "urgent" -> {
+                        predicates.add(root.get("priority").in(TaskPriority.URGENT, TaskPriority.HIGH));
+                        predicates.add(root.get("status").in(TERMINAL_STATUSES).not());
+                    }
+                    case "resolved" -> predicates.add(root.get("status").in(TERMINAL_STATUSES));
+                }
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return taskRepository.findAll(spec, pageable);
+    }
+
     /** List internal platform engineering issues (filtered by type!=PROJECT, scope=PLATFORM_INTERNAL). */
     public Page<Task> findEngineeringIssues(Pageable pageable) {
         return taskRepository.findByScopeAndTypeNot(TaskScope.PLATFORM_INTERNAL, TaskType.PROJECT, pageable);
+    }
+
+    /** Dynamic filter for Workspace Engineering Issues with query parameters. */
+    public Page<Task> findWorkspaceIssues(
+            String search,
+            TaskStatus status,
+            TaskPriority priority,
+            String view,
+            String assigneeId,
+            Pageable pageable
+    ) {
+        Specification<Task> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("scope"), TaskScope.PLATFORM_INTERNAL));
+            predicates.add(cb.notEqual(root.get("type"), TaskType.PROJECT));
+
+            if (search != null && !search.isBlank()) {
+                String pattern = "%" + search.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("title")), pattern),
+                        cb.like(cb.lower(root.get("obsidianRef")), pattern)
+                ));
+            }
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            if (priority != null) {
+                predicates.add(cb.equal(root.get("priority"), priority));
+            }
+
+            if (assigneeId != null && !assigneeId.isBlank()) {
+                if ("__unassigned__".equalsIgnoreCase(assigneeId)) {
+                    predicates.add(cb.or(cb.isNull(root.get("assigneeId")), cb.equal(root.get("assigneeId"), "")));
+                } else {
+                    predicates.add(cb.equal(root.get("assigneeId"), assigneeId));
+                }
+            }
+
+            if (view != null && !view.isBlank()) {
+                switch (view.toLowerCase()) {
+                    case "active" -> predicates.add(root.get("status").in(TERMINAL_STATUSES).not());
+                    case "urgent" -> {
+                        predicates.add(root.get("priority").in(TaskPriority.URGENT, TaskPriority.HIGH));
+                        predicates.add(root.get("status").in(TERMINAL_STATUSES).not());
+                    }
+                    case "no-assignee" -> predicates.add(cb.or(cb.isNull(root.get("assigneeId")), cb.equal(root.get("assigneeId"), "")));
+                    case "overdue" -> {
+                        predicates.add(cb.isNotNull(root.get("dueDate")));
+                        predicates.add(cb.lessThan(root.get("dueDate"), LocalDateTime.now()));
+                        predicates.add(root.get("status").in(TERMINAL_STATUSES).not());
+                    }
+                    case "resolved" -> predicates.add(root.get("status").in(TERMINAL_STATUSES));
+                }
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return taskRepository.findAll(spec, pageable);
     }
 
     /**

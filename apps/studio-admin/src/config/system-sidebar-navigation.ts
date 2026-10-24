@@ -7,6 +7,7 @@ export type MenuItem = {
   icon: string;
   shortcut?: string;
   requiredPermission?: string | string[];
+  badge?: TranslationKey;
 };
 
 export type MenuSection = {
@@ -147,41 +148,79 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
     ],
   },
 
-  // ── Operations: Projects & Issues ────────────────────────────────────────
-  tasks: {
-    title: "Support & Issues",
-    translationKey: "nav.projects_issues",
+  // ── Operations: Support ──────────────────────────────────────────────────
+  support: {
+    title: "Support",
+    translationKey: "nav.support",
     sections: [
       {
-        title: "Workspace",
-        translationKey: "nav.projects_plans",
-        requiredPermission: "system.task.manage",
+        title: "Support Operations",
+        translationKey: "nav.support_operations",
+        requiredPermission: ["support.tickets.view", "system.task.manage"],
         items: [
-          { title: "Projects & Plans", translationKey: "nav.projects_plans", url: "/tasks/projects", icon: "FolderKanban", shortcut: "S then P", requiredPermission: "system.task.manage" },
-          { title: "Internal Platform Issues", translationKey: "nav.internal_platform_issues", url: "/tasks?scope=PLATFORM_INTERNAL", icon: "Server", shortcut: "S then I", requiredPermission: "system.task.manage" },
-          { title: "B2B Mitra Escalations", translationKey: "nav.b2b_escalations", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Building2", shortcut: "S then B", requiredPermission: "system.task.manage" },
+          {
+            title: "Ticket Queue",
+            translationKey: "nav.ticket_queue",
+            url: "/support/tickets",
+            icon: "Inbox",
+            shortcut: "S then T",
+            requiredPermission: ["support.tickets.view", "system.task.manage"],
+          },
+          {
+            title: "SLA & Reports",
+            translationKey: "nav.sla_reports",
+            url: "/support/sla",
+            icon: "Clock",
+            shortcut: "S then S",
+            badge: "nav.coming_soon",
+            requiredPermission: ["support.tickets.view", "system.task.manage"],
+          },
+        ],
+      },
+    ],
+  },
+
+  // ── Platform: Workspace ──────────────────────────────────────────────────
+  workspace: {
+    title: "Workspace",
+    translationKey: "nav.workspace",
+    sections: [
+      {
+        title: "Planning & Knowledge",
+        translationKey: "nav.planning_knowledge",
+        requiredPermission: ["platform.workspace.view", "system.task.manage"],
+        items: [
+          {
+            title: "Plans, Ideas & Specs",
+            translationKey: "nav.plans_ideas_specs",
+            url: "/workspace/plans",
+            icon: "FolderKanban",
+            shortcut: "S then P",
+            requiredPermission: ["platform.workspace.view", "system.task.manage"],
+          },
+          {
+            title: "Roadmap",
+            translationKey: "nav.roadmap",
+            url: "/workspace/roadmap",
+            icon: "Map",
+            shortcut: "S then R",
+            requiredPermission: ["platform.workspace.view", "system.task.manage"],
+          },
         ],
       },
       {
-        title: "Views",
-        translationKey: "nav.all_issues",
-        requiredPermission: "system.task.manage",
+        title: "Execution Tracker",
+        translationKey: "nav.execution_tracker",
+        requiredPermission: ["platform.issues.view", "system.task.manage"],
         items: [
-          { title: "All Issues", translationKey: "nav.all_issues", url: "/tasks", icon: "LayoutDashboard", shortcut: "S then A", requiredPermission: "system.task.manage" },
-          { title: "Active Issues", translationKey: "nav.active_issues", url: "/tasks?quick=active", icon: "Activity", shortcut: "S then 1", requiredPermission: "system.task.manage" },
-          { title: "Overdue", translationKey: "nav.overdue_issues", url: "/tasks?quick=overdue", icon: "CalendarClock", shortcut: "S then 2", requiredPermission: "system.task.manage" },
-          { title: "Unassigned", translationKey: "nav.unassigned_issues", url: "/tasks?quick=no-assignee", icon: "UserX", shortcut: "S then 3", requiredPermission: "system.task.manage" },
-          { title: "Upcoming 7d", translationKey: "nav.upcoming_7d", url: "/tasks?quick=upcoming", icon: "Clock", shortcut: "S then 4", requiredPermission: "system.task.manage" },
-          { title: "Resolved", translationKey: "nav.resolved_issues", url: "/tasks?quick=resolved", icon: "CheckCircle", shortcut: "S then 5", requiredPermission: "system.task.manage" },
-        ],
-      },
-      {
-        title: "Personal",
-        translationKey: "nav.my_assigned_issues",
-        requiredPermission: "system.task.manage",
-        items: [
-          { title: "My Assigned Issues", translationKey: "nav.my_assigned_issues", url: "/tasks?quick=my-issues", icon: "ClipboardList", shortcut: "S then M", requiredPermission: "system.task.manage" },
-          { title: "Created by Me", translationKey: "nav.created_by_me", url: "/tasks?quick=created-by-me", icon: "UserCheck", shortcut: "S then C", requiredPermission: "system.task.manage" },
+          {
+            title: "Issues & Tasks",
+            translationKey: "nav.issues_tasks",
+            url: "/workspace/issues",
+            icon: "CheckSquare",
+            shortcut: "S then I",
+            requiredPermission: ["platform.issues.view", "system.task.manage"],
+          },
         ],
       },
     ],
@@ -432,3 +471,4 @@ SYSTEM_SIDEBAR_NAVIGATION.licenses = SYSTEM_SIDEBAR_NAVIGATION.licensing;
 SYSTEM_SIDEBAR_NAVIGATION.packages = SYSTEM_SIDEBAR_NAVIGATION.catalog;
 SYSTEM_SIDEBAR_NAVIGATION.users = SYSTEM_SIDEBAR_NAVIGATION.identity;
 SYSTEM_SIDEBAR_NAVIGATION.data_protection = SYSTEM_SIDEBAR_NAVIGATION.system;
+SYSTEM_SIDEBAR_NAVIGATION.tasks = SYSTEM_SIDEBAR_NAVIGATION.workspace;

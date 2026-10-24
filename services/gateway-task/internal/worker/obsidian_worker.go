@@ -88,8 +88,20 @@ func (w *ObsidianWorker) processTaskWithRetry(ctx context.Context, payload templ
 			}
 			folder = "01_Projects/Tenants/" + slug
 		default:
-			// PLATFORM_INTERNAL or unspecified: K2NET internal engineering projects
-			folder = "01_Projects/Platform"
+			// PLATFORM_INTERNAL or unspecified: K2NET Workspace documents
+			refType := strings.ToUpper(strings.TrimSpace(payload.ReferenceType))
+			switch refType {
+			case "IDEA":
+				folder = "01_Workspace/Platform/Ideas"
+			case "DOC":
+				folder = "01_Workspace/Platform/Docs"
+			case "PROJECT":
+				folder = "01_Workspace/Platform/Projects"
+			case "PLAN":
+				fallthrough
+			default:
+				folder = "01_Workspace/Platform/Plans"
+			}
 		}
 	default: // TICKET
 		switch payload.Scope {

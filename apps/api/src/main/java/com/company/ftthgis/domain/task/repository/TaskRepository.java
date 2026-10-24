@@ -7,6 +7,7 @@ import com.company.ftthgis.domain.task.entity.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface TaskRepository extends JpaRepository<Task, UUID> {
+public interface TaskRepository extends JpaRepository<Task, UUID>, JpaSpecificationExecutor<Task> {
 
     /** All tasks for a tenant, paginated. Hibernate Filter handles org scoping. */
     Page<Task> findAll(Pageable pageable);
@@ -104,6 +105,54 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     /** Count total tasks by scope matching given status list. */
     long countByScopeAndStatusIn(TaskScope scope, List<TaskStatus> statuses);
+
+    /** Count open engineering issues excluding PROJECT container type. */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.type != com.company.ftthgis.domain.task.entity.TaskType.PROJECT AND t.status NOT IN :terminalStatuses")
+    long countOpenIssuesByScope(
+            @Param("scope") TaskScope scope,
+            @Param("terminalStatuses") List<TaskStatus> terminalStatuses
+    );
+
+    /** Count URGENT engineering issues excluding PROJECT container type. */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.type != com.company.ftthgis.domain.task.entity.TaskType.PROJECT AND t.priority = :priority AND t.status NOT IN :terminalStatuses")
+    long countUrgentIssuesByScope(
+            @Param("scope") TaskScope scope,
+            @Param("priority") TaskPriority priority,
+            @Param("terminalStatuses") List<TaskStatus> terminalStatuses
+    );
+
+    /** Count resolved engineering issues today excluding PROJECT container type. */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.type != com.company.ftthgis.domain.task.entity.TaskType.PROJECT AND t.status = 'RESOLVED' AND t.resolvedAt >= :startOfDay")
+    long countResolvedIssuesTodayByScope(
+            @Param("scope") TaskScope scope,
+            @Param("startOfDay") LocalDateTime startOfDay
+    );
+
+    /** Count total workspace plans/projects. */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.type = com.company.ftthgis.domain.task.entity.TaskType.PROJECT")
+    long countTotalPlansByScope(@Param("scope") TaskScope scope);
+
+    /** Count active workspace plans/projects (not in terminal statuses). */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.type = com.company.ftthgis.domain.task.entity.TaskType.PROJECT AND t.status NOT IN :terminalStatuses")
+    long countActivePlansByScope(
+            @Param("scope") TaskScope scope,
+            @Param("terminalStatuses") List<TaskStatus> terminalStatuses
+    );
+
+    /** Count completed workspace plans/projects (in terminal statuses). */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.type = com.company.ftthgis.domain.task.entity.TaskType.PROJECT AND t.status IN :terminalStatuses")
+    long countCompletedPlansByScope(
+            @Param("scope") TaskScope scope,
+            @Param("terminalStatuses") List<TaskStatus> terminalStatuses
+    );
+
+    /** Count at-risk workspace plans/projects (URGENT or overdue and not completed). */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.scope = :scope AND t.type = com.company.ftthgis.domain.task.entity.TaskType.PROJECT AND (t.priority = com.company.ftthgis.domain.task.entity.TaskPriority.URGENT OR (t.dueDate IS NOT NULL AND t.dueDate < :now)) AND t.status NOT IN :terminalStatuses")
+    long countAtRiskPlansByScope(
+            @Param("scope") TaskScope scope,
+            @Param("now") LocalDateTime now,
+            @Param("terminalStatuses") List<TaskStatus> terminalStatuses
+    );
 }
 
 

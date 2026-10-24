@@ -29,7 +29,7 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
    - **Tenant Billing**: `billing.view`, `billing.manage` (Scope: `TENANT`).
    - **Platform Billing**: `billing.read`, `billing.subscriptions.*`, `billing.invoices.*` (Scope: `SYSTEM`).
    - **Organizations**: `organizations.view`, `organizations.update`, `organizations.create`, `organizations.delete` (Scope: `TENANT`); sedangkan `system.organizations.*` dan legacy alias `orgs.view`, `orgs.manage` (Scope: `SYSTEM`).
-   - **Workspace vs Proyek**: `platform.projects.*`, `platform.issues.*` (Scope: `SYSTEM`); sedangkan `projects.*`, `network.*` (Scope: `TENANT`).
+   - **Workspace vs Proyek**: `platform.workspace.*`, `platform.issues.*` (Scope: `SYSTEM`); sedangkan `projects.*`, `network.*` (Scope: `TENANT`).
 
 ---
 

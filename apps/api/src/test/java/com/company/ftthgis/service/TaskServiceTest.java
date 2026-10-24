@@ -321,4 +321,53 @@ class TaskServiceTest {
         assertEquals(90.0, metrics.slaComplianceRate());
         verify(mockSession).disableFilter("organizationFilter");
     }
+
+    @Test
+    void generateReferenceCodeShouldSupportPolymorphicSubtypes() {
+        UUID orgId = UUID.randomUUID();
+        when(taskRepository.countTasksForMonth(eq(orgId), eq(TaskType.PROJECT), anyInt(), anyInt())).thenReturn(0L);
+
+        String ideaCode = taskService.generateReferenceCode(TaskType.PROJECT, TaskScope.PLATFORM_INTERNAL, orgId, "IDEA");
+        assertTrue(ideaCode.startsWith("IDEA-"), "Reference code for IDEA should start with IDEA-, got: " + ideaCode);
+
+        String planCode = taskService.generateReferenceCode(TaskType.PROJECT, TaskScope.PLATFORM_INTERNAL, orgId, "PLAN");
+        assertTrue(planCode.startsWith("PLN-"), "Reference code for PLAN should start with PLN-, got: " + planCode);
+
+        String docCode = taskService.generateReferenceCode(TaskType.PROJECT, TaskScope.PLATFORM_INTERNAL, orgId, "DOC");
+        assertTrue(docCode.startsWith("DOC-"), "Reference code for DOC should start with DOC-, got: " + docCode);
+
+        String prjCode = taskService.generateReferenceCode(TaskType.PROJECT, TaskScope.PLATFORM_INTERNAL, orgId, "PROJECT");
+        assertTrue(prjCode.startsWith("PRJ-"), "Reference code for PROJECT should start with PRJ-, got: " + prjCode);
+    }
+
+    @Test
+    void getEngineeringIssuesSummaryShouldExcludeProjects() {
+        when(taskRepository.countOpenIssuesByScope(eq(TaskScope.PLATFORM_INTERNAL), any())).thenReturn(7L);
+        when(taskRepository.countUrgentIssuesByScope(eq(TaskScope.PLATFORM_INTERNAL), any(), any())).thenReturn(2L);
+        when(taskRepository.countResolvedIssuesTodayByScope(eq(TaskScope.PLATFORM_INTERNAL), any())).thenReturn(3L);
+
+        var summary = taskService.getEngineeringIssuesSummary();
+
+        assertNotNull(summary);
+        assertEquals(7L, summary.totalOpen());
+        assertEquals(2L, summary.urgentCount());
+        assertEquals(3L, summary.resolvedToday());
+        verify(taskRepository).countOpenIssuesByScope(eq(TaskScope.PLATFORM_INTERNAL), any());
+    }
+
+    @Test
+    void getWorkspacePlansSummaryShouldReturnCalculatedMetrics() {
+        when(taskRepository.countTotalPlansByScope(eq(TaskScope.PLATFORM_INTERNAL))).thenReturn(12L);
+        when(taskRepository.countActivePlansByScope(eq(TaskScope.PLATFORM_INTERNAL), any())).thenReturn(5L);
+        when(taskRepository.countCompletedPlansByScope(eq(TaskScope.PLATFORM_INTERNAL), any())).thenReturn(6L);
+        when(taskRepository.countAtRiskPlansByScope(eq(TaskScope.PLATFORM_INTERNAL), any(), any())).thenReturn(1L);
+
+        var summary = taskService.getWorkspacePlansSummary();
+
+        assertNotNull(summary);
+        assertEquals(12L, summary.totalPlans());
+        assertEquals(5L, summary.activeInitiatives());
+        assertEquals(6L, summary.completedPlans());
+        assertEquals(1L, summary.atRiskCount());
+    }
 }

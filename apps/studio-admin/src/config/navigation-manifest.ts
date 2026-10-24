@@ -15,6 +15,8 @@ import {
   Users,
   Lock,
   Settings,
+  Headset,
+  Briefcase,
 } from "lucide-react";
 
 export type NavigationPlane =
@@ -102,16 +104,16 @@ export const NAVIGATION_MANIFEST: ManifestNavItem[] = [
     activePrefixes: ["/licensing", "/licenses"],
   },
   {
-    id: "tasks",
+    id: "support",
     plane: "OPERATIONS",
-    title: "Support & Issues",
-    translationKey: "nav.projects_issues",
-    icon: ClipboardList,
-    href: "/tasks",
+    title: "Support",
+    translationKey: "nav.support",
+    icon: Headset,
+    href: "/support/tickets",
     shortcut: "G then P",
-    requiredPermission: ["system.task.manage", "system.observability.view"],
+    requiredPermission: ["support.tickets.view", "system.task.manage"],
     badgeKey: "unreadB2B",
-    activePrefixes: ["/tasks"],
+    activePrefixes: ["/support"],
   },
 
   // ── 3. PRODUCT PLANE (Define the business — Control Plane) ────────────────
@@ -128,6 +130,17 @@ export const NAVIGATION_MANIFEST: ManifestNavItem[] = [
   },
 
   // ── 4. PLATFORM PLANE (Run the system — Infrastructure & Health) ───────────
+  {
+    id: "workspace",
+    plane: "PLATFORM",
+    title: "Workspace",
+    translationKey: "nav.workspace",
+    icon: Briefcase,
+    href: "/workspace/plans",
+    shortcut: "G then W",
+    requiredPermission: ["platform.workspace.view", "platform.issues.view", "system.task.manage"],
+    activePrefixes: ["/workspace"],
+  },
   {
     id: "observability",
     plane: "PLATFORM",

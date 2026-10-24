@@ -167,8 +167,8 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("licensing.killswitch", "Execute Emergency Kill-Switch",   "licensing", SCOPE_SYSTEM),
 
             // platform — workspace, engineering issues & specifications (SYSTEM scope)
-            new PermissionData("platform.projects.view",   "View Workspace Projects & Specs",   "platform", SCOPE_SYSTEM),
-            new PermissionData("platform.projects.manage", "Manage Workspace Projects & Specs", "platform", SCOPE_SYSTEM),
+            new PermissionData("platform.workspace.view",   "View Platform Workspace (Plans & Specs)",   "platform", SCOPE_SYSTEM),
+            new PermissionData("platform.workspace.manage", "Manage Platform Workspace (Plans & Specs)", "platform", SCOPE_SYSTEM),
             new PermissionData("platform.issues.view",     "View Engineering Issues Backlog",   "platform", SCOPE_SYSTEM),
             new PermissionData("platform.issues.manage",   "Manage Engineering Issues Backlog", "platform", SCOPE_SYSTEM),
 

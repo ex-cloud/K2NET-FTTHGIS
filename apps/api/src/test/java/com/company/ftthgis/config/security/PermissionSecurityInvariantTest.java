@@ -49,7 +49,7 @@ class PermissionSecurityInvariantTest {
                 tenantPerm,
                 Permission.builder().code("network.view").name("Network").scope("TENANT").build(),
                 systemPerm,
-                Permission.builder().code("platform.projects.view").name("Projects").scope("SYSTEM").build(),
+                Permission.builder().code("platform.workspace.view").name("Workspace").scope("SYSTEM").build(),
                 Permission.builder().code("support.tickets.view").name("Support").scope("SYSTEM").build()
         );
 
@@ -97,8 +97,8 @@ class PermissionSecurityInvariantTest {
                 .build();
 
         Permission systemPerm = Permission.builder()
-                .code("platform.projects.view")
-                .name("View Platform Projects")
+                .code("platform.workspace.view")
+                .name("View Platform Workspace")
                 .scope("SYSTEM")
                 .build();
 
@@ -113,7 +113,7 @@ class PermissionSecurityInvariantTest {
         // platform_engineer requests "platform."
         syncMethod.invoke(seeder, engineerRole, allPerms, "SYSTEM", false, new String[]{"platform."});
         assertEquals(1, engineerRole.getPermissions().size());
-        assertEquals("platform.projects.view", engineerRole.getPermissions().iterator().next().getCode());
+        assertEquals("platform.workspace.view", engineerRole.getPermissions().iterator().next().getCode());
         assertTrue(engineerRole.getPermissions().stream().allMatch(p -> "SYSTEM".equalsIgnoreCase(p.getScope())),
                 "platform_engineer must only receive SYSTEM scoped permissions");
     }
@@ -148,7 +148,7 @@ class PermissionSecurityInvariantTest {
         assertTrue(SecurityConfig.KeycloakRoleConverter.isSystemScopedPermission(explicitSystem));
 
         // 2. Prefix system.*, platform.*, support.*, catalog.*, licensing.*
-        Permission platformPerm = Permission.builder().code("platform.projects.view").scope(null).build();
+        Permission platformPerm = Permission.builder().code("platform.workspace.view").scope(null).build();
         assertTrue(SecurityConfig.KeycloakRoleConverter.isSystemScopedPermission(platformPerm));
 
         Permission supportPerm = Permission.builder().code("support.tickets.view").scope(null).build();

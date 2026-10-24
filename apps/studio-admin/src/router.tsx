@@ -496,11 +496,27 @@ const securityPasswordRoute = createRoute({ getParentRoute: () => authenticatedL
 // Logs
 const logsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/logs", component: () => <Lazy><LogsPage /></Lazy> });
 
-// Tasks
+// Workspace & Support Routes (Linear & Notion Architecture)
+const workspaceRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace", component: () => <Navigate to="/workspace/plans" /> });
+const workspacePlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans", component: () => <Lazy><TasksProjectsPage /></Lazy> });
+const workspacePlanIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans/$id", component: () => <Lazy><TasksProjectIdPage /></Lazy> });
+const workspaceProjectsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/projects", component: () => <Navigate to="/workspace/plans" /> });
+const workspaceProjectIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/projects/$id", component: () => <Lazy><TasksProjectIdPage /></Lazy> });
+const workspaceIssuesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/issues", component: () => <Lazy><TasksPage /></Lazy> });
+const workspaceIssuesNewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/issues/new", component: () => <Lazy><TasksNewPage /></Lazy> });
+const workspaceIssueIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/issues/$id", component: () => <Lazy><TasksIdPage /></Lazy> });
+
+// Support Domain
+const supportRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support", component: () => <Navigate to="/support/tickets" /> });
+const supportTicketsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/tickets", component: () => <Lazy><TasksPage /></Lazy> });
+const supportTicketsNewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/tickets/new", component: () => <Lazy><TasksNewPage /></Lazy> });
+const supportTicketIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/tickets/$id", component: () => <Lazy><TasksIdPage /></Lazy> });
+
+// Tasks (Legacy Aliases & Safety Net)
 const tasksRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks", component: () => <Lazy><TasksPage /></Lazy> });
 const tasksNewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/new", component: () => <Lazy><TasksNewPage /></Lazy> });
 const tasksIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/$id", component: () => <Lazy><TasksIdPage /></Lazy> });
-const tasksProjectsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/projects", component: () => <Lazy><TasksProjectsPage /></Lazy> });
+const tasksProjectsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/projects", component: () => <Navigate to="/workspace/plans" /> });
 const tasksProjectIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/projects/$id", component: () => <Lazy><TasksProjectIdPage /></Lazy> });
 
 // AI
@@ -568,6 +584,11 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   securityComplianceRoute, securityRolesRoute, securityPermissionsRoute, securityPasswordRoute,
   // Others
   logsRoute,
+  // Workspace & Support (Linear & Notion Architecture)
+  workspaceRoute, workspacePlansRoute, workspacePlanIdRoute, workspaceProjectsRoute, workspaceProjectIdRoute,
+  workspaceIssuesRoute, workspaceIssuesNewRoute, workspaceIssueIdRoute,
+  supportRoute, supportTicketsRoute, supportTicketsNewRoute, supportTicketIdRoute,
+  // Tasks (Legacy Aliases & Safety Net)
   tasksRoute, tasksNewRoute, tasksIdRoute, tasksProjectsRoute, tasksProjectIdRoute,
   aiRoute, aiAddRoute, aiConfigRoute, aiTemplatesRoute, aiPromptsRoute, aiSimulatorRoute, aiGraphRoute,
   settingsRedirectRoute, settingsGeneralRoute, settingsSystemInfoRoute, settingsBrandingRoute, settingsSmtpRoute, settingsGisSpatialRoute,

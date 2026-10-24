@@ -20,7 +20,7 @@ class WorkspaceAndSupportSecurityTest {
                 PreAuthorize preAuth = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
                 assertNotNull(preAuth, "Public endpoint " + method.getName() + " in WorkspaceController must have @PreAuthorize");
                 assertTrue(
-                        preAuth.value().contains("platform.projects") ||
+                        preAuth.value().contains("platform.workspace") ||
                         preAuth.value().contains("platform.issues") ||
                         preAuth.value().contains("system.task.manage"),
                         "Method " + method.getName() + " has invalid PreAuthorize: " + preAuth.value()

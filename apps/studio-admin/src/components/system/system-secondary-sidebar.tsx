@@ -58,6 +58,9 @@ import {
   Package,
   Receipt,
   Terminal,
+  Briefcase,
+  CheckSquare,
+  Headset,
 } from "lucide-react";
 import {
   Collapsible,
@@ -130,6 +133,9 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Package,
   Receipt,
   Terminal,
+  Briefcase,
+  CheckSquare,
+  Headset,
 };
 
 interface OrgCounts {
@@ -142,7 +148,9 @@ interface OrgCounts {
 const SIDEBAR_ROUTE_MAP: { prefixes: string[]; key: string | null }[] = [
   { prefixes: ["/overview", "/inbox"], key: null },
   { prefixes: ["/ai", "/assets-3d"], key: "ai" },
-  { prefixes: ["/tasks"], key: "tasks" },
+  { prefixes: ["/workspace"], key: "workspace" },
+  { prefixes: ["/support"], key: "support" },
+  { prefixes: ["/tasks"], key: "workspace" },
   { prefixes: ["/catalog", "/packages"], key: "catalog" },
   { prefixes: ["/billing"], key: "billing" },
   { prefixes: ["/licensing", "/licenses"], key: "licensing" },
@@ -195,9 +203,24 @@ function isSidebarItemActive(
   }
 
   const isProjectsRoute =
-    itemUrl === "/tasks/projects" &&
-    (pathname.startsWith("/tasks/projects") || pathname.startsWith("/system/tasks/projects"));
-  const pathMatch = pathname === itemUrl || pathname === `/system${itemUrl}` || isProjectsRoute;
+    (itemUrl === "/tasks/projects" || itemUrl === "/workspace/plans") &&
+    (pathname.startsWith("/tasks/projects") ||
+      pathname.startsWith("/workspace/plans") ||
+      pathname.startsWith("/system/workspace/plans") ||
+      pathname.startsWith("/system/tasks/projects"));
+  const isIssuesRoute =
+    itemUrl === "/workspace/issues" &&
+    (pathname.startsWith("/workspace/issues") || pathname.startsWith("/system/workspace/issues"));
+  const isSupportRoute =
+    itemUrl === "/support/tickets" &&
+    (pathname.startsWith("/support/tickets") || pathname.startsWith("/system/support/tickets"));
+
+  const pathMatch =
+    pathname === itemUrl ||
+    pathname === `/system${itemUrl}` ||
+    isProjectsRoute ||
+    isIssuesRoute ||
+    isSupportRoute;
 
   const hasFilter =
     searchParams.has("status") ||
@@ -211,7 +234,10 @@ function isSidebarItemActive(
     itemUrl === "/organizations" ||
     itemUrl === "/licensing/licenses" ||
     itemUrl === "/licenses" ||
-    itemUrl === "/tasks";
+    itemUrl === "/tasks" ||
+    itemUrl === "/workspace/plans" ||
+    itemUrl === "/workspace/issues" ||
+    itemUrl === "/support/tickets";
 
   return isFilterableRoot ? pathMatch && !hasFilter : pathMatch;
 }
@@ -298,7 +324,7 @@ function SidebarNavItem({
   const { t } = useTranslation();
   const isActive = isSidebarItemActive(item.url, pathname, searchParams);
   const Icon = ICON_MAP[item.icon] || FileText;
-  const isB2BLink = item.url.includes("scope=TENANT_TO_PLATFORM");
+  const isB2BLink = item.url.includes("scope=TENANT_TO_PLATFORM") || item.url.startsWith("/support");
   const orgBadgeCount = getOrgBadgeCount(item.url, orgCounts);
   const licenseBadge = getLicenseBadge(item.url, licenseOverview);
   const packageBadge = getPackageBadge(item.url, packageOverview);
@@ -327,6 +353,12 @@ function SidebarNavItem({
       >
         <Icon className={`w-3.5 h-3.5 ${isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"}`} />
         <span className="truncate flex-1">{itemTitle}</span>
+
+        {item.badge && (
+          <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border shrink-0">
+            {t(item.badge)}
+          </span>
+        )}
 
         {isB2BLink && unreadB2BCount > 0 && (
           <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse shrink-0">
