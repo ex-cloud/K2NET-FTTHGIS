@@ -78,6 +78,10 @@ Aturan khusus untuk microservice Python yang berjalan berdampingan dengan servic
 * HNSW index dibuat dengan parameter `m=16, ef_construction=64` untuk balance antara kecepatan dan akurasi.
 * Jangan pernah store atau query embedding tanpa filter tenant_id — ini adalah pelanggaran Zero Data Leakage.
 
+### Server-Side RAG Boundary & Scope Isolation (Zero Data Leakage)
+* **Penyaringan Wajib di Sisi Server**: Filter pgvector wajib menyertakan pemeriksaan metadata `visibility_scope`. Dokumen atau embedding vektor dengan `visibility_scope = 'SYSTEM_INTERNAL_ONLY'` (seperti spesifikasi teknis TipTap platform, PRD internal, dan backlog engineering) **DILARANG KERAS** dikembalikan pada query RAG jika pemanggil adalah tenant ISP (`X-Tenant-ID` != Sentinel Platform `00000000-0000-0000-0000-000000000001`).
+* **Larangan Filter di Frontend**: Batasan visibilitas dokumen arsitektur dan eskalasi B2B wajib di-enforce di query database FastAPI, dilarang keras mengandalkan pemotongan/penyaringan di layer frontend.
+
 ### Pre-Deployment Checklist Python
 ```bash
 cd services/gateway-ai

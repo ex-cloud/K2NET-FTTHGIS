@@ -36,14 +36,16 @@ flowchart TD
 
 Setiap kali Agent atau Developer membuat, memodifikasi, atau menyarankan controller/endpoint baru, **WAJIB** mengikuti checklist 6-Langkah ini sebagai *Definition of Done*:
 
-### 🔹 Langkah 1: Migrasi Database Permission (Flyway SQL)
+### 🔹 Langkah 1: Migrasi Database Permission (Flyway SQL) & PermissionSeeder
 Setiap modul baru **wajib** mendaftarkan permission atomiknya ke database melalui file migrasi Flyway di `apps/api/src/main/resources/db/migration/V{N}__add_{module}_permissions.sql`.
-Migration wajib melakukan:
-1. `INSERT INTO permissions ...`
-2. `INSERT INTO role_permissions ...` mapping ke role relevan dalam migrasi yang **SAMA**.
+Migration dan kode wajib memenuhi standar [multi-tenant-permission-security-standard.md](file:///opt/project5/.agents/rules/multi-tenant-permission-security-standard.md):
+1. **Deklarasi Scope Wajib (Fail-Close)**: Kolom `scope` wajib dideklarasikan secara eksplisit (`'SYSTEM'` atau `'TENANT'`). Dilarang membiarkan NULL atau default generik.
+2. `INSERT INTO permissions ...`
+3. `INSERT INTO role_permissions ...` mapping ke role relevan dalam migrasi yang **SAMA**. Role `TENANT` haram menerima permission `SYSTEM`.
+4. **Sinkronisasi `PermissionSeeder.java`**: Daftarkan permission baru di `PermissionSeeder.java` menggunakan konstruktor fail-close 4-argumen: `new PermissionData(code, name, module, scope)`.
 
 ```sql
--- 1. Daftarkan Permissions Atomik Modul Baru
+-- 1. Daftarkan Permissions Atomik Modul Baru (Scope Wajib Eksplisit)
 INSERT INTO permissions (code, name, description, module, scope, created_at, updated_at)
 VALUES 
   ('system.inventory.view', 'View Inventory', 'Melihat daftar inventaris perangkat', 'inventory', 'SYSTEM', NOW(), NOW()),
@@ -55,7 +57,7 @@ ON CONFLICT (code) DO UPDATE SET
   scope = EXCLUDED.scope,
   updated_at = NOW();
 
--- 2. Asosiasikan ke Role Default dalam migration yang SAMA
+-- 2. Asosiasikan ke Role Default dalam migration yang SAMA (Scope Guard)
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id 
 FROM roles r, permissions p 
@@ -217,6 +219,9 @@ Sebelum menyatakan pekerjaan selesai:
 | **Migrasi Permission** | Menambahkan permission tanpa langsung memetakan ke role di migration yang sama | `INSERT INTO role_permissions ...` dalam file SQL Flyway yang sama |
 | **Frontend Roles** | `roles.includes("ROLE_SUPER_ADMIN")` | `usePermissions().isSuperAdmin` atau `canAccess("...")` |
 | **Frontend Styling** | Hardcode warna: `bg-zinc-900`, `text-white`, `bg-emerald-500` | Token Semantik: `bg-card`, `text-foreground`, `bg-primary`, `border-border` |
+| **Scope PBAC** | Memberikan permission berscope `SYSTEM` ke role `TENANT` atau sebaliknya | Isolasi total: 0 baris permission SYSTEM pada role TENANT ([multi-tenant-permission-security-standard.md](file:///opt/project5/.agents/rules/multi-tenant-permission-security-standard.md)) |
+| **Seeder Matching** | Pencocokan greedy wildcard (`.view` atau `.endsWith()`) tanpa scope check | Scope guard wajib + exact match / scoped prefix/suffix + Set code equality |
+| **AI Agent Behavior** | Berhalusinasi, berasumsi di luar kode, atau improvisasi sepihak tanpa konfirmasi | Berpijak pada fakta live DB/git + konfirmasi eksplisit user sebelum improvisasi |
 | **Deployment** | Menjalankan `docker build` atau `docker compose build` di server | Git push ke `main` (build oleh GitHub Actions Runner) |
 
 ---

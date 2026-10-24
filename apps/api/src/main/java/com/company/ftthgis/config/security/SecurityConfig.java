@@ -352,9 +352,9 @@ public class SecurityConfig {
                         var role = roleOpt.get();
                         if (role.getPermissions() != null) {
                             role.getPermissions().forEach(permission -> {
-                                // Double defense: Block any system.* permissions for non-platform realm tokens
-                                if (permission.getCode() != null && permission.getCode().startsWith("system.")) {
-                                    log.warn("🚨 Blocked system permission {} for non-platform realm user {}", permission.getCode(), jwt.getSubject());
+                                // Strict Double Defense: Block any SYSTEM-scoped permissions for non-platform realm tokens
+                                if (isSystemScopedPermission(permission)) {
+                                    log.warn("🚨 Blocked SYSTEM permission {} for non-platform realm user {}", permission.getCode(), jwt.getSubject());
                                     return;
                                 }
                                 authorities.add(new SimpleGrantedAuthority(permission.getCode()));
@@ -368,6 +368,29 @@ public class SecurityConfig {
 
             log.info("Final Mapped Authorities for {}: {}", jwt.getSubject(), authorities);
             return authorities;
+        }
+
+        static boolean isSystemScopedPermission(com.company.ftthgis.domain.user.entity.Permission permission) {
+            if (permission == null) {
+                return false;
+            }
+            if ("SYSTEM".equalsIgnoreCase(permission.getScope())) {
+                return true;
+            }
+            String code = permission.getCode();
+            if (code == null) {
+                return false;
+            }
+            return code.startsWith("system.")
+                    || code.startsWith("platform.")
+                    || code.startsWith("support.")
+                    || code.startsWith("catalog.")
+                    || code.startsWith("licensing.")
+                    || code.startsWith("billing.subscriptions.")
+                    || code.startsWith("billing.invoices.")
+                    || "billing.read".equals(code)
+                    || "orgs.view".equals(code)
+                    || "orgs.manage".equals(code);
         }
     }
 }

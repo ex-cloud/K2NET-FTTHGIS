@@ -66,6 +66,7 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 15. [rules/marketplace-package-standard.md](file:///opt/project5/.agents/rules/marketplace-package-standard.md): Standar 6-Pilar pembuatan paket marketplace, pola audit Envers Flyway, dan evaluasi kartu UI.
 16. [rules/marketplace-engines.md](file:///opt/project5/.agents/rules/marketplace-engines.md): Panduan pemilihan bahasa engine polyglot (Java, Go, Python, Rust) & pemetaan port 12 paket resmi.
 17. [rules/lifecycle-and-documentation.md](file:///opt/project5/.agents/rules/lifecycle-and-documentation.md): Standar siklus hidup dokumen, pencatatan bug `docs/bug/{pending,active,resolved}`, pemindahan plan `docs/plans/active/` ke `docs/plans/completed/`, dan laporan resmi `docs/reports/`.
+18. [rules/multi-tenant-permission-security-standard.md](file:///opt/project5/.agents/rules/multi-tenant-permission-security-standard.md): Standar hukum arsitektural otorisasi PBAC, Scope Air-Gap mutlak (0 kebocoran SYSTEM ke TENANT), algoritma presisi Seeder, SecurityConfig double-defense, dan larangan halusinasi AI.
 
 ---
 
@@ -79,5 +80,7 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 - **MinIO Connection**: Terikat pada Tailscale IP `100.110.205.109:9005`. Dilarang `localhost:9005`.
 - **Zero Hardcoded Strings (`@k2net/i18n`)**: Seluruh teks antarmuka wajib `useTranslation()` terdaftar simultan di `en/*.json` & `id/*.json`.
 - **CI Security Gate**: 100% endpoint dilindungi PBAC (`ComprehensiveControllerSecurityCoverageTest`). Dilarang `isAuthenticated()`.
+- **Scope Air-Gap & Anti-Leakage (`PermissionSeeder` & `SecurityConfig`)**: Role `TENANT` haram memiliki permission berscope `SYSTEM`. Seeder wajib fail-close 4-argumen (`code, name, module, scope`), perbandingan Set code equality (`currentCodes.equals(targetCodes)`), dan ingress `SecurityConfig.java` double-defense memblokir seluruh prefix berscope `SYSTEM` (`platform.*`, `support.*`, `catalog.*`, `licensing.*`, `billing.subscriptions.*`, `billing.invoices.*`, `billing.read`, `orgs.*`) dari token non-platform realm.
+- **Larangan Halusinasi & Konfirmasi Improvisasi**: AI Agent DILARANG KERAS berhalusinasi atau keluar dari konteks monorepo K2NET. Segala bentuk ide perbaikan di luar tugas aktif atau improvisasi arsitektural WAJIB dikonfirmasikan terlebih dahulu ke pengguna sebelum dieksekusi.
 - **Ukuran Kontrol Baku**: Toolbar & card footer wajib `size="sm"` (`h-7 px-2.5`, icon `size-3.5`). Tabel data padat wajib `size="xs"` (`h-6 px-2`, icon `size-3`).
 - **Shared Layout Shell**: Sub-sidebar wajib `<SecondarySidebarHeader />` (`h-12 py-2 px-4`). Kanvas wajib `<PageLayout>` + `<PageHero>`.
