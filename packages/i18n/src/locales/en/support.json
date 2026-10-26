@@ -62,5 +62,6 @@
   "status_compliant_rate": "Compliant ({{rate}}%)",
   "tier_tickets_count": "{{open}} open / {{total}} total",
   "loading_metrics": "Calculating real-time metrics...",
-  "toast_refreshing": "Refreshing tickets..."
+  "toast_refreshing": "Refreshing tickets...",
+  "no_tickets_found": "No tickets found for this view."
 }

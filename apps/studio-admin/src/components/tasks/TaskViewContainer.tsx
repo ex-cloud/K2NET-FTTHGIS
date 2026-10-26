@@ -24,6 +24,7 @@ interface TaskViewContainerProps {
   focusedIndex: number;
   displayProperties: DisplayPropertiesState;
   onCardDrop: (itemId: string, targetStatus: string) => void;
+  emptyMessage?: string;
 }
 
 export function TaskViewContainer({
@@ -44,6 +45,7 @@ export function TaskViewContainer({
   focusedIndex,
   displayProperties,
   onCardDrop,
+  emptyMessage,
 }: TaskViewContainerProps) {
   return (
     <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin">
@@ -63,6 +65,7 @@ export function TaskViewContainer({
           onSelectAllTasks={onSelectAllTasks}
           focusedIndex={focusedIndex}
           displayProperties={displayProperties}
+          emptyMessage={emptyMessage}
         />
       )}
 

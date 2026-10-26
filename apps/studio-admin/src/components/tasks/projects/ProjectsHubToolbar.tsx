@@ -18,6 +18,7 @@ import {
   type ViewOrdering,
   type ShowClosedFilter,
 } from "@/components/tasks/LinearDisplayOptionsPopover";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 
 interface ProjectsHubToolbarProps {
@@ -61,6 +62,8 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
   loading,
   refresh,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="relative z-30 bg-background/50 backdrop-blur-sm py-3 shrink-0 border-b border-border/60 overflow-visible">
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between px-6">
@@ -71,7 +74,7 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Filter by project name..."
+              placeholder={t("workspace.search_placeholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-8"
@@ -91,12 +94,12 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
               >
                 <span>
                   {statusFilter === "ALL"
-                    ? "Status"
+                    ? t("workspace.status_filter")
                     : statusFilter === "IN_PROGRESS"
-                    ? "In Progress"
+                    ? t("tasks.status_in_progress")
                     : statusFilter === "RESOLVED"
-                    ? "Completed"
-                    : "Backlog"}
+                    ? t("tasks.status_resolved")
+                    : t("tasks.status_backlog")}
                 </span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
@@ -106,25 +109,25 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
                 onClick={() => setStatusFilter("ALL")}
                 className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", statusFilter === "ALL" && "bg-primary/10 text-primary font-semibold")}
               >
-                <span>All Statuses</span>
+                <span>{t("workspace.tab_all")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setStatusFilter("IN_PROGRESS")}
                 className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", statusFilter === "IN_PROGRESS" && "bg-primary/10 text-primary font-semibold")}
               >
-                <span>In Progress</span>
+                <span>{t("tasks.status_in_progress")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setStatusFilter("TODO")}
                 className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", statusFilter === "TODO" && "bg-primary/10 text-primary font-semibold")}
               >
-                <span>Backlog / Planned</span>
+                <span>{t("tasks.status_todo")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setStatusFilter("RESOLVED")}
                 className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", statusFilter === "RESOLVED" && "bg-primary/10 text-primary font-semibold")}
               >
-                <span>Completed</span>
+                <span>{t("tasks.status_resolved")}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -140,7 +143,7 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
                     : "bg-card border-border hover:bg-muted/30 text-foreground"
                 )}
               >
-                <span>{priorityFilter === "ALL" ? "Priority" : priorityFilter}</span>
+                <span>{priorityFilter === "ALL" ? t("workspace.priority_filter") : priorityFilter}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
@@ -149,31 +152,31 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
                 onClick={() => setPriorityFilter("ALL")}
                 className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", priorityFilter === "ALL" && "bg-primary/10 text-primary font-semibold")}
               >
-                <span>All Priorities</span>
+                <span>{t("tasks.priority")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setPriorityFilter("URGENT")}
                 className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", priorityFilter === "URGENT" && "bg-primary/10 text-primary font-semibold")}
               >
-                <span className="text-destructive font-semibold">Urgent</span>
+                <span className="text-destructive font-semibold">{t("tasks.priority_urgent")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setPriorityFilter("HIGH")}
                 className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", priorityFilter === "HIGH" && "bg-primary/10 text-primary font-semibold")}
               >
-                <span className="text-amber-500 font-semibold">High</span>
+                <span className="font-semibold text-foreground">{t("tasks.priority_high")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setPriorityFilter("NORMAL")}
                 className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", priorityFilter === "NORMAL" && "bg-primary/10 text-primary font-semibold")}
               >
-                <span>Normal</span>
+                <span>{t("tasks.priority_normal")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setPriorityFilter("LOW")}
                 className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", priorityFilter === "LOW" && "bg-primary/10 text-primary font-semibold")}
               >
-                <span className="text-blue-500">Low</span>
+                <span className="text-muted-foreground">{t("tasks.priority_low")}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

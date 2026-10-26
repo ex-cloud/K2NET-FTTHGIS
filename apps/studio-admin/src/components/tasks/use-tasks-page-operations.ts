@@ -33,7 +33,12 @@ export function useTasksPageOperations({
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
   useEffect(() => {
-    setLocalTasks(filteredTasks);
+    setLocalTasks((prev) => {
+      if (prev.length === filteredTasks.length && prev.every((t, i) => t.id === filteredTasks[i]?.id && t.updatedAt === filteredTasks[i]?.updatedAt)) {
+        return prev;
+      }
+      return filteredTasks;
+    });
   }, [filteredTasks]);
 
   const handleSaveTask = useCallback(

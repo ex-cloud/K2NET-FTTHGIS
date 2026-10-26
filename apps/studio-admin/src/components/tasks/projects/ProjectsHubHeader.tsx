@@ -96,7 +96,7 @@ export const ProjectsHubHeader: React.FC<ProjectsHubHeaderProps> = ({
               <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase">
                 {t("workspace.kpi_active_initiatives")}
               </span>
-              <FolderKanban className="h-4 w-4 text-primary" />
+              <FolderKanban className="h-4 w-4 text-foreground" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground font-mono">{activeCount}</p>
@@ -109,7 +109,7 @@ export const ProjectsHubHeader: React.FC<ProjectsHubHeaderProps> = ({
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-700"
+                  className="h-full rounded-full bg-foreground transition-all duration-700"
                   style={{ width: `${totalProjects ? Math.round((activeCount / totalProjects) * 100) : 0}%` }}
                 />
               </div>
@@ -163,7 +163,7 @@ export const ProjectsHubHeader: React.FC<ProjectsHubHeaderProps> = ({
               <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase">
                 {t("workspace.kpi_completed_plans")}
               </span>
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <CheckCircle2 className="h-4 w-4 text-foreground" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground font-mono">{completedCount}</p>
@@ -176,7 +176,7 @@ export const ProjectsHubHeader: React.FC<ProjectsHubHeaderProps> = ({
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-green-500 transition-all duration-700"
+                  className="h-full rounded-full bg-foreground transition-all duration-700"
                   style={{ width: `${totalProjects ? Math.round((completedCount / totalProjects) * 100) : 0}%` }}
                 />
               </div>

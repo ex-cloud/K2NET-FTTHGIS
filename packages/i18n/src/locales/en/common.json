@@ -220,5 +220,7 @@
   "inbox_feed4_badge": "Linear B2B Sync",
   "inbox_feed4_count": "{{count}} Unread",
   "inbox_feed4_title": "Tenant Escalations & Optical Outage Reports",
-  "inbox_feed4_desc": "Direct ticket escalations filed by tenant network operations teams regarding upstream fiber cut incidents, poller anomalies, or billing disputes."
+  "inbox_feed4_desc": "Direct ticket escalations filed by tenant network operations teams regarding upstream fiber cut incidents, poller anomalies, or billing disputes.",
+  "showing": "Showing:",
+  "reset_filter": "Reset filter"
 }

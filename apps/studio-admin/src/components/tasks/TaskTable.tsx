@@ -43,6 +43,7 @@ interface TaskTableProps {
   onSelectAllTasks?: () => void;
   focusedIndex?: number;
   displayProperties?: DisplayPropertiesState;
+  emptyMessage?: string;
 }
 
 const COLUMN_CLASSES: Record<string, string> = {
@@ -95,6 +96,7 @@ export function TaskTable({
   onSelectAllTasks,
   focusedIndex = -1,
   displayProperties,
+  emptyMessage,
 }: TaskTableProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -232,7 +234,7 @@ export function TaskTable({
         ) : tasks.length === 0 ? (
           <div className="px-4 py-16 text-center flex flex-col items-center gap-3 text-muted-foreground">
             <ClipboardList className="h-10 w-10 opacity-30" />
-            <p className="text-sm">{t("tasks.no_tasks_found")}</p>
+            <p className="text-sm">{emptyMessage || t("tasks.no_tasks_found")}</p>
           </div>
         ) : (
           table.getRowModel().rows.map((row, index) => (

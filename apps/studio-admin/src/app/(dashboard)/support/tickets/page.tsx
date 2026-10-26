@@ -115,6 +115,9 @@ export default function SupportTicketsPage() {
           onToggleKpiCards={handleToggleKpiCards}
           summary={data.summary}
           totalElements={data.totalElements}
+          isSupport={true}
+          createButtonLabel={t("support.action_new_ticket")}
+          activeStatLabel={t("support.kpi_open_tickets")}
         />
 
         {/* ── Quick Filter Tabs for Support Queue ─────────────────── */}
@@ -159,6 +162,7 @@ export default function SupportTicketsPage() {
               projectParam={projectParam}
               typeParam={typeParam}
               scopeParam={scopeParam}
+              defaultScope="TENANT_TO_PLATFORM"
               onReset={() => router.push("/support/tickets")}
             />
 
@@ -180,6 +184,7 @@ export default function SupportTicketsPage() {
               focusedIndex={operations.focusedIndex}
               displayProperties={toolbar.displayProperties}
               onCardDrop={operations.handleCardDrop}
+              emptyMessage={t("support.no_tickets_found")}
             />
           </div>
 

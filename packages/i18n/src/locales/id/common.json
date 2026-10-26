@@ -220,5 +220,7 @@
   "inbox_feed4_badge": "Sinkronisasi Linear B2B",
   "inbox_feed4_count": "{{count}} Belum Dibaca",
   "inbox_feed4_title": "Eskalasi Tenant & Laporan Gangguan Optik",
-  "inbox_feed4_desc": "Eskalasi tiket langsung yang diajukan oleh tim operasi jaringan tenant terkait insiden kabel putus, anomali poller, atau perselisihan tagihan."
+  "inbox_feed4_desc": "Eskalasi tiket langsung yang diajukan oleh tim operasi jaringan tenant terkait insiden kabel putus, anomali poller, atau perselisihan tagihan.",
+  "showing": "Menampilkan:",
+  "reset_filter": "Atur ulang filter"
 }

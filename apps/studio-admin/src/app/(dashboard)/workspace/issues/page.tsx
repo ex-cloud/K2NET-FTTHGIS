@@ -62,9 +62,9 @@ export default function WorkspaceIssuesPage() {
   const toolbar = useTaskToolbarState(projectParam);
   const data = useTaskPageData(scopeParam);
 
-  // Filter tasks and explicitly exclude container projects so issues list is clean
+  // Filter tasks (useFilteredTasks internally excludes type PROJECT when typeParam is not set)
   const filteredTasks = useFilteredTasks({
-    tasks: data.tasks?.filter((task) => task.type !== "PROJECT") ?? [],
+    tasks: data.tasks,
     quickParam,
     userIdentifiers: data.userIdentifiers,
     searchQuery: toolbar.searchQuery,

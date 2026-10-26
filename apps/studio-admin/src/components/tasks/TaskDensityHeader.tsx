@@ -13,6 +13,9 @@ interface TaskDensityHeaderProps {
   onToggleKpiCards: () => void;
   summary: TaskSummaryDto | null;
   totalElements: number;
+  isSupport?: boolean;
+  createButtonLabel?: string;
+  activeStatLabel?: string;
 }
 
 export function TaskDensityHeader({
@@ -26,6 +29,9 @@ export function TaskDensityHeader({
   onToggleKpiCards,
   summary,
   totalElements,
+  isSupport,
+  createButtonLabel,
+  activeStatLabel,
 }: TaskDensityHeaderProps) {
   return (
     <>
@@ -40,11 +46,13 @@ export function TaskDensityHeader({
         onToggleKpiCards={onToggleKpiCards}
         summary={summary}
         totalElements={totalElements}
+        createButtonLabel={createButtonLabel}
+        activeStatLabel={activeStatLabel}
       />
 
       {showKpiCards && (
         <div className="px-4 md:px-6 shrink-0 animate-in fade-in-50 duration-150">
-          <TaskKpiStrip summaryProp={summary} />
+          <TaskKpiStrip summaryProp={summary} isSupport={isSupport} />
         </div>
       )}
     </>

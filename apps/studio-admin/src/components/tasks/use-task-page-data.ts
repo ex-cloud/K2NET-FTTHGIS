@@ -31,7 +31,11 @@ export function useTaskPageData(scopeParam: TaskScope | null) {
     setUnreadCount(b2bCount);
   }, [b2bCount, setUnreadCount]);
 
-  if (error) toast.error("Failed to load tasks: " + error);
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to load tasks: " + error);
+    }
+  }, [error]);
 
   const { users: teamUsers } = useTeamUsers();
 

@@ -22,6 +22,8 @@ interface TaskHeaderStatsBarProps {
     resolvedToday?: number;
   } | null;
   totalElements: number;
+  createButtonLabel?: string;
+  activeStatLabel?: string;
 }
 
 export function TaskHeaderStatsBar({
@@ -35,6 +37,8 @@ export function TaskHeaderStatsBar({
   onToggleKpiCards,
   summary,
   totalElements,
+  createButtonLabel,
+  activeStatLabel,
 }: TaskHeaderStatsBarProps) {
   const { t } = useTranslation();
   const { canAccess } = usePermissions();
@@ -103,10 +107,10 @@ export function TaskHeaderStatsBar({
               onClick={onOpenNewTask}
               disabled={!canManageTask}
               className="h-7 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs font-medium text-xs"
-              aria-label="New Issue"
+              aria-label={createButtonLabel || "New Issue"}
             >
               <Plus className="size-3.5" />
-              <span className="hidden sm:inline">{t("tasks.new_issue")}</span>
+              <span className="hidden sm:inline">{createButtonLabel || t("tasks.new_issue")}</span>
               <kbd className="hidden sm:inline text-[10px] opacity-70 font-mono">C</kbd>
             </button>
           </ActionTooltip>
@@ -117,7 +121,7 @@ export function TaskHeaderStatsBar({
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground/90 font-medium px-4 md:px-6 shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="font-bold text-foreground font-mono">{summary?.totalOpen ?? "—"}</span>
-          <span>{t("tasks.active_issues")}</span>
+          <span>{activeStatLabel || t("tasks.active_issues")}</span>
           <span title="Total open non-terminal issues" className="cursor-help text-muted-foreground/60 hover:text-foreground">
             <HelpCircle className="h-3.5 w-3.5" />
           </span>

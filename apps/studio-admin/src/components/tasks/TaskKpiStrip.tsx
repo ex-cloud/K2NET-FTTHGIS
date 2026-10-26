@@ -7,6 +7,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Card } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { useTaskSummary, type TaskSummary } from "@/hooks/useTaskSummary";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ function MetricCard({
   percent,
   color,
   pulse,
+  ratioLabel,
 }: {
   icon: React.ElementType;
   label: string;
@@ -27,34 +29,28 @@ function MetricCard({
   percent: number;
   color: "primary" | "destructive" | "amber" | "sky";
   pulse?: boolean;
+  ratioLabel: string;
 }) {
   const colorMap = {
     primary: {
-      icon: "text-primary",
-      bar: "bg-primary",
+      icon: "text-foreground",
+      bar: "bg-foreground",
     },
     destructive: {
       icon: "text-destructive",
       bar: "bg-destructive",
     },
     amber: {
-      icon: "text-amber-500 dark:text-amber-400",
-      bar: "bg-amber-500",
+      icon: "text-foreground/80",
+      bar: "bg-foreground/80",
     },
     sky: {
-      icon: "text-sky-500 dark:text-sky-400",
-      bar: "bg-sky-500",
+      icon: "text-foreground",
+      bar: "bg-foreground",
     },
   };
   const c = colorMap[color];
   const barColor = c.bar;
-
-  const ratioLabel =
-    label === "Active Tasks"
-      ? "Active Share"
-      : label === "Urgent"
-      ? "Urgent Share"
-      : "Resolution Rate";
 
   return (
     <Card glowingEffect className="p-5 flex flex-col gap-3">
@@ -76,7 +72,7 @@ function MetricCard({
 
       {/* Value + Sub */}
       <div>
-        <p className="text-2xl font-bold text-foreground">{value}</p>
+        <p className="text-2xl font-bold text-foreground font-mono">{value}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
       </div>
 
@@ -100,9 +96,11 @@ function MetricCard({
 // ─── Main TaskKpiStrip ─────────────────────────────────────────────────────────
 interface TaskKpiStripProps {
   summaryProp?: TaskSummary | null;
+  isSupport?: boolean;
 }
 
-export function TaskKpiStrip({ summaryProp }: TaskKpiStripProps = {}) {
+export function TaskKpiStrip({ summaryProp, isSupport }: TaskKpiStripProps = {}) {
+  const { t } = useTranslation();
   const { summary: fetchedSummary, loading: hookLoading } = useTaskSummary();
   const summary = summaryProp !== undefined ? summaryProp : fetchedSummary;
   const loading = summaryProp !== undefined ? false : hookLoading;
@@ -147,28 +145,31 @@ export function TaskKpiStrip({ summaryProp }: TaskKpiStripProps = {}) {
     <div className="grid grid-cols-3 gap-3 mb-4">
       <MetricCard
         icon={ClipboardList}
-        label="Active Tasks"
+        label={isSupport ? t("support.kpi_open_tickets") : t("tasks.active_issues")}
         value={totalOpen}
-        sub={`${grandTotal} total created`}
+        sub={`${grandTotal} ${isSupport ? t("support.kpi_total_tickets") : t("tasks.total")}`}
         percent={activePct}
         color="primary"
+        ratioLabel={isSupport ? t("support.kpi_open_tickets") : t("tasks.active_issues")}
       />
       <MetricCard
         icon={AlertCircle}
-        label="Urgent"
+        label={t("tasks.urgent")}
         value={urgentCount}
-        sub="Immediate attention needed"
+        sub={t("workspace.kpi_at_risk_desc")}
         percent={urgentPct}
         color="destructive"
         pulse={urgentCount > 0}
+        ratioLabel={t("tasks.urgent")}
       />
       <MetricCard
         icon={CheckCircle2}
-        label="Resolved Today"
+        label={t("tasks.resolved_today")}
         value={resolvedToday}
-        sub="Tickets closed today"
+        sub={t("support.kpi_resolved_desc")}
         percent={resolvedPct}
-        color="sky"
+        color="primary"
+        ratioLabel={t("tasks.resolved_today")}
       />
     </div>
   );
