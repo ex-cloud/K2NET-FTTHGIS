@@ -1,27 +1,49 @@
-import { FileText, FileCode, Sparkles, RotateCcw } from "lucide-react";
+import { FileText, FileCode, Lightbulb, FolderKanban, BookOpen, RotateCcw } from "lucide-react";
 import { RichTextEditor } from "@k2net/ui";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
-import { TEMPLATE_TECH_SPEC, TEMPLATE_INITIATIVE } from "./new-project-constants";
+import {
+  TEMPLATE_PLAN_SPEC,
+  TEMPLATE_IDEA_RFC,
+  TEMPLATE_PROJECT_CHARTER,
+  TEMPLATE_DOC_SOP,
+  type WorkspaceSubtype,
+} from "./new-project-constants";
 
 interface NewProjectEditorSectionProps {
+  subtype?: WorkspaceSubtype;
   description: string;
   setDescription: (val: string) => void;
   onUploadImage: (file: File) => Promise<{ url: string; filename?: string }>;
 }
 
 export function NewProjectEditorSection({
+  subtype = "PLAN",
   description,
   setDescription,
   onUploadImage,
 }: NewProjectEditorSectionProps) {
   const { t } = useTranslation();
+
+  const getEditorTitle = () => {
+    switch (subtype) {
+      case "IDEA":
+        return t("workspace.template_idea");
+      case "PROJECT":
+        return t("workspace.template_project");
+      case "DOC":
+        return t("workspace.template_doc");
+      default:
+        return t("workspace.template_plan");
+    }
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
           <FileText className="w-3.5 h-3.5 text-primary" />
-          <span>Project Plan Specification (TipTap Markdown)</span>
+          <span>{getEditorTitle()} (TipTap Markdown)</span>
         </label>
 
         <div className="flex items-center gap-1.5">
@@ -29,24 +51,46 @@ export function NewProjectEditorSection({
           <button
             type="button"
             onClick={() => {
-              setDescription(TEMPLATE_TECH_SPEC);
-              toast.info("Template Technical Architecture Plan dimuat");
+              setDescription(TEMPLATE_PLAN_SPEC);
+              toast.info(t("workspace.template_plan"));
             }}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-secondary text-foreground hover:bg-secondary/80 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted/60 border border-border/60 text-foreground hover:bg-muted transition-colors cursor-pointer"
           >
-            <FileCode className="w-3 h-3 text-cyan-500" />
-            <span>Tech Spec</span>
+            <FileCode className="w-3 h-3 text-muted-foreground" />
+            <span>{t("workspace.template_plan")}</span>
           </button>
           <button
             type="button"
             onClick={() => {
-              setDescription(TEMPLATE_INITIATIVE);
-              toast.info("Template Platform Initiative dimuat");
+              setDescription(TEMPLATE_IDEA_RFC);
+              toast.info(t("workspace.template_idea"));
             }}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-secondary text-foreground hover:bg-secondary/80 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted/60 border border-border/60 text-foreground hover:bg-muted transition-colors cursor-pointer"
           >
-            <Sparkles className="w-3 h-3 text-amber-500" />
-            <span>Initiative</span>
+            <Lightbulb className="w-3 h-3 text-muted-foreground" />
+            <span>{t("workspace.template_idea")}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDescription(TEMPLATE_PROJECT_CHARTER);
+              toast.info(t("workspace.template_project"));
+            }}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted/60 border border-border/60 text-foreground hover:bg-muted transition-colors cursor-pointer"
+          >
+            <FolderKanban className="w-3 h-3 text-muted-foreground" />
+            <span>{t("workspace.template_project")}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDescription(TEMPLATE_DOC_SOP);
+              toast.info(t("workspace.template_doc"));
+            }}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted/60 border border-border/60 text-foreground hover:bg-muted transition-colors cursor-pointer"
+          >
+            <BookOpen className="w-3 h-3 text-muted-foreground" />
+            <span>{t("workspace.template_doc")}</span>
           </button>
           {description && (
             <button
@@ -66,7 +110,7 @@ export function NewProjectEditorSection({
           value={description}
           onChange={setDescription}
           minHeight="180px"
-          placeholder="Tuliskan spesifikasi project plan, arsitektur sistem, tabel konfigurasi, dan deliverables teknis di sini..."
+          placeholder={t("projects.plan_placeholder")}
           onUploadImage={onUploadImage}
         />
       </div>

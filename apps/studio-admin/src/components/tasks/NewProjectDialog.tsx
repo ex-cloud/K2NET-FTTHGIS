@@ -7,21 +7,26 @@ import {
   DropdownMenuItem,
   Button,
 } from "@k2net/ui";
-import { FolderKanban, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@k2net/i18n";
 import { type TaskScope } from "@/hooks/useTasksQuery";
-import { PROJECT_ICONS } from "./new-project-constants";
+import {
+  PROJECT_ICONS,
+  WORKSPACE_SUBTYPES,
+  type WorkspaceSubtype,
+} from "./new-project-constants";
 import { NewProjectPropertyPills } from "./NewProjectPropertyPills";
 import { NewProjectMilestones } from "./NewProjectMilestones";
 import { NewProjectEditorSection } from "./NewProjectEditorSection";
 import { useNewProjectForm } from "./use-new-project-form";
 
-interface NewProjectDialogProps {
+export interface NewProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   defaultValues?: {
+    subtype?: WorkspaceSubtype;
     title?: string;
     summary?: string;
     description?: string;
@@ -43,23 +48,117 @@ export function NewProjectDialog({
   const form = useNewProjectForm({ open, onOpenChange, onSuccess, defaultValues });
   const IconComponent = form.activeIconObj.icon;
 
+  const currentSubtypeConfig =
+    WORKSPACE_SUBTYPES.find((s) => s.id === form.subtype) || WORKSPACE_SUBTYPES[0];
+  const SubtypeIcon = currentSubtypeConfig.icon;
+
+  const getBreadcrumbTitle = () => {
+    switch (form.subtype) {
+      case "IDEA":
+        return t("workspace.modal_title_idea");
+      case "PROJECT":
+        return t("workspace.modal_title_project");
+      case "DOC":
+        return t("workspace.modal_title_doc");
+      default:
+        return t("workspace.modal_title_plan");
+    }
+  };
+
+  const getBreadcrumbSubtitle = () => {
+    switch (form.subtype) {
+      case "IDEA":
+        return t("workspace.modal_desc_idea");
+      case "PROJECT":
+        return t("workspace.modal_desc_project");
+      case "DOC":
+        return t("workspace.modal_desc_doc");
+      default:
+        return t("workspace.modal_desc_plan");
+    }
+  };
+
+  const getTitlePlaceholder = () => {
+    switch (form.subtype) {
+      case "IDEA":
+        return t("workspace.title_placeholder_idea");
+      case "PROJECT":
+        return t("workspace.title_placeholder_project");
+      case "DOC":
+        return t("workspace.title_placeholder_doc");
+      default:
+        return t("workspace.title_placeholder_plan");
+    }
+  };
+
+  const getSubmitButtonLabel = () => {
+    switch (form.subtype) {
+      case "IDEA":
+        return t("workspace.btn_create_idea");
+      case "PROJECT":
+        return t("workspace.btn_create_project");
+      case "DOC":
+        return t("workspace.btn_create_doc");
+      default:
+        return t("workspace.btn_create_plan");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="w-full sm:max-w-[860px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-lg rounded-2xl overflow-hidden flex flex-col gap-0 max-h-[90vh]"
+        className="w-full sm:max-w-[880px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-lg rounded-2xl overflow-hidden flex flex-col gap-0 max-h-[92vh]"
       >
         {/* ── Top Header / Breadcrumb ────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-b border-border/40 bg-muted/20 shrink-0">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-border/40 bg-muted/20 shrink-0">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-secondary/80 text-xs font-medium text-foreground">
-            <FolderKanban className="w-3.5 h-3.5 text-amber-500" />
+            <SubtypeIcon className={cn("w-3.5 h-3.5", currentSubtypeConfig.color.split(" ")[0])} />
             <span>K2N</span>
             <span className="text-muted-foreground/60">›</span>
-            <span className="font-semibold text-foreground">New project plan</span>
+            <span className="font-semibold text-foreground">{getBreadcrumbTitle()}</span>
           </div>
           <span className="text-[11px] text-muted-foreground hidden sm:inline">
-            Inisiatif Roadmap &amp; Arsitektur Payung
+            {getBreadcrumbSubtitle()}
           </span>
+        </div>
+
+        {/* ── Subtype Switcher Bar ───────────────────────────────────────── */}
+        <div className="flex items-center gap-2 px-6 py-2.5 border-b border-border/30 bg-muted/10 shrink-0 overflow-x-auto">
+          <span className="text-[11px] font-medium text-muted-foreground mr-1">
+            {t("workspace.type_filter")}:
+          </span>
+          {WORKSPACE_SUBTYPES.map((sub) => {
+            const SubIcon = sub.icon;
+            const isSelected = form.subtype === sub.id;
+            return (
+              <button
+                key={sub.id}
+                type="button"
+                onClick={() => form.handleSubtypeChange(sub.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer border",
+                  isSelected
+                    ? "bg-accent text-accent-foreground border-primary/50 shadow-xs"
+                    : "bg-background/60 text-muted-foreground border-border/40 hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <SubIcon className={cn("size-3.5", sub.color.split(" ")[0])} />
+                <span>
+                  {sub.id === "PLAN"
+                    ? t("workspace.subtype_plan")
+                    : sub.id === "IDEA"
+                    ? t("workspace.subtype_idea")
+                    : sub.id === "PROJECT"
+                    ? t("workspace.subtype_project")
+                    : t("workspace.subtype_doc")}
+                </span>
+                <span className="text-[10px] font-mono text-muted-foreground/70 uppercase">
+                  ({sub.codePrefix})
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* ── Form Body ──────────────────────────────────────────────────── */}
@@ -104,7 +203,7 @@ export function NewProjectDialog({
                   type="text"
                   value={form.name}
                   onChange={(e) => form.setName(e.target.value)}
-                  placeholder="Project plan name (e.g. Core Engine V2 Refactoring)"
+                  placeholder={getTitlePlaceholder()}
                   autoFocus
                   required
                   className="w-full text-xl font-bold font-sans tracking-tight text-foreground bg-transparent border-0 focus:outline-none placeholder:text-muted-foreground/40 leading-tight"
@@ -113,7 +212,7 @@ export function NewProjectDialog({
                   type="text"
                   value={form.summary}
                   onChange={(e) => form.setSummary(e.target.value)}
-                  placeholder="Executive summary / tujuan ringkas inisiatif..."
+                  placeholder={t("workspace.summary_placeholder")}
                   className="w-full text-xs text-foreground/80 placeholder:text-muted-foreground/40 bg-transparent border-0 focus:outline-none"
                 />
               </div>
@@ -140,49 +239,54 @@ export function NewProjectDialog({
 
             {/* ── TipTap Markdown Project Plan Editor ───────────────────────── */}
             <NewProjectEditorSection
+              subtype={form.subtype}
               description={form.description}
               setDescription={form.setDescription}
               onUploadImage={form.handleUploadImage}
             />
 
-            {/* ── Milestones Section ───────────────────────────────────────── */}
-            <NewProjectMilestones
-              milestones={form.milestones}
-              onAddMilestone={form.handleAddMilestone}
-              onRemoveMilestone={(id) => form.setMilestones((prev) => prev.filter((m) => m.id !== id))}
-              showMilestoneInput={form.showMilestoneInput}
-              setShowMilestoneInput={form.setShowMilestoneInput}
-              newMilestoneText={form.newMilestoneText}
-              setNewMilestoneText={form.setNewMilestoneText}
-            />
+            {/* ── Milestones Section (Only for PROJECT and PLAN) ───────────── */}
+            {(form.subtype === "PROJECT" || form.subtype === "PLAN") && (
+              <NewProjectMilestones
+                milestones={form.milestones}
+                onAddMilestone={form.handleAddMilestone}
+                onRemoveMilestone={(id) => form.setMilestones((prev) => prev.filter((m) => m.id !== id))}
+                showMilestoneInput={form.showMilestoneInput}
+                setShowMilestoneInput={form.setShowMilestoneInput}
+                newMilestoneText={form.newMilestoneText}
+                setNewMilestoneText={form.setNewMilestoneText}
+              />
+            )}
           </div>
 
           {/* ── Modal Footer ──────────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-6 py-3 border-t border-border/40 bg-muted/20 shrink-0">
             <span className="text-[11px] text-muted-foreground">
-              Tip: Gunakan TipTap Markdown untuk menyusun format tabel &amp; checklist
+              {t("workspace.tip_markdown")}
             </span>
             <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="ghost"
+                size="sm"
                 onClick={() => onOpenChange(false)}
-                className="text-xs font-medium text-muted-foreground hover:text-foreground h-8 px-3 rounded-md"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground h-7 px-2.5 rounded-md"
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
+                size="sm"
                 disabled={form.isSubmitting || !form.name.trim()}
-                className="h-8 px-4 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                className="h-7 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 {form.isSubmitting ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Membuat Project...</span>
+                    <span>{t("common.saving")}</span>
                   </>
                 ) : (
-                  <span>Create project plan</span>
+                  <span>{getSubmitButtonLabel()}</span>
                 )}
               </Button>
             </div>

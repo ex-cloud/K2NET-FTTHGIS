@@ -8,6 +8,7 @@ import {
   User,
   CheckCircle2,
 } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { ProjectContextMenu } from "@/components/tasks/ProjectContextMenu";
 import { type DisplayPropertiesState } from "@/components/tasks/LinearDisplayOptionsPopover";
 import { type ProjectPlanItem } from "./projects-hub-helpers";
@@ -35,6 +36,7 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
   onDeleteProject,
 }) => {
   const router = useRouter();
+  const { t } = useTranslation();
   const isComplete = proj.percentage === 100;
 
   return (
@@ -50,19 +52,19 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
     >
       <div
         onClick={() => router.push(`/tasks/projects/${proj.id}`)}
-        className="flex border-b border-border/40 hover:bg-muted/30 transition-colors group cursor-pointer items-stretch divide-x divide-border/45 text-xs"
+        className="flex border-b border-border/40 hover:bg-muted/30 transition-colors group cursor-pointer items-stretch divide-x divide-border/40 text-xs"
       >
         {/* Name + Obsidian Ref */}
         <div className="px-4 py-3 flex items-center gap-2.5 min-w-[200px] flex-1">
-          <div className="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-500 group-hover:scale-105 transition-transform">
-            <Box className="w-3.5 h-3.5" />
+          <div className="w-6 h-6 rounded-md bg-muted/60 border border-border/80 flex items-center justify-center shrink-0 text-foreground group-hover:border-primary/40 group-hover:scale-105 transition-transform">
+            <Box className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
               {proj.name}
             </span>
             {proj.obsidianRef && (
-              <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
+              <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded shrink-0 border border-border/50">
                 {proj.obsidianRef}
               </span>
             )}
@@ -76,17 +78,17 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
               {proj.health === "On track" ? (
                 <>
                   <TrendingUp className="w-3.5 h-3.5 text-green-500" />
-                  <span className="text-green-500 font-medium">On track</span>
+                  <span className="text-green-500 font-medium">{t("workspace.health_on_track")}</span>
                 </>
               ) : proj.health === "At risk" ? (
                 <>
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-amber-500 font-medium">At risk</span>
+                  <span className="text-amber-500 font-medium">{t("workspace.health_at_risk")}</span>
                 </>
               ) : (
                 <>
                   <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                  <span className="text-destructive font-medium">Off track</span>
+                  <span className="text-destructive font-medium">{t("workspace.health_off_track")}</span>
                 </>
               )}
             </div>
@@ -105,7 +107,7 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
                 HIGH
               </span>
             ) : proj.priority === "LOW" ? (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/30">
+              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted/50 text-muted-foreground border border-border/60">
                 LOW
               </span>
             ) : (
@@ -117,7 +119,7 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
         {/* Lead */}
         {displayProperties.lead !== false && (
           <div className="px-4 py-3 flex items-center gap-2 w-32 shrink-0 min-w-0">
-            <div className="w-5 h-5 rounded-full bg-secondary text-foreground flex items-center justify-center font-bold text-[10px] shrink-0 border border-border">
+            <div className="w-5 h-5 rounded-full bg-muted text-foreground flex items-center justify-center font-bold text-[10px] shrink-0 border border-border">
               {proj.lead !== "Unassigned" ? (
                 proj.lead.slice(0, 2).toUpperCase()
               ) : (
@@ -132,7 +134,7 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
         {displayProperties.targetDate !== false && (
           <div className="px-4 py-3 flex items-center text-muted-foreground font-mono text-[11px] w-28 shrink-0">
             {proj.dueDate
-              ? new Date(proj.dueDate).toLocaleDateString("id-ID", {
+              ? new Date(proj.dueDate).toLocaleDateString(undefined, {
                   day: "numeric",
                   month: "short",
                   year: "numeric",
@@ -145,7 +147,7 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
         {displayProperties.created !== false && (
           <div className="px-4 py-3 flex items-center text-muted-foreground font-mono text-[11px] whitespace-nowrap w-28 shrink-0">
             {proj.createdAt
-              ? new Date(proj.createdAt).toLocaleDateString("id-ID", {
+              ? new Date(proj.createdAt).toLocaleDateString(undefined, {
                   day: "numeric",
                   month: "short",
                   year: "numeric",

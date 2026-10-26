@@ -208,11 +208,26 @@ const TasksNewPage = lazyWithRetry(() =>
 const TasksIdPage = lazyWithRetry(() =>
   import("./app/(dashboard)/tasks/[id]/page").then((m) => ({ default: m.default }))
 );
-const TasksProjectsPage = lazyWithRetry(() =>
-  import("./app/(dashboard)/tasks/projects/page").then((m) => ({ default: m.default }))
-);
 const TasksProjectIdPage = lazyWithRetry(() =>
   import("./app/(dashboard)/tasks/projects/[id]/page").then((m) => ({ default: m.default }))
+);
+const WorkspacePlansPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/workspace/plans/page").then((m) => ({ default: m.default }))
+);
+const WorkspacePlanDetailPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/workspace/plans/[id]/page").then((m) => ({ default: m.default }))
+);
+const WorkspaceRoadmapPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/workspace/roadmap/page").then((m) => ({ default: m.default }))
+);
+const WorkspaceIssuesPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/workspace/issues/page").then((m) => ({ default: m.default }))
+);
+const SupportTicketsPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/support/tickets/page").then((m) => ({ default: m.default }))
+);
+const SupportSlaPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/support/sla/page").then((m) => ({ default: m.default }))
 );
 const AiPage = lazyWithRetry(() =>
   import("./app/(dashboard)/ai/page").then((m) => ({ default: m.default }))
@@ -498,19 +513,21 @@ const logsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, 
 
 // Workspace & Support Routes (Linear & Notion Architecture)
 const workspaceRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace", component: () => <Navigate to="/workspace/plans" /> });
-const workspacePlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans", component: () => <Lazy><TasksProjectsPage /></Lazy> });
-const workspacePlanIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans/$id", component: () => <Lazy><TasksProjectIdPage /></Lazy> });
+const workspacePlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans", component: () => <Lazy><WorkspacePlansPage /></Lazy> });
+const workspacePlanIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans/$id", component: () => <Lazy><WorkspacePlanDetailPage /></Lazy> });
+const workspaceRoadmapRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/roadmap", component: () => <Lazy><WorkspaceRoadmapPage /></Lazy> });
 const workspaceProjectsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/projects", component: () => <Navigate to="/workspace/plans" /> });
-const workspaceProjectIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/projects/$id", component: () => <Lazy><TasksProjectIdPage /></Lazy> });
-const workspaceIssuesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/issues", component: () => <Lazy><TasksPage /></Lazy> });
+const workspaceProjectIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/projects/$id", component: () => <Lazy><WorkspacePlanDetailPage /></Lazy> });
+const workspaceIssuesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/issues", component: () => <Lazy><WorkspaceIssuesPage /></Lazy> });
 const workspaceIssuesNewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/issues/new", component: () => <Lazy><TasksNewPage /></Lazy> });
 const workspaceIssueIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/issues/$id", component: () => <Lazy><TasksIdPage /></Lazy> });
 
 // Support Domain
 const supportRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support", component: () => <Navigate to="/support/tickets" /> });
-const supportTicketsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/tickets", component: () => <Lazy><TasksPage /></Lazy> });
+const supportTicketsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/tickets", component: () => <Lazy><SupportTicketsPage /></Lazy> });
 const supportTicketsNewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/tickets/new", component: () => <Lazy><TasksNewPage /></Lazy> });
 const supportTicketIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/tickets/$id", component: () => <Lazy><TasksIdPage /></Lazy> });
+const supportSlaRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/sla", component: () => <Lazy><SupportSlaPage /></Lazy> });
 
 // Tasks (Legacy Aliases & Safety Net)
 const tasksRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks", component: () => <Lazy><TasksPage /></Lazy> });
@@ -585,9 +602,9 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   // Others
   logsRoute,
   // Workspace & Support (Linear & Notion Architecture)
-  workspaceRoute, workspacePlansRoute, workspacePlanIdRoute, workspaceProjectsRoute, workspaceProjectIdRoute,
+  workspaceRoute, workspacePlansRoute, workspacePlanIdRoute, workspaceRoadmapRoute, workspaceProjectsRoute, workspaceProjectIdRoute,
   workspaceIssuesRoute, workspaceIssuesNewRoute, workspaceIssueIdRoute,
-  supportRoute, supportTicketsRoute, supportTicketsNewRoute, supportTicketIdRoute,
+  supportRoute, supportTicketsRoute, supportTicketsNewRoute, supportTicketIdRoute, supportSlaRoute,
   // Tasks (Legacy Aliases & Safety Net)
   tasksRoute, tasksNewRoute, tasksIdRoute, tasksProjectsRoute, tasksProjectIdRoute,
   aiRoute, aiAddRoute, aiConfigRoute, aiTemplatesRoute, aiPromptsRoute, aiSimulatorRoute, aiGraphRoute,

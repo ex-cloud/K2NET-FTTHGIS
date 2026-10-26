@@ -206,6 +206,7 @@
   "inbox_card4_desc": "Tiket aktif tenant-ke-platform",
   "inbox_feed1_badge": "MFA Identitas-Ganda",
   "inbox_feed1_ttl": "TTL 30 Menit",
+  "inbox_feed1_count": "{{count}} Aktif",
   "inbox_feed1_title": "Pusat Akses Dukungan & Impersonasi",
   "inbox_feed1_desc": "Teknisi platform membutuhkan elevasi sementara berbatas waktu untuk memeriksa topologi jaringan dan konfigurasi OLT tenant. Seluruh mutasi operasional diaudit di bawah identitas ganda.",
   "inbox_feed2_badge": "Registrasi Mandiri",

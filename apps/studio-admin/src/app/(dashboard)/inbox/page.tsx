@@ -17,12 +17,14 @@ import { useTranslation } from "@k2net/i18n";
 import { Link } from "@/lib/navigation-compat";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useLicenseOverview } from "@/hooks/useOrganizationLicenses";
+import { useImpersonationCenter } from "@/hooks/useImpersonationCenter";
 import { useTaskStore } from "@/store/task-store";
 
 export default function InboxApprovalsPage() {
   const { t } = useTranslation();
   const { organizations, loading: loadingOrgs } = useOrganizations();
   const { data: licenseOverview, isLoading: loadingLicenses } = useLicenseOverview();
+  const { stats: impersonationStats, loading: loadingImpersonation } = useImpersonationCenter();
   const unreadB2BCount = useTaskStore((state) => state.unreadB2BCount);
 
   const trialOrgs = React.useMemo(() => {
@@ -79,7 +81,7 @@ export default function InboxApprovalsPage() {
             </div>
             <div>
               <div className="text-2xl font-bold tracking-tight text-foreground font-mono">
-                {t("common.inbox_card1_status")}
+                {loadingImpersonation ? "..." : impersonationStats.activeCount}
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {t("common.inbox_card1_title")}
@@ -160,7 +162,7 @@ export default function InboxApprovalsPage() {
                 {t("common.inbox_card4_desc")}
               </p>
             </div>
-            <Link href="/tasks?scope=TENANT_TO_PLATFORM">
+            <Link href="/support/tickets">
               <Button size="sm" variant="outline" className="w-full text-xs justify-between">
                 <span>{t("common.inbox_action_view")}</span>
                 <ArrowRight className="size-3.5 ml-1" />
@@ -184,7 +186,9 @@ export default function InboxApprovalsPage() {
                     {t("common.inbox_feed1_badge")}
                   </Badge>
                   <span className="text-[11px] font-mono text-muted-foreground">
-                    {t("common.inbox_feed1_ttl")}
+                    {impersonationStats.activeCount > 0
+                      ? t("common.inbox_feed1_count", { count: impersonationStats.activeCount })
+                      : t("common.inbox_feed1_ttl")}
                   </span>
                 </div>
                 <h3 className="text-sm font-bold text-foreground">
@@ -282,8 +286,8 @@ export default function InboxApprovalsPage() {
                 </p>
               </div>
               <div className="pt-2 border-t border-border/50 flex items-center justify-between">
-                <span className="text-[11px] font-mono text-muted-foreground">system.task.manage</span>
-                <Link href="/tasks?scope=TENANT_TO_PLATFORM">
+                <span className="text-[11px] font-mono text-muted-foreground">support.tickets.view</span>
+                <Link href="/support/tickets">
                   <Button size="sm" className="h-7 text-xs px-3">
                     <ExternalLink className="size-3 mr-1.5" />
                     {t("common.inbox_action_view")}

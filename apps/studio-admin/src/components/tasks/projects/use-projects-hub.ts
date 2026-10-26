@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-compat";
+import { useSearchParams } from "@/lib/navigation-compat";
 import { useTasksQuery } from "@/hooks/useTasksQuery";
 import {
   type DisplayPropertiesState,
@@ -20,6 +21,9 @@ export type { ProjectPlanItem, SortField, SortDir };
 
 export function useProjectsHub() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const typeFilter = searchParams.get("type") || searchParams.get("view") || "all";
+
   const {
     tasks,
     loading,
@@ -109,12 +113,13 @@ export function useProjectsHub() {
       searchQuery,
       statusFilter,
       priorityFilter,
+      typeFilter,
       showClosed,
       ordering,
       sortField,
       sortDir,
     });
-  }, [projects, searchQuery, statusFilter, priorityFilter, showClosed, ordering, sortField, sortDir]);
+  }, [projects, searchQuery, statusFilter, priorityFilter, typeFilter, showClosed, ordering, sortField, sortDir]);
 
   const activeCount = useMemo(
     () => projects.filter((p) => !["RESOLVED", "CLOSED"].includes(p.status)).length,
@@ -141,6 +146,7 @@ export function useProjectsHub() {
     setStatusFilter,
     priorityFilter,
     setPriorityFilter,
+    typeFilter,
     newProjectOpen,
     setNewProjectOpen,
     viewMode,

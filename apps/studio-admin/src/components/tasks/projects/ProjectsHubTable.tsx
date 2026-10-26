@@ -13,6 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type DisplayPropertiesState } from "@/components/tasks/LinearDisplayOptionsPopover";
 import {
   type ProjectPlanItem,
@@ -59,6 +60,7 @@ const ColumnHeader: React.FC<ColumnHeaderProps> = ({
   onSort,
   align = "start",
 }) => {
+  const { t } = useTranslation();
   const isSorted = currentSortField === field;
   return (
     <DropdownMenu>
@@ -87,14 +89,14 @@ const ColumnHeader: React.FC<ColumnHeaderProps> = ({
           className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
         >
           <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
-          <span>Sort Ascending</span>
+          <span>{t("workspace.sort_asc")}</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => onSort(field, "desc")}
           className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
         >
           <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
-          <span>Sort Descending</span>
+          <span>{t("workspace.sort_desc")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -121,6 +123,8 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
   onUpdateDueDate,
   onDeleteProject,
 }) => {
+  const { t } = useTranslation();
+
   const handleSort = (field: SortField, dir: SortDir) => {
     setSortField(field);
     setSortDir(dir);
@@ -130,10 +134,10 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
     <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin">
       <div className="min-w-[1000px] flex flex-col">
         {/* ── Sticky Column Headers ── */}
-        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md flex border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md flex border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold tracking-wider text-muted-foreground shadow-xs">
           <div className="px-4 py-2.5 flex items-center min-w-[200px] flex-1">
             <ColumnHeader
-              title="Name"
+              title={t("workspace.col_name")}
               field="name"
               currentSortField={sortField}
               currentSortDir={sortDir}
@@ -144,7 +148,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
           {displayProperties.health !== false && (
             <div className="px-4 py-2.5 flex items-center w-28 shrink-0">
               <ColumnHeader
-                title="Health"
+                title={t("workspace.col_health")}
                 field="health"
                 currentSortField={sortField}
                 currentSortDir={sortDir}
@@ -156,7 +160,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
           {displayProperties.priority !== false && (
             <div className="px-4 py-2.5 flex items-center w-24 shrink-0">
               <ColumnHeader
-                title="Priority"
+                title={t("workspace.col_priority")}
                 field="priority"
                 currentSortField={sortField}
                 currentSortDir={sortDir}
@@ -168,7 +172,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
           {displayProperties.lead !== false && (
             <div className="px-4 py-2.5 flex items-center w-32 shrink-0 min-w-0">
               <ColumnHeader
-                title="Lead"
+                title={t("workspace.col_lead")}
                 field="lead"
                 currentSortField={sortField}
                 currentSortDir={sortDir}
@@ -180,7 +184,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
           {displayProperties.targetDate !== false && (
             <div className="px-4 py-2.5 flex items-center w-28 shrink-0">
               <ColumnHeader
-                title="Target Date"
+                title={t("workspace.col_target_date")}
                 field="dueDate"
                 currentSortField={sortField}
                 currentSortDir={sortDir}
@@ -192,7 +196,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
           {displayProperties.created !== false && (
             <div className="px-4 py-2.5 flex items-center w-28 shrink-0">
               <ColumnHeader
-                title="Created"
+                title={t("workspace.col_created")}
                 field="createdAt"
                 currentSortField={sortField}
                 currentSortDir={sortDir}
@@ -204,7 +208,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
           {displayProperties.issues !== false && (
             <div className="px-4 py-2.5 flex items-center justify-center w-20 shrink-0">
               <ColumnHeader
-                title="Issues"
+                title={t("workspace.col_issues")}
                 field="issuesCount"
                 currentSortField={sortField}
                 currentSortDir={sortDir}
@@ -217,7 +221,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
           {displayProperties.status !== false && (
             <div className="px-4 py-2.5 flex items-center justify-end w-24 shrink-0">
               <ColumnHeader
-                title="Status"
+                title={t("workspace.col_status")}
                 field="percentage"
                 currentSortField={sortField}
                 currentSortDir={sortDir}
@@ -232,23 +236,23 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
         {loading && projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="text-xs text-muted-foreground font-mono">Loading project plans...</p>
+            <p className="text-xs text-muted-foreground font-mono">{t("workspace.loading_projects")}</p>
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <FolderKanban className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm font-medium text-foreground">No project plans found</p>
+            <p className="text-sm font-medium text-foreground">{t("workspace.no_projects_found")}</p>
             <p className="text-xs text-muted-foreground max-w-sm text-center">
               {searchQuery
-                ? "Try adjusting your search or filters."
-                : "Create your first high-level engineering project or milestone."}
+                ? t("workspace.no_projects_search_desc")
+                : t("workspace.no_projects_empty_desc")}
             </p>
             <button
               onClick={onNewProject}
               className="mt-2 inline-flex items-center gap-1.5 px-2.5 h-7 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer shadow-xs"
             >
               <Plus className="h-3.5 w-3.5" />
-              <span>New Project</span>
+              <span>{t("workspace.action_new_plan")}</span>
             </button>
           </div>
         ) : (
@@ -272,7 +276,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
           {loadingMore && (
             <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground font-mono">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>Loading more projects...</span>
+              <span>{t("workspace.loading_more_projects")}</span>
             </div>
           )}
         </div>

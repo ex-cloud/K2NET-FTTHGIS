@@ -43,7 +43,7 @@ export function MobileTasksTab({ onNavigate }: MobileTasksTabProps) {
         <div className="space-y-1.5 pt-2">
           <button
             type="button"
-            onClick={() => onNavigate("/tasks?scope=TENANT_TO_PLATFORM")}
+            onClick={() => onNavigate("/support/tickets")}
             className="w-full flex items-center justify-between p-2.5 rounded-md border border-border/60 bg-card hover:bg-muted/60 text-left text-xs transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export function MobileTasksTab({ onNavigate }: MobileTasksTabProps) {
 
           <button
             type="button"
-            onClick={() => onNavigate("/tasks?scope=PLATFORM_INTERNAL")}
+            onClick={() => onNavigate("/workspace/issues")}
             className="w-full flex items-center justify-between p-2.5 rounded-md border border-border/60 bg-card hover:bg-muted/60 text-left text-xs transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2">
@@ -68,10 +68,10 @@ export function MobileTasksTab({ onNavigate }: MobileTasksTabProps) {
 
         <div className="pt-2">
           <Button
-            onClick={() => onNavigate("/tasks")}
+            onClick={() => onNavigate("/workspace/issues")}
             className="w-full h-8 text-xs font-medium"
           >
-            Open Full Kanban Board &rarr;
+            Open Full Issues Board &rarr;
           </Button>
         </div>
       </div>

@@ -192,6 +192,32 @@ function matchesParamUrl(
   return pathMatch && Array.from(itemParams.keys()).every((k) => searchParams.get(k) === itemParams.get(k));
 }
 
+const SPECIAL_ROUTE_PREFIXES: Record<string, string[]> = {
+  "/tasks/projects": ["/tasks/projects", "/workspace/plans", "/system/workspace/plans", "/system/tasks/projects"],
+  "/workspace/plans": ["/tasks/projects", "/workspace/plans", "/system/workspace/plans", "/system/tasks/projects"],
+  "/workspace/roadmap": ["/workspace/roadmap", "/system/workspace/roadmap"],
+  "/workspace/issues": ["/workspace/issues", "/system/workspace/issues"],
+  "/support/tickets": ["/support/tickets", "/system/support/tickets"],
+  "/support/sla": ["/support/sla", "/system/support/sla"],
+};
+
+const FILTER_PARAMS = ["status", "view", "type", "quick", "scope", "project"];
+const FILTERABLE_ROOTS = new Set([
+  "/organizations",
+  "/licensing/licenses",
+  "/licenses",
+  "/tasks",
+  "/workspace/plans",
+  "/workspace/issues",
+  "/support/tickets",
+]);
+
+function checkPathMatch(itemUrl: string, pathname: string): boolean {
+  if (pathname === itemUrl || pathname === `/system${itemUrl}`) return true;
+  const prefixes = SPECIAL_ROUTE_PREFIXES[itemUrl];
+  return prefixes ? prefixes.some((p) => pathname.startsWith(p)) : false;
+}
+
 function isSidebarItemActive(
   itemUrl: string,
   pathname: string | null,
@@ -202,44 +228,11 @@ function isSidebarItemActive(
     return matchesParamUrl(itemUrl, pathname, searchParams);
   }
 
-  const isProjectsRoute =
-    (itemUrl === "/tasks/projects" || itemUrl === "/workspace/plans") &&
-    (pathname.startsWith("/tasks/projects") ||
-      pathname.startsWith("/workspace/plans") ||
-      pathname.startsWith("/system/workspace/plans") ||
-      pathname.startsWith("/system/tasks/projects"));
-  const isIssuesRoute =
-    itemUrl === "/workspace/issues" &&
-    (pathname.startsWith("/workspace/issues") || pathname.startsWith("/system/workspace/issues"));
-  const isSupportRoute =
-    itemUrl === "/support/tickets" &&
-    (pathname.startsWith("/support/tickets") || pathname.startsWith("/system/support/tickets"));
+  const pathMatch = checkPathMatch(itemUrl, pathname);
+  if (!pathMatch) return false;
 
-  const pathMatch =
-    pathname === itemUrl ||
-    pathname === `/system${itemUrl}` ||
-    isProjectsRoute ||
-    isIssuesRoute ||
-    isSupportRoute;
-
-  const hasFilter =
-    searchParams.has("status") ||
-    searchParams.has("view") ||
-    searchParams.has("type") ||
-    searchParams.has("quick") ||
-    searchParams.has("scope") ||
-    searchParams.has("project");
-
-  const isFilterableRoot =
-    itemUrl === "/organizations" ||
-    itemUrl === "/licensing/licenses" ||
-    itemUrl === "/licenses" ||
-    itemUrl === "/tasks" ||
-    itemUrl === "/workspace/plans" ||
-    itemUrl === "/workspace/issues" ||
-    itemUrl === "/support/tickets";
-
-  return isFilterableRoot ? pathMatch && !hasFilter : pathMatch;
+  const hasFilter = FILTER_PARAMS.some((k) => searchParams.has(k));
+  return FILTERABLE_ROOTS.has(itemUrl) ? !hasFilter : true;
 }
 
 function getOrgBadgeCount(url: string, orgCounts: OrgCounts): number | null {

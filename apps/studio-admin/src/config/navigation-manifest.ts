@@ -6,7 +6,6 @@ import {
   Building2,
   Receipt,
   KeyRound,
-  ClipboardList,
   Boxes,
   ScanLine,
   Cpu,

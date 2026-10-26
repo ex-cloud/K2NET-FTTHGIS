@@ -641,9 +641,64 @@ public class TaskService {
         double complianceRate = total > 0
                 ? Math.round(((double) (total - urgent) / total * 100.0) * 10.0) / 10.0
                 : 100.0;
-        double avgResolutionHours = 4.5; // Baseline metric
 
-        return new SupportSlaMetricsDTO(total, open, resolved, urgent, complianceRate, avgResolutionHours);
+        // Dynamic calculation of average resolution time from real resolved tasks
+        List<Task> resolvedTasks = taskRepository.findResolvedTasksWithTimestamps(
+                TaskScope.TENANT_TO_PLATFORM, TERMINAL_STATUSES);
+        double avgResolutionHours = 0.0;
+        if (resolvedTasks != null && !resolvedTasks.isEmpty()) {
+            long totalSeconds = 0;
+            long count = 0;
+            for (Task t : resolvedTasks) {
+                if (t.getCreatedAt() != null && t.getResolvedAt() != null) {
+                    long secs = java.time.Duration.between(t.getCreatedAt(), t.getResolvedAt()).getSeconds();
+                    if (secs >= 0) {
+                        totalSeconds += secs;
+                        count++;
+                    }
+                }
+            }
+            if (count > 0) {
+                avgResolutionHours = Math.round(((double) totalSeconds / count / 3600.0) * 10.0) / 10.0;
+            }
+        }
+
+        // Sev 1 (Critical - URGENT priority)
+        long sev1Total = taskRepository.countByScopeAndPriority(TaskScope.TENANT_TO_PLATFORM, TaskPriority.URGENT);
+        long sev1Open = urgent;
+        long sev1Resolved = taskRepository.countByScopeAndPriorityAndStatusIn(
+                TaskScope.TENANT_TO_PLATFORM, TaskPriority.URGENT, TERMINAL_STATUSES);
+        double sev1Rate = sev1Total > 0
+                ? Math.round(((double) (sev1Total - sev1Open) / sev1Total * 100.0) * 10.0) / 10.0
+                : 100.0;
+
+        // Sev 2 (Major - HIGH priority)
+        long sev2Total = taskRepository.countByScopeAndPriority(TaskScope.TENANT_TO_PLATFORM, TaskPriority.HIGH);
+        long sev2Open = taskRepository.countByScopeAndPriorityAndStatusNotIn(
+                TaskScope.TENANT_TO_PLATFORM, TaskPriority.HIGH, TERMINAL_STATUSES);
+        long sev2Resolved = taskRepository.countByScopeAndPriorityAndStatusIn(
+                TaskScope.TENANT_TO_PLATFORM, TaskPriority.HIGH, TERMINAL_STATUSES);
+        double sev2Rate = sev2Total > 0
+                ? Math.round(((double) (sev2Total - sev2Open) / sev2Total * 100.0) * 10.0) / 10.0
+                : 100.0;
+
+        // Sev 3 (Normal - NORMAL & LOW priority)
+        long sev3Total = taskRepository.countByScopeAndPriorityIn(
+                TaskScope.TENANT_TO_PLATFORM, List.of(TaskPriority.NORMAL, TaskPriority.LOW));
+        long sev3Open = taskRepository.countByScopeAndPriorityInAndStatusNotIn(
+                TaskScope.TENANT_TO_PLATFORM, List.of(TaskPriority.NORMAL, TaskPriority.LOW), TERMINAL_STATUSES);
+        long sev3Resolved = taskRepository.countByScopeAndPriorityInAndStatusIn(
+                TaskScope.TENANT_TO_PLATFORM, List.of(TaskPriority.NORMAL, TaskPriority.LOW), TERMINAL_STATUSES);
+        double sev3Rate = sev3Total > 0
+                ? Math.round(((double) (sev3Total - sev3Open) / sev3Total * 100.0) * 10.0) / 10.0
+                : 100.0;
+
+        return new SupportSlaMetricsDTO(
+                total, open, resolved, urgent, complianceRate, avgResolutionHours,
+                sev1Total, sev1Open, sev1Resolved, sev1Rate,
+                sev2Total, sev2Open, sev2Resolved, sev2Rate,
+                sev3Total, sev3Open, sev3Resolved, sev3Rate
+        );
     }
 
     /**

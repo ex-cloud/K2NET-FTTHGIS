@@ -11,7 +11,7 @@ export interface TenantInvoice {
   date: string;
   description: string;
   amount: string;
-  status: "PAID" | "PENDING";
+  status: "PAID" | "PENDING" | "OVERDUE" | "CANCELLED" | string;
   paymentMethod: string;
 }
 

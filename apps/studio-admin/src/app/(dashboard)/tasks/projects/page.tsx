@@ -50,7 +50,7 @@ export default function ProjectsHubPage() {
           {hub.viewMode === "timeline" ? (
             <ProjectTimelineView
               projects={hub.filteredProjects}
-              onProjectClick={(id) => router.push(`/tasks/projects/${id}`)}
+              onProjectClick={(id) => router.push(`/workspace/plans/${id}`)}
             />
           ) : (
             <ProjectsHubTable

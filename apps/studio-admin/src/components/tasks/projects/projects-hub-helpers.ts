@@ -8,6 +8,7 @@ export interface ProjectPlanItem {
   id: string;
   name: string;
   obsidianRef?: string;
+  referenceType?: string;
   health: "On track" | "At risk" | "Off track";
   priority: string;
   lead: string;
@@ -63,10 +64,20 @@ export function aggregateProjectsFromTasks(tasks: Task[]): ProjectPlanItem[] {
     if (p.priority === "URGENT") health = "At risk";
     if (p.dueDate && new Date(p.dueDate) < new Date() && pct < 100) health = "Off track";
 
+    // Deduce or read referenceType
+    let refType = p.referenceType?.toUpperCase();
+    if (!refType) {
+      if (p.obsidianRef?.startsWith("IDEA-")) refType = "IDEA";
+      else if (p.obsidianRef?.startsWith("PLN-")) refType = "PLAN";
+      else if (p.obsidianRef?.startsWith("DOC-")) refType = "DOC";
+      else refType = "PROJECT";
+    }
+
     return {
       id: p.id,
       name: p.title,
       obsidianRef: p.obsidianRef,
+      referenceType: refType,
       health,
       priority: p.priority || "NORMAL",
       lead: p.assigneeId || "Unassigned",
@@ -85,10 +96,53 @@ interface FilterSortProjectsParams {
   searchQuery: string;
   statusFilter: string;
   priorityFilter: string;
+  typeFilter?: string;
   showClosed: ShowClosedFilter;
   ordering: ViewOrdering;
   sortField: SortField | null;
   sortDir: SortDir;
+}
+
+function matchesSearch(p: ProjectPlanItem, searchQuery: string): boolean {
+  if (!searchQuery) return true;
+  const q = searchQuery.toLowerCase();
+  return (
+    p.name.toLowerCase().includes(q) ||
+    Boolean(p.obsidianRef && p.obsidianRef.toLowerCase().includes(q)) ||
+    p.lead.toLowerCase().includes(q)
+  );
+}
+
+function matchesStatus(status: string, statusFilter: string): boolean {
+  if (statusFilter === "ALL") return true;
+  if (statusFilter === "IN_PROGRESS") return status === "IN_PROGRESS";
+  if (statusFilter === "TODO") return ["TODO", "BACKLOG", "PLANNED"].includes(status);
+  if (statusFilter === "RESOLVED") return ["RESOLVED", "CLOSED"].includes(status);
+  return true;
+}
+
+function matchesShowClosed(status: string, showClosed: ShowClosedFilter): boolean {
+  if (showClosed === "all") return true;
+  const isClosed = status === "RESOLVED" || status === "CLOSED";
+  return showClosed === "closed" ? isClosed : !isClosed;
+}
+
+const TYPE_ALIAS_MAP: Record<string, string> = {
+  PLANS: "PLAN",
+  PLAN: "PLAN",
+  IDEAS: "IDEA",
+  IDEA: "IDEA",
+  PROJECTS: "PROJECT",
+  PROJECT: "PROJECT",
+  DOCS: "DOC",
+  DOC: "DOC",
+};
+
+function matchesType(refType: string | undefined, normalizedType: string | undefined): boolean {
+  if (!normalizedType || normalizedType === "ALL") return true;
+  const pType = refType?.toUpperCase() || "PLAN";
+  const expected = TYPE_ALIAS_MAP[normalizedType] ?? normalizedType;
+  return pType === expected;
 }
 
 export function filterAndSortProjects({
@@ -96,33 +150,21 @@ export function filterAndSortProjects({
   searchQuery,
   statusFilter,
   priorityFilter,
+  typeFilter,
   showClosed,
   ordering,
   sortField,
   sortDir,
 }: FilterSortProjectsParams): ProjectPlanItem[] {
+  const normalizedType = typeFilter?.trim().toUpperCase();
+
   const list = projects.filter((p) => {
-    const matchSearch =
-      searchQuery === "" ||
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.obsidianRef && p.obsidianRef.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      p.lead.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchStatus =
-      statusFilter === "ALL" ||
-      (statusFilter === "IN_PROGRESS" && p.status === "IN_PROGRESS") ||
-      (statusFilter === "TODO" && ["TODO", "BACKLOG", "PLANNED"].includes(p.status)) ||
-      (statusFilter === "RESOLVED" && ["RESOLVED", "CLOSED"].includes(p.status));
-
-    const matchPriority =
-      priorityFilter === "ALL" || p.priority === priorityFilter;
-
-    const matchShowClosed =
-      showClosed === "all" ||
-      (showClosed === "open" && p.status !== "RESOLVED" && p.status !== "CLOSED") ||
-      (showClosed === "closed" && (p.status === "RESOLVED" || p.status === "CLOSED"));
-
-    return matchSearch && matchStatus && matchPriority && matchShowClosed;
+    if (!matchesSearch(p, searchQuery)) return false;
+    if (!matchesStatus(p.status, statusFilter)) return false;
+    if (priorityFilter !== "ALL" && p.priority !== priorityFilter) return false;
+    if (!matchesShowClosed(p.status, showClosed)) return false;
+    if (!matchesType(p.referenceType, normalizedType)) return false;
+    return true;
   });
 
   if (ordering === "created") {

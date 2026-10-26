@@ -48,7 +48,7 @@ export default function ProjectHubDetailPage() {
       <div className="p-8 text-center text-muted-foreground">
         <p>{t("tasks.project_not_found")}</p>
         <button
-          onClick={() => router.push("/tasks/projects")}
+          onClick={() => router.push("/workspace/plans")}
           className="mt-3 text-xs text-primary underline cursor-pointer"
         >
           {t("tasks.back_to_all_projects")}

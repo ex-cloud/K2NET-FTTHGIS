@@ -224,7 +224,7 @@ export function OverviewMetricCardsRow({
           footer="Operations & SLA"
           icon={ClipboardList}
           accentClassName="text-amber-400"
-          footerLinkHref="/tasks"
+          footerLinkHref="/support/tickets"
           footerLinkLabel="Manage Tickets"
         />
       </div>

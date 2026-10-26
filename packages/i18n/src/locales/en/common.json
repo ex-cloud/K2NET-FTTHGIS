@@ -206,6 +206,7 @@
   "inbox_card4_desc": "Tenant-to-platform active tickets",
   "inbox_feed1_badge": "Dual-Identity MFA",
   "inbox_feed1_ttl": "30-min TTL",
+  "inbox_feed1_count": "{{count}} Active",
   "inbox_feed1_title": "Support Access & Impersonation Center",
   "inbox_feed1_desc": "Platform engineers require temporary, time-bounded elevation to inspect tenant network topologies and OLT configurations. All operational mutations are audited under dual identities.",
   "inbox_feed2_badge": "Self-Service Onboarding",

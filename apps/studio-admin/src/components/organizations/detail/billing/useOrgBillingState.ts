@@ -1,54 +1,26 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import { toBackendPlanName, type EnrichedOrganization } from "../../types";
 import { useTenantSubscription, type TenantSubscriptionSummary } from "@/hooks/useTenantSubscription";
+import { useBillingInvoices } from "@/hooks/useBillingInvoices";
+import { formatIdr } from "@/lib/formatters";
 import type { ProrationEstimate } from "@/lib/actions/gateways";
 import type { SubscriptionPlanInfo, TenantInvoice } from "./billing-types";
 
-function formatPlanAmount(planPrice?: number): string {
-  const numericPrice = Number(planPrice || 0);
-  if (numericPrice > 0) {
-    return `Rp ${numericPrice.toLocaleString("id-ID")}`;
+function formatInvoiceDate(isoString?: string): string {
+  if (!isoString) return "—";
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "—";
   }
-  if (planPrice !== undefined) {
-    return "Free Trial";
-  }
-  return "—";
-}
-
-function generateMockInvoices(currentTier: string, planPrice?: number): TenantInvoice[] {
-  const nowYear = new Date().getFullYear();
-  const currentPlanAmountStr = formatPlanAmount(planPrice);
-
-  return [
-    {
-      id: "inv-1",
-      invoiceNumber: `INV-${nowYear}-08-0042`,
-      date: "01 Aug 2026",
-      description: `K2NET FTTH GIS SaaS Subscription — ${currentTier} Tier`,
-      amount: currentPlanAmountStr,
-      status: "PAID",
-      paymentMethod: "Xendit Virtual Account BCA",
-    },
-    {
-      id: "inv-2",
-      invoiceNumber: `INV-${nowYear}-07-0038`,
-      date: "01 Jul 2026",
-      description: `K2NET FTTH GIS SaaS Subscription — ${currentTier} Tier`,
-      amount: currentPlanAmountStr,
-      status: "PAID",
-      paymentMethod: "Xendit Virtual Account BCA",
-    },
-    {
-      id: "inv-3",
-      invoiceNumber: `INV-${nowYear}-06-0029`,
-      date: "01 Jun 2026",
-      description: `K2NET FTTH GIS SaaS Subscription — ${currentTier} Tier`,
-      amount: currentPlanAmountStr,
-      status: "PAID",
-      paymentMethod: "Xendit Virtual Account Mandiri",
-    },
-  ];
 }
 
 function resolvePlanTierInfo(summary: TenantSubscriptionSummary | null | undefined, org: EnrichedOrganization) {
@@ -111,6 +83,7 @@ function calculateUsageMetrics(summary: TenantSubscriptionSummary | null | undef
 }
 
 export function useOrgBillingState(org: EnrichedOrganization) {
+  const { t } = useTranslation();
   const {
     summary,
     availablePlans,
@@ -147,9 +120,22 @@ export function useOrgBillingState(org: EnrichedOrganization) {
 
   const usage = useMemo(() => calculateUsageMetrics(summary, org), [summary, org]);
 
-  const invoices = useMemo(() => {
-    return generateMockInvoices(currentTier, summary?.planPrice);
-  }, [currentTier, summary?.planPrice]);
+  const { data: allInvoices = [] } = useBillingInvoices();
+
+  const invoices: TenantInvoice[] = useMemo(() => {
+    const orgFiltered = allInvoices.filter(
+      (inv) => inv.organizationId === org.id || (org.slug && inv.organizationSlug === org.slug)
+    );
+    return orgFiltered.map((inv) => ({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      date: formatInvoiceDate(inv.createdAt),
+      description: inv.description,
+      amount: formatIdr(inv.amount),
+      status: inv.status,
+      paymentMethod: inv.paymentMethod || "Xendit VA / Gateway",
+    }));
+  }, [allInvoices, org.id, org.slug]);
 
   const handleSelectPlanFromSheet = async (plan: SubscriptionPlanInfo) => {
     setSelectedPlanTarget(plan);
@@ -195,7 +181,7 @@ export function useOrgBillingState(org: EnrichedOrganization) {
   const handleExecuteDowngrade = async () => {
     if (!selectedPlanTarget) return;
     if (!downgradeReason.trim()) {
-      toast.error("Wajib mengisi alasan resmi / nomor surat downgrade.");
+      toast.error(t("billing.toast_downgrade_reason_required"));
       return;
     }
     setIsExecuting(true);

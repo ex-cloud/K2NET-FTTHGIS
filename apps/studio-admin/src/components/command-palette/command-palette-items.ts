@@ -108,29 +108,29 @@ export function buildActionItems(
       title: "Create New Support Ticket",
       category: "Actions",
       icon: ClipboardList,
-      badgeText: "Tasks",
+      badgeText: "Support",
       action: () => {
-        navigate("/tasks/new?type=TICKET");
+        navigate("/support/tickets");
       },
     },
     {
       id: "action-open-kanban",
-      title: "Open Project Kanban Board",
+      title: "Open Workspace Issues Kanban",
       category: "Actions",
       icon: ClipboardList,
-      badgeText: "Tasks",
+      badgeText: "Workspace",
       action: () => {
-        navigate("/tasks?view=kanban");
+        navigate("/workspace/issues?view=kanban");
       },
     },
     {
       id: "action-view-urgent",
-      title: "View All Urgent Tickets Now",
+      title: "View Urgent Support Tickets",
       category: "Actions",
       icon: AlertCircle,
-      badgeText: "Tasks",
+      badgeText: "Support",
       action: () => {
-        navigate("/tasks?priority=URGENT&status=TODO");
+        navigate("/support/tickets?quick=urgent");
       },
     },
   ];

@@ -153,6 +153,28 @@ public interface TaskRepository extends JpaRepository<Task, UUID>, JpaSpecificat
             @Param("now") LocalDateTime now,
             @Param("terminalStatuses") List<TaskStatus> terminalStatuses
     );
+
+    /** Count total tasks by scope and specific priority. */
+    long countByScopeAndPriority(TaskScope scope, TaskPriority priority);
+
+    /** Count total tasks by scope, priority, and terminal status list. */
+    long countByScopeAndPriorityAndStatusIn(TaskScope scope, TaskPriority priority, List<TaskStatus> statuses);
+
+    /** Count total tasks by scope and priority list. */
+    long countByScopeAndPriorityIn(TaskScope scope, List<TaskPriority> priorities);
+
+    /** Count total tasks by scope, priority list, and not in terminal status list. */
+    long countByScopeAndPriorityInAndStatusNotIn(TaskScope scope, List<TaskPriority> priorities, List<TaskStatus> statuses);
+
+    /** Count total tasks by scope, priority list, and in terminal status list. */
+    long countByScopeAndPriorityInAndStatusIn(TaskScope scope, List<TaskPriority> priorities, List<TaskStatus> statuses);
+
+    /** Find resolved tasks with timestamps to compute real average resolution time. */
+    @Query("SELECT t FROM Task t WHERE t.scope = :scope AND t.status IN :terminalStatuses AND t.resolvedAt IS NOT NULL AND t.createdAt IS NOT NULL")
+    List<Task> findResolvedTasksWithTimestamps(
+            @Param("scope") TaskScope scope,
+            @Param("terminalStatuses") List<TaskStatus> terminalStatuses
+    );
 }
 
 
