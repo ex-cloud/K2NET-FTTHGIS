@@ -63,5 +63,11 @@
   "tier_tickets_count": "{{open}} aktif / {{total}} total",
   "loading_metrics": "Menghitung metrik waktu-nyata...",
   "toast_refreshing": "Memperbarui daftar tiket...",
-  "no_tickets_found": "Tidak ada tiket untuk tampilan ini."
+  "no_tickets_found": "Tidak ada tiket untuk tampilan ini.",
+  "kpi_queue_trend": "Volume Antrean",
+  "kpi_in_queue": "terbuka di antrean",
+  "kpi_sla_risk_telemetry": "SLA Kritis",
+  "kpi_zero_sla_risk": "0 risiko pelanggaran",
+  "kpi_resolution_velocity": "Kecepatan Resolusi",
+  "kpi_closed_today": "ditutup hari ini"
 }

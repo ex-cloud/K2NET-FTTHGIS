@@ -11,46 +11,33 @@ import { useTranslation } from "@k2net/i18n";
 import { useTaskSummary, type TaskSummary } from "@/hooks/useTaskSummary";
 import { cn } from "@/lib/utils";
 
-// ─── MetricCard: Compute-style vertical card with progress bar ─────────────────
+import { KpiMiniBarChart } from "@/components/tasks/KpiMiniBarChart";
+
+// ─── MetricCard: Modern Telemetry Card with Mini Bar Chart (Option 1) ───────
 function MetricCard({
   icon: Icon,
   label,
   value,
   sub,
-  percent,
   color,
   pulse,
-  ratioLabel,
+  chartLabel,
+  chartMeta,
+  count,
+  variant,
 }: {
   icon: React.ElementType;
   label: string;
   value: string | number;
   sub: string;
-  percent: number;
-  color: "primary" | "destructive" | "amber" | "sky";
+  color: "primary" | "destructive" | "amber";
   pulse?: boolean;
-  ratioLabel: string;
+  chartLabel: string;
+  chartMeta: string;
+  count: number;
+  variant: "active" | "urgent" | "resolved";
 }) {
-  const colorMap = {
-    primary: {
-      icon: "text-foreground",
-      bar: "bg-foreground",
-    },
-    destructive: {
-      icon: "text-destructive",
-      bar: "bg-destructive",
-    },
-    amber: {
-      icon: "text-foreground/80",
-      bar: "bg-foreground/80",
-    },
-    sky: {
-      icon: "text-foreground",
-      bar: "bg-foreground",
-    },
-  };
-  const c = colorMap[color];
-  const barColor = c.bar;
+  const iconColor = color === "destructive" ? "text-destructive" : "text-foreground";
 
   return (
     <Card glowingEffect className="p-5 flex flex-col gap-3">
@@ -66,7 +53,7 @@ function MetricCard({
               <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
             </span>
           )}
-          <Icon className={cn("h-4 w-4", c.icon)} />
+          <Icon className={cn("h-4 w-4", iconColor)} />
         </div>
       </div>
 
@@ -76,19 +63,14 @@ function MetricCard({
         <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
       </div>
 
-      {/* Progress bar */}
-      <div>
-        <div className="flex justify-between text-xs text-muted-foreground mb-1">
-          <span>{ratioLabel}</span>
-          <span>{Math.min(Math.round(percent), 100)}%</span>
-        </div>
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-          <div
-            className={cn("h-full rounded-full transition-all duration-700", barColor)}
-            style={{ width: `${Math.min(percent, 100)}%` }}
-          />
-        </div>
-      </div>
+      {/* Mini Bar Chart Activity Sparkline */}
+      <KpiMiniBarChart
+        label={chartLabel}
+        meta={chartMeta}
+        count={count}
+        variant={variant}
+        color={color}
+      />
     </Card>
   );
 }
@@ -110,11 +92,6 @@ export function TaskKpiStrip({ summaryProp, isSupport }: TaskKpiStripProps = {})
   const resolvedToday = summary?.resolvedToday ?? 0;
   const grandTotal = totalOpen + resolvedToday;
 
-  // Derived percents
-  const activePct = grandTotal > 0 ? Math.round((totalOpen / grandTotal) * 100) : 0;
-  const urgentPct = totalOpen > 0 ? Math.round((urgentCount / totalOpen) * 100) : 0;
-  const resolvedPct = grandTotal > 0 ? Math.round((resolvedToday / grandTotal) * 100) : 0;
-
   if (loading) {
     return (
       <div className="grid grid-cols-3 gap-3 mb-4">
@@ -128,12 +105,13 @@ export function TaskKpiStrip({ summaryProp, isSupport }: TaskKpiStripProps = {})
               <div className="h-8 bg-muted rounded w-12 mb-1" />
               <div className="h-3 bg-muted rounded w-28" />
             </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <div className="h-3 bg-muted rounded w-14" />
-                <div className="h-3 bg-muted rounded w-8" />
+            <div className="pt-2.5 border-t border-border/40 flex items-end justify-between">
+              <div className="h-3 bg-muted rounded w-16" />
+              <div className="flex items-end gap-1 h-7">
+                {[0, 1, 2, 3, 4, 5, 6].map((b) => (
+                  <div key={b} className="w-1.5 h-3 bg-muted rounded-xs" />
+                ))}
               </div>
-              <div className="h-1.5 bg-muted rounded-full" />
             </div>
           </Card>
         ))}
@@ -148,28 +126,34 @@ export function TaskKpiStrip({ summaryProp, isSupport }: TaskKpiStripProps = {})
         label={isSupport ? t("support.kpi_open_tickets") : t("tasks.active_issues")}
         value={totalOpen}
         sub={`${grandTotal} ${isSupport ? t("support.kpi_total_tickets") : t("tasks.total")}`}
-        percent={activePct}
+        chartLabel={isSupport ? t("support.kpi_queue_trend") : t("tasks.kpi_volume_trend")}
+        chartMeta={`${totalOpen} ${isSupport ? t("support.kpi_in_queue") : t("tasks.kpi_in_queue")}`}
+        count={totalOpen}
+        variant="active"
         color="primary"
-        ratioLabel={isSupport ? t("support.kpi_open_tickets") : t("tasks.active_issues")}
       />
       <MetricCard
         icon={AlertCircle}
         label={t("tasks.urgent")}
         value={urgentCount}
         sub={t("workspace.kpi_at_risk_desc")}
-        percent={urgentPct}
-        color="destructive"
+        chartLabel={isSupport ? t("support.kpi_sla_risk_telemetry") : t("tasks.kpi_critical_alerts")}
+        chartMeta={urgentCount > 0 ? `${urgentCount} ${t("support.kpi_urgent_tickets")}` : t("support.kpi_zero_sla_risk")}
+        count={urgentCount}
+        variant="urgent"
+        color={urgentCount > 0 ? "destructive" : "primary"}
         pulse={urgentCount > 0}
-        ratioLabel={t("tasks.urgent")}
       />
       <MetricCard
         icon={CheckCircle2}
         label={t("tasks.resolved_today")}
         value={resolvedToday}
         sub={t("support.kpi_resolved_desc")}
-        percent={resolvedPct}
+        chartLabel={isSupport ? t("support.kpi_resolution_velocity") : t("tasks.kpi_closed_trend")}
+        chartMeta={`${resolvedToday} ${isSupport ? t("support.kpi_closed_today") : t("tasks.resolved_today")}`}
+        count={resolvedToday}
+        variant="resolved"
         color="primary"
-        ratioLabel={t("tasks.resolved_today")}
       />
     </div>
   );

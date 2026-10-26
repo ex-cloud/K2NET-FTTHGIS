@@ -88,5 +88,11 @@
   "export_spec": "Export Spec",
   "export_spec_title": "Copy Spec as Markdown",
   "toast_refreshing": "Refreshing issues...",
-  "issues_count_format": "{{completed}}/{{total}} issues"
+  "issues_count_format": "{{completed}}/{{total}} issues",
+  "kpi_activity_dist": "Activity Distribution",
+  "kpi_active_in_pipeline": "in pipeline",
+  "kpi_risk_telemetry": "Risk Telemetry",
+  "kpi_zero_breaches": "0 breach risks",
+  "kpi_delivery_velocity": "Delivery Velocity",
+  "kpi_delivered": "delivered"
 }

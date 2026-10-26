@@ -63,5 +63,11 @@
   "tier_tickets_count": "{{open}} open / {{total}} total",
   "loading_metrics": "Calculating real-time metrics...",
   "toast_refreshing": "Refreshing tickets...",
-  "no_tickets_found": "No tickets found for this view."
+  "no_tickets_found": "No tickets found for this view.",
+  "kpi_queue_trend": "Queue Volume",
+  "kpi_in_queue": "open in queue",
+  "kpi_sla_risk_telemetry": "Critical SLA",
+  "kpi_zero_sla_risk": "0 breach risks",
+  "kpi_resolution_velocity": "Resolution Velocity",
+  "kpi_closed_today": "closed today"
 }

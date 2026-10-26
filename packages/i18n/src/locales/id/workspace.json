@@ -88,5 +88,11 @@
   "export_spec": "Ekspor Dokumen",
   "export_spec_title": "Salin Dokumen Spek sebagai Markdown",
   "toast_refreshing": "Memperbarui daftar issue...",
-  "issues_count_format": "{{completed}}/{{total}} issue"
+  "issues_count_format": "{{completed}}/{{total}} issue",
+  "kpi_activity_dist": "Distribusi Aktivitas",
+  "kpi_active_in_pipeline": "dalam pipeline",
+  "kpi_risk_telemetry": "Telemetri Risiko",
+  "kpi_zero_breaches": "0 risiko pelanggaran",
+  "kpi_delivery_velocity": "Kecepatan Pengiriman",
+  "kpi_delivered": "terselesaikan"
 }

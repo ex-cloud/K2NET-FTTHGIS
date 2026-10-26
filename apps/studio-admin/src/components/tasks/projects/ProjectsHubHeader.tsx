@@ -9,6 +9,7 @@ import {
 import { Card, Button } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
+import { KpiMiniBarChart } from "@/components/tasks/KpiMiniBarChart";
 
 interface ProjectsHubHeaderProps {
   onNewProject: () => void;
@@ -102,18 +103,13 @@ export const ProjectsHubHeader: React.FC<ProjectsHubHeaderProps> = ({
               <p className="text-2xl font-bold text-foreground font-mono">{activeCount}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{activeCount} {t("workspace.kpi_active_desc")}</p>
             </div>
-            <div>
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{t("workspace.kpi_active_initiatives")}</span>
-                <span>{totalProjects ? Math.round((activeCount / totalProjects) * 100) : 0}%</span>
-              </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-foreground transition-all duration-700"
-                  style={{ width: `${totalProjects ? Math.round((activeCount / totalProjects) * 100) : 0}%` }}
-                />
-              </div>
-            </div>
+            <KpiMiniBarChart
+              label={t("workspace.kpi_activity_dist")}
+              meta={`${activeCount} ${t("workspace.kpi_active_in_pipeline")}`}
+              count={activeCount}
+              variant="active"
+              color="primary"
+            />
           </Card>
 
           {/* At Risk Card */}
@@ -140,21 +136,13 @@ export const ProjectsHubHeader: React.FC<ProjectsHubHeaderProps> = ({
                 {atRiskCount > 0 ? t("workspace.kpi_at_risk_desc") : t("workspace.kpi_all_on_schedule")}
               </p>
             </div>
-            <div>
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{t("workspace.kpi_at_risk")}</span>
-                <span>{totalProjects ? Math.round((atRiskCount / totalProjects) * 100) : 0}%</span>
-              </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-700",
-                    atRiskCount > 0 ? "bg-destructive" : "bg-muted-foreground/30"
-                  )}
-                  style={{ width: `${totalProjects ? Math.round((atRiskCount / totalProjects) * 100) : 0}%` }}
-                />
-              </div>
-            </div>
+            <KpiMiniBarChart
+              label={t("workspace.kpi_risk_telemetry")}
+              meta={atRiskCount > 0 ? `${atRiskCount} ${t("workspace.kpi_at_risk")}` : t("workspace.kpi_zero_breaches")}
+              count={atRiskCount}
+              variant="urgent"
+              color={atRiskCount > 0 ? "destructive" : "primary"}
+            />
           </Card>
 
           {/* Completed Plans Card */}
@@ -169,18 +157,13 @@ export const ProjectsHubHeader: React.FC<ProjectsHubHeaderProps> = ({
               <p className="text-2xl font-bold text-foreground font-mono">{completedCount}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{completedCount} {t("workspace.kpi_completed_desc")}</p>
             </div>
-            <div>
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{t("workspace.kpi_completed_plans")}</span>
-                <span>{totalProjects ? Math.round((completedCount / totalProjects) * 100) : 0}%</span>
-              </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-foreground transition-all duration-700"
-                  style={{ width: `${totalProjects ? Math.round((completedCount / totalProjects) * 100) : 0}%` }}
-                />
-              </div>
-            </div>
+            <KpiMiniBarChart
+              label={t("workspace.kpi_delivery_velocity")}
+              meta={`${completedCount} ${t("workspace.kpi_delivered")}`}
+              count={completedCount}
+              variant="resolved"
+              color="primary"
+            />
           </Card>
         </div>
       </div>

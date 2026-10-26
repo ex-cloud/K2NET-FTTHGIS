@@ -132,5 +132,9 @@
   "project_not_found": "Project not found.",
   "milestone_name_placeholder": "Target milestone name (e.g. Phase 1: Core Engine Integration)",
   "operational_notifications": "Operational Notifications",
-  "no_active_alerts": "No active operational alerts for this workspace."
+  "no_active_alerts": "No active operational alerts for this workspace.",
+  "kpi_volume_trend": "Volume Trend",
+  "kpi_in_queue": "in progress",
+  "kpi_critical_alerts": "Critical Alerts",
+  "kpi_closed_trend": "Resolution Trend"
 }

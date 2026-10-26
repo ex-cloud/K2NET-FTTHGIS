@@ -132,5 +132,9 @@
   "project_not_found": "Project tidak ditemukan.",
   "milestone_name_placeholder": "Nama target milestone (misal: Phase 1: Integrasi Core Engine)",
   "operational_notifications": "Notifikasi Operasional",
-  "no_active_alerts": "Tidak ada peringatan operasional aktif untuk ruang kerja ini."
+  "no_active_alerts": "Tidak ada peringatan operasional aktif untuk ruang kerja ini.",
+  "kpi_volume_trend": "Tren Volume",
+  "kpi_in_queue": "dalam progres",
+  "kpi_critical_alerts": "Peringatan Kritis",
+  "kpi_closed_trend": "Tren Resolusi"
 }
