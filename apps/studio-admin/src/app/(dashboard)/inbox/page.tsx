@@ -1,6 +1,4 @@
 import * as React from "react";
-import { Inbox, RefreshCw } from "lucide-react";
-import { Button, Badge, PageLayout, PageHero } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { usePathname, useRouter, useSearchParams } from "@/lib/navigation-compat";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -15,6 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 import { type QuickPill } from "@/components/inbox/inbox-types";
+import { InboxTopFilterTabs } from "@/components/inbox/InboxTopFilterTabs";
 import { InboxQueueStream } from "@/components/inbox/InboxQueueStream";
 import { InboxDetailPane } from "@/components/inbox/InboxDetailPane";
 import { useInboxQueueBuilder } from "@/components/inbox/use-inbox-queue-builder";
@@ -96,7 +95,7 @@ export default function InboxApprovalsPage() {
   }, [session?.user]);
 
   // ── Queue Items Builder Hook ───────────────────────────────────────────────
-  const { categoryFilteredItems } = useInboxQueueBuilder({
+  const { categoryFilteredItems, tabCounts } = useInboxQueueBuilder({
     organizations,
     activeSessions,
     impersonationStats,
@@ -304,66 +303,55 @@ export default function InboxApprovalsPage() {
     queryClient.invalidateQueries();
   };
 
+  const handleFilterChange = React.useCallback(
+    (filterId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (filterId === "all") {
+        params.delete("filter");
+      } else {
+        params.set("filter", filterId);
+      }
+      params.delete("item");
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname);
+    },
+    [router, pathname, searchParams]
+  );
+
   const activeSectionTitle = React.useMemo(() => {
     switch (currentFilter) {
-      case "approvals": return t("nav.inbox_filter_approvals");
-      case "trials": return t("nav.inbox_filter_trials");
-      case "licensing": return t("nav.inbox_filter_licensing");
-      case "assigned": return t("nav.inbox_filter_assigned");
-      case "created": return t("nav.inbox_filter_created");
-      case "resolved": return t("nav.inbox_filter_resolved");
-      default: return t("nav.inbox_filter_all");
+      case "approvals":
+        return t("nav.inbox_filter_approvals");
+      case "trials":
+        return t("nav.inbox_filter_trials");
+      case "licensing":
+        return t("nav.inbox_filter_licensing");
+      case "assigned":
+        return t("nav.inbox_filter_assigned");
+      case "created":
+        return t("nav.inbox_filter_created");
+      case "resolved":
+        return t("nav.inbox_filter_resolved");
+      default:
+        return t("nav.inbox_filter_all");
     }
   }, [currentFilter, t]);
 
-  const urgentCount = React.useMemo(() => {
-    return visibleItems.filter((i) => i.priority === "URGENT").length;
-  }, [visibleItems]);
-
   return (
-    <PageLayout variant="workspace" spaceY="space-y-4">
-      {/* ── Lapisan 2 Hero Canvas ────────────────────────────────────────── */}
-      <PageHero
-        eyebrow={t("nav.inbox_approvals")}
-        title={t("common.inbox_title")}
-        icon={Inbox}
-        subtitle={t("common.inbox_subtitle")}
-        meta={
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="font-mono text-xs">
-              {visibleItems.length} {t("common.inbox_actionable_items")}
-            </Badge>
-            {urgentCount > 0 && (
-              <Badge variant="destructive" className="font-mono text-xs">
-                {urgentCount} {t("common.inbox_urgent_flag")}
-              </Badge>
-            )}
-            {justUpdated && (
-              <Badge variant="secondary" className="font-mono text-xs flex items-center gap-1.5 animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                {t("common.inbox_just_updated")}
-              </Badge>
-            )}
-          </div>
-        }
-        actions={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleRefreshAll(false)}
-            disabled={isLoading}
-            className="h-7 px-2.5 text-xs font-medium cursor-pointer"
-            title={t("common.inbox_refresh_queue")}
-          >
-            <RefreshCw className={cn("size-3.5 mr-1.5", isLoading && "animate-spin")} />
-            {t("common.refresh")}
-          </Button>
-        }
+    <div className="flex flex-col h-full w-full bg-background overflow-hidden select-none">
+      {/* ── Top Unified Dual-Toolbar Filter Tabs ───────────────────────── */}
+      <InboxTopFilterTabs
+        currentFilter={currentFilter}
+        onFilterChange={handleFilterChange}
+        tabCounts={tabCounts}
+        justUpdated={justUpdated}
+        isLoading={isLoading}
+        onRefresh={() => handleRefreshAll(false)}
       />
 
-      {/* ── 3-Pane Split View Workspace Container ────────────────────────── */}
-      <div className="border border-border/60 rounded-xl overflow-hidden bg-card/30 flex flex-col lg:flex-row h-[calc(100vh-14rem)] min-h-[600px] shadow-sm">
-        {/* PANEL 2: Master Queue Stream (Hidden on mobile when detail is open) */}
+      {/* ── 2-Column Split View Workspace Container (Full Viewport Height) ── */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* PANEL 1: Master Queue Stream */}
         <InboxQueueStream
           items={visibleItems}
           selectedItemId={selectedItemId}
@@ -380,8 +368,13 @@ export default function InboxApprovalsPage() {
           onRefresh={() => handleRefreshAll(false)}
         />
 
-        {/* PANEL 3: Detail Inspector & Execution Pane (Full width on mobile) */}
-        <div className={cn("flex-1 h-full", !mobileShowDetail && "hidden lg:flex")}>
+        {/* PANEL 2: Detail Inspector & Execution Pane */}
+        <div
+          className={cn(
+            "flex-1 h-full min-w-0 overflow-hidden",
+            !mobileShowDetail && "hidden lg:flex"
+          )}
+        >
           <InboxDetailPane
             selectedItem={selectedItem}
             onUpdateTaskStatus={handleUpdateTaskStatus}
@@ -392,6 +385,6 @@ export default function InboxApprovalsPage() {
           />
         </div>
       </div>
-    </PageLayout>
+    </div>
   );
 }

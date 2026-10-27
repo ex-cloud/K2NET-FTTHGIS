@@ -9,6 +9,10 @@ import {
   ChevronDown,
   ArrowLeft,
   CheckCircle,
+  User,
+  Building2,
+  Zap,
+  Clock,
 } from "lucide-react";
 import {
   Button,
@@ -17,14 +21,20 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  Markdown,
 } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { Link } from "@/lib/navigation-compat";
+import { cn } from "@/lib/utils";
+import { useSession } from "@/lib/auth-compat";
+import { useTeamUsers } from "@/hooks/useTeamUsers";
 import { TaskCommentsSection } from "@/components/tasks/TaskCommentsSection";
 import type { TaskComment } from "@/hooks/useTasksQuery";
 import {
   type InboxQueueItem,
   formatRelativeTime,
+  resolveUserDisplayName,
+  isUuidString,
 } from "./inbox-types";
 
 // ── Subcomponent 1: Contextual Action Buttons ────────────────────────────────
@@ -163,7 +173,15 @@ function DetailToolbarActions({
         </DropdownMenu>
       )}
 
-      <Link href={selectedItem.category === "B2B_TICKET" ? "/support/tickets" : "/workspace/issues"}>
+      <Link
+        href={
+          selectedItem.category === "B2B_TICKET"
+            ? `/support/tickets`
+            : selectedItem.category === "PLAN" || selectedItem.category === "PROJECT" || selectedItem.category === "IDEA" || selectedItem.category === "DOC"
+            ? `/workspace/plans/${selectedItem.id}`
+            : "/workspace/issues"
+        }
+      >
         <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 font-medium">
           <ExternalLink className="size-3 mr-1.5" />
           {t("common.inbox_action_open_full")}
@@ -203,7 +221,7 @@ function CategoryContextCard({ selectedItem }: { selectedItem: InboxQueueItem })
           <div>
             <span className="text-muted-foreground block text-[11px]">{t("common.inbox_trial_realm")}</span>
             <span className="font-mono text-primary font-medium">
-              {raw.data.slug ? `tenant_${raw.data.slug}` : "—"}
+              {raw.data.slug && !isUuidString(raw.data.slug) && raw.data.slug.length < 20 ? `tenant_${raw.data.slug}` : raw.data.name}
             </span>
           </div>
         </div>
@@ -320,6 +338,14 @@ export function InboxDetailPane({
   onBackToQueue,
 }: InboxDetailPaneProps) {
   const { t } = useTranslation();
+  const { data: session } = useSession();
+  const { users: teamUsers } = useTeamUsers();
+
+  const requesterDisplayName = React.useMemo(() => {
+    if (!selectedItem) return "—";
+    const rawReq = selectedItem.requesterName;
+    return resolveUserDisplayName(rawReq, teamUsers, session?.user);
+  }, [selectedItem, teamUsers, session?.user]);
 
   if (!selectedItem) {
     return (
@@ -375,9 +401,9 @@ export function InboxDetailPane({
       </div>
 
       {/* Scrollable Detail Body */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar-thin">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 custom-scrollbar-thin">
         {/* Header Title Section */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-muted-foreground font-mono">
               {selectedItem.subtitle}
@@ -388,40 +414,58 @@ export function InboxDetailPane({
           </h1>
         </div>
 
-        {/* Metadata Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="p-3 rounded-lg border border-border/60 bg-card/40 space-y-1">
-            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block">
-              {t("common.inbox_meta_requester")}
+        {/* Compact Inline Metadata Row */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 py-2 px-3 rounded-lg bg-muted/30 border border-border/50 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <User className="size-3.5 text-muted-foreground shrink-0" />
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {t("common.inbox_meta_requester")}:
             </span>
-            <span className="text-xs font-semibold text-foreground truncate block">
-              {selectedItem.requesterName || "—"}
-            </span>
-          </div>
-
-          <div className="p-3 rounded-lg border border-border/60 bg-card/40 space-y-1">
-            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block">
-              {t("common.inbox_meta_org")}
-            </span>
-            <span className="text-xs font-semibold text-foreground truncate block">
-              {selectedItem.organizationName || "—"}
+            <span className="font-semibold text-foreground">
+              {requesterDisplayName}
             </span>
           </div>
 
-          <div className="p-3 rounded-lg border border-border/60 bg-card/40 space-y-1">
-            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block">
-              {t("common.inbox_meta_priority")}
+          {selectedItem.organizationName && (
+            <>
+              <span className="text-border">•</span>
+              <div className="flex items-center gap-1.5">
+                <Building2 className="size-3.5 text-muted-foreground shrink-0" />
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  {t("common.inbox_meta_org")}:
+                </span>
+                <span className="font-semibold text-foreground">
+                  {selectedItem.organizationName}
+                </span>
+              </div>
+            </>
+          )}
+
+          <span className="text-border">•</span>
+          <div className="flex items-center gap-1.5">
+            <Zap className="size-3.5 text-muted-foreground shrink-0" />
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {t("common.inbox_meta_priority")}:
             </span>
-            <span className="text-xs font-mono font-semibold text-foreground block">
+            <span
+              className={cn(
+                "font-mono font-semibold",
+                selectedItem.priority === "URGENT" || selectedItem.priority === "HIGH"
+                  ? "text-destructive"
+                  : "text-foreground"
+              )}
+            >
               {selectedItem.priority}
             </span>
           </div>
 
-          <div className="p-3 rounded-lg border border-border/60 bg-card/40 space-y-1">
-            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block">
-              {t("common.inbox_meta_created")}
+          <span className="text-border">•</span>
+          <div className="flex items-center gap-1.5">
+            <Clock className="size-3.5 text-muted-foreground shrink-0" />
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {t("common.inbox_meta_created")}:
             </span>
-            <span className="text-xs font-mono text-muted-foreground block">
+            <span className="font-mono text-muted-foreground">
               {formatRelativeTime(selectedItem.createdAt, t)}
             </span>
           </div>
@@ -430,13 +474,19 @@ export function InboxDetailPane({
         {/* Category-Specific Context Content from Real Backend DTO */}
         <CategoryContextCard selectedItem={selectedItem} />
 
-        {/* Main Text Content */}
+        {/* Main Text Content (Markdown Rendered) */}
         <div className="space-y-2">
           <h4 className="text-xs font-bold font-mono uppercase tracking-wider text-muted-foreground">
             {t("common.inbox_description_title")}
           </h4>
-          <div className="p-4 rounded-xl border border-border/60 bg-card/20 text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed font-sans">
-            {selectedItem.description || t("common.inbox_no_description")}
+          <div className="p-4 rounded-xl border border-border/60 bg-card/20 text-xs text-foreground/90 leading-relaxed font-sans">
+            {selectedItem.description ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
+                <Markdown content={selectedItem.description} />
+              </div>
+            ) : (
+              <p className="text-muted-foreground italic text-xs">{t("common.inbox_no_description")}</p>
+            )}
           </div>
         </div>
       </div>

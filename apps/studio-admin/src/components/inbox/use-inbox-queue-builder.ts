@@ -43,9 +43,9 @@ export function useInboxQueueBuilder({
             id: `trial-${orgId}`,
             category: "TRIAL",
             title: org.name,
-            subtitle: org.status === "TRIAL" ? t("common.inbox_card2_desc") : org.slug,
+            subtitle: org.status === "TRIAL" ? t("common.inbox_card2_desc") : (org.name || "Trial Organization"),
             description: org.description || "",
-            code: org.slug ? `ORG-${org.slug.toUpperCase()}` : `ORG-${orgId.slice(0, 6).toUpperCase()}`,
+            code: org.name || "TRIAL",
             priority: "HIGH",
             status: org.status || "TRIAL",
             createdAt: org.createdAt || new Date().toISOString(),
@@ -107,15 +107,37 @@ export function useInboxQueueBuilder({
       });
     }
 
-    // 4. Tasks (Engineering Issues & B2B Tickets)
+    // 4. Tasks (Engineering Issues, Plans, Projects, Docs, Ideas & B2B Tickets)
     if (tasks && Array.isArray(tasks)) {
       tasks.forEach((task) => {
         const isB2B = task.scope === "TENANT_TO_PLATFORM";
-        const cat: InboxCategory = isB2B ? "B2B_TICKET" : "ISSUE";
-        const codePrefix = isB2B ? "TKT" : "ISS";
-        const code = task.id.startsWith("TKT-") || task.id.startsWith("ISS-")
-          ? task.id
-          : `${codePrefix}-${task.id.slice(0, 6).toUpperCase()}`;
+        let cat: InboxCategory = "ISSUE";
+        let code = task.obsidianRef || "";
+
+        if (isB2B) {
+          cat = "B2B_TICKET";
+          if (!code) code = `TKT-${task.id.slice(0, 6).toUpperCase()}`;
+        } else if (task.obsidianRef) {
+          if (task.obsidianRef.startsWith("PLN-")) {
+            cat = "PLAN";
+          } else if (task.obsidianRef.startsWith("PRJ-")) {
+            cat = "PROJECT";
+          } else if (task.obsidianRef.startsWith("IDEA-")) {
+            cat = "IDEA";
+          } else if (task.obsidianRef.startsWith("DOC-")) {
+            cat = "DOC";
+          } else if (task.obsidianRef.startsWith("TKT-")) {
+            cat = "B2B_TICKET";
+          } else {
+            cat = "ISSUE";
+          }
+        } else if (task.type === "PROJECT") {
+          cat = "PROJECT";
+          code = `PRJ-${task.id.slice(0, 6).toUpperCase()}`;
+        } else {
+          cat = "ISSUE";
+          code = `ISS-${task.id.slice(0, 6).toUpperCase()}`;
+        }
 
         const validPriorities: InboxPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
         const priority: InboxPriority = validPriorities.includes(task.priority as InboxPriority)
@@ -159,13 +181,13 @@ export function useInboxQueueBuilder({
         return allQueueItems.filter((i) => i.category === "LICENSE");
       case "assigned":
         return allQueueItems.filter((i) => {
-          if (i.category !== "ISSUE" && i.category !== "B2B_TICKET") return false;
+          if (i.status === "RESOLVED" || i.status === "CLOSED") return false;
           const assignee = (i.assigneeName || "").toLowerCase();
           return assignee.length > 0 && userIdentifiers.includes(assignee);
         });
       case "created":
         return allQueueItems.filter((i) => {
-          if (i.category !== "ISSUE" && i.category !== "B2B_TICKET") return false;
+          if (i.status === "RESOLVED" || i.status === "CLOSED") return false;
           const requester = (i.requesterName || "").toLowerCase();
           return requester.length > 0 && userIdentifiers.includes(requester);
         });
@@ -177,8 +199,28 @@ export function useInboxQueueBuilder({
     }
   }, [allQueueItems, currentFilter, userIdentifiers]);
 
+  const tabCounts = React.useMemo(() => {
+    const notResolved = allQueueItems.filter((i) => i.status !== "RESOLVED" && i.status !== "CLOSED");
+    return {
+      all: notResolved.length,
+      approvals: allQueueItems.filter((i) => i.category === "APPROVAL" && i.status !== "RESOLVED" && i.status !== "CLOSED").length,
+      trials: allQueueItems.filter((i) => i.category === "TRIAL" && i.status !== "RESOLVED" && i.status !== "CLOSED").length,
+      licensing: allQueueItems.filter((i) => i.category === "LICENSE" && i.status !== "RESOLVED" && i.status !== "CLOSED").length,
+      assigned: notResolved.filter((i) => {
+        const assignee = (i.assigneeName || "").toLowerCase();
+        return assignee.length > 0 && userIdentifiers.includes(assignee);
+      }).length,
+      created: notResolved.filter((i) => {
+        const requester = (i.requesterName || "").toLowerCase();
+        return requester.length > 0 && userIdentifiers.includes(requester);
+      }).length,
+      resolved: allQueueItems.filter((i) => i.status === "RESOLVED" || i.status === "CLOSED").length,
+    };
+  }, [allQueueItems, userIdentifiers]);
+
   return {
     allQueueItems,
     categoryFilteredItems,
+    tabCounts,
   };
 }

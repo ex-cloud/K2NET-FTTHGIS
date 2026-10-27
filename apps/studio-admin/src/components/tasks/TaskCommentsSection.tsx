@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@k2net/i18n";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { useTeamUsers } from "@/hooks/useTeamUsers";
+import { resolveUserDisplayName } from "@/components/inbox/inbox-types";
 import { type TaskComment } from "@/hooks/useTasksQuery";
 
 interface TaskCommentsSectionProps {
@@ -36,10 +38,24 @@ function formatCommentDate(iso: string) {
   }
 }
 
-function CommentItem({ comment }: { comment: TaskComment }) {
-  const initials = comment.authorId
-    ? comment.authorId.substring(0, 2).toUpperCase()
-    : "AN";
+function CommentItem({
+  comment,
+  teamUsers,
+  currentUser,
+}: {
+  comment: TaskComment;
+  teamUsers?: { id: string; name?: string; email?: string }[];
+  currentUser?: { id?: string; name?: string; email?: string; username?: string };
+}) {
+  const authorName = resolveUserDisplayName(comment.authorId, teamUsers, currentUser);
+  const initials =
+    authorName
+      .split(" ")
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "SA";
   const timeFormatted = formatCommentDate(comment.createdAt);
 
   return (
@@ -49,7 +65,7 @@ function CommentItem({ comment }: { comment: TaskComment }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-semibold text-foreground">{comment.authorId?.split("@")[0] ?? "User"}</span>
+          <span className="text-xs font-semibold text-foreground">{authorName}</span>
           <span className="text-[10px] text-muted-foreground">{timeFormatted}</span>
         </div>
         <div className="text-sm text-foreground/85 bg-card border border-border/50 rounded-xl px-3.5 py-2.5 whitespace-pre-wrap leading-relaxed">
@@ -67,6 +83,7 @@ export function TaskCommentsSection({
 }: TaskCommentsSectionProps) {
   const { t } = useTranslation();
   const { data: session } = useSession();
+  const { users: teamUsers } = useTeamUsers();
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
@@ -139,7 +156,7 @@ export function TaskCommentsSection({
       ) : (
         <div className="space-y-3.5 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar-thin">
           {comments.map((c) => (
-            <CommentItem key={c.id} comment={c} />
+            <CommentItem key={c.id} comment={c} teamUsers={teamUsers} currentUser={session?.user} />
           ))}
           <div ref={commentsEndRef} />
         </div>

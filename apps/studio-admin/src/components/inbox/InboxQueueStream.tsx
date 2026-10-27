@@ -7,6 +7,7 @@ import {
   type InboxQueueItem,
   type QuickPill,
   formatRelativeTime,
+  stripMarkdown,
 } from "./inbox-types";
 
 interface InboxQueueStreamProps {
@@ -167,24 +168,31 @@ export function InboxQueueStream({
                 ref={isSelected ? selectedItemRef : undefined}
                 onClick={() => onSelectItem(item.id)}
                 className={cn(
-                  "p-3.5 text-left transition-colors relative flex flex-col gap-1.5 cursor-pointer",
+                  "p-3 text-left transition-colors relative flex flex-col gap-1 cursor-pointer",
                   isSelected
                     ? "bg-muted/80 border-l-2 border-l-foreground shadow-sm"
                     : "hover:bg-muted/30 border-l-2 border-l-transparent"
                 )}
               >
-                {/* Top Bar item */}
-                <div className="flex items-center justify-between gap-1.5">
-                  <div className="flex items-center gap-1.5 min-w-0">
+                {/* Row 1: Status Dot + Type Badge + Code + Priority + Time */}
+                <div className="flex items-center justify-between gap-1.5 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                     {item.status !== "RESOLVED" && item.status !== "CLOSED" && (
                       <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                     )}
-                    <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border shrink-0">
+                    <span className="font-mono text-[10px] font-semibold px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border shrink-0">
                       {item.category === "TRIAL" && t("common.inbox_category_trial")}
                       {item.category === "APPROVAL" && t("common.inbox_category_approval")}
                       {item.category === "LICENSE" && t("common.inbox_category_license")}
                       {item.category === "B2B_TICKET" && t("common.inbox_category_b2b")}
                       {item.category === "ISSUE" && t("common.inbox_category_issue")}
+                      {item.category === "PLAN" && t("common.inbox_category_plan")}
+                      {item.category === "PROJECT" && t("common.inbox_category_project")}
+                      {item.category === "IDEA" && t("common.inbox_category_idea")}
+                      {item.category === "DOC" && t("common.inbox_category_doc")}
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground font-medium shrink-0">
+                      {item.code}
                     </span>
                     {isUrgent && (
                       <span className="text-[10px] font-mono font-bold text-destructive shrink-0">
@@ -192,31 +200,26 @@ export function InboxQueueStream({
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                  <span className="text-[10px] text-muted-foreground font-mono shrink-0 ml-auto">
                     {formatRelativeTime(item.createdAt, t)}
                   </span>
                 </div>
 
-                {/* Title */}
-                <div className="font-medium text-foreground text-xs line-clamp-1 leading-snug">
+                {/* Row 2: Title */}
+                <div className="font-medium text-foreground text-xs truncate leading-snug">
                   {item.title}
                 </div>
 
-                {/* Snippet */}
-                <div className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                  {item.description || item.subtitle}
-                </div>
-
-                {/* Bottom Pills */}
-                <div className="flex items-center gap-2 pt-0.5 text-[10px] font-mono text-muted-foreground/80">
-                  <span className="bg-background/80 px-1 py-0.5 rounded border border-border/50">
-                    {item.code}
-                  </span>
+                {/* Row 3: Organization & Stripped Markdown Snippet */}
+                <div className="text-[11px] text-muted-foreground truncate leading-relaxed flex items-center gap-1.5">
                   {item.organizationName && (
-                    <span className="truncate max-w-[140px]">
-                      {item.organizationName}
+                    <span className="font-medium text-foreground/75 shrink-0">
+                      {item.organizationName} ·
                     </span>
                   )}
+                  <span className="truncate">
+                    {stripMarkdown(item.description || item.subtitle || "")}
+                  </span>
                 </div>
               </div>
             );

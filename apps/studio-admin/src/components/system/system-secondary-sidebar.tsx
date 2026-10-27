@@ -147,7 +147,7 @@ interface OrgCounts {
 
 const SIDEBAR_ROUTE_MAP: { prefixes: string[]; key: string | null }[] = [
   { prefixes: ["/overview"], key: null },
-  { prefixes: ["/inbox"], key: "inbox" },
+  { prefixes: ["/inbox"], key: null },
   { prefixes: ["/ai", "/assets-3d"], key: "ai" },
   { prefixes: ["/workspace"], key: "workspace" },
   { prefixes: ["/support"], key: "support" },

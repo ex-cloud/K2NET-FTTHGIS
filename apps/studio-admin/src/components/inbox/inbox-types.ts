@@ -3,7 +3,16 @@ import type { ImpersonationSessionItem, ImpersonationStats } from "@/hooks/useIm
 import type { LicenseOverviewKpi } from "@/hooks/useOrganizationLicenses";
 import type { Task } from "@/hooks/useTasksQuery";
 
-export type InboxCategory = "TRIAL" | "APPROVAL" | "LICENSE" | "B2B_TICKET" | "ISSUE";
+export type InboxCategory =
+  | "TRIAL"
+  | "APPROVAL"
+  | "LICENSE"
+  | "B2B_TICKET"
+  | "ISSUE"
+  | "PLAN"
+  | "PROJECT"
+  | "IDEA"
+  | "DOC";
 
 export type InboxPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
@@ -63,4 +72,67 @@ export function formatRelativeTime(
   } catch {
     return "";
   }
+}
+
+export function isUuidString(str: string | undefined): boolean {
+  if (!str) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
+}
+
+export function stripMarkdown(md: string | undefined): string {
+  if (!md) return "";
+  return md
+    .replace(/^#+\s+/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/_([^_]+)_/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^[-*+]\s+/gm, "")
+    .replace(/^\d+\.\s+/gm, "")
+    .replace(/>\s+/gm, "")
+    .replace(/\n+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function resolveUserDisplayName(
+  userId: string | undefined,
+  teamUsers: { id: string; name?: string; email?: string }[] = [],
+  currentUser?: { id?: string; name?: string; email?: string; username?: string }
+): string {
+  if (!userId) return "Super Admin";
+
+  if (
+    currentUser &&
+    (currentUser.id === userId ||
+      currentUser.email?.toLowerCase() === userId.toLowerCase() ||
+      currentUser.username?.toLowerCase() === userId.toLowerCase())
+  ) {
+    return currentUser.name || currentUser.username || "Super Admin";
+  }
+
+  const found = teamUsers.find(
+    (u) =>
+      u.id === userId ||
+      (u.email && u.email.toLowerCase() === userId.toLowerCase())
+  );
+  if (found && found.name && found.name.trim().length > 0 && !isUuidString(found.name)) {
+    return found.name;
+  }
+  if (found && found.email) {
+    return found.email.split("@")[0];
+  }
+
+  if (userId.includes("@")) {
+    return userId.split("@")[0];
+  }
+
+  if (isUuidString(userId)) {
+    return "Super Admin";
+  }
+
+  return userId;
 }
