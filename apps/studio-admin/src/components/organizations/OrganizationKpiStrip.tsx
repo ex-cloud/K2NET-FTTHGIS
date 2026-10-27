@@ -3,6 +3,7 @@
 import { Building2, UploadCloud, Network, AlertTriangle } from "lucide-react";
 import { Card } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
+import { KpiMiniBarChart } from "@/components/common/KpiMiniBarChart";
 import type { EnrichedOrganization } from "./types";
 
 interface OrganizationKpiStripProps {
@@ -41,7 +42,7 @@ export function OrganizationKpiStrip({
           <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
             {t("organizations.kpi_active_tenants")}
           </span>
-          <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+          <div className="h-6 w-6 rounded-lg bg-muted/40 border border-border/40 flex items-center justify-center text-foreground">
             <Building2 className="h-3.5 w-3.5" />
           </div>
         </div>
@@ -58,18 +59,13 @@ export function OrganizationKpiStrip({
             {t("organizations.kpi_live_desc", { active: activeCount, total })}
           </p>
         </div>
-        <div>
-          <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
-            <span>{t("organizations.kpi_utilization")}</span>
-            <span>{activePct}%</span>
-          </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-700"
-              style={{ width: `${activePct}%` }}
-            />
-          </div>
-        </div>
+        <KpiMiniBarChart
+          label={t("organizations.kpi_tenant_activity")}
+          meta={t("organizations.kpi_live_count", { count: activeCount })}
+          count={activeCount}
+          variant="active"
+          color="primary"
+        />
       </Card>
 
       {/* 2. PROVISIONING QUEUE */}
@@ -78,7 +74,7 @@ export function OrganizationKpiStrip({
           <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
             {t("organizations.kpi_prov_trial")}
           </span>
-          <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+          <div className="h-6 w-6 rounded-lg bg-muted/40 border border-border/40 flex items-center justify-center text-foreground">
             <UploadCloud className="h-3.5 w-3.5" />
           </div>
         </div>
@@ -87,7 +83,7 @@ export function OrganizationKpiStrip({
             <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
               {provisioningCount + trialCount}
             </p>
-            <span className="text-xs font-mono text-blue-500">
+            <span className="text-xs font-mono text-foreground/80 font-medium">
               {provisioningCount > 0 ? t("organizations.kpi_in_setup") : t("organizations.kpi_on_trial")}
             </span>
           </div>
@@ -95,18 +91,13 @@ export function OrganizationKpiStrip({
             {t("organizations.kpi_prov_trial_desc", { prov: provisioningCount, trial: trialCount })}
           </p>
         </div>
-        <div>
-          <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
-            <span>{t("organizations.kpi_utilization")}</span>
-            <span>{Math.min(100, (provisioningCount + trialCount) * 25)}%</span>
-          </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-700"
-              style={{ width: `${Math.min(100, (provisioningCount + trialCount) * 25)}%` }}
-            />
-          </div>
-        </div>
+        <KpiMiniBarChart
+          label={t("organizations.kpi_onboarding_pipeline")}
+          meta={t("organizations.kpi_in_pipeline", { count: provisioningCount + trialCount })}
+          count={provisioningCount + trialCount}
+          variant="active"
+          color="primary"
+        />
       </Card>
 
       {/* 3. HARDWARE DEPLOYED */}
@@ -115,7 +106,7 @@ export function OrganizationKpiStrip({
           <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
             {t("organizations.kpi_ftth_hardware")}
           </span>
-          <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+          <div className="h-6 w-6 rounded-lg bg-muted/40 border border-border/40 flex items-center justify-center text-foreground">
             <Network className="h-3.5 w-3.5" />
           </div>
         </div>
@@ -124,7 +115,7 @@ export function OrganizationKpiStrip({
             <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
               {totalOlts} <span className="text-xs font-normal text-muted-foreground">OLTs</span>
             </p>
-            <span className="text-xs font-mono text-primary">
+            <span className="text-xs font-mono text-muted-foreground">
               {totalOdps} ODPs
             </span>
           </div>
@@ -132,18 +123,13 @@ export function OrganizationKpiStrip({
             {t("organizations.kpi_hardware_desc", { pct: oltPct })}
           </p>
         </div>
-        <div>
-          <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
-            <span>{t("organizations.kpi_utilization")}</span>
-            <span>{oltPct}%</span>
-          </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-700"
-              style={{ width: `${oltPct}%` }}
-            />
-          </div>
-        </div>
+        <KpiMiniBarChart
+          label={t("organizations.kpi_hardware_telemetry")}
+          meta={`${totalOlts} OLTs • ${totalOdps} ODPs`}
+          count={totalOlts + totalOdps}
+          variant="active"
+          color="primary"
+        />
       </Card>
 
       {/* 4. AT RISK / SUSPENDED */}
@@ -171,18 +157,17 @@ export function OrganizationKpiStrip({
               : t("organizations.kpi_at_risk_desc", { count: atRiskCount })}
           </p>
         </div>
-        <div>
-          <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
-            <span>{t("organizations.kpi_utilization")}</span>
-            <span>{Math.min(100, atRiskCount * 33)}%</span>
-          </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-destructive rounded-full transition-all duration-700"
-              style={{ width: `${Math.min(100, atRiskCount * 33)}%` }}
-            />
-          </div>
-        </div>
+        <KpiMiniBarChart
+          label={t("organizations.kpi_account_health")}
+          meta={
+            atRiskCount > 0
+              ? t("organizations.kpi_need_attention", { count: atRiskCount })
+              : t("organizations.kpi_healthy")
+          }
+          count={atRiskCount}
+          variant="urgent"
+          color={atRiskCount > 0 ? "destructive" : "primary"}
+        />
       </Card>
     </div>
   );
