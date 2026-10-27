@@ -208,7 +208,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.planning_knowledge",
         requiredPermission: ["platform.workspace.view", "system.task.manage"],
         items: [
-          { title: "Plans, Ideas & Specs", translationKey: "nav.plans_ideas_specs", url: "/workspace/plans", icon: "FolderKanban", shortcut: "S then P", requiredPermission: ["platform.workspace.view", "system.task.manage"] },
+          { title: "Workspace", translationKey: "nav.plans_ideas_specs", url: "/workspace/plans", icon: "FolderKanban", shortcut: "S then P", requiredPermission: ["platform.workspace.view", "system.task.manage"] },
           { title: "Roadmap", translationKey: "nav.roadmap", url: "/workspace/roadmap", icon: "Map", shortcut: "S then R", requiredPermission: ["platform.workspace.view", "system.task.manage"] },
         ],
       },

@@ -22,6 +22,7 @@ import { useTranslation } from "@k2net/i18n";
 
 interface TaskSecondarySidebarProps {
   tasks: Task[];
+  context?: "workspace" | "support";
   obsidianStatus?: "connected" | "disconnected" | "syncing";
   lastSyncTime?: string;
   onSelectProject?: (projectName: string | null) => void;
@@ -127,7 +128,7 @@ const SidebarProjectsSection: React.FC<SidebarProjectsSectionProps> = ({
               key={proj.name}
               onClick={() => {
                 if (onSelectProject) onSelectProject(proj.name);
-                onNavigate(`/tasks?scope=PLATFORM_INTERNAL&project=${encodeURIComponent(proj.name)}`);
+                onNavigate(`/workspace/issues?project=${encodeURIComponent(proj.name)}`);
               }}
               className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
             >
@@ -169,7 +170,7 @@ const SidebarTeamsSection: React.FC<SidebarTeamsSectionProps> = ({
     <SidebarSection title={t("tasks.teams_scope")} icon={Shield} defaultOpen={true}>
       <div className="space-y-1 pt-1">
         <button
-          onClick={() => onNavigate("/tasks?scope=PLATFORM_INTERNAL")}
+          onClick={() => onNavigate("/workspace/issues")}
           className={cn(
             "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
             currentScope === "PLATFORM_INTERNAL"
@@ -187,7 +188,7 @@ const SidebarTeamsSection: React.FC<SidebarTeamsSectionProps> = ({
         </button>
 
         <button
-          onClick={() => onNavigate("/tasks?scope=TENANT_TO_PLATFORM")}
+          onClick={() => onNavigate("/support/tickets")}
           className={cn(
             "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
             currentScope === "TENANT_TO_PLATFORM"
@@ -268,6 +269,7 @@ const ObsidianSyncCard: React.FC<ObsidianSyncCardProps> = ({
 
 export function TaskSecondarySidebar({
   tasks,
+  context = "workspace",
   obsidianStatus = "connected",
   lastSyncTime = "Realtime",
   onSelectProject,
@@ -275,6 +277,7 @@ export function TaskSecondarySidebar({
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentScope = searchParams.get("scope");
+  const isSupport = context === "support";
 
   const projectStats = useMemo(() => {
     const names = new Set<string>();
@@ -326,20 +329,24 @@ export function TaskSecondarySidebar({
 
   return (
     <div className="w-full flex flex-col divide-y divide-border/50 text-xs">
-      <SidebarProjectsSection
-        projectStats={projectStats}
-        onSelectProject={onSelectProject}
-        onNavigate={(path) => router.push(path)}
-      />
+      {!isSupport && (
+        <SidebarProjectsSection
+          projectStats={projectStats}
+          onSelectProject={onSelectProject}
+          onNavigate={(path) => router.push(path)}
+        />
+      )}
 
-      <SidebarTeamsSection
-        currentScope={currentScope}
-        tasks={tasks}
-        b2bCount={derived.b2bCount}
-        onNavigate={(path) => router.push(path)}
-      />
+      {!isSupport && (
+        <SidebarTeamsSection
+          currentScope={currentScope}
+          tasks={tasks}
+          b2bCount={derived.b2bCount}
+          onNavigate={(path) => router.push(path)}
+        />
+      )}
 
-      <SidebarSection title="Status Breakdown" icon={BarChart3} defaultOpen={false}>
+      <SidebarSection title={isSupport ? "Ticket Status" : "Status Breakdown"} icon={BarChart3} defaultOpen={isSupport}>
         <div className="space-y-0.5 pt-1">
           {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
             <MiniProgressBar
@@ -353,7 +360,7 @@ export function TaskSecondarySidebar({
         </div>
       </SidebarSection>
 
-      <SidebarSection title="Priority" icon={Flag} defaultOpen={false}>
+      <SidebarSection title={isSupport ? "Severity & Priority" : "Priority"} icon={Flag} defaultOpen={isSupport}>
         <div className="space-y-0.5 pt-1">
           {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
             <MiniProgressBar
@@ -367,7 +374,7 @@ export function TaskSecondarySidebar({
         </div>
       </SidebarSection>
 
-      <SidebarSection title="Workload" icon={Users} defaultOpen={false}>
+      <SidebarSection title={isSupport ? "Helpdesk Workload" : "Workload"} icon={Users} defaultOpen={isSupport}>
         <div className="space-y-1 pt-1">
           {Object.entries(derived.assigneeMap).map(([assignee, count]) => (
             <div key={assignee} className="flex items-center justify-between py-1">
@@ -380,17 +387,19 @@ export function TaskSecondarySidebar({
                 </span>
               </div>
               <span className="text-[10px] font-mono text-muted-foreground font-semibold shrink-0">
-                {count} {count === 1 ? "task" : "tasks"}
+                {count} {count === 1 ? (isSupport ? "ticket" : "task") : (isSupport ? "tickets" : "tasks")}
               </span>
             </div>
           ))}
         </div>
       </SidebarSection>
 
-      <ObsidianSyncCard
-        obsidianStatus={obsidianStatus}
-        lastSyncTime={lastSyncTime}
-      />
+      {!isSupport && (
+        <ObsidianSyncCard
+          obsidianStatus={obsidianStatus}
+          lastSyncTime={lastSyncTime}
+        />
+      )}
     </div>
   );
 }

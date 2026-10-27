@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useParams } from "@/lib/navigation-compat";
+import { useParams, usePathname, useRouter } from "@/lib/navigation-compat";
 import { useSession } from "@/lib/auth-compat";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +14,8 @@ import { TaskDetailTopBar } from "@/components/tasks/TaskDetailTopBar";
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
   const { task, loading, error, refresh } = useTasksQuery(id);
 
@@ -34,6 +36,21 @@ export default function TaskDetailPage() {
 
   // Auto-save debounce ref
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Redirect legacy /tasks/:id to canonical routes
+  useEffect(() => {
+    if (task && pathname?.startsWith("/tasks/")) {
+      if (task.type === "PROJECT") {
+        router.replace(`/workspace/plans/${task.id}`);
+        return;
+      }
+      if (task.scope === "TENANT_TO_PLATFORM") {
+        router.replace(`/support/tickets/${task.id}`);
+        return;
+      }
+      router.replace(`/workspace/issues/${task.id}`);
+    }
+  }, [task, pathname, router]);
 
   // Sync from task
   useEffect(() => {

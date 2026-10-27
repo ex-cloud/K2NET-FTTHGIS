@@ -10,7 +10,7 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
   "/tasks": "Projects & Issues",
   "/tasks/projects": "Projects",
   "/workspace": "Workspace",
-  "/workspace/plans": "Plans, Ideas & Specs",
+  "/workspace/plans": "Workspace",
   "/workspace/roadmap": "Roadmap & Initiatives",
   "/workspace/issues": "Issues & Tasks",
   "/support": "Support",
@@ -103,8 +103,23 @@ export function getRouteBreadcrumbs(pathname: string): RouteBreadcrumb[] {
     if (segments.length > 1) {
       if (rootSeg === "organizations") {
         breadcrumbs.push({ label: "Organization Details" });
+      } else if (rootSeg === "workspace" && segments[1] === "plans") {
+        breadcrumbs.push({ label: "Plans", href: "/workspace/plans" });
+        if (segments.length > 2) {
+          breadcrumbs.push({ label: "Details" });
+        }
+      } else if (rootSeg === "workspace" && segments[1] === "issues") {
+        breadcrumbs.push({ label: "Issues", href: "/workspace/issues" });
+        if (segments.length > 2) {
+          breadcrumbs.push({ label: "Details" });
+        }
+      } else if (rootSeg === "support" && segments[1] === "tickets") {
+        breadcrumbs.push({ label: "Tickets", href: "/support/tickets" });
+        if (segments.length > 2) {
+          breadcrumbs.push({ label: "Details" });
+        }
       } else if (rootSeg === "tasks" && segments[1] === "projects") {
-        breadcrumbs.push({ label: "Projects", href: "/tasks/projects" });
+        breadcrumbs.push({ label: "Projects", href: "/workspace/plans" });
         if (segments.length > 2) {
           breadcrumbs.push({ label: "Details" });
         }
@@ -137,6 +152,15 @@ export function getRouteHeaderTitle(pathname: string): string {
   }
 
   // Specific prefix rules
+  if (pathname.startsWith("/workspace/plans")) {
+    return "Workspace";
+  }
+  if (pathname.startsWith("/workspace/issues")) {
+    return "Issues & Tasks";
+  }
+  if (pathname.startsWith("/support/tickets")) {
+    return "Support Tickets";
+  }
   if (pathname.startsWith("/tasks/projects")) {
     return "Projects";
   }

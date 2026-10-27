@@ -77,33 +77,37 @@ export default function WorkspacePlanDetailPage() {
       />
 
       {/* ── 3. Tab Contents ────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin p-6 md:p-8">
-        <div className="max-w-4xl mx-auto">
-          {activeTab === "overview" && (
-            <ProjectOverviewTab
-              title={proj.title}
-              setTitle={proj.setTitle}
-              description={proj.description}
-              setDescription={proj.setDescription}
-              status={proj.status}
-              setStatus={proj.setStatus}
-              priority={proj.priority}
-              setPriority={proj.setPriority}
-              assigneeId={proj.assigneeId}
-              setAssigneeId={proj.setAssigneeId}
-              dueDate={proj.dueDate}
-              setDueDate={proj.setDueDate}
-              healthStatus={proj.healthStatus}
-              projectTask={projectTask}
-              teamUsers={teamUsers}
-              progressPercent={proj.progressPercent}
-              resolvedIssuesCount={proj.resolvedIssuesCount}
-              totalIssuesCount={proj.totalIssuesCount}
-              onSaveField={proj.handleSaveField}
-            />
-          )}
+      <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin p-4 md:p-6 w-full">
+        {activeTab === "overview" && (
+          <ProjectOverviewTab
+            title={proj.title}
+            setTitle={proj.setTitle}
+            description={proj.description}
+            setDescription={proj.setDescription}
+            status={proj.status}
+            setStatus={proj.setStatus}
+            priority={proj.priority}
+            setPriority={proj.setPriority}
+            assigneeId={proj.assigneeId}
+            setAssigneeId={proj.setAssigneeId}
+            dueDate={proj.dueDate}
+            setDueDate={proj.setDueDate}
+            healthStatus={proj.healthStatus}
+            projectTask={projectTask}
+            teamUsers={teamUsers}
+            progressPercent={proj.progressPercent}
+            resolvedIssuesCount={proj.resolvedIssuesCount}
+            totalIssuesCount={proj.totalIssuesCount}
+            projectIssues={proj.projectIssues}
+            comments={proj.comments}
+            onSaveField={proj.handleSaveField}
+            onOpenNewIssue={() => setNewIssueOpen(true)}
+            onNavigateTab={setActiveTab}
+          />
+        )}
 
-          {activeTab === "activity" && (
+        {activeTab === "activity" && (
+          <div className="max-w-4xl mx-auto">
             <ProjectActivityTab
               updateMode={proj.updateMode}
               setUpdateMode={proj.setUpdateMode}
@@ -112,11 +116,14 @@ export default function WorkspacePlanDetailPage() {
               postingUpdate={proj.postingUpdate}
               progressPercent={proj.progressPercent}
               comments={proj.comments}
+              teamUsers={teamUsers}
               onPostUpdate={proj.handlePostUpdate}
             />
-          )}
+          </div>
+        )}
 
-          {activeTab === "issues" && (
+        {activeTab === "issues" && (
+          <div className="w-full">
             <ProjectIssuesTab
               projectIssues={proj.projectIssues}
               resolvedIssuesCount={proj.resolvedIssuesCount}
@@ -127,8 +134,8 @@ export default function WorkspacePlanDetailPage() {
               onUpdateIssue={proj.handleUpdateIssue}
               onDeleteIssue={proj.handleDeleteIssue}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* New Issue in this plan */}

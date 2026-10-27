@@ -268,7 +268,7 @@ export function getTaskTableColumns({
                 onClick={(e) => {
                   if (isProjectRef) {
                     e.stopPropagation();
-                    const target = task.parentTaskId ? `/tasks/projects/${task.parentTaskId}` : `/tasks/projects`;
+                    const target = task.parentTaskId ? `/workspace/plans/${task.parentTaskId}` : `/workspace/plans`;
                     onNavigate(target);
                   }
                 }}

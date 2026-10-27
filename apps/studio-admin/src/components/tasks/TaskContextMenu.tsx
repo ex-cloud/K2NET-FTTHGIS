@@ -273,6 +273,12 @@ const TaskActions: React.FC<TaskActionsProps> = ({ task, onDelete }) => {
   const { canAccess } = usePermissions();
   const canManageTask = canAccess("system.task.manage");
 
+  const getTaskRelativeUrl = (t: Task) => {
+    if (t.type === "PROJECT") return `/workspace/plans/${t.id}`;
+    if (t.scope === "TENANT_TO_PLATFORM") return `/support/tickets?issue=${t.id}`;
+    return `/workspace/issues?issue=${t.id}`;
+  };
+
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
@@ -299,7 +305,7 @@ const TaskActions: React.FC<TaskActionsProps> = ({ task, onDelete }) => {
         </ContextMenuSubTrigger>
         <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem
-            onClick={() => handleCopy(`${window.location.origin}/tasks?issue=${task.id}`, "Issue Link")}
+            onClick={() => handleCopy(`${window.location.origin}${getTaskRelativeUrl(task)}`, "Issue Link")}
             className="cursor-pointer"
           >
             <ExternalLink className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
@@ -320,7 +326,7 @@ const TaskActions: React.FC<TaskActionsProps> = ({ task, onDelete }) => {
           <ContextMenuItem
             onClick={() =>
               handleCopy(
-                `[${task.obsidianRef || task.id.slice(0, 8)}](${window.location.origin}/tasks?issue=${task.id}) - ${task.title}`,
+                `[${task.obsidianRef || task.id.slice(0, 8)}](${window.location.origin}${getTaskRelativeUrl(task)}) - ${task.title}`,
                 "Markdown Link"
               )
             }
@@ -381,7 +387,7 @@ const TaskActions: React.FC<TaskActionsProps> = ({ task, onDelete }) => {
       )}
 
       {/* Open in new tab */}
-      <ContextMenuItem onClick={() => window.open(`/tasks?issue=${task.id}`, "_blank")} className="cursor-pointer">
+      <ContextMenuItem onClick={() => window.open(getTaskRelativeUrl(task), "_blank")} className="cursor-pointer">
         <ExternalLink className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
         <span>Open in new tab</span>
       </ContextMenuItem>

@@ -51,7 +51,7 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
       onDelete={() => onDeleteProject(proj.id)}
     >
       <div
-        onClick={() => router.push(`/tasks/projects/${proj.id}`)}
+        onClick={() => router.push(`/workspace/plans/${proj.id}`)}
         className="flex border-b border-border/40 hover:bg-muted/30 transition-colors group cursor-pointer items-stretch divide-x divide-border/40 text-xs"
       >
         {/* Name + Obsidian Ref */}
@@ -77,8 +77,8 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
             <div className="inline-flex items-center gap-1.5">
               {proj.health === "On track" ? (
                 <>
-                  <TrendingUp className="w-3.5 h-3.5 text-green-500" />
-                  <span className="text-green-500 font-medium">{t("workspace.health_on_track")}</span>
+                  <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-primary font-medium">{t("workspace.health_on_track")}</span>
                 </>
               ) : proj.health === "At risk" ? (
                 <>
@@ -170,13 +170,13 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
               <CheckCircle2
                 className={cn(
                   "w-3.5 h-3.5",
-                  isComplete ? "text-green-500" : "text-primary"
+                  isComplete ? "text-primary" : "text-muted-foreground"
                 )}
               />
               <span
                 className={cn(
                   "font-mono font-bold text-xs",
-                  isComplete ? "text-green-500" : "text-foreground"
+                  isComplete ? "text-primary" : "text-foreground"
                 )}
               >
                 {proj.percentage}%

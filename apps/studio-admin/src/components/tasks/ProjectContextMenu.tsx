@@ -311,7 +311,7 @@ const ProjectActions: React.FC<ProjectActionsProps> = ({ project, onDelete }) =>
           <ContextMenuItem
             onClick={() =>
               handleCopy(
-                `${window.location.origin}/tasks/projects/${project.id}`,
+                `${window.location.origin}/workspace/plans/${project.id}`,
                 "Project Link"
               )
             }
@@ -395,7 +395,7 @@ const ProjectActions: React.FC<ProjectActionsProps> = ({ project, onDelete }) =>
 
       {/* New comment */}
       <ContextMenuItem
-        onClick={() => window.open(`/tasks/projects/${project.id}`, "_self")}
+        onClick={() => window.open(`/workspace/plans/${project.id}`, "_self")}
         className="cursor-pointer"
       >
         <MessageSquare className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
@@ -421,7 +421,7 @@ const ProjectActions: React.FC<ProjectActionsProps> = ({ project, onDelete }) =>
 
       {/* Open in New Tab */}
       <ContextMenuItem
-        onClick={() => window.open(`/tasks/projects/${project.id}`, "_blank")}
+        onClick={() => window.open(`/workspace/plans/${project.id}`, "_blank")}
         className="cursor-pointer"
       >
         <ExternalLink className="mr-2 h-3.5 w-3.5 text-muted-foreground" />

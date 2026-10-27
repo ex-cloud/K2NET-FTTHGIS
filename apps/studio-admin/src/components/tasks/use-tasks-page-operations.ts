@@ -108,7 +108,7 @@ export function useTasksPageOperations({
   // Keyboard Shortcuts
   useLinearShortcuts({
     onNewTask: () => setDialogOpen(true),
-    onNewProject: () => router.push("/tasks/projects"),
+    onNewProject: () => router.push("/workspace/plans"),
     onNextRow: () => setFocusedIndex((prev) => Math.min(filteredTasks.length - 1, prev + 1)),
     onPrevRow: () => setFocusedIndex((prev) => Math.max(0, prev - 1)),
     onOpenSelected: () => {

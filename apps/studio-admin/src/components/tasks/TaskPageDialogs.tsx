@@ -2,7 +2,7 @@ import { TaskBulkActionBar } from "@/components/tasks/TaskBulkActionBar";
 import { TaskShortcutsHelpDialog } from "@/components/tasks/TaskShortcutsHelpDialog";
 import { TaskBatchDeleteDialog } from "@/components/tasks/TaskBatchDeleteDialog";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
-import { NewTaskDialog } from "@/components/tasks/NewTaskDialog";
+import { NewTaskDialog, type NewTaskDefaultValues } from "@/components/tasks/NewTaskDialog";
 import type { useTaskDialogsState } from "@/components/tasks/use-task-dialogs-state";
 import type { useTasksPageOperations } from "@/components/tasks/use-tasks-page-operations";
 
@@ -12,6 +12,7 @@ interface TaskPageDialogsProps {
   assigneesList: string[];
   dynamicProjectsList: string[];
   refresh: () => void;
+  defaultValues?: NewTaskDefaultValues;
 }
 
 export function TaskPageDialogs({
@@ -20,6 +21,7 @@ export function TaskPageDialogs({
   assigneesList,
   dynamicProjectsList,
   refresh,
+  defaultValues,
 }: TaskPageDialogsProps) {
   return (
     <>
@@ -61,6 +63,7 @@ export function TaskPageDialogs({
         onSuccess={refresh}
         assigneesList={assigneesList}
         projectsList={dynamicProjectsList}
+        defaultValues={defaultValues}
       />
     </>
   );

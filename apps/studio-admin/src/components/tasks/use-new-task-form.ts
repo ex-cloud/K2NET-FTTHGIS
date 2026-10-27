@@ -4,6 +4,7 @@ import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { type NewTaskDefaultValues } from "./NewTaskDialog";
+import { type IssueSubtype } from "./configs";
 
 interface UseNewTaskFormParams {
   open: boolean;
@@ -21,6 +22,7 @@ interface BuildTaskPayloadParams {
   assigneeId: string;
   dueDate: string;
   selectedProject: string | null;
+  subtype: IssueSubtype;
   defaultValues?: NewTaskDefaultValues;
 }
 
@@ -33,10 +35,15 @@ function buildTaskPayload({
   assigneeId,
   dueDate,
   selectedProject,
+  subtype,
   defaultValues,
 }: BuildTaskPayloadParams): Record<string, unknown> {
+  const isSubtask = Boolean(defaultValues?.parentTaskId);
+  const taskType = isSubtask ? "TICKET" : (defaultValues?.type ?? type);
+  const resolvedRefType = subtype || defaultValues?.referenceType || (isSubtask ? "TASK" : undefined);
+
   const payload: Record<string, unknown> = {
-    type: defaultValues?.parentTaskId ? "TICKET" : (defaultValues?.type ?? type),
+    type: taskType,
     title: title.trim(),
     description: description.trim() || undefined,
     priority,
@@ -45,7 +52,7 @@ function buildTaskPayload({
     scope: defaultValues?.scope ?? "PLATFORM_INTERNAL",
     dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
     parentTaskId: defaultValues?.parentTaskId || undefined,
-    referenceType: defaultValues?.parentTaskId ? "PROJECT" : undefined,
+    referenceType: resolvedRefType,
     referenceId: defaultValues?.parentTaskId || undefined,
   };
 
@@ -54,6 +61,7 @@ function buildTaskPayload({
   }
   return payload;
 }
+
 
 export function useNewTaskForm({
   open,
@@ -67,6 +75,7 @@ export function useNewTaskForm({
 
   // Form states
   const [type, setType] = useState<"TICKET" | "PROJECT">("TICKET");
+  const [subtype, setSubtype] = useState<IssueSubtype>("TASK");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"URGENT" | "HIGH" | "NORMAL" | "LOW">("NORMAL");
@@ -88,10 +97,19 @@ export function useNewTaskForm({
         setPriority(defaultValues.priority ?? "NORMAL");
         setStatus(defaultValues.status ?? "TODO");
         setSelectedProject(defaultValues.project ?? null);
+        if (
+          defaultValues.referenceType &&
+          ["TASK", "BUG", "FEATURE", "IMPROVEMENT"].includes(defaultValues.referenceType.toUpperCase())
+        ) {
+          setSubtype(defaultValues.referenceType.toUpperCase() as IssueSubtype);
+        } else {
+          setSubtype("TASK");
+        }
       } else {
         setTitle("");
         setDescription("");
         setType("TICKET");
+        setSubtype("TASK");
         setPriority("NORMAL");
         setStatus("TODO");
         setAssigneeId("");
@@ -107,7 +125,7 @@ export function useNewTaskForm({
     if (!files || files.length === 0) return;
     const file = files[0];
     setIsUploadingFile(true);
-    toast.info("Mengunggah dan mengompresi berkas via MinIO storage-gateway...");
+    toast.info("Uploading file via MinIO storage-gateway...");
     try {
       const { uploadTaskAttachment } = await import("@/lib/storage-client");
       const res = await uploadTaskAttachment(file, session?.accessToken ?? undefined);
@@ -115,10 +133,10 @@ export function useNewTaskForm({
         const isImg = file.type.startsWith("image/");
         const markdown = isImg ? `\n\n![${file.name}](${res.url})` : `\n\n[📎 ${file.name}](${res.url})`;
         setDescription((prev) => prev + markdown);
-        toast.success(`Berkas ${file.name} berhasil diunggah dan dikompresi ke MinIO`);
+        toast.success(`File ${file.name} successfully uploaded to MinIO`);
       }
     } catch (err: unknown) {
-      toast.error("Gagal mengunggah berkas: " + (err instanceof Error ? err.message : "Storage error"));
+      toast.error("Failed to upload file: " + (err instanceof Error ? err.message : "Storage error"));
     } finally {
       setIsUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -128,11 +146,11 @@ export function useNewTaskForm({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      toast.error("Judul task wajib diisi");
+      toast.error("Task title is required");
       return;
     }
     if (!session?.accessToken) {
-      toast.error("Sesi Anda kedaluwarsa. Silakan login kembali.");
+      toast.error("Your session has expired. Please log in again.");
       return;
     }
 
@@ -148,6 +166,7 @@ export function useNewTaskForm({
         assigneeId,
         dueDate,
         selectedProject,
+        subtype,
         defaultValues,
       });
 
@@ -160,14 +179,14 @@ export function useNewTaskForm({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? "Gagal membuat task baru");
+        throw new Error(err.message ?? "Failed to create task");
       }
 
       const created = await res.json();
       toast.success(
         selectedProject
-          ? `Issue terdaftar dalam ${selectedProject} — Ref: ${created.obsidianRef ?? created.id}`
-          : "Issue baru berhasil dibuat"
+          ? `Issue registered in ${selectedProject} — Ref: ${created.obsidianRef ?? created.id}`
+          : "Issue created successfully"
       );
 
       if (createMore) {
@@ -179,7 +198,7 @@ export function useNewTaskForm({
         onSuccess();
       }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan sistem saat membuat task");
+      toast.error(err instanceof Error ? err.message : "A system error occurred while creating task");
     } finally {
       setIsSubmitting(false);
     }
@@ -188,6 +207,8 @@ export function useNewTaskForm({
   return {
     type,
     setType,
+    subtype,
+    setSubtype,
     title,
     setTitle,
     description,
@@ -213,3 +234,4 @@ export function useNewTaskForm({
     handleSubmit,
   };
 }
+

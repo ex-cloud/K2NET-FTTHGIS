@@ -7,15 +7,25 @@ interface TaskRightSidebarProps {
   open: boolean;
   onClose: () => void;
   tasks: Task[];
+  context?: "workspace" | "support";
+  title?: string;
+  onSelectProject?: (projectName: string | null) => void;
 }
 
-export function TaskRightSidebar({ open, onClose, tasks }: TaskRightSidebarProps) {
+export function TaskRightSidebar({
+  open,
+  onClose,
+  tasks,
+  context = "workspace",
+  title = "Overview",
+  onSelectProject,
+}: TaskRightSidebarProps) {
   if (!open) return null;
 
   return (
     <div className="w-72 shrink-0 flex flex-col min-h-0 border border-border bg-card/10 rounded-xl overflow-hidden">
       <SecondarySidebarHeader
-        title="Overview"
+        title={title}
         className="bg-transparent border-border/60"
         actions={
           <button
@@ -27,7 +37,11 @@ export function TaskRightSidebar({ open, onClose, tasks }: TaskRightSidebarProps
         }
       />
       <div className="flex-1 overflow-y-auto">
-        <TaskSecondarySidebar tasks={tasks} />
+        <TaskSecondarySidebar
+          tasks={tasks}
+          context={context}
+          onSelectProject={onSelectProject}
+        />
       </div>
     </div>
   );

@@ -64,7 +64,7 @@ export function useTaskNotifications() {
         duration: 8000,
         action: {
           label: "Open",
-          onClick: () => routerRef.current?.push(`/tasks/${eventPayload.id}`),
+          onClick: () => routerRef.current?.push(`/support/tickets/${eventPayload.id}`),
         },
       });
     }

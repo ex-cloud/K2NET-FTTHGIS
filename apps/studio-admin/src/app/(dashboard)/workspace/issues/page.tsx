@@ -187,6 +187,8 @@ export default function WorkspaceIssuesPage() {
             open={rightPanelOpen}
             onClose={() => setRightPanelOpen(false)}
             tasks={data.tasks}
+            context="workspace"
+            title="Overview"
           />
         </div>
       </div>
@@ -197,6 +199,7 @@ export default function WorkspaceIssuesPage() {
         assigneesList={data.assigneesList}
         dynamicProjectsList={data.dynamicProjectsList}
         refresh={data.refresh}
+        defaultValues={{ scope: "PLATFORM_INTERNAL" }}
       />
     </>
   );

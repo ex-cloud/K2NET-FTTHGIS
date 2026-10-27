@@ -28,10 +28,14 @@ export interface TaskLabel {
 }
 
 export const DEFAULT_LABELS: TaskLabel[] = [
-  { id: "bug", name: "Bug", colorName: "Red", dotColor: "bg-red-500", badgeColor: "bg-red-500/10 text-red-500 border-red-500/20" },
-  { id: "feature", name: "Feature", colorName: "Purple", dotColor: "bg-purple-500", badgeColor: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
-  { id: "improvement", name: "Improvement", colorName: "Blue", dotColor: "bg-blue-500", badgeColor: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
+  { id: "gis", name: "GIS & Spatial", colorName: "Green", dotColor: "bg-primary", badgeColor: "bg-primary/10 text-primary border-primary/20" },
+  { id: "network", name: "Network & OLT", colorName: "Teal", dotColor: "bg-teal-500", badgeColor: "bg-teal-500/10 text-teal-500 border-teal-500/20" },
+  { id: "api", name: "API & Backend", colorName: "Blue", dotColor: "bg-blue-500", badgeColor: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
+  { id: "frontend", name: "UI & Frontend", colorName: "Purple", dotColor: "bg-purple-500", badgeColor: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
+  { id: "database", name: "Database & Migration", colorName: "Orange", dotColor: "bg-orange-500", badgeColor: "bg-orange-500/10 text-orange-500 border-orange-500/20" },
+  { id: "security", name: "Security & PBAC", colorName: "Red", dotColor: "bg-red-500", badgeColor: "bg-red-500/10 text-red-500 border-red-500/20" },
 ];
+
 
 export const LABEL_COLORS = [
   { name: "Grey", dotColor: "bg-muted-foreground/60", badgeColor: "bg-muted text-muted-foreground border-border" },

@@ -199,17 +199,11 @@ const SecurityPasswordPolicyPage = lazyWithRetry(() =>
 const LogsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/logs/page").then((m) => ({ default: m.default }))
 );
-const TasksPage = lazyWithRetry(() =>
-  import("./app/(dashboard)/tasks/page").then((m) => ({ default: m.default }))
-);
 const TasksNewPage = lazyWithRetry(() =>
   import("./app/(dashboard)/tasks/new/page").then((m) => ({ default: m.default }))
 );
 const TasksIdPage = lazyWithRetry(() =>
   import("./app/(dashboard)/tasks/[id]/page").then((m) => ({ default: m.default }))
-);
-const TasksProjectIdPage = lazyWithRetry(() =>
-  import("./app/(dashboard)/tasks/projects/[id]/page").then((m) => ({ default: m.default }))
 );
 const WorkspacePlansPage = lazyWithRetry(() =>
   import("./app/(dashboard)/workspace/plans/page").then((m) => ({ default: m.default }))
@@ -535,12 +529,51 @@ const supportTicketsNewRoute = createRoute({ getParentRoute: () => authenticated
 const supportTicketIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/tickets/$id", component: () => <Lazy><TasksIdPage /></Lazy> });
 const supportSlaRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/support/sla", component: () => <Lazy><SupportSlaPage /></Lazy> });
 
+// Legacy Tasks Redirectors (Zero Broken Links)
+function LegacyTasksRedirect() {
+  const search = typeof window !== "undefined" ? window.location.search : "";
+  const params = new URLSearchParams(search);
+  const scope = params.get("scope");
+  const type = params.get("type");
+  const issue = params.get("issue");
+
+  if (issue) {
+    if (scope === "TENANT_TO_PLATFORM") {
+      return <Navigate to={`/support/tickets/${issue}` as unknown as never} replace />;
+    }
+    return <Navigate to={`/workspace/issues/${issue}` as unknown as never} replace />;
+  }
+
+  if (type === "PROJECT") {
+    params.delete("type");
+    const qs = params.toString();
+    return <Navigate to={`/workspace/plans${qs ? `?${qs}` : ""}` as unknown as never} replace />;
+  }
+
+  if (scope === "TENANT_TO_PLATFORM") {
+    params.delete("scope");
+    const qs = params.toString();
+    return <Navigate to={`/support/tickets${qs ? `?${qs}` : ""}` as unknown as never} replace />;
+  }
+
+  params.delete("scope");
+  const qs = params.toString();
+  return <Navigate to={`/workspace/issues${qs ? `?${qs}` : ""}` as unknown as never} replace />;
+}
+
 // Tasks (Legacy Aliases & Safety Net)
-const tasksRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks", component: () => <Lazy><TasksPage /></Lazy> });
-const tasksNewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/new", component: () => <Lazy><TasksNewPage /></Lazy> });
+const tasksRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks", component: LegacyTasksRedirect });
+const tasksNewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/new", component: () => <Navigate to="/workspace/issues/new" replace /> });
 const tasksIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/$id", component: () => <Lazy><TasksIdPage /></Lazy> });
-const tasksProjectsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/projects", component: () => <Navigate to="/workspace/plans" /> });
-const tasksProjectIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/projects/$id", component: () => <Lazy><TasksProjectIdPage /></Lazy> });
+const tasksProjectsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/projects", component: () => <Navigate to="/workspace/plans" replace /> });
+const tasksProjectIdRoute = createRoute({
+  getParentRoute: () => authenticatedLayoutRoute,
+  path: "/tasks/projects/$id",
+  component: () => {
+    const { id } = tasksProjectIdRoute.useParams();
+    return <Navigate to={`/workspace/plans/${id}` as unknown as never} replace />;
+  },
+});
 
 // AI
 const aiRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/ai", component: () => <Lazy><AiPage /></Lazy> });

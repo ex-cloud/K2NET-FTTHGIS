@@ -6,6 +6,7 @@ import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useTeamUsers } from "@/hooks/useTeamUsers";
 import { type TaskScope } from "@/hooks/useTasksQuery";
+import { useRouter } from "@/lib/navigation-compat";
 import {
   type WorkspaceSubtype,
   PROJECT_ICONS,
@@ -144,6 +145,7 @@ export function useNewProjectForm({
   defaultValues,
 }: UseNewProjectFormOptions) {
   const { t } = useTranslation();
+  const router = useRouter();
   const { data: session } = useSession();
   const { users: teamUsers } = useTeamUsers();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -274,6 +276,9 @@ export function useNewProjectForm({
       );
       onOpenChange(false);
       onSuccess();
+      if (created?.id) {
+        router.push(`/workspace/plans/${created.id}`);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       toast.error(msg || t("workspace.toast_create_failed"));

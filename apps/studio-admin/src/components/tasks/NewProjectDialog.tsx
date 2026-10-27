@@ -17,8 +17,6 @@ import {
   type WorkspaceSubtype,
 } from "./new-project-constants";
 import { NewProjectPropertyPills } from "./NewProjectPropertyPills";
-import { NewProjectMilestones } from "./NewProjectMilestones";
-import { NewProjectEditorSection } from "./NewProjectEditorSection";
 import { useNewProjectForm } from "./use-new-project-form";
 
 export interface NewProjectDialogProps {
@@ -108,7 +106,7 @@ export function NewProjectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="w-full sm:max-w-[880px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-lg rounded-2xl overflow-hidden flex flex-col gap-0 max-h-[92vh]"
+        className="w-full sm:max-w-[620px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-lg rounded-2xl overflow-hidden flex flex-col gap-0"
       >
         {/* ── Top Header / Breadcrumb ────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-border/40 bg-muted/20 shrink-0">
@@ -162,8 +160,8 @@ export function NewProjectDialog({
         </div>
 
         {/* ── Form Body ──────────────────────────────────────────────────── */}
-        <form onSubmit={form.handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="px-6 pt-5 pb-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar-thin">
+        <form onSubmit={form.handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="px-6 py-5 space-y-4">
             {/* Project Icon Selector + Name Input */}
             <div className="flex items-start gap-3.5">
               <DropdownMenu>
@@ -198,7 +196,7 @@ export function NewProjectDialog({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <div className="flex-1 space-y-1 min-w-0">
+              <div className="flex-1 space-y-1.5 min-w-0">
                 <input
                   type="text"
                   value={form.name}
@@ -206,7 +204,7 @@ export function NewProjectDialog({
                   placeholder={getTitlePlaceholder()}
                   autoFocus
                   required
-                  className="w-full text-xl font-bold font-sans tracking-tight text-foreground bg-transparent border-0 focus:outline-none placeholder:text-muted-foreground/40 leading-tight"
+                  className="w-full text-lg font-bold font-sans tracking-tight text-foreground bg-transparent border-0 focus:outline-none placeholder:text-muted-foreground/40 leading-tight"
                 />
                 <input
                   type="text"
@@ -229,40 +227,18 @@ export function NewProjectDialog({
               teamUsers={form.teamUsers}
               currentUserName={form.session?.user?.name}
               currentUserEmail={form.session?.user?.email}
-              startDate={form.startDate}
-              onStartDateChange={form.handleStartDateChange}
               targetDate={form.targetDate}
               onTargetDateChange={form.handleTargetDateChange}
               selectedLabels={form.selectedLabels}
               setSelectedLabels={form.setSelectedLabels}
-            />
-
-            {/* ── TipTap Markdown Project Plan Editor ───────────────────────── */}
-            <NewProjectEditorSection
               subtype={form.subtype}
-              description={form.description}
-              setDescription={form.setDescription}
-              onUploadImage={form.handleUploadImage}
             />
-
-            {/* ── Milestones Section (Only for PROJECT and PLAN) ───────────── */}
-            {(form.subtype === "PROJECT" || form.subtype === "PLAN") && (
-              <NewProjectMilestones
-                milestones={form.milestones}
-                onAddMilestone={form.handleAddMilestone}
-                onRemoveMilestone={(id) => form.setMilestones((prev) => prev.filter((m) => m.id !== id))}
-                showMilestoneInput={form.showMilestoneInput}
-                setShowMilestoneInput={form.setShowMilestoneInput}
-                newMilestoneText={form.newMilestoneText}
-                setNewMilestoneText={form.setNewMilestoneText}
-              />
-            )}
           </div>
 
           {/* ── Modal Footer ──────────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-6 py-3 border-t border-border/40 bg-muted/20 shrink-0">
             <span className="text-[11px] text-muted-foreground">
-              {t("workspace.tip_markdown")}
+              {t("workspace.hint_full_canvas")}
             </span>
             <div className="flex items-center gap-2">
               <Button

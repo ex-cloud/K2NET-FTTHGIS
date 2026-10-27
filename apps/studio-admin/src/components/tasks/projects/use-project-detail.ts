@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import type { Task, TaskComment } from "@/hooks/useTasksQuery";
@@ -51,6 +52,7 @@ export function useProjectDetail({
   projectTask,
   refresh,
 }: UseProjectDetailProps) {
+  const { t } = useTranslation();
   const [subtasks, setSubtasks] = useState<Task[]>([]);
   const [, setSubtasksLoading] = useState(true);
 
@@ -84,7 +86,6 @@ export function useProjectDetail({
   const [priority, setPriority] = useState("NORMAL");
   const [assigneeId, setAssigneeId] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | undefined>();
-  const [healthStatus] = useState<"On track" | "At risk" | "Off track">("On track");
 
   // Activity update draft
   const [updateMode, setUpdateMode] = useState<"update" | "comment">("update");
@@ -102,7 +103,7 @@ export function useProjectDetail({
       setAssigneeId(projectTask.assigneeId ?? null);
       setDueDate(projectTask.dueDate);
       setComments(projectTask.comments ?? []);
-      document.title = `Projects › ${projectTask.title} | FTTH GIS K2NET`;
+      document.title = `Workspace › ${projectTask.title} | FTTH GIS K2NET`;
     }
   }, [projectTask]);
 
@@ -118,6 +119,23 @@ export function useProjectDetail({
       ? 100
       : 0;
 
+  // Real dynamic healthStatus derived from latest status update or schedule/progress
+  const latestStatusUpdate = [...comments].reverse().find((c) => c.content.startsWith("[STATUS_UPDATE:"));
+  let healthStatus: "On track" | "At risk" | "Off track" = "On track";
+  if (latestStatusUpdate) {
+    const match = latestStatusUpdate.content.match(/^\[STATUS_UPDATE:\s*([^|]+)\s*\|/);
+    if (match && ["On track", "At risk", "Off track"].includes(match[1].trim())) {
+      healthStatus = match[1].trim() as "On track" | "At risk" | "Off track";
+    }
+  } else if (dueDate) {
+    const diffDays = Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0 && progressPercent < 100) {
+      healthStatus = "Off track";
+    } else if (diffDays <= 7 && progressPercent < 100) {
+      healthStatus = "At risk";
+    }
+  }
+
   const handleSaveField = async (fields: Partial<Task>) => {
     if (!projectTask || !id) return;
     const changed = getChangedFields(fields, projectTask);
@@ -132,16 +150,17 @@ export function useProjectDetail({
         body: JSON.stringify(changed),
       });
       if (res.ok) {
-        toast.success("Project updated");
+        toast.success(t("workspace.toast_workspace_updated"));
         refresh();
       }
     } catch {
-      toast.error("Failed to update project");
+      toast.error(t("workspace.toast_workspace_update_failed"));
     }
   };
 
-  const handlePostUpdate = async () => {
-    if (!updateText.trim() || !id) return;
+  const handlePostUpdate = async (overrideContent?: string) => {
+    const textToSend = (overrideContent ?? updateText).trim();
+    if (!textToSend || !id) return;
     setPostingUpdate(true);
     try {
       const baseUrl = getBackendBaseUrl();
@@ -149,16 +168,20 @@ export function useProjectDetail({
         method: "POST",
         token: sessionToken ?? "",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: updateText.trim() }),
+        body: JSON.stringify({ content: textToSend }),
       });
       if (res.ok) {
         const comment: TaskComment = await res.json();
         setComments((prev) => [...prev, comment]);
         setUpdateText("");
-        toast.success("Project update posted");
+        toast.success(
+          updateMode === "update"
+            ? t("workspace.toast_status_update_posted")
+            : t("workspace.toast_comment_posted")
+        );
       }
     } catch {
-      toast.error("Failed to post update");
+      toast.error(t("workspace.toast_post_failed"));
     } finally {
       setPostingUpdate(false);
     }

@@ -1,5 +1,6 @@
 import { type FormEvent } from "react";
 import { Plus, LayoutList, Columns3, Search, CornerDownLeft, Loader2 } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import { type Task } from "@/hooks/useTasksQuery";
 
@@ -14,7 +15,7 @@ interface ProjectIssuesHeaderBarProps {
   viewMode: "list" | "kanban";
   setViewMode: (vm: "list" | "kanban") => void;
   onSelectAll: () => void;
-  onNewIssueClick: () => void;
+  onNewIssueClick?: () => void;
   quickTitle: string;
   setQuickTitle: (t: string) => void;
   isCreatingQuick: boolean;
@@ -33,13 +34,15 @@ export function ProjectIssuesHeaderBar({
   viewMode,
   setViewMode,
   onSelectAll,
-  onNewIssueClick,
+  onNewIssueClick: _onNewIssueClick,
   quickTitle,
   setQuickTitle,
   isCreatingQuick,
   onQuickSubmit,
   showQuickAdd,
 }: ProjectIssuesHeaderBarProps) {
+  const { t } = useTranslation();
+
   return (
     <>
       {/* ── Top Header with Controls & Search ────────────────────────────────── */}
@@ -55,13 +58,18 @@ export function ProjectIssuesHeaderBar({
             className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary ml-1 shrink-0"
             title="Select all"
           />
-          <span className="text-xs font-bold text-foreground shrink-0">Project Issues</span>
+          <span className="text-xs font-bold text-foreground shrink-0">
+            {t("workspace.issues_header_title")}
+          </span>
           <span className="text-xs font-mono text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full shrink-0">
-            {resolvedIssuesCount}/{totalIssuesCount} resolved
+            {t("workspace.issues_resolved_count", {
+              resolved: resolvedIssuesCount,
+              total: totalIssuesCount,
+            })}
           </span>
           {selectedIds.size > 0 && (
             <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md shrink-0">
-              {selectedIds.size} selected
+              {t("workspace.issues_selected_count", { count: selectedIds.size })}
             </span>
           )}
 
@@ -71,7 +79,7 @@ export function ProjectIssuesHeaderBar({
               <Search className="absolute left-2.5 top-2 h-3 w-3 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Filter issues..."
+                placeholder={t("workspace.issues_filter_placeholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-7 pr-3 py-1 text-[11px] rounded-lg border border-border/60 bg-background/60 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary h-7"
@@ -92,10 +100,10 @@ export function ProjectIssuesHeaderBar({
                   ? "bg-card text-foreground shadow-xs font-bold"
                   : "text-muted-foreground hover:text-foreground"
               )}
-              title="List View"
+              title={t("workspace.issues_view_list")}
             >
               <LayoutList className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-[11px]">List</span>
+              <span className="hidden sm:inline text-[11px]">{t("workspace.issues_view_list")}</span>
             </button>
             <button
               type="button"
@@ -106,22 +114,12 @@ export function ProjectIssuesHeaderBar({
                   ? "bg-card text-foreground shadow-xs font-bold"
                   : "text-muted-foreground hover:text-foreground"
               )}
-              title="Kanban Board"
+              title={t("workspace.issues_view_kanban")}
             >
               <Columns3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-[11px]">Kanban</span>
+              <span className="hidden sm:inline text-[11px]">{t("workspace.issues_view_kanban")}</span>
             </button>
           </div>
-
-          {/* New Issue Button */}
-          <button
-            type="button"
-            onClick={onNewIssueClick}
-            className="flex items-center gap-1.5 px-2.5 h-7 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New issue</span>
-          </button>
         </div>
       </div>
 
@@ -132,7 +130,7 @@ export function ProjectIssuesHeaderBar({
             <Plus className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Quick add new issue to this project (type title and press Enter)..."
+              placeholder={t("workspace.issues_quick_add_placeholder")}
               value={quickTitle}
               onChange={(e) => setQuickTitle(e.target.value)}
               disabled={isCreatingQuick}

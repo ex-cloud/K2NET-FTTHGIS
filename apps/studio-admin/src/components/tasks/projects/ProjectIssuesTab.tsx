@@ -1,4 +1,5 @@
 import { Card } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { type Task } from "@/hooks/useTasksQuery";
 import { TaskBulkActionBar } from "@/components/tasks/TaskBulkActionBar";
 import { useProjectIssuesTab } from "./use-project-issues-tab";
@@ -27,6 +28,7 @@ export function ProjectIssuesTab({
   onUpdateIssue,
   onDeleteIssue,
 }: ProjectIssuesTabProps) {
+  const { t } = useTranslation();
   const {
     viewMode,
     setViewMode,
@@ -67,7 +69,6 @@ export function ProjectIssuesTab({
         viewMode={viewMode}
         setViewMode={setViewMode}
         onSelectAll={handleSelectAll}
-        onNewIssueClick={onNewIssueClick}
         quickTitle={quickTitle}
         setQuickTitle={setQuickTitle}
         isCreatingQuick={isCreatingQuick}
@@ -78,18 +79,18 @@ export function ProjectIssuesTab({
       {/* ── Empty State ────────────────────────────────────────────────────── */}
       {projectIssues.length === 0 ? (
         <Card className="p-8 text-center text-muted-foreground border-dashed border-border/60 bg-card/20 rounded-xl space-y-2">
-          <p className="text-xs">Belum ada issue atau tugas yang terhubung ke projek ini.</p>
+          <p className="text-xs">{t("workspace.issues_empty_title")}</p>
           <button
             type="button"
             onClick={onNewIssueClick}
             className="text-xs text-primary font-medium hover:underline cursor-pointer"
           >
-            + Tambahkan Issue Pertama
+            {t("workspace.issues_empty_action")}
           </button>
         </Card>
       ) : filteredIssues.length === 0 ? (
         <div className="p-6 text-center text-muted-foreground border border-dashed border-border/40 rounded-xl text-xs">
-          Tidak ditemukan issue yang sesuai dengan pencarian &quot;{searchQuery}&quot;.
+          {t("workspace.issues_search_no_match", { query: searchQuery })}
         </div>
       ) : viewMode === "list" ? (
         /* ── LIST VIEW ──────────────────────────────────────────────────────── */

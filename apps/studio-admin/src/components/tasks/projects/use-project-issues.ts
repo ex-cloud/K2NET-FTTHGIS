@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import type { Task } from "@/hooks/useTasksQuery";
@@ -18,6 +19,8 @@ export function useProjectIssues({
   fetchSubtasks,
   refresh,
 }: UseProjectIssuesProps) {
+  const { t } = useTranslation();
+
   const handleUpdateIssue = async (issueId: string, fields: Partial<Task>) => {
     try {
       const baseUrl = getBackendBaseUrl();
@@ -28,14 +31,14 @@ export function useProjectIssues({
         body: JSON.stringify(fields),
       });
       if (res.ok) {
-        toast.success("Issue updated");
+        toast.success(t("workspace.toast_issue_updated"));
         fetchSubtasks();
         refresh();
       } else {
-        toast.error("Failed to update issue");
+        toast.error(t("workspace.toast_issue_update_failed"));
       }
     } catch {
-      toast.error("Network error while updating issue");
+      toast.error(t("workspace.toast_issue_update_failed"));
     }
   };
 
@@ -53,14 +56,14 @@ export function useProjectIssues({
         token: sessionToken ?? "",
       });
       if (res.ok) {
-        toast.success("Issue deleted successfully");
+        toast.success(t("workspace.toast_issue_deleted"));
         fetchSubtasks();
         refresh();
       } else {
-        toast.error("Failed to delete issue");
+        toast.error(t("workspace.toast_issue_delete_failed"));
       }
     } catch {
-      toast.error("Network error while deleting issue");
+      toast.error(t("workspace.toast_issue_delete_failed"));
     }
   };
 
@@ -76,7 +79,7 @@ export function useProjectIssues({
         scope: projectTask?.scope ?? "PLATFORM_INTERNAL",
         parentTaskId: id,
         obsidianRef: projectTask?.obsidianRef || undefined,
-        referenceType: "PROJECT",
+        referenceType: "TASK",
         referenceId: id,
       };
       const res = await httpClient(`${baseUrl}/tasks`, {
@@ -86,14 +89,14 @@ export function useProjectIssues({
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        toast.success(`Issue "${quickTitle}" created`);
+        toast.success(t("workspace.toast_issue_created", { title: quickTitle }));
         fetchSubtasks();
         refresh();
       } else {
-        toast.error("Failed to create issue");
+        toast.error(t("workspace.toast_issue_create_failed"));
       }
     } catch {
-      toast.error("Network error while creating issue");
+      toast.error(t("workspace.toast_issue_create_failed"));
     }
   };
 

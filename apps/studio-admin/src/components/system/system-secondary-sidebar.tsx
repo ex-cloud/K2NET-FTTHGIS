@@ -195,7 +195,6 @@ function matchesParamUrl(
 
 const SPECIAL_ROUTE_PREFIXES: Record<string, string[]> = {
   "/inbox": ["/inbox", "/system/inbox"],
-  "/tasks/projects": ["/tasks/projects", "/workspace/plans", "/system/workspace/plans", "/system/tasks/projects"],
   "/workspace/plans": ["/tasks/projects", "/workspace/plans", "/system/workspace/plans", "/system/tasks/projects"],
   "/workspace/roadmap": ["/workspace/roadmap", "/system/workspace/roadmap"],
   "/workspace/issues": ["/workspace/issues", "/system/workspace/issues"],

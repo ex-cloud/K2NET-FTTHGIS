@@ -10,12 +10,16 @@ interface ProjectOverviewPlanEditorProps {
   description: string;
   setDescription: (desc: string) => void;
   onSaveField: (fields: Partial<Task>) => Promise<void>;
+  title?: string;
+  subtitle?: string;
 }
 
 export function ProjectOverviewPlanEditor({
   description,
   setDescription,
   onSaveField,
+  title,
+  subtitle,
 }: ProjectOverviewPlanEditorProps) {
   const { t } = useTranslation();
   const { data: session } = useSession();
@@ -48,7 +52,11 @@ export function ProjectOverviewPlanEditor({
         }
         throw new Error("Invalid storage upload response");
       } catch (err: unknown) {
-        toast.error(t("projects.image_upload_fail", { error: err instanceof Error ? err.message : "Storage error" }));
+        toast.error(
+          t("projects.image_upload_fail", {
+            error: err instanceof Error ? err.message : "Storage error",
+          })
+        );
         throw err;
       }
     },
@@ -56,23 +64,27 @@ export function ProjectOverviewPlanEditor({
   );
 
   return (
-    <div className="space-y-3 pt-2">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 pt-1 flex-1 flex flex-col min-h-0">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-primary" />
-            <span>{t("projects.plan_specification")}</span>
+            <span>{title || t("projects.plan_specification")}</span>
           </h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {t("projects.plan_spec_desc")}
+            {subtitle || t("projects.plan_spec_desc")}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {lastSaved && (
             <span className="text-[10px] text-muted-foreground font-mono flex items-center gap-1 hidden sm:inline-flex">
               <Check className="w-3 h-3 text-primary" />
-              <span>{t("projects.saved_at", { time: lastSaved.toLocaleTimeString("id-ID") })}</span>
+              <span>
+                {t("projects.saved_at", {
+                  time: lastSaved.toLocaleTimeString("id-ID"),
+                })}
+              </span>
             </span>
           )}
           <Button
@@ -98,11 +110,11 @@ export function ProjectOverviewPlanEditor({
       </div>
 
       {/* TipTap WYSIWYG Editor Container */}
-      <div className="rounded-lg border border-border/70 overflow-hidden bg-card/40 focus-within:border-primary/50 transition-colors shadow-xs">
+      <div className="flex-1 rounded-xl border border-border/70 overflow-hidden bg-card/40 focus-within:border-primary/50 transition-colors shadow-xs">
         <RichTextEditor
           value={description}
           onChange={setDescription}
-          minHeight="320px"
+          minHeight="480px"
           placeholder={t("projects.plan_placeholder")}
           onUploadImage={handleUploadImage}
         />

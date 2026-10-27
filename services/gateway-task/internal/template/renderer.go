@@ -221,8 +221,10 @@ tags:
 
 ### 📍 Lokasi Geospasial GIS
 - **Objek GIS**: {{.ReferenceType}} (ID: ` + "`{{.ReferenceID}}`" + `)
-- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://system-gis.kdua.net/tasks/{{.TaskID}})
-{{end}}
+{{if eq .Scope "TENANT_TO_PLATFORM"}}- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://system-gis.kdua.net/support/tickets/{{.TaskID}})
+{{else if eq .Scope "PLATFORM_INTERNAL"}}- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://system-gis.kdua.net/workspace/issues/{{.TaskID}})
+{{else}}- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://tenant-gis.kdua.net/tasks/{{.TaskID}})
+{{end}}{{end}}
 
 ---
 

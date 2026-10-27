@@ -84,7 +84,7 @@ const SubIssueRow: React.FC<SubIssueRowProps> = ({ sub, onToggleStatus, onDelete
         </button>
 
         <Link
-          href={`/tasks/${sub.id}`}
+          href={`/workspace/issues/${sub.id}`}
           className={cn(
             "text-xs truncate transition-colors hover:text-primary",
             isDone ? "line-through text-muted-foreground/60" : "text-foreground"

@@ -1,3 +1,4 @@
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 
 export type ProjectTab = "overview" | "activity" | "issues";
@@ -17,6 +18,8 @@ export function ProjectDetailTabsBar({
   resolvedIssuesCount,
   totalIssuesCount,
 }: ProjectDetailTabsBarProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="px-6 border-b border-border/40 shrink-0 bg-background/50 flex items-center gap-1">
       <button
@@ -28,7 +31,7 @@ export function ProjectDetailTabsBar({
             : "border-transparent text-muted-foreground hover:text-foreground"
         )}
       >
-        Overview
+        {t("workspace.tab_overview")}
       </button>
       <button
         onClick={() => setActiveTab("activity")}
@@ -39,7 +42,7 @@ export function ProjectDetailTabsBar({
             : "border-transparent text-muted-foreground hover:text-foreground"
         )}
       >
-        <span>Activity</span>
+        <span>{t("workspace.tab_activity")}</span>
         {commentsCount > 0 && (
           <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-muted text-muted-foreground">
             {commentsCount}
@@ -55,7 +58,7 @@ export function ProjectDetailTabsBar({
             : "border-transparent text-muted-foreground hover:text-foreground"
         )}
       >
-        <span>Issues</span>
+        <span>{t("workspace.tab_issues")}</span>
         <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-primary/10 text-primary font-bold">
           {resolvedIssuesCount}/{totalIssuesCount}
         </span>

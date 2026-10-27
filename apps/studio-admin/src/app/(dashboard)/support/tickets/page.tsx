@@ -192,6 +192,8 @@ export default function SupportTicketsPage() {
             open={rightPanelOpen}
             onClose={() => setRightPanelOpen(false)}
             tasks={data.tasks}
+            context="support"
+            title="Ticket Insights"
           />
         </div>
       </div>
@@ -202,6 +204,7 @@ export default function SupportTicketsPage() {
         assigneesList={data.assigneesList}
         dynamicProjectsList={data.dynamicProjectsList}
         refresh={data.refresh}
+        defaultValues={{ scope: "TENANT_TO_PLATFORM" }}
       />
     </>
   );

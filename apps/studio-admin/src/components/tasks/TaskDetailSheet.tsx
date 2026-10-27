@@ -65,14 +65,24 @@ const SheetHeaderBar: React.FC<SheetHeaderBarProps> = ({ task, saving, isDirty }
             Obsidian
           </a>
         )}
-        <a
-          href={`/tasks/${task.id}`}
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted px-2 py-1 rounded-md transition-colors"
-          title={t("tasks.open_full_page")}
-        >
-          <ArrowUpRight className="h-3.5 w-3.5" />
-          {t("tasks.full_page")}
-        </a>
+        {(() => {
+          const fullPageHref =
+            task.type === "PROJECT"
+              ? `/workspace/plans/${task.id}`
+              : task.scope === "TENANT_TO_PLATFORM"
+                ? `/support/tickets/${task.id}`
+                : `/workspace/issues/${task.id}`;
+          return (
+            <a
+              href={fullPageHref}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted px-2 py-1 rounded-md transition-colors"
+              title={t("tasks.open_full_page")}
+            >
+              <ArrowUpRight className="h-3.5 w-3.5" />
+              {t("tasks.full_page")}
+            </a>
+          );
+        })()}
         <SheetClose asChild>
           <button
             type="button"

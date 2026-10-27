@@ -1,6 +1,7 @@
 import { Dialog, DialogContent } from "@k2net/ui";
-import { Loader2, Paperclip, Sparkles } from "lucide-react";
+import { Loader2, Paperclip, LifeBuoy, FolderGit2, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@k2net/i18n";
 import { type TaskScope } from "@/hooks/useTasksQuery";
 import { NewTaskPropertyPills } from "./NewTaskPropertyPills";
 import { useNewTaskForm } from "./use-new-task-form";
@@ -14,6 +15,7 @@ export interface NewTaskDefaultValues {
   parentTaskId?: string;
   priority?: "URGENT" | "HIGH" | "NORMAL" | "LOW";
   status?: string;
+  referenceType?: string;
 }
 
 interface NewTaskDialogProps {
@@ -33,7 +35,45 @@ export function NewTaskDialog({
   projectsList = [],
   defaultValues,
 }: NewTaskDialogProps) {
+  const { t: _t } = useTranslation();
   const form = useNewTaskForm({ open, onOpenChange, onSuccess, defaultValues });
+
+  const isSupport = defaultValues?.scope === "TENANT_TO_PLATFORM";
+  const isProjectIssue = Boolean(defaultValues?.parentTaskId);
+
+  const getHeaderConfig = () => {
+    if (isSupport) {
+      return {
+        icon: LifeBuoy,
+        badgeText: "Support",
+        title: "New Support Ticket",
+        placeholderTitle: "Ticket summary (e.g. OLT GPON uplink packet drop on Sector 3)...",
+        placeholderDesc: "Describe customer impact, affected tenant, and technical details...",
+        submitLabel: "Create Ticket",
+      };
+    }
+    if (isProjectIssue) {
+      return {
+        icon: FolderGit2,
+        badgeText: "Workspace",
+        title: defaultValues?.project ? `${defaultValues.project} Issue` : "New Project Issue",
+        placeholderTitle: "Issue title...",
+        placeholderDesc: "Add description... (supports markdown)",
+        submitLabel: "Create Issue",
+      };
+    }
+    return {
+      icon: CircleDot,
+      badgeText: "Workspace",
+      title: "New Issue & Task",
+      placeholderTitle: "Issue title...",
+      placeholderDesc: "Add description... (supports markdown)",
+      submitLabel: "Create Issue",
+    };
+  };
+
+  const header = getHeaderConfig();
+  const HeaderIcon = header.icon;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -41,35 +81,16 @@ export function NewTaskDialog({
         showCloseButton={true}
         className="w-full sm:max-w-[660px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-lg rounded-2xl overflow-hidden flex flex-col gap-0"
       >
-        {/* ── Linear-Style Header Bar ──────────────────────────────────── */}
+        {/* ── Contextual Header Bar (No OS emojis, clean Lucide SVG icons) ─ */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border/50 bg-background/50 shrink-0">
           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
             <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/10 text-primary">
-              <Sparkles className="h-3 w-3" />
-              K2N
+              <HeaderIcon className="h-3.5 w-3.5" />
+              <span>{header.badgeText}</span>
             </span>
             <span>›</span>
-            <span className="text-foreground">
-              {form.type === "PROJECT" || form.selectedProject ? "New Project Issue" : "New Issue"}
-            </span>
+            <span className="text-foreground font-medium">{header.title}</span>
           </div>
-
-          {!defaultValues?.parentTaskId && (
-            <div className="flex items-center gap-1 pr-6">
-              <button
-                type="button"
-                onClick={() => form.setType(form.type === "TICKET" ? "PROJECT" : "TICKET")}
-                className={cn(
-                  "text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors border",
-                  form.type === "PROJECT"
-                    ? "bg-primary/15 text-primary border-primary/30"
-                    : "bg-muted text-muted-foreground border-transparent hover:text-foreground"
-                )}
-              >
-                {form.type === "PROJECT" ? "Project Mode" : "Issue Mode"}
-              </button>
-            </div>
-          )}
         </div>
 
         {/* ── Form Canvas ──────────────────────────────────────────────── */}
@@ -80,21 +101,26 @@ export function NewTaskDialog({
               autoFocus
               value={form.title}
               onChange={(e) => form.setTitle(e.target.value)}
-              placeholder="Issue title..."
-              className="w-full text-lg font-bold text-foreground bg-transparent border-none outline-none placeholder:text-muted-foreground/40 focus:ring-0"
+              placeholder={header.placeholderTitle}
+              className="w-full text-base sm:text-lg font-bold text-foreground bg-transparent border-none outline-none placeholder:text-muted-foreground/40 focus:ring-0"
             />
 
             <textarea
               value={form.description}
               onChange={(e) => form.setDescription(e.target.value)}
-              placeholder="Add description... (supports markdown)"
+              placeholder={header.placeholderDesc}
               rows={4}
               className="w-full text-sm text-foreground/90 bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground/40 focus:ring-0 leading-relaxed"
             />
           </div>
 
-          {/* ── Linear Inline Pill Bar ─────────────────────────────────── */}
+          {/* ── Contextual Inline Property Pills ───────────────────────── */}
           <NewTaskPropertyPills
+            subtype={form.subtype}
+            setSubtype={form.setSubtype}
+            showSubtypePicker={!isSupport}
+            showProjectPicker={!isSupport && !isProjectIssue}
+            isProjectMode={false}
             status={form.status}
             setStatus={form.setStatus}
             priority={form.priority}
@@ -153,7 +179,7 @@ export function NewTaskDialog({
                 )}
               >
                 {form.isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Create {form.type === "PROJECT" || form.selectedProject ? "Project Issue" : "Issue"}
+                <span>{header.submitLabel}</span>
               </button>
             </div>
           </div>

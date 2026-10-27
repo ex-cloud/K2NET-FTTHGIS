@@ -24,8 +24,8 @@ import { cn } from "@/lib/utils";
 interface ProjectsHubToolbarProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  statusFilter: string;
-  setStatusFilter: (status: string) => void;
+  statusFilter?: string;
+  setStatusFilter?: (status: string) => void;
   priorityFilter: string;
   setPriorityFilter: (priority: string) => void;
   viewMode: "table" | "timeline";
@@ -45,8 +45,8 @@ interface ProjectsHubToolbarProps {
 export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
   searchQuery,
   setSearchQuery,
-  statusFilter,
-  setStatusFilter,
+  statusFilter: _statusFilter,
+  setStatusFilter: _setStatusFilter,
   priorityFilter,
   setPriorityFilter,
   viewMode,
@@ -81,56 +81,6 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
             />
           </div>
 
-          {/* Status Filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden",
-                  statusFilter !== "ALL"
-                    ? "bg-primary/10 border-primary/40 text-primary"
-                    : "bg-card border-border hover:bg-muted/30 text-foreground"
-                )}
-              >
-                <span>
-                  {statusFilter === "ALL"
-                    ? t("workspace.status_filter")
-                    : statusFilter === "IN_PROGRESS"
-                    ? t("tasks.status_in_progress")
-                    : statusFilter === "RESOLVED"
-                    ? t("tasks.status_resolved")
-                    : t("tasks.status_backlog")}
-                </span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-xl p-1 min-w-36 z-50">
-              <DropdownMenuItem
-                onClick={() => setStatusFilter("ALL")}
-                className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", statusFilter === "ALL" && "bg-primary/10 text-primary font-semibold")}
-              >
-                <span>{t("workspace.tab_all")}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setStatusFilter("IN_PROGRESS")}
-                className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", statusFilter === "IN_PROGRESS" && "bg-primary/10 text-primary font-semibold")}
-              >
-                <span>{t("tasks.status_in_progress")}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setStatusFilter("TODO")}
-                className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", statusFilter === "TODO" && "bg-primary/10 text-primary font-semibold")}
-              >
-                <span>{t("tasks.status_todo")}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setStatusFilter("RESOLVED")}
-                className={cn("text-xs py-1.5 px-2.5 rounded-lg cursor-pointer", statusFilter === "RESOLVED" && "bg-primary/10 text-primary font-semibold")}
-              >
-                <span>{t("tasks.status_resolved")}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
 
           {/* Priority Filter */}
           <DropdownMenu>

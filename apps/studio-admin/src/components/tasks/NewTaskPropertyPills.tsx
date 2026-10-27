@@ -5,14 +5,20 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@k2net/ui";
-import { User, AlertCircle, ChevronDown } from "lucide-react";
+import { User, AlertCircle, ChevronDown, CheckSquare } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
-import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
+import { STATUS_CONFIG, PRIORITY_CONFIG, ISSUE_SUBTYPES, type IssueSubtype } from "./configs";
 import { TaskLabelPicker } from "./TaskLabelPicker";
 import { TaskProjectPicker } from "./TaskProjectPicker";
 import { LinearDatePicker } from "./LinearDatePicker";
 
 interface NewTaskPropertyPillsProps {
+  subtype?: IssueSubtype;
+  setSubtype?: (subtype: IssueSubtype) => void;
+  showSubtypePicker?: boolean;
+  showProjectPicker?: boolean;
+  isProjectMode?: boolean;
   status: string;
   setStatus: (status: string) => void;
   priority: "URGENT" | "HIGH" | "NORMAL" | "LOW";
@@ -30,6 +36,11 @@ interface NewTaskPropertyPillsProps {
 }
 
 export const NewTaskPropertyPills: React.FC<NewTaskPropertyPillsProps> = ({
+  subtype,
+  setSubtype,
+  showSubtypePicker = true,
+  showProjectPicker = true,
+  isProjectMode = false,
   status,
   setStatus,
   priority,
@@ -45,11 +56,56 @@ export const NewTaskPropertyPills: React.FC<NewTaskPropertyPillsProps> = ({
   selectedLabels,
   setSelectedLabels,
 }) => {
+  const { t } = useTranslation();
   const currentStatus = STATUS_CONFIG[status] ?? STATUS_CONFIG.TODO;
   const StatusIcon = currentStatus.icon;
+  const currentSubtypeConfig = subtype ? ISSUE_SUBTYPES[subtype] : ISSUE_SUBTYPES.TASK;
+  const SubtypeIcon = currentSubtypeConfig?.icon ?? CheckSquare;
 
   return (
     <div className="px-5 py-3 border-t border-border/50 bg-background/30 flex flex-wrap items-center gap-2">
+      {/* 0. Issue Subtype Pill */}
+      {showSubtypePicker && !isProjectMode && subtype && setSubtype && (
+        <DropdownMenu>
+
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 h-7 rounded-md border border-border/60 bg-card hover:bg-muted/50 transition-colors cursor-pointer",
+                currentSubtypeConfig.badgeClass
+              )}
+            >
+              <SubtypeIcon className="h-3 w-3 shrink-0" />
+              <span>{t(currentSubtypeConfig.i18nKey)}</span>
+              <ChevronDown className="h-3 w-3 opacity-60 ml-0.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-36 z-[100] p-1">
+            {(Object.entries(ISSUE_SUBTYPES) as [IssueSubtype, typeof ISSUE_SUBTYPES[IssueSubtype]][]).map(
+              ([key, cfg]) => {
+                const Icon = cfg.icon;
+                return (
+                  <DropdownMenuItem
+                    key={key}
+                    onClick={() => setSubtype(key)}
+                    className={cn(
+                      "flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-md cursor-pointer",
+                      subtype === key
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "hover:bg-muted/50 text-foreground"
+                    )}
+                  >
+                    <Icon className={cn("h-3 w-3", cfg.className)} />
+                    <span>{t(cfg.i18nKey)}</span>
+                  </DropdownMenuItem>
+                );
+              }
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
       {/* 1. Status Pill */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -65,6 +121,7 @@ export const NewTaskPropertyPills: React.FC<NewTaskPropertyPillsProps> = ({
             <ChevronDown className="h-3 w-3 opacity-60 ml-0.5" />
           </button>
         </DropdownMenuTrigger>
+
         <DropdownMenuContent align="start" className="min-w-36 z-[100] p-1">
           {Object.entries(STATUS_CONFIG).map(([key, cfg]) => {
             const Icon = cfg.icon;
@@ -156,11 +213,14 @@ export const NewTaskPropertyPills: React.FC<NewTaskPropertyPillsProps> = ({
       </DropdownMenu>
 
       {/* 4. Project Pill */}
-      <TaskProjectPicker
-        selectedProject={selectedProject}
-        projectsList={projectsList}
-        onChange={setSelectedProject}
-      />
+      {showProjectPicker && (
+        <TaskProjectPicker
+          selectedProject={selectedProject}
+          projectsList={projectsList}
+          onChange={setSelectedProject}
+        />
+      )}
+
 
       {/* 5. Due Date Pill */}
       <LinearDatePicker
