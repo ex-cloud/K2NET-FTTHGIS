@@ -423,6 +423,12 @@ const inboxRoute = createRoute({
   component: () => <Lazy><InboxPage /></Lazy>,
 });
 
+const inboxMyWorkRoute = createRoute({
+  getParentRoute: () => authenticatedLayoutRoute,
+  path: "/inbox/my-work",
+  component: () => <Lazy><InboxPage /></Lazy>,
+});
+
 // Organizations
 const orgsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations", component: () => <Lazy><OrganizationsPage /></Lazy> });
 const orgSlugRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/$slug", component: () => <Lazy><OrganizationSlugPage /></Lazy> });
@@ -574,6 +580,7 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   indexRoute,
   overviewRoute,
   inboxRoute,
+  inboxMyWorkRoute,
   // Orgs
   orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
   // 3-Domain Architecture: Catalog, Billing, Licensing

@@ -170,7 +170,7 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
   }
 
   if (!response.ok) {
-    if (response.status === 401 && !impersonationSessionId) {
+    if (response.status === 401) {
       setApiAuthToken(null);
       setImpersonationSessionId(null);
     }

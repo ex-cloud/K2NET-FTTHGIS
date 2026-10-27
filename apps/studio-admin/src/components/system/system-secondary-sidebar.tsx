@@ -146,7 +146,8 @@ interface OrgCounts {
 }
 
 const SIDEBAR_ROUTE_MAP: { prefixes: string[]; key: string | null }[] = [
-  { prefixes: ["/overview", "/inbox"], key: null },
+  { prefixes: ["/overview"], key: null },
+  { prefixes: ["/inbox"], key: "inbox" },
   { prefixes: ["/ai", "/assets-3d"], key: "ai" },
   { prefixes: ["/workspace"], key: "workspace" },
   { prefixes: ["/support"], key: "support" },
@@ -193,6 +194,7 @@ function matchesParamUrl(
 }
 
 const SPECIAL_ROUTE_PREFIXES: Record<string, string[]> = {
+  "/inbox": ["/inbox", "/system/inbox"],
   "/tasks/projects": ["/tasks/projects", "/workspace/plans", "/system/workspace/plans", "/system/tasks/projects"],
   "/workspace/plans": ["/tasks/projects", "/workspace/plans", "/system/workspace/plans", "/system/tasks/projects"],
   "/workspace/roadmap": ["/workspace/roadmap", "/system/workspace/roadmap"],
@@ -201,7 +203,7 @@ const SPECIAL_ROUTE_PREFIXES: Record<string, string[]> = {
   "/support/sla": ["/support/sla", "/system/support/sla"],
 };
 
-const FILTER_PARAMS = ["status", "view", "type", "quick", "scope", "project"];
+const FILTER_PARAMS = ["status", "view", "type", "quick", "scope", "project", "filter"];
 const FILTERABLE_ROOTS = new Set([
   "/organizations",
   "/licensing/licenses",
@@ -210,6 +212,7 @@ const FILTERABLE_ROOTS = new Set([
   "/workspace/plans",
   "/workspace/issues",
   "/support/tickets",
+  "/inbox",
 ]);
 
 function checkPathMatch(itemUrl: string, pathname: string): boolean {
@@ -225,7 +228,12 @@ function isSidebarItemActive(
 ): boolean {
   if (!pathname) return false;
   if (itemUrl.includes("?")) {
-    return matchesParamUrl(itemUrl, pathname, searchParams);
+    const isMatched = matchesParamUrl(itemUrl, pathname, searchParams);
+    if (isMatched) return true;
+    if ((pathname === "/inbox" || pathname === "/system/inbox") && !searchParams.has("filter") && itemUrl === "/inbox?filter=all") {
+      return true;
+    }
+    return false;
   }
 
   const pathMatch = checkPathMatch(itemUrl, pathname);
@@ -233,6 +241,34 @@ function isSidebarItemActive(
 
   const hasFilter = FILTER_PARAMS.some((k) => searchParams.has(k));
   return FILTERABLE_ROOTS.has(itemUrl) ? !hasFilter : true;
+}
+
+function getInboxBadge(
+  url: string,
+  unreadB2BCount: number,
+  orgCounts: OrgCounts,
+  licenseOverview?: LicenseOverviewKpi
+): { count: number; style: string } | null {
+  const trialCount = orgCounts.trial || 0;
+  const licenseFlags = (licenseOverview?.gracePeriodLicenses || 0) + (licenseOverview?.suspendedLicenses || 0);
+
+  if (url === "/inbox?filter=all" || url === "/inbox") {
+    const total = trialCount + licenseFlags + unreadB2BCount;
+    if (total > 0) {
+      return { count: total, style: "bg-primary/10 text-primary border border-primary/20" };
+    }
+  }
+  if (url === "/inbox?filter=trials") {
+    if (trialCount > 0) {
+      return { count: trialCount, style: "bg-primary/10 text-primary border border-primary/20" };
+    }
+  }
+  if (url === "/inbox?filter=licensing") {
+    if (licenseFlags > 0) {
+      return { count: licenseFlags, style: "bg-destructive/10 text-destructive border border-destructive/20" };
+    }
+  }
+  return null;
 }
 
 function getOrgBadgeCount(url: string, orgCounts: OrgCounts): number | null {
@@ -321,6 +357,7 @@ function SidebarNavItem({
   const orgBadgeCount = getOrgBadgeCount(item.url, orgCounts);
   const licenseBadge = getLicenseBadge(item.url, licenseOverview);
   const packageBadge = getPackageBadge(item.url, packageOverview);
+  const inboxBadge = getInboxBadge(item.url, unreadB2BCount, orgCounts, licenseOverview);
   const itemTitle = item.translationKey ? t(item.translationKey) : item.title;
 
   const orgBadgeStyle = item.url.includes("status=ACTIVE")
@@ -356,6 +393,12 @@ function SidebarNavItem({
         {isB2BLink && unreadB2BCount > 0 && (
           <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse shrink-0">
             {unreadB2BCount}
+          </span>
+        )}
+
+        {inboxBadge !== null && (
+          <span className={`ml-auto text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${inboxBadge.style}`}>
+            {inboxBadge.count}
           </span>
         )}
 

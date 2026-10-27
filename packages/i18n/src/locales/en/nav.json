@@ -256,5 +256,15 @@
   "plane_product": "PRODUCT",
   "plane_platform": "PLATFORM",
   "plane_governance": "GOVERNANCE",
-  "plane_bottom": "SYSTEM"
+  "plane_bottom": "SYSTEM",
+  "inbox_group_triage": "Triage & Approvals",
+  "inbox_filter_all": "All Actionable",
+  "inbox_filter_approvals": "Approvals & Impersonation",
+  "inbox_filter_trials": "Trial Onboarding",
+  "inbox_filter_licensing": "License & Grace Alerts",
+  "inbox_group_my_workspace": "My Workspace",
+  "inbox_filter_assigned": "Assigned to Me",
+  "inbox_filter_created": "Created by Me",
+  "inbox_group_archive": "Archive",
+  "inbox_filter_resolved": "Resolved & History"
 }

@@ -256,5 +256,15 @@
   "plane_product": "PRODUK",
   "plane_platform": "PLATFORM",
   "plane_governance": "TATA KELOLA",
-  "plane_bottom": "SISTEM"
+  "plane_bottom": "SISTEM",
+  "inbox_group_triage": "Triase & Persetujuan",
+  "inbox_filter_all": "Semua Tindakan",
+  "inbox_filter_approvals": "Persetujuan & Impersonasi",
+  "inbox_filter_trials": "Antrean Uji Coba",
+  "inbox_filter_licensing": "Peringatan Lisensi & Grace",
+  "inbox_group_my_workspace": "Ruang Kerja Saya",
+  "inbox_filter_assigned": "Ditugaskan ke Saya",
+  "inbox_filter_created": "Dibuat oleh Saya",
+  "inbox_group_archive": "Arsip",
+  "inbox_filter_resolved": "Selesai & Riwayat"
 }

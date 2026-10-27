@@ -26,6 +26,39 @@ export type SidebarConfig = {
 };
 
 export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
+  // ── Home: Inbox & Approvals ───────────────────────────────────────────────
+  inbox: {
+    title: "Inbox",
+    translationKey: "nav.inbox_approvals",
+    sections: [
+      {
+        title: "Triage & Approvals",
+        translationKey: "nav.inbox_group_triage",
+        items: [
+          { title: "All Actionable", translationKey: "nav.inbox_filter_all", url: "/inbox?filter=all", icon: "Inbox", shortcut: "G then A" },
+          { title: "Approvals & Impersonation", translationKey: "nav.inbox_filter_approvals", url: "/inbox?filter=approvals", icon: "ShieldAlert", shortcut: "G then P", requiredPermission: ["system.support.impersonate"] },
+          { title: "Trial Onboarding", translationKey: "nav.inbox_filter_trials", url: "/inbox?filter=trials", icon: "Building2", shortcut: "G then T", requiredPermission: ["system.organizations.manage"] },
+          { title: "License & Grace Alerts", translationKey: "nav.inbox_filter_licensing", url: "/inbox?filter=licensing", icon: "KeyRound", shortcut: "G then L", requiredPermission: ["licensing.killswitch"] },
+        ],
+      },
+      {
+        title: "My Workspace",
+        translationKey: "nav.inbox_group_my_workspace",
+        items: [
+          { title: "Assigned to Me", translationKey: "nav.inbox_filter_assigned", url: "/inbox?filter=assigned", icon: "UserCheck", shortcut: "G then M" },
+          { title: "Created by Me", translationKey: "nav.inbox_filter_created", url: "/inbox?filter=created", icon: "FileText", shortcut: "G then C" },
+        ],
+      },
+      {
+        title: "Archive",
+        translationKey: "nav.inbox_group_archive",
+        items: [
+          { title: "Resolved & History", translationKey: "nav.inbox_filter_resolved", url: "/inbox?filter=resolved", icon: "CheckCircle", shortcut: "G then R" },
+        ],
+      },
+    ],
+  },
+
   // ── Operations: Billing ──────────────────────────────────────────────────
   billing: {
     title: "Billing & Invoices",
@@ -158,23 +191,8 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.support_operations",
         requiredPermission: ["support.tickets.view", "system.task.manage"],
         items: [
-          {
-            title: "Ticket Queue",
-            translationKey: "nav.ticket_queue",
-            url: "/support/tickets",
-            icon: "Inbox",
-            shortcut: "S then T",
-            requiredPermission: ["support.tickets.view", "system.task.manage"],
-          },
-          {
-            title: "SLA & Reports",
-            translationKey: "nav.sla_reports",
-            url: "/support/sla",
-            icon: "Clock",
-            shortcut: "S then S",
-            badge: "nav.coming_soon",
-            requiredPermission: ["support.tickets.view", "system.task.manage"],
-          },
+          { title: "Ticket Queue", translationKey: "nav.ticket_queue", url: "/support/tickets", icon: "Inbox", shortcut: "S then T", requiredPermission: ["support.tickets.view", "system.task.manage"] },
+          { title: "SLA & Reports", translationKey: "nav.sla_reports", url: "/support/sla", icon: "Clock", shortcut: "S then S", badge: "nav.coming_soon", requiredPermission: ["support.tickets.view", "system.task.manage"] },
         ],
       },
     ],
@@ -190,22 +208,8 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.planning_knowledge",
         requiredPermission: ["platform.workspace.view", "system.task.manage"],
         items: [
-          {
-            title: "Plans, Ideas & Specs",
-            translationKey: "nav.plans_ideas_specs",
-            url: "/workspace/plans",
-            icon: "FolderKanban",
-            shortcut: "S then P",
-            requiredPermission: ["platform.workspace.view", "system.task.manage"],
-          },
-          {
-            title: "Roadmap",
-            translationKey: "nav.roadmap",
-            url: "/workspace/roadmap",
-            icon: "Map",
-            shortcut: "S then R",
-            requiredPermission: ["platform.workspace.view", "system.task.manage"],
-          },
+          { title: "Plans, Ideas & Specs", translationKey: "nav.plans_ideas_specs", url: "/workspace/plans", icon: "FolderKanban", shortcut: "S then P", requiredPermission: ["platform.workspace.view", "system.task.manage"] },
+          { title: "Roadmap", translationKey: "nav.roadmap", url: "/workspace/roadmap", icon: "Map", shortcut: "S then R", requiredPermission: ["platform.workspace.view", "system.task.manage"] },
         ],
       },
       {
@@ -213,14 +217,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         translationKey: "nav.execution_tracker",
         requiredPermission: ["platform.issues.view", "system.task.manage"],
         items: [
-          {
-            title: "Issues & Tasks",
-            translationKey: "nav.issues_tasks",
-            url: "/workspace/issues",
-            icon: "CheckSquare",
-            shortcut: "S then I",
-            requiredPermission: ["platform.issues.view", "system.task.manage"],
-          },
+          { title: "Issues & Tasks", translationKey: "nav.issues_tasks", url: "/workspace/issues", icon: "CircleDot", shortcut: "S then I", requiredPermission: ["platform.issues.view", "system.task.manage"] },
         ],
       },
     ],
