@@ -192,6 +192,22 @@
   "label_priority": "Prioritas",
   "label_assignee": "Penerima Tugas",
   "label_properties": "Properti",
-  "label_lead": "Penanggung Jawab"
+  "label_lead": "Penanggung Jawab",
+  "status_computed_hint": "Sinkron otomatis dari kemajuan issue",
+  "status_planned": "Direncanakan",
+  "status_in_progress": "Sedang Berjalan",
+  "status_completed": "Selesai",
+  "lifecycle_draft": "Draf",
+  "lifecycle_in_review": "Dalam Peninjauan",
+  "lifecycle_approved": "Disetujui",
+  "lifecycle_superseded": "Kedaluwarsa / Diganti",
+  "lifecycle_proposed": "Diusulkan",
+  "lifecycle_discussion": "Diskusi Terbuka",
+  "lifecycle_accepted": "Diterima",
+  "lifecycle_declined": "Ditolak",
+  "doc_metadata_wiki": "Wiki Pengetahuan",
+  "doc_metadata_active": "Dokumen Aktif",
+  "action_select_batch": "Pilih untuk aksi massal",
+  "action_deselect_batch": "Batal pilih"
 }
 

@@ -5,6 +5,7 @@ import {
   Calendar,
   MoreHorizontal,
   Trash2,
+  Check,
 } from "lucide-react";
 
 import {
@@ -68,13 +69,30 @@ export function ProjectIssuesListView({
             >
               {/* Left Group: Checkbox + Subtype + Status + Ref + Title */}
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                {/* Select Checkbox */}
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => onToggleSelect(issue.id)}
-                  className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary ml-0.5 shrink-0"
-                />
+                {/* Multi-Select Checkbox (Only visible during batch selection mode) */}
+                {selectedIds.size > 0 && (
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect(issue.id)}
+                    className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary ml-0.5 shrink-0"
+                  />
+                )}
+
+                {/* Instant Binary Status Checkbox (TODO ↔ RESOLVED) */}
+                <button
+                  type="button"
+                  onClick={() => onToggleIssueStatus(issue)}
+                  className={cn(
+                    "w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer shrink-0 ml-0.5",
+                    isDone
+                      ? "bg-primary border-primary text-primary-foreground shadow-2xs"
+                      : "border-border/80 hover:border-primary/80 bg-background/50 hover:bg-muted/40"
+                  )}
+                  title={isDone ? t("workspace.action_mark_todo") : t("workspace.action_mark_done")}
+                >
+                  {isDone && <Check className="w-3 h-3 stroke-[2.5]" />}
+                </button>
 
                 {/* Subtype Badge */}
                 <span
@@ -87,19 +105,6 @@ export function ProjectIssuesListView({
                   <SubtypeIcon className="w-3 h-3" />
                   <span className="hidden sm:inline">{t(subtype.i18nKey)}</span>
                 </span>
-
-                {/* Status Toggle Button */}
-                <button
-                  type="button"
-                  onClick={() => onToggleIssueStatus(issue)}
-                  className={cn(
-                    "shrink-0 p-0.5 rounded hover:bg-muted transition-colors cursor-pointer",
-                    isDone ? "text-primary" : "text-muted-foreground"
-                  )}
-                  title={t("workspace.issues_toggle_status_tooltip")}
-                >
-                  <StatusIcon className="w-3.5 h-3.5" />
-                </button>
 
                 {/* Ref ID Badge */}
                 <span className="text-[10px] font-mono text-muted-foreground shrink-0 bg-muted/50 px-1 py-0.5 rounded border border-border/40">
@@ -178,6 +183,16 @@ export function ProjectIssuesListView({
                     >
                       <StatusIcon className="w-3.5 h-3.5" />
                       <span>{isDone ? t("workspace.action_mark_todo") : t("workspace.action_mark_done")}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onToggleSelect(issue.id)}
+                      className="text-xs cursor-pointer flex items-center gap-2"
+                    >
+                      <span>
+                        {isSelected
+                          ? t("workspace.action_deselect_batch")
+                          : t("workspace.action_select_batch")}
+                      </span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>

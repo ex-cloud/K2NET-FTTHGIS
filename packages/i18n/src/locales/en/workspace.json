@@ -192,6 +192,22 @@
   "label_priority": "Priority",
   "label_assignee": "Assignee",
   "label_properties": "Properties",
-  "label_lead": "Lead"
+  "label_lead": "Lead",
+  "status_computed_hint": "Computed automatically from issue deliverables",
+  "status_planned": "Planned",
+  "status_in_progress": "In Progress",
+  "status_completed": "Completed",
+  "lifecycle_draft": "Draft",
+  "lifecycle_in_review": "Under Review",
+  "lifecycle_approved": "Approved",
+  "lifecycle_superseded": "Superseded",
+  "lifecycle_proposed": "Proposed",
+  "lifecycle_discussion": "In Discussion",
+  "lifecycle_accepted": "Accepted",
+  "lifecycle_declined": "Declined",
+  "doc_metadata_wiki": "Living Wiki",
+  "doc_metadata_active": "Active Knowledge",
+  "action_select_batch": "Select for batch action",
+  "action_deselect_batch": "Deselect"
 }
 
