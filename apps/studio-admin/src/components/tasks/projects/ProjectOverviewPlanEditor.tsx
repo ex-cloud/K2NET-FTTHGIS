@@ -1,44 +1,65 @@
-import { useState, useCallback } from "react";
-import { FileText, Save, Check, Loader2 } from "lucide-react";
-import { Button, RichTextEditor } from "@k2net/ui";
+import { useCallback } from "react";
+import { FileText, Lightbulb, BookOpen, FolderKanban } from "lucide-react";
+import { RichTextEditor } from "@k2net/ui";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
 import { useSession } from "@/lib/auth-compat";
 import { type Task } from "@/hooks/useTasksQuery";
+import { cn } from "@/lib/utils";
+
+type WorkspaceDocType = "PLAN" | "IDEA" | "DOC" | "PROJECT";
 
 interface ProjectOverviewPlanEditorProps {
+  title: string;
+  setTitle: (title: string) => void;
+  originalTitle: string;
   description: string;
   setDescription: (desc: string) => void;
   onSaveField: (fields: Partial<Task>) => Promise<void>;
-  title?: string;
-  subtitle?: string;
+  docType: WorkspaceDocType;
+}
+
+function getSubtypeVisuals(docType: WorkspaceDocType, t: (key: string) => string) {
+  switch (docType) {
+    case "IDEA":
+      return {
+        Icon: Lightbulb,
+        iconContainerClass: "bg-purple-500/10 border-purple-500/20 text-purple-400",
+        typeLabel: t("workspace.idea_spec_title"),
+      };
+    case "DOC":
+      return {
+        Icon: BookOpen,
+        iconContainerClass: "bg-blue-500/10 border-blue-500/20 text-blue-400",
+        typeLabel: t("workspace.doc_spec_title"),
+      };
+    case "PROJECT":
+      return {
+        Icon: FolderKanban,
+        iconContainerClass: "bg-amber-500/10 border-amber-500/20 text-amber-400",
+        typeLabel: t("workspace.project_spec_title"),
+      };
+    default:
+      return {
+        Icon: FileText,
+        iconContainerClass: "bg-primary/10 border-primary/20 text-primary",
+        typeLabel: t("workspace.plan_spec_title"),
+      };
+  }
 }
 
 export function ProjectOverviewPlanEditor({
+  title,
+  setTitle,
+  originalTitle,
   description,
   setDescription,
   onSaveField,
-  title,
-  subtitle,
+  docType,
 }: ProjectOverviewPlanEditorProps) {
   const { t } = useTranslation();
   const { data: session } = useSession();
-  const [isSavingPlan, setIsSavingPlan] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-
-  // Manual save handler for TipTap document
-  const handleSaveDocument = async () => {
-    setIsSavingPlan(true);
-    try {
-      await onSaveField({ description });
-      setLastSaved(new Date());
-      toast.success(t("projects.plan_saved_success"));
-    } catch {
-      toast.error(t("projects.plan_saved_fail"));
-    } finally {
-      setIsSavingPlan(false);
-    }
-  };
+  const { Icon: TypeIcon, iconContainerClass, typeLabel } = getSubtypeVisuals(docType, t);
 
   // Image upload handler via MinIO storage-client
   const handleUploadImage = useCallback(
@@ -64,57 +85,43 @@ export function ProjectOverviewPlanEditor({
   );
 
   return (
-    <div className="space-y-3 pt-1 flex-1 flex flex-col min-h-0">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <FileText className="w-3.5 h-3.5 text-primary" />
-            <span>{title || t("projects.plan_specification")}</span>
-          </h3>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            {subtitle || t("projects.plan_spec_desc")}
-          </p>
+    <div className="flex-1 rounded-2xl border border-border/70 overflow-hidden bg-card/40 focus-within:border-primary/50 transition-colors shadow-xs flex flex-col">
+      {/* ── Document Canvas Header: Subtype Pill + Inline Editable H1 Title ── */}
+      <div className="p-4 sm:p-6 pb-4 border-b border-border/40 bg-card/60 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <div
+            className={cn(
+              "w-6 h-6 rounded-md flex items-center justify-center shrink-0 border transition-colors shadow-2xs",
+              iconContainerClass
+            )}
+          >
+            <TypeIcon className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
+            {typeLabel}
+          </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {lastSaved && (
-            <span className="text-[10px] text-muted-foreground font-mono flex items-center gap-1 hidden sm:inline-flex">
-              <Check className="w-3 h-3 text-primary" />
-              <span>
-                {t("projects.saved_at", {
-                  time: lastSaved.toLocaleTimeString("id-ID"),
-                })}
-              </span>
-            </span>
-          )}
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleSaveDocument}
-            disabled={isSavingPlan}
-            className="h-7 px-2.5 text-xs font-medium rounded-md shadow-xs flex items-center gap-1.5 cursor-pointer"
-          >
-            {isSavingPlan ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>{t("projects.saving_plan")}</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-3.5 h-3.5" />
-                <span>{t("projects.save_plan")}</span>
-              </>
-            )}
-          </Button>
-        </div>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={() => {
+            if (title.trim() && title.trim() !== originalTitle) {
+              onSaveField({ title: title.trim() });
+            }
+          }}
+          placeholder={t("workspace.title_placeholder")}
+          className="text-2xl sm:text-3xl font-extrabold text-foreground bg-transparent border-0 outline-none w-full tracking-tight hover:bg-muted/10 px-2 -mx-2 py-1 rounded-lg transition-colors placeholder:text-muted-foreground/40"
+        />
       </div>
 
-      {/* TipTap WYSIWYG Editor Container */}
-      <div className="flex-1 rounded-xl border border-border/70 overflow-hidden bg-card/40 focus-within:border-primary/50 transition-colors shadow-xs">
+      {/* ── TipTap WYSIWYG Editor Body ── */}
+      <div className="flex-1 min-h-[500px]">
         <RichTextEditor
           value={description}
           onChange={setDescription}
-          minHeight="480px"
+          minHeight="500px"
           placeholder={t("projects.plan_placeholder")}
           onUploadImage={handleUploadImage}
         />

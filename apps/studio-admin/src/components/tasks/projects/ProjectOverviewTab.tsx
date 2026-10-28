@@ -1,16 +1,7 @@
-import {
-  FileText,
-  Lightbulb,
-  BookOpen,
-  FolderKanban,
-  Layers,
-  MessageSquare,
-  Plus,
-} from "lucide-react";
+import { Layers, MessageSquare, Plus } from "lucide-react";
 import { type Task, type TaskComment } from "@/hooks/useTasksQuery";
 import { type TeamUser } from "@/hooks/useTeamUsers";
 import { useTranslation } from "@k2net/i18n";
-import { cn } from "@/lib/utils";
 import { ProjectOverviewPropertiesGrid } from "./ProjectOverviewPropertiesGrid";
 import { ProjectOverviewSummaryCard } from "./ProjectOverviewSummaryCard";
 import { ProjectOverviewPlanEditor } from "./ProjectOverviewPlanEditor";
@@ -71,42 +62,6 @@ function deduceDocType(projectTask: Task): WorkspaceDocType {
   return "PLAN";
 }
 
-function getDocTypeVisuals(
-  docType: WorkspaceDocType,
-  t: (key: string) => string
-) {
-  switch (docType) {
-    case "IDEA":
-      return {
-        TypeIcon: Lightbulb,
-        iconContainerClass: "bg-purple-500/10 border-purple-500/20 text-purple-400",
-        specTitle: t("workspace.idea_spec_title"),
-        specDesc: t("workspace.idea_spec_desc"),
-      };
-    case "DOC":
-      return {
-        TypeIcon: BookOpen,
-        iconContainerClass: "bg-blue-500/10 border-blue-500/20 text-blue-400",
-        specTitle: t("workspace.doc_spec_title"),
-        specDesc: t("workspace.doc_spec_desc"),
-      };
-    case "PROJECT":
-      return {
-        TypeIcon: FolderKanban,
-        iconContainerClass: "bg-amber-500/10 border-amber-500/20 text-amber-400",
-        specTitle: t("workspace.project_spec_title"),
-        specDesc: t("workspace.project_spec_desc"),
-      };
-    default:
-      return {
-        TypeIcon: FileText,
-        iconContainerClass: "bg-primary/10 border-primary/20 text-primary",
-        specTitle: t("workspace.plan_spec_title"),
-        specDesc: t("workspace.plan_spec_desc"),
-      };
-  }
-}
-
 export function ProjectOverviewTab({
   title,
   setTitle,
@@ -143,7 +98,6 @@ export function ProjectOverviewTab({
 }: ProjectOverviewTabProps) {
   const { t } = useTranslation();
   const docType = deduceDocType(projectTask);
-  const { TypeIcon, iconContainerClass, specTitle, specDesc } = getDocTypeVisuals(docType, t);
 
   const shouldShowIssues = docType === "PROJECT" || totalIssuesCount > 0;
 
@@ -156,41 +110,17 @@ export function ProjectOverviewTab({
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start w-full animate-in fade-in-50 duration-150">
-      {/* ── Left Column: Title, Full-Width Markdown Document, Issues & Activity ──────── */}
+      {/* ── Left Column: Full Document Canvas, Issues & Activity ──────── */}
       <div className="flex-1 min-w-0 space-y-6 w-full flex flex-col">
-        {/* 1. Document Title Header (First item, no duplicate obsidianRef) */}
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs border transition-colors",
-              iconContainerClass
-            )}
-          >
-            <TypeIcon className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={() => {
-                if (title.trim() && title.trim() !== projectTask.title) {
-                  onSaveField({ title: title.trim() });
-                }
-              }}
-              placeholder={t("workspace.title_placeholder")}
-              className="text-2xl font-bold text-foreground bg-transparent border-0 outline-none w-full tracking-tight hover:bg-muted/20 px-2 py-1 rounded-lg transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* 2. Dynamic Specification Editor */}
+        {/* 1. Full Document Canvas (Subtype Header + Inline Editable H1 Title + TipTap WYSIWYG) */}
         <ProjectOverviewPlanEditor
+          title={title}
+          setTitle={setTitle}
+          originalTitle={projectTask.title}
           description={description}
           setDescription={setDescription}
           onSaveField={onSaveField}
-          title={specTitle}
-          subtitle={specDesc}
+          docType={docType}
         />
 
         {/* 3. Section Issues & Deliverables (Conditional: PROJECT or totalIssuesCount > 0) */}
