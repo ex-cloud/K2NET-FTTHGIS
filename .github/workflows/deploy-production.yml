@@ -197,8 +197,8 @@ jobs:
       - name: Audit Hardcoded Colors
         run: pnpm audit:colors
 
-      - name: Validate Shared UI Typecheck
-        run: pnpm --filter @k2net/ui typecheck
+      - name: Validate All Shared Packages Build
+        run: pnpm --filter "./packages/*" build
 
       - name: Validate Studio Admin Vite Typecheck
         run: pnpm --filter @k2net/studio-admin typecheck
