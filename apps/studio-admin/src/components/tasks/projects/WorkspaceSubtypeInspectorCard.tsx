@@ -67,7 +67,7 @@ interface WorkspaceSubtypeInspectorCardProps {
 }
 
 export const WorkspaceSubtypeInspectorCard: React.FC<WorkspaceSubtypeInspectorCardProps> = ({
-  type: _type,
+  type,
   projectTask,
   projectIssues = [],
   resolvedIssuesCount,
@@ -78,6 +78,9 @@ export const WorkspaceSubtypeInspectorCard: React.FC<WorkspaceSubtypeInspectorCa
   onNavigateToIssues,
 }) => {
   const { t } = useTranslation();
+
+  // Subtype-based conditional display: only show milestones card for PROJECT or if issues exist
+  const shouldShowMilestonesCard = type === "PROJECT" || totalIssuesCount > 0;
 
   // Real breakdown from subtasks
   const inProgressCount = projectIssues.filter((t) => t.status === "IN_PROGRESS").length;
@@ -95,13 +98,14 @@ export const WorkspaceSubtypeInspectorCard: React.FC<WorkspaceSubtypeInspectorCa
 
   return (
     <div className="space-y-4">
-      {/* ── 1. Real Linked Issues Telemetry ────────────────────────────── */}
-      <Card className="border border-border/60 bg-card/60 rounded-xl p-4 space-y-3.5 shadow-xs">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-primary" />
-            <span>{t("workspace.inspector_milestones")}</span>
-          </span>
+      {/* ── 1. Linked Issues Telemetry (Conditional: PROJECT or totalIssuesCount > 0) ── */}
+      {shouldShowMilestonesCard && (
+        <Card className="border border-border/60 bg-card/60 rounded-xl p-4 space-y-3.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-primary" />
+              <span>{t("workspace.inspector_milestones")}</span>
+            </span>
           <span className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
             {resolvedIssuesCount}/{totalIssuesCount} {t("workspace.completed_label")}
           </span>
@@ -170,6 +174,7 @@ export const WorkspaceSubtypeInspectorCard: React.FC<WorkspaceSubtypeInspectorCa
           )}
         </div>
       </Card>
+      )}
 
       {/* ── 2. Real Document Metadata & Vault Audit ─────────────────────── */}
       <Card className="border border-border/60 bg-card/60 rounded-xl p-4 space-y-3 shadow-xs">
@@ -200,21 +205,23 @@ export const WorkspaceSubtypeInspectorCard: React.FC<WorkspaceSubtypeInspectorCa
             </div>
           )}
 
-          {/* Schedule status */}
-          <div className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40">
-            <span className="text-muted-foreground flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>{t("workspace.schedule_status")}</span>
-            </span>
-            <span
-              className={cn(
-                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
-                scheduleBadge.className
-              )}
-            >
-              {scheduleBadge.label}
-            </span>
-          </div>
+          {/* Schedule status (only for PROJECT or if due date is set) */}
+          {(type === "PROJECT" || Boolean(projectTask.dueDate)) && (
+            <div className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>{t("workspace.schedule_status")}</span>
+              </span>
+              <span
+                className={cn(
+                  "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                  scheduleBadge.className
+                )}
+              >
+                {scheduleBadge.label}
+              </span>
+            </div>
+          )}
 
           {/* Real Word Count and Reading Time */}
           <div className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40">
