@@ -133,7 +133,7 @@ export function RichTextEditor({
     editable: !disabled,
     editorProps: {
       attributes: {
-        class: `focus:outline-none min-h-[${minHeight}] p-4 text-xs text-foreground leading-relaxed selection:bg-muted`,
+        class: "focus:outline-none min-h-[320px] p-4 text-xs text-foreground leading-relaxed selection:bg-muted",
       },
     },
     onUpdate: ({ editor: ed }) => {
@@ -274,7 +274,7 @@ export function RichTextEditor({
     <div
       className={
         borderless
-          ? `flex flex-col bg-transparent overflow-hidden ${className}`
+          ? `flex flex-col flex-1 bg-transparent overflow-hidden ${className}`
           : `rounded-lg border border-border bg-card shadow-xs overflow-hidden flex flex-col focus-within:border-border transition-colors ${className}`
       }
       onDrop={handleDrop}
@@ -715,9 +715,14 @@ export function RichTextEditor({
       </div>
 
       {/* ── Editor Canvas / Workspace ────────────────────────────────────── */}
-      <div className="relative flex-1 bg-background min-h-[300px] max-h-[500px] overflow-y-auto custom-scrollbar">
+      <div
+        className={`relative flex-1 bg-background min-h-[320px] ${
+          borderless ? "" : "max-h-[500px]"
+        } overflow-y-auto custom-scrollbar`}
+        style={{ minHeight }}
+      >
         {viewMode === "visual" && (
-          <div className="prose-container">
+          <div className="prose-container h-full">
             <EditorContent editor={editor} />
           </div>
         )}
@@ -767,7 +772,7 @@ export function RichTextEditor({
       </div>
 
       {/* ── Metadata & Token Summary Bar ─────────────────────────────────── */}
-      <div className="px-4 py-2 bg-muted/30 border-t border-border/80 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+      <div className="mt-auto shrink-0 px-4 py-2 bg-muted/30 border-t border-border/80 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
         <div className="flex items-center gap-3">
           <span>
             Kata: <strong className="text-foreground">{wordCount.toLocaleString()}</strong>

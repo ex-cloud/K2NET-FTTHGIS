@@ -220,6 +220,10 @@
   "btn_create_workspace": "Buat Dokumen",
   "btn_creating_workspace": "Menyimpan...",
   "toast_workspace_created": "Dokumen workspace berhasil dibuat",
-  "activity_send_shortcut": "Ctrl+Enter untuk kirim cepat"
+  "activity_send_shortcut": "Ctrl+Enter untuk kirim cepat",
+  "activity_replies_count": "{{count}} balasan",
+  "activity_hide_replies": "Sembunyikan balasan",
+  "activity_reply_placeholder": "Tulis balasan untuk @{{name}}...",
+  "activity_replying_to": "Membalas @{{name}}"
 }
 

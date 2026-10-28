@@ -117,17 +117,20 @@ export default function WorkspaceNewPlanPage() {
     try {
       const baseUrl = getBackendBaseUrl();
       const payload = {
-        title: finalTitle,
-        description,
-        priority,
-        assigneeId: assigneeId || null,
-        referenceType: docType,
-        dueDate: docType === "PROJECT" && dueDate ? dueDate : null,
-        scope: "PLATFORM_INTERNAL",
         type: "PROJECT",
+        referenceType: docType,
+        title: finalTitle,
+        description: description || undefined,
+        priority,
+        assigneeId: assigneeId || undefined,
+        dueDate:
+          docType === "PROJECT" && dueDate
+            ? new Date(dueDate).toISOString().slice(0, 19)
+            : undefined,
+        scope: "PLATFORM_INTERNAL",
       };
 
-      const res = await httpClient(`${baseUrl}/api/v1/system/workspace/plans`, {
+      let res = await httpClient(`${baseUrl}/system/workspace/plans`, {
         method: "POST",
         token: session?.accessToken ?? "",
         headers: { "Content-Type": "application/json" },
@@ -135,7 +138,17 @@ export default function WorkspaceNewPlanPage() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to create workspace plan");
+        res = await httpClient(`${baseUrl}/tasks`, {
+          method: "POST",
+          token: session?.accessToken ?? "",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || t("workspace.error_create_failed"));
       }
 
       const created = await res.json();
@@ -153,8 +166,9 @@ export default function WorkspaceNewPlanPage() {
 
       toast.success(t("workspace.toast_workspace_created"));
       router.replace(`/workspace/plans/${created.id}`);
-    } catch {
-      toast.error(t("workspace.toast_workspace_update_failed"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      toast.error(msg || t("workspace.toast_create_failed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -288,7 +302,7 @@ export default function WorkspaceNewPlanPage() {
                 >
                   <option value="">{t("tasks.unassigned")}</option>
                   {teamUsers.map((u) => (
-                    <option key={u.id} value={u.id}>
+                    <option key={u.id} value={u.email || u.id}>
                       {u.name || u.email}
                     </option>
                   ))}

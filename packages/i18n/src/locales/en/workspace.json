@@ -220,6 +220,10 @@
   "btn_create_workspace": "Create Document",
   "btn_creating_workspace": "Creating...",
   "toast_workspace_created": "Workspace document created successfully",
-  "activity_send_shortcut": "Ctrl+Enter to send quickly"
+  "activity_send_shortcut": "Ctrl+Enter to send quickly",
+  "activity_replies_count": "{{count}} replies",
+  "activity_hide_replies": "Hide replies",
+  "activity_reply_placeholder": "Write a reply to @{{name}}...",
+  "activity_replying_to": "Replying to @{{name}}"
 }
 

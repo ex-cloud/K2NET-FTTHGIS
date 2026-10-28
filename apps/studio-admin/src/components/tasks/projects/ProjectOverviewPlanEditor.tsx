@@ -117,12 +117,13 @@ export function ProjectOverviewPlanEditor({
       </div>
 
       {/* ── TipTap WYSIWYG Editor Body ── */}
-      <div className="flex-1 min-h-[500px]">
+      <div className="flex-1 flex flex-col">
         <RichTextEditor
           value={description}
           onChange={setDescription}
-          minHeight="500px"
+          minHeight="360px"
           borderless={true}
+          className="flex-1"
           placeholder={t("projects.plan_placeholder")}
           onUploadImage={handleUploadImage}
         />

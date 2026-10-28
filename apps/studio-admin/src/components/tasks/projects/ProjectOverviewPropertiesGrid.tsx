@@ -396,7 +396,9 @@ export function ProjectOverviewPropertiesGrid({
             value={dueDate || undefined}
             onChange={(val) => {
               setDueDate?.(val);
-              onSaveField({ dueDate: val ? new Date(val).toISOString() : undefined });
+              onSaveField({
+                dueDate: val ? new Date(val).toISOString().slice(0, 19) : undefined,
+              });
             }}
             buttonClassName="border-0 bg-transparent p-0 hover:bg-transparent text-xs font-mono font-semibold"
           />

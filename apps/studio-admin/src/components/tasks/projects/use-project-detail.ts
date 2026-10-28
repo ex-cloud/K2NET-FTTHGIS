@@ -226,7 +226,9 @@ export function useProjectDetail({
       const comment = await postAuditComment(baseUrl, id, sessionToken, textToSend);
       if (comment) {
         setComments((prev) => [...prev, comment]);
-        setUpdateText("");
+        if (!overrideContent) {
+          setUpdateText("");
+        }
         toast.success(t("workspace.toast_comment_posted"));
       }
     } catch {
