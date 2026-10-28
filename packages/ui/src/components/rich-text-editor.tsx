@@ -56,6 +56,7 @@ export interface RichTextEditorProps {
   disabled?: boolean;
   minHeight?: string;
   className?: string;
+  borderless?: boolean;
   onUploadImage?: (file: File) => Promise<{ url: string; filename?: string }>;
 }
 
@@ -66,6 +67,7 @@ export function RichTextEditor({
   disabled = false,
   minHeight = "320px",
   className = "",
+  borderless = false,
   onUploadImage,
 }: RichTextEditorProps) {
   const [viewMode, setViewMode] = useState<"visual" | "split" | "raw">("visual");
@@ -109,7 +111,7 @@ export function RichTextEditor({
       TipTapLink.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: "text-primary underline cursor-pointer font-medium",
+          class: "text-foreground underline decoration-muted-foreground/60 hover:decoration-foreground cursor-pointer font-medium",
         },
       }),
       TipTapImage.configure({
@@ -131,7 +133,7 @@ export function RichTextEditor({
     editable: !disabled,
     editorProps: {
       attributes: {
-        class: `focus:outline-none min-h-[${minHeight}] p-4 text-xs text-foreground leading-relaxed selection:bg-primary/20`,
+        class: `focus:outline-none min-h-[${minHeight}] p-4 text-xs text-foreground leading-relaxed selection:bg-muted`,
       },
     },
     onUpdate: ({ editor: ed }) => {
@@ -209,20 +211,27 @@ export function RichTextEditor({
     [editor, onUploadImage]
   );
 
-  // Link Dialog
-  const setLink = useCallback(() => {
+  // Link Dialog Popover States
+  const [linkUrl, setLinkUrl] = useState("");
+  const [isLinkOpen, setIsLinkOpen] = useState(false);
+
+  const handleOpenLinkMenu = useCallback(() => {
     if (!editor) return;
     const previousUrl = editor.getAttributes("link").href;
-    const url = window.prompt("Masukkan URL tautan:", previousUrl || "https://");
-
-    if (url === null) return;
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
-      return;
-    }
-
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    setLinkUrl(previousUrl || "");
+    setIsLinkOpen(true);
   }, [editor]);
+
+  const handleApplyLink = useCallback(() => {
+    if (!editor) return;
+    if (!linkUrl.trim()) {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    } else {
+      const formatted = linkUrl.trim().startsWith("http") ? linkUrl.trim() : `https://${linkUrl.trim()}`;
+      editor.chain().focus().extendMarkRange("link").setLink({ href: formatted }).run();
+    }
+    setIsLinkOpen(false);
+  }, [editor, linkUrl]);
 
   // Insert Table Shortcut
   const insertTable = useCallback(() => {
@@ -263,7 +272,11 @@ export function RichTextEditor({
 
   return (
     <div
-      className={`rounded-lg border border-border bg-card shadow-xs overflow-hidden flex flex-col focus-within:border-primary/60 transition-colors ${className}`}
+      className={
+        borderless
+          ? `flex flex-col bg-transparent overflow-hidden ${className}`
+          : `rounded-lg border border-border bg-card shadow-xs overflow-hidden flex flex-col focus-within:border-border transition-colors ${className}`
+      }
       onDrop={handleDrop}
       onPaste={handlePaste}
     >
@@ -282,7 +295,7 @@ export function RichTextEditor({
       />
 
       {/* ── Toolbar / MenuBar ────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-1.5 p-2 bg-muted/40 border-b border-border/80 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 p-2 bg-muted/30 border-b border-border/70 text-xs">
         {/* Left Side: Formatting Tools */}
         <div className="flex flex-wrap items-center gap-1">
           {/* Headings */}
@@ -292,8 +305,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().setParagraph().run()}
               className={`px-2 py-1 text-[11px] font-medium rounded transition-colors cursor-pointer ${
                 editor?.isActive("paragraph") && !editor?.isActive("heading")
-                  ? "bg-primary/15 text-primary font-semibold"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Paragraf Normal"
             >
@@ -304,8 +317,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
               className={`px-2 py-1 text-[11px] font-bold rounded transition-colors cursor-pointer ${
                 editor?.isActive("heading", { level: 1 })
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Heading 1 (#)"
             >
@@ -316,8 +329,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
               className={`px-2 py-1 text-[11px] font-bold rounded transition-colors cursor-pointer ${
                 editor?.isActive("heading", { level: 2 })
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Heading 2 (##)"
             >
@@ -328,8 +341,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
               className={`px-2 py-1 text-[11px] font-bold rounded transition-colors cursor-pointer ${
                 editor?.isActive("heading", { level: 3 })
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Heading 3 (###)"
             >
@@ -346,8 +359,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleBold().run()}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 editor?.isActive("bold")
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Tebal (**teks**)"
             >
@@ -358,8 +371,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleItalic().run()}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 editor?.isActive("italic")
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Miring (*teks*)"
             >
@@ -370,8 +383,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleStrike().run()}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 editor?.isActive("strike")
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Coret (~~teks~~)"
             >
@@ -382,8 +395,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleCode().run()}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 editor?.isActive("code")
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Kode Baris (`kode`)"
             >
@@ -400,8 +413,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleBulletList().run()}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 editor?.isActive("bulletList")
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Daftar Bullet (- item)"
             >
@@ -412,8 +425,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleOrderedList().run()}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 editor?.isActive("orderedList")
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Daftar Nomor (1. item)"
             >
@@ -424,8 +437,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleBlockquote().run()}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 editor?.isActive("blockquote")
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Kutipan / Catatan (> teks)"
             >
@@ -436,8 +449,8 @@ export function RichTextEditor({
               onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 editor?.isActive("codeBlock")
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
               title="Blok Kode (```)"
             >
@@ -446,7 +459,7 @@ export function RichTextEditor({
             <button
               type="button"
               onClick={() => editor?.chain().focus().setHorizontalRule().run()}
-              className="p-1 rounded text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer"
+              className="p-1 rounded text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer"
               title="Garis Pemisah (---)"
             >
               <Minus className="w-3.5 h-3.5" />
@@ -462,21 +475,21 @@ export function RichTextEditor({
                 type="button"
                 className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors cursor-pointer ${
                   editor?.isActive("table")
-                    ? "bg-primary/15 text-primary border-primary/40"
+                    ? "bg-muted text-foreground border-border shadow-2xs font-semibold"
                     : "bg-background border-border text-foreground hover:bg-muted/60"
                 }`}
                 title="Manajemen Tabel Markdown"
               >
-                <TableIcon className="w-3.5 h-3.5 text-primary" />
+                <TableIcon className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>Tabel</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48 bg-card border-border shadow-xl">
+            <DropdownMenuContent align="start" className="w-48 bg-popover border-border shadow-xl">
               <DropdownMenuLabel className="text-xs font-bold text-foreground">
                 Operasi Tabel
               </DropdownMenuLabel>
               <DropdownMenuItem onClick={insertTable} className="text-xs gap-2 cursor-pointer">
-                <TableIcon className="w-3.5 h-3.5 text-primary" />
+                <TableIcon className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>Sisipkan Tabel Baru</span>
               </DropdownMenuItem>
 
@@ -555,39 +568,77 @@ export function RichTextEditor({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Link & Image Upload */}
+          {/* Link Popover & Image Upload */}
           <div className="flex items-center bg-background rounded-md border border-border p-0.5 shadow-2xs">
-            <button
-              type="button"
-              onClick={setLink}
-              className={`p-1 rounded transition-colors cursor-pointer ${
-                editor?.isActive("link")
-                  ? "bg-primary/15 text-primary"
-                  : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              }`}
-              title="Sisipkan Tautan"
-            >
-              <LinkIcon className="w-3.5 h-3.5" />
-            </button>
-            {editor?.isActive("link") && (
-              <button
-                type="button"
-                onClick={() => editor.chain().focus().unsetLink().run()}
-                className="p-1 rounded text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                title="Hapus Tautan"
-              >
-                <Unlink className="w-3.5 h-3.5" />
-              </button>
-            )}
+            <DropdownMenu open={isLinkOpen} onOpenChange={setIsLinkOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleOpenLinkMenu}
+                  className={`p-1 rounded transition-colors cursor-pointer ${
+                    editor?.isActive("link")
+                      ? "bg-muted text-foreground font-semibold shadow-2xs"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  }`}
+                  title="Sisipkan Tautan"
+                >
+                  <LinkIcon className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-72 p-2 bg-popover border border-border shadow-xl rounded-xl space-y-2">
+                <div className="text-[11px] font-semibold text-foreground px-1">
+                  Sisipkan Tautan (URL)
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="url"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleApplyLink();
+                      }
+                    }}
+                    placeholder="https://contoh.com"
+                    className="flex-1 px-2.5 py-1 text-xs rounded-md bg-muted/40 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-border"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyLink}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-md bg-foreground text-background hover:opacity-90 cursor-pointer shrink-0"
+                  >
+                    Terapkan
+                  </button>
+                </div>
+                {editor?.isActive("link") && (
+                  <div className="pt-1 border-t border-border/50 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        editor?.chain().focus().extendMarkRange("link").unsetLink().run();
+                        setIsLinkOpen(false);
+                      }}
+                      className="text-[11px] text-destructive hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <Unlink className="w-3 h-3" />
+                      <span>Hapus Tautan</span>
+                    </button>
+                  </div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingImage}
-              className="p-1 rounded text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer"
+              className="p-1 rounded text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer"
               title="Unggah Gambar (atau Drag & Drop langsung)"
             >
               {isUploadingImage ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
               ) : (
                 <ImageIcon className="w-3.5 h-3.5" />
               )}
@@ -602,7 +653,7 @@ export function RichTextEditor({
               type="button"
               onClick={() => editor?.chain().focus().undo().run()}
               disabled={!editor?.can().undo()}
-              className="p-1 rounded text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-40 transition-colors cursor-pointer"
+              className="p-1 rounded text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-40 transition-colors cursor-pointer"
               title="Undo (Ctrl+Z)"
             >
               <Undo className="w-3.5 h-3.5" />
@@ -611,7 +662,7 @@ export function RichTextEditor({
               type="button"
               onClick={() => editor?.chain().focus().redo().run()}
               disabled={!editor?.can().redo()}
-              className="p-1 rounded text-foreground/75 dark:text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-40 transition-colors cursor-pointer"
+              className="p-1 rounded text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-40 transition-colors cursor-pointer"
               title="Redo (Ctrl+Shift+Z)"
             >
               <Redo className="w-3.5 h-3.5" />
@@ -626,8 +677,8 @@ export function RichTextEditor({
             onClick={() => setViewMode("visual")}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
               viewMode === "visual"
-                ? "bg-primary/15 text-primary font-semibold"
-                : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                ? "bg-muted text-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             }`}
             title="Mode Editor Visual (WYSIWYG TipTap)"
           >
@@ -639,8 +690,8 @@ export function RichTextEditor({
             onClick={() => setViewMode("split")}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
               viewMode === "split"
-                ? "bg-primary/15 text-primary font-semibold"
-                : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                ? "bg-muted text-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             }`}
             title="Mode Split (Editor di Kiri & Live Markdown di Kanan)"
           >
@@ -652,8 +703,8 @@ export function RichTextEditor({
             onClick={() => setViewMode("raw")}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
               viewMode === "raw"
-                ? "bg-primary/15 text-primary font-semibold"
-                : "text-foreground/75 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                ? "bg-muted text-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             }`}
             title="Mode Teks Markdown Mentah"
           >
@@ -680,9 +731,9 @@ export function RichTextEditor({
 
             {/* Right: Real-time Markdown Rendered Preview */}
             <div className="p-4 bg-muted/10 overflow-y-auto custom-scrollbar text-xs leading-relaxed text-foreground">
-              <div className="text-[10px] uppercase font-mono tracking-wider font-semibold text-foreground/75 dark:text-muted-foreground mb-3 pb-1 border-b border-border flex items-center justify-between">
+              <div className="text-[10px] uppercase font-mono tracking-wider font-semibold text-muted-foreground mb-3 pb-1 border-b border-border flex items-center justify-between">
                 <span>Live GFM Markdown Preview</span>
-                <Badge variant="outline" className="text-[9px] font-mono border-primary/30 text-primary">
+                <Badge variant="outline" className="text-[9px] font-mono border-border text-muted-foreground bg-muted/40">
                   pgvector ready
                 </Badge>
               </div>
@@ -709,14 +760,14 @@ export function RichTextEditor({
               }}
               rows={14}
               placeholder="# Tulis format Markdown mentah di sini..."
-              className="w-full h-full min-h-[300px] p-3 rounded-lg bg-muted/20 border border-border text-foreground font-mono text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary resize-y custom-scrollbar"
+              className="w-full h-full min-h-[300px] p-3 rounded-lg bg-muted/20 border border-border text-foreground font-mono text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-border resize-y custom-scrollbar"
             />
           </div>
         )}
       </div>
 
       {/* ── Metadata & Token Summary Bar ─────────────────────────────────── */}
-      <div className="px-4 py-2 bg-muted/30 border-t border-border/80 flex items-center justify-between text-[11px] text-foreground/75 dark:text-muted-foreground font-mono">
+      <div className="px-4 py-2 bg-muted/30 border-t border-border/80 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
         <div className="flex items-center gap-3">
           <span>
             Kata: <strong className="text-foreground">{wordCount.toLocaleString()}</strong>
@@ -727,12 +778,12 @@ export function RichTextEditor({
           </span>
           <span>•</span>
           <span>
-            Est. Token RAG: <strong className="text-primary font-semibold">~{estimatedTokens.toLocaleString()}</strong>
+            Est. Token RAG: <strong className="text-foreground font-medium">~{estimatedTokens.toLocaleString()}</strong>
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-foreground/75 dark:text-muted-foreground hidden sm:inline">
+          <span className="text-[10px] text-muted-foreground hidden sm:inline">
             Drag & Drop gambar didukung
           </span>
           <Badge variant="outline" className="text-[9px] font-mono border-border bg-background">

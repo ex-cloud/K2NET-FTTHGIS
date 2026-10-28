@@ -1,5 +1,16 @@
-import { useState } from "react";
-import { TrendingUp, MessageSquare, AlertTriangle, AlertCircle, Loader2 } from "lucide-react";
+import { useRef } from "react";
+import {
+  TrendingUp,
+  MessageSquare,
+  AlertTriangle,
+  Loader2,
+  CheckCircle2,
+  UserCheck,
+  FileEdit,
+  Sparkles,
+  GitCommit,
+  CornerUpLeft,
+} from "lucide-react";
 import { Card, TracingBeam } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { type TaskComment } from "@/hooks/useTasksQuery";
@@ -8,12 +19,9 @@ import { useSession } from "@/lib/auth-compat";
 import { cn } from "@/lib/utils";
 
 interface ProjectActivityTabProps {
-  updateMode: "update" | "comment";
-  setUpdateMode: (mode: "update" | "comment") => void;
   updateText: string;
   setUpdateText: (text: string) => void;
   postingUpdate: boolean;
-  progressPercent: number;
   comments: TaskComment[];
   teamUsers?: TeamUser[];
   onPostUpdate: (customContent?: string) => Promise<void>;
@@ -21,18 +29,44 @@ interface ProjectActivityTabProps {
 
 type HealthOption = "On track" | "At risk" | "Off track";
 
-function parseCommentContent(content: string) {
-  const match = content.match(/^\[STATUS_UPDATE:\s*([^|]+)\s*\|\s*([^\]]+)\]\s*(.*)$/s);
-  if (match) {
+interface ParsedComment {
+  isStatusUpdate: boolean;
+  isSystemEvent: boolean;
+  systemAction?: string;
+  systemDetail?: string;
+  health: HealthOption | null;
+  progress: string | null;
+  body: string;
+}
+
+function parseCommentContent(content: string): ParsedComment {
+  const statusMatch = content.match(/^\[STATUS_UPDATE:\s*([^|]+)\s*\|\s*([^\]]+)\]\s*(.*)$/s);
+  if (statusMatch) {
     return {
       isStatusUpdate: true,
-      health: match[1].trim() as HealthOption,
-      progress: match[2].trim(),
-      body: match[3].trim(),
+      isSystemEvent: false,
+      health: statusMatch[1].trim() as HealthOption,
+      progress: statusMatch[2].trim(),
+      body: statusMatch[3].trim(),
     };
   }
+
+  const systemMatch = content.match(/^\[SYSTEM_EVENT:\s*([^|]+)\s*\|\s*([^\]]+)\]$/s);
+  if (systemMatch) {
+    return {
+      isStatusUpdate: false,
+      isSystemEvent: true,
+      systemAction: systemMatch[1].trim(),
+      systemDetail: systemMatch[2].trim(),
+      health: null,
+      progress: null,
+      body: "",
+    };
+  }
+
   return {
     isStatusUpdate: false,
+    isSystemEvent: false,
     health: null,
     progress: null,
     body: content,
@@ -46,7 +80,6 @@ function getAuthorDisplay(
 ): { name: string; initials: string } {
   if (!authorId) return { name: "Super Admin", initials: "SA" };
 
-  // 1. Check in teamUsers
   if (teamUsers && teamUsers.length > 0) {
     const found = teamUsers.find(
       (u) =>
@@ -60,7 +93,6 @@ function getAuthorDisplay(
     }
   }
 
-  // 2. Check if it matches session user
   if (
     sessionUser &&
     (sessionUser.id === authorId || sessionUser.email === authorId)
@@ -69,12 +101,10 @@ function getAuthorDisplay(
     return { name, initials: name.substring(0, 2).toUpperCase() };
   }
 
-  // 3. If it looks like a UUID (length >= 20 and contains hyphens)
   if (/^[0-9a-f-]{20,}$/i.test(authorId)) {
     return { name: "Super Admin", initials: "SA" };
   }
 
-  // 4. If email
   if (authorId.includes("@")) {
     const name = authorId.split("@")[0];
     return { name, initials: name.substring(0, 2).toUpperCase() };
@@ -83,29 +113,177 @@ function getAuthorDisplay(
   return { name: authorId, initials: authorId.substring(0, 2).toUpperCase() };
 }
 
+function AuditTrailFeedItem({
+  comment,
+  parsed,
+  author,
+}: {
+  comment: TaskComment;
+  parsed: ParsedComment;
+  author: { name: string; initials: string };
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-muted/25 border border-border/40 text-[11px] text-muted-foreground shadow-2xs hover:border-border/70 transition-colors">
+      <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+        {parsed.systemAction === "STATUS_CHANGE" && <CheckCircle2 className="w-3 h-3 text-primary" />}
+        {parsed.systemAction === "PRIORITY_CHANGE" && <AlertTriangle className="w-3 h-3 text-amber-500" />}
+        {parsed.systemAction === "LEAD_CHANGE" && <UserCheck className="w-3 h-3 text-blue-400" />}
+        {parsed.systemAction === "SPEC_UPDATED" && <FileEdit className="w-3 h-3 text-purple-400" />}
+        {parsed.systemAction === "DOC_CREATED" && <Sparkles className="w-3 h-3 text-primary" />}
+        {!["STATUS_CHANGE", "PRIORITY_CHANGE", "LEAD_CHANGE", "SPEC_UPDATED", "DOC_CREATED"].includes(
+          parsed.systemAction || ""
+        ) && <GitCommit className="w-3 h-3" />}
+      </div>
+      <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
+        <span className="font-semibold text-foreground">{author.name}</span>
+        <span>
+          {parsed.systemAction === "STATUS_CHANGE"
+            ? t("workspace.activity_event_status_changed", { detail: parsed.systemDetail || "" })
+            : parsed.systemAction === "PRIORITY_CHANGE"
+            ? t("workspace.activity_event_priority_changed", { detail: parsed.systemDetail || "" })
+            : parsed.systemAction === "LEAD_CHANGE"
+            ? t("workspace.activity_event_lead_changed", { detail: parsed.systemDetail || "" })
+            : parsed.systemAction === "SPEC_UPDATED"
+            ? t("workspace.activity_event_spec_updated")
+            : parsed.systemAction === "DOC_CREATED"
+            ? t("workspace.activity_event_doc_created")
+            : parsed.systemDetail || ""}
+        </span>
+      </div>
+      <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+        {new Date(comment.createdAt).toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </span>
+    </div>
+  );
+}
+
+function CommentCardItem({
+  comment,
+  parsed,
+  author,
+  onReply,
+}: {
+  comment: TaskComment;
+  parsed: ParsedComment;
+  author: { name: string; initials: string };
+  onReply: (authorName: string, bodyText: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-start gap-3 p-3.5 rounded-xl bg-card/40 border border-border/50 text-xs shadow-2xs hover:border-border/80 transition-colors">
+      <div className="w-7 h-7 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center shrink-0 mt-0.5 text-[10px] shadow-2xs">
+        {author.initials}
+      </div>
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground">{author.name}</span>
+            {parsed.isStatusUpdate ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                <TrendingUp className="w-3 h-3" />
+                <span>{t("workspace.badge_status_update")}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                <MessageSquare className="w-3 h-3" />
+                <span>{t("workspace.badge_comment")}</span>
+              </span>
+            )}
+            {parsed.health && (
+              <span
+                className={cn(
+                  "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                  parsed.health === "On track"
+                    ? "text-primary bg-primary/10"
+                    : parsed.health === "At risk"
+                    ? "text-amber-500 bg-amber-500/10"
+                    : "text-rose-500 bg-rose-500/10"
+                )}
+              >
+                {parsed.health}
+              </span>
+            )}
+            {parsed.progress && (
+              <span className="text-[10px] font-mono text-muted-foreground">
+                {parsed.progress}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground">
+            {new Date(comment.createdAt).toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        </div>
+        <div className="text-foreground/90 leading-relaxed whitespace-pre-wrap space-y-1">
+          {parsed.body.split("\n").map((line, lIdx) => {
+            if (line.startsWith(">")) {
+              return (
+                <div
+                  key={lIdx}
+                  className="border-l-2 border-primary/50 pl-2 py-0.5 text-muted-foreground italic bg-muted/20 rounded-r text-[11px]"
+                >
+                  {line.replace(/^>\s*/, "")}
+                </div>
+              );
+            }
+            return <div key={lIdx}>{line}</div>;
+          })}
+        </div>
+        <div className="pt-1 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={() => onReply(author.name, parsed.body)}
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground font-medium transition-colors cursor-pointer group"
+          >
+            <CornerUpLeft className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+            <span>{t("workspace.activity_reply")}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ProjectActivityTab({
-  updateMode,
-  setUpdateMode,
   updateText,
   setUpdateText,
   postingUpdate,
-  progressPercent,
   comments,
   teamUsers,
   onPostUpdate,
 }: ProjectActivityTabProps) {
   const { t } = useTranslation();
   const { data: session } = useSession();
-  const [healthStatus, setHealthStatus] = useState<HealthOption>("On track");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = async () => {
     if (!updateText.trim()) return;
-    if (updateMode === "update") {
-      const formatted = `[STATUS_UPDATE: ${healthStatus} | Progress: ${progressPercent}%]\n\n${updateText.trim()}`;
-      await onPostUpdate(formatted);
-    } else {
-      await onPostUpdate(updateText.trim());
-    }
+    await onPostUpdate(updateText.trim());
+  };
+
+  const handleReply = (authorName: string, bodyText: string) => {
+    const cleanSnippet = bodyText
+      .split("\n")
+      .filter((l) => !l.startsWith(">"))
+      .join(" ")
+      .trim()
+      .substring(0, 80);
+    const quote = `> @${authorName}: "${cleanSnippet}"\n\n`;
+    setUpdateText(quote);
+    setTimeout(() => {
+      textareaRef.current?.focus();
+      textareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
   };
 
   return (
@@ -113,119 +291,55 @@ export function ProjectActivityTab({
       <div className="space-y-6 animate-in fade-in-50 duration-150">
         {/* ── 1. Composer Card ─────────────────────────────────────────── */}
         <Card className="border border-border/60 bg-card/60 rounded-xl p-4 space-y-3 shadow-xs">
-          <div className="flex flex-wrap items-center justify-between border-b border-border/40 pb-2.5 gap-2">
-            <div className="flex items-center gap-1 bg-muted/50 p-0.5 rounded-lg border border-border/70">
-              <button
-                type="button"
-                onClick={() => setUpdateMode("update")}
-                className={cn(
-                  "text-xs px-3 h-7 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5",
-                  updateMode === "update"
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                title={t("workspace.activity_update_desc")}
-              >
-                <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                <span>{t("workspace.activity_update_mode")}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setUpdateMode("comment")}
-                className={cn(
-                  "text-xs px-3 h-7 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5",
-                  updateMode === "comment"
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                title={t("workspace.activity_comment_desc")}
-              >
-                <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>{t("workspace.activity_comment_mode")}</span>
-              </button>
+          <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">
+                {t("workspace.activity_comment_mode")}
+              </span>
             </div>
-
-            {/* Health status pill selector in Update mode */}
-            {updateMode === "update" && (
-              <div className="flex items-center gap-1 bg-background/60 p-0.5 rounded-lg border border-border/40">
-                {(["On track", "At risk", "Off track"] as const).map((h) => {
-                  const isActive = healthStatus === h;
-                  return (
-                    <button
-                      key={h}
-                      type="button"
-                      onClick={() => setHealthStatus(h)}
-                      className={cn(
-                        "text-[11px] font-medium px-2 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1",
-                        isActive
-                          ? h === "On track"
-                            ? "bg-primary/15 text-primary font-bold shadow-2xs"
-                            : h === "At risk"
-                            ? "bg-amber-500/15 text-amber-500 font-bold shadow-2xs"
-                            : "bg-rose-500/15 text-rose-500 font-bold shadow-2xs"
-                          : "text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100"
-                      )}
-                    >
-                      {h === "On track" && <TrendingUp className="w-3 h-3" />}
-                      {h === "At risk" && <AlertTriangle className="w-3 h-3" />}
-                      {h === "Off track" && <AlertCircle className="w-3 h-3" />}
-                      <span>{h}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <span className="text-[11px] text-muted-foreground">
+              {t("workspace.activity_comment_desc")}
+            </span>
           </div>
 
           <textarea
+            ref={textareaRef}
             value={updateText}
             onChange={(e) => setUpdateText(e.target.value)}
-            placeholder={
-              updateMode === "update"
-                ? t("workspace.activity_update_placeholder")
-                : t("workspace.activity_comment_placeholder")
-            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
+            placeholder={t("workspace.activity_comment_placeholder")}
             className="w-full min-h-[90px] text-xs bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 focus:ring-0 resize-none leading-relaxed"
           />
 
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              {updateMode === "update" ? (
-                <span>
-                  {t("workspace.activity_delivery_progress")}:{" "}
-                  <strong className="text-foreground font-mono">{progressPercent}%</strong>
-                </span>
-              ) : (
-                <span className="text-[11px] text-muted-foreground/80">
-                  {t("workspace.activity_comment_desc")}
-                </span>
-              )}
-            </div>
+            <span className="text-[11px] text-muted-foreground/75">
+              {t("workspace.activity_send_shortcut")}
+            </span>
 
             <button
               type="button"
               onClick={handleSubmit}
               disabled={!updateText.trim() || postingUpdate}
-              className="flex items-center gap-1.5 px-3 h-7 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+              className="flex items-center gap-1.5 px-3 h-7 text-xs font-medium rounded-md bg-foreground text-background hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
             >
               {postingUpdate ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : updateMode === "update" ? (
-                <TrendingUp className="w-3.5 h-3.5" />
               ) : (
                 <MessageSquare className="w-3.5 h-3.5" />
               )}
-              <span>
-                {updateMode === "update"
-                  ? t("workspace.activity_post_update")
-                  : t("workspace.activity_post_comment")}
-              </span>
+              <span>{t("workspace.activity_post_comment")}</span>
             </button>
           </div>
         </Card>
 
         {/* ── 2. Timeline History Feed ─────────────────────────────────── */}
-        <div className="space-y-4 pt-2">
+        <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               {t("workspace.activity_timeline_history")}
@@ -244,63 +358,25 @@ export function ProjectActivityTab({
               const author = getAuthorDisplay(c.authorId, teamUsers, session?.user);
               const parsed = parseCommentContent(c.content);
 
+              if (parsed.isSystemEvent) {
+                return (
+                  <AuditTrailFeedItem
+                    key={c.id || idx}
+                    comment={c}
+                    parsed={parsed}
+                    author={author}
+                  />
+                );
+              }
+
               return (
-                <div
+                <CommentCardItem
                   key={c.id || idx}
-                  className="flex items-start gap-3 p-3.5 rounded-xl bg-card/40 border border-border/50 text-xs shadow-2xs hover:border-border/80 transition-colors"
-                >
-                  <div className="w-7 h-7 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center shrink-0 mt-0.5 text-[10px] shadow-2xs">
-                    {author.initials}
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">{author.name}</span>
-                        {parsed.isStatusUpdate ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                            <TrendingUp className="w-3 h-3" />
-                            <span>{t("workspace.badge_status_update")}</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
-                            <MessageSquare className="w-3 h-3" />
-                            <span>{t("workspace.badge_comment")}</span>
-                          </span>
-                        )}
-                        {parsed.health && (
-                          <span
-                            className={cn(
-                              "text-[10px] font-semibold px-1.5 py-0.5 rounded",
-                              parsed.health === "On track"
-                                ? "text-primary bg-primary/10"
-                                : parsed.health === "At risk"
-                                ? "text-amber-500 bg-amber-500/10"
-                                : "text-rose-500 bg-rose-500/10"
-                            )}
-                          >
-                            {parsed.health}
-                          </span>
-                        )}
-                        {parsed.progress && (
-                          <span className="text-[10px] font-mono text-muted-foreground">
-                            {parsed.progress}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-mono text-muted-foreground">
-                        {new Date(c.createdAt).toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                    <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                      {parsed.body}
-                    </p>
-                  </div>
-                </div>
+                  comment={c}
+                  parsed={parsed}
+                  author={author}
+                  onReply={handleReply}
+                />
               );
             })
           )}

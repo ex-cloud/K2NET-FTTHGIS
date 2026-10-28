@@ -72,7 +72,6 @@ const SHOW_CLOSED_OPTIONS: Array<{ key: ShowClosedFilter; label: string }> = [
 ];
 
 const PROJECT_PROPERTIES: Array<{ key: keyof DisplayPropertiesState; label: string }> = [
-  { key: "health", label: "Health" },
   { key: "priority", label: "Priority" },
   { key: "lead", label: "Lead" },
   { key: "targetDate", label: "Target date" },

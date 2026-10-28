@@ -208,6 +208,18 @@
   "doc_metadata_wiki": "Living Wiki",
   "doc_metadata_active": "Active Knowledge",
   "action_select_batch": "Select for batch action",
-  "action_deselect_batch": "Deselect"
+  "action_deselect_batch": "Deselect",
+  "activity_reply": "Reply",
+  "activity_event_status_changed": "changed status: {{detail}}",
+  "activity_event_priority_changed": "changed priority: {{detail}}",
+  "activity_event_lead_changed": "reassigned lead: {{detail}}",
+  "activity_event_spec_updated": "updated document specification canvas",
+  "activity_event_doc_created": "created this workspace document",
+  "new_doc_title": "New Workspace Document",
+  "draft_subtasks_notice": "Subtask issues and activity timeline will be enabled after saving this document.",
+  "btn_create_workspace": "Create Document",
+  "btn_creating_workspace": "Creating...",
+  "toast_workspace_created": "Workspace document created successfully",
+  "activity_send_shortcut": "Ctrl+Enter to send quickly"
 }
 

@@ -4,7 +4,6 @@ import { Plus, Milestone, HelpCircle, CheckCircle2, AlertTriangle, Calendar } fr
 import { Card, Button } from "@k2net/ui";
 import { ProjectTimelineView } from "@/components/tasks/projects/ProjectTimelineView";
 import { useProjectsHub } from "@/components/tasks/projects/use-projects-hub";
-import { NewProjectDialog } from "@/components/tasks/NewProjectDialog";
 import { cn } from "@/lib/utils";
 
 export default function WorkspaceRoadmapPage() {
@@ -28,7 +27,7 @@ export default function WorkspaceRoadmapPage() {
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            onClick={() => hub.setNewProjectOpen(true)}
+            onClick={() => router.push("/workspace/plans/new?type=PROJECT")}
             className="px-2.5 h-7 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-xs flex items-center gap-1.5 active:scale-[0.98] transition-all shadow-xs cursor-pointer"
           >
             <Plus className="size-3.5" />
@@ -128,17 +127,6 @@ export default function WorkspaceRoadmapPage() {
           />
         </div>
       </div>
-
-      {/* ── New Plan Dialog ──────────────────────────────────────────── */}
-      <NewProjectDialog
-        open={hub.newProjectOpen}
-        onOpenChange={hub.setNewProjectOpen}
-        onSuccess={hub.refresh}
-        defaultValues={{
-          subtype: "PROJECT",
-          scope: "PLATFORM_INTERNAL",
-        }}
-      />
     </div>
   );
 }

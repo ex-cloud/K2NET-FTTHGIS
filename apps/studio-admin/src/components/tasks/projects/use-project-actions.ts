@@ -9,6 +9,23 @@ interface UseProjectActionsParams {
 }
 
 export function useProjectActions({ accessToken, refresh }: UseProjectActionsParams) {
+  const recordSystemEvent = useCallback(
+    async (projectId: string, content: string) => {
+      try {
+        const baseUrl = getBackendBaseUrl();
+        await httpClient(`${baseUrl}/tasks/${projectId}/comments`, {
+          method: "POST",
+          token: accessToken ?? "",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+      } catch {
+        // Non-blocking
+      }
+    },
+    [accessToken]
+  );
+
   const handleUpdateStatus = useCallback(async (projectId: string, status: string) => {
     try {
       const baseUrl = getBackendBaseUrl();
@@ -20,6 +37,7 @@ export function useProjectActions({ accessToken, refresh }: UseProjectActionsPar
       });
       if (res.ok) {
         toast.success(`Project status updated to ${status}`);
+        recordSystemEvent(projectId, `[SYSTEM_EVENT: STATUS_CHANGE | ${status}]`);
         refresh();
       } else {
         toast.error("Failed to update project status");
@@ -27,7 +45,7 @@ export function useProjectActions({ accessToken, refresh }: UseProjectActionsPar
     } catch {
       toast.error("Network error while updating status");
     }
-  }, [accessToken, refresh]);
+  }, [accessToken, refresh, recordSystemEvent]);
 
   const handleUpdatePriority = useCallback(async (projectId: string, priority: string) => {
     try {
@@ -40,6 +58,7 @@ export function useProjectActions({ accessToken, refresh }: UseProjectActionsPar
       });
       if (res.ok) {
         toast.success(`Project priority updated to ${priority}`);
+        recordSystemEvent(projectId, `[SYSTEM_EVENT: PRIORITY_CHANGE | ${priority}]`);
         refresh();
       } else {
         toast.error("Failed to update project priority");
@@ -47,7 +66,7 @@ export function useProjectActions({ accessToken, refresh }: UseProjectActionsPar
     } catch {
       toast.error("Network error while updating priority");
     }
-  }, [accessToken, refresh]);
+  }, [accessToken, refresh, recordSystemEvent]);
 
   const handleUpdateLead = useCallback(async (projectId: string, lead: string) => {
     try {
@@ -60,6 +79,7 @@ export function useProjectActions({ accessToken, refresh }: UseProjectActionsPar
       });
       if (res.ok) {
         toast.success(`Project lead updated to ${lead}`);
+        recordSystemEvent(projectId, `[SYSTEM_EVENT: LEAD_CHANGE | ${lead}]`);
         refresh();
       } else {
         toast.error("Failed to update project lead");
@@ -67,7 +87,7 @@ export function useProjectActions({ accessToken, refresh }: UseProjectActionsPar
     } catch {
       toast.error("Network error while updating lead");
     }
-  }, [accessToken, refresh]);
+  }, [accessToken, refresh, recordSystemEvent]);
 
   const handleUpdateDueDate = useCallback(async (projectId: string, dueDate?: string) => {
     try {
@@ -80,6 +100,7 @@ export function useProjectActions({ accessToken, refresh }: UseProjectActionsPar
       });
       if (res.ok) {
         toast.success("Target date updated");
+        recordSystemEvent(projectId, `[SYSTEM_EVENT: TARGET_DATE_CHANGE | ${dueDate || "Unset"}]`);
         refresh();
       } else {
         toast.error("Failed to update target date");
@@ -87,7 +108,7 @@ export function useProjectActions({ accessToken, refresh }: UseProjectActionsPar
     } catch {
       toast.error("Network error while updating target date");
     }
-  }, [accessToken, refresh]);
+  }, [accessToken, refresh, recordSystemEvent]);
 
   const handleUpdateHealth = useCallback((_projectId: string, health: string) => {
     toast.success(`Project health updated to ${health}`);

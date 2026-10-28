@@ -208,6 +208,18 @@
   "doc_metadata_wiki": "Wiki Pengetahuan",
   "doc_metadata_active": "Dokumen Aktif",
   "action_select_batch": "Pilih untuk aksi massal",
-  "action_deselect_batch": "Batal pilih"
+  "action_deselect_batch": "Batal pilih",
+  "activity_reply": "Balas",
+  "activity_event_status_changed": "mengubah status: {{detail}}",
+  "activity_event_priority_changed": "mengubah prioritas: {{detail}}",
+  "activity_event_lead_changed": "mengubah penanggung jawab: {{detail}}",
+  "activity_event_spec_updated": "memperbarui kanvas spesifikasi dokumen",
+  "activity_event_doc_created": "membuat dokumen workspace ini",
+  "new_doc_title": "Dokumen Workspace Baru",
+  "draft_subtasks_notice": "Subtask issue dan linimasa aktivitas akan aktif setelah dokumen ini disimpan.",
+  "btn_create_workspace": "Buat Dokumen",
+  "btn_creating_workspace": "Menyimpan...",
+  "toast_workspace_created": "Dokumen workspace berhasil dibuat",
+  "activity_send_shortcut": "Ctrl+Enter untuk kirim cepat"
 }
 

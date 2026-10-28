@@ -2,13 +2,9 @@ import React from "react";
 import { useRouter } from "@/lib/navigation-compat";
 import {
   Box,
-  TrendingUp,
-  AlertTriangle,
-  AlertCircle,
   User,
   CheckCircle2,
 } from "lucide-react";
-import { useTranslation } from "@k2net/i18n";
 import { ProjectContextMenu } from "@/components/tasks/ProjectContextMenu";
 import { type DisplayPropertiesState } from "@/components/tasks/LinearDisplayOptionsPopover";
 import { type ProjectPlanItem } from "./projects-hub-helpers";
@@ -36,7 +32,6 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
   onDeleteProject,
 }) => {
   const router = useRouter();
-  const { t } = useTranslation();
   const isComplete = proj.percentage === 100;
 
   return (
@@ -70,30 +65,6 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
             )}
           </div>
         </div>
-
-        {/* Health */}
-        {displayProperties.health !== false && (
-          <div className="px-4 py-3 flex items-center w-28 shrink-0">
-            <div className="inline-flex items-center gap-1.5">
-              {proj.health === "On track" ? (
-                <>
-                  <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-primary font-medium">{t("workspace.health_on_track")}</span>
-                </>
-              ) : proj.health === "At risk" ? (
-                <>
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-amber-500 font-medium">{t("workspace.health_at_risk")}</span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                  <span className="text-destructive font-medium">{t("workspace.health_off_track")}</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Priority */}
         {displayProperties.priority !== false && (

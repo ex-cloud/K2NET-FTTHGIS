@@ -1,7 +1,6 @@
 import { useRouter } from "@/lib/navigation-compat";
 import { useTranslation } from "@k2net/i18n";
 import { QuickFilterTabs, type QuickFilterTabOption } from "@/components/common/QuickFilterTabs";
-import { NewProjectDialog } from "@/components/tasks/NewProjectDialog";
 import { ProjectTimelineView } from "@/components/tasks/projects/ProjectTimelineView";
 import { useProjectsHub } from "@/components/tasks/projects/use-projects-hub";
 import { ProjectsHubHeader } from "@/components/tasks/projects/ProjectsHubHeader";
@@ -26,7 +25,7 @@ export default function WorkspacePlansPage() {
     <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-4 overflow-hidden">
       {/* ── Page Header & KPI Cards ──────────────────────────────────── */}
       <ProjectsHubHeader
-        onNewProject={() => hub.setNewProjectOpen(true)}
+        onNewProject={() => router.push("/workspace/plans/new")}
         activeCount={hub.activeCount}
         atRiskCount={hub.atRiskCount}
         completedCount={hub.completedCount}
@@ -86,7 +85,7 @@ export default function WorkspacePlansPage() {
               setSortField={hub.setSortField}
               setSortDir={hub.setSortDir}
               sentinelRef={hub.sentinelRef}
-              onNewProject={() => hub.setNewProjectOpen(true)}
+              onNewProject={() => router.push("/workspace/plans/new")}
               onUpdateStatus={hub.handleUpdateStatus}
               onUpdatePriority={hub.handleUpdatePriority}
               onUpdateHealth={hub.handleUpdateHealth}
@@ -97,16 +96,6 @@ export default function WorkspacePlansPage() {
           )}
         </div>
       </div>
-
-      {/* ── New Workspace Document Dialog ────────────────────────────── */}
-      <NewProjectDialog
-        open={hub.newProjectOpen}
-        onOpenChange={hub.setNewProjectOpen}
-        onSuccess={hub.refresh}
-        defaultValues={{
-          scope: "PLATFORM_INTERNAL",
-        }}
-      />
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default function WorkspacePlanDetailPage() {
   const proj = useProjectDetail({
     id,
     sessionToken: session?.accessToken ?? undefined,
-    projectTask,
+    projectTask: projectTask ?? null,
     refresh,
   });
 
@@ -57,7 +57,6 @@ export default function WorkspacePlanDetailPage() {
         title={proj.title}
         projectTask={projectTask}
         onExportMarkdown={proj.handleExportMarkdown}
-        onOpenNewIssue={() => setNewIssueOpen(true)}
         onSavePlan={proj.handleSavePlan}
         isSavingPlan={proj.isSavingPlan}
         lastSaved={proj.lastSaved}
@@ -78,7 +77,6 @@ export default function WorkspacePlanDetailPage() {
           setAssigneeId={proj.setAssigneeId}
           dueDate={proj.dueDate}
           setDueDate={proj.setDueDate}
-          healthStatus={proj.healthStatus}
           projectTask={projectTask}
           teamUsers={teamUsers}
           progressPercent={proj.progressPercent}
@@ -92,8 +90,6 @@ export default function WorkspacePlanDetailPage() {
           onToggleIssueStatus={proj.handleToggleIssueStatus}
           onUpdateIssue={proj.handleUpdateIssue}
           onDeleteIssue={proj.handleDeleteIssue}
-          updateMode={proj.updateMode}
-          setUpdateMode={proj.setUpdateMode}
           updateText={proj.updateText}
           setUpdateText={proj.setUpdateText}
           postingUpdate={proj.postingUpdate}

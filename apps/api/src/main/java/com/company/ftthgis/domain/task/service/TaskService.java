@@ -331,6 +331,11 @@ public class TaskService {
     )
     public void delete(UUID id) {
         Task task = findById(id);
+        List<Task> subtasks = taskRepository.findByParentTaskId(id);
+        if (subtasks != null && !subtasks.isEmpty()) {
+            log.info("[TaskService] Cascade deleting {} subtasks for parent task id={}", subtasks.size(), id);
+            taskRepository.deleteAll(subtasks);
+        }
         taskRepository.delete(task);
         log.warn("[TaskService] Deleted task id={}", id);
     }

@@ -145,18 +145,6 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
             />
           </div>
 
-          {displayProperties.health !== false && (
-            <div className="px-4 py-2.5 flex items-center w-28 shrink-0">
-              <ColumnHeader
-                title={t("workspace.col_health")}
-                field="health"
-                currentSortField={sortField}
-                currentSortDir={sortDir}
-                onSort={handleSort}
-              />
-            </div>
-          )}
-
           {displayProperties.priority !== false && (
             <div className="px-4 py-2.5 flex items-center w-24 shrink-0">
               <ColumnHeader

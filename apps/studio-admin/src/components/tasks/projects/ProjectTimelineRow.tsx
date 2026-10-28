@@ -1,5 +1,4 @@
 import { FolderKanban } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { ProjectTimelineItem } from "./ProjectTimelineView";
 
 interface ProjectTimelineRowProps {
@@ -38,22 +37,11 @@ export function ProjectTimelineRow({
           </div>
         </div>
 
-        {/* Health Indicator & Progress Badge */}
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] font-mono font-bold text-foreground">
+        {/* Progress Badge */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[11px] font-mono font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded-full border border-border/50">
             {project.percentage}%
           </span>
-          <span
-            className={cn(
-              "w-2.5 h-2.5 rounded-full shrink-0",
-              project.health === "On track"
-                ? "bg-primary shadow-[0_0_6px_var(--primary)]"
-                : project.health === "At risk"
-                ? "bg-amber-500 shadow-[0_0_6px_#f59e0b]"
-                : "bg-destructive shadow-[0_0_6px_#ef4444]"
-            )}
-            title={project.health}
-          />
         </div>
       </div>
 
@@ -69,25 +57,11 @@ export function ProjectTimelineRow({
             left: `${leftPx}px`,
             width: `${widthPx}px`,
           }}
-          className={cn(
-            "absolute h-8 rounded-xl border flex items-center px-3 text-[11px] font-semibold shadow-sm transition-all cursor-pointer hover:brightness-110 hover:shadow-md z-15 active:scale-[0.99]",
-            project.health === "On track"
-              ? "bg-primary/20 border-primary/60 text-foreground dark:text-primary"
-              : project.health === "At risk"
-              ? "bg-amber-500/20 border-amber-500/60 text-foreground dark:text-amber-400"
-              : "bg-destructive/20 border-destructive/60 text-foreground dark:text-destructive"
-          )}
+          className="absolute h-8 rounded-xl border border-border/80 bg-muted/50 text-foreground flex items-center px-3 text-[11px] font-semibold shadow-xs transition-all cursor-pointer hover:bg-muted/70 hover:shadow-sm z-15 active:scale-[0.99] overflow-hidden"
         >
           {/* Progress Fill Background inside Pill */}
           <div
-            className={cn(
-              "absolute inset-y-0 left-0 rounded-xl opacity-25 pointer-events-none",
-              project.health === "On track"
-                ? "bg-primary"
-                : project.health === "At risk"
-                ? "bg-amber-500"
-                : "bg-destructive"
-            )}
+            className="absolute inset-y-0 left-0 bg-foreground/10 pointer-events-none"
             style={{ width: `${project.percentage}%` }}
           />
 

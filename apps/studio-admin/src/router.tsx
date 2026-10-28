@@ -211,6 +211,9 @@ const WorkspacePlansPage = lazyWithRetry(() =>
 const WorkspacePlanDetailPage = lazyWithRetry(() =>
   import("./app/(dashboard)/workspace/plans/[id]/page").then((m) => ({ default: m.default }))
 );
+const WorkspacePlanNewPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/workspace/plans/new/page").then((m) => ({ default: m.default }))
+);
 const WorkspaceRoadmapPage = lazyWithRetry(() =>
   import("./app/(dashboard)/workspace/roadmap/page").then((m) => ({ default: m.default }))
 );
@@ -514,6 +517,7 @@ const logsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, 
 // Workspace & Support Routes (Linear & Notion Architecture)
 const workspaceRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace", component: () => <Navigate to="/workspace/plans" /> });
 const workspacePlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans", component: () => <Lazy><WorkspacePlansPage /></Lazy> });
+const workspacePlanNewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans/new", component: () => <Lazy><WorkspacePlanNewPage /></Lazy> });
 const workspacePlanIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans/$id", component: () => <Lazy><WorkspacePlanDetailPage /></Lazy> });
 const workspaceRoadmapRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/roadmap", component: () => <Lazy><WorkspaceRoadmapPage /></Lazy> });
 const workspaceProjectsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/projects", component: () => <Navigate to="/workspace/plans" /> });
@@ -642,7 +646,7 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   // Others
   logsRoute,
   // Workspace & Support (Linear & Notion Architecture)
-  workspaceRoute, workspacePlansRoute, workspacePlanIdRoute, workspaceRoadmapRoute, workspaceProjectsRoute, workspaceProjectIdRoute,
+  workspaceRoute, workspacePlansRoute, workspacePlanNewRoute, workspacePlanIdRoute, workspaceRoadmapRoute, workspaceProjectsRoute, workspaceProjectIdRoute,
   workspaceIssuesRoute, workspaceIssuesNewRoute, workspaceIssueIdRoute,
   supportRoute, supportTicketsRoute, supportTicketsNewRoute, supportTicketIdRoute, supportSlaRoute,
   // Tasks (Legacy Aliases & Safety Net)

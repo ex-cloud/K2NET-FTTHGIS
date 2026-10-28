@@ -1,25 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
+import { type Task, type TaskComment } from "@/hooks/useTasksQuery";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
-import type { Task, TaskComment } from "@/hooks/useTasksQuery";
 import { exportProjectMarkdownSpec } from "./project-spec-export";
 import { useProjectIssues } from "./use-project-issues";
 
 interface UseProjectDetailProps {
   id?: string;
   sessionToken?: string;
-  projectTask?: Task | null;
+  projectTask: Task | null;
   refresh: () => void;
 }
 
-function getChangedFields(fields: Partial<Task>, projectTask: Task): Partial<Task> | null {
-  const changed: Partial<Task> = {};
+function getChangedFields(fields: Partial<Task>, projectTask: Task) {
+  const changed: Record<string, unknown> = {};
   let hasChanges = false;
 
-  if (fields.title !== undefined && fields.title.trim() !== (projectTask.title ?? "")) {
-    changed.title = fields.title.trim();
+  if (fields.title !== undefined && fields.title !== projectTask.title) {
+    changed.title = fields.title;
     hasChanges = true;
   }
   if (fields.description !== undefined && fields.description !== (projectTask.description ?? "")) {
@@ -44,6 +44,82 @@ function getChangedFields(fields: Partial<Task>, projectTask: Task): Partial<Tas
   }
 
   return hasChanges ? changed : null;
+}
+
+function calculateProgress(subtasks: Task[], status: string) {
+  const resolvedIssuesCount = subtasks.filter(
+    (t) => t.status === "RESOLVED" || t.status === "CLOSED"
+  ).length;
+  const totalIssuesCount = subtasks.length;
+  const progressPercent =
+    totalIssuesCount > 0
+      ? Math.round((resolvedIssuesCount / totalIssuesCount) * 100)
+      : status === "RESOLVED" || status === "CLOSED"
+      ? 100
+      : 0;
+
+  return { resolvedIssuesCount, totalIssuesCount, progressPercent };
+}
+
+function calculateHealthStatus(comments: TaskComment[], dueDate?: string, progressPercent = 0) {
+  const latestStatusUpdate = [...comments].reverse().find((c) => c.content.startsWith("[STATUS_UPDATE:"));
+  if (latestStatusUpdate) {
+    const match = latestStatusUpdate.content.match(/^\[STATUS_UPDATE:\s*([^|]+)\s*\|/);
+    if (match && ["On track", "At risk", "Off track"].includes(match[1].trim())) {
+      return match[1].trim() as "On track" | "At risk" | "Off track";
+    }
+  }
+  if (dueDate) {
+    const diffDays = Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0 && progressPercent < 100) {
+      return "Off track";
+    }
+    if (diffDays <= 7 && progressPercent < 100) {
+      return "At risk";
+    }
+  }
+  return "On track";
+}
+
+async function postAuditComment(
+  baseUrl: string,
+  id: string,
+  token: string | undefined,
+  content: string
+): Promise<TaskComment | null> {
+  try {
+    const res = await httpClient(`${baseUrl}/tasks/${id}/comments`, {
+      method: "POST",
+      token: token ?? "",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {
+    // Non-blocking
+  }
+  return null;
+}
+
+function triggerFieldAuditEvents(
+  changed: Partial<Task>,
+  projectTask: Task,
+  recordEvent: (content: string) => void
+) {
+  if (changed.status && changed.status !== projectTask.status) {
+    recordEvent(`[SYSTEM_EVENT: STATUS_CHANGE | ${projectTask.status} ➔ ${changed.status}]`);
+  }
+  if (changed.priority && changed.priority !== projectTask.priority) {
+    recordEvent(`[SYSTEM_EVENT: PRIORITY_CHANGE | ${projectTask.priority} ➔ ${changed.priority}]`);
+  }
+  if (changed.assigneeId !== undefined && changed.assigneeId !== projectTask.assigneeId) {
+    recordEvent(`[SYSTEM_EVENT: LEAD_CHANGE | ${changed.assigneeId ? "Updated" : "Unassigned"}]`);
+  }
+  if (changed.dueDate !== undefined && changed.dueDate !== projectTask.dueDate) {
+    recordEvent(`[SYSTEM_EVENT: TARGET_DATE_CHANGE | ${changed.dueDate || "Unset"}]`);
+  }
 }
 
 export function useProjectDetail({
@@ -79,21 +155,18 @@ export function useProjectDetail({
     fetchSubtasks();
   }, [fetchSubtasks]);
 
-  // Editable fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("IN_PROGRESS");
   const [priority, setPriority] = useState("NORMAL");
   const [assigneeId, setAssigneeId] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | undefined>();
-
-  // Activity update draft
-  const [updateMode, setUpdateMode] = useState<"update" | "comment">("update");
   const [updateText, setUpdateText] = useState("");
   const [postingUpdate, setPostingUpdate] = useState(false);
   const [comments, setComments] = useState<TaskComment[]>([]);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  // Sync project data
   useEffect(() => {
     if (projectTask) {
       setTitle(projectTask.title);
@@ -107,34 +180,19 @@ export function useProjectDetail({
     }
   }, [projectTask]);
 
-  const projectIssues = subtasks;
-  const resolvedIssuesCount = projectIssues.filter(
-    (t) => t.status === "RESOLVED" || t.status === "CLOSED"
-  ).length;
-  const totalIssuesCount = projectIssues.length;
-  const progressPercent =
-    totalIssuesCount > 0
-      ? Math.round((resolvedIssuesCount / totalIssuesCount) * 100)
-      : status === "RESOLVED" || status === "CLOSED"
-      ? 100
-      : 0;
+  const { resolvedIssuesCount, totalIssuesCount, progressPercent } =
+    calculateProgress(subtasks, status);
+  const healthStatus = calculateHealthStatus(comments, dueDate, progressPercent);
 
-  // Real dynamic healthStatus derived from latest status update or schedule/progress
-  const latestStatusUpdate = [...comments].reverse().find((c) => c.content.startsWith("[STATUS_UPDATE:"));
-  let healthStatus: "On track" | "At risk" | "Off track" = "On track";
-  if (latestStatusUpdate) {
-    const match = latestStatusUpdate.content.match(/^\[STATUS_UPDATE:\s*([^|]+)\s*\|/);
-    if (match && ["On track", "At risk", "Off track"].includes(match[1].trim())) {
-      healthStatus = match[1].trim() as "On track" | "At risk" | "Off track";
-    }
-  } else if (dueDate) {
-    const diffDays = Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0 && progressPercent < 100) {
-      healthStatus = "Off track";
-    } else if (diffDays <= 7 && progressPercent < 100) {
-      healthStatus = "At risk";
-    }
-  }
+  const recordSystemEvent = useCallback(
+    async (content: string) => {
+      if (!id) return;
+      const baseUrl = getBackendBaseUrl();
+      const comment = await postAuditComment(baseUrl, id, sessionToken, content);
+      if (comment) setComments((prev) => [...prev, comment]);
+    },
+    [id, sessionToken]
+  );
 
   const handleSaveField = async (fields: Partial<Task>) => {
     if (!projectTask || !id) return;
@@ -152,6 +210,7 @@ export function useProjectDetail({
       if (res.ok) {
         toast.success(t("workspace.toast_workspace_updated"));
         refresh();
+        triggerFieldAuditEvents(changed, projectTask, recordSystemEvent);
       }
     } catch {
       toast.error(t("workspace.toast_workspace_update_failed"));
@@ -164,26 +223,35 @@ export function useProjectDetail({
     setPostingUpdate(true);
     try {
       const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/tasks/${id}/comments`, {
-        method: "POST",
-        token: sessionToken ?? "",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: textToSend }),
-      });
-      if (res.ok) {
-        const comment: TaskComment = await res.json();
+      const comment = await postAuditComment(baseUrl, id, sessionToken, textToSend);
+      if (comment) {
         setComments((prev) => [...prev, comment]);
         setUpdateText("");
-        toast.success(
-          updateMode === "update"
-            ? t("workspace.toast_status_update_posted")
-            : t("workspace.toast_comment_posted")
-        );
+        toast.success(t("workspace.toast_comment_posted"));
       }
     } catch {
       toast.error(t("workspace.toast_post_failed"));
     } finally {
       setPostingUpdate(false);
+    }
+  };
+
+  const handleSavePlan = async () => {
+    if (!id || !projectTask) return;
+    setIsSavingPlan(true);
+    try {
+      const isContentChanged =
+        description !== (projectTask.description ?? "") || title !== projectTask.title;
+      await handleSaveField({ title, description });
+      if (isContentChanged) {
+        recordSystemEvent("[SYSTEM_EVENT: SPEC_UPDATED | canvas markdown]");
+      }
+      setLastSaved(new Date());
+      toast.success(t("projects.plan_saved_success"));
+    } catch {
+      toast.error(t("projects.plan_saved_fail"));
+    } finally {
+      setIsSavingPlan(false);
     }
   };
 
@@ -202,28 +270,11 @@ export function useProjectDetail({
       dueDate,
       healthStatus,
       description,
-      projectIssues,
+      projectIssues: subtasks,
       resolvedIssuesCount,
       totalIssuesCount,
       progressPercent,
     });
-  };
-
-  const [isSavingPlan, setIsSavingPlan] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-
-  const handleSavePlan = async () => {
-    if (!id || !projectTask) return;
-    setIsSavingPlan(true);
-    try {
-      await handleSaveField({ title, description });
-      setLastSaved(new Date());
-      toast.success(t("projects.plan_saved_success"));
-    } catch {
-      toast.error(t("projects.plan_saved_fail"));
-    } finally {
-      setIsSavingPlan(false);
-    }
   };
 
   return {
@@ -242,13 +293,11 @@ export function useProjectDetail({
     dueDate,
     setDueDate,
     healthStatus,
-    updateMode,
-    setUpdateMode,
     updateText,
     setUpdateText,
     postingUpdate,
     comments,
-    projectIssues,
+    projectIssues: subtasks,
     resolvedIssuesCount,
     totalIssuesCount,
     progressPercent,

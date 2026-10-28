@@ -24,6 +24,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -370,4 +371,30 @@ class TaskServiceTest {
         assertEquals(6L, summary.completedPlans());
         assertEquals(1L, summary.atRiskCount());
     }
+
+    @Test
+    void deleteTaskShouldCascadeDeleteSubtasks() {
+        UUID parentId = UUID.randomUUID();
+        Task parent = new Task();
+        parent.setId(parentId);
+
+        Task subtask1 = new Task();
+        subtask1.setId(UUID.randomUUID());
+        subtask1.setParentTaskId(parentId);
+
+        Task subtask2 = new Task();
+        subtask2.setId(UUID.randomUUID());
+        subtask2.setParentTaskId(parentId);
+
+        List<Task> subtasks = List.of(subtask1, subtask2);
+
+        when(taskRepository.findById(parentId)).thenReturn(Optional.of(parent));
+        when(taskRepository.findByParentTaskId(parentId)).thenReturn(subtasks);
+
+        taskService.delete(parentId);
+
+        verify(taskRepository).deleteAll(subtasks);
+        verify(taskRepository).delete(parent);
+    }
 }
+

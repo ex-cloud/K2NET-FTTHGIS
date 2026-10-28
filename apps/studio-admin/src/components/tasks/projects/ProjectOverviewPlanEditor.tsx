@@ -24,25 +24,25 @@ function getSubtypeVisuals(docType: WorkspaceDocType, t: (key: string) => string
     case "IDEA":
       return {
         Icon: Lightbulb,
-        iconContainerClass: "bg-purple-500/10 border-purple-500/20 text-purple-400",
+        iconContainerClass: "bg-muted/70 border-border/80 text-foreground",
         typeLabel: t("workspace.idea_spec_title"),
       };
     case "DOC":
       return {
         Icon: BookOpen,
-        iconContainerClass: "bg-blue-500/10 border-blue-500/20 text-blue-400",
+        iconContainerClass: "bg-muted/70 border-border/80 text-foreground",
         typeLabel: t("workspace.doc_spec_title"),
       };
     case "PROJECT":
       return {
         Icon: FolderKanban,
-        iconContainerClass: "bg-amber-500/10 border-amber-500/20 text-amber-400",
+        iconContainerClass: "bg-muted/70 border-border/80 text-foreground",
         typeLabel: t("workspace.project_spec_title"),
       };
     default:
       return {
         Icon: FileText,
-        iconContainerClass: "bg-primary/10 border-primary/20 text-primary",
+        iconContainerClass: "bg-muted/70 border-border/80 text-foreground",
         typeLabel: t("workspace.plan_spec_title"),
       };
   }
@@ -85,7 +85,7 @@ export function ProjectOverviewPlanEditor({
   );
 
   return (
-    <div className="flex-1 rounded-2xl border border-border/70 overflow-hidden bg-card/40 focus-within:border-primary/50 transition-colors shadow-xs flex flex-col">
+    <div className="flex-1 rounded-2xl border border-border/70 overflow-hidden bg-card/40 focus-within:border-border transition-colors shadow-xs flex flex-col">
       {/* ── Document Canvas Header: Subtype Pill + Inline Editable H1 Title ── */}
       <div className="p-4 sm:p-6 pb-4 border-b border-border/40 bg-card/60 space-y-2.5">
         <div className="flex items-center gap-2">
@@ -122,6 +122,7 @@ export function ProjectOverviewPlanEditor({
           value={description}
           onChange={setDescription}
           minHeight="500px"
+          borderless={true}
           placeholder={t("projects.plan_placeholder")}
           onUploadImage={handleUploadImage}
         />

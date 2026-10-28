@@ -3,7 +3,6 @@ import { type Task, type TaskComment } from "@/hooks/useTasksQuery";
 import { type TeamUser } from "@/hooks/useTeamUsers";
 import { useTranslation } from "@k2net/i18n";
 import { ProjectOverviewPropertiesGrid } from "./ProjectOverviewPropertiesGrid";
-import { ProjectOverviewSummaryCard } from "./ProjectOverviewSummaryCard";
 import { ProjectOverviewPlanEditor } from "./ProjectOverviewPlanEditor";
 import { WorkspaceSubtypeInspectorCard } from "./WorkspaceSubtypeInspectorCard";
 import { ProjectIssuesTab } from "./ProjectIssuesTab";
@@ -22,7 +21,6 @@ interface ProjectOverviewTabProps {
   setAssigneeId: (assigneeId: string | null) => void;
   dueDate?: string;
   setDueDate?: (dueDate: string | undefined) => void;
-  healthStatus: "On track" | "At risk" | "Off track";
   projectTask: Task;
   teamUsers: TeamUser[];
   progressPercent?: number;
@@ -36,8 +34,6 @@ interface ProjectOverviewTabProps {
   onToggleIssueStatus?: (issue: Task) => Promise<void>;
   onUpdateIssue?: (issueId: string, fields: Partial<Task>) => Promise<void>;
   onDeleteIssue?: (issueId: string) => Promise<void>;
-  updateMode?: "update" | "comment";
-  setUpdateMode?: (mode: "update" | "comment") => void;
   updateText?: string;
   setUpdateText?: (text: string) => void;
   postingUpdate?: boolean;
@@ -75,7 +71,6 @@ export function ProjectOverviewTab({
   setAssigneeId,
   dueDate,
   setDueDate,
-  healthStatus,
   projectTask,
   teamUsers,
   progressPercent = 0,
@@ -89,8 +84,6 @@ export function ProjectOverviewTab({
   onToggleIssueStatus,
   onUpdateIssue,
   onDeleteIssue,
-  updateMode = "update",
-  setUpdateMode,
   updateText = "",
   setUpdateText,
   postingUpdate = false,
@@ -174,12 +167,9 @@ export function ProjectOverviewTab({
           </div>
 
           <ProjectActivityTab
-            updateMode={updateMode}
-            setUpdateMode={setUpdateMode ?? (() => {})}
             updateText={updateText}
             setUpdateText={setUpdateText ?? (() => {})}
             postingUpdate={postingUpdate}
-            progressPercent={progressPercent}
             comments={comments}
             teamUsers={teamUsers}
             onPostUpdate={onPostUpdate ?? (async () => {})}
@@ -207,17 +197,7 @@ export function ProjectOverviewTab({
           referenceType={docType}
         />
 
-        {/* 2. Executive Status Summary Card (100% Real Latest Update from DB) */}
-        <ProjectOverviewSummaryCard
-          healthStatus={healthStatus}
-          assigneeId={assigneeId}
-          projectTask={projectTask}
-          comments={comments}
-          teamUsers={teamUsers}
-          onNavigateToActivity={() => scrollToSection("workspace-activity-section")}
-        />
-
-        {/* 3. Subtype-Specific Inspector Card (100% Real Subtasks & Telemetry) */}
+        {/* 2. Subtype-Specific Inspector Card (100% Real Subtasks & Telemetry) */}
         <WorkspaceSubtypeInspectorCard
           type={docType}
           projectTask={projectTask}
