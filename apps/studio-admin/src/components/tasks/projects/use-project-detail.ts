@@ -209,6 +209,23 @@ export function useProjectDetail({
     });
   };
 
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const handleSavePlan = async () => {
+    if (!id || !projectTask) return;
+    setIsSavingPlan(true);
+    try {
+      await handleSaveField({ title, description });
+      setLastSaved(new Date());
+      toast.success(t("projects.plan_saved_success"));
+    } catch {
+      toast.error(t("projects.plan_saved_fail"));
+    } finally {
+      setIsSavingPlan(false);
+    }
+  };
+
   return {
     subtasks,
     fetchSubtasks,
@@ -238,6 +255,9 @@ export function useProjectDetail({
     handleSaveField,
     handlePostUpdate,
     handleExportMarkdown,
+    handleSavePlan,
+    isSavingPlan,
+    lastSaved,
     ...issuesOps,
   };
 }

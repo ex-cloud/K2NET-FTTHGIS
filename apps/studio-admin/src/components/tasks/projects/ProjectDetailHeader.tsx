@@ -1,5 +1,5 @@
 import { PageHeader } from "@k2net/ui";
-import { Box, ExternalLink, FileDown, Plus } from "lucide-react";
+import { Box, ExternalLink, FileDown, Plus, Save, Check, Loader2 } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
 import type { Task } from "@/hooks/useTasksQuery";
 
@@ -8,6 +8,9 @@ interface ProjectDetailHeaderProps {
   projectTask: Task;
   onExportMarkdown: () => void;
   onOpenNewIssue: () => void;
+  onSavePlan?: () => void;
+  isSavingPlan?: boolean;
+  lastSaved?: Date | null;
 }
 
 export function ProjectDetailHeader({
@@ -15,6 +18,9 @@ export function ProjectDetailHeader({
   projectTask,
   onExportMarkdown,
   onOpenNewIssue,
+  onSavePlan,
+  isSavingPlan,
+  lastSaved,
 }: ProjectDetailHeaderProps) {
   const { t } = useTranslation();
 
@@ -34,6 +40,31 @@ export function ProjectDetailHeader({
               <ExternalLink className="size-3" />
               <span>{projectTask.obsidianRef}</span>
             </a>
+          )}
+          {lastSaved && (
+            <span className="text-[11px] text-muted-foreground font-mono items-center gap-1 hidden md:inline-flex">
+              <Check className="size-3 text-primary" />
+              <span>
+                {t("projects.saved_at", {
+                  time: lastSaved.toLocaleTimeString("id-ID"),
+                })}
+              </span>
+            </span>
+          )}
+          {onSavePlan && (
+            <button
+              onClick={onSavePlan}
+              disabled={isSavingPlan}
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border bg-background hover:bg-muted text-foreground text-xs font-medium shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+              title={t("projects.save_plan")}
+            >
+              {isSavingPlan ? (
+                <Loader2 className="size-3.5 animate-spin text-primary" />
+              ) : (
+                <Save className="size-3.5 text-primary" />
+              )}
+              <span>{isSavingPlan ? t("projects.saving_plan") : t("projects.save_plan")}</span>
+            </button>
           )}
           <button
             onClick={onExportMarkdown}

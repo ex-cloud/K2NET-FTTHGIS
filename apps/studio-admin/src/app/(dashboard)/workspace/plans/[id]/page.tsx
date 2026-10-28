@@ -6,13 +6,7 @@ import { useTasksQuery } from "@/hooks/useTasksQuery";
 import { useTeamUsers } from "@/hooks/useTeamUsers";
 import { NewTaskDialog } from "@/components/tasks/NewTaskDialog";
 import { ProjectOverviewTab } from "@/components/tasks/projects/ProjectOverviewTab";
-import { ProjectActivityTab } from "@/components/tasks/projects/ProjectActivityTab";
-import { ProjectIssuesTab } from "@/components/tasks/projects/ProjectIssuesTab";
 import { ProjectDetailHeader } from "@/components/tasks/projects/ProjectDetailHeader";
-import {
-  ProjectDetailTabsBar,
-  type ProjectTab,
-} from "@/components/tasks/projects/ProjectDetailTabsBar";
 import { useProjectDetail } from "@/components/tasks/projects/use-project-detail";
 import { useTranslation } from "@k2net/i18n";
 
@@ -23,7 +17,6 @@ export default function WorkspacePlanDetailPage() {
   const { data: session } = useSession();
   const { users: teamUsers } = useTeamUsers();
 
-  const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
   const [newIssueOpen, setNewIssueOpen] = useState(false);
 
   const { task: projectTask, loading, refresh } = useTasksQuery(id);
@@ -65,77 +58,47 @@ export default function WorkspacePlanDetailPage() {
         projectTask={projectTask}
         onExportMarkdown={proj.handleExportMarkdown}
         onOpenNewIssue={() => setNewIssueOpen(true)}
+        onSavePlan={proj.handleSavePlan}
+        isSavingPlan={proj.isSavingPlan}
+        lastSaved={proj.lastSaved}
       />
 
-      {/* ── 2. Linear Tabs Bar ─────────────────────────────────────────── */}
-      <ProjectDetailTabsBar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        commentsCount={proj.comments.length}
-        resolvedIssuesCount={proj.resolvedIssuesCount}
-        totalIssuesCount={proj.totalIssuesCount}
-      />
-
-      {/* ── 3. Tab Contents ────────────────────────────────────────────── */}
+      {/* ── 2. Unified Document Canvas (Single-Page Flow) ─────────────── */}
       <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin p-4 md:p-6 w-full">
-        {activeTab === "overview" && (
-          <ProjectOverviewTab
-            title={proj.title}
-            setTitle={proj.setTitle}
-            description={proj.description}
-            setDescription={proj.setDescription}
-            status={proj.status}
-            setStatus={proj.setStatus}
-            priority={proj.priority}
-            setPriority={proj.setPriority}
-            assigneeId={proj.assigneeId}
-            setAssigneeId={proj.setAssigneeId}
-            dueDate={proj.dueDate}
-            setDueDate={proj.setDueDate}
-            healthStatus={proj.healthStatus}
-            projectTask={projectTask}
-            teamUsers={teamUsers}
-            progressPercent={proj.progressPercent}
-            resolvedIssuesCount={proj.resolvedIssuesCount}
-            totalIssuesCount={proj.totalIssuesCount}
-            projectIssues={proj.projectIssues}
-            comments={proj.comments}
-            onSaveField={proj.handleSaveField}
-            onOpenNewIssue={() => setNewIssueOpen(true)}
-            onNavigateTab={setActiveTab}
-          />
-        )}
-
-        {activeTab === "activity" && (
-          <div className="max-w-4xl mx-auto">
-            <ProjectActivityTab
-              updateMode={proj.updateMode}
-              setUpdateMode={proj.setUpdateMode}
-              updateText={proj.updateText}
-              setUpdateText={proj.setUpdateText}
-              postingUpdate={proj.postingUpdate}
-              progressPercent={proj.progressPercent}
-              comments={proj.comments}
-              teamUsers={teamUsers}
-              onPostUpdate={proj.handlePostUpdate}
-            />
-          </div>
-        )}
-
-        {activeTab === "issues" && (
-          <div className="w-full">
-            <ProjectIssuesTab
-              projectIssues={proj.projectIssues}
-              resolvedIssuesCount={proj.resolvedIssuesCount}
-              totalIssuesCount={proj.totalIssuesCount}
-              onNewIssueClick={() => setNewIssueOpen(true)}
-              onQuickCreateIssue={proj.handleQuickCreateIssue}
-              onToggleIssueStatus={proj.handleToggleIssueStatus}
-              onUpdateIssue={proj.handleUpdateIssue}
-              onDeleteIssue={proj.handleDeleteIssue}
-            />
-          </div>
-        )}
+        <ProjectOverviewTab
+          title={proj.title}
+          setTitle={proj.setTitle}
+          description={proj.description}
+          setDescription={proj.setDescription}
+          status={proj.status}
+          setStatus={proj.setStatus}
+          priority={proj.priority}
+          setPriority={proj.setPriority}
+          assigneeId={proj.assigneeId}
+          setAssigneeId={proj.setAssigneeId}
+          dueDate={proj.dueDate}
+          setDueDate={proj.setDueDate}
+          healthStatus={proj.healthStatus}
+          projectTask={projectTask}
+          teamUsers={teamUsers}
+          progressPercent={proj.progressPercent}
+          resolvedIssuesCount={proj.resolvedIssuesCount}
+          totalIssuesCount={proj.totalIssuesCount}
+          projectIssues={proj.projectIssues}
+          comments={proj.comments}
+          onSaveField={proj.handleSaveField}
+          onOpenNewIssue={() => setNewIssueOpen(true)}
+          onQuickCreateIssue={proj.handleQuickCreateIssue}
+          onToggleIssueStatus={proj.handleToggleIssueStatus}
+          onUpdateIssue={proj.handleUpdateIssue}
+          onDeleteIssue={proj.handleDeleteIssue}
+          updateMode={proj.updateMode}
+          setUpdateMode={proj.setUpdateMode}
+          updateText={proj.updateText}
+          setUpdateText={proj.setUpdateText}
+          postingUpdate={proj.postingUpdate}
+          onPostUpdate={proj.handlePostUpdate}
+        />
       </div>
 
       {/* New Issue in this plan */}
