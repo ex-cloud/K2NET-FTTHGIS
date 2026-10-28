@@ -20,9 +20,7 @@ export function Step4ProvisioningProgress({
   streamError,
   onRetry,
 }: Step4ProvisioningProgressProps) {
-  const progressPercent = streamError
-    ? Math.min(100, Math.max(15, (provisioningStage / 5) * 100))
-    : Math.min(100, Math.max(15, (provisioningStage / 5) * 100));
+  const progressPercent = Math.min(100, Math.max(15, (provisioningStage / 5) * 100));
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300">

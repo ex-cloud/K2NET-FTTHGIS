@@ -3,6 +3,7 @@ import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactPlugin from "eslint-plugin-react";
 import queryPlugin from "@tanstack/eslint-plugin-query";
+import sonarjs from "eslint-plugin-sonarjs";
 
 export default tseslint.config(
   js.configs.recommended,
@@ -26,8 +27,16 @@ export default tseslint.config(
       "react-hooks": reactHooks,
       "react": reactPlugin,
       "@tanstack/query": queryPlugin,
+      "sonarjs": sonarjs,
     },
     rules: {
+      // ----------------------------------------------------
+      // 0. ANTI-AI-SLOP & LOGIC SMELL GUARDS (SonarJS)
+      // ----------------------------------------------------
+      "sonarjs/no-identical-conditions": "error",
+      "sonarjs/no-all-duplicated-branches": "error",
+      "sonarjs/no-duplicated-branches": "warn",
+      "sonarjs/no-identical-functions": "warn",
       // ----------------------------------------------------
       // 1. REACT & HOOKS (Lifecycle, Re-render & Security)
       // ----------------------------------------------------

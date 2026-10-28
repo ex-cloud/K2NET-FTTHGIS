@@ -1,0 +1,47 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreWorkspaces": [
+    "apps/studio",
+    "apps/www"
+  ],
+  "workspaces": {
+    "apps/studio-admin": {
+      "entry": [
+        "src/app/**/page.tsx"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}"
+      ]
+    },
+    "apps/studio-tenant": {
+      "entry": [
+        "src/pages/**/*.{ts,tsx}"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}"
+      ]
+    },
+    "packages/auth": {
+      "entry": [
+        "src/index.ts",
+        "src/*/index.ts"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}"
+      ]
+    },
+    "packages/*": {
+      "entry": [
+        "src/index.{ts,tsx}"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}"
+      ]
+    }
+  },
+  "ignoreDependencies": [
+    "@tailwindcss/vite",
+    "tailwindcss",
+    "tw-animate-css"
+  ]
+}

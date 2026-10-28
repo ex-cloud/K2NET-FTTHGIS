@@ -25,12 +25,16 @@
     "audit:design-system:admin": "bash scripts/audit-design-system.sh admin",
     "audit:design-system:tenant": "bash scripts/audit-design-system.sh tenant",
     "audit:i18n": "bash scripts/audit-i18n.sh",
-    "audit:design-system:ui": "bash scripts/audit-design-system.sh ui"
+    "audit:design-system:ui": "bash scripts/audit-design-system.sh ui",
+    "audit:slop": "knip --files --no-exit-code",
+    "audit:deadcode": "knip --no-exit-code"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "^5.102.8",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-sonarjs": "^4.2.2",
+    "knip": "^6.43.0",
     "turbo": "^2.0.0"
   },
   "packageManager": "pnpm@9.15.9"

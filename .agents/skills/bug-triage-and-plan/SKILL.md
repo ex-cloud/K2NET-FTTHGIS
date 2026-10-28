@@ -17,6 +17,8 @@ Skill ini diaktifkan saat AI Agent menemukan bug, menerima laporan kegagalan aud
 ## 🎯 Tujuan Prosedur
 Memastikan setiap temuan memiliki tiket terdokumentasi rapi, tidak ada berkas acak yang mengotori repositori, rencana kerja tereksekusi dengan kendali checklist ketat, dan seluruh pekerjaan yang selesai diarsipkan secara otomatis.
 
+- **Referensi Lengkap**: [Standar Siklus Hidup Dokumen, Tiket Bug & Implementation Plan](./references/lifecycle-and-documentation.md)
+
 ---
 
 ## 📋 Alur Eksekusi Langkah-demi-Langkah

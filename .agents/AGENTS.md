@@ -47,31 +47,28 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 
 ---
 
-## 📋 Aturan Pengkodean per Bagian (Coding Rules)
+## 📋 7 Aturan Inti (Core Always-On Rules — `.agents/rules/`)
 
-1. [rules/frontend.md](file:///opt/project5/.agents/rules/frontend.md): Page Guards PBAC, Form Zod, styling dark mode, Plane isolation, Log Explorer.
-2. [rules/frontend-advanced.md](file:///opt/project5/.agents/rules/frontend-advanced.md): Linear Task Management, Responsif, Tooltip, Context Menu, KPI Glow, Three.js, i18n, Anatomi Kontrol.
-3. [rules/backend.md](file:///opt/project5/.agents/rules/backend.md): Spring Security `@PreAuthorize`, Hibernate PostGIS, snake_case DB mapping.
-4. [rules/microservices.md](file:///opt/project5/.agents/rules/microservices.md): Port map internal, header `X-Tenant-ID`, `go.work` compilation.
-5. [rules/infrastructure.md](file:///opt/project5/.agents/rules/infrastructure.md): Routing Kong/Traefik, SSL termination, Keycloak bypass, MinIO Tailscale.
-6. [rules/styles.md](file:///opt/project5/.agents/rules/styles.md): Token warna monokrom, dark/light theme, anti-hardcode `zinc-*`/`text-white`.
-7. [rules/styles-components.md](file:///opt/project5/.agents/rules/styles-components.md): Form inputs, badges, switchers, Skeleton CSR, Dynamic Theme, Tooltip, Context Menu.
-8. [rules/ui-layout-architecture.md](file:///opt/project5/.agents/rules/ui-layout-architecture.md): Arsitektur 2-lapisan (Shell vs Canvas `<Outlet />`), `PageLayout`, `PageHero`.
-9. [rules/ai-knowledge.md](file:///opt/project5/.agents/rules/ai-knowledge.md): Taksonomi 6 kategori pengetahuan, 500 token chunking, tenant isolation.
-10. [rules/service-audit-standards.md](file:///opt/project5/.agents/rules/service-audit-standards.md): Matriks Quality Gate 5 pilar & `pnpm verify`.
-11. [rules/module-creation-standard.md](file:///opt/project5/.agents/rules/module-creation-standard.md): Alur 5-langkah modul baru, Flyway SQL, `@PreAuthorize`, sidebar filtering.
-12. [rules/versioning-and-patching-standard.md](file:///opt/project5/.agents/rules/versioning-and-patching-standard.md): Rute `/api/v[0-9]+/`, Flyway sekuensial anti-downtime, SemVer.
-13. [rules/dev-history-observability.md](file:///opt/project5/.agents/rules/dev-history-observability.md): Riwayat audit 10 modul observabilitas, Prometheus, OLT Poller, Storage.
-14. [rules/dev-history-platform.md](file:///opt/project5/.agents/rules/dev-history-platform.md): Riwayat Linear task management, TipTap, AI assistant, PBAC CI gate.
-15. [rules/marketplace-package-standard.md](file:///opt/project5/.agents/rules/marketplace-package-standard.md): Standar 6-Pilar pembuatan paket marketplace, pola audit Envers Flyway, dan evaluasi kartu UI.
-16. [rules/marketplace-engines.md](file:///opt/project5/.agents/rules/marketplace-engines.md): Panduan pemilihan bahasa engine polyglot (Java, Go, Python, Rust) & pemetaan port 12 paket resmi.
-17. [rules/lifecycle-and-documentation.md](file:///opt/project5/.agents/rules/lifecycle-and-documentation.md): Standar siklus hidup dokumen, pencatatan bug `docs/bug/{pending,active,resolved}`, pemindahan plan `docs/plans/active/` ke `docs/plans/completed/`, dan laporan resmi `docs/reports/`.
-18. [rules/multi-tenant-permission-security-standard.md](file:///opt/project5/.agents/rules/multi-tenant-permission-security-standard.md): Standar hukum arsitektural otorisasi PBAC, Scope Air-Gap mutlak (0 kebocoran SYSTEM ke TENANT), algoritma presisi Seeder, SecurityConfig double-defense, dan larangan halusinasi AI.
+Aturan deklaratif inti (*guardrails*) yang selalu dimuat otomatis:
+1. [rules/frontend.md](file:///opt/project5/.agents/rules/frontend.md): Vite 6 CSR SPA, Page Guards PBAC, Form Zod, paritas `@k2net/i18n`, ukuran kontrol `size="sm"`/`size="xs"`.
+2. [rules/styles.md](file:///opt/project5/.agents/rules/styles.md): Token warna monokrom semantik, dark/light theme, anti-hardcode `zinc-*`/`text-white`, Shell `@k2net/ui`.
+3. [rules/backend.md](file:///opt/project5/.agents/rules/backend.md): Spring Security `@PreAuthorize`, Hibernate PostGIS (`SRID 4326`), Envers `@Audited` (`_aud`), snake_case DB mapping.
+4. [rules/multi-tenant-permission-security-standard.md](file:///opt/project5/.agents/rules/multi-tenant-permission-security-standard.md): Standar hukum arsitektural otorisasi PBAC, Scope Air-Gap mutlak (0 kebocoran SYSTEM ke TENANT), algoritma presisi Seeder, SecurityConfig double-defense, dan larangan halusinasi AI.
+5. [rules/microservices.md](file:///opt/project5/.agents/rules/microservices.md): Port map internal, header `X-Tenant-ID` & `X-Gateway-Token`, kompilasi `services/go.work`, non-blocking `auditclient`.
+6. [rules/infrastructure.md](file:///opt/project5/.agents/rules/infrastructure.md): Routing Kong/Traefik, SSL termination, larangan hardcode IP `172.18.0.x`, MinIO Tailscale.
+7. [rules/versioning-and-patching-standard.md](file:///opt/project5/.agents/rules/versioning-and-patching-standard.md): Rute `/api/v[0-9]+/`, Flyway sekuensial anti-downtime (`V1..VN`), SemVer.
 
 ---
 
-## ⚡ Skills AI Otomatisasi (Custom Skills)
-- [skills/bug-triage-and-plan](file:///opt/project5/.agents/skills/bug-triage-and-plan/SKILL.md): Prosedur terautomasi pembuatan tiket bug `docs/bug/{pending,active,resolved}`, rencana aksi `docs/plans/{active,completed}`, checklist todo, quality gate monorepo, pengarsipan otomatis, dan laporan akhir resmi `docs/reports/`.
+## ⚡ 6 Skills AI Otomatisasi (On-Demand SOP & Playbooks — `.agents/skills/`)
+
+Prosedur langkah-demi-langkah (*Progressive Disclosure*) beserta dokumentasi referensi mendalam (`references/`):
+1. [skills/bug-triage-and-plan](file:///opt/project5/.agents/skills/bug-triage-and-plan/SKILL.md): SOP siklus hidup tiket bug `docs/bug/{pending,active,resolved}`, rencana aksi `docs/plans/{active,completed}`, pengarsipan otomatis, dan laporan akhir `docs/reports/`.
+2. [skills/new-module-and-pbac](file:///opt/project5/.agents/skills/new-module-and-pbac/SKILL.md): SOP 6-langkah pembuatan modul/endpoint baru, Flyway SQL, registrasi 4-argumen `PermissionSeeder.java`, `@PreAuthorize`, dan `ComprehensiveControllerSecurityCoverageTest`.
+3. [skills/marketplace-package-builder](file:///opt/project5/.agents/skills/marketplace-package-builder/SKILL.md): SOP 6-Pilar pembuatan paket add-on Marketplace (`platform_packages`, Envers `_aud`, pemilihan engine polyglot Java/Go/Python/Rust, dan 5 state kartu UI).
+4. [skills/polyglot-gateway-service](file:///opt/project5/.agents/skills/polyglot-gateway-service/SKILL.md): SOP pengembangan & observabilitas microservice Go (`services/gateway-*`, port 5001–5014) dan Python (`gateway-ai`), `services/go.work`, Prometheus `/metrics`, dan Kong routing.
+5. [skills/ui-component-and-i18n](file:///opt/project5/.agents/skills/ui-component-and-i18n/SKILL.md): SOP pembuatan halaman/komponen React, Arsitektur 2-Lapisan (`PageLayout` + `PageHero`), anatomi kontrol, Knowledge Base AI, dan paritas 100% `@k2net/i18n`.
+6. [skills/anti-slop-and-hygiene](file:///opt/project5/.agents/skills/anti-slop-and-hygiene/SKILL.md): SOP Anti-AI-Slop (`knip` dead-code detector + `eslint-plugin-sonarjs` logic smell detector), Quality Gate 5-Pilar (`pnpm verify`), dan pembersihan ghost process/swap server (`scripts/cleanup.sh`).
 
 ---
 
