@@ -46,36 +46,6 @@ export function NewProjectDialog({
   const form = useNewProjectForm({ open, onOpenChange, onSuccess, defaultValues });
   const IconComponent = form.activeIconObj.icon;
 
-  const currentSubtypeConfig =
-    WORKSPACE_SUBTYPES.find((s) => s.id === form.subtype) || WORKSPACE_SUBTYPES[0];
-  const SubtypeIcon = currentSubtypeConfig.icon;
-
-  const getBreadcrumbTitle = () => {
-    switch (form.subtype) {
-      case "IDEA":
-        return t("workspace.modal_title_idea");
-      case "PROJECT":
-        return t("workspace.modal_title_project");
-      case "DOC":
-        return t("workspace.modal_title_doc");
-      default:
-        return t("workspace.modal_title_plan");
-    }
-  };
-
-  const getBreadcrumbSubtitle = () => {
-    switch (form.subtype) {
-      case "IDEA":
-        return t("workspace.modal_desc_idea");
-      case "PROJECT":
-        return t("workspace.modal_desc_project");
-      case "DOC":
-        return t("workspace.modal_desc_doc");
-      default:
-        return t("workspace.modal_desc_plan");
-    }
-  };
-
   const getTitlePlaceholder = () => {
     switch (form.subtype) {
       case "IDEA":
@@ -106,57 +76,43 @@ export function NewProjectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="w-full sm:max-w-[620px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-lg rounded-2xl overflow-hidden flex flex-col gap-0"
+        className="w-full sm:max-w-[580px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-lg rounded-2xl overflow-hidden flex flex-col gap-0"
       >
-        {/* ── Top Header / Breadcrumb ────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-border/40 bg-muted/20 shrink-0">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-secondary/80 text-xs font-medium text-foreground">
-            <SubtypeIcon className={cn("w-3.5 h-3.5", currentSubtypeConfig.color.split(" ")[0])} />
-            <span>K2N</span>
-            <span className="text-muted-foreground/60">›</span>
-            <span className="font-semibold text-foreground">{getBreadcrumbTitle()}</span>
+        {/* ── Subtype Switcher Bar (Primary Header) ───────────────────────── */}
+        <div className="px-6 pt-5 pb-3 border-b border-border/30 bg-muted/10 shrink-0">
+          <div className="flex items-center gap-1.5 p-1 bg-background/80 rounded-xl border border-border/50 shadow-2xs w-full justify-between">
+            {WORKSPACE_SUBTYPES.map((sub) => {
+              const SubIcon = sub.icon;
+              const isSelected = form.subtype === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={() => form.handleSubtypeChange(sub.id)}
+                  className={cn(
+                    "flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                    isSelected
+                      ? "bg-accent text-accent-foreground border border-primary/40 shadow-xs font-semibold"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  )}
+                >
+                  <SubIcon className={cn("size-3.5", sub.color.split(" ")[0])} />
+                  <span>
+                    {sub.id === "PLAN"
+                      ? t("workspace.subtype_plan")
+                      : sub.id === "IDEA"
+                      ? t("workspace.subtype_idea")
+                      : sub.id === "PROJECT"
+                      ? t("workspace.subtype_project")
+                      : t("workspace.subtype_doc")}
+                  </span>
+                  <span className="text-[10px] font-mono text-muted-foreground/60 uppercase">
+                    ({sub.codePrefix})
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <span className="text-[11px] text-muted-foreground hidden sm:inline">
-            {getBreadcrumbSubtitle()}
-          </span>
-        </div>
-
-        {/* ── Subtype Switcher Bar ───────────────────────────────────────── */}
-        <div className="flex items-center gap-2 px-6 py-2.5 border-b border-border/30 bg-muted/10 shrink-0 overflow-x-auto">
-          <span className="text-[11px] font-medium text-muted-foreground mr-1">
-            {t("workspace.type_filter")}:
-          </span>
-          {WORKSPACE_SUBTYPES.map((sub) => {
-            const SubIcon = sub.icon;
-            const isSelected = form.subtype === sub.id;
-            return (
-              <button
-                key={sub.id}
-                type="button"
-                onClick={() => form.handleSubtypeChange(sub.id)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer border",
-                  isSelected
-                    ? "bg-accent text-accent-foreground border-primary/50 shadow-xs"
-                    : "bg-background/60 text-muted-foreground border-border/40 hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <SubIcon className={cn("size-3.5", sub.color.split(" ")[0])} />
-                <span>
-                  {sub.id === "PLAN"
-                    ? t("workspace.subtype_plan")
-                    : sub.id === "IDEA"
-                    ? t("workspace.subtype_idea")
-                    : sub.id === "PROJECT"
-                    ? t("workspace.subtype_project")
-                    : t("workspace.subtype_doc")}
-                </span>
-                <span className="text-[10px] font-mono text-muted-foreground/70 uppercase">
-                  ({sub.codePrefix})
-                </span>
-              </button>
-            );
-          })}
         </div>
 
         {/* ── Form Body ──────────────────────────────────────────────────── */}

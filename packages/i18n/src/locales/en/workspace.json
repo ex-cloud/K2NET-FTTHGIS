@@ -189,6 +189,7 @@
   "label_status": "Status",
   "label_priority": "Priority",
   "label_assignee": "Assignee",
-  "label_properties": "Properties"
+  "label_properties": "Properties",
+  "label_lead": "Lead"
 }
 

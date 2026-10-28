@@ -189,6 +189,7 @@
   "label_status": "Status",
   "label_priority": "Prioritas",
   "label_assignee": "Penerima Tugas",
-  "label_properties": "Properti"
+  "label_properties": "Properti",
+  "label_lead": "Penanggung Jawab"
 }
 
