@@ -73,8 +73,8 @@ public class KeycloakAdminService {
         user.setEnabled(true);
         user.setUsername(username != null && !username.isEmpty() ? username : email);
         user.setEmail(email);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
+        user.setFirstName(firstName != null && !firstName.isBlank() ? firstName : "User");
+        user.setLastName(lastName != null && !lastName.isBlank() ? lastName : "Admin");
         user.setEmailVerified(true);
 
         // Set Password
@@ -119,8 +119,8 @@ public class KeycloakAdminService {
         user.setEnabled(true);
         user.setUsername(username != null && !username.isEmpty() ? username : email);
         user.setEmail(email);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
+        user.setFirstName(firstName != null && !firstName.isBlank() ? firstName : "User");
+        user.setLastName(lastName != null && !lastName.isBlank() ? lastName : "Admin");
         user.setEmailVerified(true);
         user.setRequiredActions(Collections.singletonList("UPDATE_PASSWORD")); // Force password update
 

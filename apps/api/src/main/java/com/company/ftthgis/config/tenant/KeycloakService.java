@@ -707,7 +707,7 @@ public class KeycloakService {
             if (fullName != null && !fullName.isBlank()) {
                 String[] parts = fullName.trim().split("\\s+", 2);
                 user.setFirstName(parts[0]);
-                user.setLastName(parts.length > 1 ? parts[1] : "");
+                user.setLastName(parts.length > 1 && !parts[1].isBlank() ? parts[1] : "Admin");
             } else {
                 user.setFirstName("Organization");
                 user.setLastName("Owner");
@@ -923,7 +923,7 @@ public class KeycloakService {
             if (fullName != null && !fullName.isBlank()) {
                 String[] parts = fullName.trim().split("\\s+", 2);
                 user.setFirstName(parts[0]);
-                user.setLastName(parts.length > 1 ? parts[1] : "");
+                user.setLastName(parts.length > 1 && !parts[1].isBlank() ? parts[1] : "Admin");
             } else {
                 user.setFirstName("Organization");
                 user.setLastName("Owner");
