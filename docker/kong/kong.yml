@@ -689,7 +689,15 @@ plugins:
               svc.set_header("X-Tenant-Slug", claims.tenant_slug)
             end
             if not tenant or tenant == "" then
-              return deny()
+              local host = (req.get_host() or ""):lower()
+              local slug = host:match("^([a-z0-9%-]+)%-gis%." .. BASE_DOMAIN .. "$")
+                        or host:match("^([a-z0-9%-]+)%.gis%." .. BASE_DOMAIN .. "$")
+              if slug and not RESERVED[slug] then
+                tenant = slug
+                svc.set_header("X-Tenant-Slug", slug)
+              else
+                return deny()
+              end
             end
           end
           svc.set_header("X-Tenant-Id", tenant)

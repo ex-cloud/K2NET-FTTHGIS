@@ -144,6 +144,7 @@ public class KeycloakService {
                 // Always sync default client and IDP even if the realm already exists
                 provisionDefaultClient(realmName);
                 disableReviewProfileInFirstBrokerLogin(realmName);
+                ensureUserProfileConfig(realmName);
                 
                 // Sync theme and metadata attributes
                 existingRealm.setLoginTheme("ftth-gis");
@@ -414,6 +415,7 @@ public class KeycloakService {
             // 2. ALWAYS Provision/Sync the Default Client (ftth-gis-frontend) as Public PKCE
             provisionDefaultClient(realmName);
             disableReviewProfileInFirstBrokerLogin(realmName);
+            ensureUserProfileConfig(realmName);
 
             // 3. Clone & Sync Google & GitHub Identity Providers with subscription plan gating
             if (!"ftth-realm".equalsIgnoreCase(realmName) && !"master".equalsIgnoreCase(realmName)) {
@@ -1195,6 +1197,47 @@ public class KeycloakService {
             }
         } catch (Exception e) {
             log.error("❌ ERROR: Failed to disable 'Review Profile' execution in realm '{}': {}", realmName, e.getMessage());
+        }
+    }
+
+    /**
+     * Synchronizes the Keycloak Declarative User Profile schema for the realm.
+     * Enables unmanaged attributes so that custom multi-tenant claims (organization_id, tenant_id, tenant_slug, phone)
+     * are never discarded during tenant user provisioning or profile sync.
+     */
+    private void ensureUserProfileConfig(String realmName) {
+        try {
+            var userProfileResource = keycloak.realm(realmName).users().userProfile();
+            org.keycloak.representations.userprofile.config.UPConfig config = userProfileResource.getConfiguration();
+            if (config == null) {
+                config = new org.keycloak.representations.userprofile.config.UPConfig();
+            }
+
+            config.setUnmanagedAttributePolicy(org.keycloak.representations.userprofile.config.UPConfig.UnmanagedAttributePolicy.ENABLED);
+
+            // Ensure lastName is not strictly required for Indonesian single-word names
+            var lastNameAttr = config.getAttribute("lastName");
+            if (lastNameAttr != null && lastNameAttr.getRequired() != null) {
+                lastNameAttr.setRequired(null);
+            }
+
+            List<String> requiredAttrs = List.of("organization_id", "tenant_id", "tenant_slug", "phone", "phoneNumber");
+            for (String attrName : requiredAttrs) {
+                if (config.getAttribute(attrName) == null) {
+                    var attr = new org.keycloak.representations.userprofile.config.UPAttribute(attrName);
+                    attr.setDisplayName(attrName);
+                    var perms = new org.keycloak.representations.userprofile.config.UPAttributePermissions();
+                    perms.setView(java.util.Set.of("admin", "user"));
+                    perms.setEdit(java.util.Set.of("admin"));
+                    attr.setPermissions(perms);
+                    config.addOrReplaceAttribute(attr);
+                }
+            }
+
+            userProfileResource.update(config);
+            log.info("✅ Keycloak User Profile synchronized for realm '{}' (unmanaged attributes ENABLED, custom tenant attributes registered)", realmName);
+        } catch (Exception e) {
+            log.warn("⚠️ Non-critical: could not sync user profile config in realm '{}': {}", realmName, e.getMessage());
         }
     }
 
