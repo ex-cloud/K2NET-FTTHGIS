@@ -30,17 +30,18 @@ func SecurityHeadersAndCSRFMiddleware() gin.HandlerFunc {
 				strings.HasPrefix(ct, "text/plain") {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 					"error":   "CSRF_REJECTED",
-					"message": "Permintaan lintas situs (form-encoded) ditolak.",
+					"message": "Cross-site form requests are prohibited.",
 				})
 				return
 			}
 
 			// Validate Origin header when sent by browsers
 			if origin := strings.TrimSpace(c.GetHeader("Origin")); origin != "" {
-				if !isTrustedOrigin(origin, c.Request.Host) {
+				xfh := c.GetHeader("X-Forwarded-Host")
+				if !isTrustedOrigin(origin, c.Request.Host, xfh) {
 					c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 						"error":   "CSRF_ORIGIN_MISMATCH",
-						"message": "Asal permintaan (Origin) tidak diizinkan.",
+						"message": "Request origin not permitted.",
 					})
 					return
 				}
@@ -51,23 +52,35 @@ func SecurityHeadersAndCSRFMiddleware() gin.HandlerFunc {
 	}
 }
 
-func isTrustedOrigin(rawOrigin, requestHost string) bool {
+func isTrustedOrigin(rawOrigin, requestHost string, forwardedHost ...string) bool {
 	parsed, err := url.Parse(rawOrigin)
 	if err != nil || parsed.Host == "" {
 		return false
 	}
 	originHost := strings.ToLower(parsed.Hostname())
-	reqHostname := strings.ToLower(strings.Split(requestHost, ":")[0])
 
+	// 1. All legitimate production K2NET domains and wildcard subdomains (*.kdua.net)
+	if originHost == "kdua.net" || strings.HasSuffix(originHost, ".kdua.net") {
+		return true
+	}
+
+	// 2. Local development environments
+	if originHost == "localhost" || originHost == "127.0.0.1" {
+		return true
+	}
+
+	// 3. Match against request Host or X-Forwarded-Host (for custom tenant domains)
+	reqHostname := strings.ToLower(strings.Split(requestHost, ":")[0])
 	if originHost == reqHostname {
 		return true
 	}
-	if (originHost == "localhost" || originHost == "127.0.0.1") && (reqHostname == "localhost" || reqHostname == "127.0.0.1") {
-		return true
+	for _, f := range forwardedHost {
+		fHost := strings.ToLower(strings.Split(strings.TrimSpace(f), ":")[0])
+		if fHost != "" && originHost == fHost {
+			return true
+		}
 	}
-	if strings.HasSuffix(originHost, ".kdua.net") && (reqHostname == "kdua.net" || strings.HasSuffix(reqHostname, ".kdua.net")) {
-		return true
-	}
+
 	return false
 }
 
@@ -114,7 +127,7 @@ func PerIPRateLimitMiddleware(maxRequests int, window time.Duration) gin.Handler
 			mu.Unlock()
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"error":   "RATE_LIMITED",
-				"message": "Terlalu banyak percobaan autentikasi. Silakan tunggu beberapa saat.",
+				"message": "Too many authentication attempts. Please wait a moment.",
 			})
 			return
 		}

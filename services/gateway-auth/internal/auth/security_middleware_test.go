@@ -12,25 +12,29 @@ import (
 
 func TestIsTrustedOrigin(t *testing.T) {
 	tests := []struct {
-		origin      string
-		requestHost string
-		expected    bool
+		origin        string
+		requestHost   string
+		forwardedHost []string
+		expected      bool
 	}{
-		{"https://system-gis.kdua.net", "system-gis.kdua.net", true},
-		{"https://system-gis.kdua.net:8000", "system-gis.kdua.net:8000", true},
-		{"https://kircon-bandung-gis.kdua.net", "kdua.net", true},
-		{"http://localhost:3000", "localhost:8000", true},
-		{"http://127.0.0.1:3001", "127.0.0.1:8000", true},
-		{"https://malicious.com", "system-gis.kdua.net", false},
-		{"https://kdua.net.attacker.com", "system-gis.kdua.net", false},
-		{"invalid-uri", "system-gis.kdua.net", false},
-		{"", "system-gis.kdua.net", false},
+		{"https://system-gis.kdua.net", "system-gis.kdua.net", nil, true},
+		{"https://system-gis.kdua.net", "ftth-auth-gateway", nil, true},
+		{"https://system-gis.kdua.net:8000", "system-gis.kdua.net:8000", nil, true},
+		{"https://kircon-bandung-gis.kdua.net", "kdua.net", nil, true},
+		{"https://kircon-bandung-gis.kdua.net", "ftth-auth-gateway", nil, true},
+		{"https://custom-isp.com", "ftth-auth-gateway", []string{"custom-isp.com"}, true},
+		{"http://localhost:3000", "localhost:8000", nil, true},
+		{"http://127.0.0.1:3001", "127.0.0.1:8000", nil, true},
+		{"https://malicious.com", "system-gis.kdua.net", nil, false},
+		{"https://kdua.net.attacker.com", "system-gis.kdua.net", nil, false},
+		{"invalid-uri", "system-gis.kdua.net", nil, false},
+		{"", "system-gis.kdua.net", nil, false},
 	}
 
 	for _, tt := range tests {
-		got := isTrustedOrigin(tt.origin, tt.requestHost)
+		got := isTrustedOrigin(tt.origin, tt.requestHost, tt.forwardedHost...)
 		if got != tt.expected {
-			t.Errorf("isTrustedOrigin(%q, %q) = %v; want %v", tt.origin, tt.requestHost, got, tt.expected)
+			t.Errorf("isTrustedOrigin(%q, %q, %v) = %v; want %v", tt.origin, tt.requestHost, tt.forwardedHost, got, tt.expected)
 		}
 	}
 }

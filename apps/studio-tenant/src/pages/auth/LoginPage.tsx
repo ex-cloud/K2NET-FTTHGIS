@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@k2net/auth/client";
+import { useAuth, resolveAuthErrorMessage } from "@k2net/auth/client";
 import { useTranslation } from "@k2net/i18n";
 import {
   AuthLoginForm,
@@ -228,17 +228,13 @@ export function LoginPage() {
       if (result.mfaRequired) {
         setMfaRequired(true);
         if (result.error) {
-          setErrorMessage(result.message || t("auth.login_error_invalid"));
+          setErrorMessage(resolveAuthErrorMessage(result.error, result.message, t));
         }
         return;
       }
 
       if (!result.success) {
-        setErrorMessage(
-          result.error === "NETWORK_ERROR"
-            ? t("auth.login_error_network")
-            : result.message || t("auth.login_error_invalid")
-        );
+        setErrorMessage(resolveAuthErrorMessage(result.error, result.message, t));
         return;
       }
 
