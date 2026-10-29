@@ -3,70 +3,141 @@ import { ShieldCheck, BookOpen, Quote, Sparkles, X, CheckCircle2, Lock } from "l
 import { ModeToggle } from "../mode-toggle";
 import { renderIsometricFigureById, ISOMETRIC_FIGURES_LIST } from "../linear-isometric/figure-registry";
 
+export type AuthLocale = "en" | "id";
+
 export interface AuthLoginLayoutProps {
   children: React.ReactNode;
   portalName?: string;
   portalSubtitle?: string;
+  welcomeTitle?: string;
   docsUrl?: string;
+  docsLabel?: string;
   testimonialQuote?: string;
   testimonialAuthor?: string;
   testimonialRole?: string;
   figureComponent?: React.ReactNode;
   figureId?: string;
+  locale?: AuthLocale;
+  onLocaleChange?: (locale: AuthLocale) => void;
+  footerAgreePrefix?: string;
+  footerTermsLabel?: string;
+  footerAndLabel?: string;
+  footerPrivacyLabel?: string;
+  footerAgreeSuffix?: string;
+  footerCopyrightText?: string;
+  policyTermsTab?: string;
+  policyPrivacyTab?: string;
+  policyCloseButton?: string;
 }
 
 export function AuthLoginLayout({
   children,
   portalName = "FTTH GIS Portal",
   portalSubtitle = "Sign in to your system administrator account.",
+  welcomeTitle,
   docsUrl = "https://system-gis.kdua.net/gateways/overview",
+  docsLabel,
   testimonialQuote = "Managing enterprise fiber-to-the-home geodata networks has never been this seamless. Highly stable, fast geocoding, and fully isolated multi-tenancy.",
   testimonialAuthor = "Andiansyah",
   testimonialRole = "Chief Technology Officer, K2NET",
   figureComponent,
   figureId = "fig-07",
+  locale = "en",
+  onLocaleChange,
+  footerAgreePrefix,
+  footerTermsLabel,
+  footerAndLabel,
+  footerPrivacyLabel,
+  footerAgreeSuffix,
+  footerCopyrightText,
+  policyTermsTab,
+  policyPrivacyTab,
+  policyCloseButton,
 }: AuthLoginLayoutProps) {
   const [activePolicyModal, setActivePolicyModal] = useState<"terms" | "privacy" | null>(null);
   const activeMeta = ISOMETRIC_FIGURES_LIST.find((f) => f.id === figureId) || ISOMETRIC_FIGURES_LIST[0];
 
+  const resolvedWelcome = welcomeTitle || "Welcome back";
+  const resolvedDocsLabel = docsLabel || "System Docs";
+  const resolvedAgreePrefix = footerAgreePrefix || "By continuing, you agree to";
+  const resolvedTerms = footerTermsLabel || "Terms of Service";
+  const resolvedAnd = footerAndLabel || "and";
+  const resolvedPrivacy = footerPrivacyLabel || "Privacy Policy";
+  const resolvedAgreeSuffix = footerAgreeSuffix || "of FTTH GIS.";
+  const resolvedCopyright =
+    footerCopyrightText || "K2NET Enterprise SaaS Platform. All rights reserved.";
+  const resolvedPolicyTermsTab = policyTermsTab || "Terms";
+  const resolvedPolicyPrivacyTab = policyPrivacyTab || "Privacy";
+  const resolvedPolicyCloseButton = policyCloseButton || "I Understand & Close";
+
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans">
-      
       {/* ─── LEFT COLUMN: Login Form & Header ─────────────────────────── */}
       <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-4 sm:p-10 md:p-14 relative bg-sidebar border-r border-black/90 shadow-[1px_0_0_0_rgba(255,255,255,0.065)] z-10">
-        
-        {/* Top Header Row (Logo + Docs + Theme Toggle) */}
-        <div className="flex items-center justify-between w-full z-20">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 border border-primary/25">
+        {/* Top Header Row (Logo + Language Switcher EN|ID + Docs + Theme Toggle) */}
+        <div className="flex items-center justify-between w-full z-20 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 border border-primary/25 shrink-0">
               <ShieldCheck className="h-3.5 w-3.5 text-primary" />
             </div>
-            <span className="text-xs font-bold tracking-wider uppercase text-foreground font-mono">
+            <span className="text-xs font-bold tracking-wider uppercase text-foreground font-mono truncate">
               {portalName}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onLocaleChange && (
+              <div
+                className="inline-flex h-8 items-center rounded-md border border-border/80 bg-background/50 p-0.5 text-[11px] font-mono shadow-xs"
+                role="group"
+                aria-label="Language Switcher"
+              >
+                <button
+                  type="button"
+                  onClick={() => onLocaleChange("en")}
+                  className={`h-6 px-2 rounded-sm font-medium transition-all cursor-pointer ${
+                    locale === "en"
+                      ? "bg-accent text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  EN
+                </button>
+                <span className="text-border/80 select-none px-0.5">|</span>
+                <button
+                  type="button"
+                  onClick={() => onLocaleChange("id")}
+                  className={`h-6 px-2 rounded-sm font-medium transition-all cursor-pointer ${
+                    locale === "id"
+                      ? "bg-accent text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  ID
+                </button>
+              </div>
+            )}
+
             {docsUrl && (
               <a
                 href={docsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background/50 hover:bg-accent/80 hover:text-foreground transition-all text-[11px] font-medium text-muted-foreground shadow-xs"
+                className="inline-flex h-8 items-center gap-1.5 px-2.5 rounded-md border border-border/80 bg-background/50 hover:bg-accent/80 hover:text-foreground transition-all text-[11px] font-medium text-muted-foreground shadow-xs"
               >
-                <BookOpen className="h-3 w-3" />
-                <span>System Docs</span>
+                <BookOpen className="h-3 w-3 shrink-0" />
+                <span className="hidden sm:inline">{resolvedDocsLabel}</span>
               </a>
             )}
             <ModeToggle className="h-8 w-8 rounded-md border border-border/80 bg-background/50 text-muted-foreground hover:text-foreground hover:bg-accent/80" />
           </div>
         </div>
 
-        {/* Ambient Mobile Emerald Glow & Grid (visible only on mobile) */}
-        <div 
+        {/* Ambient Mobile Glow & Grid (visible only on mobile) */}
+        <div
           className="lg:hidden absolute top-36 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full blur-3xl pointer-events-none opacity-85"
           style={{
-            background: "radial-gradient(circle, rgba(34,197,94,0.22) 0%, rgba(16,185,129,0.08) 45%, transparent 70%)"
+            background: "radial-gradient(circle, rgba(34,197,94,0.22) 0%, rgba(16,185,129,0.08) 45%, transparent 70%)",
           }}
         />
         <div
@@ -80,8 +151,7 @@ export function AuthLoginLayout({
         />
 
         {/* Center Form Area */}
-        <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-6">
-          
+        <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-5">
           {/* Mobile 3D Hero (visible only on mobile) */}
           <div className="lg:hidden flex flex-col items-center justify-center -mt-2 mb-2">
             <div className="w-full max-w-[170px] flex items-center justify-center">
@@ -91,7 +161,7 @@ export function AuthLoginLayout({
 
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Welcome back
+              {resolvedWelcome}
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
               {portalSubtitle}
@@ -105,37 +175,37 @@ export function AuthLoginLayout({
         {/* Bottom Footer Row */}
         <div className="text-[11px] text-muted-foreground z-20 flex flex-col gap-1.5 border-t border-black/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.065)] pt-5">
           <p>
-            By continuing, you agree to FTTH GIS&apos;s{" "}
+            {resolvedAgreePrefix}{" "}
             <button
               type="button"
               onClick={() => setActivePolicyModal("terms")}
               className="underline text-primary hover:text-primary/80 transition-colors font-medium cursor-pointer"
             >
-              Terms of Service
+              {resolvedTerms}
             </button>{" "}
-            and{" "}
+            {resolvedAnd}{" "}
             <button
               type="button"
               onClick={() => setActivePolicyModal("privacy")}
               className="underline text-primary hover:text-primary/80 transition-colors font-medium cursor-pointer"
             >
-              Privacy Policy
-            </button>.
+              {resolvedPrivacy}
+            </button>{" "}
+            {resolvedAgreeSuffix}
           </p>
           <p className="font-mono text-[10px] text-muted-foreground/70">
-            &copy; {new Date().getFullYear()} K2NET Enterprise SaaS Platform. All rights reserved.
+            &copy; {new Date().getFullYear()} {resolvedCopyright}
           </p>
         </div>
       </div>
 
       {/* ─── RIGHT COLUMN: 3D Isometric Figure & Testimonial ───────────── */}
       <div className="hidden lg:flex flex-1 bg-background flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
-        
-        {/* Global Ambient Radial Emerald Illumination */}
-        <div 
+        {/* Global Ambient Radial Illumination */}
+        <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[580px] h-[580px] rounded-full blur-3xl pointer-events-none opacity-85"
           style={{
-            background: "radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.07) 38%, transparent 70%)"
+            background: "radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.07) 38%, transparent 70%)",
           }}
         />
 
@@ -154,7 +224,7 @@ export function AuthLoginLayout({
         <div className="w-full flex justify-end z-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/60 bg-card/60 backdrop-blur-md text-[10px] font-mono font-medium tracking-wider text-muted-foreground uppercase shadow-xs">
             <Sparkles className="h-3 w-3 text-primary" />
-            <span>{activeMeta ? `${activeMeta.fig}: ${activeMeta.tag}` : "FIG 0.1: PURPOSE-BUILT"}</span>
+            <span>{activeMeta ? `${activeMeta.fig}: ${activeMeta.tag}` : "FIG 0.7: QUANTUM ORB"}</span>
           </div>
         </div>
 
@@ -189,13 +259,13 @@ export function AuthLoginLayout({
         </div>
       </div>
 
-      {/* ─── INTERACTIVE POLICY MODAL DIALOG ──────────────────────────── */}
+      {/* ─── INTERACTIVE POLICY MODAL DIALOG (v2026.3) ────────────────── */}
       {activePolicyModal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
           onClick={() => setActivePolicyModal(null)}
         >
-          <div 
+          <div
             className="bg-card border border-border/80 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-lg overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
@@ -209,7 +279,7 @@ export function AuthLoginLayout({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h2 className="text-base font-bold text-foreground truncate">
-                        {activePolicyModal === "terms" ? "Terms of Service" : "Privacy Policy"}
+                        {activePolicyModal === "terms" ? resolvedTerms : resolvedPrivacy}
                       </h2>
                       <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded shrink-0">
                         v2026.3
@@ -224,7 +294,7 @@ export function AuthLoginLayout({
                 <button
                   type="button"
                   onClick={() => setActivePolicyModal(null)}
-                  className="sm:hidden p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0 ml-2"
+                  className="sm:hidden p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0 ml-2 font-medium"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -235,31 +305,31 @@ export function AuthLoginLayout({
                   <button
                     type="button"
                     onClick={() => setActivePolicyModal("terms")}
-                    className={`flex-1 sm:flex-initial px-3 py-1 rounded-md transition-all ${
-                      activePolicyModal === "terms" 
-                        ? "bg-primary text-primary-foreground font-semibold shadow-xs" 
+                    className={`flex-1 sm:flex-initial px-3 py-1 rounded-md font-medium transition-all ${
+                      activePolicyModal === "terms"
+                        ? "bg-primary text-primary-foreground shadow-xs"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    Terms
+                    {resolvedPolicyTermsTab}
                   </button>
                   <button
                     type="button"
                     onClick={() => setActivePolicyModal("privacy")}
-                    className={`flex-1 sm:flex-initial px-3 py-1 rounded-md transition-all ${
-                      activePolicyModal === "privacy" 
-                        ? "bg-cyan-500 text-white font-semibold shadow-xs" 
+                    className={`flex-1 sm:flex-initial px-3 py-1 rounded-md font-medium transition-all ${
+                      activePolicyModal === "privacy"
+                        ? "bg-accent text-foreground shadow-xs"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    Privacy
+                    {resolvedPolicyPrivacyTab}
                   </button>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setActivePolicyModal(null)}
-                  className="hidden sm:flex p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
+                  className="hidden sm:flex p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0 font-medium"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -353,15 +423,14 @@ export function AuthLoginLayout({
               <button
                 type="button"
                 onClick={() => setActivePolicyModal(null)}
-                className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-colors cursor-pointer text-center"
+                className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-lg bg-primary text-primary-foreground font-medium text-xs hover:bg-primary/90 transition-colors cursor-pointer text-center"
               >
-                I Understand & Close
+                {resolvedPolicyCloseButton}
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

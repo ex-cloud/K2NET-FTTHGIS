@@ -397,6 +397,7 @@ func (c *Collector) FetchComputeMetrics(ctx context.Context) (map[string]interfa
 		{"job": "ftth-poller", "up": true, "memoryBytes": 45 * 1024 * 1024},
 		{"job": "gateway-audit", "up": true, "memoryBytes": 38 * 1024 * 1024},
 		{"job": "gateway-ai", "up": true, "memoryBytes": 140 * 1024 * 1024},
+		{"job": "gateway-auth", "up": true, "memoryBytes": 18 * 1024 * 1024},
 		{"job": "observability-gateway", "up": true, "memoryBytes": 28 * 1024 * 1024},
 		{"job": "keycloak", "up": true, "memoryBytes": 450 * 1024 * 1024},
 		{"job": "ftth-postgres", "up": true, "memoryBytes": 180 * 1024 * 1024},

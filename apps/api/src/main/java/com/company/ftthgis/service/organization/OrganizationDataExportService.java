@@ -318,7 +318,7 @@ public class OrganizationDataExportService {
             org = Organization.builder()
                     .name(name)
                     .slug(slug)
-                    .realmKey(slug)
+                    .realmKey(KeycloakService.TENANT_SHARED_REALM)
                     .website(website)
                     .address(address)
                     .subscriptionPlan(plan)
@@ -327,25 +327,18 @@ public class OrganizationDataExportService {
             org = organizationRepository.save(org);
 
             // Default configs
-            saveConfig(org, "keycloak_realm", slug);
+            saveConfig(org, "keycloak_realm", KeycloakService.TENANT_SHARED_REALM);
             saveConfig(org, "import_source", "json_backup");
         }
 
-        // Ensure Keycloak Realm is created & enabled
+        // Ensure tenant users in shared realm 'k2net-tenants' are enabled upon restore/import
         try {
-            String realmToEnsure = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
-            String planCode = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().getName() != null
-                    ? org.getSubscriptionPlan().getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
-                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
-                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
-            boolean hasSso = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().isHasSso();
-
-            keycloakService.ensureRealmExists(realmToEnsure, hasSso, org.getName(), planCode, planDisplayName, org.getLogoUrl());
-            keycloakService.setRealmEnabled(realmToEnsure, true);
+            keycloakService.ensureTenantSharedRealmExists();
+            if (org.getId() != null) {
+                keycloakService.setOrganizationUsersEnabled(org.getId().toString(), true);
+            }
         } catch (Exception e) {
-            log.warn("⚠️ Non-critical failure provisioning Keycloak realm for imported tenant {}: {}", slug, e.getMessage());
+            log.warn("⚠️ Non-critical failure syncing shared Keycloak realm for imported tenant {}: {}", slug, e.getMessage());
         }
 
         // Import projects if present

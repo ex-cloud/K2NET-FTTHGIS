@@ -42,10 +42,10 @@ public class AuthDiscoveryController {
         Optional<Organization> org = organizationRepository.findBySlug(slug);
         
         if (org.isPresent()) {
-            // For now, we assume realm name = slug
-            // In the future, we could store the realm name in Organization entity
-            String realmName = org.get().getSlug();
-            
+            String realmName = org.get().getRealmKey() != null && !org.get().getRealmKey().isBlank()
+                    ? org.get().getRealmKey()
+                    : com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM;
+
             return ResponseEntity.ok(DiscoveryResponse.builder()
                     .realm(realmName)
                     .issuerUrl(keycloakServerUrl + "/realms/" + realmName)

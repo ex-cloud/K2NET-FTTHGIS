@@ -293,22 +293,10 @@ public class OrganizationDirectoryService {
             log.warn("⚠️ Non-fatal: could not sync tenant_branding for {}: {}", savedOrg.getSlug(), brandEx.getMessage());
         }
 
-        // Synchronize Keycloak Realm metadata (Display Name, Subscription Tier Badge & Logo)
-        try {
-            String realmKey = savedOrg.getRealmKey() != null ? savedOrg.getRealmKey() : savedOrg.getSlug();
-            boolean hasSso = savedOrg.getSubscriptionPlan() != null && savedOrg.getSubscriptionPlan().isHasSso();
-            String planCode = savedOrg.getSubscriptionPlan() != null && savedOrg.getSubscriptionPlan().getName() != null
-                    ? savedOrg.getSubscriptionPlan().getName()
-                    : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
-                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
-                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
-
-            keycloakService.ensureRealmExists(realmKey, hasSso, savedOrg.getName(), planCode, planDisplayName, savedOrg.getLogoUrl());
-        } catch (Exception ex) {
-            log.warn("⚠️ Failed to sync Keycloak realm on org update for '{}': {}", savedOrg.getSlug(), ex.getMessage());
-        }
+        // Under 2-Realm Consolidation, tenant branding/plan metadata is served dynamically from PostgreSQL/Redis
+        // via /api/v1/auth/tenant-context without mutating the shared 'k2net-tenants' Keycloak realm.
+        log.debug("ℹ️ Tenant metadata updated in PostgreSQL for '{}' (shared realm '{}')",
+                savedOrg.getSlug(), savedOrg.getRealmKey());
 
         return savedOrg;
     }
@@ -360,10 +348,13 @@ public class OrganizationDirectoryService {
             log.warn("Could not query DB users for org {}: {}", slug, e.getMessage());
         }
 
-        // 2. Fetch from Keycloak Realm
+        // 2. Fetch from Keycloak Realm (strictly scoped by organization_id in 'k2net-tenants')
         if (org.getRealmKey() != null) {
             try {
-                List<org.keycloak.representations.idm.UserRepresentation> kcUsers = keycloakService.getRealmUsers(org.getRealmKey());
+                List<org.keycloak.representations.idm.UserRepresentation> kcUsers =
+                        KeycloakService.PLATFORM_REALM.equalsIgnoreCase(org.getRealmKey())
+                                ? keycloakService.getRealmUsers(KeycloakService.PLATFORM_REALM)
+                                : keycloakService.getOrganizationUsers(orgId.toString());
                 for (var kc : kcUsers) {
                     boolean alreadyInList = userList.stream().anyMatch(u -> kc.getUsername() != null && kc.getUsername().equalsIgnoreCase((String) u.get("username")));
                     if (!alreadyInList) {

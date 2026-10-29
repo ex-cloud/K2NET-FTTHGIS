@@ -259,13 +259,14 @@ public class TenantLicenseController {
                         OrganizationContext.setOrganizationId(resolved);
                         return resolved;
                     } catch (IllegalArgumentException ignored) {
-                        // Jika berupa slug atau realm key (misal dctvdcwnlqnijogkoqwn)
-                        var orgOpt = organizationRepository.findBySlug(cleanHeader)
-                                .or(() -> organizationRepository.findByRealmKey(cleanHeader));
-                        if (orgOpt.isPresent()) {
-                            UUID id = orgOpt.get().getId();
-                            OrganizationContext.setOrganizationId(id);
-                            return id;
+                        if (!com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM.equalsIgnoreCase(cleanHeader)) {
+                            var orgOpt = organizationRepository.findBySlug(cleanHeader)
+                                    .or(() -> organizationRepository.findFirstByRealmKey(cleanHeader));
+                            if (orgOpt.isPresent()) {
+                                UUID id = orgOpt.get().getId();
+                                OrganizationContext.setOrganizationId(id);
+                                return id;
+                            }
                         }
                     }
                 }
@@ -291,14 +292,26 @@ public class TenantLicenseController {
                 } catch (IllegalArgumentException ignored) {}
             }
 
-            // Jika token berasal dari tenant realm Keycloak terisolasi
+            String tenantSlugClaim = jwt.getClaimAsString("tenant_slug");
+            if (tenantSlugClaim != null && !tenantSlugClaim.isBlank()) {
+                var orgBySlug = organizationRepository.findBySlug(tenantSlugClaim.trim().toLowerCase());
+                if (orgBySlug.isPresent()) {
+                    UUID id = orgBySlug.get().getId();
+                    OrganizationContext.setOrganizationId(id);
+                    return id;
+                }
+            }
+
+            // Jika token berasal dari tenant realm Keycloak terisolasi legacy
             String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
             if (issuer.contains("/realms/")) {
                 String[] parts = issuer.split("/");
                 String realmSlug = parts[parts.length - 1];
-                if (!"ftth-realm".equals(realmSlug) && !"master".equals(realmSlug)) {
+                if (!"ftth-realm".equals(realmSlug)
+                        && !"master".equals(realmSlug)
+                        && !com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM.equalsIgnoreCase(realmSlug)) {
                     var orgOpt = organizationRepository.findBySlug(realmSlug)
-                            .or(() -> organizationRepository.findByRealmKey(realmSlug));
+                            .or(() -> organizationRepository.findFirstByRealmKey(realmSlug));
                     if (orgOpt.isPresent()) {
                         UUID id = orgOpt.get().getId();
                         OrganizationContext.setOrganizationId(id);

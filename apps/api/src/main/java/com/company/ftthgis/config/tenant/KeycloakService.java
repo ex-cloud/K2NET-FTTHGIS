@@ -53,29 +53,87 @@ public class KeycloakService {
     @org.springframework.beans.factory.annotation.Value("${app.security.oauth2.github.client-secret}")
     private String githubClientSecret;
 
+    public static final String PLATFORM_REALM = KongConfigSyncService.PLATFORM_REALM;
+    public static final String TENANT_SHARED_REALM = KongConfigSyncService.TENANT_SHARED_REALM;
+
+    private static final List<String> STANDARD_TENANT_ROLES = List.of(
+            "tenant_owner", "tenant_admin", "network_engineer", "noc_operator",
+            "field_technician", "billing_staff", "viewer", "admin"
+    );
+
+    public boolean isProtectedRealm(String realmName) {
+        return "master".equalsIgnoreCase(realmName)
+                || PLATFORM_REALM.equalsIgnoreCase(realmName)
+                || TENANT_SHARED_REALM.equalsIgnoreCase(realmName);
+    }
+
     /**
-     * Ensures a realm exists for a tenant.
-     * Uses the singleton Keycloak admin client.
+     * Ensures the consolidated shared tenant realm ('k2net-tenants') exists with OIDC client,
+     * Protocol Mappers (organization_id, tenant_id, tenant_slug), standard tenant roles, and IdPs.
      */
+    public void ensureTenantSharedRealmExists() {
+        ensureRealmExists(TENANT_SHARED_REALM, true, "K2NET ISP Tenants", "STARTER", "K2NET ISP Tenants", null);
+        ensureStandardTenantRoles(TENANT_SHARED_REALM);
+    }
+
+    private void ensureStandardTenantRoles(String realmName) {
+        try {
+            var rolesResource = keycloak.realm(realmName).roles();
+            List<String> existingNames = rolesResource.list().stream()
+                    .map(org.keycloak.representations.idm.RoleRepresentation::getName)
+                    .toList();
+            for (String roleName : STANDARD_TENANT_ROLES) {
+                if (!existingNames.contains(roleName)) {
+                    org.keycloak.representations.idm.RoleRepresentation role =
+                            new org.keycloak.representations.idm.RoleRepresentation();
+                    role.setName(roleName);
+                    role.setDescription("Standard K2NET ISP Tenant Role: " + roleName);
+                    rolesResource.create(role);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to ensure standard tenant roles in realm '{}': {}", realmName, e.getMessage());
+        }
+    }
+
     /**
-     * Ensures a realm exists for a tenant.
-     * Uses the singleton Keycloak admin client.
+     * Ensures a realm exists for platform or consolidated tenant plane.
+     * Under the 2-Realm architecture, any non-platform realm request is consolidated onto 'k2net-tenants'.
      */
     public void ensureRealmExists(String realmName) {
         ensureRealmExists(realmName, false, null, null, null, null);
     }
 
     /**
-     * Ensures a realm exists for a tenant with specific SSO plan gating.
+     * Ensures a realm exists for platform or consolidated tenant plane.
      */
     public void ensureRealmExists(String realmName, boolean hasSso) {
         ensureRealmExists(realmName, hasSso, null, null, null, null);
     }
 
     /**
-     * Ensures a realm exists for a tenant with specific SSO plan gating and dynamic metadata.
+     * Ensures a realm exists. Strictly enforces 2-Realm Consolidation ('ftth-realm' + 'k2net-tenants').
      */
     public void ensureRealmExists(String realmName, boolean hasSso, String displayName, String plan, String planDisplayName, String logoUrl) {
+        if (realmName == null || realmName.isBlank()) {
+            return;
+        }
+        if (!"master".equalsIgnoreCase(realmName)
+                && !PLATFORM_REALM.equalsIgnoreCase(realmName)
+                && !TENANT_SHARED_REALM.equalsIgnoreCase(realmName)) {
+            log.info("ℹ️ 2-Realm Consolidation: Redirecting legacy realm ensure request '{}' to shared realm '{}'",
+                    realmName, TENANT_SHARED_REALM);
+            ensureTenantSharedRealmExists();
+            return;
+        }
+        boolean effectiveHasSso = TENANT_SHARED_REALM.equalsIgnoreCase(realmName) || hasSso;
+        String effectiveDisplay = TENANT_SHARED_REALM.equalsIgnoreCase(realmName) ? "K2NET ISP Tenants" : displayName;
+        String effectivePlan = TENANT_SHARED_REALM.equalsIgnoreCase(realmName) ? "STARTER" : plan;
+        String effectivePlanDisplay = TENANT_SHARED_REALM.equalsIgnoreCase(realmName) ? "K2NET ISP Tenants" : planDisplayName;
+        hasSso = effectiveHasSso;
+        displayName = effectiveDisplay;
+        plan = effectivePlan;
+        planDisplayName = effectivePlanDisplay;
         log.info("🛡️ Ensuring Keycloak Realm exists: {} (hasSso: {}, displayName: {}, plan: {})", realmName, hasSso, displayName, plan);
         try {
             // 0. Check if the realm already exists to avoid creation conflicts
@@ -428,8 +486,57 @@ public class KeycloakService {
                 realmResource.clients().get(client.getId()).update(client);
                 log.info("🔄 SUCCESS: Updated '{}' PKCE client in realm: {} with Redirects: {}", provisionClientId, realmName, redirects);
             }
+
+            ensureProtocolMappersOnDefaultClient(realmName);
         } catch (Exception e) {
             log.error("❌ ERROR: Failed to sync client in realm '{}': {}", realmName, e.getMessage());
+        }
+    }
+
+    /**
+     * Ensures OIDC User Attribute Protocol Mappers (organization_id, tenant_id, tenant_slug)
+     * exist on the default frontend client in both ftth-realm and k2net-tenants.
+     */
+    private void ensureProtocolMappersOnDefaultClient(String realmName) {
+        try {
+            var realmResource = keycloak.realm(realmName);
+            List<ClientRepresentation> clients = realmResource.clients().findByClientId(provisionClientId);
+            if (clients.isEmpty()) {
+                return;
+            }
+            var clientResource = realmResource.clients().get(clients.get(0).getId());
+            List<org.keycloak.representations.idm.ProtocolMapperRepresentation> existingMappers =
+                    clientResource.getProtocolMappers().getMappers();
+
+            List<String> claimAttributes = List.of("organization_id", "tenant_id", "tenant_slug");
+            for (String attrName : claimAttributes) {
+                boolean present = existingMappers != null && existingMappers.stream()
+                        .anyMatch(m -> attrName.equalsIgnoreCase(m.getName())
+                                || (m.getConfig() != null && attrName.equalsIgnoreCase(m.getConfig().get("claim.name"))));
+                if (!present) {
+                    org.keycloak.representations.idm.ProtocolMapperRepresentation mapper =
+                            new org.keycloak.representations.idm.ProtocolMapperRepresentation();
+                    mapper.setName(attrName);
+                    mapper.setProtocol("openid-connect");
+                    mapper.setProtocolMapper("oidc-usermodel-attribute-mapper");
+                    java.util.Map<String, String> cfg = new java.util.HashMap<>();
+                    cfg.put("user.attribute", attrName);
+                    cfg.put("claim.name", attrName);
+                    cfg.put("jsonType.label", "String");
+                    cfg.put("id.token.claim", "true");
+                    cfg.put("access.token.claim", "true");
+                    cfg.put("userinfo.token.claim", "true");
+                    cfg.put("multivalued", "false");
+                    cfg.put("aggregate.attrs", "false");
+                    mapper.setConfig(cfg);
+                    try (Response resp = clientResource.getProtocolMappers().createMapper(mapper)) {
+                        log.info("✅ Ensured OIDC Protocol Mapper '{}' on client '{}' in realm '{}' (HTTP {})",
+                                attrName, provisionClientId, realmName, resp.getStatus());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Non-critical: could not ensure protocol mappers in realm '{}': {}", realmName, e.getMessage());
         }
     }
 
@@ -532,6 +639,260 @@ public class KeycloakService {
         } catch (Exception e) {
             log.error("LDAP Test Failed for realm '{}': {}", realmName, e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Fast (< 100ms) tenant user provisioning inside the shared 'k2net-tenants' realm.
+     * Enforces multi-tenant isolation via OIDC user attributes (organization_id, tenant_id, tenant_slug)
+     * without creating a new realm or triggering Kong reload.
+     */
+    public String createTenantOwnerUser(
+            String organizationId,
+            String tenantSlug,
+            String username,
+            String email,
+            String password,
+            String roleName,
+            String fullName,
+            String phone
+    ) {
+        try {
+            var realmResource = keycloak.realm(TENANT_SHARED_REALM);
+            String normalizedEmail = email != null ? email.trim().toLowerCase() : "";
+            String effectiveUsername = (username != null && !username.isBlank())
+                    ? username.trim()
+                    : normalizedEmail;
+
+            // 1. Cross-tenant email collision defense inside k2net-tenants
+            if (!normalizedEmail.isEmpty()) {
+                List<org.keycloak.representations.idm.UserRepresentation> byEmail =
+                        realmResource.users().searchByEmail(normalizedEmail, true);
+                if (byEmail != null && !byEmail.isEmpty()) {
+                    org.keycloak.representations.idm.UserRepresentation found = byEmail.get(0);
+                    List<String> existingOrgAttr = found.getAttributes() != null
+                            ? found.getAttributes().get("organization_id")
+                            : null;
+                    String existingOrgId = (existingOrgAttr != null && !existingOrgAttr.isEmpty())
+                            ? existingOrgAttr.get(0)
+                            : null;
+                    if (existingOrgId != null && !existingOrgId.equals(organizationId)) {
+                        throw new IllegalArgumentException(
+                                "Email '" + normalizedEmail + "' sudah terdaftar pada organisasi lain."
+                        );
+                    }
+                    log.info("ℹ️ Tenant owner email '{}' already exists in '{}' for org '{}'",
+                            normalizedEmail, TENANT_SHARED_REALM, organizationId);
+                    return found.getId();
+                }
+            }
+
+            // 2. Username collision defense in shared realm (e.g. multiple tenants asking for 'admin')
+            List<org.keycloak.representations.idm.UserRepresentation> byUsername =
+                    realmResource.users().searchByUsername(effectiveUsername, true);
+            if (byUsername != null && !byUsername.isEmpty()) {
+                if (!normalizedEmail.isEmpty() && !effectiveUsername.equalsIgnoreCase(normalizedEmail)) {
+                    log.info("ℹ️ Username '{}' already taken in shared realm '{}'; scoping username to email '{}'",
+                            effectiveUsername, TENANT_SHARED_REALM, normalizedEmail);
+                    effectiveUsername = normalizedEmail;
+                } else {
+                    effectiveUsername = effectiveUsername + "." + tenantSlug;
+                }
+            }
+
+            org.keycloak.representations.idm.UserRepresentation user =
+                    new org.keycloak.representations.idm.UserRepresentation();
+            user.setUsername(effectiveUsername);
+            user.setEmail(normalizedEmail);
+            if (fullName != null && !fullName.isBlank()) {
+                String[] parts = fullName.trim().split("\\s+", 2);
+                user.setFirstName(parts[0]);
+                user.setLastName(parts.length > 1 ? parts[1] : "");
+            } else {
+                user.setFirstName("Organization");
+                user.setLastName("Owner");
+            }
+            user.setEnabled(true);
+            user.setEmailVerified(true);
+
+            java.util.Map<String, List<String>> attrs = new java.util.HashMap<>();
+            if (organizationId != null && !organizationId.isBlank()) {
+                attrs.put("organization_id", List.of(organizationId));
+                attrs.put("tenant_id", List.of(organizationId));
+            }
+            if (tenantSlug != null && !tenantSlug.isBlank()) {
+                attrs.put("tenant_slug", List.of(tenantSlug));
+            }
+            if (phone != null && !phone.isBlank()) {
+                attrs.put("phoneNumber", List.of(phone.trim()));
+                attrs.put("phone", List.of(phone.trim()));
+            }
+            user.setAttributes(attrs);
+
+            String userId;
+            try (Response response = realmResource.users().create(user)) {
+                if (response.getStatus() != 201) {
+                    String errorMsg = response.readEntity(String.class);
+                    log.error("❌ Failed to create tenant owner '{}' in '{}'. Status: {}. Error: {}",
+                            effectiveUsername, TENANT_SHARED_REALM, response.getStatus(), errorMsg);
+                    throw new RuntimeException("Keycloak tenant user creation failed: HTTP " + response.getStatus());
+                }
+                userId = org.keycloak.admin.client.CreatedResponseUtil.getCreatedId(response);
+            }
+
+            org.keycloak.representations.idm.CredentialRepresentation cred =
+                    new org.keycloak.representations.idm.CredentialRepresentation();
+            cred.setType(org.keycloak.representations.idm.CredentialRepresentation.PASSWORD);
+            cred.setValue(password);
+            cred.setTemporary(false);
+            realmResource.users().get(userId).resetPassword(cred);
+
+            String targetRoleName = (roleName != null && !roleName.isBlank()) ? roleName : "admin";
+            try {
+                realmResource.roles().get(targetRoleName).toRepresentation();
+            } catch (Exception e) {
+                org.keycloak.representations.idm.RoleRepresentation newRole =
+                        new org.keycloak.representations.idm.RoleRepresentation();
+                newRole.setName(targetRoleName);
+                realmResource.roles().create(newRole);
+            }
+            org.keycloak.representations.idm.RoleRepresentation targetRole =
+                    realmResource.roles().get(targetRoleName).toRepresentation();
+            realmResource.users().get(userId).roles().realmLevel().add(List.of(targetRole));
+
+            log.info("✅ Provisioned tenant owner '{}' (ID: {}, org: {}, slug: {}) in '{}'",
+                    effectiveUsername, userId, organizationId, tenantSlug, TENANT_SHARED_REALM);
+            return userId;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("❌ CRITICAL: Failed to create tenant owner in '{}' for org '{}': {}",
+                    TENANT_SHARED_REALM, organizationId, e.getMessage());
+            throw new RuntimeException("Tenant user provisioning failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Deletes a single user in 'k2net-tenants' (used for atomic rollback).
+     */
+    public void deleteTenantUser(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return;
+        }
+        try {
+            keycloak.realm(TENANT_SHARED_REALM).users().delete(userId);
+            log.info("🧹 Deleted orphan tenant user '{}' from '{}'", userId, TENANT_SHARED_REALM);
+        } catch (Exception e) {
+            log.warn("⚠️ Non-critical: failed to delete tenant user '{}' from '{}': {}",
+                    userId, TENANT_SHARED_REALM, e.getMessage());
+        }
+    }
+
+    /**
+     *Disables or enables all users belonging to a specific organization_id in 'k2net-tenants'.
+     * When disabling, immediately revokes all active Keycloak sessions for those users.
+     */
+    public void setOrganizationUsersEnabled(String organizationId, boolean enabled) {
+        if (organizationId == null || organizationId.isBlank()) {
+            return;
+        }
+        try {
+            var usersResource = keycloak.realm(TENANT_SHARED_REALM).users();
+            List<org.keycloak.representations.idm.UserRepresentation> matched = getOrganizationUsers(organizationId);
+            for (var u : matched) {
+                u.setEnabled(enabled);
+                usersResource.get(u.getId()).update(u);
+                if (!enabled) {
+                    try {
+                        usersResource.get(u.getId()).logout();
+                    } catch (Exception ignored) {}
+                }
+            }
+            log.info("🔒 Set enabled={} for {} user(s) of organization '{}' in '{}'",
+                    enabled, matched.size(), organizationId, TENANT_SHARED_REALM);
+        } catch (Exception e) {
+            log.warn("⚠️ Non-critical: failed updating user enabled state for org '{}': {}",
+                    organizationId, e.getMessage());
+        }
+    }
+
+    /**
+     * Permanently deletes all users belonging to a specific organization_id in 'k2net-tenants'.
+     */
+    public void deleteOrganizationUsers(String organizationId) {
+        if (organizationId == null || organizationId.isBlank()) {
+            return;
+        }
+        try {
+            var usersResource = keycloak.realm(TENANT_SHARED_REALM).users();
+            List<org.keycloak.representations.idm.UserRepresentation> matched = getOrganizationUsers(organizationId);
+            for (var u : matched) {
+                try {
+                    usersResource.delete(u.getId());
+                } catch (Exception ex) {
+                    log.warn("⚠️ Could not delete user '{}' for org '{}': {}", u.getId(), organizationId, ex.getMessage());
+                }
+            }
+            log.info("🗑️ Deleted {} user(s) of organization '{}' from '{}'",
+                    matched.size(), organizationId, TENANT_SHARED_REALM);
+        } catch (Exception e) {
+            log.warn("⚠️ Non-critical: failed deleting users for org '{}': {}", organizationId, e.getMessage());
+        }
+    }
+
+    /**
+     * Updates tenant_slug user attribute for all users belonging to organizationId during slug migration.
+     */
+    public void updateOrganizationUsersSlug(String organizationId, String newTenantSlug) {
+        if (organizationId == null || organizationId.isBlank() || newTenantSlug == null || newTenantSlug.isBlank()) {
+            return;
+        }
+        try {
+            var usersResource = keycloak.realm(TENANT_SHARED_REALM).users();
+            List<org.keycloak.representations.idm.UserRepresentation> matched = getOrganizationUsers(organizationId);
+            for (var u : matched) {
+                java.util.Map<String, List<String>> attrs = u.getAttributes() != null
+                        ? new java.util.HashMap<>(u.getAttributes())
+                        : new java.util.HashMap<>();
+                attrs.put("tenant_slug", List.of(newTenantSlug));
+                u.setAttributes(attrs);
+                usersResource.get(u.getId()).update(u);
+            }
+            log.info("🔀 Updated tenant_slug='{}' for {} user(s) of org '{}' in '{}'",
+                    newTenantSlug, matched.size(), organizationId, TENANT_SHARED_REALM);
+        } catch (Exception e) {
+            log.warn("⚠️ Non-critical: failed updating tenant_slug attribute for org '{}': {}",
+                    organizationId, e.getMessage());
+        }
+    }
+
+    /**
+     * Fetches users in 'k2net-tenants' strictly scoped to the given organization_id attribute.
+     */
+    public List<org.keycloak.representations.idm.UserRepresentation> getOrganizationUsers(String organizationId) {
+        if (organizationId == null || organizationId.isBlank()) {
+            return new ArrayList<>();
+        }
+        try {
+            List<org.keycloak.representations.idm.UserRepresentation> candidates =
+                    keycloak.realm(TENANT_SHARED_REALM).users().searchByAttributes("organization_id:" + organizationId);
+            if (candidates == null) {
+                return new ArrayList<>();
+            }
+            List<org.keycloak.representations.idm.UserRepresentation> verified = new ArrayList<>();
+            for (var u : candidates) {
+                if (u.getAttributes() != null) {
+                    List<String> orgVals = u.getAttributes().get("organization_id");
+                    if (orgVals != null && orgVals.contains(organizationId)) {
+                        verified.add(u);
+                    }
+                }
+            }
+            return verified;
+        } catch (Exception e) {
+            log.warn("Could not fetch Keycloak users for org '{}' in '{}': {}",
+                    organizationId, TENANT_SHARED_REALM, e.getMessage());
+            return new ArrayList<>();
         }
     }
 
@@ -662,7 +1023,7 @@ public class KeycloakService {
      * When disabled, all tenant users are immediately locked out and cannot authenticate.
      */
     public void setRealmEnabled(String realmName, boolean enabled) {
-        if ("master".equalsIgnoreCase(realmName) || "ftth-realm".equalsIgnoreCase(realmName)) {
+        if (isProtectedRealm(realmName)) {
             log.warn("🛡️ Security Alert: Attempted to modify enabled state of protected realm: {}", realmName);
             return;
         }
@@ -681,7 +1042,7 @@ public class KeycloakService {
      * Deletes a realm from Keycloak. Use with caution!
      */
     public void deleteRealm(String realmName) {
-        if ("master".equalsIgnoreCase(realmName) || "ftth-realm".equalsIgnoreCase(realmName)) {
+        if (isProtectedRealm(realmName)) {
             log.warn("🛡️ Security Alert: Attempted to delete protected realm: {}", realmName);
             return;
         }
@@ -842,7 +1203,7 @@ public class KeycloakService {
      * Prevents zombie sessions on clients during realm/slug migration.
      */
     public void logoutAllSessions(String realmName) {
-        if ("master".equalsIgnoreCase(realmName) || "ftth-realm".equalsIgnoreCase(realmName)) {
+        if (isProtectedRealm(realmName)) {
             log.warn("🛡️ Security Alert: Attempted to logoutAll on protected realm: {}", realmName);
             return;
         }

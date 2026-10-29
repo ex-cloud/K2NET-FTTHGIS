@@ -1,40 +1,87 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@k2net/auth/client";
-import { AuthLoginLayout, Button } from "@k2net/ui";
-import { extractTenantSlug } from "../../lib/keycloak-config";
-import { Shield, ArrowRight } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
+import {
+  AuthLoginForm,
+  AuthLoginLayout,
+  type AuthCredentialsSubmitPayload,
+  type AuthLoginFormLabels,
+  type AuthMethod,
+} from "@k2net/ui";
+import { extractTenantSlug } from "../../lib/keycloak-config";
 
-interface AuthMethod {
-  id: string;
+interface TenantAuthContextDto {
+  id?: string;
   name: string;
-  type: string;
-  icon: string;
-  enabled: boolean;
-}
-
-interface OrganizationAuthMethodsResponse {
   slug: string;
-  name: string;
+  targetSlug?: string;
+  isAlias?: boolean;
+  realmKey?: string;
   logoUrl?: string;
   plan?: string;
   planDisplayName?: string;
   authMode?: string;
-  primaryAuthMethod: string;
-  allowedMethods: AuthMethod[];
-  mfaRequired: boolean;
   status?: string;
-  theme: string;
+  hasSso?: boolean;
+  allowedMethods?: string[];
+  mfaRequired?: boolean;
+}
+
+function sanitizeCallbackPath(raw: string | null): string {
+  if (!raw) return "/";
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed === "/login") {
+    return "/";
+  }
+  return trimmed;
+}
+
+function mapAllowedMethods(methods?: string[], hasSso?: boolean): AuthMethod[] {
+  const list = methods || (hasSso ? ["password", "google", "github"] : ["password"]);
+  const out: AuthMethod[] = [];
+  if (list.includes("google")) {
+    out.push({
+      id: "google",
+      name: "Google",
+      type: "social",
+      icon: "google",
+      enabled: true,
+    });
+  }
+  if (list.includes("github")) {
+    out.push({
+      id: "github",
+      name: "GitHub",
+      type: "social",
+      icon: "github",
+      enabled: true,
+    });
+  }
+  return out;
 }
 
 export function LoginPage() {
-  const { t } = useTranslation();
-  const { authenticated, login, initialized } = useAuth();
+  const { t, locale, setLocale } = useTranslation();
+  const { authenticated, initialized, login, loginWithCredentials } = useAuth();
   const navigate = useNavigate();
   const tenantSlug = extractTenantSlug();
-  const [redirectTriggered, setRedirectTriggered] = React.useState(false);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const turnstileSiteKey =
+    (import.meta.env.VITE_TURNSTILE_TENANT_SITE_KEY as string | undefined)?.trim() ||
+    (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ||
+    "0x4AAAAAAFq1LAd5fwZMDgz5";
+
+  const callbackUrl = useMemo(() => {
+    if (typeof window === "undefined") return "/";
+    const params = new URLSearchParams(window.location.search);
+    return sanitizeCallbackPath(params.get("callbackUrl"));
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -48,116 +95,215 @@ export function LoginPage() {
         navigate({ to: "/" });
         return;
       }
-      // Clean residual legacy storage
       localStorage.removeItem("k2net_impersonation_meta");
       localStorage.removeItem("k2net_impersonation_token");
       localStorage.removeItem("k2net_impersonation_session_id");
       localStorage.removeItem("k2net_impersonating_in_progress");
     }
 
-    if (initialized) {
-      if (authenticated) {
+    if (initialized && authenticated) {
+      if (callbackUrl === "/") {
         navigate({ to: "/" });
-      } else if (!redirectTriggered) {
-        setRedirectTriggered(true);
-        login({
-          redirectUri: window.location.origin,
-        });
+      } else if (typeof window !== "undefined") {
+        window.location.replace(callbackUrl);
       }
     }
-  }, [initialized, authenticated, navigate, login, redirectTriggered]);
+  }, [authenticated, callbackUrl, initialized, navigate]);
 
-  const { data: authConfig } = useQuery<OrganizationAuthMethodsResponse>({
-    queryKey: ["auth-methods", tenantSlug],
+  const { data: tenantCtx } = useQuery<TenantAuthContextDto>({
+    queryKey: ["tenant-auth-context", tenantSlug],
     queryFn: async () => {
       try {
-        const res = await fetch(`/api/v1/organizations/${tenantSlug}/auth-methods`);
+        const res = await fetch(
+          `/api/v1/auth/tenant-context?slug=${encodeURIComponent(tenantSlug)}`
+        );
         if (!res.ok) {
           return {
             slug: tenantSlug,
-            name: "ISP Tenant Workspace",
+            name: tenantSlug === "default" ? "Main GIS" : tenantSlug,
             plan: "FREE",
-            planDisplayName: "Starter Trial",
-            authMode: "EMAIL_PASSWORD",
-            primaryAuthMethod: "email-password",
-            allowedMethods: [],
+            planDisplayName: "STARTER TRIAL",
+            authMode: "PASSWORD_ONLY",
+            allowedMethods: ["password"],
             mfaRequired: false,
             status: "ACTIVE",
-            theme: "ftth-gis",
           };
         }
-        return res.json();
+        return (await res.json()) as TenantAuthContextDto;
       } catch {
         return {
           slug: tenantSlug,
-          name: "ISP Tenant Workspace",
+          name: tenantSlug === "default" ? "Main GIS" : tenantSlug,
           plan: "FREE",
-          planDisplayName: "Starter Trial",
-          authMode: "EMAIL_PASSWORD",
-          primaryAuthMethod: "email-password",
-          allowedMethods: [],
+          planDisplayName: "STARTER TRIAL",
+          authMode: "PASSWORD_ONLY",
+          allowedMethods: ["password"],
           mfaRequired: false,
           status: "ACTIVE",
-          theme: "ftth-gis",
         };
       }
     },
   });
 
-  const handleManualLogin = () => {
-    login({
-      redirectUri: window.location.origin,
+  // Smoothly redirect migrated alias subdomains to active Clean Slug domain
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      tenantCtx?.isAlias &&
+      tenantCtx.targetSlug &&
+      tenantCtx.targetSlug !== tenantSlug
+    ) {
+      if (window.location.host.includes(`${tenantSlug}-gis`)) {
+        const nextHost = window.location.host.replace(
+          `${tenantSlug}-gis`,
+          `${tenantCtx.targetSlug}-gis`
+        );
+        window.location.replace(
+          `${window.location.protocol}//${nextHost}${window.location.pathname}${window.location.search}`
+        );
+      }
+    }
+  }, [tenantCtx?.isAlias, tenantCtx?.targetSlug, tenantSlug]);
+
+  const socialMethods = useMemo(
+    () => mapAllowedMethods(tenantCtx?.allowedMethods, tenantCtx?.hasSso),
+    [tenantCtx?.allowedMethods, tenantCtx?.hasSso]
+  );
+
+  const formLabels = useMemo<AuthLoginFormLabels>(
+    () => ({
+      accountEmailOrUsername: t("auth.account_email_or_username"),
+      accountPlaceholder: t("auth.account_placeholder"),
+      requiredBadge: t("auth.required_badge"),
+      passwordUpper: t("auth.password_upper"),
+      passwordPlaceholder: t("auth.password_placeholder"),
+      forgotPassword: t("auth.forgot_password"),
+      forgotPasswordNotice: t("auth.forgot_password_notice"),
+      showPassword: t("auth.show_password"),
+      hidePassword: t("auth.hide_password"),
+      rememberMeBrowser: t("auth.remember_me_browser"),
+      orContinueWith: t("auth.or_continue_with"),
+      continueWithGoogle: t("auth.continue_with_google"),
+      continueWithGithub: t("auth.continue_with_github"),
+      continueWithProviderPrefix: t("auth.continue_with_provider_prefix"),
+      signInPlatformAdmin: t("auth.sign_in_platform_admin"),
+      continueIspWorkspace: t("auth.continue_isp_workspace"),
+      mfaCodeLabel: t("auth.mfa_code_label"),
+      mfaCodePlaceholder: t("auth.mfa_code_placeholder"),
+      mfaCodeHint: t("auth.mfa_code_hint"),
+      mfaVerifySubmit: t("auth.mfa_verify_submit"),
+      mfaBackToLogin: t("auth.mfa_back_to_login"),
+      turnstileVerifying: t("auth.turnstile_verifying"),
+      suspendedTitle: t("auth.suspended_title"),
+      suspendedDesc: t("auth.suspended_desc"),
+      tierFreeLabel: t("auth.tier_free_label"),
+      tierFreeValue: t("auth.tier_free_value"),
+      tierFreeDesc: t("auth.tier_free_desc"),
+      tierProLabel: t("auth.tier_pro_label"),
+      tierProValue: t("auth.tier_pro_value"),
+      tierProDesc: t("auth.tier_pro_desc"),
+      tierEnterpriseLabel: t("auth.tier_enterprise_label"),
+      tierEnterpriseValue: t("auth.tier_enterprise_value"),
+      tierEnterpriseDesc: t("auth.tier_enterprise_desc"),
+      complianceBanner: t("auth.compliance_banner"),
+    }),
+    [t]
+  );
+
+  const handleSubmitCredentials = async (payload: AuthCredentialsSubmitPayload) => {
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
+      const result = await loginWithCredentials({
+        plane: "TENANT",
+        tenantSlug: effectiveSlug,
+        username: payload.username,
+        password: payload.password,
+        totp: payload.totp,
+        rememberMe: payload.rememberMe,
+        turnstileToken: payload.turnstileToken,
+      });
+
+      if (result.mfaRequired) {
+        setMfaRequired(true);
+        if (result.error) {
+          setErrorMessage(result.message || t("auth.login_error_invalid"));
+        }
+        return;
+      }
+
+      if (!result.success) {
+        setErrorMessage(
+          result.error === "NETWORK_ERROR"
+            ? t("auth.login_error_network")
+            : result.message || t("auth.login_error_invalid")
+        );
+        return;
+      }
+
+      if (callbackUrl === "/") {
+        navigate({ to: "/" });
+      } else if (typeof window !== "undefined") {
+        window.location.replace(callbackUrl);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSocialLogin = (providerId: string) => {
+    void login({
+      idpHint: providerId,
+      redirectUri: window.location.origin + callbackUrl,
     });
   };
 
   return (
     <AuthLoginLayout
-      portalName={authConfig?.name || "FTTH GIS Tenant Portal"}
-      portalSubtitle={
-        authConfig?.planDisplayName
-          ? `Workspace ${authConfig.name || "Tenant"} • ${authConfig.planDisplayName}`
-          : "ISP FTTH Geospatial Network Management Workspace"
-      }
+      portalName={tenantCtx?.name || t("auth.tenant_portal_fallback")}
+      portalSubtitle={t("auth.tenant_portal_subtitle")}
+      welcomeTitle={t("auth.welcome_back")}
       docsUrl="https://system-gis.kdua.net/gateways/overview"
-      testimonialQuote="From fiber distribution to optical power level diagnostics, managing our ISP footprint has never been easier."
-      testimonialAuthor="ISP Operations Lead"
-      testimonialRole="Network Infrastructure Team"
+      docsLabel={t("auth.system_docs")}
+      testimonialQuote={t("auth.tenant_testimonial_quote")}
+      testimonialAuthor={t("auth.tenant_testimonial_author")}
+      testimonialRole={t("auth.tenant_testimonial_role")}
+      figureId="fig-07"
+      locale={locale}
+      onLocaleChange={setLocale}
+      footerAgreePrefix={t("auth.footer_agree_prefix")}
+      footerTermsLabel={t("auth.footer_terms")}
+      footerAndLabel={t("auth.footer_and")}
+      footerPrivacyLabel={t("auth.footer_privacy")}
+      footerAgreeSuffix={t("auth.footer_agree_suffix")}
+      footerCopyrightText={t("auth.footer_copyright")}
+      policyTermsTab={t("auth.policy_terms_tab")}
+      policyPrivacyTab={t("auth.policy_privacy_tab")}
+      policyCloseButton={t("auth.policy_close_button")}
     >
-      <div className="flex flex-col gap-6">
-        <div className="rounded-xl border border-border/70 bg-card/60 p-8 shadow-xl backdrop-blur-sm">
-          <div className="flex flex-col items-center text-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
-              <Shield className="h-6 w-6" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-foreground">
-                {authConfig?.name || "ISP Workspace"} Authentication
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("auth.logging_in")}
-              </p>
-            </div>
-
-            <div className="my-2 flex items-center justify-center gap-2">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <span className="text-xs font-mono text-muted-foreground">
-                {t("auth.logging_in")}
-              </span>
-            </div>
-
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleManualLogin}
-              className="mt-2 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer text-xs"
-            >
-              <span>{t("auth.sso_button")}</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      </div>
+      <AuthLoginForm
+        orgName={tenantCtx?.name || t("auth.tenant_org_fallback")}
+        description={t("auth.tenant_org_subtitle")}
+        logoUrl={tenantCtx?.logoUrl}
+        plan={tenantCtx?.plan || "FREE"}
+        planDisplayName={tenantCtx?.planDisplayName || "STARTER TRIAL"}
+        authMode={tenantCtx?.authMode}
+        status={tenantCtx?.status || "ACTIVE"}
+        allowedMethods={socialMethods}
+        locale={locale}
+        labels={formLabels}
+        isLoading={isSubmitting}
+        mfaRequired={mfaRequired}
+        turnstileSiteKey={turnstileSiteKey}
+        errorMessage={errorMessage}
+        onSubmitCredentials={handleSubmitCredentials}
+        onContinueWithProvider={handleSocialLogin}
+        onResetMfaStep={() => {
+          setMfaRequired(false);
+          setErrorMessage(null);
+        }}
+      />
     </AuthLoginLayout>
   );
 }
-

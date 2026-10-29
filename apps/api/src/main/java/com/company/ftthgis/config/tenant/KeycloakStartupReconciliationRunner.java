@@ -23,46 +23,30 @@ public class KeycloakStartupReconciliationRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        log.info("🚀 [Startup Reconciliation] Synchronizing B2B Tenant Realms, Identity Providers & Kong Edge...");
+        log.info("🚀 [Startup Reconciliation] Verifying 2 Static Realms (ftth-realm & k2net-tenants) & Kong Edge...");
 
         try {
-            // 1. Sync system realm to Kong
-            kongConfigSyncService.syncRealmToKong("ftth-realm");
+            // 1. Reconcile the 2 permanent realms ONLY (zero per-organization realm creation)
+            keycloakService.ensureRealmExists(KongConfigSyncService.PLATFORM_REALM);
+            keycloakService.ensureTenantSharedRealmExists();
 
-            // 2. Fetch all organizations
+            kongConfigSyncService.syncRealmToKong(KongConfigSyncService.PLATFORM_REALM);
+            kongConfigSyncService.syncRealmToKong(KongConfigSyncService.TENANT_SHARED_REALM);
+
+            // 2. Ensure MinIO S3 tenant vaults exist for active organizations (lightweight, no Keycloak/Kong reload)
             List<Organization> organizations = organizationRepository.findAll();
-            log.info("📋 Found {} organizations to reconcile with Keycloak & Kong", organizations.size());
-
             for (Organization org : organizations) {
                 if (org.getSlug() == null || org.getSlug().trim().isEmpty()) {
                     continue;
                 }
-
-                String realmName = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
-                boolean hasSso = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().isHasSso();
-                String planCode = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().getName() != null
-                        ? org.getSubscriptionPlan().getName()
-                        : "FREE";
-                String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
-                        : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
-                        : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
-                        : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
-
-                log.info("🔍 Reconciling organization '{}' (Realm: {}, Slug: {}, Plan: {}, hasSso: {})",
-                        org.getName(), realmName, org.getSlug(),
-                        planDisplayName,
-                        hasSso);
-
                 try {
-                    keycloakService.ensureRealmExists(realmName, hasSso, org.getName(), planCode, planDisplayName, org.getLogoUrl());
-                    kongConfigSyncService.syncRealmToKong(realmName);
                     fileStorageService.initTenantVault(org.getSlug());
                 } catch (Exception ex) {
-                    log.warn("⚠️ Failed to reconcile realm/vault '{}' during startup: {}", realmName, ex.getMessage());
+                    log.warn("⚠️ Failed to initialize MinIO vault for '{}' during startup: {}", org.getSlug(), ex.getMessage());
                 }
             }
 
-            log.info("🎉 [Startup Reconciliation] Completed successfully!");
+            log.info("🎉 [Startup Reconciliation] 2-Realm Architecture verified successfully!");
         } catch (Exception e) {
             log.error("❌ Error during startup reconciliation: {}", e.getMessage(), e);
         }

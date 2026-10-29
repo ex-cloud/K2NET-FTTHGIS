@@ -315,6 +315,37 @@ services:
           cpus: '0.25'
           memory: 128M
 
+  gateway-auth:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/gateway-auth:latest
+    build:
+      context: ./services
+      dockerfile: gateway-auth/Dockerfile
+    container_name: ftth-auth-gateway
+    restart: always
+    env_file:
+      - ./services/.env
+    environment:
+      - PORT=5014
+      - REDIS_ADDR=redis:6379
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@ftth-postgres:5432/${DB_NAME}
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8081
+      - KEYCLOAK_CLIENT_ID=ftth-gis-frontend
+      - BACKEND_INTERNAL_URL=http://backend:9090
+      - AUDIT_GATEWAY_URL=http://ftth-audit-gateway:5009
+      - GATEWAY_TOKEN=${GATEWAY_TOKEN}
+      - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY:-}
+      - TURNSTILE_TENANT_SECRET_KEY=${TURNSTILE_TENANT_SECRET_KEY:-}
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
+    expose:
+      - "5014"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
 networks:
   default:
     name: project5_default

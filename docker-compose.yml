@@ -151,7 +151,10 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME}
       KC_DB_USERNAME: "${DB_USER}"
       KC_DB_PASSWORD: "${DB_PASSWORD}"
-      JAVA_OPTS_APPEND: "-Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
+      KC_CACHE: "local"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      JAVA_OPTS_APPEND: "-Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+ExitOnOutOfMemoryError"
     command: start-dev --http-port=8081
     labels:
       - "traefik.enable=true"

@@ -15,8 +15,12 @@ on:
       - 'services/gateway-olt/**'
       - 'services/gateway-audit/**'
       - 'services/poller/**'
+      - 'services/gateway-task/**'
+      - 'services/observability-gateway/**'
+      - 'services/gateway-auth/**'
       - 'services/shared/**'
       - 'services/go.work'
+      - 'docker-compose.gateways.yml'
       - '.github/workflows/gateways-ci.yml'
   workflow_dispatch:
     inputs:
@@ -35,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway, gateway-whatsapp, gateway-scheduler, gateway-export, gateway-olt, gateway-audit, poller]
+        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway, gateway-whatsapp, gateway-scheduler, gateway-export, gateway-olt, gateway-audit, poller, gateway-task, observability-gateway, gateway-auth]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

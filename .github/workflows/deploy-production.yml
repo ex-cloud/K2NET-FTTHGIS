@@ -22,6 +22,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
       - 'docker-compose.yml'
+      - 'docker-compose.gateways.yml'
       - '.github/workflows/deploy-production.yml'
   workflow_dispatch:
     inputs:
@@ -62,6 +63,7 @@ jobs:
       gateway-ai: ${{ steps.filter.outputs.gateway-ai }}
       poller: ${{ steps.filter.outputs.poller }}
       observability-gateway: ${{ steps.filter.outputs.observability-gateway }}
+      gateway-auth: ${{ steps.filter.outputs.gateway-auth }}
       gateways_matrix: ${{ steps.set-matrix.outputs.gateways_matrix }}
       any_gateway_changed: ${{ steps.set-matrix.outputs.any_gateway_changed }}
     steps:
@@ -93,6 +95,7 @@ jobs:
               - 'services/shared/**'
               - 'services/go.work'
               - '.github/workflows/deploy-production.yml'
+              - 'docker-compose.gateways.yml'
             map-gateway:
               - 'services/map-gateway/**'
             notification-gateway:
@@ -119,6 +122,8 @@ jobs:
               - 'services/poller/**'
             observability-gateway:
               - 'services/observability-gateway/**'
+            gateway-auth:
+              - 'services/gateway-auth/**'
 
       - name: Generate Go Gateways Build Matrix
         id: set-matrix
@@ -129,7 +134,7 @@ jobs:
           MANUAL_SERVICE="${{ github.event.inputs.service }}"
           
           if [[ "$SHARED" == "true" || ( "$EVENT_NAME" == "workflow_dispatch" && ( "$MANUAL_SERVICE" == "all" || "$MANUAL_SERVICE" == "gateways" ) ) ]]; then
-            SERVICES=("map-gateway" "notification-gateway" "payment-gateway" "storage-gateway" "gateway-whatsapp" "gateway-scheduler" "gateway-export" "gateway-olt" "gateway-audit" "gateway-task" "poller" "gateway-ai" "observability-gateway")
+            SERVICES=("map-gateway" "notification-gateway" "payment-gateway" "storage-gateway" "gateway-whatsapp" "gateway-scheduler" "gateway-export" "gateway-olt" "gateway-audit" "gateway-task" "poller" "gateway-ai" "observability-gateway" "gateway-auth")
           else
             if [[ "${{ steps.filter.outputs.map-gateway }}" == "true" ]]; then SERVICES+=("map-gateway"); fi
             if [[ "${{ steps.filter.outputs.notification-gateway }}" == "true" ]]; then SERVICES+=("notification-gateway"); fi
@@ -144,6 +149,7 @@ jobs:
             if [[ "${{ steps.filter.outputs.gateway-ai }}" == "true" ]]; then SERVICES+=("gateway-ai"); fi
             if [[ "${{ steps.filter.outputs.poller }}" == "true" ]]; then SERVICES+=("poller"); fi
             if [[ "${{ steps.filter.outputs.observability-gateway }}" == "true" ]]; then SERVICES+=("observability-gateway"); fi
+            if [[ "${{ steps.filter.outputs.gateway-auth }}" == "true" ]]; then SERVICES+=("gateway-auth"); fi
           fi
           
           # Build JSON manually
@@ -567,7 +573,7 @@ jobs:
             fi
 
             # Deploy Go & Python gateways if changed or manually triggered
-            SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit gateway-task poller gateway-ai observability-gateway"
+            SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit gateway-task poller gateway-ai observability-gateway gateway-auth"
             for svc in $SERVICES_LIST; do
               CHANGED="false"
               if [ "$svc" == "map-gateway" ] && [ "${{ needs.changes.outputs.map-gateway }}" == "true" ]; then CHANGED="true"; fi
@@ -583,6 +589,7 @@ jobs:
               if [ "$svc" == "gateway-ai" ] && [ "${{ needs.changes.outputs.gateway-ai }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "poller" ] && [ "${{ needs.changes.outputs.poller }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "observability-gateway" ] && [ "${{ needs.changes.outputs.observability-gateway }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "gateway-auth" ] && [ "${{ needs.changes.outputs.gateway-auth }}" == "true" ]; then CHANGED="true"; fi
 
               # If shared libraries changed, we build/deploy all gateways
               if [ "${{ needs.changes.outputs.shared }}" == "true" ]; then CHANGED="true"; fi

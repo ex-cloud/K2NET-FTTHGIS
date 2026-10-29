@@ -2,6 +2,7 @@ go 1.25.7
 
 use (
 	./gateway-audit
+	./gateway-auth
 	./gateway-export
 	./gateway-olt
 	./gateway-scheduler

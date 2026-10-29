@@ -19,6 +19,8 @@ Semua service internal berjalan pada port statis berikut:
 * `5010` - go-poller (SNMP live status tracking API & Prometheus Metrics)
 * `5011` - gateway-task (Obsidian Sync Worker)
 * `5012` - **gateway-ai** (AI Assistant FastAPI Python — RAG + SSE + pgvector)
+* `5013` - observability-gateway (Unified observability & health tracking)
+* `5014` - **gateway-auth** (Cloudflare-style Edge Auth BFF, Turnstile & 2-Realm OIDC token broker)
 
 *Saat membuat service atau port baru, pastikan didaftarkan juga di `docker/prometheus/prometheus.yml` untuk monitoring.*
 

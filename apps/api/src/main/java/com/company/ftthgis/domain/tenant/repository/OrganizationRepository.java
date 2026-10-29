@@ -12,7 +12,8 @@ public interface OrganizationRepository extends JpaRepository<Organization, UUID
     Optional<Organization> findBySlug(String slug);
     boolean existsBySlug(String slug);
 
-    Optional<Organization> findByRealmKey(String realmKey);
+    java.util.List<Organization> findAllByRealmKey(String realmKey);
+    Optional<Organization> findFirstByRealmKey(String realmKey);
     boolean existsByRealmKey(String realmKey);
 
     @org.springframework.data.jpa.repository.Query("SELECT o.slug FROM Organization o")

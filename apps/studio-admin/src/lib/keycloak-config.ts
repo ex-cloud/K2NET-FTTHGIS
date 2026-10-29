@@ -13,5 +13,7 @@ export function getAdminKeycloakConfig(): KeycloakAuthConfig {
     url: authServerUrl,
     realm: import.meta.env.VITE_KEYCLOAK_REALM || "ftth-realm",
     clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "ftth-gis-frontend",
+    plane: "PLATFORM",
+    tenantSlug: "system",
   };
 }

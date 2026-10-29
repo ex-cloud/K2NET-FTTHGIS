@@ -109,6 +109,13 @@ scrape_configs:
         labels:
           application: "observability-gateway"
 
+  - job_name: "gateway-auth"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["ftth-auth-gateway:5014"]
+        labels:
+          application: "gateway-auth"
+
   - job_name: "node-exporter"
     static_configs:
       - targets: ["node-exporter:9100"]

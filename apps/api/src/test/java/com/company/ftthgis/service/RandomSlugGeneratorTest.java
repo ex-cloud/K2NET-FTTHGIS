@@ -67,4 +67,22 @@ class RandomSlugGeneratorTest {
         String smartSlug = generator.generateSmartSlug("PT Sukarajin Bandung", organizationRepository, aliasRepository);
         assertThat(smartSlug).matches("^pt-sukarajin-bandung-[a-z0-9]{4}$");
     }
+
+    @Test
+    @DisplayName("Should generate clean professional slug stripping corporate prefix without forced random suffix")
+    void testGenerateCleanSlug() {
+        when(organizationRepository.existsBySlug("kircon-bandung")).thenReturn(false);
+        when(aliasRepository.existsByOldSlug("kircon-bandung")).thenReturn(false);
+
+        String cleanSlug = generator.generateCleanSlug("PT Kircon Bandung", organizationRepository, aliasRepository);
+        assertThat(cleanSlug).isEqualTo("kircon-bandung");
+
+        // When exact clean slug already exists, appends short numeric suffix -2
+        when(organizationRepository.existsBySlug("kircon-bandung")).thenReturn(true);
+        when(organizationRepository.existsBySlug("kircon-bandung-2")).thenReturn(false);
+        when(aliasRepository.existsByOldSlug("kircon-bandung-2")).thenReturn(false);
+
+        String collidedSlug = generator.generateCleanSlug("PT. Kircon Bandung", organizationRepository, aliasRepository);
+        assertThat(collidedSlug).isEqualTo("kircon-bandung-2");
+    }
 }

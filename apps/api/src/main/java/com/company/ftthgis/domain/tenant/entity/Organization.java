@@ -54,8 +54,9 @@ public class Organization {
     @Column(nullable = false, unique = true)
     private String slug;
 
-    @Column(name = "realm_key", nullable = false, unique = true)
-    private String realmKey;
+    @Column(name = "realm_key", nullable = false)
+    @lombok.Builder.Default
+    private String realmKey = "k2net-tenants";
 
     @Column(columnDefinition = "TEXT")
     private String description;

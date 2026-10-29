@@ -113,14 +113,26 @@ public class TenantBrandingController {
                 } catch (IllegalArgumentException ignored) {}
             }
 
-            // Keycloak realm slug fallback
+            String tenantSlugClaim = jwt.getClaimAsString("tenant_slug");
+            if (tenantSlugClaim != null && !tenantSlugClaim.isBlank()) {
+                var orgByClaimSlug = organizationRepository.findBySlug(tenantSlugClaim.trim().toLowerCase());
+                if (orgByClaimSlug.isPresent()) {
+                    UUID id = orgByClaimSlug.get().getId();
+                    OrganizationContext.setOrganizationId(id);
+                    return id;
+                }
+            }
+
+            // Keycloak realm slug fallback (only for legacy non-shared realm)
             String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
             if (issuer.contains("/realms/")) {
                 String[] parts = issuer.split("/");
                 String realmSlug = parts[parts.length - 1];
-                if (!"ftth-realm".equals(realmSlug) && !"master".equals(realmSlug)) {
+                if (!"ftth-realm".equals(realmSlug)
+                        && !"master".equals(realmSlug)
+                        && !com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM.equalsIgnoreCase(realmSlug)) {
                     var orgOpt = organizationRepository.findBySlug(realmSlug)
-                            .or(() -> organizationRepository.findByRealmKey(realmSlug));
+                            .or(() -> organizationRepository.findFirstByRealmKey(realmSlug));
                     if (orgOpt.isPresent()) {
                         UUID id = orgOpt.get().getId();
                         OrganizationContext.setOrganizationId(id);

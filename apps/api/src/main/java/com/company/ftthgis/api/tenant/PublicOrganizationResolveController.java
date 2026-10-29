@@ -44,7 +44,9 @@ public class PublicOrganizationResolveController {
         Optional<Organization> directOrg = organizationRepository.findBySlug(cleanedSlug);
         if (directOrg.isPresent()) {
             Organization org = directOrg.get();
-            String effectiveRealmKey = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
+            String effectiveRealmKey = (org.getRealmKey() != null && !org.getRealmKey().isBlank())
+                    ? org.getRealmKey()
+                    : com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM;
             String planTier = org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "FREE";
 
             return ResponseEntity.ok(OrganizationResolveResponse.builder()
@@ -65,7 +67,9 @@ public class PublicOrganizationResolveController {
             OrganizationSlugAlias alias = aliasOpt.get();
             Organization targetOrg = alias.getOrganization();
             if (targetOrg != null) {
-                String effectiveRealmKey = targetOrg.getRealmKey() != null ? targetOrg.getRealmKey() : targetOrg.getSlug();
+                String effectiveRealmKey = (targetOrg.getRealmKey() != null && !targetOrg.getRealmKey().isBlank())
+                        ? targetOrg.getRealmKey()
+                        : com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM;
                 String planTier = targetOrg.getSubscriptionPlan() != null ? targetOrg.getSubscriptionPlan().getName() : "PRO";
 
                 log.info("🔀 Resolved historical alias '{}' -> active slug '{}' (Realm: {})",

@@ -68,7 +68,7 @@ public class OrganizationLifecycleService {
         summary.put("nodesCount", nodesCount);
         summary.put("cablesCount", cablesCount);
         summary.put("usersCount", usersCount);
-        summary.put("keycloakRealm", org.getSlug());
+        summary.put("keycloakRealm", org.getRealmKey() != null ? org.getRealmKey() : KeycloakService.TENANT_SHARED_REALM);
         summary.put("status", org.getStatus() != null ? org.getStatus().toString() : "ACTIVE");
         return summary;
     }
@@ -126,8 +126,8 @@ public class OrganizationLifecycleService {
             org.setStatus(Organization.OrganizationStatus.SUSPENDED);
             organizationRepository.save(org);
 
-            // Immediate Lockout: Disable Keycloak Realm so tenant users cannot authenticate
-            keycloakService.setRealmEnabled(slug, false);
+            // Immediate Lockout: Disable all Keycloak users belonging to this organization in 'k2net-tenants'
+            keycloakService.setOrganizationUsersEnabled(org.getId().toString(), false);
 
             try {
                 auditLoggingService.logEvent(
@@ -172,16 +172,18 @@ public class OrganizationLifecycleService {
         try {
             String effectiveRealmKey = org.getRealmKey() != null && !org.getRealmKey().trim().isEmpty() ? org.getRealmKey() : slug;
 
-            // 1. Delete Keycloak Realm (Infrastructure Cleanup)
-            log.info("🛡️ Deleting Keycloak Realm: {} (effective realmKey: {})", slug, effectiveRealmKey);
+            // 1. Delete Tenant Users from Shared Keycloak Realm ('k2net-tenants')
+            log.info("🛡️ Deleting Keycloak users for organization '{}' (ID: {}) from shared realm '{}'",
+                    slug, orgIdStr, KeycloakService.TENANT_SHARED_REALM);
             try {
-                keycloakService.deleteRealm(effectiveRealmKey);
+                keycloakService.deleteOrganizationUsers(orgIdStr);
             } catch (Exception e) {
-                log.warn("⚠️ Non-critical failure deleting Keycloak realm: {}. Manual cleanup may be required.", e.getMessage());
+                log.warn("⚠️ Non-critical failure deleting Keycloak users for org {}: {}", orgIdStr, e.getMessage());
             }
-            if (!effectiveRealmKey.equalsIgnoreCase(slug)) {
+            if (!KeycloakService.TENANT_SHARED_REALM.equalsIgnoreCase(effectiveRealmKey)
+                    && !KeycloakService.PLATFORM_REALM.equalsIgnoreCase(effectiveRealmKey)) {
                 try {
-                    keycloakService.deleteRealm(slug);
+                    keycloakService.deleteRealm(effectiveRealmKey);
                 } catch (Exception ignored) {}
             }
 
@@ -307,8 +309,8 @@ public class OrganizationLifecycleService {
         org.setStatus(Organization.OrganizationStatus.ACTIVE);
         organizationRepository.save(org);
 
-        // Re-enable Keycloak realm
-        keycloakService.setRealmEnabled(slug, true);
+        // Re-enable Keycloak users belonging to this organization in 'k2net-tenants'
+        keycloakService.setOrganizationUsersEnabled(org.getId().toString(), true);
 
         try {
             auditLoggingService.logEvent(

@@ -95,19 +95,45 @@ public class UserSyncService {
             return null;
         }
 
-        // Extract organization from realm name in issuer URL
+        // Extract realm name from issuer URL
         String realmName = "master";
         if (issuer != null && issuer.contains("/realms/")) {
             realmName = issuer.substring(issuer.lastIndexOf("/") + 1);
         }
-        
-        final String finalRealm = realmName;
-        Organization org = organizationRepository.findBySlug(realmName)
-                .or(() -> organizationRepository.findBySlug("default"))
-                .or(() -> organizationRepository.findBySlug("system"))
-                .orElse(null);
 
-        // Extract roles from JWT and map to dynamic platform roles
+        boolean isSystemRealm = "ftth-realm".equalsIgnoreCase(realmName)
+                || "master".equalsIgnoreCase(realmName)
+                || "default".equalsIgnoreCase(realmName);
+        boolean isSharedTenantRealm = com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM
+                .equalsIgnoreCase(realmName);
+
+        Organization org = null;
+        if (isSystemRealm) {
+            org = organizationRepository.findBySlug("default")
+                    .or(() -> organizationRepository.findBySlug("system"))
+                    .orElse(null);
+        } else {
+            String orgIdClaim = jwt.getClaimAsString("organization_id");
+            if (orgIdClaim == null || orgIdClaim.isBlank()) {
+                orgIdClaim = jwt.getClaimAsString("tenant_id");
+            }
+            if (orgIdClaim != null && !orgIdClaim.isBlank() && !"00000000-0000-0000-0000-000000000000".equals(orgIdClaim)) {
+                try {
+                    org = organizationRepository.findById(UUID.fromString(orgIdClaim.trim())).orElse(null);
+                } catch (IllegalArgumentException ignored) {}
+            }
+            if (org == null) {
+                String tenantSlugClaim = jwt.getClaimAsString("tenant_slug");
+                if (tenantSlugClaim != null && !tenantSlugClaim.isBlank()) {
+                    org = organizationRepository.findBySlug(tenantSlugClaim.trim().toLowerCase()).orElse(null);
+                }
+            }
+            if (org == null && !isSharedTenantRealm) {
+                org = organizationRepository.findBySlug(realmName).orElse(null);
+            }
+        }
+
+        // Extract roles from JWT and map to dynamic platform/tenant roles
         java.util.Set<String> roleNames = new java.util.HashSet<>();
         java.util.Map<String, Object> realmAccess = (java.util.Map<String, Object>) jwt.getClaims().get("realm_access");
         if (realmAccess != null && realmAccess.containsKey("roles")) {
@@ -121,6 +147,23 @@ public class UserSyncService {
                 java.util.Collection<String> clientRoles = (java.util.Collection<String>) clientAccess.get("roles");
                 roleNames.addAll(clientRoles);
             }
+        }
+
+        // Normalize canonical shared tenant role aliases
+        if (roleNames.contains("tenant_owner") || roleNames.contains("tenant_admin")) {
+            roleNames.add("admin");
+        }
+        if (roleNames.contains("noc_operator")) {
+            roleNames.add("noc");
+        }
+        if (roleNames.contains("network_engineer")) {
+            roleNames.add("surveyor");
+        }
+        if (roleNames.contains("field_technician")) {
+            roleNames.add("technician");
+        }
+        if (roleNames.contains("billing_staff")) {
+            roleNames.add("finance");
         }
 
         List<String> priorityRoles = List.of(
@@ -154,13 +197,11 @@ public class UserSyncService {
             );
         }
 
-        // 2. Strict Tenant Domain / Realm Alignment Check
+        // 2. Strict Tenant Domain / Realm Alignment Check (2-Realm Air-Gap)
         User targetUser = existingUser.orElseGet(() -> userByEmail.orElse(null));
         if (targetUser != null) {
             Organization userOrg = targetUser.getOrganization();
             String userOrgSlug = (userOrg != null) ? userOrg.getSlug() : "system";
-
-            boolean isSystemRealm = "ftth-realm".equals(realmName) || "master".equals(realmName) || "default".equals(realmName);
             boolean isSystemOrg = "system".equalsIgnoreCase(userOrgSlug) || "default".equalsIgnoreCase(userOrgSlug);
 
             if (isSystemRealm) {
@@ -171,6 +212,24 @@ public class UserSyncService {
                         "Anda tidak memiliki hak akses untuk masuk ke domain/tenant ini."
                     );
                 }
+            } else if (isSharedTenantRealm) {
+                if (isSystemOrg) {
+                    log.warn("❌ Plane mismatch block for user {}: System user attempted login via tenant realm '{}'",
+                            email, realmName);
+                    throw new org.springframework.security.authentication.BadCredentialsException(
+                        "Anda tidak memiliki hak akses untuk masuk ke domain/tenant ini."
+                    );
+                }
+                if (org != null && userOrg != null && !userOrg.getId().equals(org.getId())) {
+                    log.warn("❌ Cross-tenant mismatch block for user {}: Registered org '{}', JWT claim org '{}'",
+                            email, userOrgSlug, org.getSlug());
+                    throw new org.springframework.security.authentication.BadCredentialsException(
+                        "Anda tidak memiliki hak akses untuk masuk ke domain/tenant ini."
+                    );
+                }
+                if (org == null && userOrg != null) {
+                    org = userOrg;
+                }
             } else if (!userOrgSlug.equalsIgnoreCase(realmName)) {
                 log.warn("❌ Realm mismatch block for user {}: Registered organization is '{}', but logging in via realm '{}'", 
                     email, userOrgSlug, realmName);
@@ -180,6 +239,8 @@ public class UserSyncService {
             }
         }
 
+        final Organization resolvedOrg = org;
+
         if (existingUser.isPresent()) {
             boolean isJwtStale = false;
             User user = existingUser.get();
@@ -187,16 +248,16 @@ public class UserSyncService {
                 java.time.Instant updatedAtInstant = user.getUpdatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant();
                 isJwtStale = jwt.getIssuedAt().isBefore(updatedAtInstant.minusSeconds(5));
             }
-            return updateExistingUser(user, email, name, username, org, isJwtStale, jwtRole);
+            return updateExistingUser(user, email, name, username, resolvedOrg, isJwtStale, jwtRole);
         } else {
             return userRepository.findByEmail(email)
                     .map(user -> {
                         log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
                         userRepository.delete(user);
                         userRepository.flush();
-                        return createNewUser(keycloakId, email, name, username, org, jwtRole);
+                        return createNewUser(keycloakId, email, name, username, resolvedOrg, jwtRole);
                     })
-                    .orElseGet(() -> createNewUser(keycloakId, email, name, username, org, jwtRole));
+                    .orElseGet(() -> createNewUser(keycloakId, email, name, username, resolvedOrg, jwtRole));
         }
     }
 

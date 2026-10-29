@@ -1,22 +1,25 @@
-"use client";
-
-import React, { useState } from "react";
-import { 
-  KeyRound, 
-  ShieldAlert, 
-  ArrowRight, 
-  Loader2, 
-  Mail, 
-  Building2, 
-  ShieldCheck, 
-  Lock, 
+import React, { useEffect, useRef, useState } from "react";
+import {
+  KeyRound,
+  ShieldAlert,
+  ArrowRight,
+  Loader2,
+  Mail,
+  Building2,
+  ShieldCheck,
+  Lock,
   AlertTriangle,
-  Sparkles
+  Sparkles,
+  Eye,
+  EyeOff,
+  Smartphone,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
 import { Badge } from "../badge";
+import type { AuthLocale } from "./auth-login-layout";
 
 export interface AuthMethod {
   id: string;
@@ -24,6 +27,54 @@ export interface AuthMethod {
   type: string;
   icon: string;
   enabled: boolean;
+}
+
+export interface AuthCredentialsSubmitPayload {
+  username: string;
+  password: string;
+  rememberMe: boolean;
+  totp?: string;
+  turnstileToken?: string;
+}
+
+export interface AuthLoginFormLabels {
+  accountEmailOrUsername?: string;
+  accountPlaceholder?: string;
+  requiredBadge?: string;
+  passwordUpper?: string;
+  passwordPlaceholder?: string;
+  forgotPassword?: string;
+  forgotPasswordNotice?: string;
+  showPassword?: string;
+  hidePassword?: string;
+  rememberMeBrowser?: string;
+  orContinueWith?: string;
+  continueWithGoogle?: string;
+  continueWithGithub?: string;
+  continueWithProviderPrefix?: string;
+  signInPlatformAdmin?: string;
+  continueIspWorkspace?: string;
+  mfaCodeLabel?: string;
+  mfaCodePlaceholder?: string;
+  mfaCodeHint?: string;
+  mfaVerifySubmit?: string;
+  mfaBackToLogin?: string;
+  turnstileVerifying?: string;
+  suspendedTitle?: string;
+  suspendedDesc?: string;
+  tierInternalLabel?: string;
+  tierInternalValue?: string;
+  tierInternalDesc?: string;
+  tierFreeLabel?: string;
+  tierFreeValue?: string;
+  tierFreeDesc?: string;
+  tierProLabel?: string;
+  tierProValue?: string;
+  tierProDesc?: string;
+  tierEnterpriseLabel?: string;
+  tierEnterpriseValue?: string;
+  tierEnterpriseDesc?: string;
+  complianceBanner?: string;
 }
 
 export interface AuthLoginFormProps {
@@ -38,63 +89,272 @@ export interface AuthLoginFormProps {
   allowedMethods?: AuthMethod[];
   primaryAuthMethod?: string;
   submitLabel?: string;
+  onSubmitCredentials?: (payload: AuthCredentialsSubmitPayload) => void | Promise<void>;
   onContinueWithEmail?: (email: string) => void;
   onContinueWithProvider?: (providerId: string) => void;
+  onForgotPassword?: (usernameOrEmail: string) => void;
+  onResetMfaStep?: () => void;
+  mfaRequired?: boolean;
+  turnstileSiteKey?: string;
   isLoading?: boolean;
   defaultEmail?: string;
   errorMessage?: string | null;
+  locale?: AuthLocale;
+  labels?: AuthLoginFormLabels;
+}
+
+interface TurnstileWindow extends Window {
+  turnstile?: {
+    render: (
+      container: HTMLElement,
+      options: {
+        sitekey: string;
+        action?: string;
+        theme?: "auto" | "light" | "dark";
+        size?: "normal" | "flexible" | "compact";
+        callback?: (token: string) => void;
+        "expired-callback"?: () => void;
+        "error-callback"?: () => void;
+      }
+    ) => string;
+    reset?: (widgetId: string) => void;
+    remove?: (widgetId: string) => void;
+  };
 }
 
 export function AuthLoginForm({
   allowedMethods = [],
-  primaryAuthMethod,
   title,
   description,
   logoUrl,
   orgName,
   plan = "FREE",
   planDisplayName,
-  authMode,
   status = "ACTIVE",
   submitLabel,
+  onSubmitCredentials,
   onContinueWithEmail,
   onContinueWithProvider,
+  onForgotPassword,
+  onResetMfaStep,
+  mfaRequired = false,
+  turnstileSiteKey,
   isLoading = false,
   defaultEmail = "",
   errorMessage = null,
+  locale = "en",
+  labels,
 }: AuthLoginFormProps) {
   const [usernameOrEmail, setUsernameOrEmail] = useState(defaultEmail);
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | undefined>(undefined);
+  const [showForgotHelp, setShowForgotHelp] = useState(false);
+
+  const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
+
+
+  // Mount Cloudflare Turnstile widget dynamically when turnstileSiteKey is configured
+  useEffect(() => {
+    const cleanKey = turnstileSiteKey?.trim();
+    if (!cleanKey || typeof window === "undefined") {
+      return;
+    }
+
+    let cancelled = false;
+    const win = window as TurnstileWindow;
+
+    const mountWidget = () => {
+      if (cancelled || !turnstileContainerRef.current || !win.turnstile) return;
+      if (turnstileWidgetIdRef.current && win.turnstile.remove) {
+        try {
+          win.turnstile.remove(turnstileWidgetIdRef.current);
+        } catch {
+          // ignore cleanup warning
+        }
+      }
+      turnstileContainerRef.current.replaceChildren();
+      turnstileWidgetIdRef.current = win.turnstile.render(turnstileContainerRef.current, {
+        sitekey: cleanKey,
+        action: "login",
+        theme: "auto",
+        size: "flexible",
+        callback: (token: string) => setTurnstileToken(token),
+        "expired-callback": () => setTurnstileToken(undefined),
+        "error-callback": () => setTurnstileToken(undefined),
+      });
+    };
+
+    if (win.turnstile) {
+      mountWidget();
+    } else {
+      const existingScript = document.getElementById("cf-turnstile-api-script") as HTMLScriptElement | null;
+      if (existingScript) {
+        existingScript.addEventListener("load", mountWidget);
+      } else {
+        const script = document.createElement("script");
+        script.id = "cf-turnstile-api-script";
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.async = true;
+        script.defer = true;
+        script.addEventListener("load", mountWidget);
+        document.head.appendChild(script);
+      }
+    }
+
+    return () => {
+      cancelled = true;
+      if (turnstileWidgetIdRef.current && win.turnstile?.remove) {
+        try {
+          win.turnstile.remove(turnstileWidgetIdRef.current);
+        } catch {
+          // ignore
+        }
+        turnstileWidgetIdRef.current = null;
+      }
+    };
+  }, [turnstileSiteKey]);
+
+  // Reset single-use Turnstile token when login attempts result in an error
+  useEffect(() => {
+    const win = typeof window !== "undefined" ? (window as TurnstileWindow) : undefined;
+    if (errorMessage && turnstileWidgetIdRef.current && win?.turnstile?.reset) {
+      try {
+        win.turnstile.reset(turnstileWidgetIdRef.current);
+        setTurnstileToken(undefined);
+      } catch {
+        // ignore
+      }
+    }
+  }, [errorMessage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanUser = usernameOrEmail.trim();
+    if (onSubmitCredentials) {
+      void onSubmitCredentials({
+        username: cleanUser,
+        password,
+        rememberMe,
+        totp: mfaRequired ? totpCode.trim() : undefined,
+        turnstileToken,
+      });
+      return;
+    }
     if (onContinueWithEmail) {
-      onContinueWithEmail(usernameOrEmail.trim());
+      onContinueWithEmail(cleanUser);
     }
   };
 
-  const isSuspended = status === "SUSPENDED" || status === "TRIAL_EXPIRED";
-  const isInternal = plan?.toUpperCase() === "INTERNAL";
-  const isFreePlan = !isInternal && (!plan || plan.toUpperCase() === "FREE" || plan.toUpperCase() === "BASIC");
-  const isProPlan = !isInternal && (plan?.toUpperCase() === "PRO" || plan?.toUpperCase() === "PROFESSIONAL");
-  const isEnterprisePlan = !isInternal && plan?.toUpperCase() === "ENTERPRISE";
+  const handleForgotClick = () => {
+    if (onForgotPassword) {
+      onForgotPassword(usernameOrEmail.trim());
+    } else {
+      setShowForgotHelp((prev) => !prev);
+    }
+  };
 
-  const resolvedSubmitLabel = submitLabel || (
-    isInternal
-      ? "Continue with Keycloak SSO"
-      : isEnterprisePlan || authMode === "ENTERPRISE_SAML_MFA"
-      ? "Continue with Enterprise SSO" 
-      : "Sign In with Password"
-  );
+  const handleBackFromMfa = () => {
+    setTotpCode("");
+    if (onResetMfaStep) {
+      onResetMfaStep();
+    }
+  };
+
+  const statusUpper = (status || "ACTIVE").toUpperCase();
+  const isSuspended = statusUpper === "SUSPENDED" || statusUpper === "TRIAL_EXPIRED" || statusUpper === "DELETED";
+  const planUpper = (plan || "FREE").toUpperCase();
+  const isInternal = planUpper === "INTERNAL";
+  const isProPlan = !isInternal && (planUpper === "PRO" || planUpper === "PROFESSIONAL");
+  const isEnterprisePlan = !isInternal && planUpper === "ENTERPRISE";
+  const isFreePlan = !isInternal && !isProPlan && !isEnterprisePlan;
+
+  const copy = {
+    accountEmailOrUsername: labels?.accountEmailOrUsername || "ACCOUNT EMAIL OR USERNAME",
+    accountPlaceholder: labels?.accountPlaceholder || "e.g. admin@isp.net or admin.username",
+    requiredBadge: labels?.requiredBadge || "Required",
+    passwordUpper: labels?.passwordUpper || "PASSWORD",
+    passwordPlaceholder: labels?.passwordPlaceholder || "••••••••••••",
+    forgotPassword: labels?.forgotPassword || "Forgot password?",
+    forgotPasswordNotice:
+      labels?.forgotPasswordNotice ||
+      "Contact your Workspace Owner or K2NET Platform Support to initiate a verified password reset.",
+    showPassword: labels?.showPassword || "Show password",
+    hidePassword: labels?.hidePassword || "Hide password",
+    rememberMeBrowser: labels?.rememberMeBrowser || "Remember me on this browser",
+    orContinueWith: labels?.orContinueWith || "OR CONTINUE WITH",
+    continueWithGoogle: labels?.continueWithGoogle || "Continue with Google",
+    continueWithGithub: labels?.continueWithGithub || "Continue with GitHub",
+    continueWithProviderPrefix: labels?.continueWithProviderPrefix || "Continue with",
+    signInPlatformAdmin: labels?.signInPlatformAdmin || "Sign In to Platform Admin",
+    continueIspWorkspace: labels?.continueIspWorkspace || "Continue to ISP Workspace",
+    mfaCodeLabel: labels?.mfaCodeLabel || "6-DIGIT AUTHENTICATOR CODE",
+    mfaCodePlaceholder: labels?.mfaCodePlaceholder || "000000",
+    mfaCodeHint:
+      labels?.mfaCodeHint ||
+      "Open your Authenticator app (Google Authenticator / Authy) and enter the 6-digit verification code.",
+    mfaVerifySubmit: labels?.mfaVerifySubmit || "Verify & Sign In",
+    mfaBackToLogin: labels?.mfaBackToLogin || "Use another account",
+    suspendedTitle: labels?.suspendedTitle || "Subscription Suspended or Inactive",
+    suspendedDesc:
+      labels?.suspendedDesc ||
+      "This organization workspace is currently suspended or awaiting activation. Please contact K2NET Platform Administration.",
+    tierInternalLabel: labels?.tierInternalLabel || "ACCESS MODE",
+    tierInternalValue: labels?.tierInternalValue || "MASTER IAM & MFA",
+    tierInternalDesc:
+      labels?.tierInternalDesc ||
+      "System-level authentication protected by Keycloak Master IAM and step-up MFA enforcement.",
+    tierFreeLabel: labels?.tierFreeLabel || "LOGIN METHOD",
+    tierFreeValue: labels?.tierFreeValue || "EMAIL + PASSWORD",
+    tierFreeDesc:
+      labels?.tierFreeDesc ||
+      "Native password authentication. Google Workspace & GitHub SSO unlock on Pro & Enterprise plans.",
+    tierProLabel: labels?.tierProLabel || "LOGIN METHODS",
+    tierProValue: labels?.tierProValue || "PASSWORD + SOCIAL SSO",
+    tierProDesc:
+      labels?.tierProDesc ||
+      "Sign in directly with your account password or one-click Google & GitHub Single Sign-On.",
+    tierEnterpriseLabel: labels?.tierEnterpriseLabel || "ENTERPRISE IAM",
+    tierEnterpriseValue: labels?.tierEnterpriseValue || "SSO IdP & MFA",
+    tierEnterpriseDesc:
+      labels?.tierEnterpriseDesc ||
+      "Direct Corporate Identity Provider integration with mandatory multi-factor authentication enforcement.",
+    complianceBanner:
+      labels?.complianceBanner ||
+      "Multi-tenant isolated access. Every sign-in event is cryptographically monitored and audited under K2NET ISP security standards.",
+  };
+
+  const resolvedSubmitLabel =
+    submitLabel ||
+    (mfaRequired
+      ? copy.mfaVerifySubmit
+      : isInternal
+      ? copy.signInPlatformAdmin
+      : copy.continueIspWorkspace);
 
   const socialMethods = allowedMethods.filter(
     (m) => m.enabled && (m.type === "social" || m.type === "saml" || m.type === "enterprise")
   );
 
+  const isSubmitDisabled =
+    isLoading ||
+    isSuspended ||
+    !usernameOrEmail.trim() ||
+    !password ||
+    (mfaRequired && totpCode.trim().length < 6) ||
+    (Boolean(turnstileSiteKey?.trim()) && !mfaRequired && !turnstileToken);
+
   return (
     <div className="w-full space-y-4">
       {/* Error Message */}
       {errorMessage && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs font-medium text-destructive animate-in fade-in">
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs font-medium text-destructive animate-in fade-in"
+        >
           <ShieldAlert className="h-4 w-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>
@@ -105,119 +365,297 @@ export function AuthLoginForm({
         <div className="flex items-start gap-2.5 rounded-md border border-destructive/40 bg-destructive/10 p-3.5 text-xs text-destructive animate-in fade-in">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
-            <strong className="block font-semibold">Masa Berlaku Langganan Berakhir</strong>
+            <strong className="block font-semibold">{copy.suspendedTitle}</strong>
             <span className="text-[11px] leading-relaxed text-destructive/90">
-              Workspace organisasi ini saat ini sedang ditangguhkan. Silakan hubungi tim administrator K2NET untuk mengaktifkan kembali langganan.
+              {copy.suspendedDesc}
             </span>
           </div>
         </div>
       )}
 
       {/* Main Login Card */}
-      <div className="bg-card/60 border border-border/70 rounded-lg p-6 shadow-sm backdrop-blur-md space-y-4">
-        {/* Tenant Identity & Subscription Tier Header */}
+      <div className="bg-card/60 border border-border/70 rounded-xl p-5 sm:p-6 shadow-sm backdrop-blur-md space-y-4">
+        {/* 1. Identity Card Header + Tier Badge */}
         {(orgName || title) && (
-          <div className="flex items-center justify-between pb-3 border-b border-border/50">
+          <div className="flex items-center justify-between gap-2 pb-3 border-b border-border/50">
             <div className="flex items-center gap-2.5 min-w-0">
               {logoUrl ? (
                 <img
                   src={logoUrl}
-                  alt={orgName || "Logo"}
-                  className="size-7 rounded-md object-contain border border-border/60 bg-background/50 p-0.5 shrink-0"
+                  alt={orgName || "Organization"}
+                  className="size-8 rounded-md object-contain border border-border/60 bg-background/50 p-0.5 shrink-0"
                 />
               ) : (
-                <div className="size-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                  <Building2 className="size-3.5" />
+                <div className="size-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                  {isInternal ? <ShieldCheck className="size-4" /> : <Building2 className="size-4" />}
                 </div>
               )}
               <div className="flex flex-col min-w-0">
-                <span className="text-xs font-bold text-foreground truncate max-w-[190px]">
+                <span className="text-xs font-bold text-foreground truncate max-w-[185px]">
                   {orgName || title}
                 </span>
                 <span className="text-[10px] text-muted-foreground font-mono truncate">
-                  {description || (isInternal ? "System Management Core" : "ISP Workspace")}
+                  {description || (isInternal ? "Master IAM & Platform Operations" : "ISP Workspace & Operations")}
                 </span>
               </div>
             </div>
 
-            {/* Tier Badge */}
             {isInternal && (
-              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-500 dark:text-amber-400 text-[9px] font-mono font-medium tracking-wider shrink-0">
+              <Badge
+                variant="outline"
+                className="bg-amber-500/10 border-amber-500/30 text-amber-500 dark:text-amber-400 text-[9px] font-mono font-medium tracking-wider shrink-0"
+              >
                 {planDisplayName ? planDisplayName.toUpperCase() : "SYSTEM ADMIN"}
               </Badge>
             )}
             {isFreePlan && (
-              <Badge variant="outline" className="bg-primary/5 border-primary/25 text-primary text-[9px] font-mono font-medium tracking-wider shrink-0">
-                {planDisplayName ? planDisplayName.toUpperCase() : "FREE • 7 DAYS"}
+              <Badge
+                variant="outline"
+                className="bg-primary/5 border-primary/25 text-primary text-[9px] font-mono font-medium tracking-wider shrink-0"
+              >
+                {planDisplayName ? planDisplayName.toUpperCase() : "STARTER TRIAL"}
               </Badge>
             )}
             {isProPlan && (
-              <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400 text-[9px] font-mono font-medium tracking-wider shrink-0">
-                {planDisplayName ? planDisplayName.toUpperCase() : "PROFESSIONAL"}
+              <Badge
+                variant="outline"
+                className="bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400 text-[9px] font-mono font-medium tracking-wider shrink-0"
+              >
+                {planDisplayName ? planDisplayName.toUpperCase() : "PROFESSIONAL ISP"}
               </Badge>
             )}
             {isEnterprisePlan && (
-              <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400 text-[9px] font-mono font-medium tracking-wider shrink-0">
+              <Badge
+                variant="outline"
+                className="bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400 text-[9px] font-mono font-medium tracking-wider shrink-0"
+              >
                 {planDisplayName ? planDisplayName.toUpperCase() : "ENTERPRISE"}
               </Badge>
             )}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Account Email or Username Input */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label
-                htmlFor="usernameOrEmail"
-                className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
-              >
-                Account Email or Username
-              </Label>
-              <span className="text-[10px] text-primary/80 font-mono">Required</span>
+        {/* 2. Social SSO Buttons ABOVE Form (Pro / Enterprise Tenants) */}
+        {!mfaRequired && socialMethods.length > 0 && (
+          <div className="space-y-3">
+            <div className="grid gap-2">
+              {socialMethods.map((method) => {
+                const methodLabel =
+                  method.icon === "google"
+                    ? copy.continueWithGoogle
+                    : method.icon === "github"
+                    ? copy.continueWithGithub
+                    : `${copy.continueWithProviderPrefix} ${method.name}`;
+
+                return (
+                  <Button
+                    key={method.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs cursor-pointer"
+                    onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
+                    disabled={isLoading || isSuspended}
+                  >
+                    {method.icon === "google" && <GoogleIcon className="size-3.5" />}
+                    {method.icon === "github" && <GithubIcon className="size-3.5" />}
+                    {method.icon !== "google" && method.icon !== "github" && (
+                      <KeyRound className="size-3.5 text-primary" />
+                    )}
+                    <span>{methodLabel}</span>
+                  </Button>
+                );
+              })}
             </div>
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                id="usernameOrEmail"
-                type="text"
-                placeholder="e.g. admin@isp.net or admin.username"
-                value={usernameOrEmail}
-                onChange={(e) => setUsernameOrEmail(e.target.value)}
-                className="pl-10 h-9 bg-background/60 border-border/70 rounded-md text-sm focus-visible:ring-primary"
-                disabled={isLoading || isSuspended}
-              />
+
+            <div className="relative flex items-center justify-center py-1">
+              <div className="w-full border-t border-border/60" />
+              <span className="absolute bg-card px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
+                {copy.orContinueWith}
+              </span>
             </div>
           </div>
+        )}
 
-          {/* Primary Action Button */}
+        {/* 3. Full Native Credentials & Inline MFA Form */}
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          {!mfaRequired ? (
+            <>
+              {/* Account Email or Username Input */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label
+                    htmlFor="usernameOrEmail"
+                    className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    {copy.accountEmailOrUsername}
+                  </Label>
+                  <span className="text-[10px] text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded font-mono">
+                    {copy.requiredBadge}
+                  </span>
+                </div>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="usernameOrEmail"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    placeholder={copy.accountPlaceholder}
+                    value={usernameOrEmail}
+                    onChange={(e) => setUsernameOrEmail(e.target.value)}
+                    className="pl-9 h-9 bg-background/60 border-border/70 rounded-md text-xs sm:text-sm focus-visible:ring-primary"
+                    disabled={isLoading || isSuspended}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password Input + Forgot Password + Show/Hide Toggle */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label
+                    htmlFor="accountPassword"
+                    className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    {copy.passwordUpper}
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={handleForgotClick}
+                    className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                  >
+                    {copy.forgotPassword}
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="accountPassword"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder={copy.passwordPlaceholder}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9 pr-9 h-9 bg-background/60 border-border/70 rounded-md text-xs sm:text-sm focus-visible:ring-primary"
+                    disabled={isLoading || isSuspended}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? copy.hidePassword : copy.showPassword}
+                    title={showPassword ? copy.hidePassword : copy.showPassword}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors font-medium cursor-pointer"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+
+                {showForgotHelp && (
+                  <p className="text-[11px] text-muted-foreground bg-muted/40 border border-border/60 rounded-md p-2 leading-relaxed">
+                    {copy.forgotPasswordNotice}
+                  </p>
+                )}
+              </div>
+
+              {/* Remember Me Checkbox */}
+              <div className="flex items-center justify-between pt-0.5">
+                <label className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLoading || isSuspended}
+                    className="size-3.5 rounded border-border bg-background accent-primary cursor-pointer"
+                  />
+                  <span>{copy.rememberMeBrowser}</span>
+                </label>
+              </div>
+
+              {/* Optional Cloudflare Turnstile Anti-Bot Widget */}
+              {Boolean(turnstileSiteKey?.trim()) && (
+                <div className="pt-1">
+                  <div ref={turnstileContainerRef} className="min-h-[65px] w-full overflow-hidden rounded-md" />
+                </div>
+              )}
+            </>
+          ) : (
+            /* Inline 6-Digit MFA OTP Mode */
+            <div className="space-y-3 animate-in fade-in duration-150">
+              <div className="rounded-md border border-primary/25 bg-primary/5 p-3 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                  <Smartphone className="size-3.5" />
+                  <span>{copy.mfaCodeLabel}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {copy.mfaCodeHint}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Input
+                  id="totpCode"
+                  name="totp"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  autoFocus
+                  placeholder={copy.mfaCodePlaceholder}
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                  className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-background/60 border-border/70 rounded-md focus-visible:ring-primary"
+                  disabled={isLoading || isSuspended}
+                  required
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleBackFromMfa}
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="size-3" />
+                <span>{copy.mfaBackToLogin}</span>
+              </button>
+            </div>
+          )}
+
+          {/* 4. Primary Submit Button */}
           <Button
             type="submit"
-            disabled={isLoading || isSuspended}
-            className="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 transition-all duration-200 group"
+            size="sm"
+            disabled={isSubmitDisabled}
+            className="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 transition-all duration-200 group cursor-pointer"
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <>
                 <span>{resolvedSubmitLabel}</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
               </>
             )}
           </Button>
         </form>
 
-        {/* Tier UX Guidance Box */}
+        {/* 5. Tier UX Guidance Box */}
         {isInternal && (
           <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="flex items-center gap-1.5 font-mono text-amber-500 text-[10px] font-semibold">
-                <Lock className="size-3" /> ACCESS MODE
+                <Lock className="size-3" /> {copy.tierInternalLabel}
               </span>
-              <span className="font-mono text-[10px] font-bold text-amber-500">MASTER IAM & MFA</span>
+              <span className="font-mono text-[10px] font-bold text-amber-500">
+                {copy.tierInternalValue}
+              </span>
             </div>
             <p className="text-[10px] text-muted-foreground leading-relaxed">
-              Autentikasi tingkat sistem dengan proteksi Keycloak IAM Master Realm dan penegakan MFA wajib.
+              {copy.tierInternalDesc}
             </p>
           </div>
         )}
@@ -226,12 +664,14 @@ export function AuthLoginForm({
           <div className="rounded-md border border-border/70 bg-background/40 p-3 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="flex items-center gap-1.5 font-mono text-muted-foreground text-[10px] font-semibold">
-                <KeyRound className="size-3 text-primary" /> LOGIN METHOD
+                <KeyRound className="size-3 text-primary" /> {copy.tierFreeLabel}
               </span>
-              <span className="font-mono text-[10px] font-bold text-primary">EMAIL + PASSWORD</span>
+              <span className="font-mono text-[10px] font-bold text-primary">
+                {copy.tierFreeValue}
+              </span>
             </div>
             <p className="text-[10px] text-muted-foreground leading-relaxed">
-              Otentikasi mandiri berbasis password. Opsi Google Workspace SSO & SAML IdP aktif pada paket Pro & Enterprise.
+              {copy.tierFreeDesc}
             </p>
           </div>
         )}
@@ -240,12 +680,14 @@ export function AuthLoginForm({
           <div className="rounded-md border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="flex items-center gap-1.5 font-mono text-cyan-500 text-[10px] font-semibold">
-                <Sparkles className="size-3" /> LOGIN METHODS
+                <Sparkles className="size-3" /> {copy.tierProLabel}
               </span>
-              <span className="font-mono text-[10px] font-bold text-cyan-500">PASSWORD + GOOGLE SSO</span>
+              <span className="font-mono text-[10px] font-bold text-cyan-500">
+                {copy.tierProValue}
+              </span>
             </div>
             <p className="text-[10px] text-muted-foreground leading-relaxed">
-              Tersedia login menggunakan kredensial password langsung atau Single Sign-On Google Workspace.
+              {copy.tierProDesc}
             </p>
           </div>
         )}
@@ -254,46 +696,15 @@ export function AuthLoginForm({
           <div className="rounded-md border border-purple-500/20 bg-purple-500/5 p-3 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="flex items-center gap-1.5 font-mono text-purple-500 text-[10px] font-semibold">
-                <Lock className="size-3" /> ENTERPRISE IAM
+                <Lock className="size-3" /> {copy.tierEnterpriseLabel}
               </span>
-              <span className="font-mono text-[10px] font-bold text-purple-500">SAML IdP & MFA</span>
+              <span className="font-mono text-[10px] font-bold text-purple-500">
+                {copy.tierEnterpriseValue}
+              </span>
             </div>
             <p className="text-[10px] text-muted-foreground leading-relaxed">
-              Integrasi langsung Identity Provider perusahaan (Okta, Azure AD, SAML 2.0) dengan penegakan MFA wajib.
+              {copy.tierEnterpriseDesc}
             </p>
-          </div>
-        )}
-
-        {/* Social Logins (Google Workspace SSO, SAML, etc.) */}
-        {socialMethods.length > 0 && (
-          <div className="space-y-3 pt-1">
-            {/* Divider */}
-            <div className="relative flex items-center justify-center py-1">
-              <div className="w-full border-t border-border/60" />
-              <span className="absolute bg-card px-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                OR CONTINUE WITH
-              </span>
-            </div>
-
-            <div className="grid gap-2">
-              {socialMethods.map((method) => (
-                <Button
-                  key={method.id}
-                  type="button"
-                  variant="outline"
-                  className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/80 bg-background/40 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs"
-                  onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
-                  disabled={isLoading || isSuspended}
-                >
-                  {method.icon === "google" && <GoogleIcon className="size-3.5" />}
-                  {method.icon === "github" && <GithubIcon className="size-3.5" />}
-                  {method.icon !== "google" && method.icon !== "github" && (
-                    <KeyRound className="size-3.5 text-primary" />
-                  )}
-                  <span>Continue with {method.name}</span>
-                </Button>
-              ))}
-            </div>
           </div>
         )}
       </div>
@@ -301,9 +712,7 @@ export function AuthLoginForm({
       {/* Compliance / Security Notice Banner */}
       <div className="flex items-start gap-2.5 rounded-md border border-primary/20 bg-primary/5 p-3 text-[11px] text-primary leading-relaxed">
         <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
-        <span>
-          Akses terisolasi multi-tenant. Seluruh aktivitas login dipantau dan diaudit secara kriptografis sesuai standar kepatuhan ISP K2NET.
-        </span>
+        <span>{copy.complianceBanner}</span>
       </div>
     </div>
   );

@@ -56,11 +56,7 @@ export function useSession(): UseSessionReturn {
     if (keycloak?.refreshToken) return keycloak.refreshToken;
     if (typeof window !== "undefined") {
       const authObj = (window as unknown as { __K2NET_AUTH__?: { refreshToken?: string } }).__K2NET_AUTH__;
-      return (
-        authObj?.refreshToken ||
-        localStorage.getItem("k2net_kc_refresh_token") ||
-        null
-      );
+      return authObj?.refreshToken || null;
     }
     return null;
   }, [keycloak?.refreshToken]);

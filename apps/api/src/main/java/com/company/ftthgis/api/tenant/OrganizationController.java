@@ -220,7 +220,7 @@ public class OrganizationController {
     @PostMapping("/{slug}/sync-keycloak")
     @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.security.manage')")
     public ResponseEntity<Void> syncKeycloak(@PathVariable String slug) {
-        keycloakService.ensureRealmExists(slug);
+        keycloakService.ensureTenantSharedRealmExists();
         return ResponseEntity.ok().build();
     }
 

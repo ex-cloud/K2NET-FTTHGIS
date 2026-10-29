@@ -255,18 +255,9 @@ public class OrganizationSubscriptionService {
 
         organizationRepository.save(org);
 
-        // 🛡️ Synchronize Keycloak Identity Provider (SSO) status & Realm metadata with new plan tier
-        try {
-            String realmKey = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
-            String planCode = targetPlan.getName() != null ? targetPlan.getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
-                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
-                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
-            keycloakService.ensureRealmExists(realmKey, targetPlan.isHasSso(), org.getName(), planCode, planDisplayName, org.getLogoUrl());
-        } catch (Exception ex) {
-            log.warn("⚠️ Failed to sync Keycloak realm on upgrade for {}: {}", slug, ex.getMessage());
-        }
+        // Under 2-Realm Consolidation, SSO plan gating is enforced dynamically per-tenant via DB + gateway-auth
+        log.info("🛡️ Updated subscription plan for '{}' to '{}' (SSO allowed: {})",
+                slug, targetPlan.getName(), targetPlan.isHasSso());
 
         auditLoggingService.logSuspiciousActivity(
                 org.getId(),
@@ -327,18 +318,9 @@ public class OrganizationSubscriptionService {
 
         organizationRepository.save(org);
 
-        // 🛡️ Synchronize Keycloak Identity Provider (SSO) status & Realm metadata with new plan tier (Disable on downgrade to Free)
-        try {
-            String realmKey = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
-            String planCode = targetPlan.getName() != null ? targetPlan.getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
-                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
-                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
-            keycloakService.ensureRealmExists(realmKey, targetPlan.isHasSso(), org.getName(), planCode, planDisplayName, org.getLogoUrl());
-        } catch (Exception ex) {
-            log.warn("⚠️ Failed to sync Keycloak realm on downgrade for {}: {}", slug, ex.getMessage());
-        }
+        // Under 2-Realm Consolidation, SSO plan gating is enforced dynamically per-tenant via DB + gateway-auth
+        log.info("🛡️ Downgraded subscription plan for '{}' to '{}' (SSO allowed: {})",
+                slug, targetPlan.getName(), targetPlan.isHasSso());
 
         auditLoggingService.logSuspiciousActivity(
                 org.getId(),

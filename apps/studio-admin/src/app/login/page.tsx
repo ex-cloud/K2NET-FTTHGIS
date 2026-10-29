@@ -1,80 +1,157 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "@/lib/navigation-compat";
 import { useAuth } from "@k2net/auth/client";
-import { AuthLoginLayout, Button } from "@k2net/ui";
-import { Shield, ArrowRight } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
+import {
+  AuthLoginForm,
+  AuthLoginLayout,
+  type AuthCredentialsSubmitPayload,
+  type AuthLoginFormLabels,
+} from "@k2net/ui";
+
+function sanitizeCallbackPath(raw: string | null): string {
+  if (!raw) return "/overview";
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed === "/login") {
+    return "/overview";
+  }
+  return trimmed;
+}
 
 export default function AdminLoginPage() {
-  const { authenticated, login, initialized } = useAuth();
+  const { t, locale, setLocale } = useTranslation();
+  const { authenticated, initialized, loginWithCredentials } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams?.get("callbackUrl") || "/";
-  const [redirectTriggered, setRedirectTriggered] = useState(false);
+  const callbackUrl = sanitizeCallbackPath(searchParams?.get("callbackUrl") ?? null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const turnstileSiteKey =
+    (import.meta.env.VITE_TURNSTILE_ADMIN_SITE_KEY as string | undefined)?.trim() ||
+    (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ||
+    "0x4AAAAAAFqzoRy-yUZNkjii";
 
   useEffect(() => {
-    if (initialized) {
-      if (authenticated) {
-        router.replace(callbackUrl);
-      } else if (!redirectTriggered) {
-        setRedirectTriggered(true);
-        login({
-          redirectUri: window.location.origin + callbackUrl,
-        });
-      }
+    if (initialized && authenticated) {
+      router.replace(callbackUrl);
     }
-  }, [initialized, authenticated, router, callbackUrl, login, redirectTriggered]);
+  }, [authenticated, callbackUrl, initialized, router]);
 
-  const handleManualLogin = () => {
-    login({
-      redirectUri: window.location.origin + callbackUrl,
-    });
+  const formLabels = useMemo<AuthLoginFormLabels>(
+    () => ({
+      accountEmailOrUsername: t("auth.account_email_or_username"),
+      accountPlaceholder: t("auth.account_placeholder"),
+      requiredBadge: t("auth.required_badge"),
+      passwordUpper: t("auth.password_upper"),
+      passwordPlaceholder: t("auth.password_placeholder"),
+      forgotPassword: t("auth.forgot_password"),
+      forgotPasswordNotice: t("auth.forgot_password_notice"),
+      showPassword: t("auth.show_password"),
+      hidePassword: t("auth.hide_password"),
+      rememberMeBrowser: t("auth.remember_me_browser"),
+      orContinueWith: t("auth.or_continue_with"),
+      continueWithGoogle: t("auth.continue_with_google"),
+      continueWithGithub: t("auth.continue_with_github"),
+      continueWithProviderPrefix: t("auth.continue_with_provider_prefix"),
+      signInPlatformAdmin: t("auth.sign_in_platform_admin"),
+      continueIspWorkspace: t("auth.continue_isp_workspace"),
+      mfaCodeLabel: t("auth.mfa_code_label"),
+      mfaCodePlaceholder: t("auth.mfa_code_placeholder"),
+      mfaCodeHint: t("auth.mfa_code_hint"),
+      mfaVerifySubmit: t("auth.mfa_verify_submit"),
+      mfaBackToLogin: t("auth.mfa_back_to_login"),
+      turnstileVerifying: t("auth.turnstile_verifying"),
+      suspendedTitle: t("auth.suspended_title"),
+      suspendedDesc: t("auth.suspended_desc"),
+      tierInternalLabel: t("auth.tier_internal_label"),
+      tierInternalValue: t("auth.tier_internal_value"),
+      tierInternalDesc: t("auth.tier_internal_desc"),
+      complianceBanner: t("auth.compliance_banner"),
+    }),
+    [t]
+  );
+
+  const handleSubmitCredentials = async (payload: AuthCredentialsSubmitPayload) => {
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await loginWithCredentials({
+        plane: "PLATFORM",
+        tenantSlug: "system",
+        username: payload.username,
+        password: payload.password,
+        totp: payload.totp,
+        rememberMe: payload.rememberMe,
+        turnstileToken: payload.turnstileToken,
+      });
+
+      if (result.mfaRequired) {
+        setMfaRequired(true);
+        if (result.error) {
+          setErrorMessage(result.message || t("auth.login_error_invalid"));
+        }
+        return;
+      }
+
+      if (!result.success) {
+        setErrorMessage(
+          result.error === "NETWORK_ERROR"
+            ? t("auth.login_error_network")
+            : result.message || t("auth.login_error_invalid")
+        );
+        return;
+      }
+
+      router.replace(callbackUrl);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-
 
   return (
     <AuthLoginLayout
-      portalName="FTTH GIS PORTAL"
-      portalSubtitle="Sign in to your system administrator account."
+      portalName={t("auth.admin_portal_name")}
+      portalSubtitle={t("auth.admin_portal_subtitle")}
+      welcomeTitle={t("auth.welcome_back")}
       docsUrl="https://system-gis.kdua.net/gateways/overview"
-      testimonialQuote="Managing enterprise fiber-to-the-home geodata networks has never been this seamless. Highly stable, fast geocoding, and fully isolated multi-tenancy."
-      testimonialAuthor="Andiansyah"
-      testimonialRole="Chief Technology Officer, K2NET"
+      docsLabel={t("auth.system_docs")}
+      testimonialQuote={t("auth.admin_testimonial_quote")}
+      testimonialAuthor={t("auth.admin_testimonial_author")}
+      testimonialRole={t("auth.admin_testimonial_role")}
+      figureId="fig-07"
+      locale={locale}
+      onLocaleChange={setLocale}
+      footerAgreePrefix={t("auth.footer_agree_prefix")}
+      footerTermsLabel={t("auth.footer_terms")}
+      footerAndLabel={t("auth.footer_and")}
+      footerPrivacyLabel={t("auth.footer_privacy")}
+      footerAgreeSuffix={t("auth.footer_agree_suffix")}
+      footerCopyrightText={t("auth.footer_copyright")}
+      policyTermsTab={t("auth.policy_terms_tab")}
+      policyPrivacyTab={t("auth.policy_privacy_tab")}
+      policyCloseButton={t("auth.policy_close_button")}
     >
-      <div className="flex flex-col gap-6">
-        <div className="rounded-xl border border-border/70 bg-card/60 p-8 shadow-xl backdrop-blur-sm">
-          <div className="flex flex-col items-center text-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
-              <Shield className="h-6 w-6" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-foreground">
-                K2NET Platform Admin
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Mengalihkan ke Keycloak 1-Step Authentication...
-              </p>
-            </div>
-
-            <div className="my-2 flex items-center justify-center gap-2">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <span className="text-xs font-mono text-muted-foreground">
-                Memverifikasi sesi keamanan...
-              </span>
-            </div>
-
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleManualLogin}
-              className="mt-2 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer text-xs"
-            >
-              <span>Lanjutkan ke Form Login Keycloak</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      </div>
+      <AuthLoginForm
+        orgName={t("auth.admin_org_name")}
+        description={t("auth.admin_org_subtitle")}
+        plan="INTERNAL"
+        planDisplayName="SYSTEM ADMIN"
+        status="ACTIVE"
+        locale={locale}
+        labels={formLabels}
+        isLoading={isSubmitting}
+        mfaRequired={mfaRequired}
+        turnstileSiteKey={turnstileSiteKey}
+        errorMessage={errorMessage}
+        onSubmitCredentials={handleSubmitCredentials}
+        onResetMfaStep={() => {
+          setMfaRequired(false);
+          setErrorMessage(null);
+        }}
+      />
     </AuthLoginLayout>
   );
 }

@@ -47,12 +47,21 @@ public class KongConfigSyncService {
             .connectTimeout(Duration.ofSeconds(5))
             .build();
 
+    public static final String PLATFORM_REALM = "ftth-realm";
+    public static final String TENANT_SHARED_REALM = "k2net-tenants";
+
     /**
-     * Synchronizes a Keycloak Realm's RS256 Public Key to Kong API Gateway declarative configuration.
-     * Updates kong.yml on disk and posts the updated configuration to Kong Admin API (/config).
+     * Synchronizes one of the 2 static permanent Keycloak Realms (ftth-realm or k2net-tenants)
+     * RS256 Public Key to Kong API Gateway declarative configuration.
+     * Dynamic per-tenant realm creation in Kong is strictly disabled under the 2-Realm architecture.
      */
     public synchronized boolean syncRealmToKong(String realmName) {
-        if ("master".equalsIgnoreCase(realmName)) {
+        if (realmName == null || "master".equalsIgnoreCase(realmName)) {
+            return true;
+        }
+        if (!PLATFORM_REALM.equalsIgnoreCase(realmName) && !TENANT_SHARED_REALM.equalsIgnoreCase(realmName)) {
+            log.info("ℹ️ Skipping dynamic Kong consumer creation for '{}' — consolidated under static realm '{}'",
+                    realmName, TENANT_SHARED_REALM);
             return true;
         }
 

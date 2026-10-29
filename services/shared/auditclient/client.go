@@ -127,6 +127,8 @@ func (c *Client) Log(ctx context.Context, event Event, logGroup, serviceSource s
 			event.Metadata["logType"] = "whatsapp"
 		case "gateway-task":
 			event.Metadata["logType"] = "task"
+		case "gateway-auth":
+			event.Metadata["logType"] = "auth"
 		case "gateway-ai":
 			event.Metadata["logType"] = "ai"
 		case "martin":

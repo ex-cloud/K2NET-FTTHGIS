@@ -132,7 +132,7 @@ class OrganizationServiceTest {
                 .id(testOrgId)
                 .name("PT Sukarajin Bandung Network")
                 .slug("sukarajin")
-                .realmKey("sukarajin-realm-key")
+                .realmKey(KeycloakService.TENANT_SHARED_REALM)
                 .status(Organization.OrganizationStatus.ACTIVE)
                 .logoUrl("https://storage.k2net.id/logos/sukarajin.png")
                 .build();
@@ -177,8 +177,9 @@ class OrganizationServiceTest {
 
         assertDoesNotThrow(() -> organizationService.deleteOrganization("sukarajin", "nuclear", "Test Nuclear Wipe"));
 
-        // Verify Keycloak realm deletion
-        verify(keycloakService).deleteRealm("sukarajin-realm-key");
+        // Verify tenant-scoped Keycloak user deletion in shared 'k2net-tenants' realm (never deleting shared realm!)
+        verify(keycloakService).deleteOrganizationUsers(testOrgId.toString());
+        verify(keycloakService, never()).deleteRealm(KeycloakService.TENANT_SHARED_REALM);
 
         // Verify storage file deletion
         verify(fileStorageService).deleteFile("https://storage.k2net.id/logos/sukarajin.png");

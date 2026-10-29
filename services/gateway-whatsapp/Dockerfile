@@ -14,6 +14,7 @@ COPY poller/go.mod poller/go.sum ./poller/
 COPY storage-gateway/go.mod storage-gateway/go.sum ./storage-gateway/
 COPY gateway-task/go.mod gateway-task/go.sum ./gateway-task/
 COPY observability-gateway/go.mod ./observability-gateway/
+COPY gateway-auth/go.mod ./gateway-auth/
 RUN go work sync
 COPY shared/ ./shared/
 COPY gateway-whatsapp/ ./gateway-whatsapp/

@@ -4,20 +4,29 @@ let activeImpersonationSessionId: string | null = null;
 export function setApiAuthToken(token: string | null) {
   activeToken = token;
   if (typeof window !== "undefined") {
-    if (token) {
+    const hasImpersonationSession = Boolean(
+      activeImpersonationSessionId ||
+        sessionStorage.getItem("k2net_impersonation_session_id") ||
+        sessionStorage.getItem("k2net_impersonating_in_progress")
+    );
+    if (token && hasImpersonationSession) {
       sessionStorage.setItem("k2net_impersonation_token", token);
-    } else {
+    } else if (!token) {
       sessionStorage.removeItem("k2net_impersonation_token");
     }
-    // Bersihkan residu legacy localStorage agar tidak bocor lintas tab
     localStorage.removeItem("k2net_impersonation_token");
   }
 }
 
 export function getApiAuthToken(): string | null {
   if (!activeToken && typeof window !== "undefined") {
-    activeToken = sessionStorage.getItem("k2net_impersonation_token");
-    // Bersihkan residu legacy localStorage agar tidak bocor lintas tab
+    const hasImpersonationSession = Boolean(
+      activeImpersonationSessionId ||
+        sessionStorage.getItem("k2net_impersonation_session_id")
+    );
+    if (hasImpersonationSession) {
+      activeToken = sessionStorage.getItem("k2net_impersonation_token");
+    }
     localStorage.removeItem("k2net_impersonation_token");
   }
   return activeToken;
@@ -31,7 +40,6 @@ export function setImpersonationSessionId(sessionId: string | null) {
     } else {
       sessionStorage.removeItem("k2net_impersonation_session_id");
     }
-    // Bersihkan residu legacy localStorage agar tidak bocor lintas tab
     localStorage.removeItem("k2net_impersonation_session_id");
   }
 }
@@ -39,7 +47,6 @@ export function setImpersonationSessionId(sessionId: string | null) {
 export function getImpersonationSessionId(): string | null {
   if (!activeImpersonationSessionId && typeof window !== "undefined") {
     activeImpersonationSessionId = sessionStorage.getItem("k2net_impersonation_session_id");
-    // Bersihkan residu legacy localStorage agar tidak bocor lintas tab
     localStorage.removeItem("k2net_impersonation_session_id");
   }
   return activeImpersonationSessionId;
@@ -62,8 +69,6 @@ export async function refreshImpersonationToken(): Promise<string | null> {
 
   refreshingPromise = (async () => {
     try {
-      // NOTE: Do NOT send the Authorization header here, because if the token is already expired,
-      // Spring Security will intercept and return 401 before the request reaches the permitAll controller.
       const res = await fetch("/api/v1/system/impersonate/refresh-token", {
         method: "POST",
         headers: {
@@ -80,8 +85,7 @@ export async function refreshImpersonationToken(): Promise<string | null> {
         }
       }
       return null;
-    } catch (err) {
-      console.warn("[apiClient] Failed to refresh impersonation token:", err);
+    } catch {
       return null;
     } finally {
       refreshingPromise = null;
@@ -157,15 +161,37 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
     ...customConfig,
   });
 
-  // Auto-heal 401 during active impersonation
-  if (response.status === 401 && impersonationSessionId) {
-    const newToken = await refreshImpersonationToken();
-    if (newToken) {
-      reqHeaders["Authorization"] = `Bearer ${newToken}`;
-      response = await fetch(url, {
-        headers: reqHeaders,
-        ...customConfig,
-      });
+  // Auto-heal 401 during active impersonation or via Edge Auth BFF silent cookie refresh
+  if (response.status === 401) {
+    if (impersonationSessionId) {
+      const newToken = await refreshImpersonationToken();
+      if (newToken) {
+        reqHeaders["Authorization"] = `Bearer ${newToken}`;
+        response = await fetch(url, {
+          headers: reqHeaders,
+          ...customConfig,
+        });
+      }
+    } else if (typeof window !== "undefined") {
+      const authBridge = (
+        window as unknown as {
+          __K2NET_AUTH__?: {
+            updateToken?: (minValidity?: number) => Promise<boolean>;
+            token?: string;
+          };
+        }
+      ).__K2NET_AUTH__;
+      if (authBridge?.updateToken) {
+        const refreshed = await authBridge.updateToken(30);
+        if (refreshed && authBridge.token) {
+          setApiAuthToken(authBridge.token);
+          reqHeaders["Authorization"] = `Bearer ${authBridge.token}`;
+          response = await fetch(url, {
+            headers: reqHeaders,
+            ...customConfig,
+          });
+        }
+      }
     }
   }
 
@@ -178,7 +204,6 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
     throw new Error(errorBody || `HTTP ${response.status} ${response.statusText}`);
   }
 
-  // Handle empty responses
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
     return response.json();

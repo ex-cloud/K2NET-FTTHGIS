@@ -179,4 +179,31 @@ class OrganizationStatusFilterTest {
         filter.doFilterInternal(meReq, meResp, filterChain);
         verify(filterChain).doFilter(meReq, meResp);
     }
+
+    @Test
+    @DisplayName("Shared realm k2net-tenants resolves organization strictly via organization_id JWT claim")
+    void testSharedTenantRealm_ResolvesViaOrganizationIdClaim() throws ServletException, IOException {
+        UUID orgId = UUID.randomUUID();
+        Organization suspendedOrg = Organization.builder()
+                .id(orgId)
+                .name("PT Kircon Bandung")
+                .slug("kircon-bandung")
+                .realmKey(KeycloakService.TENANT_SHARED_REALM)
+                .status(Organization.OrganizationStatus.SUSPENDED)
+                .build();
+
+        Jwt jwt = mock(Jwt.class);
+        when(jwt.getIssuer()).thenReturn(java.net.URI.create("http://localhost:8081/realms/k2net-tenants").toURL());
+        when(jwt.getClaimAsString("organization_id")).thenReturn(orgId.toString());
+        when(authentication.getPrincipal()).thenReturn(jwt);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(suspendedOrg));
+
+        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/v1/network/olts");
+        MockHttpServletResponse resp = new MockHttpServletResponse();
+        filter.doFilterInternal(req, resp, filterChain);
+
+        assertEquals(403, resp.getStatus());
+        assertTrue(resp.getContentAsString().contains("ORGANIZATION_SUSPENDED"));
+    }
 }

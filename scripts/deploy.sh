@@ -58,7 +58,7 @@ IS_GO_GATEWAY="false"
 if [ -n "$2" ]; then
   if [ "$ENV" = "staging" ]; then
     case "$2" in
-      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task|observability-gateway)
+      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task|gateway-ai|observability-gateway|gateway-auth)
         IS_GO_GATEWAY="true"
         TARGET_SERVICE="$2"
         ;;
@@ -83,7 +83,7 @@ if [ -n "$2" ]; then
     esac
   else
     case "$2" in
-      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task|observability-gateway)
+      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task|gateway-ai|observability-gateway|gateway-auth)
         IS_GO_GATEWAY="true"
         TARGET_SERVICE="$2"
         ;;
@@ -147,7 +147,9 @@ if [ "$ENV" = "production" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-audit:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-task:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/poller:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-ai:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/observability-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-auth:latest || true
   else
     # Pull all — core services fail loudly, gateways are best-effort
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest
@@ -165,7 +167,9 @@ if [ "$ENV" = "production" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-audit:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-task:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/poller:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-ai:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/observability-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-auth:latest || true
   fi
 
   if [ -n "$TARGET_SERVICE" ]; then

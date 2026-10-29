@@ -11,7 +11,7 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 - **Frontend Admin**: Vite 6 CSR SPA — [apps/studio-admin](file:///opt/project5/apps/studio-admin) (port 3001)
 - **Frontend Tenant**: Vite 6 CSR SPA — [apps/studio-tenant](file:///opt/project5/apps/studio-tenant) (port 3000)
 - **Backend Core**: Spring Boot 3.x — [apps/api](file:///opt/project5/apps/api) (port 9090)
-- **13 Go/Python Gateways**: [services/](file:///opt/project5/services/) (ports: 5001–5013)
+- **14 Go/Python Gateways**: [services/](file:///opt/project5/services/) (ports: 5001–5014)
 - **Gateway & Proxy**: Kong (port 8000), Traefik (port 80/443)
 - **Identity & DB**: Keycloak 26 (port 8081), PostgreSQL 17 (`ftth_gis`), MinIO S3 (`:9005`), Redis
 

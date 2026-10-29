@@ -65,8 +65,7 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
                                 .ifPresent(org -> OrganizationContext.setOrganizationId(org.getId()));
                     }
                 } else {
-                    Optional<Organization> orgOpt = organizationRepository.findBySlug(slug)
-                            .or(() -> organizationRepository.findByRealmKey(slug));
+                    Optional<Organization> orgOpt = resolveTenantOrganization(jwt, slug, request);
                     
                     if (orgOpt.isPresent()) {
                         Organization org = orgOpt.get();
@@ -134,5 +133,55 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
         } finally {
             OrganizationContext.clear();
         }
+    }
+
+    private Optional<Organization> resolveTenantOrganization(Jwt jwt, String realmSlug, HttpServletRequest request) {
+        // 1. Primary 2-Realm Resolution: JWT claim organization_id / tenant_id (UUID)
+        String orgIdClaim = jwt.getClaimAsString("organization_id");
+        if (orgIdClaim == null || orgIdClaim.isBlank()) {
+            orgIdClaim = jwt.getClaimAsString("tenant_id");
+        }
+        if (orgIdClaim != null && !orgIdClaim.isBlank() && !"00000000-0000-0000-0000-000000000000".equals(orgIdClaim)) {
+            try {
+                Optional<Organization> byId = organizationRepository.findById(UUID.fromString(orgIdClaim.trim()));
+                if (byId.isPresent()) {
+                    return byId;
+                }
+            } catch (IllegalArgumentException ignored) {}
+        }
+
+        // 2. Secondary 2-Realm Resolution: JWT claim tenant_slug
+        String tenantSlugClaim = jwt.getClaimAsString("tenant_slug");
+        if (tenantSlugClaim != null && !tenantSlugClaim.isBlank()) {
+            Optional<Organization> bySlug = organizationRepository.findBySlug(tenantSlugClaim.trim().toLowerCase());
+            if (bySlug.isPresent()) {
+                return bySlug;
+            }
+        }
+
+        // 3. Edge Gateway Header X-Tenant-ID (UUID or slug)
+        String tenantHeader = request.getHeader("X-Tenant-ID");
+        if (tenantHeader != null && !tenantHeader.isBlank() && !"00000000-0000-0000-0000-000000000000".equals(tenantHeader.trim())) {
+            String clean = tenantHeader.trim();
+            try {
+                Optional<Organization> byHeaderId = organizationRepository.findById(UUID.fromString(clean));
+                if (byHeaderId.isPresent()) {
+                    return byHeaderId;
+                }
+            } catch (IllegalArgumentException ignored) {
+                Optional<Organization> byHeaderSlug = organizationRepository.findBySlug(clean.toLowerCase());
+                if (byHeaderSlug.isPresent()) {
+                    return byHeaderSlug;
+                }
+            }
+        }
+
+        // 4. Legacy fallback ONLY when issuer realm is NOT the shared 'k2net-tenants' realm
+        if (!KeycloakService.TENANT_SHARED_REALM.equalsIgnoreCase(realmSlug)) {
+            return organizationRepository.findBySlug(realmSlug)
+                    .or(() -> organizationRepository.findFirstByRealmKey(realmSlug));
+        }
+
+        return Optional.empty();
     }
 }

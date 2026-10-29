@@ -173,7 +173,7 @@ class OrganizationCharacterizationTest {
                 .id(testOrgId)
                 .name("PT Sukarajin Bandung Network")
                 .slug("sukarajin")
-                .realmKey("sukarajin")
+                .realmKey(KeycloakService.TENANT_SHARED_REALM)
                 .slugType("CUSTOM")
                 .status(Organization.OrganizationStatus.ACTIVE)
                 .subscriptionPlan(proPlan)
@@ -287,7 +287,7 @@ class OrganizationCharacterizationTest {
         });
 
         String generatedKeycloakUserId = UUID.randomUUID().toString();
-        when(keycloakService.createOwnerUser(anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(keycloakService.createTenantOwnerUser(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any(), any()))
                 .thenReturn(generatedKeycloakUserId);
         when(roleRepository.findByNameAndIsSystemRoleTrue("admin")).thenReturn(Optional.of(adminRole));
 
@@ -299,9 +299,10 @@ class OrganizationCharacterizationTest {
         Organization savedOrg = (Organization) response.get("organization");
         assertEquals(testOrgId, savedOrg.getId());
         assertEquals("sukarajin", savedOrg.getSlug());
+        assertEquals(KeycloakService.TENANT_SHARED_REALM, savedOrg.getRealmKey());
 
-        verify(keycloakService).ensureRealmExists(eq("sukarajin"), eq(true), eq("PT Sukarajin Network"), eq("PRO"), anyString(), isNull());
-        verify(keycloakService).createOwnerUser(eq("sukarajin"), eq("pic_admin"), eq("pic@sukarajin.id"), anyString(), eq("admin"));
+        verify(keycloakService, never()).ensureRealmExists(anyString(), anyBoolean(), anyString(), anyString(), anyString(), any());
+        verify(keycloakService).createTenantOwnerUser(eq(testOrgId.toString()), eq("sukarajin"), eq("pic_admin"), eq("pic@sukarajin.id"), anyString(), eq("admin"), isNull(), isNull());
         verify(entityManager).persist(any(com.company.ftthgis.domain.user.entity.User.class));
     }
 
@@ -354,7 +355,7 @@ class OrganizationCharacterizationTest {
 
         when(organizationRepository.findById(testOrgId)).thenReturn(Optional.of(pendingOrg));
         when(organizationRepository.saveAndFlush(any(Organization.class))).thenReturn(pendingOrg);
-        when(keycloakService.createOwnerUser(anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(keycloakService.createTenantOwnerUser(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any(), any()))
                 .thenReturn(UUID.randomUUID().toString());
         when(roleRepository.findByNameAndIsSystemRoleTrue("admin")).thenReturn(Optional.of(adminRole));
 
@@ -362,7 +363,8 @@ class OrganizationCharacterizationTest {
 
         assertNotNull(result);
         assertEquals(Organization.OrganizationStatus.ACTIVE, pendingOrg.getStatus());
-        verify(keycloakService).ensureRealmExists(eq("pendingfiber"), anyBoolean(), anyString(), anyString(), anyString(), isNull());
+        assertEquals(KeycloakService.TENANT_SHARED_REALM, pendingOrg.getRealmKey());
+        verify(keycloakService).createTenantOwnerUser(eq(testOrgId.toString()), eq("pendingfiber"), eq("admin_pending"), eq("admin@pending.id"), anyString(), eq("admin"), isNull(), isNull());
     }
 
     // =========================================================================
@@ -392,7 +394,7 @@ class OrganizationCharacterizationTest {
         assertNotNull(result);
         assertEquals("PT Sukarajin Prima Global", result.getName());
         verify(fileStorageService).deleteFile("https://storage.k2net.id/logos/sukarajin.png");
-        verify(keycloakService).ensureRealmExists(eq("sukarajin"), anyBoolean(), eq("PT Sukarajin Prima Global"), anyString(), anyString(), eq("https://storage.k2net.id/logos/new-sukarajin.png"));
+        verify(keycloakService, never()).ensureRealmExists(anyString(), anyBoolean(), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -484,12 +486,12 @@ class OrganizationCharacterizationTest {
         organizationService.restoreOrganization("suspendedorg");
 
         assertEquals(Organization.OrganizationStatus.ACTIVE, suspendedOrg.getStatus());
-        verify(keycloakService).setRealmEnabled("suspendedorg", true);
+        verify(keycloakService).setOrganizationUsersEnabled(testOrgId.toString(), true);
         verify(auditLoggingService).logEvent(eq("system"), eq("TENANT_RESTORED"), eq("ORGANIZATION"), eq(testOrgId.toString()), any(), any(), any());
     }
 
     @Test
-    @DisplayName("Lifecycle: deleteOrganization with soft mode should set SUSPENDED and disable realm")
+    @DisplayName("Lifecycle: deleteOrganization with soft mode should set SUSPENDED and disable org users in k2net-tenants")
     void testDeleteOrganization_SoftDelete_Success() {
         when(organizationRepository.findBySlug("sukarajin")).thenReturn(Optional.of(testOrg));
         when(tenantSecurity.isOwner("sukarajin")).thenReturn(true);
@@ -499,18 +501,19 @@ class OrganizationCharacterizationTest {
 
         assertEquals(Organization.OrganizationStatus.SUSPENDED, testOrg.getStatus());
         assertNotNull(testOrg.getDeletedAt());
-        verify(keycloakService).setRealmEnabled("sukarajin", false);
+        verify(keycloakService).setOrganizationUsersEnabled(testOrgId.toString(), false);
     }
 
     @Test
-    @DisplayName("Lifecycle: deleteOrganization with nuclear mode should trigger cascaded SQL wipe and delete realm")
+    @DisplayName("Lifecycle: deleteOrganization with nuclear mode should trigger cascaded SQL wipe and delete org users")
     void testDeleteOrganization_Nuclear_Success() {
         when(organizationRepository.findBySlug("sukarajin")).thenReturn(Optional.of(testOrg));
         when(tenantSecurity.isOwner("sukarajin")).thenReturn(true);
 
         organizationService.deleteOrganization("sukarajin", "nuclear", "Nuclear destruction test");
 
-        verify(keycloakService).deleteRealm("sukarajin");
+        verify(keycloakService).deleteOrganizationUsers(testOrgId.toString());
+        verify(keycloakService, never()).deleteRealm(KeycloakService.TENANT_SHARED_REALM);
         verify(fileStorageService).deleteFile("https://storage.k2net.id/logos/sukarajin.png");
         verify(jdbcTemplate, atLeast(5)).update(anyString(), eq(testOrgId));
         verify(entityManager).clear();

@@ -18,12 +18,91 @@ public class RandomSlugGenerator {
     public static final Set<String> RESERVED_SLUGS = Set.of(
             "admin", "api", "auth", "system", "gis", "root", "superadmin",
             "dashboard", "app", "apps", "static", "assets", "tiles", "tile",
-            "master", "default", "ftth-realm", "mail", "smtp", "login",
+            "master", "default", "ftth-realm", "k2net-tenants", "mail", "smtp", "login",
             "logout", "register", "portal", "billing", "support", "status",
             "health", "metrics", "prometheus", "grafana", "kong", "traefik",
             "minio", "nextcloud", "poller", "notification", "payment", "storage",
             "map", "export", "scheduler", "task", "whatsapp", "olt", "observability", "ai"
     );
+
+    /**
+     * Sanitizes an organization name into a clean, professional DNS-safe base slug
+     * by stripping common Indonesian corporate prefixes (PT, CV, UD, Yayasan, Perum, Koperasi).
+     * e.g. "PT Kircon Bandung" -> "kircon-bandung", "PT. Nusantara Fiber" -> "nusantara-fiber"
+     */
+    public String sanitizeCleanBaseSlug(String name) {
+        if (name == null || name.isBlank()) {
+            return "tenant";
+        }
+        String trimmed = name.trim();
+        String withoutEntityPrefix = trimmed.replaceFirst(
+                "(?i)^(pt|cv|ud|yayasan|perum|koperasi)\\.?\\s+",
+                ""
+        ).trim();
+        String candidate = withoutEntityPrefix.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
+        if (candidate.length() < 3) {
+            candidate = sanitizeBaseSlug(trimmed);
+        }
+        if (candidate.length() < 3) {
+            candidate = ("isp-" + candidate).replaceAll("-+$", "");
+        }
+        if (candidate.length() > 32) {
+            candidate = candidate.substring(0, 32).replaceAll("-+$", "");
+        }
+        return candidate;
+    }
+
+    /**
+     * Generates a clean, professional tenant slug directly from the organization name
+     * without forced random suffixes (e.g. "PT Kircon Bandung" -> "kircon-bandung").
+     * Only appends a short numeric or 4-char suffix if a name collision occurs.
+     */
+    public String generateCleanSlug(String orgName,
+                                    OrganizationRepository organizationRepository,
+                                    OrganizationSlugAliasRepository aliasRepository) {
+        String base = sanitizeCleanBaseSlug(orgName);
+
+        if (!isReserved(base)) {
+            boolean existsInOrgs = organizationRepository != null && organizationRepository.existsBySlug(base);
+            boolean existsInAliases = aliasRepository != null && aliasRepository.existsByOldSlug(base);
+            if (!existsInOrgs && !existsInAliases) {
+                log.info("🎯 Generated clean slug: '{}' for org '{}'", base, orgName);
+                return base;
+            }
+        }
+
+        // First fallback: short numeric suffix -2..-9
+        for (int idx = 2; idx <= 9; idx++) {
+            String candidate = base + "-" + idx;
+            if (isReserved(candidate)) {
+                continue;
+            }
+            boolean existsInOrgs = organizationRepository != null && organizationRepository.existsBySlug(candidate);
+            boolean existsInAliases = aliasRepository != null && aliasRepository.existsByOldSlug(candidate);
+            if (!existsInOrgs && !existsInAliases) {
+                log.info("🎯 Generated clean slug with numeric suffix: '{}' for org '{}'", candidate, orgName);
+                return candidate;
+            }
+        }
+
+        // Second fallback: short 4-character alphanumeric suffix
+        for (int attempt = 1; attempt <= 50; attempt++) {
+            String candidate = base + "-" + generateSuffix(4);
+            if (isReserved(candidate)) {
+                continue;
+            }
+            boolean existsInOrgs = organizationRepository != null && organizationRepository.existsBySlug(candidate);
+            boolean existsInAliases = aliasRepository != null && aliasRepository.existsByOldSlug(candidate);
+            if (!existsInOrgs && !existsInAliases) {
+                log.info("🎯 Generated clean slug with 4-char suffix: '{}' for org '{}'", candidate, orgName);
+                return candidate;
+            }
+        }
+
+        return base + "-" + generateSuffix(6);
+    }
 
     /**
      * Sanitizes an organization name into a DNS-safe base slug.

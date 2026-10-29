@@ -99,18 +99,19 @@ verify_backend() {
 }
 
 # ------------------------------------------------------------------------------
-# 3. GO MICROSERVICES & GATEWAYS VERIFICATION (12 Services)
+# 3. GO MICROSERVICES & GATEWAYS VERIFICATION (13 Go + 1 Python AI)
 # ------------------------------------------------------------------------------
 verify_gateways() {
   echo -e "${YELLOW}━━━ [3/4] GO MICROSERVICES & GATEWAYS (services/*) ━━━${NC}"
   echo -e "  🔹 Menjalankan static analysis (go vet) & kompilasi workspace..."
   cd /opt/project5/services
-  GATEWAY_DIRS="gateway-audit gateway-export gateway-olt gateway-scheduler gateway-whatsapp map-gateway notification-gateway payment-gateway poller gateway-task storage-gateway shared"
+  GATEWAY_DIRS="gateway-audit gateway-auth gateway-export gateway-olt gateway-scheduler gateway-whatsapp map-gateway notification-gateway observability-gateway payment-gateway poller gateway-task storage-gateway shared"
   for d in $GATEWAY_DIRS; do
     if [ -d "$d" ]; then
       (cd "$d" && go vet ./... > /dev/null 2>&1 && go build ./... > /dev/null 2>&1)
     fi
   done
+  (cd gateway-auth && go test ./... > /dev/null 2>&1)
   
   # Python AI Gateway check
   if [ -d "/opt/project5/services/gateway-ai" ]; then
@@ -120,7 +121,7 @@ verify_gateways() {
   fi
   
   cd /opt/project5
-  echo -e "  ${GREEN}✓ 13 Microservices & Gateways (AI, Notification, Payment, Map, Storage, Poller, dll.) terkompilasi sukses.${NC}\n"
+  echo -e "  ${GREEN}✓ 14 Microservices & Gateways (AI, Auth BFF, Notification, Payment, Map, Storage, Poller, dll.) terkompilasi sukses.${NC}\n"
 }
 
 # ------------------------------------------------------------------------------

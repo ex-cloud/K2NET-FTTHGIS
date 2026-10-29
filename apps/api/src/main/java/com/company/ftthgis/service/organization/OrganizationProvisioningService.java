@@ -86,15 +86,16 @@ public class OrganizationProvisioningService {
                     && !organizationRepository.existsBySlug(candidateSlug)
                     && (organizationSlugAliasRepository == null || !organizationSlugAliasRepository.existsByOldSlug(candidateSlug))) {
                 finalSlug = candidateSlug;
+                slugType = "CUSTOM";
             } else {
-                finalSlug = randomSlugGenerator.generateSmartSlug(request.getName(), organizationRepository, organizationSlugAliasRepository);
+                finalSlug = randomSlugGenerator.generateCleanSlug(request.getName(), organizationRepository, organizationSlugAliasRepository);
+                slugType = "CLEAN";
             }
-            slugType = "SMART";
-            log.info("🎯 Assigned smart slug '{}' for organization '{}'", finalSlug, request.getName());
+            log.info("🎯 Assigned clean slug '{}' for organization '{}'", finalSlug, request.getName());
         } else if (request.getSlug() == null || request.getSlug().trim().isBlank()) {
-            finalSlug = randomSlugGenerator.generateSmartSlug(request.getName(), organizationRepository, organizationSlugAliasRepository);
-            slugType = "SMART";
-            log.info("🎯 Auto-assigned smart slug '{}' for organization '{}'", finalSlug, request.getName());
+            finalSlug = randomSlugGenerator.generateCleanSlug(request.getName(), organizationRepository, organizationSlugAliasRepository);
+            slugType = "CLEAN";
+            log.info("🎯 Auto-assigned clean slug '{}' for organization '{}'", finalSlug, request.getName());
         } else {
             finalSlug = request.getSlug().trim().toLowerCase();
             if (randomSlugGenerator.isReserved(finalSlug)) {
@@ -133,7 +134,7 @@ public class OrganizationProvisioningService {
         Organization.OrganizationBuilder<?, ?> orgBuilder = Organization.builder()
                 .name(request.getName())
                 .slug(finalSlug)
-                .realmKey(finalSlug) // Initial realm_key is permanently bound to the initial slug
+                .realmKey(KeycloakService.TENANT_SHARED_REALM)
                 .slugType(slugType)
                 .description(request.getDescription())
                 .address(request.getAddress())
@@ -191,52 +192,47 @@ public class OrganizationProvisioningService {
         String tempPassword = "Temp@" + UUID.randomUUID().toString().substring(0, 8);
         String adminUsername = request.getAdminUsername() != null ? request.getAdminUsername()
                 : request.getAdminEmail();
+        String createdKeycloakUserId = null;
 
         try {
-            // Stage 3: Setup Keycloak 26 Security Realm
+            // Stage 3: Bind Shared Keycloak 26 Tenant Realm (Zero Realm Creation & Zero Kong Reload)
             activeStage = 3;
             long startStage3 = System.currentTimeMillis();
             if (listener != null) {
-                listener.onStageStarted(3, "Setup Keycloak 26 Security Realm", "Generating isolated realm, OIDC client, and auth protocols...");
+                listener.onStageStarted(3, "Bind Shared Keycloak 26 Tenant Realm", "Binding tenant organization to shared 'k2net-tenants' identity plane...");
             }
 
-            String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
-            log.info("🔑 Provisioning Keycloak for organization: {} (Realm: {})", saved.getSlug(), effectiveRealmKey);
-
-            String planCode = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().getName() != null
-                    ? saved.getSubscriptionPlan().getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
-                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
-                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
-            boolean hasSso = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().isHasSso();
-
-            keycloakService.ensureRealmExists(effectiveRealmKey, hasSso, saved.getName(), planCode, planDisplayName, saved.getLogoUrl());
+            String effectiveRealmKey = KeycloakService.TENANT_SHARED_REALM;
+            log.info("🔑 Binding organization '{}' to shared Keycloak realm '{}' (< 1ms, zero Kong reload)",
+                    saved.getSlug(), effectiveRealmKey);
 
             long durStage3 = Math.max(1, System.currentTimeMillis() - startStage3);
             if (listener != null) {
-                listener.onStageCompleted(3, durStage3, "Keycloak realm '" + effectiveRealmKey + "' successfully provisioned.");
+                listener.onStageCompleted(3, durStage3, "Bound to shared Keycloak realm '" + effectiveRealmKey + "'.");
             }
 
             // Stage 4: Register Technical PIC Admin
             activeStage = 4;
             long startStage4 = System.currentTimeMillis();
             if (listener != null) {
-                listener.onStageStarted(4, "Register Technical PIC Admin", "Registering technical administrator and binding master access...");
+                listener.onStageStarted(4, "Register Technical PIC Admin", "Registering technical administrator with tenant claim isolation...");
             }
 
-            log.info("👤 Creating Owner User: {} (Email: {}, Phone: {})", adminUsername, request.getAdminEmail(), effectivePhone);
+            log.info("👤 Creating Owner User in '{}': {} (Email: {}, OrgId: {}, Slug: {})",
+                    effectiveRealmKey, adminUsername, request.getAdminEmail(), saved.getId(), saved.getSlug());
             String ownerRoleName = "admin";
             String picName = request.getPicName() != null && !request.getPicName().isBlank() ? request.getPicName().trim() : null;
-            String keycloakId;
-            if (picName != null || effectivePhone != null) {
-                keycloakId = keycloakService.createOwnerUser(
-                        effectiveRealmKey, adminUsername, request.getAdminEmail(), tempPassword, ownerRoleName,
-                        picName, effectivePhone);
-            } else {
-                keycloakId = keycloakService.createOwnerUser(
-                        effectiveRealmKey, adminUsername, request.getAdminEmail(), tempPassword, ownerRoleName);
-            }
+            String keycloakId = keycloakService.createTenantOwnerUser(
+                    saved.getId().toString(),
+                    saved.getSlug(),
+                    adminUsername,
+                    request.getAdminEmail(),
+                    tempPassword,
+                    ownerRoleName,
+                    picName,
+                    effectivePhone
+            );
+            createdKeycloakUserId = keycloakId;
 
             // Create Local User Record for Internal Mapping
             log.info("💾 Saving local user mapping for Keycloak ID: {}", keycloakId);
@@ -269,21 +265,9 @@ public class OrganizationProvisioningService {
             entityManager.persist(localUser);
             entityManager.flush();
 
-            // Configure LDAP if requested
-            if (request.isLdapEnabled()) {
-                log.info("📡 Configuring LDAP Federation for realm: {}", saved.getSlug());
-                com.company.ftthgis.config.tenant.LdapConfig ldapConfig = new com.company.ftthgis.config.tenant.LdapConfig();
-                ldapConfig.setUrl(request.getLdapUrl());
-                ldapConfig.setUserDn(request.getLdapBaseDn());
-                ldapConfig.setBindDn(request.getLdapBindDn());
-                ldapConfig.setBindPassword(request.getLdapBindPassword());
-
-                keycloakService.configureLdap(saved.getSlug(), ldapConfig);
-            }
-
             long durStage4 = Math.max(1, System.currentTimeMillis() - startStage4);
             if (listener != null) {
-                listener.onStageCompleted(4, durStage4, "Owner user '" + adminUsername + "' registered with 'admin' role.");
+                listener.onStageCompleted(4, durStage4, "Owner user '" + adminUsername + "' registered in '" + effectiveRealmKey + "' with 'admin' role.");
             }
 
             // Stage 5: Finalize Workspace & Audit Trail
@@ -388,12 +372,12 @@ public class OrganizationProvisioningService {
             }
 
             if (saved != null) {
-                try {
-                    String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
-                    keycloakService.deleteRealm(effectiveRealmKey);
-                    log.info("🧹 Cleaned up orphan Keycloak realm '{}' after provisioning failure.", effectiveRealmKey);
-                } catch (Exception cleanupEx) {
-                    log.warn("Failed to delete orphan realm during rollback: {}", cleanupEx.getMessage());
+                if (createdKeycloakUserId != null) {
+                    try {
+                        keycloakService.deleteTenantUser(createdKeycloakUserId);
+                    } catch (Exception cleanupEx) {
+                        log.warn("Failed to delete orphan tenant user during rollback: {}", cleanupEx.getMessage());
+                    }
                 }
 
                 try {
@@ -475,9 +459,9 @@ public class OrganizationProvisioningService {
         String finalSlug;
         String slugType;
         if ("FREE".equalsIgnoreCase(targetPlanName) || request.getSlug() == null || request.getSlug().trim().isBlank()) {
-            finalSlug = randomSlugGenerator.generateSmartSlug(request.getName(), organizationRepository, organizationSlugAliasRepository);
-            slugType = "SMART";
-            log.info("🎯 Auto-assigned smart slug '{}' for self-registered organization '{}'", finalSlug, request.getName());
+            finalSlug = randomSlugGenerator.generateCleanSlug(request.getName(), organizationRepository, organizationSlugAliasRepository);
+            slugType = "CLEAN";
+            log.info("🎯 Auto-assigned clean slug '{}' for self-registered organization '{}'", finalSlug, request.getName());
         } else {
             finalSlug = request.getSlug().trim().toLowerCase();
             if (randomSlugGenerator.isReserved(finalSlug)) {
@@ -500,6 +484,7 @@ public class OrganizationProvisioningService {
         Organization org = Organization.builder()
                 .name(request.getName())
                 .slug(finalSlug)
+                .realmKey(KeycloakService.TENANT_SHARED_REALM)
                 .slugType(slugType)
                 .description(request.getDescription())
                 .address(request.getAddress())
@@ -577,25 +562,15 @@ public class OrganizationProvisioningService {
             org.setTrialExpiresAt(LocalDateTime.now().plusDays(14));
         }
 
-        if (org.getRealmKey() == null) {
-            org.setRealmKey(org.getSlug());
-        }
+        org.setRealmKey(KeycloakService.TENANT_SHARED_REALM);
         Organization saved = organizationRepository.saveAndFlush(org);
 
-        // Provision Keycloak
+        // Provision Keycloak user inside shared 'k2net-tenants' realm
         String tempPassword = "Temp@" + UUID.randomUUID().toString().substring(0, 8);
         try {
-            String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
-            log.info("🔑 Provisioning Keycloak for approved organization: {} (Realm: {})", saved.getSlug(), effectiveRealmKey);
-            String planCode = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().getName() != null
-                    ? saved.getSubscriptionPlan().getName() : "FREE";
-            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter 14-Day Trial"
-                    : ("STARTER".equalsIgnoreCase(planCode) ? "Starter ISP"
-                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional ISP"
-                    : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode)));
-            boolean hasSso = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().isHasSso();
-
-            keycloakService.ensureRealmExists(effectiveRealmKey, hasSso, saved.getName(), planCode, planDisplayName, saved.getLogoUrl());
+            String effectiveRealmKey = KeycloakService.TENANT_SHARED_REALM;
+            log.info("🔑 Provisioning Keycloak user for approved organization '{}' in shared realm '{}'",
+                    saved.getSlug(), effectiveRealmKey);
 
             String adminPhone = org.getConfigs().stream()
                     .filter(c -> "pending_admin_phone".equals(c.getConfigKey()) || "admin_phone".equals(c.getConfigKey()))
@@ -607,14 +582,16 @@ public class OrganizationProvisioningService {
                     .findFirst().orElse(null);
 
             String ownerRoleName = "admin";
-            String keycloakId;
-            if (picName != null || adminPhone != null) {
-                keycloakId = keycloakService.createOwnerUser(
-                        effectiveRealmKey, adminUsername, adminEmail, tempPassword, ownerRoleName, picName, adminPhone);
-            } else {
-                keycloakId = keycloakService.createOwnerUser(
-                        effectiveRealmKey, adminUsername, adminEmail, tempPassword, ownerRoleName);
-            }
+            String keycloakId = keycloakService.createTenantOwnerUser(
+                    saved.getId().toString(),
+                    saved.getSlug(),
+                    adminUsername,
+                    adminEmail,
+                    tempPassword,
+                    ownerRoleName,
+                    picName,
+                    adminPhone
+            );
 
             String picJobTitle = org.getConfigs().stream()
                     .filter(c -> "pending_pic_job_title".equals(c.getConfigKey()) || "pic_job_title".equals(c.getConfigKey()))
@@ -646,26 +623,12 @@ public class OrganizationProvisioningService {
 
             entityManager.persist(localUser);
 
-            // Configure LDAP if enabled
             if (ldapEnabled) {
-                log.info("📡 Configuring LDAP Federation for approved realm: {}", saved.getSlug());
-                com.company.ftthgis.config.tenant.LdapConfig ldapConfig = new com.company.ftthgis.config.tenant.LdapConfig();
-                
-                org.getConfigs().stream().filter(c -> "ldap_url".equals(c.getConfigKey())).findFirst().ifPresent(c -> ldapConfig.setUrl(c.getConfigValue()));
-                org.getConfigs().stream().filter(c -> "ldap_base_dn".equals(c.getConfigKey())).findFirst().ifPresent(c -> ldapConfig.setUserDn(c.getConfigValue()));
-                org.getConfigs().stream().filter(c -> "ldap_bind_dn".equals(c.getConfigKey())).findFirst().ifPresent(c -> ldapConfig.setBindDn(c.getConfigValue()));
-                org.getConfigs().stream().filter(c -> "ldap_bind_password".equals(c.getConfigKey())).findFirst().ifPresent(c -> {
-                    try {
-                        ldapConfig.setBindPassword(encryptionUtils.decrypt(c.getConfigValue()));
-                    } catch (Exception e) {
-                        log.error("Failed to decrypt LDAP password: {}", e.getMessage());
-                    }
-                });
-
-                keycloakService.configureLdap(saved.getSlug(), ldapConfig);
+                log.info("📡 LDAP config retained in organization_configs for approved tenant: {}", saved.getSlug());
             }
 
-            log.info("✅ APPROVED & PROVISIONED: Tenant '{}' is now active. Owner: {}", saved.getName(), adminUsername);
+            log.info("✅ APPROVED & PROVISIONED: Tenant '{}' is now active in '{}'. Owner: {}",
+                    saved.getName(), effectiveRealmKey, adminUsername);
 
         } catch (Exception e) {
             log.error("❌ Keycloak provisioning failed during approval of {}: {}", saved.getSlug(), e.getMessage());
@@ -679,13 +642,11 @@ public class OrganizationProvisioningService {
     }
 
     /**
-     * Melakukan reset dan sinkronisasi ulang Keycloak Realm tenant.
+     * Melakukan reset dan sinkronisasi ulang shared Keycloak Realm tenant ('k2net-tenants').
      */
     public boolean resetTenantRealm(String slug) {
-        Organization org = organizationRepository.findBySlug(slug)
+        organizationRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Organization not found"));
-        
-        String realmName = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
-        return keycloakService.syncRealm(realmName);
+        return keycloakService.syncRealm(KeycloakService.TENANT_SHARED_REALM);
     }
 }

@@ -36,6 +36,9 @@ public class OrganizationSlugMigrationService {
     private final RandomSlugGenerator randomSlugGenerator;
     private final AuditLoggingService auditLoggingService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.company.ftthgis.config.tenant.KeycloakService keycloakService;
+
     @Transactional
     public Map<String, Object> migrateSlug(UUID organizationId, String targetSlug, String actorUsername) {
         Organization org = organizationRepository.findById(organizationId)
@@ -93,9 +96,13 @@ public class OrganizationSlugMigrationService {
         org.setSlug(normalizedTarget);
         org.setSlugType("CUSTOM");
         if (org.getRealmKey() == null) {
-            org.setRealmKey(oldSlug); // Fallback safeguard
+            org.setRealmKey(com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM);
         }
         Organization updated = organizationRepository.saveAndFlush(org);
+
+        if (keycloakService != null && updated.getId() != null) {
+            keycloakService.updateOrganizationUsersSlug(updated.getId().toString(), normalizedTarget);
+        }
 
         // 6. Audit Logging
         try {
