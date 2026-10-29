@@ -233,6 +233,18 @@ func (h *Handler) Login(c *gin.Context) {
 			return
 		}
 
+		if statusCode == http.StatusBadGateway || statusCode == http.StatusGatewayTimeout || statusCode == http.StatusServiceUnavailable {
+			logger.Warn(c.Request.Context(), "Keycloak upstream returned gateway error during login",
+				zap.Int("status", statusCode),
+				zap.String("realm", targetRealm),
+			)
+			c.JSON(http.StatusBadGateway, gin.H{
+				"error":   "UPSTREAM_UNAVAILABLE",
+				"message": "Authentication service is temporarily unavailable. Please try again.",
+			})
+			return
+		}
+
 		h.emitAudit(c.Request.Context(), auditSlug, req.Username, "", clientIP, "AUTH_LOGIN_FAILED", map[string]any{
 			"plane":      plane,
 			"realm":      targetRealm,
