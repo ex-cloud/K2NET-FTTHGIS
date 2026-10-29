@@ -75,7 +75,7 @@ services:
       KONG_UNTRUSTED_LUA_SANDBOX_ENVIRONMENT: "os,os.getenv"
       GATEWAY_TOKEN: "${GATEWAY_TOKEN}"
     volumes:
-      - ./docker/kong/kong.yml:/usr/local/kong/declarative/kong.yml:ro
+      - ./docker/kong:/usr/local/kong/declarative:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -372,7 +372,7 @@ services:
     volumes:
       - /opt/project5/backups:/opt/project5/backups
       - /opt/project5/scripts:/opt/project5/scripts
-      - ./docker/kong/kong.yml:/opt/project5/docker/kong/kong.yml
+      - ./docker/kong:/opt/project5/docker/kong
     depends_on:
       postgres:
         condition: service_healthy
@@ -407,6 +407,9 @@ services:
       - "traefik.http.routers.frontend-tenant.priority=5"
       - "traefik.http.routers.frontend-tenant.middlewares=secHeaders@file"
       - "traefik.http.services.frontend-tenant.loadbalancer.server.port=3002"
+    depends_on:
+      kong:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3002/health"]
       interval: 30s
@@ -466,10 +469,12 @@ services:
       - "traefik.http.routers.frontend-admin.middlewares=secHeaders@file"
       - "traefik.http.services.frontend-admin.loadbalancer.server.port=3001"
     depends_on:
+      kong:
+        condition: service_started
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/login"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/health"]
       interval: 60s
       timeout: 10s
       retries: 3

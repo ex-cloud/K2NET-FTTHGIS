@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
@@ -147,23 +148,26 @@ public class KongConfigSyncService {
                 updatedContent = currentContent + "\n" + newConsumerYaml.toString();
             }
 
-            // 5. Atomic write updated YAML to disk with backup
+            // 5. Write updated YAML to disk in-place (preserving file inode for Docker mounts) with backup
             try {
                 Path targetPath = configFile.toPath();
-                Path tempPath = targetPath.resolveSibling(configFile.getName() + ".tmp");
                 Path backupPath = targetPath.resolveSibling(configFile.getName() + ".bak");
-
-                // Write to temp file first
-                Files.writeString(tempPath, updatedContent, StandardCharsets.UTF_8);
 
                 // Backup current file
                 if (Files.exists(targetPath)) {
                     Files.copy(targetPath, backupPath, StandardCopyOption.REPLACE_EXISTING);
                 }
 
-                // Atomic move to avoid partial writes or corruption
-                Files.move(tempPath, targetPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                log.info("✅ SUCCESS: kong.yml updated atomically on disk with consumer for realm '{}'", realmName);
+                // Write in-place to preserve inode across Docker volume mounts
+                Files.writeString(
+                        targetPath,
+                        updatedContent,
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING,
+                        StandardOpenOption.WRITE
+                );
+                log.info("✅ SUCCESS: kong.yml updated in-place on disk with consumer for realm '{}'", realmName);
             } catch (Exception fileEx) {
                 log.warn("⚠️ Could not write updated kong.yml to disk ({}: {}). Proceeding with in-memory Kong reload via Admin API.",
                         fileEx.getClass().getSimpleName(), fileEx.getMessage());
