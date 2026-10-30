@@ -10,12 +10,19 @@ import {
   EyeOff,
   Smartphone,
   ArrowLeft,
+  X,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
 import type { AuthLocale } from "./auth-login-layout";
+import {
+  getSavedProfiles,
+  removeSavedProfile,
+  type SavedAccountProfile,
+} from "./saved-profiles";
 
 export interface AuthMethod {
   id: string;
@@ -29,6 +36,7 @@ export interface AuthCredentialsSubmitPayload {
   username: string;
   password: string;
   rememberMe: boolean;
+  saveEmailOnDevice?: boolean;
   totp?: string;
   turnstileToken?: string;
 }
@@ -72,6 +80,14 @@ export interface AuthLoginFormLabels {
   tierEnterpriseValue?: string;
   tierEnterpriseDesc?: string;
   complianceBanner?: string;
+  // Cloudflare-style Multi-Account Labels
+  signInWithAnotherProfile?: string;
+  viewSavedProfiles?: string;
+  saveEmailOnDevice?: string;
+  lastUsed?: string;
+  removeSavedProfile?: string;
+  savedProfilesTitle?: string;
+  savedProfilesOr?: string;
 }
 
 export interface AuthLoginFormProps {
@@ -83,6 +99,7 @@ export interface AuthLoginFormProps {
   planDisplayName?: string;
   authMode?: string;
   status?: string;
+  tenantSlug?: string;
   allowedMethods?: AuthMethod[];
   primaryAuthMethod?: string;
   submitLabel?: string;
@@ -128,6 +145,7 @@ export function AuthLoginForm({
   plan = "FREE",
   planDisplayName,
   status = "ACTIVE",
+  tenantSlug,
   submitLabel,
   onSubmitCredentials,
   onContinueWithEmail,
@@ -142,10 +160,21 @@ export function AuthLoginForm({
   locale = "en",
   labels,
 }: AuthLoginFormProps) {
+  // Saved profiles state
+  const [savedProfiles, setSavedProfiles] = useState<SavedAccountProfile[]>(() =>
+    getSavedProfiles(tenantSlug)
+  );
+  const [authView, setAuthView] = useState<"SAVED_PROFILES" | "CREDENTIALS">(() => {
+    // If there is at least 1 saved profile and no explicit defaultEmail, start on saved profiles
+    const initialProfiles = getSavedProfiles(tenantSlug);
+    return initialProfiles.length > 0 && !defaultEmail ? "SAVED_PROFILES" : "CREDENTIALS";
+  });
+
   const [usernameOrEmail, setUsernameOrEmail] = useState(defaultEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [saveEmailOnDevice, setSaveEmailOnDevice] = useState(true);
   const [totpCode, setTotpCode] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | undefined>(undefined);
   const [showForgotHelp, setShowForgotHelp] = useState(false);
@@ -153,12 +182,17 @@ export function AuthLoginForm({
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
   const prevErrorRef = useRef<string | null>(null);
+  const passwordInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Sync saved profiles whenever tenantSlug changes or after mounting
+  useEffect(() => {
+    setSavedProfiles(getSavedProfiles(tenantSlug));
+  }, [tenantSlug]);
 
   // Mount Cloudflare Turnstile widget dynamically when turnstileSiteKey is configured
   useEffect(() => {
     const cleanKey = turnstileSiteKey?.trim();
-    if (!cleanKey || typeof window === "undefined") {
+    if (!cleanKey || typeof window === "undefined" || authView !== "CREDENTIALS") {
       return;
     }
 
@@ -214,7 +248,7 @@ export function AuthLoginForm({
         turnstileWidgetIdRef.current = null;
       }
     };
-  }, [turnstileSiteKey]);
+  }, [turnstileSiteKey, authView]);
 
   // Reset single-use Turnstile token when login attempts result in an error
   useEffect(() => {
@@ -237,6 +271,7 @@ export function AuthLoginForm({
         username: cleanUser,
         password,
         rememberMe,
+        saveEmailOnDevice,
         totp: mfaRequired ? totpCode.trim() : undefined,
         turnstileToken,
       });
@@ -262,13 +297,39 @@ export function AuthLoginForm({
     }
   };
 
+  // Profile actions
+  const handleSelectProfile = (profile: SavedAccountProfile) => {
+    setUsernameOrEmail(profile.email || profile.username || "");
+    setPassword("");
+    setAuthView("CREDENTIALS");
+    setTimeout(() => {
+      passwordInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleRemoveProfile = (e: React.MouseEvent, email: string) => {
+    e.stopPropagation();
+    const updated = removeSavedProfile(email, tenantSlug);
+    setSavedProfiles(updated);
+    if (updated.length === 0) {
+      setAuthView("CREDENTIALS");
+    }
+  };
+
+  const handleSwitchToNewProfile = () => {
+    setUsernameOrEmail("");
+    setPassword("");
+    setAuthView("CREDENTIALS");
+  };
+
+  const handleBackToSavedProfiles = () => {
+    setAuthView("SAVED_PROFILES");
+  };
+
   const statusUpper = (status || "ACTIVE").toUpperCase();
   const isSuspended = statusUpper === "SUSPENDED" || statusUpper === "TRIAL_EXPIRED" || statusUpper === "DELETED";
   const planUpper = (plan || "FREE").toUpperCase();
   const isInternal = planUpper === "INTERNAL";
-  const isProPlan = !isInternal && (planUpper === "PRO" || planUpper === "PROFESSIONAL");
-  const isEnterprisePlan = !isInternal && planUpper === "ENTERPRISE";
-  const isFreePlan = !isInternal && !isProPlan && !isEnterprisePlan;
 
   const copy = {
     loginFailedTitle: labels?.loginFailedTitle || "Failed to sign in",
@@ -301,29 +362,14 @@ export function AuthLoginForm({
     suspendedDesc:
       labels?.suspendedDesc ||
       "This organization workspace is currently suspended or awaiting activation. Please contact K2NET Platform Administration.",
-    tierInternalLabel: labels?.tierInternalLabel || "ACCESS MODE",
-    tierInternalValue: labels?.tierInternalValue || "MASTER IAM & MFA",
-    tierInternalDesc:
-      labels?.tierInternalDesc ||
-      "System-level authentication protected by Keycloak Master IAM and step-up MFA enforcement.",
-    tierFreeLabel: labels?.tierFreeLabel || "LOGIN METHOD",
-    tierFreeValue: labels?.tierFreeValue || "EMAIL + PASSWORD",
-    tierFreeDesc:
-      labels?.tierFreeDesc ||
-      "Native password authentication. Google Workspace & GitHub SSO unlock on Pro & Enterprise plans.",
-    tierProLabel: labels?.tierProLabel || "LOGIN METHODS",
-    tierProValue: labels?.tierProValue || "PASSWORD + SOCIAL SSO",
-    tierProDesc:
-      labels?.tierProDesc ||
-      "Sign in directly with your account password or one-click Google & GitHub Single Sign-On.",
-    tierEnterpriseLabel: labels?.tierEnterpriseLabel || "ENTERPRISE IAM",
-    tierEnterpriseValue: labels?.tierEnterpriseValue || "SSO IdP & MFA",
-    tierEnterpriseDesc:
-      labels?.tierEnterpriseDesc ||
-      "Direct Corporate Identity Provider integration with mandatory multi-factor authentication enforcement.",
-    complianceBanner:
-      labels?.complianceBanner ||
-      "Multi-tenant isolated access. Every sign-in event is cryptographically monitored and audited under K2NET ISP security standards.",
+    // Cloudflare-style Multi-Account Copy
+    signInWithAnotherProfile: labels?.signInWithAnotherProfile || "Sign in with another profile",
+    viewSavedProfiles: labels?.viewSavedProfiles || "View saved profiles",
+    saveEmailOnDevice: labels?.saveEmailOnDevice || "Save email and login method on this device",
+    lastUsed: labels?.lastUsed || "Last used",
+    removeSavedProfile: labels?.removeSavedProfile || "Remove profile from device",
+    savedProfilesTitle: labels?.savedProfilesTitle || "Choose an account",
+    savedProfilesOr: labels?.savedProfilesOr || "or",
   };
 
   const resolvedSubmitLabel =
@@ -377,214 +423,330 @@ export function AuthLoginForm({
 
       {/* Main Login Card */}
       <div className="bg-card/60 border border-border/70 rounded-xl p-5 sm:p-6 shadow-sm backdrop-blur-md space-y-4">
-        {/* Social SSO Buttons ABOVE Form (when supported & enabled) */}
-        {!mfaRequired && socialMethods.length > 0 && (
-          <div className="space-y-3">
-            <div className="grid gap-2">
-              {socialMethods.map((method) => {
-                const methodLabel =
-                  method.icon === "google"
-                    ? copy.continueWithGoogle
-                    : method.icon === "github"
-                    ? copy.continueWithGithub
-                    : `${copy.continueWithProviderPrefix} ${method.name}`;
+        {/* VIEW 1: Cloudflare-style Saved Profiles Chooser */}
+        {authView === "SAVED_PROFILES" && savedProfiles.length > 0 && !mfaRequired ? (
+          <div className="space-y-4 animate-in fade-in duration-150">
+            <div className="space-y-1 text-center sm:text-left">
+              <h3 className="text-sm font-semibold text-foreground tracking-tight">
+                {copy.savedProfilesTitle}
+              </h3>
+            </div>
 
+            {/* List of Saved Account Cards */}
+            <div className="space-y-2">
+              {savedProfiles.map((profile, idx) => {
+                const isLastUsed = idx === 0;
                 return (
-                  <Button
-                    key={method.id}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs cursor-pointer"
-                    onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
-                    disabled={isLoading || isSuspended}
+                  <div
+                    key={profile.email}
+                    onClick={() => handleSelectProfile(profile)}
+                    className="group relative flex items-center justify-between p-3 rounded-lg border border-border/70 bg-background/50 hover:bg-accent/40 hover:border-primary/40 transition-all cursor-pointer shadow-2xs"
                   >
-                    {method.icon === "google" && <GoogleIcon className="size-3.5" />}
-                    {method.icon === "github" && <GithubIcon className="size-3.5" />}
-                    {method.icon !== "google" && method.icon !== "github" && (
-                      <KeyRound className="size-3.5 text-primary" />
-                    )}
-                    <span>{methodLabel}</span>
-                  </Button>
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <div className="size-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                        {profile.avatarUrl ? (
+                          <img
+                            src={profile.avatarUrl}
+                            alt=""
+                            className="size-7 rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="size-3.5" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium text-foreground truncate max-w-[200px] sm:max-w-[250px]">
+                          {profile.email}
+                        </div>
+                        {profile.displayName && (
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {profile.displayName}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isLastUsed && (
+                        <span className="text-[10px] font-medium font-mono text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded">
+                          {copy.lastUsed}
+                        </span>
+                      )}
+                      <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                      <button
+                        type="button"
+                        onClick={(e) => handleRemoveProfile(e, profile.email)}
+                        className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                        title={copy.removeSavedProfile}
+                        aria-label={copy.removeSavedProfile}
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
 
+            {/* Divider */}
             <div className="relative flex items-center justify-center py-1">
               <div className="w-full border-t border-border/60" />
               <span className="absolute bg-card px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
-                {copy.orContinueWith}
+                {copy.savedProfilesOr}
               </span>
             </div>
-          </div>
-        )}
 
-        {/* 3. Full Native Credentials & Inline MFA Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          {!mfaRequired ? (
-            <>
-              {/* Account Email or Username Input */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <Label
-                    htmlFor="usernameOrEmail"
-                    className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
-                    {copy.accountEmailOrUsername}
-                  </Label>
-                  <span className="text-[10px] text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded font-mono">
-                    {copy.requiredBadge}
+            {/* Switch to Another Profile Button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSwitchToNewProfile}
+              className="w-full h-8 text-xs font-medium border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs cursor-pointer"
+            >
+              <span>{copy.signInWithAnotherProfile}</span>
+            </Button>
+          </div>
+        ) : (
+          /* VIEW 2: Standard Credentials & Password Form */
+          <>
+            {/* Social SSO Buttons ABOVE Form (when supported & enabled) */}
+            {!mfaRequired && socialMethods.length > 0 && (
+              <div className="space-y-3">
+                <div className="grid gap-2">
+                  {socialMethods.map((method) => {
+                    const methodLabel =
+                      method.icon === "google"
+                        ? copy.continueWithGoogle
+                        : method.icon === "github"
+                        ? copy.continueWithGithub
+                        : `${copy.continueWithProviderPrefix} ${method.name}`;
+
+                    return (
+                      <Button
+                        key={method.id}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs cursor-pointer"
+                        onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
+                        disabled={isLoading || isSuspended}
+                      >
+                        {method.icon === "google" && <GoogleIcon className="size-3.5" />}
+                        {method.icon === "github" && <GithubIcon className="size-3.5" />}
+                        {method.icon !== "google" && method.icon !== "github" && (
+                          <KeyRound className="size-3.5 text-primary" />
+                        )}
+                        <span>{methodLabel}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <div className="relative flex items-center justify-center py-1">
+                  <div className="w-full border-t border-border/60" />
+                  <span className="absolute bg-card px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
+                    {copy.orContinueWith}
                   </span>
                 </div>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                  <Input
-                    id="usernameOrEmail"
-                    name="username"
-                    type="text"
-                    autoComplete="username"
-                    placeholder={copy.accountPlaceholder}
-                    value={usernameOrEmail}
-                    onChange={(e) => setUsernameOrEmail(e.target.value)}
-                    className="pl-9 h-9 bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
-                    disabled={isLoading || isSuspended}
-                    required
-                  />
-                </div>
               </div>
+            )}
 
-              {/* Password Input + Forgot Password + Show/Hide Toggle */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <Label
-                    htmlFor="accountPassword"
-                    className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
-                    {copy.passwordUpper}
-                  </Label>
+            {/* Credentials & Inline MFA Form */}
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {!mfaRequired ? (
+                <>
+                  {/* Account Email or Username Input */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label
+                        htmlFor="usernameOrEmail"
+                        className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                      >
+                        {copy.accountEmailOrUsername}
+                      </Label>
+                      <span className="text-[10px] text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded font-mono">
+                        {copy.requiredBadge}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="usernameOrEmail"
+                        name="username"
+                        type="text"
+                        autoComplete="username"
+                        placeholder={copy.accountPlaceholder}
+                        value={usernameOrEmail}
+                        onChange={(e) => setUsernameOrEmail(e.target.value)}
+                        className="pl-9 h-9 bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
+                        disabled={isLoading || isSuspended}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password Input + Forgot Password + Show/Hide Toggle */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label
+                        htmlFor="accountPassword"
+                        className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                      >
+                        {copy.passwordUpper}
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={handleForgotClick}
+                        className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                      >
+                        {copy.forgotPassword}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="accountPassword"
+                        name="password"
+                        ref={passwordInputRef}
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        placeholder={copy.passwordPlaceholder}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-9 pr-9 h-9 bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
+                        disabled={isLoading || isSuspended}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? copy.hidePassword : copy.showPassword}
+                        title={showPassword ? copy.hidePassword : copy.showPassword}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors font-medium cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+
+                    {showForgotHelp && (
+                      <p className="text-[11px] text-muted-foreground bg-muted/40 border border-border/60 rounded-md p-2 leading-relaxed">
+                        {copy.forgotPasswordNotice}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Checkbox: Save email and login method on this device */}
+                  <div className="space-y-2 pt-0.5">
+                    <label className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={saveEmailOnDevice}
+                        onChange={(e) => setSaveEmailOnDevice(e.target.checked)}
+                        disabled={isLoading || isSuspended}
+                        className="size-3.5 rounded border-border bg-background accent-primary cursor-pointer"
+                      />
+                      <span>{copy.saveEmailOnDevice}</span>
+                    </label>
+
+                    {/* Remember Me Browser */}
+                    <div className="flex items-center justify-between">
+                      <label className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          disabled={isLoading || isSuspended}
+                          className="size-3.5 rounded border-border bg-background accent-primary cursor-pointer"
+                        />
+                        <span>{copy.rememberMeBrowser}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Optional Cloudflare Turnstile Anti-Bot Widget */}
+                  {Boolean(turnstileSiteKey?.trim()) && (
+                    <div className="pt-1">
+                      <div ref={turnstileContainerRef} className="min-h-[65px] w-full overflow-hidden rounded-md" />
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Inline 6-Digit MFA OTP Mode */
+                <div className="space-y-3 animate-in fade-in duration-150">
+                  <div className="rounded-md border border-primary/25 bg-primary/5 p-3 space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                      <Smartphone className="size-3.5" />
+                      <span>{copy.mfaCodeLabel}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {copy.mfaCodeHint}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Input
+                      id="totpCode"
+                      name="totp"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      autoComplete="one-time-code"
+                      autoFocus
+                      placeholder={copy.mfaCodePlaceholder}
+                      value={totpCode}
+                      onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                      className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
+                      disabled={isLoading || isSuspended}
+                      required
+                    />
+                  </div>
+
                   <button
                     type="button"
-                    onClick={handleForgotClick}
-                    className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                    onClick={handleBackFromMfa}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   >
-                    {copy.forgotPassword}
+                    <ArrowLeft className="size-3" />
+                    <span>{copy.mfaBackToLogin}</span>
                   </button>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                  <Input
-                    id="accountPassword"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    placeholder={copy.passwordPlaceholder}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-9 pr-9 h-9 bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
-                    disabled={isLoading || isSuspended}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? copy.hidePassword : copy.showPassword}
-                    title={showPassword ? copy.hidePassword : copy.showPassword}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors font-medium cursor-pointer"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-
-                {showForgotHelp && (
-                  <p className="text-[11px] text-muted-foreground bg-muted/40 border border-border/60 rounded-md p-2 leading-relaxed">
-                    {copy.forgotPasswordNotice}
-                  </p>
-                )}
-              </div>
-
-              {/* Remember Me Checkbox */}
-              <div className="flex items-center justify-between pt-0.5">
-                <label className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    disabled={isLoading || isSuspended}
-                    className="size-3.5 rounded border-border bg-background accent-primary cursor-pointer"
-                  />
-                  <span>{copy.rememberMeBrowser}</span>
-                </label>
-              </div>
-
-              {/* Optional Cloudflare Turnstile Anti-Bot Widget */}
-              {Boolean(turnstileSiteKey?.trim()) && (
-                <div className="pt-1">
-                  <div ref={turnstileContainerRef} className="min-h-[65px] w-full overflow-hidden rounded-md" />
                 </div>
               )}
-            </>
-          ) : (
-            /* Inline 6-Digit MFA OTP Mode */
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className="rounded-md border border-primary/25 bg-primary/5 p-3 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-                  <Smartphone className="size-3.5" />
-                  <span>{copy.mfaCodeLabel}</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  {copy.mfaCodeHint}
-                </p>
-              </div>
 
-              <div className="space-y-1.5">
-                <Input
-                  id="totpCode"
-                  name="totp"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  autoComplete="one-time-code"
-                  autoFocus
-                  placeholder={copy.mfaCodePlaceholder}
-                  value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
-                  className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
-                  disabled={isLoading || isSuspended}
-                  required
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleBackFromMfa}
-                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              {/* Primary Submit Button */}
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isSubmitDisabled}
+                className="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 transition-all duration-200 group cursor-pointer"
               >
-                <ArrowLeft className="size-3" />
-                <span>{copy.mfaBackToLogin}</span>
-              </button>
-            </div>
-          )}
+                {isLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <span>{resolvedSubmitLabel}</span>
+                    <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </>
+                )}
+              </Button>
 
-          {/* 4. Primary Submit Button */}
-          <Button
-            type="submit"
-            size="sm"
-            disabled={isSubmitDisabled}
-            className="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 transition-all duration-200 group cursor-pointer"
-          >
-            {isLoading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <>
-                <span>{resolvedSubmitLabel}</span>
-                <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </>
-            )}
-          </Button>
-        </form>
-
+              {/* Link below submit button: "View saved profiles" (ONLY rendered if savedProfiles.length > 0) */}
+              {!mfaRequired && savedProfiles.length > 0 && (
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={handleBackToSavedProfiles}
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <span>{copy.viewSavedProfiles}</span>
+                  </button>
+                </div>
+              )}
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

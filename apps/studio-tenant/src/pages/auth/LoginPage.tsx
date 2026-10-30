@@ -6,6 +6,7 @@ import { useTranslation } from "@k2net/i18n";
 import {
   AuthLoginForm,
   AuthLoginLayout,
+  saveAccountProfile,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
   type AuthMethod,
@@ -207,6 +208,13 @@ export function LoginPage() {
       tierEnterpriseValue: t("auth.tier_enterprise_value"),
       tierEnterpriseDesc: t("auth.tier_enterprise_desc"),
       complianceBanner: t("auth.compliance_banner"),
+      signInWithAnotherProfile: t("auth.sign_in_with_another_profile"),
+      viewSavedProfiles: t("auth.view_saved_profiles"),
+      saveEmailOnDevice: t("auth.save_email_on_device"),
+      lastUsed: t("auth.last_used"),
+      removeSavedProfile: t("auth.remove_saved_profile"),
+      savedProfilesTitle: t("auth.saved_profiles_title"),
+      savedProfilesOr: t("auth.saved_profiles_or"),
     }),
     [t]
   );
@@ -237,6 +245,14 @@ export function LoginPage() {
       if (!result.success) {
         setErrorMessage(resolveAuthErrorMessage(result.error, result.message, t));
         return;
+      }
+
+      if (payload.saveEmailOnDevice !== false) {
+        saveAccountProfile({
+          email: payload.username,
+          tenantSlug: effectiveSlug,
+          authMethod: "password",
+        });
       }
 
       if (callbackUrl === "/") {
@@ -287,6 +303,7 @@ export function LoginPage() {
         planDisplayName={tenantCtx?.planDisplayName || "STARTER TRIAL"}
         authMode={tenantCtx?.authMode}
         status={tenantCtx?.status || "ACTIVE"}
+        tenantSlug={tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug}
         allowedMethods={socialMethods}
         locale={locale}
         labels={formLabels}

@@ -5,6 +5,7 @@ import { useTranslation } from "@k2net/i18n";
 import {
   AuthLoginForm,
   AuthLoginLayout,
+  saveAccountProfile,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
 } from "@k2net/ui";
@@ -71,6 +72,13 @@ export default function AdminLoginPage() {
       tierInternalValue: t("auth.tier_internal_value"),
       tierInternalDesc: t("auth.tier_internal_desc"),
       complianceBanner: t("auth.compliance_banner"),
+      signInWithAnotherProfile: t("auth.sign_in_with_another_profile"),
+      viewSavedProfiles: t("auth.view_saved_profiles"),
+      saveEmailOnDevice: t("auth.save_email_on_device"),
+      lastUsed: t("auth.last_used"),
+      removeSavedProfile: t("auth.remove_saved_profile"),
+      savedProfilesTitle: t("auth.saved_profiles_title"),
+      savedProfilesOr: t("auth.saved_profiles_or"),
     }),
     [t]
   );
@@ -100,6 +108,14 @@ export default function AdminLoginPage() {
       if (!result.success) {
         setErrorMessage(resolveAuthErrorMessage(result.error, result.message, t));
         return;
+      }
+
+      if (payload.saveEmailOnDevice !== false) {
+        saveAccountProfile({
+          email: payload.username,
+          tenantSlug: "system",
+          authMethod: "password",
+        });
       }
 
       router.replace(callbackUrl);
@@ -137,6 +153,7 @@ export default function AdminLoginPage() {
         plan="INTERNAL"
         planDisplayName="SYSTEM ADMIN"
         status="ACTIVE"
+        tenantSlug="system"
         locale={locale}
         labels={formLabels}
         isLoading={isSubmitting}
