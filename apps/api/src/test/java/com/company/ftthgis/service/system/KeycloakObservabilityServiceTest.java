@@ -53,6 +53,7 @@ class KeycloakObservabilityServiceTest {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> connections = (List<Map<String, Object>>) stats.get("connections");
         assertNotNull(connections);
-        assertEquals(3, connections.size());
+        assertEquals(4, connections.size());
+        assertTrue(stats.containsKey("edgeAuthTelemetry"));
     }
 }
