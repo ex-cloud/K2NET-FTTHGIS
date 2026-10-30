@@ -17,6 +17,7 @@ describe("Tenant apiClient", () => {
   });
 
   it("should set and retrieve auth token in sessionStorage", () => {
+    setImpersonationSessionId("session-123");
     setApiAuthToken("tenant-jwt-token-123");
     expect(getApiAuthToken()).toBe("tenant-jwt-token-123");
     expect(sessionStorage.getItem("k2net_impersonation_token")).toBe("tenant-jwt-token-123");

@@ -82,7 +82,7 @@ services:
       - "127.0.0.1:8001:8001"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.kong.rule=(Host(`gis.kdua.net`) || Host(`system-gis.kdua.net`) || Host(`api-gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`)) && !PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.kong.rule=(Host(`gis.kdua.net`) || Host(`system-gis.kdua.net`) || Host(`api-gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`)) && !PathPrefix(`/api/auth`)"
       - "traefik.http.routers.kong.entrypoints=websecure"
       - "traefik.http.routers.kong.tls=true"
       - "traefik.http.routers.kong.priority=100"
@@ -183,7 +183,7 @@ services:
       - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.martin.rule=(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && (PathPrefix(`/catalog`) || PathPrefix(`/get_mvt_data/`))"
+      - "traefik.http.routers.martin.rule=(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && (PathPrefix(`/catalog`) || PathPrefix(`/get_mvt_data/`))"
       - "traefik.http.routers.martin.entrypoints=websecure"
       - "traefik.http.routers.martin.tls=true"
       - "traefik.http.routers.martin.priority=10"
@@ -404,7 +404,7 @@ services:
       - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-tenant.rule=(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && !Host(`system-gis.kdua.net`)"
+      - "traefik.http.routers.frontend-tenant.rule=(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && !Host(`system-gis.kdua.net`) && !Host(`auth-gis.kdua.net`) && !Host(`api-gis.kdua.net`)"
       - "traefik.http.routers.frontend-tenant.entrypoints=websecure"
       - "traefik.http.routers.frontend-tenant.tls=true"
       - "traefik.http.routers.frontend-tenant.priority=5"

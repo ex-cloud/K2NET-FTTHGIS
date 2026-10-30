@@ -21,7 +21,7 @@ async function fetchUserProfile(
   kcToken?: string | null
 ): Promise<UserProfileResponse | null> {
   // During impersonation, NEVER fall back to kcToken from regular tenant realm
-  let activeToken = isImpersonating ? getApiAuthToken() : (getApiAuthToken() || kcToken);
+  const activeToken = isImpersonating ? getApiAuthToken() : (getApiAuthToken() || kcToken);
   const headers: Record<string, string> = {};
   if (activeToken) {
     headers["Authorization"] = `Bearer ${activeToken}`;
@@ -140,6 +140,7 @@ export function usePermissions() {
       "user-profile-pbac",
       authenticated ? user?.id : "anon",
       isImpersonating ? sessionId : "direct",
+      kcToken,
       refreshPermissionsTrigger,
     ],
     queryFn: () => fetchUserProfile(isImpersonating, sessionId, kcToken),

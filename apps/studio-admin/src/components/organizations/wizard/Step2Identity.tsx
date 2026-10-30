@@ -128,9 +128,9 @@ export function Step2Identity({
             className="flex-1 bg-transparent border-none outline-none px-1 text-primary font-mono font-bold disabled:opacity-85"
           />
           <span className="text-muted-foreground font-mono">
-            {typeof window !== "undefined" && window.location.hostname.includes("gis.kdua.net")
-              ? "-gis.kdua.net"
-              : ".gis.kdua.net"}
+            {typeof window !== "undefined" && window.location.hostname.endsWith(".localhost")
+              ? ".localhost:3002"
+              : ".kdua.net"}
           </span>
           {formData.plan === "FREE" && (
             <Button

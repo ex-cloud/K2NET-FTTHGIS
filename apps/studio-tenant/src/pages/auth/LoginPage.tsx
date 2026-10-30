@@ -154,11 +154,14 @@ export function LoginPage() {
       tenantCtx.targetSlug &&
       tenantCtx.targetSlug !== tenantSlug
     ) {
-      if (window.location.host.includes(`${tenantSlug}-gis`)) {
-        const nextHost = window.location.host.replace(
-          `${tenantSlug}-gis`,
-          `${tenantCtx.targetSlug}-gis`
+      const port = window.location.port ? `:${window.location.port}` : "";
+      if (window.location.host.endsWith(".localhost") || window.location.host.startsWith("localhost")) {
+        const nextHost = `${tenantCtx.targetSlug}.localhost${port}`;
+        window.location.replace(
+          `${window.location.protocol}//${nextHost}${window.location.pathname}${window.location.search}`
         );
+      } else {
+        const nextHost = `${tenantCtx.targetSlug}.kdua.net${port}`;
         window.location.replace(
           `${window.location.protocol}//${nextHost}${window.location.pathname}${window.location.search}`
         );

@@ -231,7 +231,17 @@ public class TenantLicenseController {
             if (host != null && !host.isBlank()) {
                 String sub = host.split(":")[0];
                 String candidateSlug = null;
-                if (sub.contains("-gis.kdua.net")) {
+                if (sub.endsWith(".kdua.net")) {
+                    String first = sub.split("\\.")[0].toLowerCase();
+                    if (first.endsWith("-gis")) {
+                        candidateSlug = first.substring(0, first.length() - 4);
+                    } else if (!first.equals("system-gis")
+                            && !first.equals("api-gis")
+                            && !first.equals("auth-gis")
+                            && !first.equals("gis")) {
+                        candidateSlug = first;
+                    }
+                } else if (sub.contains("-gis.kdua.net")) {
                     candidateSlug = sub.split("-gis")[0];
                 } else if (sub.contains(".gis.kdua.net")) {
                     candidateSlug = sub.split("\\.")[0];

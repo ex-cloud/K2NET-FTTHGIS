@@ -22,6 +22,13 @@ export function parseDomain(hostname: string) {
     if (hostOnly !== baseDomain) {
       subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
     }
+  } else if (hostOnly.endsWith(".kdua.net")) {
+    baseDomain = "kdua.net";
+    isHyphen = false;
+    const parts = hostOnly.split(".");
+    if (parts.length === 3) {
+      subdomain = parts[0];
+    }
   } else if (hostOnly.endsWith("lvh.me")) {
     baseDomain = "lvh.me";
     isHyphen = false;

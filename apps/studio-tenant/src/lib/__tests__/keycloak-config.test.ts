@@ -11,6 +11,33 @@ describe("Tenant Keycloak Config", () => {
     expect(slug).toBe("isp-fiber-optics");
   });
 
+  it("should extract clean tenant slug from Option A domain (*.kdua.net)", () => {
+    delete (window as unknown as { location: unknown }).location;
+    // @ts-expect-error - mock location
+    window.location = new URL("https://kircon-network.kdua.net/login");
+
+    const slug = extractTenantSlug();
+    expect(slug).toBe("kircon-network");
+  });
+
+  it("should support legacy *-gis.kdua.net domains", () => {
+    delete (window as unknown as { location: unknown }).location;
+    // @ts-expect-error - mock location
+    window.location = new URL("https://garut-gis.kdua.net/overview");
+
+    const slug = extractTenantSlug();
+    expect(slug).toBe("garut");
+  });
+
+  it("should ignore internal system plane hostnames", () => {
+    delete (window as unknown as { location: unknown }).location;
+    // @ts-expect-error - mock location
+    window.location = new URL("https://system-gis.kdua.net/login");
+
+    const slug = extractTenantSlug();
+    expect(slug).toBe("default");
+  });
+
   it("should generate valid KeycloakAuthConfig", () => {
     const config = getTenantKeycloakConfig("my-tenant-realm");
     expect(config.realm).toBe("my-tenant-realm");

@@ -460,6 +460,7 @@ public class KeycloakService {
             redirects.add("https://system-gis.kdua.net/*");
             redirects.add("https://system.gis.kdua.net/*");
             redirects.add("https://gis.kdua.net/*");
+            redirects.add("https://*.kdua.net/*");
             redirects.add("https://*.gis.kdua.net/*");
             redirects.add("https://*-gis.kdua.net/*");
             redirects.add("http://localhost:3000/*");
@@ -474,6 +475,7 @@ public class KeycloakService {
             }
 
             if (!"ftth-realm".equals(realmName) && !"master".equals(realmName)) {
+                redirects.add("https://" + realmName + ".kdua.net/*");
                 redirects.add("https://" + realmName + "-gis.kdua.net/*");
                 redirects.add("https://" + realmName + ".gis.kdua.net/*");
             }

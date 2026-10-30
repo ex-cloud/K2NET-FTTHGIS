@@ -132,7 +132,7 @@ class OrganizationSlugMigrationServiceTest {
         assertThat(result.get("newSlug")).isEqualTo("sukarajin");
         assertThat(result.get("previousSlug")).isEqualTo("a7x9b2q1k4m8p3n5v8w2");
         assertThat(result.get("realmKey")).isEqualTo("realm-immutable-key-12345");
-        assertThat(result.get("newDomain")).isEqualTo("sukarajin-gis.kdua.net");
+        assertThat(result.get("newDomain")).isEqualTo("sukarajin.kdua.net");
 
         // Verify that realmKey is PRESERVED identically (No user UUID mutation risk)
         assertThat(proOrg.getRealmKey()).isEqualTo("realm-immutable-key-12345");

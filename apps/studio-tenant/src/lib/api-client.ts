@@ -1,3 +1,5 @@
+import { extractTenantSlug } from "./keycloak-config";
+
 let activeToken: string | null = null;
 let activeImpersonationSessionId: string | null = null;
 
@@ -113,23 +115,8 @@ function buildRequestUrl(
 }
 
 function resolveTenantSlug(): string | null {
-  if (typeof window === "undefined") return null;
-  const searchParams = new URLSearchParams(window.location.search);
-  const paramSlug = searchParams.get("tenant") || searchParams.get("slug");
-  if (paramSlug) return paramSlug.toLowerCase().trim();
-
-  const host = window.location.hostname;
-  let detectedSlug: string | null = null;
-  if (host.includes("-gis.")) {
-    detectedSlug = host.split("-gis")[0];
-  } else if (host.includes(".gis.")) {
-    detectedSlug = host.split(".")[0];
-  }
-
-  if (detectedSlug && detectedSlug !== "system" && detectedSlug !== "api" && detectedSlug !== "gis") {
-    return detectedSlug.toLowerCase().trim();
-  }
-  return null;
+  const slug = extractTenantSlug();
+  return slug && slug !== "default" ? slug : null;
 }
 
 export async function apiClient<T = unknown>(endpoint: string, options: FetchOptions = {}): Promise<T> {

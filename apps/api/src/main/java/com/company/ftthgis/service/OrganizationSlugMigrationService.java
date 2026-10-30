@@ -135,7 +135,7 @@ public class OrganizationSlugMigrationService {
             log.error("Failed to record TENANT_SLUG_MIGRATED audit event: {}", auditEx.getMessage());
         }
 
-        String newDomain = normalizedTarget + "-gis.kdua.net";
+        String newDomain = normalizedTarget + ".kdua.net";
         log.info("🎉 SUCCESS: Organization '{}' subdomain updated: '{}' -> '{}' (RealmKey '{}' preserved, zero session disruption)",
                 updated.getName(), oldSlug, normalizedTarget, updated.getRealmKey());
 
