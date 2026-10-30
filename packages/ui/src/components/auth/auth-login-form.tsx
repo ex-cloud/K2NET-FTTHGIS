@@ -1,24 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   KeyRound,
-  ShieldAlert,
   ArrowRight,
   Loader2,
   Mail,
-  Building2,
-  ShieldCheck,
   Lock,
   AlertTriangle,
-  Sparkles,
   Eye,
   EyeOff,
   Smartphone,
   ArrowLeft,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
-import { Badge } from "../badge";
 import type { AuthLocale } from "./auth-login-layout";
 
 export interface AuthMethod {
@@ -38,6 +34,7 @@ export interface AuthCredentialsSubmitPayload {
 }
 
 export interface AuthLoginFormLabels {
+  loginFailedTitle?: string;
   accountEmailOrUsername?: string;
   accountPlaceholder?: string;
   requiredBadge?: string;
@@ -155,6 +152,7 @@ export function AuthLoginForm({
 
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
+  const prevErrorRef = useRef<string | null>(null);
 
 
   // Mount Cloudflare Turnstile widget dynamically when turnstileSiteKey is configured
@@ -273,6 +271,7 @@ export function AuthLoginForm({
   const isFreePlan = !isInternal && !isProPlan && !isEnterprisePlan;
 
   const copy = {
+    loginFailedTitle: labels?.loginFailedTitle || "Failed to sign in",
     accountEmailOrUsername: labels?.accountEmailOrUsername || "ACCOUNT EMAIL OR USERNAME",
     accountPlaceholder: labels?.accountPlaceholder || "e.g. admin@isp.net or admin.username",
     requiredBadge: labels?.requiredBadge || "Required",
@@ -347,19 +346,22 @@ export function AuthLoginForm({
     (mfaRequired && totpCode.trim().length < 6) ||
     (Boolean(turnstileSiteKey?.trim()) && !mfaRequired && !turnstileToken);
 
+  // Trigger top-right toast on authentication failure
+  useEffect(() => {
+    if (errorMessage && errorMessage !== prevErrorRef.current) {
+      toast.error(copy.loginFailedTitle, {
+        description: errorMessage,
+        position: "top-right",
+        duration: 5000,
+      });
+      prevErrorRef.current = errorMessage;
+    } else if (!errorMessage) {
+      prevErrorRef.current = null;
+    }
+  }, [errorMessage, copy.loginFailedTitle]);
+
   return (
     <div className="w-full space-y-4">
-      {/* Error Message */}
-      {errorMessage && (
-        <div
-          role="alert"
-          className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs font-medium text-destructive animate-in fade-in"
-        >
-          <ShieldAlert className="h-4 w-4 shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
-
       {/* Subscription Inactive / Suspended Warning */}
       {isSuspended && (
         <div className="flex items-start gap-2.5 rounded-md border border-destructive/40 bg-destructive/10 p-3.5 text-xs text-destructive animate-in fade-in">
@@ -375,67 +377,7 @@ export function AuthLoginForm({
 
       {/* Main Login Card */}
       <div className="bg-card/60 border border-border/70 rounded-xl p-5 sm:p-6 shadow-sm backdrop-blur-md space-y-4">
-        {/* 1. Identity Card Header + Tier Badge */}
-        {(orgName || title) && (
-          <div className="flex items-center justify-between gap-2 pb-3 border-b border-border/50">
-            <div className="flex items-center gap-2.5 min-w-0">
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt={orgName || "Organization"}
-                  className="size-8 rounded-md object-contain border border-border/60 bg-background/50 p-0.5 shrink-0"
-                />
-              ) : (
-                <div className="size-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                  {isInternal ? <ShieldCheck className="size-4" /> : <Building2 className="size-4" />}
-                </div>
-              )}
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-bold text-foreground truncate max-w-[185px]">
-                  {orgName || title}
-                </span>
-                <span className="text-[10px] text-muted-foreground font-mono truncate">
-                  {description || (isInternal ? "Master IAM & Platform Operations" : "ISP Workspace & Operations")}
-                </span>
-              </div>
-            </div>
-
-            {isInternal && (
-              <Badge
-                variant="outline"
-                className="bg-amber-500/10 border-amber-500/30 text-amber-500 dark:text-amber-400 text-[9px] font-mono font-medium tracking-wider shrink-0"
-              >
-                {planDisplayName ? planDisplayName.toUpperCase() : "SYSTEM ADMIN"}
-              </Badge>
-            )}
-            {isFreePlan && (
-              <Badge
-                variant="outline"
-                className="bg-primary/5 border-primary/25 text-primary text-[9px] font-mono font-medium tracking-wider shrink-0"
-              >
-                {planDisplayName ? planDisplayName.toUpperCase() : "STARTER TRIAL"}
-              </Badge>
-            )}
-            {isProPlan && (
-              <Badge
-                variant="outline"
-                className="bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400 text-[9px] font-mono font-medium tracking-wider shrink-0"
-              >
-                {planDisplayName ? planDisplayName.toUpperCase() : "PROFESSIONAL ISP"}
-              </Badge>
-            )}
-            {isEnterprisePlan && (
-              <Badge
-                variant="outline"
-                className="bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400 text-[9px] font-mono font-medium tracking-wider shrink-0"
-              >
-                {planDisplayName ? planDisplayName.toUpperCase() : "ENTERPRISE"}
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* 2. Social SSO Buttons ABOVE Form (Pro / Enterprise Tenants) */}
+        {/* Social SSO Buttons ABOVE Form (when supported & enabled) */}
         {!mfaRequired && socialMethods.length > 0 && (
           <div className="space-y-3">
             <div className="grid gap-2">
@@ -504,7 +446,7 @@ export function AuthLoginForm({
                     placeholder={copy.accountPlaceholder}
                     value={usernameOrEmail}
                     onChange={(e) => setUsernameOrEmail(e.target.value)}
-                    className="pl-9 h-9 bg-background/60 border-border/70 rounded-md text-xs sm:text-sm focus-visible:ring-primary"
+                    className="pl-9 h-9 bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
                     disabled={isLoading || isSuspended}
                     required
                   />
@@ -538,7 +480,7 @@ export function AuthLoginForm({
                     placeholder={copy.passwordPlaceholder}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-9 pr-9 h-9 bg-background/60 border-border/70 rounded-md text-xs sm:text-sm focus-visible:ring-primary"
+                    className="pl-9 pr-9 h-9 bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
                     disabled={isLoading || isSuspended}
                     required
                   />
@@ -608,7 +550,7 @@ export function AuthLoginForm({
                   placeholder={copy.mfaCodePlaceholder}
                   value={totpCode}
                   onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
-                  className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-background/60 border-border/70 rounded-md focus-visible:ring-primary"
+                  className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
                   disabled={isLoading || isSuspended}
                   required
                 />
@@ -643,76 +585,6 @@ export function AuthLoginForm({
           </Button>
         </form>
 
-        {/* 5. Tier UX Guidance Box */}
-        {isInternal && (
-          <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-1.5 font-mono text-amber-500 text-[10px] font-semibold">
-                <Lock className="size-3" /> {copy.tierInternalLabel}
-              </span>
-              <span className="font-mono text-[10px] font-bold text-amber-500">
-                {copy.tierInternalValue}
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
-              {copy.tierInternalDesc}
-            </p>
-          </div>
-        )}
-
-        {isFreePlan && (
-          <div className="rounded-md border border-border/70 bg-background/40 p-3 space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-1.5 font-mono text-muted-foreground text-[10px] font-semibold">
-                <KeyRound className="size-3 text-primary" /> {copy.tierFreeLabel}
-              </span>
-              <span className="font-mono text-[10px] font-bold text-primary">
-                {copy.tierFreeValue}
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
-              {copy.tierFreeDesc}
-            </p>
-          </div>
-        )}
-
-        {isProPlan && (
-          <div className="rounded-md border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-1.5 font-mono text-cyan-500 text-[10px] font-semibold">
-                <Sparkles className="size-3" /> {copy.tierProLabel}
-              </span>
-              <span className="font-mono text-[10px] font-bold text-cyan-500">
-                {copy.tierProValue}
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
-              {copy.tierProDesc}
-            </p>
-          </div>
-        )}
-
-        {isEnterprisePlan && (
-          <div className="rounded-md border border-purple-500/20 bg-purple-500/5 p-3 space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="flex items-center gap-1.5 font-mono text-purple-500 text-[10px] font-semibold">
-                <Lock className="size-3" /> {copy.tierEnterpriseLabel}
-              </span>
-              <span className="font-mono text-[10px] font-bold text-purple-500">
-                {copy.tierEnterpriseValue}
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
-              {copy.tierEnterpriseDesc}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Compliance / Security Notice Banner */}
-      <div className="flex items-start gap-2.5 rounded-md border border-primary/20 bg-primary/5 p-3 text-[11px] text-primary leading-relaxed">
-        <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
-        <span>{copy.complianceBanner}</span>
       </div>
     </div>
   );

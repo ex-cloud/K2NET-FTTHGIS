@@ -118,17 +118,6 @@ export function AuthLoginLayout({
               </div>
             )}
 
-            {docsUrl && (
-              <a
-                href={docsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-8 items-center gap-1.5 px-2.5 rounded-md border border-border/80 bg-background/50 hover:bg-accent/80 hover:text-foreground transition-all text-[11px] font-medium text-muted-foreground shadow-xs"
-              >
-                <BookOpen className="h-3 w-3 shrink-0" />
-                <span className="hidden sm:inline">{resolvedDocsLabel}</span>
-              </a>
-            )}
             <ModeToggle className="h-8 w-8 rounded-md border border-border/80 bg-background/50 text-muted-foreground hover:text-foreground hover:bg-accent/80" />
           </div>
         </div>
@@ -220,12 +209,19 @@ export function AuthLoginLayout({
           }}
         />
 
-        {/* Top Right Figure Pill Badge */}
+        {/* Top Right: System Docs Button (Replacing FIG QUANTUM ORB) */}
         <div className="w-full flex justify-end z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/60 bg-card/60 backdrop-blur-md text-[10px] font-mono font-medium tracking-wider text-muted-foreground uppercase shadow-xs">
-            <Sparkles className="h-3 w-3 text-primary" />
-            <span>{activeMeta ? `${activeMeta.fig}: ${activeMeta.tag}` : "FIG 0.7: QUANTUM ORB"}</span>
-          </div>
+          {docsUrl && (
+            <a
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-8 items-center gap-1.5 px-3 rounded-md border border-border/80 bg-card/60 backdrop-blur-md hover:bg-accent hover:text-foreground transition-all text-xs font-medium text-muted-foreground shadow-xs cursor-pointer"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span>{resolvedDocsLabel}</span>
+            </a>
+          )}
         </div>
 
         {/* Center Isometric 3D Figure */}

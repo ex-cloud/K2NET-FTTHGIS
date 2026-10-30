@@ -172,6 +172,7 @@ export function LoginPage() {
 
   const formLabels = useMemo<AuthLoginFormLabels>(
     () => ({
+      loginFailedTitle: t("auth.login_failed_title"),
       accountEmailOrUsername: t("auth.account_email_or_username"),
       accountPlaceholder: t("auth.account_placeholder"),
       requiredBadge: t("auth.required_badge"),
