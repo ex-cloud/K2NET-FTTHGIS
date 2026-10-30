@@ -248,6 +248,18 @@ public class KeycloakAdminService {
         realm.setVerifyEmail(verifyEmail);
         realm.setResetPasswordAllowed(resetPasswordAllowed);
         keycloak.realm(defaultRealm).update(realm);
+
+        // Also sync to consolidated tenant realm
+        try {
+            RealmRepresentation tenantRealm = keycloak.realm("k2net-tenants").toRepresentation();
+            tenantRealm.setRegistrationAllowed(registrationAllowed);
+            tenantRealm.setVerifyEmail(verifyEmail);
+            tenantRealm.setResetPasswordAllowed(resetPasswordAllowed);
+            keycloak.realm("k2net-tenants").update(tenantRealm);
+            log.info("✅ Keycloak Realm Config updated for k2net-tenants successfully.");
+        } catch (Exception e) {
+            log.warn("Could not update k2net-tenants realm config: {}", e.getMessage());
+        }
         log.info("✅ Keycloak Realm Config updated successfully.");
     }
 
@@ -263,6 +275,7 @@ public class KeycloakAdminService {
         try {
             java.util.Set<String> realms = new java.util.HashSet<>();
             realms.add("ftth-realm");
+            realms.add("k2net-tenants");
             realms.addAll(organizationRepository.findAllSlugs());
 
             log.info("🔍 [ACTIVE SESSIONS SCAN] Realms to scan: {}", realms);
@@ -271,7 +284,9 @@ public class KeycloakAdminService {
                 try {
                     // Resolve tenant/organization display name
                     String tenantDisplayName = "System/Root";
-                    if (!"ftth-realm".equals(realmName)) {
+                    if ("k2net-tenants".equals(realmName)) {
+                        tenantDisplayName = "Tenant Workspaces";
+                    } else if (!"ftth-realm".equals(realmName)) {
                         tenantDisplayName = organizationRepository.findBySlug(realmName)
                                 .map(org -> org.getName())
                                 .orElse(realmName);
