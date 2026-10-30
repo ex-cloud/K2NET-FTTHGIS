@@ -111,3 +111,4 @@ export interface TurnstileWindow extends Window {
     remove?: (widgetId: string) => void;
   };
 }
+

@@ -231,7 +231,10 @@ public class SystemSettingService {
             // Sync default realm
             keycloakAdminService.syncPasswordPolicyToRealm("ftth-realm", policyString);
             
-            // Sync all organization realms
+            // Sync consolidated tenant realm
+            keycloakAdminService.syncPasswordPolicyToRealm("k2net-tenants", policyString);
+            
+            // Sync any dedicated organization realms (if any)
             try {
                 List<String> slugs = organizationRepository.findAllSlugs();
                 for (String slug : slugs) {
