@@ -46,9 +46,14 @@ export function Step4AdminForm({
                 value={formData.picName}
                 disabled={isSubmitting}
                 onChange={(e) => setFormData((prev) => ({ ...prev, picName: e.target.value }))}
-                placeholder="e.g. Ahmad Fauzi"
+                placeholder={t("organizations.wizard_pic_fullname_placeholder", { defaultValue: "e.g. Ahmad Fauzi" })}
                 className="bg-background border-border text-xs h-8"
               />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {t("organizations.wizard_pic_fullname_help", {
+                  defaultValue: "Supports full names as well as single-word names. The system automatically configures the Keycloak identity profile.",
+                })}
+              </p>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-foreground flex items-center justify-between">
@@ -61,7 +66,7 @@ export function Step4AdminForm({
                 value={formData.picJobTitle}
                 disabled={isSubmitting}
                 onChange={(e) => setFormData((prev) => ({ ...prev, picJobTitle: e.target.value }))}
-                placeholder="e.g. Direktur Operasional / Head of NOC"
+                placeholder={t("organizations.wizard_pic_job_title_placeholder", { defaultValue: "e.g. Operations Director / Head of NOC" })}
                 className="bg-background border-border text-xs h-8"
               />
             </div>

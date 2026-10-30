@@ -18,6 +18,13 @@ export interface ServiceConnection {
   detail: string;
 }
 
+export interface EdgeAuthTelemetry {
+  loginSuccessCount: number;
+  loginFailedCount: number;
+  rateLimitedCount: number;
+  avgLatencyMs: number;
+}
+
 export interface KeycloakStats {
   totalUsers: number;
   activeSessions: number;
@@ -25,6 +32,7 @@ export interface KeycloakStats {
   status: string;
   realm: string;
   connections: ServiceConnection[];
+  edgeAuthTelemetry?: EdgeAuthTelemetry;
 }
 
 const DEFAULT_STATS: KeycloakStats = {

@@ -354,6 +354,8 @@ func (h *ConfigHandler) GetGatewayStatus(c *gin.Context) {
 		{"ftth-poller", 5010},
 		{"ftth-task-gateway", 5011},
 		{"ftth-ai-gateway", 5012},
+		{"ftth-observability-gateway", 5013},
+		{"ftth-auth-gateway", 5014},
 	}
 
 	var results []serviceStatus

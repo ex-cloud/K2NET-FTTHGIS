@@ -322,6 +322,11 @@ export function KeycloakProvider({
 
       inflightRefreshRef.current = (async () => {
         try {
+          // If browser is currently offline, prevent failed network request that would clear active session
+          if (typeof navigator !== "undefined" && !navigator.onLine) {
+            return false;
+          }
+
           const bffRefreshed = await performBffRefresh();
           if (bffRefreshed?.accessToken) {
             const hydrated = hydrateAuthenticatedSession(
@@ -345,10 +350,15 @@ export function KeycloakProvider({
             }
           }
 
-          clearSessionState();
+          // Only clear session state if the client is definitely online and refresh was rejected by server
+          if (typeof navigator === "undefined" || navigator.onLine) {
+            clearSessionState();
+          }
           return false;
         } catch {
-          clearSessionState();
+          if (typeof navigator === "undefined" || navigator.onLine) {
+            clearSessionState();
+          }
           return false;
         } finally {
           inflightRefreshRef.current = null;
@@ -571,6 +581,40 @@ export function KeycloakProvider({
     initOptions,
     performBffRefresh,
   ]);
+
+  // Proactive token refresh when browser tab wakes up from standby or user returns to tab
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkAndRefreshOnWakeup = () => {
+      if (document.visibilityState === "visible" && activeTokenRef.current) {
+        const claims = decodeJwtClaims(activeTokenRef.current);
+        if (claims?.exp) {
+          const remainingSec = claims.exp - Math.floor(Date.now() / 1000);
+          // If token has expired or is expiring in less than 45 seconds, refresh proactively
+          if (remainingSec <= 45) {
+            void refreshTokenRef.current(45);
+          }
+        }
+      }
+    };
+
+    const handleOnline = () => {
+      if (activeTokenRef.current) {
+        void refreshTokenRef.current(30);
+      }
+    };
+
+    document.addEventListener("visibilitychange", checkAndRefreshOnWakeup);
+    window.addEventListener("focus", checkAndRefreshOnWakeup);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      document.removeEventListener("visibilitychange", checkAndRefreshOnWakeup);
+      window.removeEventListener("focus", checkAndRefreshOnWakeup);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
 
   const roles = useMemo(() => user?.roles || [], [user]);
 

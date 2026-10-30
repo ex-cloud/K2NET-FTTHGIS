@@ -148,6 +148,65 @@ public class KeycloakObservabilityService {
             log.debug("Keycloak database connection check failed: {}", e.getMessage());
         }
 
+        // 4. Connection check & real-time telemetry: Edge Auth BFF (gateway-auth:5014)
+        long authStart = System.currentTimeMillis();
+        boolean authConnected = false;
+        long authLatency = 0;
+        Map<String, Object> edgeAuthTelemetry = new HashMap<>();
+        edgeAuthTelemetry.put("loginSuccessCount", 0);
+        edgeAuthTelemetry.put("loginFailedCount", 0);
+        edgeAuthTelemetry.put("rateLimitedCount", 0);
+        edgeAuthTelemetry.put("avgLatencyMs", 0L);
+
+        try {
+            HttpRequest authMetricsReq = HttpRequest.newBuilder()
+                    .uri(URI.create("http://ftth-auth-gateway:5014/metrics"))
+                    .timeout(Duration.ofSeconds(2))
+                    .GET()
+                    .build();
+            HttpResponse<String> authMetricsRes = client.send(authMetricsReq, HttpResponse.BodyHandlers.ofString());
+            authLatency = System.currentTimeMillis() - authStart;
+            authConnected = authMetricsRes.statusCode() == 200;
+
+            if (authConnected && authMetricsRes.body() != null) {
+                String body = authMetricsRes.body();
+                int success = 0;
+                int failed = 0;
+                int rateLimited = 0;
+                double durationSum = 0;
+                long durationCount = 0;
+
+                for (String line : body.split("\n")) {
+                    line = line.trim();
+                    if (line.startsWith("#")) continue;
+
+                    if (line.startsWith("gateway_http_requests_total{") && line.contains("path=\"/api/v1/auth/login\"")) {
+                        if (line.contains("status=\"200\"")) {
+                            success += parseMetricValue(line);
+                        } else if (line.contains("status=\"401\"") || line.contains("status=\"403\"") || line.contains("status=\"400\"")) {
+                            failed += parseMetricValue(line);
+                        } else if (line.contains("status=\"429\"")) {
+                            rateLimited += parseMetricValue(line);
+                        }
+                    } else if (line.startsWith("gateway_http_requests_total{") && line.contains("status=\"429\"")) {
+                        rateLimited += parseMetricValue(line);
+                    } else if (line.startsWith("gateway_http_request_duration_seconds_sum{") && line.contains("path=\"/api/v1/auth/login\"")) {
+                        durationSum += parseMetricDouble(line);
+                    } else if (line.startsWith("gateway_http_request_duration_seconds_count{") && line.contains("path=\"/api/v1/auth/login\"")) {
+                        durationCount += parseMetricValue(line);
+                    }
+                }
+
+                edgeAuthTelemetry.put("loginSuccessCount", success);
+                edgeAuthTelemetry.put("loginFailedCount", failed);
+                edgeAuthTelemetry.put("rateLimitedCount", rateLimited);
+                long avgMs = durationCount > 0 ? Math.round((durationSum / durationCount) * 1000.0) : authLatency;
+                edgeAuthTelemetry.put("avgLatencyMs", avgMs);
+            }
+        } catch (Exception e) {
+            log.debug("gateway-auth telemetry check failed: {}", e.getMessage());
+        }
+
         // Build connections list for UI
         List<Map<String, Object>> connections = new ArrayList<>();
 
@@ -172,7 +231,15 @@ public class KeycloakObservabilityService {
         conn3.put("detail", "Session & user persistence");
         connections.add(conn3);
 
+        Map<String, Object> conn4 = new HashMap<>();
+        conn4.put("service", "Edge Auth BFF (gateway-auth:5014)");
+        conn4.put("status", authConnected ? "CONNECTED" : "DISCONNECTED");
+        conn4.put("latency", authConnected ? authLatency + "ms" : "N/A");
+        conn4.put("detail", "Cloudflare Turnstile · Direct Grant Broker");
+        connections.add(conn4);
+
         stats.put("connections", connections);
+        stats.put("edgeAuthTelemetry", edgeAuthTelemetry);
         stats.put("realm", FTTH_REALM);
 
         String adminToken = getAdminAccessToken();
@@ -354,5 +421,25 @@ public class KeycloakObservabilityService {
             log.warn("Failed to retrieve Keycloak admin access token: {}", e.getMessage());
             return null;
         }
+    }
+
+    private int parseMetricValue(String line) {
+        try {
+            int lastSpace = line.lastIndexOf(' ');
+            if (lastSpace != -1) {
+                return (int) Math.round(Double.parseDouble(line.substring(lastSpace + 1).trim()));
+            }
+        } catch (Exception ignored) {}
+        return 0;
+    }
+
+    private double parseMetricDouble(String line) {
+        try {
+            int lastSpace = line.lastIndexOf(' ');
+            if (lastSpace != -1) {
+                return Double.parseDouble(line.substring(lastSpace + 1).trim());
+            }
+        } catch (Exception ignored) {}
+        return 0.0;
     }
 }

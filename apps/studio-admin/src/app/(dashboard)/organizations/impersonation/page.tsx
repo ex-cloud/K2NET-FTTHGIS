@@ -27,6 +27,7 @@ export default function ImpersonationCenterPage() {
     setSearchQuery,
     refresh,
     emergencyRevoke,
+    emergencyRevokeAll,
     reopenPortal,
   } = useImpersonationCenter();
 
@@ -56,6 +57,7 @@ export default function ImpersonationCenterPage() {
           actionLoadingId={actionLoadingId}
           onReopenPortal={reopenPortal}
           onRevokeClick={(s) => setRevokeTarget(s)}
+          onRevokeAllClick={() => emergencyRevokeAll()}
         />
 
         <ImpersonationHistoryTable

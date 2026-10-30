@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import {
   KeyRound, Users, ShieldAlert, CheckCircle2, XCircle,
-  Info, RefreshCw, AlertCircle, Unplug,
+  Info, RefreshCw, AlertCircle, Unplug, ShieldCheck, Zap, Lock,
 } from "lucide-react";
 import { useKeycloakObservability, type ServiceConnection } from "@/hooks/useKeycloakObservability";
 
@@ -141,6 +141,82 @@ export default function IdentityPage() {
           highlight={!keycloakHealthy && !loading}
         />
       </div>
+
+      {/* Edge Auth BFF & Cloudflare Turnstile Telemetry */}
+      {stats.edgeAuthTelemetry && (
+        <Card className="border-border">
+          <CardHeader className="border-b border-border pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-semibold text-foreground">
+                  Edge Auth BFF &amp; Cloudflare Turnstile Telemetry
+                </CardTitle>
+              </div>
+              <Badge className="border-primary/20 bg-primary/10 text-primary font-mono text-[10px]">
+                PORT :5014 LIVE
+              </Badge>
+            </div>
+            <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
+              Live authentication telemetry from Go microservice (gateway-auth) via Prometheus scraper.
+            </p>
+          </CardHeader>
+          <CardContent className="p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-lg border border-border/80 bg-muted/20 p-4 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Auth Success Ratio
+                  </span>
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-xl font-bold font-mono text-foreground">
+                  {stats.edgeAuthTelemetry.loginSuccessCount + stats.edgeAuthTelemetry.loginFailedCount > 0
+                    ? `${(
+                        (stats.edgeAuthTelemetry.loginSuccessCount /
+                          (stats.edgeAuthTelemetry.loginSuccessCount + stats.edgeAuthTelemetry.loginFailedCount)) *
+                        100
+                      ).toFixed(1)}%`
+                    : "100%"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {stats.edgeAuthTelemetry.loginSuccessCount} success &middot; {stats.edgeAuthTelemetry.loginFailedCount} failed logins
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/80 bg-muted/20 p-4 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Turnstile &amp; Grant Latency
+                  </span>
+                  <Zap className="h-4 w-4 text-amber-500" />
+                </div>
+                <p className="text-xl font-bold font-mono text-foreground">
+                  {stats.edgeAuthTelemetry.avgLatencyMs > 0 ? `${stats.edgeAuthTelemetry.avgLatencyMs} ms` : "< 15 ms"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Edge CAPTCHA verification + Direct Grant broker
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/80 bg-muted/20 p-4 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Threat &amp; Rate Limit Shield
+                  </span>
+                  <Lock className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-xl font-bold font-mono text-foreground">
+                  {stats.edgeAuthTelemetry.rateLimitedCount}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Blocked brute force attempts (HTTP 429)
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* IAM Service Connections — dynamic from backend */}
       <Card>

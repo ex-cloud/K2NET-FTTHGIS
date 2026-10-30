@@ -14,6 +14,8 @@
   "processing": "Memproses...",
   "success": "Berhasil",
   "error": "Terjadi Kesalahan",
+  "internal_error": "Terjadi kesalahan sistem.",
+  "network_error": "Terjadi kesalahan jaringan.",
   "warning": "Peringatan",
   "close": "Tutup",
   "back": "Kembali",

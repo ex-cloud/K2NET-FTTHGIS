@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-compat";
 import { toast } from "sonner";
 import { getTenantUrl } from "@/lib/domain";
+import { useTranslation } from "@k2net/i18n";
 
 export interface ImpersonationSessionItem {
   id: string;
@@ -33,6 +34,7 @@ export interface ImpersonationStats {
 }
 
 export function useImpersonationCenter() {
+  const { t } = useTranslation();
   const { data: session } = useSession();
 
   const [stats, setStats] = useState<ImpersonationStats>({
@@ -130,21 +132,79 @@ export function useImpersonationCenter() {
       });
 
       if (res.ok) {
-        toast.success(`Akses Impersonasi ${tenantName} Berhasil Diputus`, {
-          description: "Sesi darurat telah dicabut dan token segera dimatikan.",
-        });
+        toast.success(
+          t("organizations.impersonation_toast_revoked_success", {
+            orgName: tenantName,
+            defaultValue: `Impersonation access for ${tenantName} revoked successfully.`,
+          }),
+          {
+            description: t("organizations.impersonation_toast_revoked_desc", {
+              defaultValue: "Emergency session has been revoked and the access token has been terminated.",
+            }),
+          }
+        );
         await fetchData();
       } else {
         const err = await res.json().catch(() => ({}));
-        toast.error("Gagal Mencabut Sesi", {
-          description: err.message || "Terjadi kesalahan sistem.",
-        });
+        toast.error(
+          t("organizations.impersonation_toast_revoke_failed", {
+            defaultValue: "Failed to revoke impersonation session.",
+          }),
+          {
+            description: err.message || t("common.internal_error", { defaultValue: "A system error occurred." }),
+          }
+        );
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Terjadi kesalahan jaringan";
-      toast.error("Kesalahan Jaringan", { description: msg });
+      const msg = e instanceof Error ? e.message : t("common.network_error", { defaultValue: "Network error occurred." });
+      toast.error(t("common.network_error", { defaultValue: "Network error occurred." }), { description: msg });
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  const emergencyRevokeAll = async () => {
+    if (!session?.accessToken || activeSessions.length === 0) return;
+    try {
+      const results = await Promise.all(
+        activeSessions.map((s) =>
+          fetch(`/api/v1/system/impersonate/sessions/${s.id}/revoke`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.accessToken}`,
+            },
+          })
+        )
+      );
+      const allOk = results.every((r) => r.ok);
+      if (allOk) {
+        toast.success(
+          t("organizations.impersonation_toast_revoke_all_success", {
+            count: activeSessions.length,
+            defaultValue: `Successfully revoked all ${activeSessions.length} active impersonation sessions.`,
+          }),
+          {
+            description: t("organizations.impersonation_toast_revoke_all_desc", {
+              defaultValue: "All operational access tokens have been terminated.",
+            }),
+          }
+        );
+      } else {
+        toast.warning(
+          t("organizations.impersonation_toast_revoke_partial", {
+            defaultValue: "Some sessions were revoked successfully.",
+          }),
+          {
+            description: t("organizations.impersonation_toast_revoke_partial_desc", {
+              defaultValue: "Please inspect the active sessions list.",
+            }),
+          }
+        );
+      }
+      await fetchData();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : t("common.network_error", { defaultValue: "Network error occurred." });
+      toast.error(t("organizations.impersonation_toast_revoke_failed", { defaultValue: "Failed to revoke sessions." }), { description: msg });
     }
   };
 
@@ -188,6 +248,7 @@ export function useImpersonationCenter() {
     setSearchQuery,
     refresh: fetchData,
     emergencyRevoke,
+    emergencyRevokeAll,
     reopenPortal,
   };
 }

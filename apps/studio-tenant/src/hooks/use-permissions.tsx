@@ -21,7 +21,7 @@ async function fetchUserProfile(
   kcToken?: string | null
 ): Promise<UserProfileResponse | null> {
   // During impersonation, NEVER fall back to kcToken from regular tenant realm
-  const activeToken = isImpersonating ? getApiAuthToken() : (getApiAuthToken() || kcToken);
+  let activeToken = isImpersonating ? getApiAuthToken() : (getApiAuthToken() || kcToken);
   const headers: Record<string, string> = {};
   if (activeToken) {
     headers["Authorization"] = `Bearer ${activeToken}`;
@@ -32,12 +32,32 @@ async function fetchUserProfile(
 
   let res = await fetch("/api/v1/users/me", { headers });
 
-  // Auto-heal 401/403 during active impersonation
-  if ((res.status === 401 || res.status === 403) && isImpersonating && sessionId) {
-    const refreshedToken = await refreshImpersonationToken();
-    if (refreshedToken) {
-      headers["Authorization"] = `Bearer ${refreshedToken}`;
-      res = await fetch("/api/v1/users/me", { headers });
+  // Auto-heal 401/403: handles BOTH impersonation sessions AND direct tenant logins after standby
+  if (res.status === 401 || res.status === 403) {
+    if (isImpersonating && sessionId) {
+      const refreshedToken = await refreshImpersonationToken();
+      if (refreshedToken) {
+        headers["Authorization"] = `Bearer ${refreshedToken}`;
+        res = await fetch("/api/v1/users/me", { headers });
+      }
+    } else if (typeof window !== "undefined") {
+      const authBridge = (
+        window as unknown as {
+          __K2NET_AUTH__?: {
+            updateToken?: (minValidity?: number) => Promise<boolean>;
+            token?: string;
+          };
+        }
+      ).__K2NET_AUTH__;
+
+      if (authBridge?.updateToken) {
+        const refreshed = await authBridge.updateToken(30);
+        const newToken = authBridge.token || getApiAuthToken();
+        if (refreshed && newToken) {
+          headers["Authorization"] = `Bearer ${newToken}`;
+          res = await fetch("/api/v1/users/me", { headers });
+        }
+      }
     }
   }
 
@@ -120,14 +140,14 @@ export function usePermissions() {
       "user-profile-pbac",
       authenticated ? user?.id : "anon",
       isImpersonating ? sessionId : "direct",
-      kcToken,
       refreshPermissionsTrigger,
     ],
     queryFn: () => fetchUserProfile(isImpersonating, sessionId, kcToken),
     enabled: isEnabled,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    retry: 1,
+    placeholderData: (previousData) => previousData,
+    retry: 2,
   });
 
   const activePermissions: string[] = Array.isArray(userProfile?.permissions)
