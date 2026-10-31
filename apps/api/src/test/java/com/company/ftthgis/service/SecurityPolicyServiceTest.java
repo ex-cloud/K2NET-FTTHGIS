@@ -26,6 +26,8 @@ public class SecurityPolicyServiceTest {
     private TenantSecurityPolicyRepository tenantPolicyRepository;
     private OrganizationRepository organizationRepository;
     private AuditLoggingService auditLoggingService;
+    private KeycloakAdminService keycloakAdminService;
+    private com.company.ftthgis.domain.user.repository.UserRepository userRepository;
 
     private SecurityPolicyService securityPolicyService;
 
@@ -38,12 +40,16 @@ public class SecurityPolicyServiceTest {
         tenantPolicyRepository = mock(TenantSecurityPolicyRepository.class);
         organizationRepository = mock(OrganizationRepository.class);
         auditLoggingService = mock(AuditLoggingService.class);
+        keycloakAdminService = mock(KeycloakAdminService.class);
+        userRepository = mock(com.company.ftthgis.domain.user.repository.UserRepository.class);
 
         securityPolicyService = new SecurityPolicyService(
                 settingService,
                 tenantPolicyRepository,
                 organizationRepository,
-                auditLoggingService
+                auditLoggingService,
+                keycloakAdminService,
+                userRepository
         );
 
         testOrgId = UUID.randomUUID();
@@ -332,5 +338,48 @@ public class SecurityPolicyServiceTest {
         assertEquals(3, effective.getGracePeriodDays(), "Should resolve to minimum grace period (3 days)");
         assertEquals(List.of("webauthn"), effective.getAllowedMethods(), "Should resolve to intersection of allowed methods");
         assertTrue(effective.isDeviceVerificationRequired());
+    }
+
+    @Test
+    @DisplayName("S13: Reconcile organization members - Assign CONFIGURE_TOTP required action when MFA enforced")
+    void testReconcileOrganizationMfa_AssignsRequiredAction() {
+        UUID memberId = UUID.randomUUID();
+        com.company.ftthgis.domain.user.entity.User member = com.company.ftthgis.domain.user.entity.User.builder()
+                .id(memberId)
+                .email("tech@fibernet.net")
+                .organization(testOrg)
+                .mfaEnabled(false)
+                .build();
+
+        when(userRepository.findByOrganizationId(testOrgId)).thenReturn(List.of(member));
+        when(keycloakAdminService.hasMfaConfigured("k2net-tenants", "tech@fibernet.net")).thenReturn(false);
+
+        securityPolicyService.reconcileOrganizationMfa(testOrg, true);
+
+        verify(keycloakAdminService).addRequiredActionToUser("k2net-tenants", "tech@fibernet.net", "CONFIGURE_TOTP");
+        verify(userRepository).save(member);
+        assertFalse(member.isMfaEnabled());
+    }
+
+    @Test
+    @DisplayName("S14: Reset member MFA - Clears Keycloak credentials and updates local user flag")
+    void testResetMemberMfa_Success() {
+        UUID memberId = UUID.randomUUID();
+        com.company.ftthgis.domain.user.entity.User member = com.company.ftthgis.domain.user.entity.User.builder()
+                .id(memberId)
+                .email("engineer@fibernet.net")
+                .organization(testOrg)
+                .mfaEnabled(true)
+                .build();
+
+        when(userRepository.findById(memberId)).thenReturn(Optional.of(member));
+
+        securityPolicyService.resetMemberMfa("fibernet", memberId, "admin@fibernet.net");
+
+        verify(keycloakAdminService).resetUserMfa("k2net-tenants", "engineer@fibernet.net");
+        assertFalse(member.isMfaEnabled());
+        verify(userRepository).save(member);
+        verify(auditLoggingService).logEvent(eq("fibernet"), eq("MFA_RESET"), eq("USER"),
+                eq(memberId.toString()), anyMap(), anyMap(), anyMap());
     }
 }

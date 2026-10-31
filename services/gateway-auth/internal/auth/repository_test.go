@@ -96,6 +96,9 @@ func TestResolveTenantContext_SentinelSlugs(t *testing.T) {
 		if res.Plan != "INTERNAL" {
 			t.Errorf("expected INTERNAL plan, got %q", res.Plan)
 		}
+		if !res.MFARequired {
+			t.Errorf("expected MFARequired=true for sentinel platform operator, got false")
+		}
 	}
 }
 

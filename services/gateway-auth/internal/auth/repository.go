@@ -74,7 +74,7 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			Status:          "ACTIVE",
 			HasSSO:          false,
 			AllowedMethods:  []string{"password"},
-			MFARequired:     false,
+			MFARequired:     true, // Tier 0 PAM Platform Mandatory MFA
 		}, nil
 	}
 
@@ -101,10 +101,13 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			COALESCE(NULLIF(TRIM(tb.logo_url), ''), COALESCE(o.logo_url, '')) AS logo_url,
 			UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
 			COALESCE(sp.has_sso, false) AS has_sso,
-			COALESCE(o.status, 'ACTIVE') AS org_status
+			COALESCE(o.status, 'ACTIVE') AS org_status,
+			(COALESCE(ss.value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required
 		FROM organizations o
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 		LEFT JOIN tenant_branding tb ON tb.organization_id = o.id
+		LEFT JOIN tenant_security_policies tsp ON tsp.organization_id = o.id
+		LEFT JOIN system_settings ss ON ss.key = 'enforce_mfa'
 		WHERE o.slug = $1
 		  AND o.deleted_at IS NULL
 		LIMIT 1
@@ -121,11 +124,14 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 				COALESCE(NULLIF(TRIM(tb.logo_url), ''), COALESCE(o.logo_url, '')) AS logo_url,
 				UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
 				COALESCE(sp.has_sso, false) AS has_sso,
-				COALESCE(o.status, 'ACTIVE') AS org_status
+				COALESCE(o.status, 'ACTIVE') AS org_status,
+				(COALESCE(ss.value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required
 			FROM organization_slug_aliases osa
 			JOIN organizations o ON osa.organization_id = o.id
 			LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 			LEFT JOIN tenant_branding tb ON tb.organization_id = o.id
+			LEFT JOIN tenant_security_policies tsp ON tsp.organization_id = o.id
+			LEFT JOIN system_settings ss ON ss.key = 'enforce_mfa'
 			WHERE osa.old_slug = $1
 			  AND o.deleted_at IS NULL
 			LIMIT 1
@@ -156,14 +162,15 @@ func (r *PostgresRepository) scanTenantRow(
 	isAlias bool,
 ) (*TenantContextResponse, error) {
 	var (
-		id        string
-		name      string
-		activeSlg string
-		realmKey  string
-		logoURL   string
-		planCode  string
-		hasSSO    bool
-		status    string
+		id                   string
+		name                 string
+		activeSlg            string
+		realmKey             string
+		logoURL              string
+		planCode             string
+		hasSSO               bool
+		status               string
+		effectiveMfaRequired bool
 	)
 	err := r.db.QueryRow(ctx, query, querySlug).Scan(
 		&id,
@@ -174,6 +181,7 @@ func (r *PostgresRepository) scanTenantRow(
 		&planCode,
 		&hasSSO,
 		&status,
+		&effectiveMfaRequired,
 	)
 	if err != nil {
 		return nil, err
@@ -200,7 +208,7 @@ func (r *PostgresRepository) scanTenantRow(
 		Status:          status,
 		HasSSO:          effectiveSSO,
 		AllowedMethods:  allowedMethods,
-		MFARequired:     planCode == "ENTERPRISE",
+		MFARequired:     effectiveMfaRequired,
 	}
 	if isAlias && activeSlg != requestedSlug {
 		out.TargetSlug = activeSlg

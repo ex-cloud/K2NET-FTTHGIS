@@ -173,6 +173,7 @@ public class SystemSettingService {
         log.info("⚙️ Updating system settings: {}", newSettings.keySet());
         boolean passwordPoliciesChanged = false;
         boolean smtpChanged = false;
+        boolean sessionIdleTimeoutChanged = false;
         for (Map.Entry<String, String> entry : newSettings.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
@@ -188,6 +189,9 @@ public class SystemSettingService {
             }
             if (key.startsWith("smtp_")) {
                 smtpChanged = true;
+            }
+            if (key.equals("session_idle_timeout")) {
+                sessionIdleTimeoutChanged = true;
             }
 
             SystemSetting setting = settingRepository.findById(key)
@@ -209,6 +213,9 @@ public class SystemSettingService {
         }
         if (smtpChanged) {
             syncSmtpToKeycloakAndGateways();
+        }
+        if (sessionIdleTimeoutChanged) {
+            syncSessionIdleTimeoutToKeycloak();
         }
         return getAllSettings();
     }
@@ -350,6 +357,28 @@ public class SystemSettingService {
 
         } catch (Exception e) {
             log.error("Failed unified SMTP synchronization: {}", e.getMessage(), e);
+        }
+    }
+
+    private void syncSessionIdleTimeoutToKeycloak() {
+        try {
+            int minutes = Integer.parseInt(getSettingValue("session_idle_timeout", "30"));
+            int seconds = Math.max(minutes, 5) * 60;
+            log.info("🔄 Triggering Keycloak session idle timeout sync for all realms: {} seconds ({}m)", seconds, minutes);
+            keycloakAdminService.syncSessionIdleTimeoutToRealm("ftth-realm", seconds);
+            keycloakAdminService.syncSessionIdleTimeoutToRealm("k2net-tenants", seconds);
+            try {
+                List<String> slugs = organizationRepository.findAllSlugs();
+                for (String slug : slugs) {
+                    if (!"ftth-realm".equals(slug) && !"ex-cloud-org".equals(slug) && !"system".equals(slug)) {
+                        keycloakAdminService.syncSessionIdleTimeoutToRealm(slug, seconds);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Non-fatal: Could not sync session idle timeout to dedicated organization realms: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.warn("Could not sync session idle timeout to Keycloak realms: {}", e.getMessage());
         }
     }
 

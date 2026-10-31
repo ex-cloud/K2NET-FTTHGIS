@@ -39,5 +39,26 @@ public class TenantSecurityPolicyController {
             ));
         }
     }
+
+    @PostMapping("/members/{memberId}/reset-mfa")
+    @PreAuthorize("hasAuthority('system.security.policy.manage') or (@tenantSecurity.isOwner(#slug) and (hasAuthority('security.policy.manage') or hasAuthority('organizations.update')))")
+    public ResponseEntity<?> resetMemberMfa(
+            @PathVariable String slug,
+            @PathVariable java.util.UUID memberId,
+            @AuthenticationPrincipal Jwt jwt) {
+        try {
+            String actor = jwt != null ? (jwt.getClaimAsString("email") != null ? jwt.getClaimAsString("email") : jwt.getSubject()) : "tenant_admin";
+            policyService.resetMemberMfa(slug, memberId, actor);
+            return ResponseEntity.ok(java.util.Map.of(
+                    "success", true,
+                    "message", "Member MFA has been reset and required action re-assigned."
+            ));
+        } catch (IllegalArgumentException | java.util.NoSuchElementException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
 }
 

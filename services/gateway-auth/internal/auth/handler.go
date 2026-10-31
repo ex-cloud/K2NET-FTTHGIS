@@ -254,6 +254,24 @@ func (h *Handler) Login(c *gin.Context) {
 			return
 		}
 
+		// Detect required action / account not set up (MFA Enrollment Required)
+		if strings.Contains(errDescLower, "not fully set up") ||
+			strings.Contains(errDescLower, "required action") ||
+			strings.Contains(errDescLower, "configure_totp") ||
+			strings.Contains(errDescLower, "action required") {
+			h.emitAudit(c.Request.Context(), auditSlug, req.Username, "", clientIP, "AUTH_MFA_ENROLLMENT_REQUIRED", map[string]any{
+				"plane": plane,
+				"realm": targetRealm,
+			})
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":       "MFA_ENROLLMENT_REQUIRED",
+				"mfaRequired": true,
+				"message":     "Organisasi Anda mewajibkan autentikasi 2-faktor (MFA). Silakan daftarkan metode MFA Anda terlebih dahulu.",
+				"action":      "CONFIGURE_TOTP",
+			})
+			return
+		}
+
 		if statusCode == http.StatusBadGateway || statusCode == http.StatusGatewayTimeout || statusCode == http.StatusServiceUnavailable {
 			logger.Warn(c.Request.Context(), "Keycloak upstream returned gateway error during login",
 				zap.Int("status", statusCode),

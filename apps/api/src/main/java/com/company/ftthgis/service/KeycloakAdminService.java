@@ -568,4 +568,106 @@ public class KeycloakAdminService {
             log.error("Failed to sync SMTP server to Keycloak realm {}: {}", realmName, e.getMessage(), e);
         }
     }
+
+    public void syncSessionIdleTimeoutToRealm(String realmName, int idleTimeoutSeconds) {
+        try {
+            log.info("⚙️ Syncing SSO Session Idle Timeout to Keycloak realm {}: {} seconds", realmName, idleTimeoutSeconds);
+            RealmRepresentation realm = keycloak.realm(realmName).toRepresentation();
+            realm.setSsoSessionIdleTimeout(idleTimeoutSeconds);
+            realm.setSsoSessionIdleTimeoutRememberMe(idleTimeoutSeconds);
+            keycloak.realm(realmName).update(realm);
+            log.info("✅ SSO Session Idle Timeout synced successfully to realm {}", realmName);
+        } catch (Exception e) {
+            log.error("Failed to sync session idle timeout to Keycloak realm {}: {}", realmName, e.getMessage(), e);
+        }
+    }
+
+    public boolean hasMfaConfigured(String targetRealm, String email) {
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (!users.isEmpty()) {
+                UserResource userResource = usersResource.get(users.get(0).getId());
+                List<CredentialRepresentation> credentials = userResource.credentials();
+                if (credentials != null) {
+                    return credentials.stream().anyMatch(c ->
+                            "otp".equalsIgnoreCase(c.getType()) ||
+                            "webauthn".equalsIgnoreCase(c.getType()) ||
+                            "webauthn-passwordless".equalsIgnoreCase(c.getType())
+                    );
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not check Keycloak MFA credentials for user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
+        }
+        return false;
+    }
+
+    public void addRequiredActionToUser(String targetRealm, String email, String requiredAction) {
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (!users.isEmpty()) {
+                UserRepresentation user = users.get(0);
+                List<String> actions = user.getRequiredActions();
+                List<String> updatedActions = actions == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(actions);
+                if (!updatedActions.contains(requiredAction)) {
+                    updatedActions.add(requiredAction);
+                    user.setRequiredActions(updatedActions);
+                    usersResource.get(user.getId()).update(user);
+                    log.info("Keycloak: Added required action '{}' for user '{}' in realm '{}'", requiredAction, email, targetRealm);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to add required action '{}' for user '{}' in realm '{}': {}", requiredAction, email, targetRealm, e.getMessage());
+        }
+    }
+
+    public void removeRequiredActionFromUser(String targetRealm, String email, String requiredAction) {
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (!users.isEmpty()) {
+                UserRepresentation user = users.get(0);
+                List<String> actions = user.getRequiredActions();
+                if (actions != null && actions.contains(requiredAction)) {
+                    List<String> updatedActions = new java.util.ArrayList<>(actions);
+                    updatedActions.remove(requiredAction);
+                    user.setRequiredActions(updatedActions);
+                    usersResource.get(user.getId()).update(user);
+                    log.info("Keycloak: Removed required action '{}' for user '{}' in realm '{}'", requiredAction, email, targetRealm);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to remove required action '{}' for user '{}' in realm '{}': {}", requiredAction, email, targetRealm, e.getMessage());
+        }
+    }
+
+    public void resetUserMfa(String targetRealm, String email) {
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (!users.isEmpty()) {
+                UserResource userResource = usersResource.get(users.get(0).getId());
+                List<CredentialRepresentation> credentials = userResource.credentials();
+                if (credentials != null) {
+                    for (CredentialRepresentation cred : credentials) {
+                        if ("otp".equalsIgnoreCase(cred.getType()) ||
+                            "webauthn".equalsIgnoreCase(cred.getType()) ||
+                            "webauthn-passwordless".equalsIgnoreCase(cred.getType())) {
+                            userResource.removeCredential(cred.getId());
+                            log.info("Keycloak: Removed MFA credential '{}' (ID: {}) for user '{}'", cred.getType(), cred.getId(), email);
+                        }
+                    }
+                }
+                // Add back CONFIGURE_TOTP required action so user must re-enroll
+                addRequiredActionToUser(targetRealm, email, "CONFIGURE_TOTP");
+            } else {
+                log.warn("User '{}' not found in Keycloak realm '{}' for MFA reset", email, targetRealm);
+            }
+        } catch (Exception e) {
+            log.error("Failed to reset MFA for user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
+            throw new RuntimeException("Failed to reset MFA in Keycloak: " + e.getMessage());
+        }
+    }
 }

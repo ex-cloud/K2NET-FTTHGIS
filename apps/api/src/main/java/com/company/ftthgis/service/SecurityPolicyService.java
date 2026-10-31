@@ -33,6 +33,8 @@ public class SecurityPolicyService {
     private final TenantSecurityPolicyRepository tenantPolicyRepository;
     private final OrganizationRepository organizationRepository;
     private final AuditLoggingService auditLoggingService;
+    private final KeycloakAdminService keycloakAdminService;
+    private final com.company.ftthgis.domain.user.repository.UserRepository userRepository;
 
     // Default constants
     private static final String DEFAULT_ALLOWED_METHODS = "totp,webauthn";
@@ -247,6 +249,10 @@ public class SecurityPolicyService {
 
         TenantSecurityPolicy saved = tenantPolicyRepository.save(policy);
 
+        if (request.mfaEnforced() != null) {
+            reconcileOrganizationMfa(org, saved.isMfaEnforced());
+        }
+
         auditLoggingService.logEvent(org.getSlug(), "TENANT_SECURITY_POLICY_UPDATE", "TENANT_POLICY",
                 saved.getId().toString(), Map.of(), Map.of("mfaEnforced", saved.isMfaEnforced()),
                 Map.of("actor", actor != null ? actor : "tenant_admin"));
@@ -255,6 +261,79 @@ public class SecurityPolicyService {
                 orgSlug, actor, saved.isMfaEnforced(), saved.getSessionIdleMinutes());
 
         return getTenantPolicy(orgSlug);
+    }
+
+    /**
+     * Reconciles Keycloak required actions and user flags for all members of an organization.
+     */
+    public void reconcileOrganizationMfa(Organization org, boolean mfaEnforced) {
+        try {
+            List<com.company.ftthgis.domain.user.entity.User> members = userRepository.findByOrganizationId(org.getId());
+            log.info("🔄 Reconciling MFA enforcement ({}) for {} members of org '{}'", mfaEnforced, members.size(), org.getSlug());
+            for (var member : members) {
+                if (member.getEmail() == null || member.getEmail().isBlank()) continue;
+                boolean hasMfa = keycloakAdminService.hasMfaConfigured("k2net-tenants", member.getEmail());
+                member.setMfaEnabled(hasMfa);
+                if (mfaEnforced) {
+                    if (!hasMfa) {
+                        keycloakAdminService.addRequiredActionToUser("k2net-tenants", member.getEmail(), "CONFIGURE_TOTP");
+                    }
+                } else {
+                    PlatformSecurityPolicyDto platform = getPlatformPolicy();
+                    if (!platform.isMfaEnforced()) {
+                        keycloakAdminService.removeRequiredActionFromUser("k2net-tenants", member.getEmail(), "CONFIGURE_TOTP");
+                    }
+                }
+                userRepository.save(member);
+            }
+        } catch (Exception e) {
+            log.warn("Could not complete MFA reconciliation for org '{}': {}", org.getSlug(), e.getMessage());
+        }
+    }
+
+    /**
+     * Resets MFA credentials for a tenant member and re-assigns required action (Admin Action / Break-Glass).
+     */
+    @Transactional
+    public void resetMemberMfa(String orgSlug, UUID memberId, String operatorEmail) {
+        Organization org = organizationRepository.findBySlug(orgSlug)
+                .orElseThrow(() -> new NoSuchElementException("Organization not found: " + orgSlug));
+
+        var member = userRepository.findById(memberId)
+                .orElseThrow(() -> new NoSuchElementException("Member user not found: " + memberId));
+
+        if (member.getOrganization() == null || !member.getOrganization().getId().equals(org.getId())) {
+            throw new IllegalArgumentException("User " + memberId + " does not belong to organization " + orgSlug);
+        }
+
+        // Break-glass check: If member is the organization owner or primary admin, log with heightened severity
+        boolean isOwner = false;
+        if (member.getEmail() != null) {
+            String memberEmail = member.getEmail().toLowerCase(Locale.ROOT);
+            isOwner = (org.getConfigs() != null && org.getConfigs().stream().anyMatch(c ->
+                    "billing_email".equalsIgnoreCase(c.getConfigKey()) && memberEmail.equalsIgnoreCase(c.getConfigValue())))
+                    || memberEmail.startsWith("admin@")
+                    || memberEmail.startsWith("owner@");
+        }
+        if (isOwner) {
+            log.warn("⚠️ BREAK-GLASS MFA RESET initiated on organization owner {} by operator {}", member.getEmail(), operatorEmail);
+        }
+
+        // Reset MFA in Keycloak (removes otp/webauthn credentials and re-assigns CONFIGURE_TOTP required action)
+        keycloakAdminService.resetUserMfa("k2net-tenants", member.getEmail());
+
+        // Update local database
+        member.setMfaEnabled(false);
+        userRepository.save(member);
+
+        // Audit log
+        auditLoggingService.logEvent(org.getSlug(), "MFA_RESET", "USER",
+                member.getId().toString(),
+                Map.of("mfaEnabled", true),
+                Map.of("mfaEnabled", false, "requiredAction", "CONFIGURE_TOTP"),
+                Map.of("operator", operatorEmail, "targetEmail", member.getEmail(), "isOwner", isOwner));
+
+        log.info("🛡️ Member MFA reset completed for user {} in org {} by {}", member.getEmail(), orgSlug, operatorEmail);
     }
 
     /**
