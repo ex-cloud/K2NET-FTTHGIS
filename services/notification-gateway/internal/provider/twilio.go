@@ -18,11 +18,13 @@ type MessageType string
 const (
 	TypeSMS      MessageType = "sms"
 	TypeWhatsApp MessageType = "whatsapp"
+	TypeEmail    MessageType = "email"
 )
 
 type NotificationPayload struct {
 	Type        MessageType `json:"type" binding:"required"`
 	To          string      `json:"to" binding:"required"`
+	Subject     string      `json:"subject,omitempty"`
 	Body        string      `json:"body" binding:"required"`
 	CallbackURL string      `json:"callback_url"`
 }

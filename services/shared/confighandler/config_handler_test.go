@@ -41,6 +41,12 @@ func TestCensorValue(t *testing.T) {
 			value:    "K2NET FTTH GIS",
 			expected: "K2NET FTTH GIS",
 		},
+		{
+			name:     "SMTP Password censoring",
+			key:      "SMTP_PASSWORD",
+			value:    "hRJGrZD7q)p{mkHS",
+			expected: "hRJG••••••••mkHS",
+		},
 	}
 
 	for _, tt := range tests {
@@ -61,6 +67,12 @@ func TestAllowedKeysWhitelist(t *testing.T) {
 		"TWILIO_ACCOUNT_SID",
 		"XENDIT_API_KEY",
 		"WA_API_URL",
+		"SMTP_HOST",
+		"SMTP_PORT",
+		"SMTP_USER",
+		"SMTP_PASSWORD",
+		"SMTP_FROM",
+		"SMTP_SECURE",
 	}
 
 	for _, k := range requiredKeys {

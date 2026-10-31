@@ -9,14 +9,6 @@ import { NotificationStatsCard } from "@/components/gateways/notification/Notifi
 import { useTranslation } from "@k2net/i18n";
 import { z } from "zod";
 
-const notificationSchema = z.object({
-  GATEWAY_TOKEN: z.string().min(16, "Gateway Token minimal 16 karakter"),
-  REDIS_ADDR: z.string().regex(/^[^:]+:\d+$/, "Format Redis Address harus host:port (contoh: redis:6379)"),
-  TWILIO_ACCOUNT_SID: z.string().startsWith("AC", "Twilio Account SID harus diawali dengan 'AC'").length(34, "Account SID harus tepat 34 karakter"),
-  TWILIO_AUTH_TOKEN: z.string().min(16, "Twilio Auth Token minimal 16 karakter"),
-  TWILIO_FROM_NUMBER: z.string().min(3, "Twilio Sender ID / Number minimal 3 karakter"),
-});
-
 export default function NotificationGatewayPage() {
   const { t } = useTranslation();
   const [config, setConfig] = useState<Record<string, string>>({});
@@ -25,6 +17,20 @@ export default function NotificationGatewayPage() {
   const [saving, setSaving] = useState(false);
   const [notifLogs, setNotifLogs] = useState<NotificationLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
+
+  const notificationSchema = React.useMemo(() => z.object({
+    GATEWAY_TOKEN: z.string().min(16, t("gateways.notification.token_min_length")).optional().or(z.literal("")),
+    REDIS_ADDR: z.string().regex(/^[^:]+:\d+$/, t("gateways.notification.redis_format_error")).optional().or(z.literal("")),
+    TWILIO_ACCOUNT_SID: z.string().startsWith("AC", t("gateways.notification.twilio_sid_format_error")).length(34, t("gateways.notification.twilio_sid_format_error")).optional().or(z.literal("")),
+    TWILIO_AUTH_TOKEN: z.string().min(16, t("gateways.notification.twilio_token_min_length")).optional().or(z.literal("")),
+    TWILIO_FROM_NUMBER: z.string().min(3, t("gateways.notification.twilio_from_min_length")).optional().or(z.literal("")),
+    SMTP_HOST: z.string().optional().or(z.literal("")),
+    SMTP_PORT: z.string().regex(/^\d+$/, t("gateways.notification.smtp_port_format_error")).optional().or(z.literal("")),
+    SMTP_USER: z.string().optional().or(z.literal("")),
+    SMTP_PASSWORD: z.string().optional().or(z.literal("")),
+    SMTP_FROM: z.string().optional().or(z.literal("")),
+    SMTP_SECURE: z.string().optional().or(z.literal("")),
+  }), [t]);
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -88,6 +94,12 @@ export default function NotificationGatewayPage() {
       "TWILIO_ACCOUNT_SID",
       "TWILIO_AUTH_TOKEN",
       "TWILIO_FROM_NUMBER",
+      "SMTP_HOST",
+      "SMTP_PORT",
+      "SMTP_USER",
+      "SMTP_PASSWORD",
+      "SMTP_FROM",
+      "SMTP_SECURE",
     ];
 
     keysToUpdate.forEach((k) => {

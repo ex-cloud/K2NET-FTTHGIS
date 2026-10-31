@@ -277,6 +277,12 @@ var allowedKeys = map[string]bool{
 	"POLL_INTERVAL_SECONDS":          true,
 	"SNMP_COMMUNITY":                 true,
 	"AUDIT_LOG_LEVEL":                true,
+	"SMTP_HOST":                      true,
+	"SMTP_PORT":                      true,
+	"SMTP_USER":                      true,
+	"SMTP_PASSWORD":                  true,
+	"SMTP_FROM":                      true,
+	"SMTP_SECURE":                    true,
 }
 
 // UpdateConfig receives a map of key-value pairs and updates the .env file

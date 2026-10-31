@@ -44,6 +44,8 @@ func main() {
 
 	twilioProv := provider.NewTwilioProvider(cfg.TwilioSID, cfg.TwilioAuthToken, cfg.TwilioFrom)
 	worker := service.NewWorker(rdb, twilioProv)
+	emailSender := delivery.NewSMTPEmailSender()
+	worker.SetEmailSender(emailSender)
 
 	go worker.Start(ctx)
 
@@ -80,6 +82,8 @@ func main() {
 	{
 		notifyGroup.POST("/notify", handler.SendNotification)
 		notifyGroup.GET("/notification/logs", handler.GetNotificationLogs)
+		notifyGroup.POST("/notification/email/test", handler.SendTestEmail)
+		notifyGroup.POST("/notifications/email/test", handler.SendTestEmail)
 	}
 
 	srv := &http.Server{

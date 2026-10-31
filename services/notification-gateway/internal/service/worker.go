@@ -12,9 +12,15 @@ import (
 	"go.uber.org/zap"
 )
 
+type EmailSender interface {
+	Send(ctx context.Context, to, subject, htmlBody string) error
+	IsConfigured() bool
+}
+
 type Worker struct {
-	rdb      *redis.Client
-	provider provider.SMSProvider
+	rdb         *redis.Client
+	provider    provider.SMSProvider
+	emailSender EmailSender
 }
 
 func NewWorker(rdb *redis.Client, provider provider.SMSProvider) *Worker {
@@ -22,6 +28,10 @@ func NewWorker(rdb *redis.Client, provider provider.SMSProvider) *Worker {
 		rdb:      rdb,
 		provider: provider,
 	}
+}
+
+func (w *Worker) SetEmailSender(sender EmailSender) {
+	w.emailSender = sender
 }
 
 // CheckIdempotency checks if the key was already processed, sets it if not
@@ -71,6 +81,27 @@ func (w *Worker) Start(ctx context.Context) {
 				continue
 			}
 			
+			if payload.Type == provider.TypeEmail {
+				if w.emailSender == nil || !w.emailSender.IsConfigured() {
+					logger.Error(ctx, "Email notification dropped: SMTP sender is not configured", zap.String("to", payload.To))
+					continue
+				}
+				subject := payload.Subject
+				if subject == "" {
+					subject = "K2NET Notification"
+				}
+				if err := w.emailSender.Send(ctx, payload.To, subject, payload.Body); err != nil {
+					logger.Error(ctx, "Failed to deliver email via SMTP",
+						zap.Error(err),
+						zap.String("to", payload.To))
+				} else {
+					logger.Info(ctx, "Email successfully delivered via SMTP",
+						zap.String("to", payload.To),
+						zap.String("subject", subject))
+				}
+				continue
+			}
+
 			msgID, err := w.provider.Send(ctx, payload)
 			if err != nil {
 				logger.Error(ctx, "Failed to deliver message via provider", 

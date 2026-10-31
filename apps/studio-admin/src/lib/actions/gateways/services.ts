@@ -459,6 +459,26 @@ export async function getNotificationLogs(): Promise<NotificationLog[]> {
   return Array.isArray(payload) ? payload : payload.data || [];
 }
 
+export async function sendNotificationTestEmail(payload?: { to?: string; subject?: string }): Promise<{ success: boolean; message: string }> {
+  await verifySuperAdmin();
+
+  const res = await fetch(`/api/v1/notification/email/test`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload || {}),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.success === false) {
+    throw new Error(data.error || `Failed to send test email: ${res.statusText}`);
+  }
+
+  return data;
+}
+
 // ─────────────────────────────────────────────
 // Payment Gateway: GET /api/v1/payments/recent
 // ─────────────────────────────────────────────

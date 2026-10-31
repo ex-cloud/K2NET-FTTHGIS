@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"gateways/notification-gateway/internal/provider"
@@ -18,17 +19,23 @@ import (
 )
 
 type HTTPHandler struct {
-	worker *service.Worker
-	rdb    *redis.Client
-	audit  *auditclient.Client
+	worker      *service.Worker
+	rdb         *redis.Client
+	audit       *auditclient.Client
+	emailSender EmailSender
 }
 
 func NewHTTPHandler(worker *service.Worker, rdb *redis.Client) *HTTPHandler {
 	return &HTTPHandler{
-		worker: worker,
-		rdb:    rdb,
-		audit:  auditclient.NewFromEnv(),
+		worker:      worker,
+		rdb:         rdb,
+		audit:       auditclient.NewFromEnv(),
+		emailSender: NewSMTPEmailSender(),
 	}
+}
+
+func (h *HTTPHandler) SetEmailSender(sender EmailSender) {
+	h.emailSender = sender
 }
 
 // RateLimiter implements a sliding-window rate limiting algorithm using Redis
@@ -273,5 +280,92 @@ func (h *HTTPHandler) GetStats(c *gin.Context) {
 		"recent_queue":        recentQueue,
 	})
 }
+
+type TestEmailRequest struct {
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+}
+
+// SendTestEmail sends an immediate test email to verify SMTP configuration
+func (h *HTTPHandler) SendTestEmail(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var req TestEmailRequest
+	_ = c.ShouldBindJSON(&req)
+
+	to := strings.TrimSpace(req.To)
+	if to == "" {
+		to = os.Getenv("SMTP_USER")
+	}
+	if to == "" {
+		to = "notify@kdua.net"
+	}
+
+	subject := strings.TrimSpace(req.Subject)
+	if subject == "" {
+		subject = "[K2NET TEST] SMTP Gateway Connection Verified"
+	}
+
+	sender := NewSMTPEmailSender()
+	if !sender.IsConfigured() {
+		errMsg := "SMTP Gateway is not fully configured (missing SMTP_HOST, SMTP_USER, or SMTP_PASSWORD)"
+		logger.Warn(ctx, errMsg)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   errMsg,
+		})
+		return
+	}
+
+	htmlBody := fmt.Sprintf(`<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e4e4e7; border-radius: 8px;">
+  <h2 style="color: #09090b; margin-top: 0;">K2NET SMTP Gateway Test</h2>
+  <p style="color: #71717a; font-size: 14px;">This is an automated test message dispatched from the K2NET Platform Admin Console (<code>/gateways/notification</code>).</p>
+  <div style="background-color: #f4f4f5; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #18181b; line-height: 1.6;">
+    <strong>Status:</strong> Connected &amp; Authenticated<br>
+    <strong>SMTP Host:</strong> %s:%d<br>
+    <strong>Timestamp:</strong> %s<br>
+    <strong>Service:</strong> notification-gateway (:5001)
+  </div>
+  <p style="color: #a1a1aa; font-size: 12px; margin-top: 20px;">If you received this message, your SMTP credentials and TLS/SSL encryption are fully operational.</p>
+</div>`, sender.host, sender.port, time.Now().UTC().Format(time.RFC3339))
+
+	err := sender.Send(ctx, to, subject, htmlBody)
+	payload := provider.NotificationPayload{
+		Type:    provider.TypeEmail,
+		To:      to,
+		Subject: subject,
+		Body:    subject,
+	}
+
+	if err != nil {
+		h.appendNotificationLog(c, payload, "failed", err.Error())
+		h.audit.LogError(ctx,
+			c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+			"SMTP_TEST_FAILED", "NOTIFICATION", "",
+			auditclient.GroupOperations, "notification-gateway",
+			err.Error(), map[string]any{"to": to, "subject": subject},
+		)
+		logger.Error(ctx, "Failed to send test email", zap.Error(err), zap.String("to", to))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	h.appendNotificationLog(c, payload, "sent", "")
+	h.audit.LogSuccess(ctx,
+		c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+		"SMTP_TEST_SENT", "NOTIFICATION", "",
+		auditclient.GroupOperations, "notification-gateway",
+		map[string]any{"to": to, "subject": subject},
+	)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("Test email sent successfully to %s", to),
+	})
+}
+
 
 

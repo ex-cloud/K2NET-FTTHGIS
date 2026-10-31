@@ -16,6 +16,24 @@ func (m *mockSMSProvider) Send(ctx context.Context, payload provider.Notificatio
 	return "mock-msg-id-001", nil
 }
 
+type mockEmailSender struct {
+	sentTo      string
+	sentSubject string
+	sentBody    string
+	configured  bool
+}
+
+func (m *mockEmailSender) Send(ctx context.Context, to, subject, htmlBody string) error {
+	m.sentTo = to
+	m.sentSubject = subject
+	m.sentBody = htmlBody
+	return nil
+}
+
+func (m *mockEmailSender) IsConfigured() bool {
+	return m.configured
+}
+
 func TestWorkerInstantiation(t *testing.T) {
 	mockProv := &mockSMSProvider{}
 	w := NewWorker(nil, mockProv)
@@ -26,6 +44,12 @@ func TestWorkerInstantiation(t *testing.T) {
 
 	if w.provider == nil {
 		t.Fatal("expected non-nil provider inside Worker")
+	}
+
+	mockEmail := &mockEmailSender{configured: true}
+	w.SetEmailSender(mockEmail)
+	if w.emailSender == nil {
+		t.Fatal("expected non-nil emailSender inside Worker")
 	}
 
 	// Test check idempotency with empty key
