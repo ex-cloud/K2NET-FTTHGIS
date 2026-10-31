@@ -7,7 +7,7 @@ import {
   useTheme,
   cn,
 } from "@k2net/ui";
-import { ShieldAlert, Building, Users, CreditCard, Sparkles, ArrowUpRight } from "lucide-react";
+import { ShieldAlert, Building, Users, CreditCard, Sparkles, ArrowUpRight, User } from "lucide-react";
 import { useAuth } from "@k2net/auth/client";
 import { useTranslation, type SupportedLocale } from "@k2net/i18n";
 import { useTenantInfo } from "../hooks/useTenantInfo";
@@ -169,6 +169,13 @@ export function TenantUserNav() {
       }}
       navigationSlot={
         <DropdownMenuGroup>
+          <DropdownMenuItem
+            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
+            onClick={() => navigate({ to: "/account/preferences" })}
+          >
+            <User className="size-3.5 text-muted-foreground" />
+            <span>{t("nav.account_preferences")}</span>
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
             onClick={() => navigate({ to: "/settings" })}

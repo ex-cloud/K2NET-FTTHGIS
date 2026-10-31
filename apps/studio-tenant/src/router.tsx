@@ -119,6 +119,9 @@ const OrgSettingsPage = lazyWithRetry(() =>
 const OrgAuditLogsPage = lazyWithRetry(() =>
   import("./pages/org/OrgAuditLogsPage").then((m) => ({ default: m.OrgAuditLogsPage }))
 );
+const AccountPreferencesPage = lazyWithRetry(() =>
+  import("./pages/account/PreferencesPage").then((m) => ({ default: m.PreferencesPage }))
+);
 
 // Layer 2: Project Scope Pages
 const ProjectOverviewPage = lazyWithRetry(() =>
@@ -595,6 +598,16 @@ const settingsAuditRoute = createRoute({
   component: () => <Navigate to="/audit-logs" />,
 });
 
+const accountPreferencesRoute = createRoute({
+  getParentRoute: () => orgAuthenticatedRoute,
+  path: "/account/preferences",
+  component: () => (
+    <Lazy>
+      <AccountPreferencesPage />
+    </Lazy>
+  ),
+});
+
 const settingsFallbackRoute = createRoute({
   getParentRoute: () => orgAuthenticatedRoute,
   path: "/settings",
@@ -1014,6 +1027,7 @@ const orgTree = orgAuthenticatedRoute.addChildren([
   settingsOauthRoute,
   settingsAuditRoute,
   settingsFallbackRoute,
+  accountPreferencesRoute,
   legacyDashboardRoute,
   legacyMapRoute,
   legacyCustomersRoute,

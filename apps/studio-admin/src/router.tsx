@@ -277,6 +277,9 @@ const LoginPage = lazyWithRetry(() =>
 const ResetPasswordPage = lazyWithRetry(() =>
   import("./app/reset-password/page").then((m) => ({ default: m.default }))
 );
+const AccountPreferencesPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/account/preferences/page").then((m) => ({ default: m.default }))
+);
 
 // ----------------------------------------------------------------
 // Suspense fallback & Error Handlers
@@ -524,6 +527,9 @@ const securityPasswordRoute = createRoute({ getParentRoute: () => authenticatedL
 // Logs
 const logsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/logs", component: () => <Lazy><LogsPage /></Lazy> });
 
+// Account Preferences
+const accountPreferencesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/account/preferences", component: () => <Lazy><AccountPreferencesPage /></Lazy> });
+
 // Workspace & Support Routes (Linear & Notion Architecture)
 const workspaceRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace", component: () => <Navigate to="/workspace/plans" /> });
 const workspacePlansRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/workspace/plans", component: () => <Lazy><WorkspacePlansPage /></Lazy> });
@@ -642,6 +648,8 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   packagesRoute, packagesSubscriptionsRoute,
   // Users
   usersRoute, usersRolesRoute, usersSessionsRoute,
+  // Account
+  accountPreferencesRoute,
   // Observability
   obsRedirectRoute, obsOverviewRoute, obsApiGatewayRoute, obsComputeRoute, obsDatabaseRoute,
   obsIdentityRoute, obsMessagingRoute, obsOltPollerRoute, obsSchedulerRoute, obsQueryPerfRoute, obsSpatialMapRoute,

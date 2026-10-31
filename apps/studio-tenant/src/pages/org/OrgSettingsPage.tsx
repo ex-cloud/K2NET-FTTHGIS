@@ -115,23 +115,109 @@ function GeneralSettingsSection({
   );
 }
 
-function SecuritySettingsSection() {
+function SecuritySettingsSection({ slug }: { slug?: string }) {
   const { t } = useTranslation();
+  const [loading, setLoading] = React.useState(true);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [mfaEnforced, setMfaEnforced] = React.useState(false);
+  const [sessionTimeout, setSessionTimeout] = React.useState(30);
+  const [isPlatformEnforced, setIsPlatformEnforced] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!slug) return;
+    let isMounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const { apiClient } = await import("../../lib/api-client");
+        const res = await apiClient<{
+          mfaEnforced: boolean;
+          sessionIdleTimeoutMinutes: number;
+          isMfaEnforcedByPlatform: boolean;
+        }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`);
+        if (res && isMounted) {
+          setMfaEnforced(res.mfaEnforced);
+          setSessionTimeout(res.sessionIdleTimeoutMinutes || 30);
+          setIsPlatformEnforced(res.isMfaEnforcedByPlatform);
+        }
+      } catch (e) {
+        console.warn("Failed to load tenant security policy:", e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [slug]);
+
+  const handleSaveSecurity = async () => {
+    if (!slug) return;
+    try {
+      setIsSaving(true);
+      const { apiClient } = await import("../../lib/api-client");
+      await apiClient(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`, {
+        method: "PUT",
+        body: JSON.stringify({
+          mfaEnforced: isPlatformEnforced ? true : mfaEnforced,
+          sessionIdleTimeoutMinutes: sessionTimeout,
+        }),
+      });
+      toast.success(t("common.saved_successfully"));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t("settings.whitelabel.save_error"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
       <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
-        <div className="space-y-0.5">
-          <Label className="text-xs font-semibold">{t("settings.mfa_enforce_label")}</Label>
+        <div className="space-y-0.5 max-w-lg">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs font-semibold">{t("settings.mfa_enforce_label")}</Label>
+            {isPlatformEnforced && (
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                {t("settings.account.mfa_locked_platform") || "Platform Enforced"}
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-muted-foreground">
             {t("settings.mfa_enforce_desc")}
           </p>
         </div>
-        <Switch defaultChecked />
+        <Switch
+          checked={isPlatformEnforced || mfaEnforced}
+          disabled={loading || isPlatformEnforced || isSaving}
+          onCheckedChange={setMfaEnforced}
+        />
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 max-w-xs">
         <Label className="text-xs font-semibold">{t("settings.session_timeout_label")}</Label>
-        <Input defaultValue={t("settings.session_timeout_default")} className="h-8.5 text-xs max-w-xs font-mono" />
+        <Input
+          type="number"
+          min={5}
+          max={1440}
+          value={sessionTimeout}
+          onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10) || 30)}
+          disabled={loading || isSaving}
+          className="h-8.5 text-xs font-mono"
+        />
+        <p className="text-[10px] text-muted-foreground">Inactivity duration in minutes before session auto-lock.</p>
+      </div>
+
+      <div className="flex justify-end pt-2 border-t border-border/40">
+        <Button
+          size="sm"
+          disabled={loading || isSaving}
+          onClick={handleSaveSecurity}
+          className="h-7 px-3 text-xs font-medium gap-1.5"
+        >
+          <Save className="size-3.5" />
+          {isSaving ? t("settings.whitelabel.saving") : t("common.save_changes")}
+        </Button>
       </div>
     </Card>
   );
@@ -391,7 +477,7 @@ export function OrgSettingsPage() {
             </TabsContent>
           </Tabs>
         )}
-        {currentSection === "security" && <SecuritySettingsSection />}
+        {currentSection === "security" && <SecuritySettingsSection slug={slug} />}
         {currentSection === "sso" && <SsoSettingsSection slug={slug} />}
         {currentSection === "oauth" && <OAuthSettingsSection slug={slug} />}
       </div>

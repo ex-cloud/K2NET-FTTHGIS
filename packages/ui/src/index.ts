@@ -61,6 +61,9 @@ export * from "./components/ai";
 // Shared Auth Components (Linear Style)
 export * from "./components/auth";
 
+// Shared Account Preferences Suite (Profile, Password, 2FA/Passkeys, Sessions, IDPs)
+export * from "./components/account";
+
 // Shared Mobile Floating Command Dock & Navigation Sheet Suite
 export * from "./components/mobile-dock";
 

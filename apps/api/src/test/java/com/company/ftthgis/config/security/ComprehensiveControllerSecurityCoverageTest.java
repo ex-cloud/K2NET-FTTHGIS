@@ -85,6 +85,10 @@ public class ComprehensiveControllerSecurityCoverageTest {
             "DeviceVerificationController.getMyDevices",
             "DeviceVerificationController.revokeDevice",
             "DeviceVerificationController.trustCurrentDevice",
+            "PersonalSecurityController.getDevices",
+            "PersonalSecurityController.revokeDevice",
+            "PersonalSecurityController.trustCurrentDevice",
+            "PersonalSecurityController.getSecuritySummary",
             "EffectiveSecurityPolicyController.getEffectivePolicy"
     );
 
