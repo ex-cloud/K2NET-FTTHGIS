@@ -4,8 +4,10 @@ import com.company.ftthgis.domain.common.SystemSetting;
 import com.company.ftthgis.domain.common.repository.SystemSettingRepository;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.config.logging.AuditRequired;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,9 +17,15 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +36,17 @@ public class SystemSettingService {
     private final KeycloakAdminService keycloakAdminService;
     private final OrganizationRepository organizationRepository;
     private final com.company.ftthgis.util.SecretEncryptionUtil encryptionUtil;
+    private final ObjectMapper objectMapper;
+
+    @Value("${app.gateway.notification-url:http://ftth-notification-gateway:5001}")
+    private String notificationGatewayUrl = "http://ftth-notification-gateway:5001";
+
+    @Value("${app.gateway.token:}")
+    private String gatewayToken = "";
+
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
 
     public static final java.util.Set<String> SENSITIVE_KEYS = java.util.Set.of(
             "smtp_password",
@@ -53,11 +72,11 @@ public class SystemSettingService {
         defaults.put("system_maintenance_mode", new String[]{"false", "GENERAL", "Enables or disables platform-wide maintenance mode"});
         
         // SMTP
-        defaults.put("smtp_host", new String[]{"smtp-relay.brevo.com", "SMTP", "SMTP outgoing mail server host"});
+        defaults.put("smtp_host", new String[]{"mail.kdua.net", "SMTP", "SMTP outgoing mail server host"});
         defaults.put("smtp_port", new String[]{"587", "SMTP", "SMTP outgoing mail server port"});
-        defaults.put("smtp_username", new String[]{"ac9057001@smtp-brevo.com", "SMTP", "SMTP username"});
+        defaults.put("smtp_username", new String[]{"notify@kdua.net", "SMTP", "SMTP username"});
         defaults.put("smtp_password", new String[]{"smtp_pass", "SMTP", "SMTP password"});
-        defaults.put("smtp_from", new String[]{"noreply@ftthgis.com", "SMTP", "Sender address for system notifications"});
+        defaults.put("smtp_from", new String[]{"notify@kdua.net", "SMTP", "Sender address for system notifications"});
         
         // SECURITY
         defaults.put("allow_self_registration", new String[]{"false", "SECURITY", "Enables or disables global self-registration for new users"});
@@ -152,6 +171,7 @@ public class SystemSettingService {
     public List<SystemSetting> updateSettings(Map<String, String> newSettings) {
         log.info("⚙️ Updating system settings: {}", newSettings.keySet());
         boolean passwordPoliciesChanged = false;
+        boolean smtpChanged = false;
         for (Map.Entry<String, String> entry : newSettings.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
@@ -164,6 +184,9 @@ public class SystemSettingService {
 
             if (key.startsWith("password_")) {
                 passwordPoliciesChanged = true;
+            }
+            if (key.startsWith("smtp_")) {
+                smtpChanged = true;
             }
 
             SystemSetting setting = settingRepository.findById(key)
@@ -182,6 +205,9 @@ public class SystemSettingService {
         }
         if (passwordPoliciesChanged) {
             syncPasswordPoliciesToKeycloak();
+        }
+        if (smtpChanged) {
+            syncSmtpToKeycloakAndGateways();
         }
         return getAllSettings();
     }
@@ -247,6 +273,82 @@ public class SystemSettingService {
             }
         } catch (Exception e) {
             log.error("Failed to compile or sync password policy: {}", e.getMessage(), e);
+        }
+    }
+
+    private void syncSmtpToKeycloakAndGateways() {
+        try {
+            String host = getSettingValue("smtp_host", "mail.kdua.net");
+            String port = getSettingValue("smtp_port", "587");
+            String username = getSettingValue("smtp_username", "notify@kdua.net");
+            String password = getSettingValue("smtp_password", "");
+            String from = getSettingValue("smtp_from", "notify@kdua.net");
+            boolean isSsl = "465".equals(port);
+
+            log.info("🔄 Triggering unified SMTP synchronization across Keycloak IAM and Notification Gateway ({}:{})...", host, port);
+
+            // 1. Sync to Keycloak Realms
+            Map<String, String> keycloakSmtp = new HashMap<>();
+            keycloakSmtp.put("host", host);
+            keycloakSmtp.put("port", port);
+            keycloakSmtp.put("user", username);
+            keycloakSmtp.put("password", password);
+            keycloakSmtp.put("from", from);
+            keycloakSmtp.put("auth", "true");
+            keycloakSmtp.put("starttls", isSsl ? "false" : "true");
+            keycloakSmtp.put("ssl", isSsl ? "true" : "false");
+            keycloakSmtp.put("fromDisplayName", "FTTH GIS Platform");
+
+            keycloakAdminService.syncSmtpServerToRealm("ftth-realm", keycloakSmtp);
+            keycloakAdminService.syncSmtpServerToRealm("k2net-tenants", keycloakSmtp);
+
+            try {
+                List<String> slugs = organizationRepository.findAllSlugs();
+                for (String slug : slugs) {
+                    if (!"ftth-realm".equals(slug) && !"ex-cloud-org".equals(slug) && !"system".equals(slug)) {
+                        keycloakAdminService.syncSmtpServerToRealm(slug, keycloakSmtp);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Non-fatal: Could not sync SMTP to dedicated organization realms: {}", e.getMessage());
+            }
+
+            // 2. Sync to Go notification-gateway asynchronously
+            CompletableFuture.runAsync(() -> {
+                try {
+                    String endpoint = notificationGatewayUrl + "/api/v1/config";
+                    Map<String, Object> payload = Map.of(
+                            "updates", Map.of(
+                                    "SMTP_HOST", host,
+                                    "SMTP_PORT", port,
+                                    "SMTP_USER", username,
+                                    "SMTP_PASSWORD", password,
+                                    "SMTP_FROM", from,
+                                    "SMTP_SECURE", isSsl ? "true" : "false"
+                            )
+                    );
+                    String jsonBody = objectMapper.writeValueAsString(payload);
+                    HttpRequest req = HttpRequest.newBuilder()
+                            .uri(URI.create(endpoint))
+                            .header("Content-Type", "application/json")
+                            .header("X-Gateway-Token", gatewayToken != null ? gatewayToken : "")
+                            .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                            .timeout(Duration.ofSeconds(5))
+                            .build();
+
+                    HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+                    if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                        log.info("✅ SMTP configuration synced successfully to notification-gateway");
+                    } else {
+                        log.warn("⚠️ notification-gateway /api/v1/config returned HTTP {}: {}", resp.statusCode(), resp.body());
+                    }
+                } catch (Exception ex) {
+                    log.error("Non-fatal: Failed syncing SMTP configuration to notification-gateway: {}", ex.getMessage());
+                }
+            });
+
+        } catch (Exception e) {
+            log.error("Failed unified SMTP synchronization: {}", e.getMessage(), e);
         }
     }
 

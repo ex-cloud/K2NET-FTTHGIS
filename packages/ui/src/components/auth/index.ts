@@ -3,5 +3,8 @@ export * from "./auth-login-types";
 export * from "./use-auth-login-form";
 export * from "./auth-login-saved-profiles";
 export * from "./auth-login-credentials";
+export * from "./auth-login-forgot-password";
+export * from "./auth-reset-password-card";
+export * from "./auth-activate-card";
 export * from "./auth-login-form";
 export * from "./saved-profiles";

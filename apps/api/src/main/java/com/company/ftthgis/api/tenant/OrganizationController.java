@@ -20,6 +20,7 @@ public class OrganizationController {
     private final com.company.ftthgis.service.ConfigurableUserService userService;
     private final KeycloakService keycloakService;
     private final com.company.ftthgis.service.OrganizationSlugMigrationService organizationSlugMigrationService;
+    private final com.company.ftthgis.service.organization.TenantActivationService tenantActivationService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('orgs.view') or hasAuthority('organizations.view')")
@@ -38,6 +39,24 @@ public class OrganizationController {
         return organizationService.getBySlug(slug)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{slug}/activation-link")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('system.organizations.view')")
+    public ResponseEntity<?> getActivationLink(@PathVariable String slug) {
+        return ResponseEntity.ok(tenantActivationService.getActiveActivationLink(slug));
+    }
+
+    @PostMapping("/{slug}/activation-link/resend")
+    @PreAuthorize("hasAuthority('system.organizations.manage')")
+    public ResponseEntity<?> resendActivationLink(@PathVariable String slug) {
+        try {
+            return ResponseEntity.ok(tenantActivationService.resendActivationLink(slug));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "error", e.getMessage()));
+        }
     }
 
     @PostMapping

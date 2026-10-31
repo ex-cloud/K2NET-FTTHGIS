@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"gateways/shared/httpclient"
 	"gateways/shared/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -38,15 +40,34 @@ type Handler struct {
 	repo        Repository
 	auditClient *auditclient.Client
 	httpClient  *http.Client
+	rdb         *redis.Client
+	kcAdmin     *KeycloakAdminClient
+	notifClient *NotificationClient
 }
 
 // NewHandler creates a new BFF authentication HTTP handler.
-func NewHandler(cfg *config.Config, repo Repository, auditClient *auditclient.Client) *Handler {
+func NewHandler(cfg *config.Config, repo Repository, auditClient *auditclient.Client, rdb *redis.Client) *Handler {
+	notifURL := os.Getenv("NOTIFICATION_GATEWAY_URL")
+	if notifURL == "" {
+		notifURL = "http://ftth-notification-gateway:5001"
+	}
+	kcUser := os.Getenv("KC_BOOTSTRAP_ADMIN_USERNAME")
+	kcPass := os.Getenv("KC_BOOTSTRAP_ADMIN_PASSWORD")
+	if kcUser == "" {
+		kcUser = "k2net-master-admin"
+	}
+	if kcPass == "" {
+		kcPass = "3pHx9nTw4v5Q2zYrS"
+	}
+
 	return &Handler{
 		cfg:         cfg,
 		repo:        repo,
 		auditClient: auditClient,
 		httpClient:  httpclient.NewClient(10 * time.Second),
+		rdb:         rdb,
+		kcAdmin:     NewKeycloakAdminClient(cfg.KeycloakInternalURL, kcUser, kcPass, rdb),
+		notifClient: NewNotificationClient(notifURL, cfg.GatewayToken),
 	}
 }
 

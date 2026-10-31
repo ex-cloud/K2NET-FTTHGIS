@@ -119,6 +119,7 @@
     "smtp_from_placeholder": "K2NET Cloud Security <notify@kdua.net>",
     "smtp_secure_label": "SSL/TLS Direct Encryption",
     "smtp_secure_desc": "Enable SSL for Port 465 (SMTPS) or STARTTLS for Port 587.",
+    "smtp_unified_sync_hint": "SMTP relay configuration is unified platform-wide with System Settings (/settings/smtp-mail). Updates automatically synchronize across Spring Boot backend, Keycloak IAM, and Notification Gateway.",
     "send_test_email": "Send Test Email",
     "sending_test_email": "Sending...",
     "test_email_recipient_label": "Test Email Recipient",

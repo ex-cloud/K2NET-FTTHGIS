@@ -20,18 +20,18 @@ public class EmailService {
      * Sends an HTML email using SMTP configurations from the database.
      */
     public boolean sendEmail(String to, String subject, String body) {
-        String host = settingsService.getSettingValue("smtp_host", "smtp-relay.brevo.com");
+        String host = settingsService.getSettingValue("smtp_host", "mail.kdua.net");
         int port = 587;
         try {
             port = Integer.parseInt(settingsService.getSettingValue("smtp_port", "587"));
         } catch (NumberFormatException e) {
             log.warn("Invalid SMTP port in settings, using default 587");
         }
-        String username = settingsService.getSettingValue("smtp_username", "smtp_user");
-        String password = settingsService.getSettingValue("smtp_password", "smtp_pass");
-        String from = settingsService.getSettingValue("smtp_from", "noreply@ftthgis.com");
+        String username = settingsService.getSettingValue("smtp_username", "notify@kdua.net");
+        String password = settingsService.getSettingValue("smtp_password", "");
+        String from = settingsService.getSettingValue("smtp_from", "notify@kdua.net");
 
-        log.info("📧 Sending email to {} via SMTP server {}:{}...", to, host, port);
+        log.info("📧 Sending email to {} via SMTP server {}:{} (from: {})...", to, host, port, from);
 
         try {
             JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
@@ -58,7 +58,7 @@ public class EmailService {
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(from);
+            helper.setFrom(from, "FTTH GIS Platform");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(body, true); // HTML content
@@ -67,7 +67,7 @@ public class EmailService {
             log.info("✅ Email successfully sent to {}", to);
             return true;
         } catch (Exception e) {
-            log.error("❌ Failed to send email to {} via SMTP", to, e);
+            log.error("❌ Failed to send email to {} via SMTP: {}", to, e.getMessage(), e);
             return false;
         }
     }

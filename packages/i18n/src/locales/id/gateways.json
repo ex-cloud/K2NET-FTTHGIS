@@ -119,6 +119,7 @@
     "smtp_from_placeholder": "K2NET Cloud Security <notify@kdua.net>",
     "smtp_secure_label": "Enkripsi Langsung SSL/TLS",
     "smtp_secure_desc": "Aktifkan SSL untuk Port 465 (SMTPS) atau STARTTLS untuk Port 587.",
+    "smtp_unified_sync_hint": "Konfigurasi SMTP relay disatukan secara terpusat dengan Pengaturan Sistem (/settings/smtp-mail). Pembaruan otomatis disinkronkan ke backend Spring Boot, Keycloak IAM, dan Notification Gateway.",
     "send_test_email": "Kirim Email Uji Coba",
     "sending_test_email": "Mengirim...",
     "test_email_recipient_label": "Penerima Email Uji Coba",

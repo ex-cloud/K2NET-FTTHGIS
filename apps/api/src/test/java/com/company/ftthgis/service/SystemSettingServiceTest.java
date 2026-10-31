@@ -28,7 +28,7 @@ public class SystemSettingServiceTest {
         keycloakAdminService = mock(KeycloakAdminService.class);
         organizationRepository = mock(OrganizationRepository.class);
         encryptionUtil = new com.company.ftthgis.util.SecretEncryptionUtil("test-encryption-secret-key-32-chars!");
-        settingService = new SystemSettingService(settingRepository, keycloakAdminService, organizationRepository, encryptionUtil);
+        settingService = new SystemSettingService(settingRepository, keycloakAdminService, organizationRepository, encryptionUtil, new com.fasterxml.jackson.databind.ObjectMapper());
     }
 
     @Test
@@ -149,5 +149,19 @@ public class SystemSettingServiceTest {
 
         String resolved = settingService.getSettingValue("smtp_password", "default");
         assertEquals("decrypted-plain-password", resolved, "Must transparently decrypt sensitive settings");
+    }
+
+    @Test
+    void testUpdateSettings_SmtpSyncsToKeycloak() {
+        Map<String, String> updates = new HashMap<>();
+        updates.put("smtp_host", "mail.kdua.net");
+        updates.put("smtp_port", "587");
+        updates.put("smtp_username", "notify@kdua.net");
+
+        settingService.updateSettings(updates);
+
+        // Verify KeycloakAdminService was called to sync SMTP settings to realms
+        verify(keycloakAdminService).syncSmtpServerToRealm(eq("ftth-realm"), anyMap());
+        verify(keycloakAdminService).syncSmtpServerToRealm(eq("k2net-tenants"), anyMap());
     }
 }

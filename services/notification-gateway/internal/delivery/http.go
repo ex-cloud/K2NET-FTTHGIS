@@ -11,6 +11,7 @@ import (
 
 	"gateways/notification-gateway/internal/provider"
 	"gateways/notification-gateway/internal/service"
+	"gateways/notification-gateway/internal/templates"
 	"gateways/shared/auditclient"
 	"gateways/shared/logger"
 	"github.com/gin-gonic/gin"
@@ -366,6 +367,186 @@ func (h *HTTPHandler) SendTestEmail(c *gin.Context) {
 		"message": fmt.Sprintf("Test email sent successfully to %s", to),
 	})
 }
+
+// ActivationEmailRequest holds parameters for sending an onboarding activation email
+type ActivationEmailRequest struct {
+	To            string `json:"to" binding:"required"`
+	RecipientName string `json:"recipient_name"`
+	OrgName       string `json:"org_name"`
+	Subdomain     string `json:"subdomain"`
+	ActivationURL string `json:"activation_url" binding:"required"`
+	ExpiresIn     string `json:"expires_in"`
+	Lang          string `json:"lang"`
+}
+
+// SendActivationEmail renders and dispatches a workspace activation email
+func (h *HTTPHandler) SendActivationEmail(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var req ActivationEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid activation request payload: " + err.Error(),
+		})
+		return
+	}
+
+	subject, htmlBody, err := templates.RenderActivationEmail(templates.ActivationEmailData{
+		RecipientName: req.RecipientName,
+		OrgName:       req.OrgName,
+		Subdomain:     req.Subdomain,
+		ActivationURL: req.ActivationURL,
+		ExpiresIn:     req.ExpiresIn,
+		Lang:          req.Lang,
+	})
+	if err != nil {
+		logger.Error(ctx, "Failed rendering activation email template", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Template rendering failed: " + err.Error(),
+		})
+		return
+	}
+
+	sender := NewSMTPEmailSender()
+	if !sender.IsConfigured() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"success": false,
+			"error":   "SMTP Gateway is not configured",
+		})
+		return
+	}
+
+	sendErr := sender.Send(ctx, req.To, subject, htmlBody)
+	payload := provider.NotificationPayload{
+		Type:    provider.TypeEmail,
+		To:      req.To,
+		Subject: subject,
+		Body:    subject,
+	}
+
+	if sendErr != nil {
+		h.appendNotificationLog(c, payload, "failed", sendErr.Error())
+		h.audit.LogError(ctx,
+			c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+			"EMAIL_ACTIVATION_FAILED", "NOTIFICATION", "",
+			auditclient.GroupOperations, "notification-gateway",
+			sendErr.Error(), map[string]any{"to": req.To, "org": req.OrgName},
+		)
+		logger.Error(ctx, "Failed to send activation email", zap.Error(sendErr), zap.String("to", req.To))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   sendErr.Error(),
+		})
+		return
+	}
+
+	h.appendNotificationLog(c, payload, "sent", "")
+	h.audit.LogSuccess(ctx,
+		c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+		"EMAIL_ACTIVATION_SENT", "NOTIFICATION", "",
+		auditclient.GroupOperations, "notification-gateway",
+		map[string]any{"to": req.To, "org": req.OrgName},
+	)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("Activation email dispatched to %s", req.To),
+	})
+}
+
+// PasswordResetEmailRequest holds parameters for sending a self-service password reset email
+type PasswordResetEmailRequest struct {
+	To            string `json:"to" binding:"required"`
+	RecipientName string `json:"recipient_name"`
+	ResetURL      string `json:"reset_url" binding:"required"`
+	ExpiresIn     string `json:"expires_in"`
+	ClientIP      string `json:"client_ip"`
+	Lang          string `json:"lang"`
+}
+
+// SendPasswordResetEmail renders and dispatches a password recovery email
+func (h *HTTPHandler) SendPasswordResetEmail(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var req PasswordResetEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid password reset request payload: " + err.Error(),
+		})
+		return
+	}
+
+	clientIP := req.ClientIP
+	if clientIP == "" {
+		clientIP = c.ClientIP()
+	}
+
+	subject, htmlBody, err := templates.RenderPasswordResetEmail(templates.PasswordResetEmailData{
+		RecipientName: req.RecipientName,
+		ResetURL:      req.ResetURL,
+		ExpiresIn:     req.ExpiresIn,
+		ClientIP:      clientIP,
+		Lang:          req.Lang,
+	})
+	if err != nil {
+		logger.Error(ctx, "Failed rendering password reset email template", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Template rendering failed: " + err.Error(),
+		})
+		return
+	}
+
+	sender := NewSMTPEmailSender()
+	if !sender.IsConfigured() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"success": false,
+			"error":   "SMTP Gateway is not configured",
+		})
+		return
+	}
+
+	sendErr := sender.Send(ctx, req.To, subject, htmlBody)
+	payload := provider.NotificationPayload{
+		Type:    provider.TypeEmail,
+		To:      req.To,
+		Subject: subject,
+		Body:    subject,
+	}
+
+	if sendErr != nil {
+		h.appendNotificationLog(c, payload, "failed", sendErr.Error())
+		h.audit.LogError(ctx,
+			c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+			"EMAIL_RESET_PASSWORD_FAILED", "NOTIFICATION", "",
+			auditclient.GroupOperations, "notification-gateway",
+			sendErr.Error(), map[string]any{"to": req.To},
+		)
+		logger.Error(ctx, "Failed to send password reset email", zap.Error(sendErr), zap.String("to", req.To))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   sendErr.Error(),
+		})
+		return
+	}
+
+	h.appendNotificationLog(c, payload, "sent", "")
+	h.audit.LogSuccess(ctx,
+		c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+		"EMAIL_RESET_PASSWORD_SENT", "NOTIFICATION", "",
+		auditclient.GroupOperations, "notification-gateway",
+		map[string]any{"to": req.To},
+	)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("Password reset email dispatched to %s", req.To),
+	})
+}
+
 
 
 

@@ -152,7 +152,7 @@ export default function SecurityAuditLogsPage() {
   };
 
   const handleTestDrain = async () => {
-    const host = getValue("smtp_host", "smtp-relay.brevo.com");
+    const host = getValue("smtp_host", "mail.kdua.net");
     const port = parseInt(getValue("smtp_port", "587"), 10);
     if (!host || !port) {
       toast.error("SMTP Host and Port are required for testing.");

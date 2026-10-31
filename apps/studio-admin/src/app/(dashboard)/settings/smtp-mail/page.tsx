@@ -25,11 +25,11 @@ export default function SettingsSmtpMailPage() {
 
   const handleSave = async () => {
     const keysToSave: Record<string, string> = {
-      smtp_host: getValue("smtp_host", "smtp-relay.brevo.com"),
+      smtp_host: getValue("smtp_host", "mail.kdua.net"),
       smtp_port: getValue("smtp_port", "587"),
-      smtp_username: getValue("smtp_username", "ac9057001@smtp-brevo.com"),
+      smtp_username: getValue("smtp_username", "notify@kdua.net"),
       smtp_password: getValue("smtp_password", ""),
-      smtp_from: getValue("smtp_from", "noreply@kdua.net"),
+      smtp_from: getValue("smtp_from", "notify@kdua.net"),
     };
 
     try {
@@ -42,7 +42,7 @@ export default function SettingsSmtpMailPage() {
   };
 
   const handleTestSmtp = async () => {
-    const host = getValue("smtp_host", "smtp-relay.brevo.com");
+    const host = getValue("smtp_host", "mail.kdua.net");
     const port = parseInt(getValue("smtp_port", "587"), 10);
     const username = getValue("smtp_username");
     const password = getValue("smtp_password");
@@ -113,15 +113,15 @@ export default function SettingsSmtpMailPage() {
         {/* Form Content */}
         <div className="space-y-8 pb-16">
           <SmtpCredentialsSection
-            smtpHost={getValue("smtp_host", "smtp-relay.brevo.com")}
+            smtpHost={getValue("smtp_host", "mail.kdua.net")}
             onSmtpHostChange={(val) => handleInputChange("smtp_host", val)}
             smtpPort={getValue("smtp_port", "587")}
             onSmtpPortChange={(val) => handleInputChange("smtp_port", val)}
-            smtpUsername={getValue("smtp_username", "")}
+            smtpUsername={getValue("smtp_username", "notify@kdua.net")}
             onSmtpUsernameChange={(val) => handleInputChange("smtp_username", val)}
             smtpPassword={getValue("smtp_password", "")}
             onSmtpPasswordChange={(val) => handleInputChange("smtp_password", val)}
-            smtpFrom={getValue("smtp_from", "noreply@kdua.net")}
+            smtpFrom={getValue("smtp_from", "notify@kdua.net")}
             onSmtpFromChange={(val) => handleInputChange("smtp_from", val)}
           />
 

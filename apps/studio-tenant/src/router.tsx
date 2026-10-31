@@ -72,6 +72,12 @@ function lazyWithRetry(
 const LoginPage = lazyWithRetry(() =>
   import("./pages/auth/LoginPage").then((m) => ({ default: m.LoginPage }))
 );
+const ResetPasswordPage = lazyWithRetry(() =>
+  import("./pages/auth/ResetPasswordPage").then((m) => ({ default: m.ResetPasswordPage }))
+);
+const ActivatePage = lazyWithRetry(() =>
+  import("./pages/auth/ActivatePage").then((m) => ({ default: m.ActivatePage }))
+);
 
 // Layer 1: Org Scope Pages
 const ProjectsPage = lazyWithRetry(() =>
@@ -296,6 +302,28 @@ const loginRoute = createRoute({
   component: () => (
     <Lazy>
       <LoginPage />
+    </Lazy>
+  ),
+  errorComponent: RouterErrorComponent,
+});
+
+const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reset-password",
+  component: () => (
+    <Lazy>
+      <ResetPasswordPage />
+    </Lazy>
+  ),
+  errorComponent: RouterErrorComponent,
+});
+
+const activateRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/activate",
+  component: () => (
+    <Lazy>
+      <ActivatePage />
     </Lazy>
   ),
   errorComponent: RouterErrorComponent,
@@ -1024,7 +1052,7 @@ const projectTree = projectAuthenticatedRoute.addChildren([
   projectSettingsFallbackRoute,
 ]);
 
-const routeTree = rootRoute.addChildren([orgTree, projectTree, loginRoute]);
+const routeTree = rootRoute.addChildren([orgTree, projectTree, loginRoute, resetPasswordRoute, activateRoute]);
 
 export const router = createRouter({
   routeTree,

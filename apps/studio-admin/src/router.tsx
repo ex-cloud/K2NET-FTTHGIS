@@ -274,6 +274,9 @@ const ObservabilityOperationsPage = lazyWithRetry(() =>
 const LoginPage = lazyWithRetry(() =>
   import("./app/login/page").then((m) => ({ default: m.default }))
 );
+const ResetPasswordPage = lazyWithRetry(() =>
+  import("./app/reset-password/page").then((m) => ({ default: m.default }))
+);
 
 // ----------------------------------------------------------------
 // Suspense fallback & Error Handlers
@@ -388,6 +391,13 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: () => <Lazy><LoginPage /></Lazy>,
+  errorComponent: RouterErrorComponent,
+});
+
+const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reset-password",
+  component: () => <Lazy><ResetPasswordPage /></Lazy>,
   errorComponent: RouterErrorComponent,
 });
 
@@ -660,7 +670,7 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   auditRedirectRoute, alertsRedirectRoute, healthRedirectRoute, subscriptionsRedirectRoute, systemSettingsRedirectRoute,
 ]);
 
-const routeTree = rootRoute.addChildren([authenticatedTree, loginRoute]);
+const routeTree = rootRoute.addChildren([authenticatedTree, loginRoute, resetPasswordRoute]);
 
 export const router = createRouter({
   routeTree,

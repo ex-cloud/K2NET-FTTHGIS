@@ -70,7 +70,7 @@ func main() {
 
 	auditClient := auditclient.New(cfg.AuditGatewayURL, cfg.GatewayToken)
 	repo := auth.NewPostgresRepository(dbPool, rdb)
-	handler := auth.NewHandler(cfg, repo, auditClient)
+	handler := auth.NewHandler(cfg, repo, auditClient, rdb)
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
@@ -106,6 +106,11 @@ func main() {
 		authAPI.POST("/refresh", handler.Refresh)
 		authAPI.POST("/logout", handler.Logout)
 		authAPI.POST("/register", mutationLimiter, handler.Register)
+		authAPI.POST("/forgot-password", handler.ForgotPassword)
+		authAPI.GET("/reset-password/validate", handler.ValidateResetToken)
+		authAPI.POST("/reset-password", mutationLimiter, handler.ResetPassword)
+		authAPI.GET("/activate/validate", handler.ValidateActivationToken)
+		authAPI.POST("/activate", mutationLimiter, handler.ActivateAccount)
 	}
 
 	srv := &http.Server{

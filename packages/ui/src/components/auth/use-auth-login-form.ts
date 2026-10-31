@@ -33,7 +33,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   const [savedProfiles, setSavedProfiles] = useState<SavedAccountProfile[]>(() =>
     getSavedProfiles(tenantSlug)
   );
-  const [authView, setAuthView] = useState<"SAVED_PROFILES" | "CREDENTIALS">(() => {
+  const [authView, setAuthView] = useState<"SAVED_PROFILES" | "CREDENTIALS" | "FORGOT_PASSWORD">(() => {
     const initialProfiles = getSavedProfiles(tenantSlug);
     return initialProfiles.length > 0 && !defaultEmail ? "SAVED_PROFILES" : "CREDENTIALS";
   });
@@ -46,6 +46,8 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   const [totpCode, setTotpCode] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | undefined>(undefined);
   const [showForgotHelp, setShowForgotHelp] = useState(false);
+  const [forgotSubmitted, setForgotSubmitted] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
@@ -151,10 +153,46 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   };
 
   const handleForgotClick = () => {
+    setAuthView("FORGOT_PASSWORD");
+    setForgotSubmitted(false);
     if (onForgotPassword) {
       onForgotPassword(usernameOrEmail.trim());
-    } else {
-      setShowForgotHelp((prev) => !prev);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setAuthView("CREDENTIALS");
+    setForgotSubmitted(false);
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanUser = usernameOrEmail.trim();
+    if (!cleanUser || forgotLoading) return;
+
+    setForgotLoading(true);
+    try {
+      if (props.onRequestForgotPassword) {
+        await props.onRequestForgotPassword(cleanUser, turnstileToken);
+      } else {
+        await fetch("/api/v1/auth/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: cleanUser,
+            turnstileToken,
+            tenantSlug,
+            plane: props.plane,
+            lang: props.locale || "en",
+          }),
+        });
+      }
+      setForgotSubmitted(true);
+    } catch {
+      // Anti-enumeration: still display success screen
+      setForgotSubmitted(true);
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -239,6 +277,18 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     removeSavedProfile: labels?.removeSavedProfile || "Remove profile from device",
     savedProfilesTitle: labels?.savedProfilesTitle || "Choose an account",
     savedProfilesOr: labels?.savedProfilesOr || "or",
+    // Forgot Password Copy
+    forgotPasswordTitle: labels?.forgotPasswordTitle || "Reset your password",
+    forgotPasswordSubtitle:
+      labels?.forgotPasswordSubtitle ||
+      "Enter your account email or username. We'll send instructions to reset your password.",
+    sendResetLink: labels?.sendResetLink || "Send Reset Link",
+    sendingResetLink: labels?.sendingResetLink || "Sending reset link...",
+    backToSignIn: labels?.backToSignIn || "Back to sign in",
+    checkInboxTitle: labels?.checkInboxTitle || "Check your email",
+    checkInboxDesc:
+      labels?.checkInboxDesc ||
+      "If an account matches this identity, we've sent password reset instructions to your inbox.",
   };
 
   const resolvedSubmitLabel =
@@ -294,12 +344,16 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     setTotpCode,
     turnstileToken,
     showForgotHelp,
+    forgotSubmitted,
+    forgotLoading,
     // Refs
     turnstileContainerRef,
     passwordInputRef,
     // Handlers
     handleSubmit,
     handleForgotClick,
+    handleForgotSubmit,
+    handleBackToLogin,
     handleBackFromMfa,
     handleSelectProfile,
     handleRemoveProfile,

@@ -147,7 +147,8 @@ class OrganizationServiceTest {
                 organizationRepository, subscriptionPlanRepository, organizationSlugAliasRepository,
                 randomSlugGenerator, organizationConfigRepository, encryptionUtils,
                 keycloakService, roleRepository, entityManager, transactionManager, fileStorageService, auditLoggingService,
-                licenseManagementService, billingInvoiceRepository
+                licenseManagementService, billingInvoiceRepository,
+                mock(com.company.ftthgis.service.organization.TenantActivationService.class)
         );
         lifecycleService = new com.company.ftthgis.service.organization.OrganizationLifecycleService(
                 organizationRepository, projectRepository, networkNodeRepository,

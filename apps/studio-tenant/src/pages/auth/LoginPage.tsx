@@ -218,6 +218,13 @@ export function LoginPage() {
       removeSavedProfile: t("auth.remove_saved_profile"),
       savedProfilesTitle: t("auth.saved_profiles_title"),
       savedProfilesOr: t("auth.saved_profiles_or"),
+      forgotPasswordTitle: t("auth.forgot_password_title"),
+      forgotPasswordSubtitle: t("auth.forgot_password_subtitle"),
+      sendResetLink: t("auth.send_reset_link"),
+      sendingResetLink: t("auth.sending_reset_link"),
+      backToSignIn: t("auth.back_to_sign_in"),
+      checkInboxTitle: t("auth.check_inbox_title"),
+      checkInboxDesc: t("auth.check_inbox_desc"),
     }),
     [t]
   );

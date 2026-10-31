@@ -3,12 +3,14 @@ import { AlertTriangle } from "lucide-react";
 import { useAuthLoginForm } from "./use-auth-login-form";
 import { AuthLoginSavedProfiles } from "./auth-login-saved-profiles";
 import { AuthLoginCredentials } from "./auth-login-credentials";
+import { AuthLoginForgotPassword } from "./auth-login-forgot-password";
 import type { AuthLoginFormProps } from "./auth-login-types";
 
 export * from "./auth-login-types";
 export * from "./use-auth-login-form";
 export * from "./auth-login-saved-profiles";
 export * from "./auth-login-credentials";
+export * from "./auth-login-forgot-password";
 
 export function AuthLoginForm(props: AuthLoginFormProps) {
   const form = useAuthLoginForm(props);
@@ -32,6 +34,8 @@ export function AuthLoginForm(props: AuthLoginFormProps) {
       <div className="bg-card/60 border border-border/70 rounded-xl p-5 sm:p-6 shadow-sm backdrop-blur-md space-y-4">
         {form.authView === "SAVED_PROFILES" && form.savedProfiles.length > 0 && !props.mfaRequired ? (
           <AuthLoginSavedProfiles form={form} />
+        ) : form.authView === "FORGOT_PASSWORD" ? (
+          <AuthLoginForgotPassword form={form} props={props} />
         ) : (
           <AuthLoginCredentials form={form} props={props} />
         )}

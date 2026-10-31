@@ -84,6 +84,10 @@ func main() {
 		notifyGroup.GET("/notification/logs", handler.GetNotificationLogs)
 		notifyGroup.POST("/notification/email/test", handler.SendTestEmail)
 		notifyGroup.POST("/notifications/email/test", handler.SendTestEmail)
+		notifyGroup.POST("/notification/email/activation", handler.SendActivationEmail)
+		notifyGroup.POST("/notifications/email/activation", handler.SendActivationEmail)
+		notifyGroup.POST("/notification/email/reset-password", handler.SendPasswordResetEmail)
+		notifyGroup.POST("/notifications/email/reset-password", handler.SendPasswordResetEmail)
 	}
 
 	srv := &http.Server{

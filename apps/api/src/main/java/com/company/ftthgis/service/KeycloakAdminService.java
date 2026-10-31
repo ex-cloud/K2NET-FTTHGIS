@@ -20,6 +20,7 @@ import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -547,6 +548,24 @@ public class KeycloakAdminService {
             log.info("✅ Password policy synced successfully to realm {}", realmName);
         } catch (Exception e) {
             log.error("Failed to sync password policy to Keycloak realm {}: {}", realmName, e.getMessage(), e);
+        }
+    }
+
+    public void syncSmtpServerToRealm(String realmName, Map<String, String> smtpConfig) {
+        try {
+            log.info("⚙️ Syncing SMTP server settings to Keycloak realm {}: host={}:{}",
+                    realmName, smtpConfig.get("host"), smtpConfig.get("port"));
+            RealmRepresentation realm = keycloak.realm(realmName).toRepresentation();
+            Map<String, String> existingSmtp = realm.getSmtpServer();
+            if (existingSmtp == null) {
+                existingSmtp = new java.util.HashMap<>();
+            }
+            existingSmtp.putAll(smtpConfig);
+            realm.setSmtpServer(existingSmtp);
+            keycloak.realm(realmName).update(realm);
+            log.info("✅ SMTP server settings synced successfully to Keycloak realm {}", realmName);
+        } catch (Exception e) {
+            log.error("Failed to sync SMTP server to Keycloak realm {}: {}", realmName, e.getMessage(), e);
         }
     }
 }

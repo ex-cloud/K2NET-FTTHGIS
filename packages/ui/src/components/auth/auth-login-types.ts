@@ -64,6 +64,14 @@ export interface AuthLoginFormLabels {
   removeSavedProfile?: string;
   savedProfilesTitle?: string;
   savedProfilesOr?: string;
+  // Forgot Password View Labels
+  forgotPasswordTitle?: string;
+  forgotPasswordSubtitle?: string;
+  sendResetLink?: string;
+  sendingResetLink?: string;
+  backToSignIn?: string;
+  checkInboxTitle?: string;
+  checkInboxDesc?: string;
 }
 
 export interface AuthLoginFormProps {
@@ -83,6 +91,8 @@ export interface AuthLoginFormProps {
   onContinueWithEmail?: (email: string) => void;
   onContinueWithProvider?: (providerId: string) => void;
   onForgotPassword?: (usernameOrEmail: string) => void;
+  onRequestForgotPassword?: (usernameOrEmail: string, turnstileToken?: string) => Promise<boolean>;
+  plane?: "PLATFORM" | "TENANT";
   onResetMfaStep?: () => void;
   mfaRequired?: boolean;
   turnstileSiteKey?: string;

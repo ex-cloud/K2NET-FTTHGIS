@@ -118,6 +118,8 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
     slug: string;
     adminPassword?: string;
     adminUsername?: string;
+    adminEmail?: string;
+    activationUrl?: string;
   } | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [formData, setFormData] = React.useState<WizardFormData>(INITIAL_FORM_DATA);
@@ -210,6 +212,8 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
             slug: targetFinalSlug,
             adminPassword: result?.adminPassword || "K2net@InitialPass2026",
             adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
+            adminEmail: formData.adminEmail,
+            activationUrl: result?.activationUrl,
           });
 
           toast.success("Organization provisioned successfully!", {

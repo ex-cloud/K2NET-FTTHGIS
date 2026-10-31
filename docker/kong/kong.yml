@@ -499,7 +499,7 @@ services:
     routes:
       - name: gateway-auth-bff-routes
         paths:
-          - "~/api/v1/auth/(login|refresh|logout|register|tenant-context|mfa(/|$))"
+          - "~/api/v1/auth/(login|refresh|logout|register|tenant-context|mfa|forgot-password|reset-password|activate(/|$))"
         regex_priority: 130
         strip_path: false
         preserve_host: true

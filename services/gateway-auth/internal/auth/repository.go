@@ -35,6 +35,8 @@ type Repository interface {
 	ResolveTenantContext(ctx context.Context, slug string) (*TenantContextResponse, error)
 	VerifyUserBelongsToOrg(ctx context.Context, userID, email, organizationID string) (bool, error)
 	SyncUserJIT(ctx context.Context, in JITUserSyncInput) error
+	FindUserForPasswordReset(ctx context.Context, identifier, tenantSlug, plane string) (*ResetTokenData, error)
+	CompleteAccountActivation(ctx context.Context, userID, orgID string) error
 }
 
 // PostgresRepository implements Repository backed by pgxpool and optional Redis cache.
@@ -359,4 +361,106 @@ func resolveCanonicalRoleName(roles []string) string {
 	}
 	return "viewer"
 }
+
+// FindUserForPasswordReset locates a user by email or username, resolving their realm and tenant slug
+func (r *PostgresRepository) FindUserForPasswordReset(
+	ctx context.Context,
+	identifier, tenantSlug, plane string,
+) (*ResetTokenData, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection not available")
+	}
+
+	cleanID := strings.ToLower(strings.TrimSpace(identifier))
+	if cleanID == "" {
+		return nil, errors.New("identifier cannot be empty")
+	}
+
+	var query string
+	var args []any
+
+	if strings.EqualFold(plane, "PLATFORM") || tenantSlug == "system" || tenantSlug == "admin" {
+		query = `
+			SELECT u.id::text, u.email, u.username,
+			       COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS full_name,
+			       'ftth-realm' AS realm_key, 'system' AS tenant_slug
+			FROM users u
+			WHERE (LOWER(u.email) = $1 OR LOWER(u.username) = $1)
+			  AND u.status != 'DELETED'
+			LIMIT 1
+		`
+		args = []any{cleanID}
+	} else if tenantSlug != "" {
+		query = `
+			SELECT u.id::text, u.email, u.username,
+			       COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS full_name,
+			       COALESCE(NULLIF(TRIM(o.realm_key), ''), 'k2net-tenants') AS realm_key,
+			       o.slug AS tenant_slug
+			FROM users u
+			JOIN organizations o ON u.organization_id = o.id
+			WHERE (LOWER(u.email) = $1 OR LOWER(u.username) = $1)
+			  AND o.slug = $2
+			  AND u.status != 'DELETED'
+			LIMIT 1
+		`
+		args = []any{cleanID, strings.ToLower(tenantSlug)}
+	} else {
+		query = `
+			SELECT u.id::text, u.email, u.username,
+			       COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS full_name,
+			       COALESCE(NULLIF(TRIM(o.realm_key), ''), 'k2net-tenants') AS realm_key,
+			       COALESCE(o.slug, '') AS tenant_slug
+			FROM users u
+			LEFT JOIN organizations o ON u.organization_id = o.id
+			WHERE (LOWER(u.email) = $1 OR LOWER(u.username) = $1)
+			  AND u.status != 'DELETED'
+			LIMIT 1
+		`
+		args = []any{cleanID}
+	}
+
+	var data ResetTokenData
+	err := r.db.QueryRow(ctx, query, args...).Scan(
+		&data.UserID,
+		&data.Email,
+		&data.Username,
+		&data.FullName,
+		&data.Realm,
+		&data.TenantSlug,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// CompleteAccountActivation sets user and organization status to ACTIVE upon magic link submission
+func (r *PostgresRepository) CompleteAccountActivation(ctx context.Context, userID, orgID string) error {
+	if r.db == nil {
+		return errors.New("database connection not available")
+	}
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if userID != "" {
+		_, err = tx.Exec(ctx, `UPDATE users SET status = 'ACTIVE', updated_at = NOW() WHERE id = $1::uuid`, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if orgID != "" {
+		_, err = tx.Exec(ctx, `UPDATE organizations SET status = 'ACTIVE' WHERE id = $1::uuid AND status = 'PENDING_ACTIVATION'`, orgID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
 

@@ -5,6 +5,8 @@ export interface ProvisioningSuccessResult {
   organization?: Record<string, unknown>;
   adminPassword?: string;
   adminUsername?: string;
+  adminEmail?: string;
+  activationUrl?: string;
   slug?: string;
   id?: string;
   name?: string;

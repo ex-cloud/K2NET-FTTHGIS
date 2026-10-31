@@ -190,11 +190,11 @@ public class KeycloakService {
                         if (smtpServer == null) {
                             smtpServer = new java.util.HashMap<>();
                         }
-                        String smtpHost = settingsService.getSettingValue("smtp_host", "smtp-relay.brevo.com");
+                        String smtpHost = settingsService.getSettingValue("smtp_host", "mail.kdua.net");
                         String smtpPort = settingsService.getSettingValue("smtp_port", "587");
-                        String smtpUser = settingsService.getSettingValue("smtp_username", "ac9057001@smtp-brevo.com");
+                        String smtpUser = settingsService.getSettingValue("smtp_username", "notify@kdua.net");
                         String smtpPass = settingsService.getSettingValue("smtp_password", "");
-                        String smtpFrom = settingsService.getSettingValue("smtp_from", "noreply@kdua.net");
+                        String smtpFrom = settingsService.getSettingValue("smtp_from", "notify@kdua.net");
 
                         smtpServer.put("host", smtpHost);
                         smtpServer.put("port", smtpPort);
@@ -341,11 +341,11 @@ public class KeycloakService {
                 if (smtpServer == null) {
                     smtpServer = new java.util.HashMap<>();
                 }
-                String smtpHost = settingsService.getSettingValue("smtp_host", "smtp-relay.brevo.com");
+                String smtpHost = settingsService.getSettingValue("smtp_host", "mail.kdua.net");
                 String smtpPort = settingsService.getSettingValue("smtp_port", "587");
-                String smtpUser = settingsService.getSettingValue("smtp_username", "ac9057001@smtp-brevo.com");
+                String smtpUser = settingsService.getSettingValue("smtp_username", "notify@kdua.net");
                 String smtpPass = settingsService.getSettingValue("smtp_password", "");
-                String smtpFrom = settingsService.getSettingValue("smtp_from", "noreply@kdua.net");
+                String smtpFrom = settingsService.getSettingValue("smtp_from", "notify@kdua.net");
 
                 smtpServer.put("host", smtpHost);
                 smtpServer.put("port", smtpPort);

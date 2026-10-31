@@ -38,6 +38,24 @@ func (m *mockRepo) SyncUserJIT(_ context.Context, in JITUserSyncInput) error {
 	return nil
 }
 
+func (m *mockRepo) FindUserForPasswordReset(_ context.Context, identifier, tenantSlug, plane string) (*ResetTokenData, error) {
+	if strings.Contains(identifier, "notfound") {
+		return nil, ErrTenantNotFound
+	}
+	return &ResetTokenData{
+		UserID:     "11111111-1111-1111-1111-111111111111",
+		Email:      identifier,
+		Username:   "owner_kircon",
+		FullName:   "Kircon Owner",
+		Realm:      "k2net-tenants",
+		TenantSlug: "kircon-bandung",
+	}, nil
+}
+
+func (m *mockRepo) CompleteAccountActivation(_ context.Context, userID, orgID string) error {
+	return nil
+}
+
 func buildTestJWT(claims map[string]any) string {
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
 	bodyBytes, _ := json.Marshal(claims)
@@ -183,7 +201,7 @@ func TestTenantContextAnd2RealmLoginFlows(t *testing.T) {
 		KeycloakClientID:    "ftth-gis-frontend",
 		CookieSecure:        true,
 	}
-	handler := NewHandler(cfg, repo, nil)
+	handler := NewHandler(cfg, repo, nil, nil)
 	router := setupTestRouter(handler)
 
 	// 1. GET /api/v1/auth/tenant-context?slug=kircon-bandung
@@ -309,3 +327,102 @@ func TestTenantContextAnd2RealmLoginFlows(t *testing.T) {
 		t.Fatalf("expected 403 on form-encoded CSRF attempt, got %d", wCSRF.Code)
 	}
 }
+
+func TestValidatePasswordComplexity(t *testing.T) {
+	tests := []struct {
+		name    string
+		pwd     string
+		wantErr bool
+	}{
+		{"Too short", "Ab1!", true},
+		{"No uppercase", "abcdef123!", true},
+		{"No number", "Abcdefgh!", true},
+		{"No special", "Abcdefgh12", true},
+		{"Valid password", "SecureP@ss2026", false},
+		{"Valid password 2", "K2net#Admin99", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidatePasswordComplexity(tc.pwd)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("ValidatePasswordComplexity(%q) error = %v, wantErr = %v", tc.pwd, err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestMaskEmail(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"admin@kdua.net", "ad***@kdua.net"},
+		{"pic@isp.com", "pi***@isp.com"},
+		{"a@b.com", "a***@b.com"},
+	}
+
+	for _, tc := range tests {
+		result := maskEmail(tc.input)
+		if result != tc.expected {
+			t.Errorf("maskEmail(%q) = %q, expected %q", tc.input, result, tc.expected)
+		}
+	}
+}
+
+func TestForgotPasswordAntiEnumeration(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &mockRepo{
+		tenants:      map[string]*TenantContextResponse{},
+		userOrgMatch: map[string]bool{},
+	}
+	cfg := &config.Config{
+		Port: "5014",
+	}
+	handler := NewHandler(cfg, repo, nil, nil)
+	r := gin.New()
+	r.POST("/api/v1/auth/forgot-password", handler.ForgotPassword)
+
+	// Test 1: User does not exist ("notfound@kdua.net")
+	payload1, _ := json.Marshal(ForgotPasswordRequest{
+		Username: "notfound@kdua.net",
+		Lang:     "id",
+	})
+	w1 := httptest.NewRecorder()
+	req1 := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", bytes.NewReader(payload1))
+	req1.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w1, req1)
+
+	if w1.Code != http.StatusOK {
+		t.Fatalf("expected HTTP 200 generic response, got %d", w1.Code)
+	}
+
+	var resp1 map[string]any
+	_ = json.Unmarshal(w1.Body.Bytes(), &resp1)
+	if resp1["success"] != true {
+		t.Errorf("expected success: true, got %v", resp1["success"])
+	}
+
+	// Test 2: User exists ("owner@kircon.id")
+	payload2, _ := json.Marshal(ForgotPasswordRequest{
+		Username: "owner@kircon.id",
+		Lang:     "id",
+	})
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", bytes.NewReader(payload2))
+	req2.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w2, req2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected HTTP 200 generic response, got %d", w2.Code)
+	}
+
+	var resp2 map[string]any
+	_ = json.Unmarshal(w2.Body.Bytes(), &resp2)
+	// Responses must be completely indistinguishable to prevent account enumeration
+	if resp1["message"] != resp2["message"] {
+		t.Errorf("expected identical generic message for found and not found users. got %v vs %v",
+			resp1["message"], resp2["message"])
+	}
+}
+

@@ -134,6 +134,15 @@ export function NotificationConfigForm({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="p-2.5 rounded-lg border border-primary/25 bg-primary/10 text-xs text-foreground flex items-center gap-2">
+            <span className="text-[10px] font-mono uppercase bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-semibold shrink-0">
+              UNIFIED
+            </span>
+            <span className="text-[11px] text-muted-foreground leading-tight">
+              {t("gateways.notification.smtp_unified_sync_hint")}
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="SMTP_HOST" className="text-xs text-muted-foreground">

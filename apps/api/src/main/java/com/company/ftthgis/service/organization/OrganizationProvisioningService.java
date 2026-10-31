@@ -53,6 +53,7 @@ public class OrganizationProvisioningService {
     private final AuditLoggingService auditLoggingService;
     private final LicenseManagementService licenseManagementService;
     private final BillingInvoiceRepository billingInvoiceRepository;
+    private final TenantActivationService tenantActivationService;
 
     @Transactional
     public Map<String, Object> createOrganization(OrganizationCreateRequest request) {
@@ -251,7 +252,7 @@ public class OrganizationProvisioningService {
             localUser.setLocale("id");
             localUser.setMfaEnabled(false);
             localUser.setOrganization(saved);
-            localUser.setStatus("ACTIVE");
+            localUser.setStatus("PENDING_ACTIVATION");
 
             // Assign the 'admin' system role to the organization owner
             Role adminRole = roleRepository
@@ -347,14 +348,30 @@ public class OrganizationProvisioningService {
             log.info("✅ SUCCESS: Organization '{}' provisioned. Owner: {}, Temp Password: {}",
                     saved.getName(), adminUsername, tempPassword);
 
-            Map<String, Object> result = Map.of(
-                "organization", saved,
-                "adminPassword", tempPassword,
-                "slug", saved.getSlug(),
-                "adminUsername", adminUsername,
-                "id", saved.getId().toString(),
-                "name", saved.getName()
-            );
+            String activationUrl = "";
+            try {
+                activationUrl = tenantActivationService.createAndDispatchActivation(
+                        saved.getId(),
+                        saved.getSlug(),
+                        saved.getName(),
+                        localUser.getId(),
+                        request.getAdminEmail(),
+                        adminUsername,
+                        request.getPicName()
+                );
+            } catch (Exception actEx) {
+                log.error("⚠️ Non-fatal: Failed creating activation link for {}: {}", saved.getSlug(), actEx.getMessage());
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("organization", saved);
+            result.put("adminPassword", tempPassword);
+            result.put("slug", saved.getSlug());
+            result.put("adminUsername", adminUsername);
+            result.put("adminEmail", request.getAdminEmail());
+            result.put("activationUrl", activationUrl);
+            result.put("id", saved.getId().toString());
+            result.put("name", saved.getName());
 
             if (listener != null) {
                 listener.onProvisioningSuccess(result);
@@ -614,7 +631,7 @@ public class OrganizationProvisioningService {
             localUser.setLocale("id");
             localUser.setMfaEnabled(false);
             localUser.setOrganization(saved);
-            localUser.setStatus("ACTIVE");
+            localUser.setStatus("PENDING_ACTIVATION");
 
             Role adminRole = roleRepository
                     .findByNameAndIsSystemRoleTrue(ownerRoleName)

@@ -169,3 +169,45 @@ func (c *JWTClaims) ExtractRoles(clientID string) []string {
 	return roles
 }
 
+// ForgotPasswordRequest is submitted to POST /api/v1/auth/forgot-password.
+type ForgotPasswordRequest struct {
+	Username       string `json:"username" binding:"required"`
+	TurnstileToken string `json:"turnstileToken,omitempty"`
+	Plane          string `json:"plane,omitempty"`
+	TenantSlug     string `json:"tenantSlug,omitempty"`
+	Lang           string `json:"lang,omitempty"`
+}
+
+// ResetPasswordRequest is submitted to POST /api/v1/auth/reset-password.
+type ResetPasswordRequest struct {
+	Token       string `json:"token" binding:"required"`
+	NewPassword string `json:"newPassword" binding:"required"`
+}
+
+// ActivateAccountRequest is submitted to POST /api/v1/auth/activate.
+type ActivateAccountRequest struct {
+	Token    string `json:"token" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// ResetTokenData stores token state in Redis auth:reset:<token>.
+type ResetTokenData struct {
+	UserID     string `json:"userId"`
+	Email      string `json:"email"`
+	Username   string `json:"username"`
+	FullName   string `json:"fullName"`
+	Realm      string `json:"realm"`
+	TenantSlug string `json:"tenantSlug"`
+}
+
+// ActivationTokenData stores token state in Redis auth:activate:<token>.
+type ActivationTokenData struct {
+	OrgID         string `json:"orgId"`
+	OrgSlug       string `json:"orgSlug"`
+	UserID        string `json:"userId"`
+	AdminEmail    string `json:"adminEmail"`
+	AdminUsername string `json:"adminUsername"`
+	OrgName       string `json:"orgName"`
+}
+
+
