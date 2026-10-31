@@ -4,20 +4,28 @@ import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.entity.UserDevice;
 import com.company.ftthgis.domain.user.repository.UserDeviceRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.security.SecureRandom;
 
+/**
+ * <h1>Device Verification & Session Tracking Service</h1>
+ * <p>
+ * Standardized in Phase 5E following the Google, GitHub, and Cloudflare architectural pattern:
+ * <ul>
+ *   <li>Authentication & MFA are 100% centralized in Keycloak (TOTP RFC 6238 & FIDO2 Passkeys).</li>
+ *   <li>{@code user_devices} table serves as the authoritative active session & device inventory.</li>
+ *   <li>New unrecognized devices trigger automated asynchronous Security Alert Notifications via Email and WhatsApp.</li>
+ *   <li>Legacy custom in-memory OTP verification is deprecated and removed to eliminate attack surface.</li>
+ * </ul>
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -29,205 +37,172 @@ public class DeviceVerificationService {
     private final SystemSettingService settingsService;
     private final EmailService emailService;
 
-    // Thread-safe map to store OTPs. Key: userId + "-" + fingerprint, Value: OtpDetails
-    private final Map<String, OtpDetails> otpCache = new ConcurrentHashMap<>();
-    private final SecureRandom random = new SecureRandom();
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @Getter
-    @Builder
-    private static class OtpDetails {
-        private final String code;
-        private final String phoneNumber;
-        private final LocalDateTime expiryTime;
-    }
-
+    /**
+     * Checks if a device is registered and trusted for the specified user.
+     */
     public boolean isDeviceVerified(UUID userId, String deviceFingerprint) {
-        // Separate device verification from global MFA key
-        boolean enforceDeviceCheck = settingsService.getSettingBoolean("device_verification_enabled", 
-                settingsService.getSettingBoolean("enforce_mfa", false));
-        boolean waOtpEnabled = settingsService.getSettingBoolean("wa_otp_enabled", false);
-        
-        if (!enforceDeviceCheck && !waOtpEnabled) {
-            return true; // Bypass if security rules are off
+        if (deviceFingerprint == null || deviceFingerprint.trim().isEmpty()) {
+            return false;
         }
 
         return userDeviceRepository.findByUserIdAndDeviceFingerprint(userId, deviceFingerprint)
-                .map(device -> {
-                    if (!device.isVerified()) {
-                        return false;
-                    }
-                    // Batasi durasi kepercayaan perangkat menjadi maksimal 24 jam (1 hari) sejak verifikasi terakhir
-                    LocalDateTime expiryThreshold = LocalDateTime.now().minusHours(24);
-                    if (device.getLastUsedAt() != null && device.getLastUsedAt().isBefore(expiryThreshold)) {
-                        log.info("⏰ Device trust expired for user {} device {} (Last verified: {})", 
-                                userId, deviceFingerprint, device.getLastUsedAt());
-                        return false;
-                    }
-                    return true;
-                })
+                .map(UserDevice::isVerified)
                 .orElse(false);
     }
 
     /**
-     * Generates and sends an OTP code for a new device (WhatsApp or Email).
-     */
-    public boolean requestOtp(UUID userId, String deviceFingerprint, String phoneNumber) {
-        String cacheKey = userId.toString() + "-" + deviceFingerprint;
-        
-        // Generate 6-digit OTP code
-        String otpCode = String.format("%06d", 100000 + random.nextInt(900000));
-        LocalDateTime expiry = LocalDateTime.now().plusMinutes(5);
-
-        otpCache.put(cacheKey, OtpDetails.builder()
-                .code(otpCode)
-                .phoneNumber(phoneNumber != null ? phoneNumber : "")
-                .expiryTime(expiry)
-                .build());
-
-        log.info("🔑 Generated OTP for user {} / device {}", userId, deviceFingerprint);
-
-        // Retrieve user to check email
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            log.error("❌ Cannot send OTP: User {} not found in system database!", userId);
-            return false;
-        }
-        User user = userOpt.get();
-        String userEmail = user.getEmail();
-
-        boolean waOtpEnabled = settingsService.getSettingBoolean("wa_otp_enabled", false);
-
-        // Check if we should send via WhatsApp
-        if (waOtpEnabled && phoneNumber != null && !phoneNumber.trim().isEmpty()) {
-            log.info("📱 Sending OTP to WhatsApp: {}", phoneNumber);
-            return whatsAppService.sendOtp(phoneNumber, otpCode);
-        } else {
-            // Send via SMTP
-            String subject = "Kode OTP Verifikasi Perangkat FTTH GIS";
-            String body = String.format(
-                    "<div style='font-family: sans-serif; padding: 20px; max-width: 600px; border: 1px solid #eee; border-radius: 8px;'>" +
-                    "  <h2 style='color: #0f766e;'>Verifikasi 2 Langkah</h2>" +
-                    "  <p>Kode OTP Anda untuk masuk ke sistem FTTH GIS adalah:</p>" +
-                    "  <div style='background-color: #f0fdf4; border: 1px dashed #22c55e; padding: 15px; text-align: center; border-radius: 6px; margin: 20px 0;'>" +
-                    "    <span style='font-size: 24px; font-weight: bold; color: #166534; letter-spacing: 2px;'>%s</span>" +
-                    "  </div>" +
-                    "  <p style='color: #666; font-size: 14px;'>Kode OTP ini hanya berlaku selama 5 menit. Jangan berikan kode ini kepada siapa pun.</p>" +
-                    "</div>",
-                    otpCode
-            );
-            
-            log.info("📧 Sending OTP email to: {}", userEmail);
-            boolean sent = emailService.sendEmail(userEmail, subject, body);
-            if (!sent) {
-                log.warn("⚠️ SMTP delivery failed for OTP email to {}", userEmail);
-            }
-            return true;
-        }
-    }
-
-    /**
-     * Verifies the OTP code. If valid, registers the device as verified.
+     * Records device activity. If the device is newly encountered for the user,
+     * registers it and triggers an asynchronous New Device Security Alert Notification.
      */
     @Transactional
-    public boolean verifyOtp(UUID userId, String deviceFingerprint, String otpCode, String browser, String os, String ipAddress) {
-        String cacheKey = userId.toString() + "-" + deviceFingerprint;
-        OtpDetails details = otpCache.get(cacheKey);
-
-        if (details == null) {
-            log.warn("❌ Verification failed: No OTP found for user {} / device {}", userId, deviceFingerprint);
+    public boolean recordDeviceActivity(UUID userId, String deviceFingerprint, String browser, String os, String ipAddress) {
+        if (deviceFingerprint == null || deviceFingerprint.trim().isEmpty()) {
             return false;
         }
 
-        if (details.getExpiryTime().isBefore(LocalDateTime.now())) {
-            log.warn("❌ Verification failed: OTP expired for user {} / device {}", userId, deviceFingerprint);
-            otpCache.remove(cacheKey);
-            return false;
-        }
-
-        if (!details.getCode().equals(otpCode)) {
-            log.warn("❌ Verification failed: Incorrect OTP code for user {} / device {}", userId, deviceFingerprint);
-            return false;
-        }
-
-        // OTP is correct! Clear from cache
-        otpCache.remove(cacheKey);
-
-        // Fetch User
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
-            log.error("❌ User {} not found in system database!", userId);
+            log.error("❌ User {} not found in system database when recording device", userId);
             return false;
         }
 
         User user = userOpt.get();
+        Optional<UserDevice> existingOpt = userDeviceRepository.findByUserIdAndDeviceFingerprint(userId, deviceFingerprint);
 
-        // Register/update the UserDevice
-        Optional<UserDevice> deviceOpt = userDeviceRepository.findByUserIdAndDeviceFingerprint(userId, deviceFingerprint);
-        UserDevice device;
-        if (deviceOpt.isPresent()) {
-            device = deviceOpt.get();
+        String cleanBrowser = (browser != null && !browser.isBlank()) ? browser : "Web Browser";
+        String cleanOs = (os != null && !os.isBlank()) ? os : "Unknown OS";
+        String cleanIp = (ipAddress != null && !ipAddress.isBlank()) ? ipAddress : "0.0.0.0";
+
+        if (existingOpt.isPresent()) {
+            UserDevice device = existingOpt.get();
             device.setVerified(true);
             device.setLastUsedAt(LocalDateTime.now());
-            device.setIpAddress(ipAddress);
-            device.setBrowser(browser);
-            device.setOs(os);
-        } else {
-            device = UserDevice.builder()
-                    .user(user)
-                    .deviceFingerprint(deviceFingerprint)
-                    .browser(browser)
-                    .os(os)
-                    .ipAddress(ipAddress)
-                    .verified(true)
-                    .createdAt(LocalDateTime.now())
-                    .lastUsedAt(LocalDateTime.now())
-                    .build();
+            device.setIpAddress(cleanIp);
+            device.setBrowser(cleanBrowser);
+            device.setOs(cleanOs);
+            userDeviceRepository.save(device);
+            log.debug("🔄 Updated existing device activity for user {} / device {}", userId, deviceFingerprint);
+            return true;
         }
 
-        userDeviceRepository.save(device);
-        log.info("✅ Device {} for User {} successfully verified and registered!", deviceFingerprint, userId);
+        // Newly encountered device!
+        UserDevice newDevice = UserDevice.builder()
+                .user(user)
+                .deviceFingerprint(deviceFingerprint)
+                .browser(cleanBrowser)
+                .os(cleanOs)
+                .ipAddress(cleanIp)
+                .verified(true)
+                .createdAt(LocalDateTime.now())
+                .lastUsedAt(LocalDateTime.now())
+                .build();
+
+        userDeviceRepository.save(newDevice);
+        log.info("🛡️ New device registered for user {} [{} on {} from IP {}]", userId, cleanBrowser, cleanOs, cleanIp);
+
+        // Dispatch asynchronous Security Alert Notification (Google / GitHub pattern)
+        sendNewDeviceSecurityAlert(user, cleanBrowser, cleanOs, cleanIp);
+
         return true;
     }
 
     /**
-     * Directly marks a device as trusted/verified for a user without checking OTP.
+     * Directly marks/records a device as trusted for a user.
      */
     @Transactional
     public boolean trustDeviceDirectly(UUID userId, String deviceFingerprint, String browser, String os, String ipAddress) {
-        // Fetch User
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            log.error("❌ User {} not found in system database!", userId);
-            return false;
+        return recordDeviceActivity(userId, deviceFingerprint, browser, os, ipAddress);
+    }
+
+    /**
+     * Sends a security alert notification to the user via Email and WhatsApp (if configured).
+     */
+    public void sendNewDeviceSecurityAlert(User user, String browser, String os, String ipAddress) {
+        String formattedTime = LocalDateTime.now().format(TIME_FORMATTER);
+        String userEmail = user.getEmail();
+        String userPhone = user.getPhone();
+
+        // 1. Send HTML Security Alert Email
+        if (userEmail != null && !userEmail.isBlank()) {
+            String subject = "Peringatan Keamanan K2NET: Deteksi Masuk dari Perangkat Baru";
+            String emailBody = buildSecurityAlertEmailHtml(
+                    user.getFullName() != null ? user.getFullName() : user.getUsername(),
+                    browser, os, ipAddress, formattedTime
+            );
+            try {
+                emailService.sendEmail(userEmail, subject, emailBody);
+                log.info("📧 New device security alert email dispatched to {}", userEmail);
+            } catch (Exception e) {
+                log.warn("⚠️ Failed to dispatch security alert email to {}: {}", userEmail, e.getMessage());
+            }
         }
 
-        User user = userOpt.get();
-
-        // Register/update the UserDevice
-        Optional<UserDevice> deviceOpt = userDeviceRepository.findByUserIdAndDeviceFingerprint(userId, deviceFingerprint);
-        UserDevice device;
-        if (deviceOpt.isPresent()) {
-            device = deviceOpt.get();
-            device.setVerified(true);
-            device.setLastUsedAt(LocalDateTime.now());
-            device.setIpAddress(ipAddress);
-            device.setBrowser(browser);
-            device.setOs(os);
-        } else {
-            device = UserDevice.builder()
-                    .user(user)
-                    .deviceFingerprint(deviceFingerprint)
-                    .browser(browser)
-                    .os(os)
-                    .ipAddress(ipAddress)
-                    .verified(true)
-                    .createdAt(LocalDateTime.now())
-                    .lastUsedAt(LocalDateTime.now())
-                    .build();
+        // 2. Send WhatsApp Security Alert Notification (if WhatsApp gateway enabled and phone configured)
+        boolean waEnabled = settingsService.getSettingBoolean("wa_gateway_enabled", false);
+        if (waEnabled && userPhone != null && !userPhone.isBlank()) {
+            String waMessage = String.format(
+                    "🛡️ *Peringatan Keamanan K2NET*\n\n" +
+                    "Aktivitas masuk terdeteksi dari perangkat/peramban baru pada akun Anda (%s):\n" +
+                    "• *Perangkat*: %s (%s)\n" +
+                    "• *Alamat IP*: %s\n" +
+                    "• *Waktu*: %s\n\n" +
+                    "Jika ini adalah Anda, abaikan pesan ini. Jika Anda tidak mengenali aktivitas ini, segera amankan akun Anda dengan mencabut sesi di menu Preferensi Akun: https://gis.kdua.net/account/preferences",
+                    user.getUsername(),
+                    browser, os,
+                    ipAddress,
+                    formattedTime
+            );
+            try {
+                whatsAppService.sendMessage(userPhone, waMessage);
+                log.info("📱 New device security alert WhatsApp message dispatched to {}", userPhone);
+            } catch (Exception e) {
+                log.warn("⚠️ Failed to dispatch WhatsApp security alert to {}: {}", userPhone, e.getMessage());
+            }
         }
+    }
 
-        userDeviceRepository.save(device);
-        log.info("🛡️ Device {} for User {} trusted directly via local authentication bypass!", deviceFingerprint, userId);
-        return true;
+    private String buildSecurityAlertEmailHtml(String displayName, String browser, String os, String ipAddress, String timestamp) {
+        return "<!DOCTYPE html>" +
+                "<html><head><meta charset='UTF-8'></head>" +
+                "<body style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 24px; color: #1e293b;'>" +
+                "  <div style='max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>" +
+                "    <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px;'>" +
+                "      <h2 style='font-size: 18px; font-weight: 700; color: #0f172a; margin: 0;'>🛡️ Peringatan Keamanan Akun K2NET</h2>" +
+                "    </div>" +
+                "    <p style='font-size: 14px; line-height: 1.5; color: #334155;'>Halo <strong>" + displayName + "</strong>,</p>" +
+                "    <p style='font-size: 14px; line-height: 1.5; color: #334155;'>Kami mendeteksi aktivitas masuk dari peramban atau perangkat baru yang belum pernah digunakan sebelumnya:</p>" +
+                "    <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px;'>" +
+                "      <p style='margin: 4px 0;'><strong>Peramban / Browser:</strong> " + browser + "</p>" +
+                "      <p style='margin: 4px 0;'><strong>Sistem Operasi:</strong> " + os + "</p>" +
+                "      <p style='margin: 4px 0;'><strong>Alamat IP:</strong> <code style='background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace;'>" + ipAddress + "</code></p>" +
+                "      <p style='margin: 4px 0;'><strong>Waktu Deteksi:</strong> " + timestamp + "</p>" +
+                "    </div>" +
+                "    <p style='font-size: 13px; line-height: 1.5; color: #64748b;'>Jika aktivitas ini dilakukan oleh Anda, Anda dapat mengabaikan email ini. Perangkat tersebut telah ditambahkan ke daftar sesi aktif Anda.</p>" +
+                "    <div style='margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;'>" +
+                "      <p style='font-size: 12px; color: #e11d48; margin: 0 0 12px 0;'><strong>Bukan Anda?</strong> Amankan akun Anda segera:</p>" +
+                "      <a href='https://gis.kdua.net/account/preferences' style='display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 6px;'>Cabut Akses Sesi di Preferensi Akun</a>" +
+                "    </div>" +
+                "  </div>" +
+                "</body></html>";
+    }
+
+    /**
+     * @deprecated Deprecated in Phase 5E. Authentication and MFA are 100% standardized on Keycloak Zero Trust (TOTP / Passkeys).
+     */
+    @Deprecated(since = "Phase 5E", forRemoval = true)
+    public boolean requestOtp(UUID userId, String deviceFingerprint, String phoneNumber) {
+        log.warn("⚠️ Legacy requestOtp called for user {}. Custom OTP is deprecated in favor of Keycloak TOTP/Passkeys.", userId);
+        return false;
+    }
+
+    /**
+     * @deprecated Deprecated in Phase 5E. Authentication and MFA are 100% standardized on Keycloak Zero Trust (TOTP / Passkeys).
+     */
+    @Deprecated(since = "Phase 5E", forRemoval = true)
+    public boolean verifyOtp(UUID userId, String deviceFingerprint, String otpCode, String browser, String os, String ipAddress) {
+        log.warn("⚠️ Legacy verifyOtp called for user {}. Custom OTP is deprecated in favor of Keycloak TOTP/Passkeys.", userId);
+        return false;
     }
 }

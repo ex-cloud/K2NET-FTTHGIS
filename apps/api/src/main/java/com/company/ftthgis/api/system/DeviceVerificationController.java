@@ -48,54 +48,31 @@ public class DeviceVerificationController {
 
     @PostMapping("/request-otp")
     @PreAuthorize("isAuthenticated()")
+    @Deprecated(since = "Phase 5E")
     public ResponseEntity<?> requestOtp(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody RequestOtpPayload payload) {
-        
-        if (payload.deviceFingerprint() == null || payload.deviceFingerprint().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "deviceFingerprint is required"));
-        }
-
-        UUID userId = UUID.fromString(jwt.getSubject());
-        String phoneNumber = payload.phoneNumber();
-        
-        boolean sent = deviceVerificationService.requestOtp(userId, payload.deviceFingerprint(), phoneNumber);
-
-        if (sent) {
-            return ResponseEntity.ok(Map.of("success", true, "message", "OTP sent successfully"));
-        } else {
-            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", "Failed to send OTP code"));
-        }
+        log.warn("⚠️ Deprecated /request-otp endpoint called by user {}", jwt.getSubject());
+        return ResponseEntity.ok(Map.of(
+                "success", false,
+                "deprecated", true,
+                "message", "Custom device OTP has been deprecated in Phase 5E. Multi-Factor Authentication is standardized via Keycloak TOTP & Passkeys FIDO2."
+        ));
     }
 
     @PostMapping("/verify")
     @PreAuthorize("isAuthenticated()")
+    @Deprecated(since = "Phase 5E")
     public ResponseEntity<?> verifyOtp(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody VerifyOtpPayload payload,
             HttpServletRequest request) {
-
-        if (payload.deviceFingerprint() == null || payload.otpCode() == null) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "deviceFingerprint and otpCode are required"));
-        }
-
-        UUID userId = UUID.fromString(jwt.getSubject());
-        String ipAddress = request.getRemoteAddr();
-
-        boolean verified = deviceVerificationService.verifyOtp(
-                userId,
-                payload.deviceFingerprint(),
-                payload.otpCode(),
-                payload.browser() != null ? payload.browser() : "Unknown Browser",
-                payload.os() != null ? payload.os() : "Unknown OS",
-                ipAddress
-        );
-
-        if (verified) {
-            return ResponseEntity.ok(Map.of("success", true, "message", "Device verified and registered as trusted."));
-        } else {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Invalid or expired OTP code"));
-        }
+        log.warn("⚠️ Deprecated /verify endpoint called by user {}", jwt.getSubject());
+        return ResponseEntity.ok(Map.of(
+                "success", false,
+                "deprecated", true,
+                "message", "Custom device OTP has been deprecated in Phase 5E. Multi-Factor Authentication is standardized via Keycloak TOTP & Passkeys FIDO2."
+        ));
     }
 
     @GetMapping("/my-devices")

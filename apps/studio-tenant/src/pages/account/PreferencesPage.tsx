@@ -3,13 +3,13 @@ import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import {
   AccountPreferencesShell,
-  AccountLabels,
-  UserProfileData,
-  PersonalSecuritySummaryData,
-  PasswordPolicyData,
-  DeviceSessionData,
   useIdleTimeout,
   IdleLockModal,
+  type AccountLabels,
+  type UserProfileData,
+  type PersonalSecuritySummaryData,
+  type PasswordPolicyData,
+  type DeviceSessionData,
 } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 import { apiClient } from "../../lib/api-client";
@@ -244,3 +244,4 @@ export function PreferencesPage() {
 }
 
 export default PreferencesPage;
+

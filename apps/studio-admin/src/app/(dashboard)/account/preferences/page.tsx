@@ -3,11 +3,11 @@ import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
 import {
   AccountPreferencesShell,
-  AccountLabels,
-  UserProfileData,
-  PersonalSecuritySummaryData,
-  PasswordPolicyData,
-  DeviceSessionData,
+  type AccountLabels,
+  type UserProfileData,
+  type PersonalSecuritySummaryData,
+  type PasswordPolicyData,
+  type DeviceSessionData,
 } from "@k2net/ui";
 import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
