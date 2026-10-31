@@ -137,7 +137,7 @@ function SecuritySettingsSection() {
   );
 }
 
-function SsoSettingsSection({ slug }: { slug: string }) {
+function SsoSettingsSection({ slug: _slug }: { slug?: string }) {
   const { t } = useTranslation();
   return (
     <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
@@ -154,7 +154,7 @@ function SsoSettingsSection({ slug }: { slug: string }) {
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold">{t("settings.issuer_url_label")}</Label>
         <Input
-          defaultValue={`https://auth-gis.kdua.net/realms/${slug || "realm"}`}
+          defaultValue="https://auth-gis.kdua.net/realms/k2net-tenants"
           disabled
           className="h-8.5 text-xs font-mono bg-muted/40"
         />
@@ -163,26 +163,43 @@ function SsoSettingsSection({ slug }: { slug: string }) {
   );
 }
 
-function OAuthSettingsSection() {
+function OAuthSettingsSection({ slug }: { slug: string }) {
   const { t } = useTranslation();
+  const [copied, setCopied] = React.useState(false);
+
+  // Masked organization client ID placeholder derived from active slug
+  const organizationClientId = React.useMemo(() => {
+    return slug ? `k2net_client_${slug}` : "k2net_client_org";
+  }, [slug]);
+
+  const handleCopy = () => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(organizationClientId);
+      setCopied(true);
+      toast.success(t("settings.api_key_copied"));
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold">{t("settings.api_secret_label")}</Label>
         <div className="flex items-center gap-2">
           <Input
-            type="password"
-            defaultValue="sk_live_k2net_98f4a187b2c019485"
-            className="h-8.5 text-xs font-mono"
+            type="text"
+            readOnly
+            value={organizationClientId}
+            className="h-8.5 text-xs font-mono bg-muted/40"
           />
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toast.success(t("settings.api_key_copied"))}
+            onClick={handleCopy}
             className="h-8.5 px-2.5 text-xs gap-1.5"
           >
             <Copy className="h-3.5 w-3.5" />
-            {t("common.download")}
+            {copied ? t("common.copied") : t("common.copy")}
           </Button>
         </div>
       </div>
@@ -376,7 +393,7 @@ export function OrgSettingsPage() {
         )}
         {currentSection === "security" && <SecuritySettingsSection />}
         {currentSection === "sso" && <SsoSettingsSection slug={slug} />}
-        {currentSection === "oauth" && <OAuthSettingsSection />}
+        {currentSection === "oauth" && <OAuthSettingsSection slug={slug} />}
       </div>
     </PageLayout>
   );

@@ -3,11 +3,13 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
 import { Skeleton } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { AuthRealmSettingsCard } from "@/components/security/auth-realm-settings-card";
 import { AuthSsoProvidersCard } from "@/components/security/auth-sso-providers-card";
 import { AuthActiveSessionsCard } from "@/components/security/auth-active-sessions-card";
 
 export default function SystemAuthPage() {
+  const { t } = useTranslation();
   const {
     realmConfig,
     loadingRealmConfig,
@@ -48,9 +50,9 @@ export default function SystemAuthPage() {
         verifyEmail: emailVerify,
         resetPasswordAllowed: resetAllowed,
       });
-      toast.success("MFA & Keycloak configurations saved successfully!");
+      toast.success(t("security.realm_settings_saved"));
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Failed to update Keycloak settings");
+      toast.error(error instanceof Error ? error.message : t("security.realm_settings_failed"));
     }
   };
 

@@ -98,6 +98,9 @@ export interface EnrichedOrganization {
   // Feature Flags
   featureFlags: OrganizationFeatureFlags;
 
+  // Security Policy
+  mfaEnforced?: boolean;
+
   // Telemetry & Rate Limiting
   apiRateLimitUsed: number;
   apiRateLimitMax: number;

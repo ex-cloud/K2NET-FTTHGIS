@@ -30,6 +30,7 @@ export interface Organization {
   adminUsername?: string;
   adminPassword?: string;
   plan?: string;
+  mfaEnforced?: boolean;
   status?: 'ACTIVE' | 'SUSPENDED' | 'TRIAL' | 'PROVISIONING' | 'OVERDUE' | 'TRIAL_EXPIRED' | 'PENDING_APPROVAL' | 'DELETED';
   trialExpiresAt?: string;
   createdAt?: string;

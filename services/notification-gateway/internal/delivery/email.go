@@ -138,7 +138,7 @@ func (s *SMTPEmailSender) Send(ctx context.Context, to, subject, htmlBody string
 		return errors.New("recipient email address is invalid")
 	}
 
-	addr := fmt.Sprintf("%s:%d", s.host, s.port)
+	addr := net.JoinHostPort(s.host, strconv.Itoa(s.port))
 	logger.Info(ctx, "Connecting to SMTP server",
 		zap.String("host", s.host),
 		zap.Int("port", s.port),

@@ -13,7 +13,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/organizations/{slug}/configs")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class OrganizationConfigController {
 
     private final OrganizationConfigService configService;
@@ -34,7 +33,7 @@ public class OrganizationConfigController {
 
     @PostMapping
     @PreAuthorize("@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update')")
-    public ResponseEntity<OrganizationConfig> saveConfig(
+    public ResponseEntity<?> saveConfig(
             @PathVariable String slug,
             @RequestBody Map<String, String> payload) {
         
@@ -44,6 +43,15 @@ public class OrganizationConfigController {
 
         if (key == null || value == null) {
             return ResponseEntity.badRequest().build();
+        }
+
+        String lowerKey = key.trim().toLowerCase();
+        if (lowerKey.startsWith("security.") || lowerKey.startsWith("mfa_") 
+                || lowerKey.startsWith("password_") || lowerKey.startsWith("device_verification")) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false, 
+                "message", "Security policies must be managed via /api/v1/organizations/{slug}/security-policy"
+            ));
         }
 
         return ResponseEntity.ok(configService.saveConfig(slug, key, value, description));

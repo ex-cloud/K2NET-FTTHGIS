@@ -42,17 +42,17 @@ export function AuthRealmSettingsCard({
     <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
       <CardHeader className="border-b border-border/40">
         <CardTitle className="text-foreground flex items-center gap-2">
-          <Lock className="w-4 h-4 text-primary" /> Global Realm Security
+          <Lock className="w-4 h-4 text-primary" /> {t("security.realm_security_title")}
         </CardTitle>
         <CardDescription className="text-muted-foreground text-xs">
-          Configure basic registration permissions and credential checks on the Keycloak master domain.
+          {t("security.realm_security_desc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <Label className="text-foreground text-sm font-medium">Self-Registration</Label>
-            <p className="text-xs text-muted-foreground">Allow users to create accounts without admin invitation.</p>
+            <Label className="text-foreground text-sm font-medium">{t("security.self_registration_title")}</Label>
+            <p className="text-xs text-muted-foreground">{t("security.self_registration_desc")}</p>
           </div>
           <Switch
             checked={regAllowed}
@@ -65,8 +65,8 @@ export function AuthRealmSettingsCard({
 
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <Label className="text-foreground text-sm font-medium">Email Verification</Label>
-            <p className="text-xs text-muted-foreground">Require email verification before granting access.</p>
+            <Label className="text-foreground text-sm font-medium">{t("security.email_verification_title")}</Label>
+            <p className="text-xs text-muted-foreground">{t("security.email_verification_desc")}</p>
           </div>
           <Switch
             checked={emailVerify}
@@ -79,8 +79,8 @@ export function AuthRealmSettingsCard({
 
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <Label className="text-foreground text-sm font-medium">Self Reset Password</Label>
-            <p className="text-xs text-muted-foreground">Provide a &quot;Forgot Password&quot; link on the login page.</p>
+            <Label className="text-foreground text-sm font-medium">{t("security.password_reset_title")}</Label>
+            <p className="text-xs text-muted-foreground">{t("security.password_reset_desc")}</p>
           </div>
           <Switch
             checked={resetAllowed}

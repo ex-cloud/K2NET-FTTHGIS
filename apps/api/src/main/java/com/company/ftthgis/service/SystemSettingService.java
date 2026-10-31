@@ -81,7 +81,8 @@ public class SystemSettingService {
         // SECURITY
         defaults.put("allow_self_registration", new String[]{"false", "SECURITY", "Enables or disables global self-registration for new users"});
         defaults.put("enforce_mfa", new String[]{"false", "SECURITY", "Forces all global and tenant users to set up 2FA/MFA"});
-        defaults.put("session_idle_timeout", new String[]{"15", "SECURITY", "Idle timeout in minutes before user session is auto-locked or logged out"});
+        defaults.put("device_verification_enabled", new String[]{"false", "SECURITY", "Enables step-up device verification with OTP for unrecognized browser/hardware fingerprints"});
+        defaults.put("session_idle_timeout", new String[]{"30", "SECURITY", "Idle timeout in minutes before user session is auto-locked or logged out"});
         defaults.put("map_auto_lock_duration", new String[]{"10", "SECURITY", "Inactive duration in minutes before mapping canvas is auto-locked for security"});
         defaults.put("password_min_length", new String[]{"8", "SECURITY", "Minimum password length requirement"});
         defaults.put("password_require_symbols", new String[]{"true", "SECURITY", "Require at least one special character"});
@@ -219,7 +220,7 @@ public class SystemSettingService {
         if (lower.startsWith("smtp_")) return "SMTP";
         if (lower.startsWith("brand_") || lower.equals("app_name") || lower.equals("logo_url") || lower.equals("footer_copyright")) return "BRANDING";
         if (lower.startsWith("default_map_") || lower.equals("vector_tile_source")) return "GIS";
-        if (lower.startsWith("password_") || lower.equals("enforce_mfa") || lower.equals("allow_self_registration") || lower.equals("session_idle_timeout") || lower.equals("map_auto_lock_duration")) return "SECURITY";
+        if (lower.startsWith("password_") || lower.equals("enforce_mfa") || lower.equals("device_verification_enabled") || lower.equals("allow_self_registration") || lower.equals("session_idle_timeout") || lower.equals("map_auto_lock_duration")) return "SECURITY";
         return "GENERAL";
     }
 

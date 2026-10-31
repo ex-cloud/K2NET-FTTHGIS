@@ -480,5 +480,15 @@
   "backup_modal_subtitle": "Snapshot database PostGIS, topologi spasial, dan metadata untuk {{orgName}} ({{orgSlug}})",
   "backup_failed_title": "Pencadangan Gagal",
   "backup_retry_btn": "Coba Lagi",
-  "backup_processing_pipeline": "Memproses Snapshot Pipeline..."
+  "backup_processing_pipeline": "Memproses Snapshot Pipeline...",
+  "active_accounts": "Akun Aktif",
+  "mfa_enforced_status": "Kebijakan MFA",
+  "mfa_policy_active": "Diwajibkan",
+  "mfa_policy_optional": "Opsional",
+  "col_user_name": "Nama Pengguna",
+  "col_role": "Peran",
+  "col_email": "Email",
+  "col_mfa": "MFA / 2FA",
+  "col_status": "Status",
+  "col_last_login": "Login Terakhir"
 }

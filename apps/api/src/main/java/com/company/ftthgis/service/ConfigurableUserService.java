@@ -449,6 +449,11 @@ public class ConfigurableUserService {
 
     @Transactional
     public UserDto updateProfile(UUID id, String fullName, String email, String avatarUrl) {
+        return updateProfile(id, fullName, email, avatarUrl, null);
+    }
+
+    @Transactional
+    public UserDto updateProfile(UUID id, String fullName, String email, String avatarUrl, String phone) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -472,6 +477,9 @@ public class ConfigurableUserService {
         }
         if (avatarUrl != null) {
             user.setAvatarUrl(avatarUrl);
+        }
+        if (phone != null) {
+            user.setPhone(phone.trim().isEmpty() ? null : phone.trim());
         }
 
         String firstName = "";

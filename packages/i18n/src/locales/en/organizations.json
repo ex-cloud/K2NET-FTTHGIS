@@ -480,5 +480,15 @@
   "backup_modal_subtitle": "Snapshot of PostGIS database, spatial topology, and metadata for {{orgName}} ({{orgSlug}})",
   "backup_failed_title": "Backup Failed",
   "backup_retry_btn": "Try Again",
-  "backup_processing_pipeline": "Processing Snapshot Pipeline..."
+  "backup_processing_pipeline": "Processing Snapshot Pipeline...",
+  "active_accounts": "Active Accounts",
+  "mfa_enforced_status": "MFA Policy",
+  "mfa_policy_active": "Enforced",
+  "mfa_policy_optional": "Optional",
+  "col_user_name": "User Name",
+  "col_role": "Role",
+  "col_email": "Email",
+  "col_mfa": "MFA / 2FA",
+  "col_status": "Status",
+  "col_last_login": "Last Login"
 }

@@ -42,11 +42,12 @@ public class DeviceVerificationService {
     }
 
     public boolean isDeviceVerified(UUID userId, String deviceFingerprint) {
-        // If MFA is not globally enforced, we can bypass or require it
-        boolean enforceMfa = settingsService.getSettingBoolean("enforce_mfa", false);
+        // Separate device verification from global MFA key
+        boolean enforceDeviceCheck = settingsService.getSettingBoolean("device_verification_enabled", 
+                settingsService.getSettingBoolean("enforce_mfa", false));
         boolean waOtpEnabled = settingsService.getSettingBoolean("wa_otp_enabled", false);
         
-        if (!enforceMfa && !waOtpEnabled) {
+        if (!enforceDeviceCheck && !waOtpEnabled) {
             return true; // Bypass if security rules are off
         }
 
@@ -83,7 +84,7 @@ public class DeviceVerificationService {
                 .expiryTime(expiry)
                 .build());
 
-        log.info("🔑 Generated OTP {} for user {} / device {}", otpCode, userId, deviceFingerprint);
+        log.info("🔑 Generated OTP for user {} / device {}", userId, deviceFingerprint);
 
         // Retrieve user to check email
         Optional<User> userOpt = userRepository.findById(userId);
@@ -118,9 +119,7 @@ public class DeviceVerificationService {
             log.info("📧 Sending OTP email to: {}", userEmail);
             boolean sent = emailService.sendEmail(userEmail, subject, body);
             if (!sent) {
-                log.warn("⚠️ SMTP delivery failed, falling back to mock log print for recovery");
-                log.info("To: {}", userEmail);
-                log.info("OTP Code (Recovery): {}", otpCode);
+                log.warn("⚠️ SMTP delivery failed for OTP email to {}", userEmail);
             }
             return true;
         }

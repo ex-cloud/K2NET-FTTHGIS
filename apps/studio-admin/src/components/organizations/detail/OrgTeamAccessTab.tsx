@@ -42,6 +42,7 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
       <TeamMembersTable
         users={effectiveUsers}
         isLoading={isLoading}
+        mfaEnforced={org.mfaEnforced}
         onPasswordReset={handlePasswordReset}
         onResendInvite={handleResendInvite}
         onChangeRole={handleChangeRole}

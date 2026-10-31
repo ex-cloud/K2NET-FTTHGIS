@@ -33,6 +33,7 @@ import { useTranslation } from "@k2net/i18n";
 interface TeamMembersTableProps {
   users: TenantUser[];
   isLoading: boolean;
+  mfaEnforced?: boolean;
   onPasswordReset: (user: TenantUser) => void;
   onResendInvite: (user: TenantUser) => void;
   onChangeRole: (userId: string, newRole: TenantUserRole) => void;
@@ -56,6 +57,7 @@ function getRoleBadge(role: TenantUserRole) {
 export function TeamMembersTable({
   users,
   isLoading,
+  mfaEnforced,
   onPasswordReset,
   onResendInvite,
   onChangeRole,
@@ -68,10 +70,13 @@ export function TeamMembersTable({
     <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">
       <div className="py-3 px-4 border-b border-border/80 bg-muted/20 flex items-center justify-between">
         <span className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
-          Active Accounts ({users.length})
+          {t("organizations.active_accounts")} ({users.length})
         </span>
         <span className="text-[11px] font-mono text-muted-foreground">
-          MFA Enforced: Yes
+          {t("organizations.mfa_enforced_status")}:{" "}
+          <span className={mfaEnforced ? "text-primary font-semibold" : "text-muted-foreground font-medium"}>
+            {mfaEnforced ? t("organizations.mfa_policy_active") : t("organizations.mfa_policy_optional")}
+          </span>
         </span>
       </div>
 
@@ -80,22 +85,22 @@ export function TeamMembersTable({
           <TableHeader className="bg-muted/40 border-b border-border/80">
             <TableRow className="hover:bg-transparent">
               <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider pl-6">
-                User Name
+                {t("organizations.col_user_name")}
               </TableHead>
               <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Role
+                {t("organizations.col_role")}
               </TableHead>
               <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Email
+                {t("organizations.col_email")}
               </TableHead>
               <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                MFA / 2FA
+                {t("organizations.col_mfa")}
               </TableHead>
               <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Status
+                {t("organizations.col_status")}
               </TableHead>
               <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider pr-6">
-                Last Login
+                {t("organizations.col_last_login")}
               </TableHead>
             </TableRow>
           </TableHeader>

@@ -107,7 +107,7 @@ public class UserController {
             @RequestBody UpdateProfileRequest request,
             @AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
-        return userService.updateProfile(userId, request.fullName(), request.email(), request.avatarUrl());
+        return userService.updateProfile(userId, request.fullName(), request.email(), request.avatarUrl(), request.phone());
     }
 
     @GetMapping("/me/social-identities")
@@ -155,7 +155,7 @@ public class UserController {
     public record LinkSocialRequest(String provider, String code, String redirectUri) {
     }
 
-    public record UpdateProfileRequest(String fullName, String email, String avatarUrl) {
+    public record UpdateProfileRequest(String fullName, String email, String avatarUrl, String phone) {
     }
 
     public record UpdateUserRequest(String role, String status, String reason) {
