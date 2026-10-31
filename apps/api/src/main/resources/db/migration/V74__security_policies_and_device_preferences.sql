@@ -84,11 +84,11 @@ WHERE p.code IN ('security.policy.view', 'security.policy.manage')
 ON CONFLICT (permission_id, role_id) DO NOTHING;
 
 -- 7. Seed Baseline Platform Security Settings into system_settings
-INSERT INTO system_settings (key, value, category, description, created_at, updated_at) VALUES
+INSERT INTO system_settings (config_key, config_value, category, description, created_at, updated_at) VALUES
     ('security.mfa.allowed_methods', 'totp,webauthn', 'SECURITY', 'Comma-separated list of allowed MFA mechanisms on platform (totp,webauthn)', NOW(), NOW()),
     ('security.mfa.grace_period_days', '7', 'SECURITY', 'Default grace period in days for new users to complete MFA enrollment', NOW(), NOW()),
     ('security.mfa.tenant_can_enforce', 'true', 'SECURITY', 'Whether tenant admins are permitted to enforce MFA for their organization', NOW(), NOW()),
     ('security.device_verification_enabled', 'false', 'SECURITY', 'Whether step-up OTP device verification is globally enabled for new devices', NOW(), NOW()),
     ('security.ip_allowlist.tenant_allowed', 'true', 'SECURITY', 'Whether tenant admins are permitted to configure IP CIDR allowlists', NOW(), NOW())
-ON CONFLICT (key) DO NOTHING;
+ON CONFLICT (config_key) DO NOTHING;
 
