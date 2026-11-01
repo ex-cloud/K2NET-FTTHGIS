@@ -235,12 +235,12 @@ public class TenantBrandingService {
             yaml.append("# Generated at: ").append(LocalDateTime.now()).append("\n");
             yaml.append("# Do not edit manually. Changes will be overwritten on branding sync.\n");
             yaml.append("# ==============================================================================\n\n");
-            yaml.append("http:\n");
-            yaml.append("  routers:\n");
 
             if (activeDomains.isEmpty()) {
-                yaml.append("    # No active custom domains provisioned yet\n");
+                yaml.append("# No active custom domains provisioned yet\n");
             } else {
+                yaml.append("http:\n");
+                yaml.append("  routers:\n");
                 for (TenantBranding tb : activeDomains) {
                     String domain = tb.getCustomDomain();
                     if (domain == null || domain.isBlank()) continue;
