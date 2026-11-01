@@ -7,7 +7,7 @@ services:
       context: ./services
       dockerfile: notification-gateway/Dockerfile
     container_name: ftth-notification-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -30,7 +30,7 @@ services:
       context: ./services
       dockerfile: payment-gateway/Dockerfile
     container_name: ftth-payment-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -54,7 +54,7 @@ services:
       context: ./services
       dockerfile: map-gateway/Dockerfile
     container_name: ftth-map-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -77,7 +77,7 @@ services:
       context: ./services
       dockerfile: storage-gateway/Dockerfile
     container_name: ftth-storage-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -101,7 +101,7 @@ services:
       context: ./services
       dockerfile: poller/Dockerfile
     container_name: ftth-poller
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -123,7 +123,7 @@ services:
       context: ./services
       dockerfile: gateway-whatsapp/Dockerfile
     container_name: ftth-whatsapp-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -146,7 +146,7 @@ services:
       context: ./services
       dockerfile: gateway-scheduler/Dockerfile
     container_name: ftth-scheduler-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -170,7 +170,7 @@ services:
       context: ./services
       dockerfile: gateway-export/Dockerfile
     container_name: ftth-export-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -194,7 +194,7 @@ services:
       context: ./services
       dockerfile: gateway-olt/Dockerfile
     container_name: ftth-olt-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -218,7 +218,7 @@ services:
       context: ./services
       dockerfile: gateway-audit/Dockerfile
     container_name: ftth-audit-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -239,7 +239,7 @@ services:
       context: ./services
       dockerfile: gateway-task/Dockerfile
     container_name: ftth-task-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -267,7 +267,7 @@ services:
       context: ./services
       dockerfile: gateway-ai/Dockerfile
     container_name: ftth-ai-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -297,7 +297,7 @@ services:
       context: ./services
       dockerfile: observability-gateway/Dockerfile
     container_name: ftth-observability-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:
@@ -321,7 +321,7 @@ services:
       context: ./services
       dockerfile: gateway-auth/Dockerfile
     container_name: ftth-auth-gateway
-    restart: always
+    restart: no
     env_file:
       - ./services/.env
     environment:

@@ -144,5 +144,48 @@ Pengumpulan log pada layer ingress API gateway dan reverse proxy wajib mengikuti
 3. **Grafana Provisioning**:
    * Loki wajib didaftarkan secara deklaratif di `docker/grafana/provisioning/datasources/datasource.yml` agar langsung dapat digunakan untuk visualisasi log dashboard tanpa konfigurasi manual di UI Grafana.
 
+---
+
+## 🔄 10. Standar Orkestrasi Booting Bertahap & Manajemen Service (Staged Boot)
+
+> 🛑 **ATURAN MUTLAK**: Seluruh 33 kontainer pada `docker-compose.yml` dan `docker-compose.gateways.yml` **WAJIB** menggunakan `restart: no` (dilarang keras `restart: always` pada definisi compose). Kebijakan ini mencegah insiden server hang/freeze akibat lonjakan CPU & RAM saat seluruh kontainer menyala serentak di detik ke-0 pasca reboot host/Proxmox.
+
+Seluruh proses startup dan shutdown diatur secara bertahap dalam **5 Gelombang Prioritas** menggunakan script [scripts/staged-startup.sh](file:///opt/project5/scripts/staged-startup.sh) dan dikelola otomatis oleh Systemd (`/etc/systemd/system/ftth-staged-boot.service`):
+
+### 🌊 Matriks 5 Gelombang Prioritas:
+1. **Gelombang 1 — Fondasi Database & Storage**: `postgres` (PostGIS), `redis`, `minio`, `minio-init` (Barrier: `pg_isready` & `redis-cli ping`).
+2. **Gelombang 2 — Edge Ingress & IAM**: `traefik`, `cloudflared`, `keycloak`, `kong` (Barrier: Kong status & Keycloak ready).
+3. **Gelombang 3 — Core Application Backend & Edge Auth**: `backend` (Spring Boot 3), `gateway-auth` (Barrier: Actuator health status `UP`).
+4. **Gelombang 4 — Frontends & Microservice Gateways**: `frontend-admin`, `frontend-tenant`, `martin`, `snmpsim`, dan 13 Go/Python Gateways.
+5. **Gelombang 5 — Observability Stack (Prioritas Terendah)**: `prometheus`, `alertmanager`, `loki`, `promtail`, `grafana`, `node-exporter`.
+
+### 📋 Perintah Operasional Baku:
+Setiap kali terjadi insiden pemeliharaan, reboot server, atau kebutuhan diagnosis service:
+* **Cek status gelombang**:
+  ```bash
+  bash /opt/project5/scripts/staged-startup.sh status
+  # Atau via shortcut: pnpm services:status
+  ```
+* **Stop aman berurutan (Graceful Reverse Shutdown)**:
+  ```bash
+  bash /opt/project5/scripts/staged-startup.sh stop
+  # Atau via shortcut: pnpm services:stop
+  ```
+* **Start bertahap (5 Gelombang + Runtime Auto-Heal)**:
+  ```bash
+  bash /opt/project5/scripts/staged-startup.sh start
+  # Atau via shortcut: pnpm services:start
+  ```
+* **Restart menyeluruh bertahap**:
+  ```bash
+  bash /opt/project5/scripts/staged-startup.sh restart
+  # Atau via shortcut: pnpm services:restart
+  ```
+* **Status Systemd Daemon**:
+  ```bash
+  systemctl status ftth-staged-boot.service
+  ```
+
+
 
 

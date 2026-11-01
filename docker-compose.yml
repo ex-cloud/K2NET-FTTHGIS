@@ -3,7 +3,7 @@ services:
   traefik:
     image: traefik:3.7.5
     container_name: traefik
-    restart: always
+    restart: no
     command:
       - "--api.dashboard=true"
       - "--api.insecure=true"
@@ -44,7 +44,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
-    restart: always
+    restart: no
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - traefik
@@ -59,7 +59,7 @@ services:
   kong:
     image: kong:3.9.3
     container_name: kong
-    restart: always
+    restart: no
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: "/usr/local/kong/declarative/kong.yml"
@@ -97,7 +97,7 @@ services:
   postgres:
     image: pgrouting/pgrouting:16-3.5-4.0
     container_name: ftth-postgres
-    restart: always
+    restart: no
     environment:
       POSTGRES_DB: "${DB_NAME}"
       POSTGRES_USER: "${DB_USER}"
@@ -124,7 +124,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: ftth-redis
-    restart: always
+    restart: no
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
@@ -139,7 +139,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.1.1
     container_name: ftth-keycloak
-    restart: always
+    restart: no
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: "${KC_ADMIN_USER}"
       KC_BOOTSTRAP_ADMIN_PASSWORD: "${KC_ADMIN_PASSWORD}" # Sesuai dengan konfigurasi lokal Anda
@@ -178,7 +178,7 @@ services:
   martin:
     image: maplibre/martin:v0.8.0
     container_name: ftth-martin
-    restart: always
+    restart: no
     environment:
       - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
     labels:
@@ -202,7 +202,7 @@ services:
   snmpsim:
     image: tandrup/snmpsim:latest
     container_name: ftth-snmpsim
-    restart: always
+    restart: no
     ports:
       - "127.0.0.1:161:161/udp"
     deploy:
@@ -215,7 +215,7 @@ services:
   prometheus:
     image: prom/prometheus:v3.11.3
     container_name: ftth-prometheus
-    restart: always
+    restart: no
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./docker/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
@@ -238,7 +238,7 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.28.1
     container_name: ftth-alertmanager
-    restart: always
+    restart: no
     volumes:
       - ./docker/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     ports:
@@ -255,7 +255,7 @@ services:
   grafana:
     image: grafana/grafana-oss:13.0.1
     container_name: ftth-grafana
-    restart: always
+    restart: no
     volumes:
       - grafana_data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -275,7 +275,7 @@ services:
   loki:
     image: grafana/loki:3.0.0
     container_name: ftth-loki
-    restart: always
+    restart: no
     ports:
       - "127.0.0.1:3100:3100"
     volumes:
@@ -291,7 +291,7 @@ services:
   promtail:
     image: grafana/promtail:3.0.0
     container_name: ftth-promtail
-    restart: always
+    restart: no
     volumes:
       - ./docker/traefik/logs:/var/log/traefik:ro
       - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
@@ -309,7 +309,7 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.11.1
     container_name: ftth-node-exporter
-    restart: always
+    restart: no
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -334,7 +334,7 @@ services:
       context: ./apps/api
       dockerfile: Dockerfile
     container_name: ftth-backend
-    restart: always
+    restart: no
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - JAVA_TOOL_OPTIONS=-Xms192m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError
@@ -399,7 +399,7 @@ services:
       context: .
       dockerfile: apps/studio-tenant/Dockerfile
     container_name: ftth-frontend-tenant
-    restart: always
+    restart: no
     extra_hosts:
       - "host.docker.internal:host-gateway"
     labels:
@@ -434,7 +434,7 @@ services:
         - NEXT_PUBLIC_GIT_BRANCH=${NEXT_PUBLIC_GIT_BRANCH:-main}
         - NEXT_PUBLIC_GIT_COMMIT=${NEXT_PUBLIC_GIT_COMMIT:-unknown}
     container_name: ftth-frontend-admin
-    restart: always
+    restart: no
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:9090/api/v1
       - BACKEND_API_URL=http://backend:9090
@@ -491,7 +491,7 @@ services:
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: ftth-minio
-    restart: always
+    restart: no
     ports:
       - "100.110.205.109:9005:9000" # API Port (Tailscale only)
       - "100.110.205.109:9006:9001" # Web Console UI Port (Tailscale only)

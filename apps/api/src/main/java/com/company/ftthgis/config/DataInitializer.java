@@ -251,7 +251,7 @@ public class DataInitializer implements CommandLineRunner {
     private void createMvtFunction() {
         log.info("--- [GIS] Creating/Updating get_mvt_data PostGIS function for Martin ---");
         String createFunctionSql = """
-                CREATE OR REPLACE FUNCTION get_mvt_data(z integer, x integer, y integer, query json)
+                CREATE OR REPLACE FUNCTION get_mvt_data(z integer, x integer, y integer, query json DEFAULT '{}'::json)
                 RETURNS bytea AS $$
                 DECLARE
                     mvt bytea;

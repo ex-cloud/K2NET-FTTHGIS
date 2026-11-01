@@ -81,3 +81,9 @@ Prosedur langkah-demi-langkah (*Progressive Disclosure*) beserta dokumentasi ref
 - **Larangan Halusinasi & Konfirmasi Improvisasi**: AI Agent DILARANG KERAS berhalusinasi atau keluar dari konteks monorepo K2NET. Segala bentuk ide perbaikan di luar tugas aktif atau improvisasi arsitektural WAJIB dikonfirmasikan terlebih dahulu ke pengguna sebelum dieksekusi.
 - **Ukuran Kontrol Baku**: Toolbar & card footer wajib `size="sm"` (`h-7 px-2.5`, icon `size-3.5`). Tabel data padat wajib `size="xs"` (`h-6 px-2`, icon `size-3`).
 - **Shared Layout Shell**: Sub-sidebar wajib `<SecondarySidebarHeader />` (`h-12 py-2 px-4`). Kanvas wajib `<PageLayout>` + `<PageHero>`.
+- **Staged Booting & Graceful Shutdown Standard**: Seluruh 33 kontainer wajib menggunakan `restart: no` di compose file untuk mencegah server hang/freeze akibat lonjakan serentak di detik ke-0 saat reboot host. Startup dan shutdown diatur oleh Systemd (`ftth-staged-boot.service`) melalui 5 gelombang prioritas (Wave 1 DB/Storage -> Wave 2 Proxy/IAM -> Wave 3 Spring Boot Backend -> Wave 4 Frontend/Gateways -> Wave 5 Observability). Perintah operasional baku:
+  - Cek status gelombang: `bash /opt/project5/scripts/staged-startup.sh status` (atau `pnpm services:status`)
+  - Stop aman berurutan: `bash /opt/project5/scripts/staged-startup.sh stop` (atau `pnpm services:stop`)
+  - Start bertahap: `bash /opt/project5/scripts/staged-startup.sh start` (atau `pnpm services:start`)
+  - Restart menyeluruh: `bash /opt/project5/scripts/staged-startup.sh restart` (atau `pnpm services:restart`)
+

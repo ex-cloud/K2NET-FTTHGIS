@@ -27,7 +27,11 @@
     "audit:i18n": "bash scripts/audit-i18n.sh",
     "audit:design-system:ui": "bash scripts/audit-design-system.sh ui",
     "audit:slop": "knip --files --no-exit-code",
-    "audit:deadcode": "knip --no-exit-code"
+    "audit:deadcode": "knip --no-exit-code",
+    "services:status": "bash scripts/staged-startup.sh status",
+    "services:start": "bash scripts/staged-startup.sh start",
+    "services:stop": "bash scripts/staged-startup.sh stop",
+    "services:restart": "bash scripts/staged-startup.sh restart"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "^5.102.8",
