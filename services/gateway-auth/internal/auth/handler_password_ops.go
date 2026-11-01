@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -366,6 +367,31 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 	})
 }
 
+// decodeActivationToken parses the Redis value of auth:activate:<token>.
+//
+// The producer (Spring Boot) historically wrote the JSON through a Jackson-serialized
+// RedisTemplate, which stores it as a quoted/escaped JSON *string literal*
+// ("{\"orgId\":...}") instead of a raw JSON object. Tokens already e-mailed to tenants
+// before the producer was fixed must keep working, so accept both representations.
+func decodeActivationToken(raw string) (ActivationTokenData, error) {
+	var data ActivationTokenData
+	trimmed := strings.TrimSpace(raw)
+	if strings.HasPrefix(trimmed, "\"") {
+		var inner string
+		if err := json.Unmarshal([]byte(trimmed), &inner); err != nil {
+			return data, err
+		}
+		trimmed = inner
+	}
+	if err := json.Unmarshal([]byte(trimmed), &data); err != nil {
+		return data, err
+	}
+	if data.OrgSlug == "" || data.UserID == "" || data.OrgID == "" {
+		return data, errors.New("incomplete activation token payload")
+	}
+	return data, nil
+}
+
 // ValidateActivationToken handles GET /api/v1/auth/activate/validate?token=...
 func (h *Handler) ValidateActivationToken(c *gin.Context) {
 	token := strings.TrimSpace(c.Query("token"))
@@ -386,8 +412,9 @@ func (h *Handler) ValidateActivationToken(c *gin.Context) {
 		return
 	}
 
-	var data ActivationTokenData
-	if jsonErr := json.Unmarshal([]byte(raw), &data); jsonErr != nil {
+	data, decErr := decodeActivationToken(raw)
+	if decErr != nil {
+		logger.Warn(c.Request.Context(), "Activation token payload could not be decoded", zap.Error(decErr))
 		c.JSON(http.StatusOK, gin.H{"valid": false, "error": "MALFORMED_TOKEN"})
 		return
 	}
@@ -450,8 +477,9 @@ func (h *Handler) ActivateAccount(c *gin.Context) {
 		return
 	}
 
-	var data ActivationTokenData
-	if jsonErr := json.Unmarshal([]byte(raw), &data); jsonErr != nil {
+	data, decErr := decodeActivationToken(raw)
+	if decErr != nil {
+		logger.Warn(ctx, "Activation token payload could not be decoded", zap.Error(decErr))
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "MALFORMED_TOKEN",
 			"message": "Data token rusak.",

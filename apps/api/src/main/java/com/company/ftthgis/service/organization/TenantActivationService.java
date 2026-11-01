@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -24,7 +24,12 @@ import java.util.UUID;
 @Slf4j
 public class TenantActivationService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    // IMPORTANT: activation keys are a cross-language contract with gateway-auth (Go), which reads
+    // `auth:activate:<token>` as RAW JSON. The shared RedisTemplate<String,Object> uses
+    // GenericJackson2JsonRedisSerializer which would store the JSON a second time as a quoted,
+    // escaped string literal and make every activation link look "Invalid or Expired".
+    // Always use the plain StringRedisTemplate for these keys.
+    private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final OrganizationRepository organizationRepository;
     private final UserRepository userRepository;
@@ -71,7 +76,9 @@ public class TenantActivationService {
             redisTemplate.opsForValue().set("auth:org-activate-token:" + orgSlug, token, Duration.ofHours(24));
             log.info("🔑 Stored activation token in Redis for organization '{}' (TTL: 24h)", orgSlug);
         } catch (Exception e) {
-            log.error("Failed storing activation token in Redis: {}", e.getMessage());
+            // Fail closed: never e-mail a link whose token was not persisted (it would be dead on arrival).
+            log.error("Failed storing activation token in Redis for '{}': {}", orgSlug, e.getMessage());
+            throw new IllegalStateException("Activation token could not be stored; activation email was NOT sent", e);
         }
 
         String activationUrl = "https://" + orgSlug + ".kdua.net/activate?token=" + token;
@@ -118,7 +125,7 @@ public class TenantActivationService {
      * Retrieves active activation link metadata for Super Admin inspection.
      */
     public Map<String, Object> getActiveActivationLink(String slug) {
-        String token = (String) redisTemplate.opsForValue().get("auth:org-activate-token:" + slug);
+        String token = redisTemplate.opsForValue().get("auth:org-activate-token:" + slug);
         if (token == null || token.isBlank()) {
             return Map.of("active", false, "slug", slug);
         }

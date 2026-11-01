@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   useTheme,
   cn,
+  clearBrowserStorageForLogout,
 } from "@k2net/ui";
 import { ShieldAlert, Building, Users, CreditCard, Sparkles, ArrowUpRight, User } from "lucide-react";
 import { useAuth } from "@k2net/auth/client";
@@ -86,10 +87,8 @@ export function TenantUserNav() {
   const { selectedTimezone, setTimezone } = useTimezonePreference(mounted);
 
   const handleLogout = async () => {
-    if (typeof window !== "undefined") {
-      localStorage.clear();
-      sessionStorage.clear();
-    }
+    // Preserves `k2net_saved_profiles` so the Account Chooser / "View saved profiles" survives logout.
+    clearBrowserStorageForLogout();
     await logout({
       redirectUri: `${window.location.origin}/login`,
     });

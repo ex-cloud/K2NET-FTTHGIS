@@ -74,6 +74,23 @@ export function parseDomain(hostname: string) {
 }
 
 /**
+ * Canonical tenant host base (plan pillar 2 / Opsi A): `https://<tenant>.kdua.net`.
+ *
+ * The production platform hosts (`system-gis.kdua.net`, `gis.kdua.net`) use the legacy "-gis"
+ * pattern, but TENANT hosts must NEVER inherit it — a tenant URL is always `<slug>.kdua.net`.
+ * Staging / lvh.me / localhost keep deriving the tenant base from the current host.
+ */
+const LEGACY_PRODUCTION_BASE = "gis.kdua.net";
+const CANONICAL_TENANT_BASE = "kdua.net";
+
+function resolveTenantBase(baseDomain: string, isHyphen: boolean): { base: string; hyphen: boolean } {
+  if (baseDomain === LEGACY_PRODUCTION_BASE) {
+    return { base: CANONICAL_TENANT_BASE, hyphen: false };
+  }
+  return { base: baseDomain, hyphen: isHyphen };
+}
+
+/**
  * Constructs a full URL for a specific tenant, handling both localhost and production domains.
  * @param slug The organization slug (subdomain)
  * @param path Optional path within the tenant dashboard (defaults to empty string for root)
@@ -88,14 +105,15 @@ export function getTenantUrl(slug: string, path: string = ""): string {
       const hostname = window.location.hostname;
       const port = window.location.port;
       
-      const { baseDomain, isHyphen } = parseDomain(hostname);
+      const parsed = parseDomain(hostname);
+      const { base, hyphen } = resolveTenantBase(parsed.baseDomain, parsed.isHyphen);
       // In local development, tenant SPA is on port 3002
       const tenantPort = (hostname === "localhost" || hostname === "127.0.0.1" || hostname.endsWith(".localhost")) ? ":3002" : (port ? `:${port}` : "");
       
-      if (isHyphen) {
-        return `${protocol}//${slug}-${baseDomain}${tenantPort}${path}`;
+      if (hyphen) {
+        return `${protocol}//${slug}-${base}${tenantPort}${path}`;
       } else {
-        return `${protocol}//${slug}.${baseDomain}${tenantPort}${path}`;
+        return `${protocol}//${slug}.${base}${tenantPort}${path}`;
       }
     }
     
@@ -110,11 +128,12 @@ export function getTenantUrl(slug: string, path: string = ""): string {
     } else if (fallbackHost.startsWith("system.")) {
       fallbackHost = fallbackHost.substring(7);
     }
+    const resolved = resolveTenantBase(fallbackHost, isHyphen);
     
-    if (isHyphen) {
-      return `${protocol}//${slug}-${fallbackHost}${path}`;
+    if (resolved.hyphen) {
+      return `${protocol}//${slug}-${resolved.base}${path}`;
     } else {
-      return `${protocol}//${slug}.${fallbackHost}${path}`;
+      return `${protocol}//${slug}.${resolved.base}${path}`;
     }
   } catch {
     return `http://${slug}.localhost:3002${path}`;
@@ -122,17 +141,18 @@ export function getTenantUrl(slug: string, path: string = ""): string {
 }
 
 /**
- * Constructs the default tenant hostname string (e.g. kircon-gis.kdua.net or kircon.localhost).
+ * Constructs the default tenant hostname string (e.g. kircon.kdua.net or kircon.localhost).
  */
 export function getDefaultTenantHost(slug: string): string {
   try {
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
-      const { baseDomain, isHyphen } = parseDomain(hostname);
-      if (isHyphen) {
-        return `${slug}-${baseDomain}`;
+      const parsed = parseDomain(hostname);
+      const { base, hyphen } = resolveTenantBase(parsed.baseDomain, parsed.isHyphen);
+      if (hyphen) {
+        return `${slug}-${base}`;
       } else {
-        return `${slug}.${baseDomain}`;
+        return `${slug}.${base}`;
       }
     }
     const appUrl = (typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_URL) || (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_APP_URL) || "http://localhost:3001";
@@ -145,10 +165,11 @@ export function getDefaultTenantHost(slug: string): string {
     } else if (fallbackHost.startsWith("system.")) {
       fallbackHost = fallbackHost.substring(7);
     }
-    if (isHyphen) {
-      return `${slug}-${fallbackHost}`;
+    const resolved = resolveTenantBase(fallbackHost, isHyphen);
+    if (resolved.hyphen) {
+      return `${slug}-${resolved.base}`;
     } else {
-      return `${slug}.${fallbackHost}`;
+      return `${slug}.${resolved.base}`;
     }
   } catch {
     return `${slug}.localhost`;

@@ -1,5 +1,10 @@
 import * as React from "react";
-import { UserNavShell, DropdownMenuGroup, DropdownMenuItem } from "@k2net/ui";
+import {
+  UserNavShell,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  clearBrowserStorageForLogout,
+} from "@k2net/ui";
 import { ShieldCheck } from "lucide-react";
 import { useTranslation, type SupportedLocale } from "@k2net/i18n";
 import { useTheme } from "@/lib/navigation-compat";
@@ -90,10 +95,8 @@ export function UserNav() {
   }, []);
 
   const handleLogout = async () => {
-    if (typeof window !== "undefined") {
-      localStorage.clear();
-      sessionStorage.clear();
-    }
+    // Preserves `k2net_saved_profiles` so the Account Chooser / "View saved profiles" survives logout.
+    clearBrowserStorageForLogout();
     await signOut({
       redirectUri: `${window.location.origin}/login`,
     });

@@ -314,6 +314,7 @@ export function LoginPage() {
         authMode={tenantCtx?.authMode}
         status={tenantCtx?.status || "ACTIVE"}
         tenantSlug={tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug}
+        plane="TENANT"
         allowedMethods={socialMethods}
         locale={locale}
         labels={formLabels}

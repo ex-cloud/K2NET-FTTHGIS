@@ -101,17 +101,50 @@ export function removeSavedProfile(email: string, tenantSlug?: string): SavedAcc
     let list: SavedAccountProfile[] = JSON.parse(raw);
     if (!Array.isArray(list)) return [];
 
+    // Mirror the visibility rule of getSavedProfiles(): a profile that is listed for this
+    // tenantSlug (same slug OR no slug) must also be removable, otherwise it becomes a zombie card.
     list = list.filter(
       (p) =>
         !(
           (p.email.toLowerCase() === cleanEmail || (p.username && p.username.toLowerCase() === cleanEmail)) &&
-          (!tenantSlug || p.tenantSlug === tenantSlug)
+          (!tenantSlug || !p.tenantSlug || p.tenantSlug === tenantSlug)
         )
     );
 
     window.localStorage.setItem(SAVED_PROFILES_STORAGE_KEY, JSON.stringify(list));
-    return list.sort((a, b) => (b.lastUsedAt || 0) - (a.lastUsedAt || 0));
+    return getSavedProfiles(tenantSlug);
   } catch {
     return [];
+  }
+}
+
+/**
+ * Clear browser storage on logout while preserving the "Saved Profiles" account chooser data.
+ *
+ * `k2net_saved_profiles` holds only descriptive metadata (email, slug, last used) and NEVER
+ * credentials or tokens (see plan section 1.2), so it is safe — and required by the
+ * Cloudflare-style chooser — to survive logout. A bare `localStorage.clear()` on logout would
+ * wipe it and make "View saved profiles" / the Account Chooser permanently unreachable.
+ */
+export function clearBrowserStorageForLogout(): void {
+  if (typeof window === "undefined") return;
+  let preserved: string | null = null;
+  try {
+    preserved = window.localStorage.getItem(SAVED_PROFILES_STORAGE_KEY);
+  } catch {
+    preserved = null;
+  }
+  try {
+    window.localStorage.clear();
+    if (preserved) {
+      window.localStorage.setItem(SAVED_PROFILES_STORAGE_KEY, preserved);
+    }
+  } catch {
+    // Ignore localStorage disabled/quota errors
+  }
+  try {
+    window.sessionStorage.clear();
+  } catch {
+    // Ignore sessionStorage disabled errors
   }
 }

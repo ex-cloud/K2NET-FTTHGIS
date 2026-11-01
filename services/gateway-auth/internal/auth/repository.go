@@ -102,12 +102,12 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
 			COALESCE(sp.has_sso, false) AS has_sso,
 			COALESCE(o.status, 'ACTIVE') AS org_status,
-			(COALESCE(ss.value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required
+			(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required
 		FROM organizations o
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 		LEFT JOIN tenant_branding tb ON tb.organization_id = o.id
 		LEFT JOIN tenant_security_policies tsp ON tsp.organization_id = o.id
-		LEFT JOIN system_settings ss ON ss.key = 'enforce_mfa'
+		LEFT JOIN system_settings ss ON ss.config_key = 'enforce_mfa'
 		WHERE o.slug = $1
 		  AND o.deleted_at IS NULL
 		LIMIT 1
@@ -125,13 +125,13 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 				UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
 				COALESCE(sp.has_sso, false) AS has_sso,
 				COALESCE(o.status, 'ACTIVE') AS org_status,
-				(COALESCE(ss.value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required
+				(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required
 			FROM organization_slug_aliases osa
 			JOIN organizations o ON osa.organization_id = o.id
 			LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 			LEFT JOIN tenant_branding tb ON tb.organization_id = o.id
 			LEFT JOIN tenant_security_policies tsp ON tsp.organization_id = o.id
-			LEFT JOIN system_settings ss ON ss.key = 'enforce_mfa'
+			LEFT JOIN system_settings ss ON ss.config_key = 'enforce_mfa'
 			WHERE osa.old_slug = $1
 			  AND o.deleted_at IS NULL
 			LIMIT 1

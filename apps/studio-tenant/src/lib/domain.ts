@@ -86,6 +86,20 @@ export function parseDomain(hostname: string): ParsedDomainResult {
 }
 
 /**
+ * Canonical tenant host base (plan pillar 2 / Opsi A): `https://<tenant>.kdua.net`.
+ * Platform hosts on the legacy "-gis" pattern must never leak that pattern into tenant URLs.
+ */
+const LEGACY_PRODUCTION_BASE = "gis.kdua.net";
+const CANONICAL_TENANT_BASE = "kdua.net";
+
+function resolveTenantBase(baseDomain: string, isHyphen: boolean): { base: string; hyphen: boolean } {
+  if (baseDomain === LEGACY_PRODUCTION_BASE) {
+    return { base: CANONICAL_TENANT_BASE, hyphen: false };
+  }
+  return { base: baseDomain, hyphen: isHyphen };
+}
+
+/**
  * Constructs a full URL for a specific tenant organization in Tenant Portal.
  * @param slug The organization slug (subdomain)
  * @param path Path within tenant portal (defaults to /projects)
@@ -99,13 +113,14 @@ export function getTenantUrl(slug: string, path: string = "/projects"): string {
       const hostname = window.location.hostname;
       const port = window.location.port;
       
-      const { baseDomain, isHyphen } = parseDomain(hostname);
+      const parsed = parseDomain(hostname);
+      const { base, hyphen } = resolveTenantBase(parsed.baseDomain, parsed.isHyphen);
       const portSuffix = port ? `:${port}` : "";
       
-      if (isHyphen) {
-        return `${protocol}//${slug}-${baseDomain}${portSuffix}${path}`;
+      if (hyphen) {
+        return `${protocol}//${slug}-${base}${portSuffix}${path}`;
       } else {
-        return `${protocol}//${slug}.${baseDomain}${portSuffix}${path}`;
+        return `${protocol}//${slug}.${base}${portSuffix}${path}`;
       }
     }
     
@@ -116,17 +131,18 @@ export function getTenantUrl(slug: string, path: string = "/projects"): string {
 }
 
 /**
- * Constructs the default tenant hostname string (e.g. kircon-gis.kdua.net or kircon.localhost).
+ * Constructs the default tenant hostname string (e.g. kircon.kdua.net or kircon.localhost).
  */
 export function getDefaultTenantHost(slug: string): string {
   try {
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
-      const { baseDomain, isHyphen } = parseDomain(hostname);
-      if (isHyphen) {
-        return `${slug}-${baseDomain}`;
+      const parsed = parseDomain(hostname);
+      const { base, hyphen } = resolveTenantBase(parsed.baseDomain, parsed.isHyphen);
+      if (hyphen) {
+        return `${slug}-${base}`;
       } else {
-        return `${slug}.${baseDomain}`;
+        return `${slug}.${base}`;
       }
     }
     return `${slug}.localhost`;

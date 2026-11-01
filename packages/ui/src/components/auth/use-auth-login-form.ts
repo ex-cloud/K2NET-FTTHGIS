@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type {
   AuthLoginFormProps,
@@ -7,6 +7,7 @@ import type {
 import {
   getSavedProfiles,
   removeSavedProfile,
+  SAVED_PROFILES_STORAGE_KEY,
   type SavedAccountProfile,
 } from "./saved-profiles";
 
@@ -53,16 +54,51 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   const turnstileWidgetIdRef = useRef<string | null>(null);
   const prevErrorRef = useRef<string | null>(null);
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
+  // True once the user explicitly interacts (types / picks a view). Prevents async profile
+  // re-sync (tenant slug resolved late, other tab) from yanking the view away from the user.
+  const viewTouchedRef = useRef(false);
 
-  // Sync saved profiles whenever tenantSlug changes or after mounting
+  const updateUsernameOrEmail = useCallback((value: string) => {
+    viewTouchedRef.current = true;
+    setUsernameOrEmail(value);
+  }, []);
+
+  // Keep saved profiles in sync with storage:
+  //  - tenantSlug resolved/changed after mount (tenant-context fetch, alias redirect)
+  //  - another browser tab adds/removes a profile (storage event)
+  // The view is reconciled so "SAVED_PROFILES" never points to an empty list, and the chooser
+  // appears when profiles become available before the user has started interacting.
   useEffect(() => {
-    setSavedProfiles(getSavedProfiles(tenantSlug));
-  }, [tenantSlug]);
+    const sync = () => {
+      const next = getSavedProfiles(tenantSlug);
+      setSavedProfiles(next);
+      setAuthView((current) => {
+        if (next.length === 0) {
+          return current === "SAVED_PROFILES" ? "CREDENTIALS" : current;
+        }
+        if (current === "CREDENTIALS" && !viewTouchedRef.current && !defaultEmail) {
+          return "SAVED_PROFILES";
+        }
+        return current;
+      });
+    };
 
-  // Mount Cloudflare Turnstile widget dynamically when turnstileSiteKey is configured
+    sync();
+
+    if (typeof window === "undefined") return;
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === SAVED_PROFILES_STORAGE_KEY) sync();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [tenantSlug, defaultEmail]);
+
+  // Mount Cloudflare Turnstile widget dynamically when turnstileSiteKey is configured.
+  // The widget is needed in the credentials view and in the forgot-password view
+  // (both render `turnstileContainerRef`); the saved-profiles chooser has no widget.
   useEffect(() => {
     const cleanKey = turnstileSiteKey?.trim();
-    if (!cleanKey || typeof window === "undefined" || authView !== "CREDENTIALS") {
+    if (!cleanKey || typeof window === "undefined" || authView === "SAVED_PROFILES") {
       return;
     }
 
@@ -117,6 +153,10 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
         }
         turnstileWidgetIdRef.current = null;
       }
+      // The widget is destroyed, so its single-use token is no longer valid. Drop it, otherwise
+      // a stale token would keep the submit button enabled after switching views and the
+      // backend would reject it (TURNSTILE_FAILED) — a UI/backend mismatch.
+      setTurnstileToken(undefined);
     };
   }, [turnstileSiteKey, authView]);
 
@@ -153,6 +193,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   };
 
   const handleForgotClick = () => {
+    viewTouchedRef.current = true;
     setAuthView("FORGOT_PASSWORD");
     setForgotSubmitted(false);
     if (onForgotPassword) {
@@ -161,6 +202,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   };
 
   const handleBackToLogin = () => {
+    viewTouchedRef.current = true;
     setAuthView("CREDENTIALS");
     setForgotSubmitted(false);
   };
@@ -205,8 +247,10 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
 
   // Profile actions
   const handleSelectProfile = (profile: SavedAccountProfile) => {
+    viewTouchedRef.current = true;
     setUsernameOrEmail(profile.email || profile.username || "");
     setPassword("");
+    setShowPassword(false);
     setAuthView("CREDENTIALS");
     setTimeout(() => {
       passwordInputRef.current?.focus();
@@ -223,14 +267,25 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   };
 
   const handleSwitchToNewProfile = () => {
+    viewTouchedRef.current = true;
     setUsernameOrEmail("");
     setPassword("");
+    setShowPassword(false);
     setAuthView("CREDENTIALS");
   };
 
   const handleBackToSavedProfiles = () => {
-    setAuthView("SAVED_PROFILES");
+    viewTouchedRef.current = true;
+    // Never keep a typed password in memory while the chooser is displayed.
+    setPassword("");
+    setShowPassword(false);
+    setTotpCode("");
+    // Re-read storage: the list may have changed since mount (other tab / removal).
+    const latest = getSavedProfiles(tenantSlug);
+    setSavedProfiles(latest);
+    setAuthView(latest.length > 0 ? "SAVED_PROFILES" : "CREDENTIALS");
   };
+
 
   const statusUpper = (status || "ACTIVE").toUpperCase();
   const isSuspended =
@@ -331,7 +386,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     authView,
     setAuthView,
     usernameOrEmail,
-    setUsernameOrEmail,
+    setUsernameOrEmail: updateUsernameOrEmail,
     password,
     setPassword,
     showPassword,

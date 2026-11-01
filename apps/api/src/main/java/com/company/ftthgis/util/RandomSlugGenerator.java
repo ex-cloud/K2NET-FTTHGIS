@@ -185,13 +185,16 @@ public class RandomSlugGenerator {
 
     /**
      * Checks if a given slug is in the platform reserved keywords blacklist.
+     * Any slug ending in "-gis" is also reserved: the legacy host pattern {@code <x>-gis.kdua.net}
+     * is permanently redirected to {@code <x>.kdua.net} at the edge (plan pillar 2), so such a slug
+     * would be ambiguous with a legacy host and with platform hosts (system-gis, auth-gis, api-gis).
      */
     public boolean isReserved(String slug) {
         if (slug == null) {
             return false;
         }
         String normalized = slug.trim().toLowerCase();
-        return RESERVED_SLUGS.contains(normalized);
+        return RESERVED_SLUGS.contains(normalized) || normalized.endsWith("-gis");
     }
 
     /**

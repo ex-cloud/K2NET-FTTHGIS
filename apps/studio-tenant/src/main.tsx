@@ -15,6 +15,33 @@ import "./index.css";
 // Initialize Core Web Vitals telemetry
 initWebVitals();
 
+// Canonical Subdomain Enforcement (Plan Pillar 2 / Option A):
+// Any request reaching the tenant SPA via legacy patterns (*-gis.kdua.net or *.gis.kdua.net)
+// is immediately and smoothly redirected to the canonical clean subdomain (*.kdua.net).
+// This eliminates dual-domain leakage and ensures zero visual discrepancy.
+if (typeof window !== "undefined") {
+  const host = window.location.hostname.toLowerCase();
+  const isLegacyTenantHost =
+    (host.endsWith("-gis.kdua.net") || host.endsWith(".gis.kdua.net")) &&
+    host !== "system-gis.kdua.net" &&
+    host !== "auth-gis.kdua.net" &&
+    host !== "api-gis.kdua.net" &&
+    host !== "gis.kdua.net";
+
+  if (isLegacyTenantHost) {
+    let canonicalHost = host;
+    if (canonicalHost.endsWith("-gis.kdua.net")) {
+      canonicalHost = canonicalHost.replace(/-gis\.kdua\.net$/, ".kdua.net");
+    } else if (canonicalHost.endsWith(".gis.kdua.net")) {
+      canonicalHost = canonicalHost.replace(/\.gis\.kdua\.net$/, ".kdua.net");
+    }
+    const targetUrl = `${window.location.protocol}//${canonicalHost}${
+      window.location.port ? `:${window.location.port}` : ""
+    }${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.replace(targetUrl);
+  }
+}
+
 // Auto-reload on deployment chunk update (prevents "error loading dynamically imported module")
 if (typeof window !== "undefined") {
   window.addEventListener("vite:preloadError", () => {
