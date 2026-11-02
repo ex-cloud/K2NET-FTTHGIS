@@ -62,20 +62,6 @@ export function OrgStatusBadge({ status, trialDaysLeft }: OrgStatusBadgeProps) {
           <span>{t("organizations.status_expired_pending")}</span>
         </Badge>
       );
-    case "PENDING_ACTIVATION":
-      return (
-        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1 px-2 py-0.5">
-          <Clock className="h-2.5 w-2.5 animate-pulse" />
-          <span>{t("organizations.status_pending_activation", "Pending Activation")}</span>
-        </Badge>
-      );
-    case "EXPIRED_PENDING":
-      return (
-        <Badge variant="outline" className="border-rose-500/40 bg-rose-500/15 text-rose-500 font-mono text-[10px] gap-1 px-2 py-0.5">
-          <AlertTriangle className="h-2.5 w-2.5" />
-          <span>{t("organizations.status_expired_pending", "Expired Pending")}</span>
-        </Badge>
-      );
     case "SUSPENDED":
       return (
         <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive font-mono text-[10px] gap-1 px-2 py-0.5">
