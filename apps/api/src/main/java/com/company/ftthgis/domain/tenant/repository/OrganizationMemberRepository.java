@@ -49,5 +49,7 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
            "WHERE om.organization.id = :organizationId " +
            "ORDER BY om.joinedAt ASC")
     List<OrganizationMember> findAllMembersByOrganizationId(@Param("organizationId") UUID organizationId);
+
+    long countByRoleId(Long roleId);
 }
 

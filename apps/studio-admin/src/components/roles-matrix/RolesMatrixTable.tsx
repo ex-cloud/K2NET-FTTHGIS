@@ -1,6 +1,6 @@
 import React from "react";
-import { Check, Layers } from "lucide-react";
-import { Badge } from "@k2net/ui";
+import { Check, Layers, Trash2 } from "lucide-react";
+import { Badge, ActionTooltip } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 import type { Role, Permission } from "./types";
@@ -13,6 +13,7 @@ interface RolesMatrixTableProps {
   isRoleModified: (roleId: number) => boolean;
   togglePermission: (roleId: number, permissionId: number) => void;
   canEdit: boolean;
+  onDeleteRole?: (role: Role) => void;
 }
 
 export function RolesMatrixTable({
@@ -23,6 +24,7 @@ export function RolesMatrixTable({
   isRoleModified,
   togglePermission,
   canEdit,
+  onDeleteRole,
 }: RolesMatrixTableProps) {
   const { t } = useTranslation();
   const moduleEntries = Object.entries(filteredGroupedPermissions);
@@ -55,6 +57,18 @@ export function RolesMatrixTable({
                     >
                       {role.code || (selectedScope === "SYSTEM" ? `SYS-${role.id}` : `TENT-${role.id}`)}
                     </Badge>
+
+                    {!role.isSystemRole && onDeleteRole && canEdit && (
+                      <ActionTooltip label={`Delete custom role "${role.displayName || role.name}"`}>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteRole(role)}
+                          className="size-4 p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer flex items-center justify-center"
+                        >
+                          <Trash2 className="size-3" />
+                        </button>
+                      </ActionTooltip>
+                    )}
 
                     {isRoleModified(role.id) && (
                       <span

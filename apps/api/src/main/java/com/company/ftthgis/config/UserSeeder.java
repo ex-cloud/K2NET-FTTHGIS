@@ -33,50 +33,37 @@ public class UserSeeder implements CommandLineRunner {
     private final UserSyncService userSyncService;
     private final KeycloakService keycloakService;
 
-    // Role prefix and code mapping
+    // Role prefix and code mapping (Streamlined Clean Baseline Templates)
     private static final Map<String, String> SYSTEM_ROLE_CODES = new LinkedHashMap<>() {{
         put("super_admin", "SYS-01");
         put("system_support", "SYS-02");
-        put("system_billing", "SYS-03");
-        put("account_manager", "SYS-04");
-        put("system_auditor", "SYS-05");
-        put("platform_engineer", "SYS-06");
+        put("account_manager", "SYS-03");
+        put("system_auditor", "SYS-04");
     }};
 
     private static final Map<String, String> TENANT_ROLE_CODES = new LinkedHashMap<>() {{
         put("admin", "TENT-01");
         put("noc", "TENT-02");
-        put("surveyor", "TENT-03");
-        put("technician", "TENT-04");
+        put("technician", "TENT-03");
+        put("surveyor", "TENT-04");
         put("finance", "TENT-05");
         put("helpdesk", "TENT-06");
-        put("supervisor", "TENT-07");
-        put("warehouse", "TENT-08");
-        put("auditor", "TENT-09");
-        put("vendor", "TENT-10");
-        put("viewer", "TENT-11");
+        put("viewer", "TENT-07");
     }};
 
-    // Permission mappings for both scopes
+    // Permission mappings for clean baseline templates
     private static final Map<String, List<String>> ROLE_PERMISSIONS = new LinkedHashMap<>() {{
         // SYSTEM Roles
-        put("super_admin", List.of("*.*")); // Full access
-        put("platform_engineer", List.of(
-            "system.gis.manage", "system.gateway.manage", "system.backup.manage",
-            "system.observability.view", "system.integration.manage",
-            "system.organizations.view", "system.organizations.webhooks.manage"
-        ));
+        put("super_admin", List.of("*.*")); // Full root access
         put("account_manager", List.of(
             "system.tenants.create", "system.tenants.approve", "system.tenants.suspend",
             "system.contracts.view", "system.contracts.upload", "system.quotas.manage",
-            "system.organizations.view", "system.organizations.create", "system.organizations.update", "orgs.view"
+            "system.organizations.view", "system.organizations.create", "system.organizations.update", "orgs.view",
+            "system.billing.manage"
         ));
         put("system_support", List.of(
             "system.support.impersonate", "system.security.manage", "system.observability.view",
             "system.organizations.view", "orgs.view"
-        ));
-        put("system_billing", List.of(
-            "system.billing.manage", "system.organizations.view", "system.organizations.manage"
         ));
         put("system_auditor", List.of(
             "system.audit.view", "system.observability.view", "system.organizations.view", "orgs.view"
@@ -95,11 +82,8 @@ public class UserSeeder implements CommandLineRunner {
         put("finance", List.of("billing.view", "billing.manage", "report.view", "report.export"));
         put("noc", List.of("network.view", "network.monitor", "inventory.view", "dashboard.view"));
         put("technician", List.of("inventory.view", "inventory.edit", "map.view", "map.edit", "task.update", "ticket.update"));
-        put("warehouse", List.of("inventory.view", "inventory.manage", "dashboard.view"));
         put("helpdesk", List.of("customer.view", "ticket.create", "ticket.view", "dashboard.view"));
         put("surveyor", List.of("survey.create", "coverage.view", "map.view"));
-        put("auditor", List.of("audit.view", "approval.manage", "report.view", "dashboard.view"));
-        put("vendor", List.of("task.update", "inventory.view", "map.view"));
         put("viewer", List.of("dashboard.view", "map.view", "report.view"));
     }};
 
@@ -204,20 +188,11 @@ public class UserSeeder implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        String defaultPassword = "Password@123";
-        // Find our default organization
-        Organization defaultOrg = organizationRepository.findBySlug("system").orElse(null);
+        String defaultPassword = "Password@123456";
         
-        createUserIfNotExists("superadmin@example.com", "xsuperadmin", "Super Admin User", "super_admin", defaultPassword, "ACTIVE", null); // Platform level
-        createUserIfNotExists("accountmanager@example.com", "xaccountmanager", "Account Manager User", "account_manager", defaultPassword, "ACTIVE", null); // Platform level
-        createUserIfNotExists("admin@example.com", "xadmin", "Admin User", "admin", defaultPassword, "ACTIVE", defaultOrg);
-        createUserIfNotExists("noc@example.com", "xnoc", "NOC Operator", "noc", defaultPassword, "ACTIVE", defaultOrg);
-        createUserIfNotExists("finance@example.com", "xfinance", "Finance Manager", "finance", defaultPassword, "ACTIVE", defaultOrg);
-        createUserIfNotExists("surveyor@example.com", "xsurveyor", "Field Surveyor", "surveyor", defaultPassword, "ACTIVE", defaultOrg);
-        createUserIfNotExists("warehouse@example.com", "xwarehouse", "Warehouse Staff", "warehouse", defaultPassword, "ACTIVE", defaultOrg);
-        createUserIfNotExists("technician@example.com", "xtechnician", "Technician User", "technician", defaultPassword, "ACTIVE", defaultOrg);
-        createUserIfNotExists("viewer@example.com", "xviewer", "Viewer User", "viewer", defaultPassword, "ACTIVE", defaultOrg);
-        createUserIfNotExists("inactive@example.com", "xinactive", "Inactive User", "viewer", defaultPassword, "INACTIVE", defaultOrg);
+        // Seed root platform administrator accounts only (Zero Dummy Accounts)
+        createUserIfNotExists("superadmin@example.com", "xsuperadmin", "Super Admin", "super_admin", defaultPassword, "ACTIVE", null);
+        createUserIfNotExists("superadmin2@example.com", "xsuperadmin2", "Second SuperAdmin", "super_admin", defaultPassword, "ACTIVE", null);
     }
 
     private String resolveKeycloakRealm(Organization org) {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Server, Users, LayoutGrid, List, Save, Loader2, Shield } from "lucide-react";
+import { Server, Users, LayoutGrid, List, Save, Loader2, Shield, ShieldPlus } from "lucide-react";
 import { ActionTooltip, Button, Badge } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ interface RolesMatrixHeaderProps {
   batchSaving: boolean;
   canUpdateRoles: boolean;
   handleSaveAll: () => void;
+  onCreateRole?: () => void;
 }
 
 export function RolesMatrixHeader({
@@ -27,6 +28,7 @@ export function RolesMatrixHeader({
   batchSaving,
   canUpdateRoles,
   handleSaveAll,
+  onCreateRole,
 }: RolesMatrixHeaderProps) {
   const { t } = useTranslation();
 
@@ -112,6 +114,19 @@ export function RolesMatrixHeader({
               </button>
             </ActionTooltip>
           </div>
+
+          {canUpdateRoles && onCreateRole && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onCreateRole}
+              className="gap-1.5 h-7 px-2.5 text-xs font-medium border-border/80 text-foreground hover:bg-accent cursor-pointer shadow-2xs"
+            >
+              <ShieldPlus className="size-3.5 text-primary" />
+              <span>Create Role</span>
+            </Button>
+          )}
 
           <ActionTooltip
             label={hasAnyModifiedRoles ? t("security.save_matrix_changes") : t("security.no_matrix_changes")}

@@ -48,10 +48,8 @@ public class PermissionSeeder implements CommandLineRunner {
 
     private static final Set<String> SYSTEM_SCOPE_ROLES = Set.of(
         "super_admin",
-        "platform_engineer",
         "account_manager",
         "system_support",
-        "system_billing",
         "system_auditor"
     );
 
@@ -239,32 +237,22 @@ public class PermissionSeeder implements CommandLineRunner {
 
         // 3. Sync System Roles (Strictly filtered by SYSTEM scope for non-super_admin)
         syncSystemRole("super_admin", allPermissionsInDb, "ALL"); // Super Admin gets everything
-        syncSystemRole("platform_engineer", allPermissionsInDb,
-            "platform.", "system.ai.manage", "system.task.manage",
-            "system.gis.manage", "system.gateway.manage", "system.backup.manage",
-            "system.observability.view", "system.integration.manage",
-            "system.organizations.view", "system.organizations.webhooks.manage");
         syncSystemRole("account_manager", allPermissionsInDb,
             "support.tickets.", "catalog.", "licensing.read", "licensing.extend", "billing.read", "billing.subscriptions.",
             "system.packages.", "system.tenants.create", "system.tenants.approve", "system.tenants.suspend",
             "system.contracts.view", "system.contracts.upload", "system.quotas.manage",
-            "system.organizations.view", "system.organizations.create", "system.organizations.update", "orgs.view");
+            "system.organizations.view", "system.organizations.create", "system.organizations.update", "orgs.view",
+            "system.billing.manage");
         syncSystemRole("system_support", allPermissionsInDb,
             "support.", "platform.issues.view", "licensing.read",
             "system.support.impersonate", "system.observability.view",
             "system.organizations.view", "orgs.view"); // system.security.manage revoked for least privilege
-        syncSystemRole("system_billing", allPermissionsInDb,
-            "billing.", "catalog.plans.read", "catalog.packages.read", "catalog.policies.", "licensing.read", "licensing.issue",
-            "system.billing.manage", "system.organizations.view", "system.organizations.manage");
         syncSystemRole("system_auditor", allPermissionsInDb,
             "system.audit.view", "system.observability.view", "system.organizations.view", "orgs.view",
             "billing.read", "licensing.read", "catalog.plans.read", "catalog.policies.read");
 
         // 4. Sync Tenant Template Roles (Strictly locked to TENANT scope!)
         syncSystemRole("admin", allPermissionsInDb, "TENANT_ALL");
-        syncSystemRole("supervisor", allPermissionsInDb,
-            "projects.", "network.", "ticket.", "task.", "approval.",
-            "inventory.view", "inventory.report", "map.", "coverage.", "customer.", "report.", "team.view");
         syncSystemRole("technician", allPermissionsInDb,
             "projects.view", "network.view", "inventory.view", "ticket.", "task.", "map.");
         syncSystemRole("viewer", allPermissionsInDb, ".view");

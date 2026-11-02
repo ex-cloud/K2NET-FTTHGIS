@@ -59,3 +59,41 @@ export async function fetchRoleUserCount(
   }
   return null;
 }
+
+export async function createRole(
+  data: {
+    name: string;
+    displayName: string;
+    description?: string;
+    scope: "SYSTEM" | "TENANT";
+    permissionIds?: number[];
+  },
+  token: string
+): Promise<Role> {
+  const baseUrl = getBackendBaseUrl();
+  const res = await httpClient(`${baseUrl}/roles`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    token,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Failed to create role" }));
+    throw new Error(errorData.message || "Failed to create role");
+  }
+
+  return (await res.json()) as Role;
+}
+
+export async function deleteRole(roleId: number, token: string): Promise<void> {
+  const baseUrl = getBackendBaseUrl();
+  const res = await httpClient(`${baseUrl}/roles/${roleId}`, {
+    method: "DELETE",
+    token,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Failed to delete role" }));
+    throw new Error(errorData.message || "Failed to delete role");
+  }
+}

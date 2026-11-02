@@ -1,10 +1,16 @@
 package com.company.ftthgis.service;
 
+import com.company.ftthgis.api.user.dto.CreateRoleRequest;
+import com.company.ftthgis.api.user.dto.UpdateRoleRequest;
+import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository;
 import com.company.ftthgis.domain.user.entity.Permission;
 import com.company.ftthgis.domain.user.entity.Role;
+import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.repository.PermissionRepository;
 import com.company.ftthgis.domain.user.repository.RoleRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
+import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -15,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.company.ftthgis.config.logging.AuditRequired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -26,7 +34,9 @@ public class RolePermissionService {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final UserRepository userRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final EntityManagerFactory entityManagerFactory;
 
     @Transactional(readOnly = true)
     public List<Role> getRoles(String scopeFilter) {
@@ -40,8 +50,11 @@ public class RolePermissionService {
 
         List<Role> rawRoles;
         if (isSuperAdmin) {
-            // 1. SYSTEM ADMIN VIEW: Only see pure master templates (no duplicates, no tenant roles)
-            rawRoles = roleRepository.findByIsSystemRoleTrueAndOrganizationIsNull();
+            if (scopeFilter != null && !scopeFilter.isEmpty()) {
+                rawRoles = roleRepository.findByScopeAndOrganizationIsNull(scopeFilter.toUpperCase());
+            } else {
+                rawRoles = roleRepository.findByOrganizationIsNull();
+            }
         } else {
             // 2. TENANT VIEW: See filtered templates (NO super_admin) + their own organization's roles
             UUID userId = UUID.fromString(jwt.getSubject());
@@ -237,6 +250,142 @@ public class RolePermissionService {
         long activeCount = userRepository.countByRoleIdAndStatus(roleId, "ACTIVE");
         long totalCount = userRepository.countByRoleId(roleId);
         return new RoleUserCountDto(roleId, role.getName(), activeCount, totalCount);
+    }
+
+    @Transactional
+    @AuditRequired(action = "ROLE_CREATED", resourceType = "ROLE", resourceIdExpression = "#result.id.toString()")
+    public Role createRole(CreateRoleRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof Jwt)) {
+            throw new org.springframework.security.access.AccessDeniedException("Authentication required");
+        }
+        Jwt jwt = (Jwt) auth.getPrincipal();
+        boolean isSuperAdmin = hasRole(jwt, "super_admin");
+
+        String cleanName = request.getName().trim().toLowerCase().replaceAll("[^a-z0-9_]", "_");
+        if (cleanName.isEmpty()) {
+            throw new IllegalArgumentException("Role name cannot be empty");
+        }
+
+        String scope = request.getScope() != null ? request.getScope().toUpperCase() : "TENANT";
+        if (!"SYSTEM".equals(scope) && !"TENANT".equals(scope)) {
+            throw new IllegalArgumentException("Invalid role scope: " + scope);
+        }
+
+        // Scope Air-Gap: Non-super_admin cannot create SYSTEM scope roles
+        if ("SYSTEM".equals(scope) && !isSuperAdmin) {
+            throw new org.springframework.security.access.AccessDeniedException("Only Super Admin can create SYSTEM scope roles");
+        }
+
+        Organization org = null;
+        if (!isSuperAdmin) {
+            UUID userId = UUID.fromString(jwt.getSubject());
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("User not found"));
+            org = user.getOrganization();
+            if (org == null) {
+                throw new org.springframework.security.access.AccessDeniedException("Tenant context required");
+            }
+            if (roleRepository.findByNameAndOrganizationId(cleanName, org.getId()).isPresent()) {
+                throw new IllegalArgumentException("Role with name '" + cleanName + "' already exists in this organization");
+            }
+        } else {
+            if (roleRepository.findByNameAndOrganizationId(cleanName, null).isPresent() || roleRepository.existsByName(cleanName)) {
+                throw new IllegalArgumentException("Role with name '" + cleanName + "' already exists");
+            }
+        }
+
+        long count = roleRepository.count();
+        String code = String.format("CUST-%02d", count + 1);
+
+        Set<Permission> assignedPermissions = new HashSet<>();
+        if (request.getPermissionIds() != null && !request.getPermissionIds().isEmpty()) {
+            List<Permission> perms = permissionRepository.findAllById(request.getPermissionIds());
+            for (Permission p : perms) {
+                // Scope Air-Gap Defense: TENANT roles cannot have SYSTEM permissions!
+                if ("TENANT".equals(scope) && "SYSTEM".equalsIgnoreCase(p.getScope())) {
+                    log.warn("Blocked SYSTEM permission {} from being attached to TENANT role {}", p.getCode(), cleanName);
+                    continue;
+                }
+                assignedPermissions.add(p);
+            }
+        }
+
+        Role newRole = Role.builder()
+                .name(cleanName)
+                .displayName(request.getDisplayName() != null && !request.getDisplayName().isBlank()
+                        ? request.getDisplayName().trim()
+                        : cleanName.replace("_", " ").toUpperCase())
+                .description(request.getDescription() != null ? request.getDescription().trim() : "Custom Role: " + cleanName)
+                .code(code)
+                .scope(scope)
+                .isSystemRole(false)
+                .organization(org)
+                .permissions(assignedPermissions)
+                .build();
+
+        Role saved = roleRepository.save(newRole);
+        evictSecondLevelCache();
+        return saved;
+    }
+
+    @Transactional
+    @AuditRequired(action = "ROLE_METADATA_UPDATED", resourceType = "ROLE", resourceIdExpression = "#roleId.toString()")
+    public Role updateRole(Long roleId, UpdateRoleRequest request) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found with id: " + roleId));
+
+        if (request.getDisplayName() != null && !request.getDisplayName().isBlank()) {
+            role.setDisplayName(request.getDisplayName().trim());
+        }
+        if (request.getDescription() != null) {
+            role.setDescription(request.getDescription().trim());
+        }
+        if (!role.isSystemRole() && request.getName() != null && !request.getName().isBlank()) {
+            String cleanName = request.getName().trim().toLowerCase().replaceAll("[^a-z0-9_]", "_");
+            role.setName(cleanName);
+        }
+
+        Role updated = roleRepository.save(role);
+        evictSecondLevelCache();
+        return updated;
+    }
+
+    @Transactional
+    @AuditRequired(action = "ROLE_DELETED", resourceType = "ROLE", resourceIdExpression = "#roleId.toString()")
+    public void deleteRole(Long roleId) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found with id: " + roleId));
+
+        if (role.isSystemRole()) {
+            throw new IllegalStateException("Cannot delete core system baseline role: " + role.getName());
+        }
+
+        long userCount = userRepository.countByRoleId(roleId);
+        if (userCount > 0) {
+            throw new IllegalStateException("Cannot delete role '" + role.getDisplayName() + "' because it is currently assigned to " + userCount + " user(s). Reassign them first.");
+        }
+
+        long memberCount = organizationMemberRepository.countByRoleId(roleId);
+        if (memberCount > 0) {
+            throw new IllegalStateException("Cannot delete role '" + role.getDisplayName() + "' because it is currently assigned to " + memberCount + " organization member(s). Reassign them first.");
+        }
+
+        role.getPermissions().clear();
+        roleRepository.saveAndFlush(role);
+        roleRepository.delete(role);
+        evictSecondLevelCache();
+    }
+
+    private void evictSecondLevelCache() {
+        try {
+            if (entityManagerFactory != null && entityManagerFactory.getCache() != null) {
+                entityManagerFactory.getCache().evictAll();
+                log.info("🧹 Hibernate L2 cache evicted in RolePermissionService.");
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Could not evict Hibernate L2 cache: {}", e.getMessage());
+        }
     }
 
     public record RoleSimilarityDto(String name, double score) {}

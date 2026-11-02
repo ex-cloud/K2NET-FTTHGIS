@@ -23,6 +23,10 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     // For System Admin: Only pure templates (no tenant roles, no duplicates)
     List<Role> findByIsSystemRoleTrueAndOrganizationIsNull();
 
+    List<Role> findByScopeAndOrganizationIsNull(String scope);
+
+    List<Role> findByOrganizationIsNull();
+
     // For Tenants: (Tenant-scoped Templates) + (Own Custom Roles)
     @Query("SELECT r FROM Role r WHERE " +
            "(r.isSystemRole = true AND r.scope = 'TENANT') OR " +

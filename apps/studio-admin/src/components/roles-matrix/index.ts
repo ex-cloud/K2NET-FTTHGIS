@@ -5,3 +5,4 @@ export * from "./RolesMatrixToolbar";
 export * from "./RolesMatrixTable";
 export * from "./RolesMatrixGrid";
 export * from "./RolesMatrixModals";
+export * from "./CreateRoleModal";

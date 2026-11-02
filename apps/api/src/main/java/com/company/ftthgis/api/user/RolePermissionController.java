@@ -31,6 +31,25 @@ public class RolePermissionController {
         return ResponseEntity.ok(rolePermissionService.getAllPermissions(scope));
     }
 
+    @PostMapping
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.manage') or hasAuthority('system.security.manage')")
+    public ResponseEntity<Role> createRole(@jakarta.validation.Valid @RequestBody com.company.ftthgis.api.user.dto.CreateRoleRequest request) {
+        return ResponseEntity.ok(rolePermissionService.createRole(request));
+    }
+
+    @PutMapping("/{roleId}")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.update')")
+    public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @RequestBody com.company.ftthgis.api.user.dto.UpdateRoleRequest request) {
+        return ResponseEntity.ok(rolePermissionService.updateRole(roleId, request));
+    }
+
+    @DeleteMapping("/{roleId}")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.manage') or hasAuthority('system.security.manage')")
+    public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {
+        rolePermissionService.deleteRole(roleId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/{roleId}/permissions")
     @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.update')")
     public ResponseEntity<Role> updateRolePermissions(

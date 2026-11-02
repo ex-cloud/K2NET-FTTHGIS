@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useAuth } from "@k2net/auth/client";
 import {
   type Role,
   type ImpactData,
@@ -10,11 +13,15 @@ import {
   RolesMatrixTable,
   RolesMatrixGrid,
   RolesMatrixModals,
+  CreateRoleModal,
 } from "./roles-matrix";
+import { deleteRole } from "./roles-matrix/rolesMatrixApi";
 
 export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
   const { canAccess } = usePermissions();
+  const { token } = useAuth();
   const state = useRolesMatrixState(context);
+  const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
 
   if (state.loading) {
     return (
@@ -48,6 +55,20 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
 
   const canEdit = canAccess("roles.update");
 
+  const handleDeleteRole = async (role: Role) => {
+    if (!token) return;
+    if (!confirm(`Are you sure you want to permanently delete custom role "${role.displayName || role.name}"?`)) {
+      return;
+    }
+    try {
+      await deleteRole(role.id, token);
+      toast.success(`Role "${role.displayName || role.name}" deleted successfully!`);
+      await state.fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete role");
+    }
+  };
+
   return (
     <div className="w-full space-y-6">
       <RolesMatrixHeader
@@ -60,6 +81,7 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
         batchSaving={state.batchSaving}
         canUpdateRoles={canEdit}
         handleSaveAll={state.handleSaveAll}
+        onCreateRole={() => setIsCreateRoleOpen(true)}
       />
 
       <RolesMatrixToolbar
@@ -80,6 +102,7 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
           isRoleModified={state.isRoleModified}
           togglePermission={state.togglePermission}
           canEdit={canEdit}
+          onDeleteRole={handleDeleteRole}
         />
       ) : (
         <RolesMatrixGrid
@@ -104,6 +127,14 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
         setImpactModalOpen={state.setImpactModalOpen}
         impactData={state.impactData}
         onConfirmImpact={handleConfirmImpact}
+      />
+
+      <CreateRoleModal
+        open={isCreateRoleOpen}
+        onOpenChange={setIsCreateRoleOpen}
+        defaultScope={state.selectedScope}
+        token={token || undefined}
+        onSuccess={() => state.fetchData()}
       />
     </div>
   );
