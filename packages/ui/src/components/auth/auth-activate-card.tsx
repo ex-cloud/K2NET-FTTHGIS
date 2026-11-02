@@ -16,6 +16,8 @@ export interface AuthActivateLabels {
   activateSuccessDesc?: string;
   tokenExpiredTitle?: string;
   tokenExpiredDesc?: string;
+  tokenExpiredGuidance?: string;
+  contactSupport?: string;
   tokenVerifying?: string;
   newPasswordLabel?: string;
   confirmPasswordLabel?: string;
@@ -72,6 +74,8 @@ export function AuthActivateCard({
     activateSuccessDesc: labels.activateSuccessDesc || "Your organization and administrator credentials are now active.",
     tokenExpiredTitle: labels.tokenExpiredTitle || "Invalid or Expired Link",
     tokenExpiredDesc: labels.tokenExpiredDesc || "This activation link has expired or has already been used.",
+    tokenExpiredGuidance: labels.tokenExpiredGuidance || "For security reasons, activation links expire in 24 hours. If your link has expired, please contact your platform administrator to dispatch a new activation link.",
+    contactSupport: labels.contactSupport || "Contact Support",
     tokenVerifying: labels.tokenVerifying || "Verifying security link...",
     newPasswordLabel: labels.newPasswordLabel || "New Password",
     confirmPasswordLabel: labels.confirmPasswordLabel || "Confirm Password",
@@ -289,18 +293,23 @@ export function AuthActivateCard({
             <h3 className="text-sm font-semibold text-foreground">{l.tokenExpiredTitle}</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">{validation.errorMessage}</p>
           </div>
+          <div className="p-2.5 rounded-md bg-background/50 border border-border/50 text-[11px] text-muted-foreground text-left leading-relaxed">
+            {l.tokenExpiredGuidance}
+          </div>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="w-full h-7 px-2.5 text-xs font-medium"
-          onClick={() => {
-            if (typeof window !== "undefined") window.location.href = "/login";
-          }}
-        >
-          {l.backToSignIn}
-        </Button>
+        <div className="space-y-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="w-full h-7 px-2.5 text-xs font-medium cursor-pointer"
+            onClick={() => {
+              if (typeof window !== "undefined") window.location.href = "/login";
+            }}
+          >
+            {l.backToSignIn}
+          </Button>
+        </div>
       </div>
     );
   }

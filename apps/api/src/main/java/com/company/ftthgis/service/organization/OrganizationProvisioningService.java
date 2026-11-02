@@ -12,6 +12,7 @@ import com.company.ftthgis.domain.tenant.repository.SubscriptionPlanRepository;
 import com.company.ftthgis.domain.user.entity.Role;
 import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.repository.RoleRepository;
+import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.domain.tenant.entity.BillingInvoice;
 import com.company.ftthgis.domain.tenant.entity.InvoiceStatus;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
@@ -54,6 +55,45 @@ public class OrganizationProvisioningService {
     private final LicenseManagementService licenseManagementService;
     private final BillingInvoiceRepository billingInvoiceRepository;
     private final TenantActivationService tenantActivationService;
+    private final UserRepository userRepository;
+    private final TenantPurgeService tenantPurgeService;
+
+    // Backward-compatible constructor for existing tests
+    public OrganizationProvisioningService(
+            OrganizationRepository organizationRepository,
+            SubscriptionPlanRepository subscriptionPlanRepository,
+            OrganizationSlugAliasRepository organizationSlugAliasRepository,
+            RandomSlugGenerator randomSlugGenerator,
+            OrganizationConfigRepository organizationConfigRepository,
+            EncryptionUtils encryptionUtils,
+            KeycloakService keycloakService,
+            RoleRepository roleRepository,
+            EntityManager entityManager,
+            org.springframework.transaction.PlatformTransactionManager transactionManager,
+            FileStorageService fileStorageService,
+            AuditLoggingService auditLoggingService,
+            LicenseManagementService licenseManagementService,
+            BillingInvoiceRepository billingInvoiceRepository,
+            TenantActivationService tenantActivationService
+    ) {
+        this.organizationRepository = organizationRepository;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
+        this.organizationSlugAliasRepository = organizationSlugAliasRepository;
+        this.randomSlugGenerator = randomSlugGenerator;
+        this.organizationConfigRepository = organizationConfigRepository;
+        this.encryptionUtils = encryptionUtils;
+        this.keycloakService = keycloakService;
+        this.roleRepository = roleRepository;
+        this.entityManager = entityManager;
+        this.transactionManager = transactionManager;
+        this.fileStorageService = fileStorageService;
+        this.auditLoggingService = auditLoggingService;
+        this.licenseManagementService = licenseManagementService;
+        this.billingInvoiceRepository = billingInvoiceRepository;
+        this.tenantActivationService = tenantActivationService;
+        this.userRepository = null;
+        this.tenantPurgeService = null;
+    }
 
     @Transactional
     public Map<String, Object> createOrganization(OrganizationCreateRequest request) {
@@ -67,6 +107,39 @@ public class OrganizationProvisioningService {
 
         if (listener != null) {
             listener.onStageStarted(1, "Validate Configuration & Subdomain", "Checking slug uniqueness and system authorization...");
+        }
+
+        // Grace Reclaim Defense against Denial of Registration:
+        // If an unactivated pending user with this email or slug exists and their activation token expired (>24h),
+        // atomically purge the expired zombie registration so the legitimate owner can register smoothly.
+        if (userRepository != null && tenantPurgeService != null) {
+            if (request.getAdminEmail() != null && !request.getAdminEmail().isBlank()) {
+                String normEmail = request.getAdminEmail().trim().toLowerCase();
+                userRepository.findByEmail(normEmail).ifPresent(existingUser -> {
+                    if ("PENDING_ACTIVATION".equalsIgnoreCase(existingUser.getStatus())) {
+                        boolean isExpired = existingUser.getCreatedAt() != null &&
+                                existingUser.getCreatedAt().isBefore(LocalDateTime.now().minusHours(24));
+                        if (isExpired) {
+                            log.warn("♻️ GRACE RECLAIM: Purging expired pending zombie registration for email '{}'", normEmail);
+                            tenantPurgeService.purgePendingUserAndTenant(existingUser, "Grace Reclaim by New Registration");
+                        }
+                    }
+                });
+            }
+            if (request.getSlug() != null && !request.getSlug().isBlank()) {
+                String candidateSlug = request.getSlug().trim().toLowerCase();
+                organizationRepository.findBySlug(candidateSlug).ifPresent(existingOrg -> {
+                    java.util.List<User> orgUsers = userRepository.findByOrganizationId(existingOrg.getId());
+                    boolean allPending = !orgUsers.isEmpty() && orgUsers.stream().allMatch(u -> "PENDING_ACTIVATION".equalsIgnoreCase(u.getStatus()));
+                    boolean isExpired = orgUsers.stream().anyMatch(u -> u.getCreatedAt() != null && u.getCreatedAt().isBefore(LocalDateTime.now().minusHours(24)));
+                    if (allPending && isExpired) {
+                        log.warn("♻️ GRACE RECLAIM: Purging expired pending zombie organization for slug '{}'", candidateSlug);
+                        for (User u : orgUsers) {
+                            tenantPurgeService.purgePendingUserAndTenant(u, "Grace Reclaim Slug by New Registration");
+                        }
+                    }
+                });
+            }
         }
 
         // Lookup Subscription Plan
@@ -466,6 +539,21 @@ public class OrganizationProvisioningService {
 
     @Transactional
     public Organization registerSelfService(OrganizationCreateRequest request) {
+        // Grace Reclaim Defense against Denial of Registration:
+        if (userRepository != null && tenantPurgeService != null && request.getAdminEmail() != null && !request.getAdminEmail().isBlank()) {
+            String normEmail = request.getAdminEmail().trim().toLowerCase();
+            userRepository.findByEmail(normEmail).ifPresent(existingUser -> {
+                if ("PENDING_ACTIVATION".equalsIgnoreCase(existingUser.getStatus())) {
+                    boolean isExpired = existingUser.getCreatedAt() != null &&
+                            existingUser.getCreatedAt().isBefore(LocalDateTime.now().minusHours(24));
+                    if (isExpired) {
+                        log.warn("♻️ GRACE RECLAIM: Purging expired pending zombie registration for email '{}'", normEmail);
+                        tenantPurgeService.purgePendingUserAndTenant(existingUser, "Grace Reclaim by Self Service Registration");
+                    }
+                }
+            });
+        }
+
         String rawPlan = request.getPlan() != null ? request.getPlan().trim() : "FREE";
         String normalizedPlan = OrganizationQuotaService.normalizePlanName(rawPlan);
         SubscriptionPlan plan = subscriptionPlanRepository

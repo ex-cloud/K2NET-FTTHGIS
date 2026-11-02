@@ -201,6 +201,29 @@ export function OrganizationContextMenu({
           <ContextMenuShortcut>T</ContextMenuShortcut>
         </ContextMenuItem>
 
+        {/* 7b. Resend Activation Magic Link */}
+        <ContextMenuItem
+          onClick={async () => {
+            try {
+              const res = await fetch(`/api/v1/organizations/${encodeURIComponent(organization.slug)}/activation-link/resend`, {
+                method: "POST",
+              });
+              if (res.ok) {
+                toast.success(t("organizations.magic_link_resent_success"));
+              } else {
+                toast.error(t("common.error"));
+              }
+            } catch {
+              toast.error(t("common.error"));
+            }
+          }}
+          disabled={!canUpdateOrg}
+          className="cursor-pointer gap-2 focus:bg-muted text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Mail className="w-3.5 h-3.5 text-primary" />
+          <span>{t("organizations.action_resend_magic_link")}</span>
+        </ContextMenuItem>
+
         <ContextMenuSeparator className="bg-border/40 my-1" />
 
         {/* 8. Copy Details Submenu */}

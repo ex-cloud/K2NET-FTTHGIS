@@ -40,6 +40,8 @@ export function ActivatePage() {
             activateSuccessDesc: t("auth.activate_success_desc"),
             tokenExpiredTitle: t("auth.token_expired_title"),
             tokenExpiredDesc: t("auth.token_expired_desc"),
+            tokenExpiredGuidance: t("auth.token_expired_guidance"),
+            contactSupport: t("auth.contact_support"),
             tokenVerifying: t("auth.token_verifying"),
             newPasswordLabel: t("auth.new_password_label"),
             confirmPasswordLabel: t("auth.confirm_password_label"),

@@ -21,6 +21,7 @@ public class OrganizationController {
     private final KeycloakService keycloakService;
     private final com.company.ftthgis.service.OrganizationSlugMigrationService organizationSlugMigrationService;
     private final com.company.ftthgis.service.organization.TenantActivationService tenantActivationService;
+    private final com.company.ftthgis.service.organization.TenantPurgeService tenantPurgeService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('orgs.view') or hasAuthority('organizations.view')")
@@ -56,6 +57,21 @@ public class OrganizationController {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{slug}/purge-expired")
+    @PreAuthorize("hasAuthority('system.organizations.manage')")
+    public ResponseEntity<?> purgeExpired(@PathVariable String slug) {
+        try {
+            boolean purged = tenantPurgeService.purgeSingleExpiredTenant(slug);
+            return ResponseEntity.ok(java.util.Map.of("success", purged, "slug", slug, "message", "Expired tenant successfully purged."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(java.util.Map.of("success", false, "error", e.getMessage()));
         }
     }
 

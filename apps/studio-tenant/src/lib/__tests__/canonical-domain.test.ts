@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 
 function resolveCanonicalTenantHost(hostname: string): string {
   const host = hostname.toLowerCase();

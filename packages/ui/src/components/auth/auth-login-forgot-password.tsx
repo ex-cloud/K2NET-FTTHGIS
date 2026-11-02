@@ -1,8 +1,9 @@
-import React from "react";
-import { ArrowLeft, Check, Mail } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ArrowLeft, Check, Mail, RefreshCw } from "lucide-react";
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
+import { cn } from "../../utils";
 import type { UseAuthLoginFormReturn } from "./use-auth-login-form";
 import type { AuthLoginFormProps } from "./auth-login-types";
 
@@ -25,6 +26,31 @@ export function AuthLoginForgotPassword({ form, props }: AuthLoginForgotPassword
 
   const { turnstileSiteKey } = props;
 
+  // 60-second cooldown timer for resending forgot password instructions
+  const [cooldown, setCooldown] = useState(60);
+
+  useEffect(() => {
+    if (!forgotSubmitted) return;
+    setCooldown(60);
+    const interval = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [forgotSubmitted]);
+
+  const handleResend = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (cooldown > 0 || forgotLoading) return;
+    setCooldown(60);
+    handleForgotSubmit(e as unknown as React.FormEvent);
+  };
+
   if (forgotSubmitted) {
     return (
       <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200 text-center py-2">
@@ -40,12 +66,28 @@ export function AuthLoginForgotPassword({ form, props }: AuthLoginForgotPassword
           </p>
         </div>
 
-        <div className="pt-2">
+        <div className="pt-2 space-y-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={cooldown > 0 || forgotLoading}
+            className="w-full h-7 px-2.5 text-xs font-medium justify-center gap-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
+            onClick={handleResend}
+          >
+            <RefreshCw className={cn("size-3", forgotLoading && "animate-spin")} />
+            <span>
+              {cooldown > 0
+                ? (copy.resendCooldown || "Resend available in {seconds}s").replace("{seconds}", String(cooldown))
+                : (copy.resendInstructions || "Resend instructions")}
+            </span>
+          </Button>
+
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="w-full h-8 text-xs font-medium justify-center gap-1.5 border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all cursor-pointer"
+            className="w-full h-7 px-2.5 text-xs font-medium justify-center gap-1.5 border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all cursor-pointer"
             onClick={handleBackToLogin}
           >
             <ArrowLeft className="size-3.5" />

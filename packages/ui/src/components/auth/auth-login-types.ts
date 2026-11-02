@@ -72,6 +72,8 @@ export interface AuthLoginFormLabels {
   backToSignIn?: string;
   checkInboxTitle?: string;
   checkInboxDesc?: string;
+  resendInstructions?: string;
+  resendCooldown?: string;
 }
 
 export interface AuthLoginFormProps {

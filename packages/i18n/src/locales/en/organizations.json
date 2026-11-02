@@ -267,7 +267,6 @@
   "import_done_and_close": "DONE & CLOSE",
   "import_close": "CLOSE",
   "import_provisioning_notice": "The import process will automatically validate the slug, configure the Keycloak Realm, and initialize the organization entity with ACTIVE status.",
-  "col_status": "Status",
   "impersonation_history_title": "Impersonation History & Forensic Logs ({{total}})",
   "impersonation_search_placeholder": "Search tenant, admin, ticket, reason...",
   "col_started_at": "Started At",
@@ -490,5 +489,11 @@
   "col_email": "Email",
   "col_mfa": "MFA / 2FA",
   "col_status": "Status",
-  "col_last_login": "Last Login"
+  "col_last_login": "Last Login",
+  "status_pending_activation": "Pending Activation",
+  "status_expired_pending": "Expired Pending",
+  "action_resend_magic_link": "Resend Activation Link",
+  "action_purge_expired": "Purge Expired Organization",
+  "magic_link_resent_success": "Activation link has been re-dispatched to Technical PIC",
+  "purge_expired_success": "Expired organization has been successfully purged"
 }

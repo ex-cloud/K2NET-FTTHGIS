@@ -86,6 +86,8 @@ export default function AdminLoginPage() {
       backToSignIn: t("auth.back_to_sign_in"),
       checkInboxTitle: t("auth.check_inbox_title"),
       checkInboxDesc: t("auth.check_inbox_desc"),
+      resendInstructions: t("auth.resend_instructions"),
+      resendCooldown: t("auth.resend_cooldown"),
     }),
     [t]
   );

@@ -26,4 +26,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
 
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u LEFT JOIN FETCH u.organization WHERE u.id = :id")
     Optional<User> findByIdWithOrganization(@org.springframework.data.repository.query.Param("id") UUID id);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.status = 'PENDING_ACTIVATION' AND u.createdAt < :cutoff")
+    java.util.List<User> findPendingUnactivatedUsers(@org.springframework.data.repository.query.Param("cutoff") java.time.LocalDateTime cutoff);
 }

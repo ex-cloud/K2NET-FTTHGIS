@@ -344,6 +344,8 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     checkInboxDesc:
       labels?.checkInboxDesc ||
       "If an account matches this identity, we've sent password reset instructions to your inbox.",
+    resendInstructions: labels?.resendInstructions || "Resend instructions",
+    resendCooldown: labels?.resendCooldown || "Resend available in {seconds}s",
   };
 
   const resolvedSubmitLabel =

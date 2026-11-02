@@ -195,7 +195,6 @@
   "doc_kyc_needs_revision": "{count} PERLU REVISI",
   "doc_kyc_incomplete": "BELUM LENGKAP",
   "doc_kyc_verification_progress": "Verifikasi: {verified} dari {total} dokumen valid ({pct}%)",
-  "col_status": "Status",
   "wizard_step1_title": "Langkah 1: Paket Lisensi & Hardware Quota",
   "wizard_step1_desc": "Pilih tier langganan untuk menentukan batas kapasitas hardware (OLT & ODP) serta fitur platform.",
   "wizard_step2_title": "Langkah 2: Identitas & Subdomain Portal",
@@ -490,5 +489,11 @@
   "col_email": "Email",
   "col_mfa": "MFA / 2FA",
   "col_status": "Status",
-  "col_last_login": "Login Terakhir"
+  "col_last_login": "Login Terakhir",
+  "status_pending_activation": "Menunggu Aktivasi",
+  "status_expired_pending": "Aktivasi Kedaluwarsa",
+  "action_resend_magic_link": "Kirim Ulang Tautan Aktivasi",
+  "action_purge_expired": "Bersihkan Organisasi Kedaluwarsa",
+  "magic_link_resent_success": "Tautan aktivasi berhasil dikirim ulang ke PIC Teknis",
+  "purge_expired_success": "Organisasi kedaluwarsa berhasil dibersihkan dari sistem"
 }
