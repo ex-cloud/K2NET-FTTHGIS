@@ -28,3 +28,4 @@ public class CreateRoleRequest {
 
     private List<Long> permissionIds;
 }
+
