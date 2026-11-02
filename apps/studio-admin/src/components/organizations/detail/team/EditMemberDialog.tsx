@@ -81,8 +81,9 @@ export function EditMemberDialog({
       toast.success(`Member ${user.name} successfully updated!`);
       onOpenChange(false);
       onSuccess();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to update member");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to update member";
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

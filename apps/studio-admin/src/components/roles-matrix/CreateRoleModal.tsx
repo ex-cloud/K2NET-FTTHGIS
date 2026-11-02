@@ -59,8 +59,9 @@ export function CreateRoleModal({
       setDisplayName("");
       setDescription("");
       onSuccess();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create role");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to create role";
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

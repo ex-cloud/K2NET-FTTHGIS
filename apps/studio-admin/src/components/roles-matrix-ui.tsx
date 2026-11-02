@@ -64,8 +64,9 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
       await deleteRole(role.id, token);
       toast.success(`Role "${role.displayName || role.name}" deleted successfully!`);
       await state.fetchData();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete role");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to delete role";
+      toast.error(msg);
     }
   };
 

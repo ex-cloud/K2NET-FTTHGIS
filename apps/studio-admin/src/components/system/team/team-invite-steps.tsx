@@ -62,8 +62,10 @@ export function StepUserDetails({
   isPlatformStaff,
 }: StepUserDetailsProps) {
   const generateStrongPassword = () => {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-    const pass = "Password@" + Math.floor(100000 + Math.random() * 900000);
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const code = 100000 + (array[0] % 900000);
+    const pass = `Password@${code}`;
     setFormData((prev) => ({ ...prev, customPassword: pass }));
   };
 

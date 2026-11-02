@@ -56,19 +56,19 @@ function getRoleBadge(role: string, displayName?: string, code?: string) {
   const norm = (role || "").toUpperCase();
   let badgeStyle = "border-border text-muted-foreground bg-muted/20";
   if (norm.includes("ADMIN") || norm.includes("SUPER")) {
-    badgeStyle = "border-purple-500/30 bg-purple-500/10 text-purple-400";
+    badgeStyle = "border-primary/40 bg-primary/10 text-primary font-semibold";
   } else if (norm.includes("NOC") || norm.includes("ENGINEER")) {
     badgeStyle = "border-primary/30 bg-primary/10 text-primary";
   } else if (norm.includes("TECH")) {
-    badgeStyle = "border-blue-500/30 bg-blue-500/10 text-blue-400";
+    badgeStyle = "border-foreground/30 bg-foreground/10 text-foreground";
   } else if (norm.includes("FINANCE") || norm.includes("BILLING")) {
-    badgeStyle = "border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
+    badgeStyle = "border-primary/30 bg-primary/10 text-primary";
   } else if (norm.includes("SURVEY")) {
-    badgeStyle = "border-teal-500/30 bg-teal-500/10 text-teal-400";
+    badgeStyle = "border-border bg-card text-foreground";
   } else if (norm.includes("WAREHOUSE")) {
-    badgeStyle = "border-amber-500/30 bg-amber-500/10 text-amber-400";
+    badgeStyle = "border-border bg-muted/40 text-muted-foreground";
   } else if (norm.includes("HELP")) {
-    badgeStyle = "border-cyan-500/30 bg-cyan-500/10 text-cyan-400";
+    badgeStyle = "border-border bg-muted/30 text-foreground";
   }
   return (
     <Badge variant="outline" className={cn("font-mono text-[10px] gap-1", badgeStyle)}>

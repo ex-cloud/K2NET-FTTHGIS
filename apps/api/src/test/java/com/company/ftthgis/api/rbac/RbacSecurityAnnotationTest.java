@@ -38,7 +38,7 @@ class RbacSecurityAnnotationTest {
 
     @Test
     void userListEndpointHasPreAuthorizeGuard() throws NoSuchMethodException {
-        Method method = UserController.class.getDeclaredMethod("index", org.springframework.data.domain.Pageable.class, String.class, String.class, String.class, String.class);
+        Method method = UserController.class.getDeclaredMethod("index", org.springframework.data.domain.Pageable.class, String.class, String.class, String.class, String.class, String.class);
         PreAuthorize auth = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
         assertNotNull(auth, "User list endpoint must have @PreAuthorize guard");
     }

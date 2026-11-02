@@ -46,7 +46,7 @@ public class SystemSettingServiceTest {
         for (SystemSetting setting : captor.getAllValues()) {
             if ("password_min_length".equals(setting.getKey())) {
                 hasMinLength = true;
-                assertEquals("8", setting.getValue());
+                assertEquals("14", setting.getValue());
                 assertEquals("SECURITY", setting.getCategory());
             }
             if ("password_require_uppercase".equals(setting.getKey())) {

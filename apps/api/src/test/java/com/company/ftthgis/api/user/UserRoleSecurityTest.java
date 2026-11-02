@@ -12,7 +12,7 @@ class UserRoleSecurityTest {
 
     @Test
     void userListingEndpointIsProtected() throws NoSuchMethodException {
-        Method method = UserController.class.getDeclaredMethod("index", org.springframework.data.domain.Pageable.class, String.class, String.class, String.class, String.class);
+        Method method = UserController.class.getDeclaredMethod("index", org.springframework.data.domain.Pageable.class, String.class, String.class, String.class, String.class, String.class);
         PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
         assertNotNull(annotation, "User listing endpoint should require authorization");
     }

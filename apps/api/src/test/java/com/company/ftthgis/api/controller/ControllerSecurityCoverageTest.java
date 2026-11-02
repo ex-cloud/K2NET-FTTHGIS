@@ -32,7 +32,7 @@ class ControllerSecurityCoverageTest {
         Method orgAnalyticsMethod = OrganizationAnalyticsController.class.getDeclaredMethod("getSummary", String.class);
         assertNotNull(AnnotationUtils.findAnnotation(orgAnalyticsMethod, PreAuthorize.class));
 
-        Method userIndexMethod = UserController.class.getDeclaredMethod("index", org.springframework.data.domain.Pageable.class, String.class, String.class, String.class, String.class);
+        Method userIndexMethod = UserController.class.getDeclaredMethod("index", org.springframework.data.domain.Pageable.class, String.class, String.class, String.class, String.class, String.class);
         assertNotNull(AnnotationUtils.findAnnotation(userIndexMethod, PreAuthorize.class));
 
         Method webhookMethod = GithubWebhookController.class.getDeclaredMethod("handleWebhook", String.class, String.class, byte[].class);
