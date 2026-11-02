@@ -73,6 +73,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/organizations/check-slug/**").permitAll() // Slug availability check
                         .requestMatchers("/api/v1/organizations/*/auth-methods").permitAll() // Public auth methods discovery
                         .requestMatchers("/api/v1/public/organizations/**").permitAll() // Public organization resolver
+                        .requestMatchers("/api/v1/public/invitations/**").permitAll() // Public member invitation acceptance
                         .requestMatchers("/api/v1/public/files/**").permitAll() // Public whitelabel assets (logos, favicons)
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
                         .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public

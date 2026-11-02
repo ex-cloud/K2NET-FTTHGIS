@@ -8,4 +8,5 @@ export * from "./auth-reset-password-card";
 export * from "./auth-activate-card";
 export * from "./auth-login-form";
 export * from "./auth-workspace-chooser";
+export * from "./auth-invite-accept-card";
 export * from "./saved-profiles";

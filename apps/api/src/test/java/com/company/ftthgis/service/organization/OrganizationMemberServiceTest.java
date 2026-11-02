@@ -10,6 +10,9 @@ import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.repository.RoleRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.service.EmailService;
+import com.company.ftthgis.service.KeycloakAdminService;
+import com.company.ftthgis.service.PasswordValidationService;
+import com.company.ftthgis.service.TurnstileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +45,15 @@ class OrganizationMemberServiceTest {
 
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private TurnstileService turnstileService;
+
+    @Mock
+    private PasswordValidationService passwordValidationService;
+
+    @Mock
+    private KeycloakAdminService keycloakAdminService;
 
     @InjectMocks
     private OrganizationMemberService service;
@@ -274,6 +286,123 @@ class OrganizationMemberServiceTest {
         assertThatThrownBy(() -> service.removeMember("nusantara", memberId, "actor-123"))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("last administrator");
+    }
+
+    @Test
+    void validateInvitation_validToken_returnsDetails() {
+        String token = "valid-token-xyz";
+        OrganizationMember invitedMember = OrganizationMember.builder()
+            .id(UUID.randomUUID())
+            .user(user)
+            .organization(orgA)
+            .roleName("engineer")
+            .status("INVITED")
+            .invitationToken(token)
+            .invitationExpiresAt(LocalDateTime.now().plusHours(24))
+            .build();
+
+        when(memberRepository.findByInvitationToken(token)).thenReturn(Optional.of(invitedMember));
+
+        InvitationValidationDto result = service.validateInvitation(token);
+
+        assertThat(result.isValid()).isTrue();
+        assertThat(result.getOrganizationName()).isEqualTo("ISP Nusantara");
+        assertThat(result.getOrganizationSlug()).isEqualTo("nusantara");
+        assertThat(result.getSubdomain()).isEqualTo("nusantara.kdua.net");
+        assertThat(result.getEmail()).isEqualTo("engineer@k2net.id");
+        assertThat(result.getRoleName()).isEqualTo("engineer");
+        assertThat(result.isHasExistingAccount()).isTrue();
+    }
+
+    @Test
+    void validateInvitation_expiredToken_returnsExpiredStatus() {
+        String token = "expired-token-xyz";
+        OrganizationMember expiredMember = OrganizationMember.builder()
+            .id(UUID.randomUUID())
+            .user(user)
+            .organization(orgA)
+            .status("INVITED")
+            .invitationToken(token)
+            .invitationExpiresAt(LocalDateTime.now().minusHours(2))
+            .build();
+
+        when(memberRepository.findByInvitationToken(token)).thenReturn(Optional.of(expiredMember));
+
+        InvitationValidationDto result = service.validateInvitation(token);
+
+        assertThat(result.isValid()).isFalse();
+        assertThat(result.isExpired()).isTrue();
+        assertThat(result.getErrorMessage()).contains("expired");
+    }
+
+    @Test
+    void validateInvitation_alreadyAccepted_returnsAcceptedStatus() {
+        String token = "accepted-token-xyz";
+        OrganizationMember activeMember = OrganizationMember.builder()
+            .id(UUID.randomUUID())
+            .user(user)
+            .organization(orgA)
+            .status("ACTIVE")
+            .invitationToken(token)
+            .build();
+
+        when(memberRepository.findByInvitationToken(token)).thenReturn(Optional.of(activeMember));
+
+        InvitationValidationDto result = service.validateInvitation(token);
+
+        assertThat(result.isValid()).isFalse();
+        assertThat(result.isAlreadyAccepted()).isTrue();
+        assertThat(result.getErrorMessage()).contains("already been accepted");
+    }
+
+    @Test
+    void acceptInvitationPublic_withCredentialsAndTurnstile_activatesMember() {
+        String token = "invite-token-abc";
+        OrganizationMember invitedMember = OrganizationMember.builder()
+            .id(UUID.randomUUID())
+            .user(user)
+            .organization(orgA)
+            .roleName("engineer")
+            .status("INVITED")
+            .invitationToken(token)
+            .invitationExpiresAt(LocalDateTime.now().plusHours(24))
+            .build();
+
+        when(turnstileService.verifyToken("turnstile-token-123", "127.0.0.1")).thenReturn(true);
+        when(memberRepository.findByInvitationToken(token)).thenReturn(Optional.of(invitedMember));
+        when(memberRepository.save(any(OrganizationMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AcceptInvitationRequest request = AcceptInvitationRequest.builder()
+            .token(token)
+            .fullName("Budi Santoso")
+            .password("K2netP@ssw0rd!2026")
+            .turnstileToken("turnstile-token-123")
+            .build();
+
+        AcceptInvitationResponseDto response = service.acceptInvitationPublic(request, "127.0.0.1");
+
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getOrganizationSlug()).isEqualTo("nusantara");
+        assertThat(response.getRedirectUrl()).isEqualTo("https://nusantara.kdua.net/login");
+        assertThat(invitedMember.getStatus()).isEqualTo("ACTIVE");
+        assertThat(invitedMember.getInvitationToken()).isNull();
+        verify(passwordValidationService).validatePassword("K2netP@ssw0rd!2026");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void acceptInvitationPublic_invalidTurnstile_throwsSecurityException() {
+        String token = "invite-token-invalid-turnstile";
+        when(turnstileService.verifyToken("bad-turnstile", "127.0.0.1")).thenReturn(false);
+
+        AcceptInvitationRequest request = AcceptInvitationRequest.builder()
+            .token(token)
+            .turnstileToken("bad-turnstile")
+            .build();
+
+        assertThatThrownBy(() -> service.acceptInvitationPublic(request, "127.0.0.1"))
+            .isInstanceOf(SecurityException.class)
+            .hasMessageContaining("Turnstile security check failed");
     }
 }
 

@@ -10,6 +10,9 @@ import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.repository.RoleRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.service.EmailService;
+import com.company.ftthgis.service.KeycloakAdminService;
+import com.company.ftthgis.service.PasswordValidationService;
+import com.company.ftthgis.service.TurnstileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,9 @@ public class OrganizationMemberService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final EmailService emailService;
+    private final TurnstileService turnstileService;
+    private final PasswordValidationService passwordValidationService;
+    private final KeycloakAdminService keycloakAdminService;
 
     /**
      * Lists all active workspaces/tenants a user is a member of.
@@ -238,6 +244,160 @@ public class OrganizationMemberService {
         log.info("🎉 User {} accepted membership invitation for workspace {}", saved.getUser().getEmail(), saved.getOrganization().getSlug());
 
         return mapToDto(saved);
+    }
+
+    /**
+     * Validates a workspace invitation token and returns details for the acceptance UI.
+     */
+    @Transactional(readOnly = true)
+    public InvitationValidationDto validateInvitation(String token) {
+        if (token == null || token.isBlank()) {
+            return InvitationValidationDto.builder()
+                .valid(false)
+                .errorMessage("Invitation token must not be blank")
+                .build();
+        }
+
+        Optional<OrganizationMember> memberOpt = memberRepository.findByInvitationToken(token);
+        if (memberOpt.isEmpty()) {
+            return InvitationValidationDto.builder()
+                .valid(false)
+                .errorMessage("Invalid or non-existent invitation token")
+                .build();
+        }
+
+        OrganizationMember member = memberOpt.get();
+        Organization org = member.getOrganization();
+        User user = member.getUser();
+
+        boolean isExpired = member.getInvitationExpiresAt() != null && member.getInvitationExpiresAt().isBefore(LocalDateTime.now());
+        boolean alreadyAccepted = "ACTIVE".equalsIgnoreCase(member.getStatus());
+
+        if (isExpired) {
+            return InvitationValidationDto.builder()
+                .valid(false)
+                .isExpired(true)
+                .organizationName(org != null ? org.getName() : null)
+                .organizationSlug(org != null ? org.getSlug() : null)
+                .subdomain(org != null ? org.getSlug() + ".kdua.net" : null)
+                .email(user != null ? user.getEmail() : null)
+                .errorMessage("Invitation token has expired. Please request a new invitation from your administrator.")
+                .build();
+        }
+
+        if (alreadyAccepted) {
+            return InvitationValidationDto.builder()
+                .valid(false)
+                .alreadyAccepted(true)
+                .organizationName(org != null ? org.getName() : null)
+                .organizationSlug(org != null ? org.getSlug() : null)
+                .subdomain(org != null ? org.getSlug() + ".kdua.net" : null)
+                .email(user != null ? user.getEmail() : null)
+                .errorMessage("Invitation has already been accepted.")
+                .build();
+        }
+
+        if (!"INVITED".equalsIgnoreCase(member.getStatus())) {
+            return InvitationValidationDto.builder()
+                .valid(false)
+                .errorMessage("Invitation is no longer valid (status: " + member.getStatus() + ")")
+                .build();
+        }
+
+        boolean hasExistingAccount = user != null && !"INVITED".equalsIgnoreCase(user.getStatus());
+
+        return InvitationValidationDto.builder()
+            .valid(true)
+            .organizationId(org != null ? org.getId() : null)
+            .organizationName(org != null ? org.getName() : null)
+            .organizationSlug(org != null ? org.getSlug() : null)
+            .subdomain(org != null ? org.getSlug() + ".kdua.net" : null)
+            .email(user != null ? user.getEmail() : null)
+            .roleName(member.getRoleName() != null ? member.getRoleName() : (member.getRole() != null ? member.getRole().getName() : "viewer"))
+            .expiresAt(member.getInvitationExpiresAt())
+            .hasExistingAccount(hasExistingAccount)
+            .build();
+    }
+
+    /**
+     * Public acceptance of workspace invitation with optional Turnstile verification and password setup.
+     */
+    @Transactional
+    public AcceptInvitationResponseDto acceptInvitationPublic(AcceptInvitationRequest request, String remoteIp) {
+        if (request == null || request.getToken() == null || request.getToken().isBlank()) {
+            throw new IllegalArgumentException("Invitation token must not be blank");
+        }
+
+        // 1. Verify Turnstile if token is provided or required
+        if (request.getTurnstileToken() != null && !request.getTurnstileToken().isBlank() && turnstileService != null) {
+            boolean turnstileValid = turnstileService.verifyToken(request.getTurnstileToken(), remoteIp);
+            if (!turnstileValid) {
+                throw new SecurityException("Turnstile security check failed. Please refresh and try again.");
+            }
+        }
+
+        OrganizationMember member = memberRepository.findByInvitationToken(request.getToken())
+            .orElseThrow(() -> new NoSuchElementException("Invalid or expired invitation token"));
+
+        if (member.getInvitationExpiresAt() != null && member.getInvitationExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Invitation token has expired. Please request a new invitation from your administrator.");
+        }
+
+        if (!"INVITED".equalsIgnoreCase(member.getStatus())) {
+            throw new IllegalStateException("Invitation has already been accepted or is no longer valid");
+        }
+
+        User targetUser = member.getUser();
+        Organization org = member.getOrganization();
+
+        // 2. Set credentials if user is newly invited or setting initial password
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            if (passwordValidationService != null) {
+                passwordValidationService.validatePassword(request.getPassword());
+            }
+
+            if (request.getFullName() != null && !request.getFullName().isBlank() && targetUser != null) {
+                targetUser.setFullName(request.getFullName().trim());
+            }
+
+            // Sync credentials to Keycloak
+            if (targetUser != null && keycloakAdminService != null) {
+                String realm = "k2net-tenants";
+                try {
+                    String name = targetUser.getFullName() != null ? targetUser.getFullName() : targetUser.getEmail().split("@")[0];
+                    String[] parts = name.split(" ", 2);
+                    String first = parts[0];
+                    String last = parts.length > 1 ? parts[1] : "";
+                    keycloakAdminService.createUserInRealm(realm, targetUser.getEmail(), targetUser.getEmail(), request.getPassword(), first, last, "ROLE_TENANT");
+                } catch (Exception e) {
+                    log.warn("Keycloak sync during invitation acceptance: {}", e.getMessage());
+                }
+            }
+
+            if (targetUser != null) {
+                targetUser.setStatus("ACTIVE");
+                userRepository.save(targetUser);
+            }
+        }
+
+        // 3. Activate membership
+        member.setStatus("ACTIVE");
+        member.setJoinedAt(LocalDateTime.now());
+        member.setInvitationToken(null);
+        member.setInvitationExpiresAt(null);
+
+        OrganizationMember saved = memberRepository.save(member);
+        log.info("🎉 Member {} successfully accepted invitation for workspace {}", saved.getUser() != null ? saved.getUser().getEmail() : "unknown", org != null ? org.getSlug() : "unknown");
+
+        String redirectUrl = org != null ? "https://" + org.getSlug() + ".kdua.net/login" : "/login";
+
+        return AcceptInvitationResponseDto.builder()
+            .success(true)
+            .message("Invitation successfully accepted")
+            .organizationSlug(org != null ? org.getSlug() : null)
+            .redirectUrl(redirectUrl)
+            .member(mapToDto(saved))
+            .build();
     }
 
     /**
