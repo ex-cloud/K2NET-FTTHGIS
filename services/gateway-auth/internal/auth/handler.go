@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -911,3 +912,73 @@ func resolveClientIP(c *gin.Context) string {
 func joinRoles(roles []string) string {
 	return strings.Join(roles, ",")
 }
+
+// ListWorkspaces handles GET /api/v1/auth/workspaces.
+// Returns list of tenant workspaces associated with the authenticated user.
+func (h *Handler) ListWorkspaces(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" || !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Bearer token required"})
+		return
+	}
+	rawToken := strings.TrimSpace(authHeader[7:])
+	claims, err := ParseJWTClaimsFromInternalToken(rawToken)
+	if err != nil || claims == nil || claims.Sub == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_token", "message": "Failed to parse token claims"})
+		return
+	}
+
+	workspaces, err := h.repo.GetUserWorkspaces(c.Request.Context(), claims.Sub, claims.Email)
+	if err != nil {
+		logger.Error(c.Request.Context(), "failed to retrieve workspaces", zap.Error(err), zap.String("userId", claims.Sub))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to retrieve user workspaces"})
+		return
+	}
+
+	if workspaces == nil {
+		workspaces = []UserWorkspace{}
+	}
+
+	c.JSON(http.StatusOK, workspaces)
+}
+
+// SwitchContext handles POST /api/v1/auth/switch-context.
+// Validates target workspace membership, updates active workspace, and returns resolved context.
+func (h *Handler) SwitchContext(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" || !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Bearer token required"})
+		return
+	}
+	rawToken := strings.TrimSpace(authHeader[7:])
+	claims, err := ParseJWTClaimsFromInternalToken(rawToken)
+	if err != nil || claims == nil || claims.Sub == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_token", "message": "Failed to parse token claims"})
+		return
+	}
+
+	var req SwitchContextRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Target organization ID is required"})
+		return
+	}
+
+	tenantCtx, err := h.repo.SwitchUserContext(c.Request.Context(), claims.Sub, req.TargetOrganizationID)
+	if err != nil {
+		logger.Warn(c.Request.Context(), "context switch rejected", zap.Error(err), zap.String("userId", claims.Sub), zap.String("targetOrgId", req.TargetOrganizationID))
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": err.Error()})
+		return
+	}
+
+	redirectURL := fmt.Sprintf("https://%s.kdua.net", tenantCtx.Slug)
+
+	c.JSON(http.StatusOK, SwitchContextResponse{
+		OrganizationID:   tenantCtx.ID,
+		OrganizationName: tenantCtx.Name,
+		OrganizationSlug: tenantCtx.Slug,
+		CanonicalDomain:  tenantCtx.Slug + ".kdua.net",
+		RoleName:         "admin",
+		RedirectURL:      redirectURL,
+	})
+}
+

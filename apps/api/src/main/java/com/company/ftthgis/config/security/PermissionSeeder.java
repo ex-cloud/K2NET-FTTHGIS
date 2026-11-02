@@ -81,6 +81,9 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("team.view",   "View Team Members",   "team", SCOPE_TENANT),
             new PermissionData("team.invite", "Invite New Members",  "team", SCOPE_TENANT),
             new PermissionData("team.manage", "Manage Member Roles", "team", SCOPE_TENANT),
+            new PermissionData("members.view",   "View Workspace Members",   "organization", SCOPE_TENANT),
+            new PermissionData("members.manage", "Manage Workspace Members", "organization", SCOPE_TENANT),
+            new PermissionData("members.invite", "Invite Workspace Members", "organization", SCOPE_TENANT),
 
             // inventory — stock & asset tracking
             new PermissionData("inventory.view",   "View Inventory",          "inventory", SCOPE_TENANT),
@@ -143,6 +146,8 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("system.contracts.view",       "View Tenant Contracts",        "system", SCOPE_SYSTEM),
             new PermissionData("system.contracts.upload",     "Upload Tenant Contracts",      "system", SCOPE_SYSTEM),
             new PermissionData("system.quotas.manage",        "Manage Tenant Quotas",         "system", SCOPE_SYSTEM),
+            new PermissionData("system.members.view",         "View All Organization Memberships",   "system", SCOPE_SYSTEM),
+            new PermissionData("system.members.manage",       "Manage All Organization Memberships", "system", SCOPE_SYSTEM),
 
             // catalog — plans, packages, policies & templates (SYSTEM scope)
             new PermissionData("catalog.plans.read",      "View Catalog Plans & Versions",   "catalog", SCOPE_SYSTEM),

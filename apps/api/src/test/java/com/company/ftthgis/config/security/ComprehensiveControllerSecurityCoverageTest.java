@@ -89,7 +89,10 @@ public class ComprehensiveControllerSecurityCoverageTest {
             "PersonalSecurityController.revokeDevice",
             "PersonalSecurityController.trustCurrentDevice",
             "PersonalSecurityController.getSecuritySummary",
-            "EffectiveSecurityPolicyController.getEffectivePolicy"
+            "EffectiveSecurityPolicyController.getEffectivePolicy",
+            "UserWorkspaceController.listMyWorkspaces",
+            "UserWorkspaceController.switchContext",
+            "TenantMemberController.acceptInvitation"
     );
 
     private static final List<String> FORBIDDEN_PREAUTHORIZE_PATTERNS = List.of(

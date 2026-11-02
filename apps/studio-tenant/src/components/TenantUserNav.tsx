@@ -7,8 +7,13 @@ import {
   useTheme,
   cn,
   clearBrowserStorageForLogout,
+  Dialog,
+  DialogContent,
+  AuthWorkspaceChooser,
+  type UserWorkspaceItem,
 } from "@k2net/ui";
-import { ShieldAlert, Building, Users, CreditCard, Sparkles, ArrowUpRight, User } from "lucide-react";
+import { ShieldAlert, Building, Users, CreditCard, Sparkles, ArrowUpRight, User, Building2 } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@k2net/auth/client";
 import { useTranslation, type SupportedLocale } from "@k2net/i18n";
 import { useTenantInfo } from "../hooks/useTenantInfo";
@@ -86,6 +91,52 @@ export function TenantUserNav() {
   const { isMono, toggleMono } = useMonoMode(mounted);
   const { selectedTimezone, setTimezone } = useTimezonePreference(mounted);
 
+  const [workspaces, setWorkspaces] = React.useState<UserWorkspaceItem[]>([]);
+  const [isSwitcherOpen, setIsSwitcherOpen] = React.useState(false);
+  const [loadingOrgId, setLoadingOrgId] = React.useState<string | undefined>();
+
+  React.useEffect(() => {
+    if (!mounted || !initialized || !user) return;
+    fetch("/api/v1/users/me/workspaces")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setWorkspaces(data);
+        }
+      })
+      .catch(() => {});
+  }, [mounted, initialized, user]);
+
+  const handleSelectWorkspace = async (ws: UserWorkspaceItem) => {
+    if (ws.isActiveContext) {
+      setIsSwitcherOpen(false);
+      return;
+    }
+    setLoadingOrgId(ws.organizationId);
+    try {
+      const res = await fetch("/api/v1/users/me/workspaces/switch-context", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetOrganizationId: ws.organizationId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(t("auth.workspace_switch_success"));
+        if (data.redirectUrl) {
+          window.location.href = data.redirectUrl;
+        } else {
+          window.location.reload();
+        }
+      } else {
+        toast.error(t("common.error"));
+      }
+    } catch {
+      toast.error(t("common.error"));
+    } finally {
+      setLoadingOrgId(undefined);
+    }
+  };
+
   const handleLogout = async () => {
     // Preserves `k2net_saved_profiles` so the Account Chooser / "View saved profiles" survives logout.
     clearBrowserStorageForLogout();
@@ -133,7 +184,8 @@ export function TenantUserNav() {
     : (user?.email || (organizationName ? `${organizationName} Workspace` : "Organization Workspace"));
 
   return (
-    <UserNavShell
+    <>
+      <UserNavShell
       isLoading={!mounted || !initialized}
       portalName="Tenant"
       user={{
@@ -196,6 +248,15 @@ export function TenantUserNav() {
             <CreditCard className="size-3.5 text-muted-foreground" />
             <span>{t("nav.tenant_billing")}</span>
           </DropdownMenuItem>
+          {workspaces.length > 1 && (
+            <DropdownMenuItem
+              className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2 text-primary"
+              onClick={() => setIsSwitcherOpen(true)}
+            >
+              <Building2 className="size-3.5 text-primary" />
+              <span>{t("nav.switch_workspace")}</span>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
       }
       impersonationSlot={
@@ -235,5 +296,22 @@ export function TenantUserNav() {
         ) : undefined
       }
     />
-  );
+    <Dialog open={isSwitcherOpen} onOpenChange={setIsSwitcherOpen}>
+      <DialogContent className="sm:max-w-md p-5 bg-card border-border">
+        <AuthWorkspaceChooser
+          workspaces={workspaces}
+          userEmail={user?.email}
+          onSelectWorkspace={handleSelectWorkspace}
+          loadingOrgId={loadingOrgId}
+          copy={{
+            title: t("auth.workspace_chooser_title"),
+            description: t("auth.workspace_chooser_desc"),
+            enterWorkspace: t("auth.workspace_enter_btn"),
+            activeBadge: t("auth.workspace_active_badge"),
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  </>
+);
 }

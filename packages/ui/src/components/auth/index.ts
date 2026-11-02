@@ -7,4 +7,5 @@ export * from "./auth-login-forgot-password";
 export * from "./auth-reset-password-card";
 export * from "./auth-activate-card";
 export * from "./auth-login-form";
+export * from "./auth-workspace-chooser";
 export * from "./saved-profiles";

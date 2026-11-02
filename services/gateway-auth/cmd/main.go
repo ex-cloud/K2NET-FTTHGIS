@@ -111,6 +111,8 @@ func main() {
 		authAPI.POST("/reset-password", mutationLimiter, handler.ResetPassword)
 		authAPI.GET("/activate/validate", handler.ValidateActivationToken)
 		authAPI.POST("/activate", mutationLimiter, handler.ActivateAccount)
+		authAPI.GET("/workspaces", handler.ListWorkspaces)
+		authAPI.POST("/switch-context", mutationLimiter, handler.SwitchContext)
 	}
 
 	srv := &http.Server{

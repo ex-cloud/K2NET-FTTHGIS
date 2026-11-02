@@ -266,5 +266,7 @@
   "inbox_filter_assigned": "Ditugaskan ke Saya",
   "inbox_filter_created": "Dibuat oleh Saya",
   "inbox_group_archive": "Arsip",
-  "inbox_filter_resolved": "Selesai & Riwayat"
+  "inbox_filter_resolved": "Selesai & Riwayat",
+  "switch_workspace": "Ganti Workspace",
+  "workspaces_title": "Workspace Saya"
 }

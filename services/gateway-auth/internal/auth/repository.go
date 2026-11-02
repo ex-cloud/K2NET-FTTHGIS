@@ -37,6 +37,8 @@ type Repository interface {
 	SyncUserJIT(ctx context.Context, in JITUserSyncInput) error
 	FindUserForPasswordReset(ctx context.Context, identifier, tenantSlug, plane string) (*ResetTokenData, error)
 	CompleteAccountActivation(ctx context.Context, userID, orgID string) error
+	GetUserWorkspaces(ctx context.Context, userID, email string) ([]UserWorkspace, error)
+	SwitchUserContext(ctx context.Context, userID, targetOrgID string) (*TenantContextResponse, error)
 }
 
 // PostgresRepository implements Repository backed by pgxpool and optional Redis cache.
@@ -235,13 +237,20 @@ func mapPlanDisplayName(planCode string) string {
 	}
 }
 
-// VerifyUserBelongsToOrg checks local users table as a secondary defense when JWT claims are missing.
+// VerifyUserBelongsToOrg checks organization_members and legacy users table as secondary defense.
 func (r *PostgresRepository) VerifyUserBelongsToOrg(ctx context.Context, userID, email, organizationID string) (bool, error) {
 	if r.db == nil || organizationID == "" {
 		return false, nil
 	}
 	const q = `
 		SELECT EXISTS (
+			SELECT 1
+			FROM organization_members om
+			JOIN users u ON u.id = om.user_id
+			WHERE om.organization_id = $1::uuid
+			  AND om.status = 'ACTIVE'
+			  AND (u.id::text = $2 OR LOWER(u.email) = LOWER($3))
+		) OR EXISTS (
 			SELECT 1
 			FROM users
 			WHERE organization_id = $1::uuid
@@ -470,5 +479,89 @@ func (r *PostgresRepository) CompleteAccountActivation(ctx context.Context, user
 
 	return tx.Commit(ctx)
 }
+
+// GetUserWorkspaces queries all active workspaces associated with a user.
+func (r *PostgresRepository) GetUserWorkspaces(ctx context.Context, userID, email string) ([]UserWorkspace, error) {
+	if r.db == nil || (userID == "" && email == "") {
+		return nil, nil
+	}
+
+	const q = `
+		SELECT 
+			org.id::text,
+			org.name,
+			org.slug,
+			COALESCE(om.role_name, 'viewer'),
+			om.status,
+			om.is_default,
+			COALESCE(u.last_active_organization_id = org.id, false) AS is_active
+		FROM organization_members om
+		JOIN organizations org ON org.id = om.organization_id
+		JOIN users u ON u.id = om.user_id
+		WHERE (u.id::text = $1 OR LOWER(u.email) = LOWER($2))
+		  AND om.status = 'ACTIVE'
+		  AND org.deleted_at IS NULL
+		ORDER BY om.is_default DESC, om.joined_at ASC
+	`
+	rows, err := r.db.Query(ctx, q, userID, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var workspaces []UserWorkspace
+	for rows.Next() {
+		var w UserWorkspace
+		if err := rows.Scan(
+			&w.OrganizationID,
+			&w.OrganizationName,
+			&w.OrganizationSlug,
+			&w.RoleName,
+			&w.Status,
+			&w.IsDefault,
+			&w.IsActiveContext,
+		); err != nil {
+			return nil, err
+		}
+		w.CanonicalDomain = w.OrganizationSlug + ".kdua.net"
+		workspaces = append(workspaces, w)
+	}
+
+	return workspaces, rows.Err()
+}
+
+// SwitchUserContext verifies user membership and updates last_active_organization_id.
+func (r *PostgresRepository) SwitchUserContext(ctx context.Context, userID, targetOrgID string) (*TenantContextResponse, error) {
+	if r.db == nil || userID == "" || targetOrgID == "" {
+		return nil, errors.New("invalid arguments for context switch")
+	}
+
+	var belongs bool
+	var orgSlug string
+	checkQuery := `
+		SELECT 
+			EXISTS (
+				SELECT 1 FROM organization_members om
+				WHERE om.user_id = $1::uuid 
+				  AND om.organization_id = $2::uuid 
+				  AND om.status = 'ACTIVE'
+			),
+			org.slug
+		FROM organizations org
+		WHERE org.id = $2::uuid AND org.deleted_at IS NULL
+	`
+	err := r.db.QueryRow(ctx, checkQuery, userID, targetOrgID).Scan(&belongs, &orgSlug)
+	if err != nil {
+		return nil, err
+	}
+	if !belongs {
+		return nil, errors.New("user is not an active member of target workspace")
+	}
+
+	_, _ = r.db.Exec(ctx, `UPDATE users SET last_active_organization_id = $1::uuid, updated_at = NOW() WHERE id = $2::uuid`, targetOrgID, userID)
+
+	return r.ResolveTenantContext(ctx, orgSlug)
+}
+
 
 

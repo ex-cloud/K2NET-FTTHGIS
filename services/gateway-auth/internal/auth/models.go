@@ -210,4 +210,32 @@ type ActivationTokenData struct {
 	OrgName       string `json:"orgName"`
 }
 
+// UserWorkspace represents an associated workspace for multi-tenant users (1 User -> N Workspaces).
+type UserWorkspace struct {
+	OrganizationID   string `json:"organizationId"`
+	OrganizationName string `json:"organizationName"`
+	OrganizationSlug string `json:"organizationSlug"`
+	CanonicalDomain  string `json:"canonicalDomain"`
+	RoleName         string `json:"roleName"`
+	Status           string `json:"status"`
+	IsDefault        bool   `json:"isDefault"`
+	IsActiveContext  bool   `json:"isActiveContext"`
+}
+
+// SwitchContextRequest is submitted to POST /api/v1/auth/switch-context.
+type SwitchContextRequest struct {
+	TargetOrganizationID string `json:"targetOrganizationId" binding:"required"`
+}
+
+// SwitchContextResponse is returned after a successful context switch.
+type SwitchContextResponse struct {
+	OrganizationID   string `json:"organizationId"`
+	OrganizationName string `json:"organizationName"`
+	OrganizationSlug string `json:"organizationSlug"`
+	CanonicalDomain  string `json:"canonicalDomain"`
+	RoleName         string `json:"roleName"`
+	RedirectURL      string `json:"redirectUrl"`
+}
+
+
 

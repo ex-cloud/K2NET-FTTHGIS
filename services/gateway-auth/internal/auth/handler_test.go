@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -54,6 +55,36 @@ func (m *mockRepo) FindUserForPasswordReset(_ context.Context, identifier, tenan
 
 func (m *mockRepo) CompleteAccountActivation(_ context.Context, userID, orgID string) error {
 	return nil
+}
+
+func (m *mockRepo) GetUserWorkspaces(_ context.Context, userID, email string) ([]UserWorkspace, error) {
+	return []UserWorkspace{
+		{
+			OrganizationID:   "org-1",
+			OrganizationName: "Kircon Fiber",
+			OrganizationSlug: "kircon-bandung",
+			CanonicalDomain:  "kircon-bandung.kdua.net",
+			RoleName:         "admin",
+			Status:           "ACTIVE",
+			IsDefault:        true,
+			IsActiveContext:  true,
+		},
+	}, nil
+}
+
+func (m *mockRepo) SwitchUserContext(_ context.Context, userID, targetOrgID string) (*TenantContextResponse, error) {
+	if targetOrgID == "invalid-org" {
+		return nil, errors.New("user is not an active member of target workspace")
+	}
+	return &TenantContextResponse{
+		ID:              targetOrgID,
+		Name:            "Kircon Fiber",
+		Slug:            "kircon-bandung",
+		RealmKey:        "k2net-tenants",
+		Plan:            "PRO",
+		PlanDisplayName: "PROFESSIONAL ISP",
+		Status:          "ACTIVE",
+	}, nil
 }
 
 func buildTestJWT(claims map[string]any) string {
@@ -423,6 +454,80 @@ func TestForgotPasswordAntiEnumeration(t *testing.T) {
 	if resp1["message"] != resp2["message"] {
 		t.Errorf("expected identical generic message for found and not found users. got %v vs %v",
 			resp1["message"], resp2["message"])
+	}
+}
+
+func TestMultiTenantWorkspacesAndSwitchContext(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &mockRepo{
+		tenants:      map[string]*TenantContextResponse{},
+		userOrgMatch: map[string]bool{},
+	}
+	cfg := &config.Config{
+		Port: "5014",
+	}
+	handler := NewHandler(cfg, repo, nil, nil)
+	r := gin.New()
+	r.GET("/api/v1/auth/workspaces", handler.ListWorkspaces)
+	r.POST("/api/v1/auth/switch-context", handler.SwitchContext)
+
+	testJWT := buildTestJWT(map[string]any{
+		"sub":   "user-123",
+		"email": "engineer@k2net.id",
+	})
+
+	// 1. GET /api/v1/auth/workspaces with Bearer token
+	reqList := httptest.NewRequest(http.MethodGet, "/api/v1/auth/workspaces", nil)
+	reqList.Header.Set("Authorization", "Bearer "+testJWT)
+	wList := httptest.NewRecorder()
+	r.ServeHTTP(wList, reqList)
+
+	if wList.Code != http.StatusOK {
+		t.Fatalf("expected 200 for ListWorkspaces, got %d", wList.Code)
+	}
+
+	var workspaces []UserWorkspace
+	if err := json.Unmarshal(wList.Body.Bytes(), &workspaces); err != nil {
+		t.Fatalf("failed to decode workspaces response: %v", err)
+	}
+	if len(workspaces) != 1 || workspaces[0].OrganizationSlug != "kircon-bandung" {
+		t.Fatalf("unexpected workspaces response: %+v", workspaces)
+	}
+
+	// 2. POST /api/v1/auth/switch-context success
+	switchPayload, _ := json.Marshal(SwitchContextRequest{
+		TargetOrganizationID: "org-1",
+	})
+	reqSwitch := httptest.NewRequest(http.MethodPost, "/api/v1/auth/switch-context", bytes.NewReader(switchPayload))
+	reqSwitch.Header.Set("Authorization", "Bearer "+testJWT)
+	reqSwitch.Header.Set("Content-Type", "application/json")
+	wSwitch := httptest.NewRecorder()
+	r.ServeHTTP(wSwitch, reqSwitch)
+
+	if wSwitch.Code != http.StatusOK {
+		t.Fatalf("expected 200 for switch context, got %d", wSwitch.Code)
+	}
+
+	var switchResp SwitchContextResponse
+	if err := json.Unmarshal(wSwitch.Body.Bytes(), &switchResp); err != nil {
+		t.Fatalf("failed to decode switch context response: %v", err)
+	}
+	if switchResp.OrganizationSlug != "kircon-bandung" || switchResp.RedirectURL != "https://kircon-bandung.kdua.net" {
+		t.Fatalf("unexpected switch context response: %+v", switchResp)
+	}
+
+	// 3. POST /api/v1/auth/switch-context forbidden for invalid org
+	switchInvalidPayload, _ := json.Marshal(SwitchContextRequest{
+		TargetOrganizationID: "invalid-org",
+	})
+	reqInvalid := httptest.NewRequest(http.MethodPost, "/api/v1/auth/switch-context", bytes.NewReader(switchInvalidPayload))
+	reqInvalid.Header.Set("Authorization", "Bearer "+testJWT)
+	reqInvalid.Header.Set("Content-Type", "application/json")
+	wInvalid := httptest.NewRecorder()
+	r.ServeHTTP(wInvalid, reqInvalid)
+
+	if wInvalid.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 Forbidden for invalid org switch, got %d", wInvalid.Code)
 	}
 }
 

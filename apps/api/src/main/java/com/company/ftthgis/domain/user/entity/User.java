@@ -67,6 +67,14 @@ public class User extends OrganizationAwareEntity {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_active_organization_id")
+    private com.company.ftthgis.domain.tenant.entity.Organization lastActiveOrganization;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.Set<com.company.ftthgis.domain.tenant.entity.OrganizationMember> organizationMembers = new java.util.HashSet<>();
+
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.Set<com.company.ftthgis.domain.tenant.entity.ProjectMember> projectMembers = new java.util.HashSet<>();
