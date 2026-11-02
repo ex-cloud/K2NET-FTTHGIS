@@ -557,22 +557,13 @@ jobs:
             git pull origin main
 
             echo "=== [2/3] Pull & restart updated services ==="
-            if [ "${{ needs.changes.outputs.frontend }}" == "true" ] || [ "${{ github.event.inputs.service }}" == "frontend-admin" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
-              echo "Pulling frontend-admin..."
-              bash scripts/deploy.sh production frontend-admin
-            fi
-
-            if [ "${{ needs.changes.outputs.frontend_tenant }}" == "true" ] || [ "${{ github.event.inputs.service }}" == "frontend-tenant" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
-              echo "Pulling frontend-tenant..."
-              bash scripts/deploy.sh production frontend-tenant
-            fi
-
+            # [Step A: Wave 3 - Core Backend] Wajib dijalankan PERTAMA agar skema DB & REST API sehat sebelum Frontend/Gateway
             if [ "${{ needs.changes.outputs.backend }}" == "true" ] || [ "${{ github.event.inputs.service }}" == "backend" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
-              echo "Pulling backend..."
+              echo "Pulling & restarting backend (Wave 3)..."
               bash scripts/deploy.sh production backend
             fi
 
-            # Deploy Go & Python gateways if changed or manually triggered
+            # [Step B: Wave 3 & 4 - Go & Python Gateways]
             SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit gateway-task poller gateway-ai observability-gateway gateway-auth"
             for svc in $SERVICES_LIST; do
               CHANGED="false"
@@ -603,6 +594,17 @@ jobs:
                 docker compose -f docker-compose.gateways.yml up -d --no-build $svc
               fi
             done
+
+            # [Step C: Wave 4 - Web Frontends] Dijalankan setelah Backend & Gateways beroperasi penuh
+            if [ "${{ needs.changes.outputs.frontend }}" == "true" ] || [ "${{ github.event.inputs.service }}" == "frontend-admin" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
+              echo "Pulling frontend-admin..."
+              bash scripts/deploy.sh production frontend-admin
+            fi
+
+            if [ "${{ needs.changes.outputs.frontend_tenant }}" == "true" ] || [ "${{ github.event.inputs.service }}" == "frontend-tenant" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
+              echo "Pulling frontend-tenant..."
+              bash scripts/deploy.sh production frontend-tenant
+            fi
 
             echo "=== [3/3] Verifikasi Container Status ==="
             docker ps --filter "name=ftth-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
