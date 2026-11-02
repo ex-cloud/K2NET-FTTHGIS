@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@k2net/ui";
 import { UserPlus, Shield, Phone, Briefcase, Mail, Key, Loader2, Sparkles, FolderGit2 } from "lucide-react";
-import type { TenantUserRole } from "./types";
+import type { DynamicRole } from "./types";
 import { cn } from "@/lib/utils";
 
 interface InviteMemberModalProps {
@@ -29,8 +29,9 @@ interface InviteMemberModalProps {
   setPhone: (phone: string) => void;
   jobTitle: string;
   setJobTitle: (jobTitle: string) => void;
-  role: TenantUserRole;
-  setRole: (role: TenantUserRole) => void;
+  roles: DynamicRole[];
+  selectedRoleId: number | null;
+  onRoleChange: (roleId: number) => void;
   creationMode: "INVITE" | "DIRECT";
   setCreationMode: (mode: "INVITE" | "DIRECT") => void;
   customPassword: string;
@@ -54,8 +55,9 @@ export function InviteMemberModal({
   setPhone,
   jobTitle,
   setJobTitle,
-  role,
-  setRole,
+  roles = [],
+  selectedRoleId,
+  onRoleChange,
   creationMode,
   setCreationMode,
   customPassword,
@@ -66,8 +68,15 @@ export function InviteMemberModal({
   isSubmitting,
   onSendInvite,
 }: InviteMemberModalProps) {
+  // Generate cryptographically random secure password (Zero Hardcoded Credentials)
   const generateStrongPassword = () => {
-    const pass = "Password@" + Math.floor(100000 + Math.random() * 900000);
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*";
+    const array = new Uint32Array(16);
+    crypto.getRandomValues(array);
+    let pass = "";
+    for (let i = 0; i < 16; i++) {
+      pass += chars[array[i] % chars.length];
+    }
     setCustomPassword(pass);
   };
 
@@ -109,7 +118,7 @@ export function InviteMemberModal({
               onClick={() => {
                 setCreationMode("DIRECT");
                 if (!customPassword) {
-                  setCustomPassword("Password@123456");
+                  generateStrongPassword();
                 }
               }}
               className={cn(
@@ -180,25 +189,38 @@ export function InviteMemberModal({
             </div>
           </div>
 
-          {/* 4. Role Selection */}
+          {/* 4. Role Selection (100% Dynamic from Database) */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <Shield className="size-3 text-primary" /> Role &amp; Access Permission <span className="text-destructive">*</span>
             </Label>
-            <Select value={role} onValueChange={(v) => setRole(v as TenantUserRole)}>
+            <Select
+              value={selectedRoleId ? String(selectedRoleId) : ""}
+              onValueChange={(v) => onRoleChange(Number(v))}
+            >
               <SelectTrigger className="bg-card border-border text-foreground h-9 text-xs">
-                <SelectValue placeholder="Select role" />
+                <SelectValue placeholder="Select dynamic workspace role" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground text-xs">
-                <SelectItem value="TENANT_ADMIN">Tenant Admin — Full Workspace Access</SelectItem>
-                <SelectItem value="NOC_OPERATOR">NOC Operator — GIS &amp; OLT Poller</SelectItem>
-                <SelectItem value="FIELD_TECH">Field Technician — ONT Provisioning &amp; Field Tickets</SelectItem>
-                <SelectItem value="SUPERVISOR">Field Supervisor — Team Approvals &amp; Progress</SelectItem>
-                <SelectItem value="SURVEYOR">Spatial Surveyor — Route Mapping &amp; CAD</SelectItem>
-                <SelectItem value="WAREHOUSE">Warehouse Staff — Inventory &amp; Material Tracking</SelectItem>
-                <SelectItem value="FINANCE">Finance &amp; Billing — Subscriptions &amp; Invoices</SelectItem>
-                <SelectItem value="HELPDESK">Helpdesk — Customer Support &amp; Trouble Tickets</SelectItem>
-                <SelectItem value="VIEWER">Read-only Viewer — Auditor &amp; Guest Observer</SelectItem>
+                {roles.length === 0 ? (
+                  <div className="p-2 text-[11px] text-muted-foreground text-center">Loading roles from database...</div>
+                ) : (
+                  roles.map((r) => (
+                    <SelectItem key={r.id} value={String(r.id)}>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-foreground">{r.displayName || r.name}</span>
+                        {r.code && (
+                          <span className="text-[10px] text-primary/80 font-mono">[{r.code}]</span>
+                        )}
+                        {r.description && (
+                          <span className="text-muted-foreground text-[11px] truncate max-w-[240px]">
+                            — {r.description}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -222,11 +244,11 @@ export function InviteMemberModal({
                 type="text"
                 value={customPassword}
                 onChange={(e) => setCustomPassword(e.target.value)}
-                placeholder="e.g. Password@123456"
+                placeholder="Click Generate Strong or enter >= 14 chars"
                 className="bg-card border-border text-foreground h-9 text-xs font-mono"
               />
               <p className="text-[10px] text-muted-foreground">
-                Minimum 14 characters. Account is created immediately in Keycloak &amp; user is prompted to set their permanent password upon first login.
+                Minimum 14 characters. Account is created in Keycloak &amp; user is prompted to set permanent password upon first login.
               </p>
             </div>
           )}

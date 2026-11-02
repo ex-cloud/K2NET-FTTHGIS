@@ -32,7 +32,7 @@ import {
   Phone,
   Edit,
 } from "lucide-react";
-import type { TenantUser, TenantUserRole } from "./types";
+import type { TenantUser, DynamicRole } from "./types";
 import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
 
@@ -40,49 +40,49 @@ interface TeamMembersTableProps {
   users: TenantUser[];
   isLoading: boolean;
   mfaEnforced?: boolean;
+  availableRoles?: DynamicRole[];
   onEditMember?: (user: TenantUser) => void;
   onPasswordReset: (user: TenantUser) => void;
   onToggleStatus?: (user: TenantUser) => void;
   onViewAudit?: (user: TenantUser) => void;
   onResendInvite: (user: TenantUser) => void;
-  onChangeRole: (userId: string, newRole: TenantUserRole) => void;
+  onChangeRole: (userId: string, newRole: string) => void;
   onCopy: (text: string, label: string) => void;
   onRemoveUser: (userId: string, userName: string) => void;
 }
 
-function getRoleBadge(role: TenantUserRole | string) {
+function getRoleBadge(role: string, displayName?: string, code?: string) {
+  const label = displayName || (role ? role.replace(/_/g, " ").toUpperCase() : "MEMBER");
   const norm = (role || "").toUpperCase();
-  if (norm.includes("ADMIN")) {
-    return <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-400 font-mono text-[10px]">Tenant Admin</Badge>;
+  let badgeStyle = "border-border text-muted-foreground bg-muted/20";
+  if (norm.includes("ADMIN") || norm.includes("SUPER")) {
+    badgeStyle = "border-purple-500/30 bg-purple-500/10 text-purple-400";
+  } else if (norm.includes("NOC") || norm.includes("ENGINEER")) {
+    badgeStyle = "border-primary/30 bg-primary/10 text-primary";
+  } else if (norm.includes("TECH")) {
+    badgeStyle = "border-blue-500/30 bg-blue-500/10 text-blue-400";
+  } else if (norm.includes("FINANCE") || norm.includes("BILLING")) {
+    badgeStyle = "border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
+  } else if (norm.includes("SURVEY")) {
+    badgeStyle = "border-teal-500/30 bg-teal-500/10 text-teal-400";
+  } else if (norm.includes("WAREHOUSE")) {
+    badgeStyle = "border-amber-500/30 bg-amber-500/10 text-amber-400";
+  } else if (norm.includes("HELP")) {
+    badgeStyle = "border-cyan-500/30 bg-cyan-500/10 text-cyan-400";
   }
-  if (norm.includes("NOC")) {
-    return <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px]">NOC Operator</Badge>;
-  }
-  if (norm.includes("TECH")) {
-    return <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-400 font-mono text-[10px]">Field Tech</Badge>;
-  }
-  if (norm.includes("SUPERVIS")) {
-    return <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-400 font-mono text-[10px]">Supervisor</Badge>;
-  }
-  if (norm.includes("SURVEY")) {
-    return <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px]">Surveyor</Badge>;
-  }
-  if (norm.includes("FINANCE") || norm.includes("BILLING")) {
-    return <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px]">Finance</Badge>;
-  }
-  if (norm.includes("WAREHOUSE")) {
-    return <Badge variant="outline" className="border-orange-500/30 bg-orange-500/10 text-orange-400 font-mono text-[10px]">Warehouse</Badge>;
-  }
-  if (norm.includes("HELP")) {
-    return <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-cyan-400 font-mono text-[10px]">Helpdesk</Badge>;
-  }
-  return <Badge variant="outline" className="border-border text-muted-foreground font-mono text-[10px]">Viewer</Badge>;
+  return (
+    <Badge variant="outline" className={cn("font-mono text-[10px] gap-1", badgeStyle)}>
+      <span>{label}</span>
+      {code && <span className="opacity-60 text-[9px]">[{code}]</span>}
+    </Badge>
+  );
 }
 
 export function TeamMembersTable({
   users,
   isLoading,
   mfaEnforced,
+  availableRoles = [],
   onEditMember,
   onPasswordReset,
   onToggleStatus,
@@ -175,7 +175,7 @@ export function TeamMembersTable({
                       </TableCell>
 
                       <TableCell className="py-3.5">
-                        {getRoleBadge(u.role)}
+                        {getRoleBadge(u.role, u.roleDisplayName, u.roleCode)}
                       </TableCell>
 
                       <TableCell className="py-3.5 font-mono text-[11px] text-muted-foreground">
@@ -338,26 +338,28 @@ export function TeamMembersTable({
 
                     <ContextMenuSeparator className="bg-border/40 my-1" />
 
-                    <ContextMenuSub>
-                      <ContextMenuSubTrigger className="cursor-pointer gap-2 focus:bg-muted">
-                        <UserCheck className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Change Role</span>
-                      </ContextMenuSubTrigger>
-                      <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border/80 shadow-xl rounded-xl py-1">
-                        <ContextMenuItem onClick={() => onChangeRole(u.id, "TENANT_ADMIN")} className="cursor-pointer">
-                          <span>Tenant Admin</span>
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => onChangeRole(u.id, "NOC_OPERATOR")} className="cursor-pointer">
-                          <span>NOC Operator</span>
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => onChangeRole(u.id, "FIELD_TECH")} className="cursor-pointer">
-                          <span>Field Tech</span>
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => onChangeRole(u.id, "VIEWER")} className="cursor-pointer">
-                          <span>Viewer</span>
-                        </ContextMenuItem>
-                      </ContextMenuSubContent>
-                    </ContextMenuSub>
+                    {availableRoles && availableRoles.length > 0 && (
+                      <ContextMenuSub>
+                        <ContextMenuSubTrigger className="cursor-pointer gap-2 focus:bg-muted">
+                          <UserCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span>Change Role</span>
+                        </ContextMenuSubTrigger>
+                        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border/80 shadow-xl rounded-xl py-1">
+                          {availableRoles.map((r) => (
+                            <ContextMenuItem
+                              key={r.id}
+                              onClick={() => onChangeRole(u.id, r.name)}
+                              className="cursor-pointer flex items-center justify-between"
+                            >
+                              <span>{r.displayName || r.name}</span>
+                              {r.code && (
+                                <span className="text-[10px] text-muted-foreground font-mono">[{r.code}]</span>
+                              )}
+                            </ContextMenuItem>
+                          ))}
+                        </ContextMenuSubContent>
+                      </ContextMenuSub>
+                    )}
 
                     <ContextMenuSeparator className="bg-border/40 my-1" />
 

@@ -18,12 +18,13 @@ import { Edit, Phone, Briefcase, Shield, User, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
-import type { TenantUser, TenantUserRole } from "./types";
+import type { TenantUser, DynamicRole } from "./types";
 
 interface EditMemberDialogProps {
   user: TenantUser | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  roles?: DynamicRole[];
   token?: string;
   onSuccess: () => void;
 }
@@ -32,12 +33,13 @@ export function EditMemberDialog({
   user,
   open,
   onOpenChange,
+  roles = [],
   token,
   onSuccess,
 }: EditMemberDialogProps) {
   const [jobTitle, setJobTitle] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<string>("NOC_OPERATOR");
+  const [role, setRole] = useState<string>("");
   const [status, setStatus] = useState<string>("ACTIVE");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -45,18 +47,20 @@ export function EditMemberDialog({
     if (user) {
       setJobTitle(user.jobTitle || "");
       setPhone(user.phone && user.phone !== "—" ? user.phone : "");
-      setRole(user.role || "NOC_OPERATOR");
+      setRole(user.role || (roles[0]?.name || "admin"));
       setStatus(user.status || "ACTIVE");
     }
-  }, [user]);
+  }, [user, roles]);
 
   const handleSubmit = async () => {
     if (!user || !token) return;
     setIsSubmitting(true);
     try {
       const baseUrl = getBackendBaseUrl();
+      const matchedRole = roles.find((r) => r.name.toLowerCase() === role.toLowerCase());
       const payload = {
         role: role.toLowerCase(),
+        roleId: matchedRole?.id,
         status,
         jobTitle: jobTitle.trim(),
         phone: phone.trim(),
@@ -113,7 +117,7 @@ export function EditMemberDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Briefcase className="size-3 text-muted-foreground" /> Job Title / Jabatan
+                <Briefcase className="size-3 text-muted-foreground" /> Job Title
               </Label>
               <Input
                 placeholder="e.g. Lead Field Technician"
@@ -137,24 +141,33 @@ export function EditMemberDialog({
             </div>
           </div>
 
+          {/* Dynamic Role Selection from Database */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <Shield className="size-3 text-primary" /> Role &amp; Permission Level
             </Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger className="bg-card border-border text-foreground h-9 text-xs">
-                <SelectValue placeholder="Select role" />
+                <SelectValue placeholder="Select dynamic workspace role" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground text-xs">
-                <SelectItem value="TENANT_ADMIN">Tenant Admin — Full Workspace Access</SelectItem>
-                <SelectItem value="NOC_OPERATOR">NOC Operator — GIS &amp; OLT Poller</SelectItem>
-                <SelectItem value="FIELD_TECH">Field Technician — ONT Provisioning &amp; Field Tickets</SelectItem>
-                <SelectItem value="SUPERVISOR">Field Supervisor — Team Approvals &amp; Progress</SelectItem>
-                <SelectItem value="SURVEYOR">Spatial Surveyor — Route Mapping &amp; CAD</SelectItem>
-                <SelectItem value="WAREHOUSE">Warehouse Staff — Inventory &amp; Material Tracking</SelectItem>
-                <SelectItem value="FINANCE">Finance &amp; Billing — Subscriptions &amp; Invoices</SelectItem>
-                <SelectItem value="HELPDESK">Helpdesk — Customer Support &amp; Trouble Tickets</SelectItem>
-                <SelectItem value="VIEWER">Read-only Viewer — Auditor &amp; Guest Observer</SelectItem>
+                {roles.length === 0 ? (
+                  <SelectItem value={role || "admin"}>{role || "admin"}</SelectItem>
+                ) : (
+                  roles.map((r) => (
+                    <SelectItem key={r.id} value={r.name}>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-foreground">{r.displayName || r.name}</span>
+                        {r.code && <span className="text-[10px] text-primary/80 font-mono">[{r.code}]</span>}
+                        {r.description && (
+                          <span className="text-muted-foreground text-[11px] truncate max-w-[220px]">
+                            — {r.description}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -168,8 +181,9 @@ export function EditMemberDialog({
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-foreground text-xs">
-                <SelectItem value="ACTIVE">ACTIVE (Authorized Access)</SelectItem>
-                <SelectItem value="SUSPENDED">SUSPENDED (Access Locked)</SelectItem>
+                <SelectItem value="ACTIVE">ACTIVE — Normal Workspace Access</SelectItem>
+                <SelectItem value="SUSPENDED">SUSPENDED — Block Login &amp; Invalidate Tokens</SelectItem>
+                <SelectItem value="PENDING">PENDING — Waiting Activation</SelectItem>
               </SelectContent>
             </Select>
           </div>

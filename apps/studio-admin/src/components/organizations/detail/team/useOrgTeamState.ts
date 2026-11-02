@@ -5,28 +5,7 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "@/lib/auth-compat";
 import { toast } from "sonner";
 import type { EnrichedOrganization } from "../../types";
-import type { TenantUser, TenantUserRole, RawServerTenantUser } from "./types";
-
-const ROLE_ID_MAP: Record<string, number> = {
-  TENANT_ADMIN: 7,
-  admin: 7,
-  FINANCE: 8,
-  finance: 8,
-  NOC_OPERATOR: 9,
-  noc: 9,
-  FIELD_TECH: 10,
-  technician: 10,
-  WAREHOUSE: 11,
-  warehouse: 11,
-  HELPDESK: 12,
-  helpdesk: 12,
-  SURVEYOR: 13,
-  surveyor: 13,
-  VIEWER: 16,
-  viewer: 16,
-  SUPERVISOR: 17,
-  supervisor: 17,
-};
+import type { TenantUser, DynamicRole, RawServerTenantUser } from "./types";
 
 export function useOrgTeamState(org: EnrichedOrganization) {
   const { data: session } = useSession();
@@ -37,13 +16,35 @@ export function useOrgTeamState(org: EnrichedOrganization) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [invitePhone, setInvitePhone] = useState("");
   const [inviteJobTitle, setInviteJobTitle] = useState("");
-  const [inviteRole, setInviteRole] = useState<TenantUserRole>("NOC_OPERATOR");
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   const [creationMode, setCreationMode] = useState<"INVITE" | "DIRECT">("INVITE");
-  const [customPassword, setCustomPassword] = useState("Password@123456");
+  const [customPassword, setCustomPassword] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch real tenant users from backend
+  // 1. Fetch available tenant roles dynamically from database (Zero Hardcoded Roles)
+  const { data: availableRoles = [] } = useQuery<DynamicRole[]>({
+    queryKey: ["tenant-roles", session?.accessToken],
+    queryFn: async () => {
+      if (!session?.accessToken) return [];
+      const baseUrl = getBackendBaseUrl();
+      try {
+        const res = await httpClient(`${baseUrl}/roles?scope=TENANT`, {
+          token: session.accessToken,
+        });
+        if (res.ok) {
+          const raw: DynamicRole[] = await res.json();
+          return raw;
+        }
+      } catch (e) {
+        console.warn("Could not fetch dynamic tenant roles:", e);
+      }
+      return [];
+    },
+    enabled: !!session?.accessToken,
+  });
+
+  // 2. Fetch real tenant users from backend
   const { data: serverUsers = [], isLoading } = useQuery<TenantUser[]>({
     queryKey: ["tenant-team-users", org.slug, org.picName, org.picPhone, session?.accessToken],
     queryFn: async () => {
@@ -62,7 +63,10 @@ export function useOrgTeamState(org: EnrichedOrganization) {
             email: u.email || `${u.username || "user"}@${org.slug}.kdua.net`,
             phone: u.phone && u.phone !== "—" ? u.phone : (idx === 0 && org.picPhone && org.picPhone !== "—" ? org.picPhone : undefined),
             jobTitle: u.jobTitle || (idx === 0 ? "Technical PIC / Owner" : undefined),
-            role: (u.role === "admin" || u.role === "TENANT_ADMIN" ? "TENANT_ADMIN" : u.role || "NOC_OPERATOR") as TenantUserRole,
+            role: u.role || u.roleName || "admin",
+            roleDisplayName: u.roleDisplayName,
+            roleId: u.roleId,
+            roleCode: u.roleCode,
             mfaEnabled: typeof u.mfaEnabled === "boolean" ? u.mfaEnabled : false,
             status: (u.status === "ACTIVE" ? "ACTIVE" : u.status === "SUSPENDED" ? "SUSPENDED" : "PENDING") as TenantUser["status"],
             lastLogin: u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : (u.lastLogin || "Active recently"),
@@ -80,7 +84,7 @@ export function useOrgTeamState(org: EnrichedOrganization) {
     enabled: !!session?.accessToken,
   });
 
-  // Fetch projects for this organization for project assignment
+  // 3. Fetch projects for this organization for project assignment
   const { data: orgProjects = [] } = useQuery<{ id: string; name: string }[]>({
     queryKey: ["org-projects", org.id, session?.accessToken],
     queryFn: async () => {
@@ -102,7 +106,23 @@ export function useOrgTeamState(org: EnrichedOrganization) {
     enabled: !!session?.accessToken && !!org.id,
   });
 
-  const effectiveUsers: TenantUser[] = useMemo(() => serverUsers, [serverUsers]);
+  // Dynamically enrich effective users with live role definitions from database
+  const effectiveUsers: TenantUser[] = useMemo(() => {
+    return serverUsers.map((u) => {
+      const matched = availableRoles.find(
+        (r) =>
+          (u.roleId && r.id === u.roleId) ||
+          r.name.toLowerCase() === (u.role || "").toLowerCase() ||
+          r.displayName?.toLowerCase() === (u.role || "").toLowerCase()
+      );
+      return {
+        ...u,
+        role: matched ? matched.name : u.role,
+        roleDisplayName: matched?.displayName || u.roleDisplayName || (u.role ? u.role.replace(/_/g, " ").toUpperCase() : "MEMBER"),
+        roleCode: matched?.code || u.roleCode,
+      };
+    });
+  }, [serverUsers, availableRoles]);
 
   const handleSendInvite = useCallback(async () => {
     if (!inviteName.trim() || !inviteEmail.trim()) {
@@ -117,7 +137,9 @@ export function useOrgTeamState(org: EnrichedOrganization) {
     setIsSubmitting(true);
     try {
       const baseUrl = getBackendBaseUrl();
-      const roleId = ROLE_ID_MAP[inviteRole] || 9;
+      // Dynamically resolve roleId from database query
+      const targetRole = availableRoles.find((r) => r.id === selectedRoleId) || availableRoles[0];
+      const roleId = targetRole ? targetRole.id : (selectedRoleId || 7);
 
       const payload = {
         fullName: inviteName.trim(),
@@ -154,9 +176,9 @@ export function useOrgTeamState(org: EnrichedOrganization) {
       setInviteEmail("");
       setInvitePhone("");
       setInviteJobTitle("");
-      setInviteRole("NOC_OPERATOR");
+      setSelectedRoleId(null);
       setCreationMode("INVITE");
-      setCustomPassword("Password@123456");
+      setCustomPassword("");
       setSelectedProjectId("");
 
       queryClient.invalidateQueries({ queryKey: ["tenant-team-users", org.slug] });
@@ -170,7 +192,8 @@ export function useOrgTeamState(org: EnrichedOrganization) {
     inviteEmail,
     invitePhone,
     inviteJobTitle,
-    inviteRole,
+    selectedRoleId,
+    availableRoles,
     creationMode,
     customPassword,
     selectedProjectId,
@@ -190,7 +213,7 @@ export function useOrgTeamState(org: EnrichedOrganization) {
   }, []);
 
   const handleChangeRole = useCallback(
-    async (userId: string, newRole: TenantUserRole) => {
+    async (userId: string, newRole: string) => {
       if (!session?.accessToken) return;
       try {
         const baseUrl = getBackendBaseUrl();
@@ -280,8 +303,9 @@ export function useOrgTeamState(org: EnrichedOrganization) {
     setInvitePhone,
     inviteJobTitle,
     setInviteJobTitle,
-    inviteRole,
-    setInviteRole,
+    selectedRoleId,
+    setSelectedRoleId,
+    availableRoles,
     creationMode,
     setCreationMode,
     customPassword,

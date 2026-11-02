@@ -36,8 +36,9 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
     setInvitePhone,
     inviteJobTitle,
     setInviteJobTitle,
-    inviteRole,
-    setInviteRole,
+    selectedRoleId,
+    setSelectedRoleId,
+    availableRoles,
     creationMode,
     setCreationMode,
     customPassword,
@@ -69,6 +70,7 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
         users={effectiveUsers}
         isLoading={isLoading}
         mfaEnforced={org.mfaEnforced}
+        availableRoles={availableRoles}
         onEditMember={(tu) => {
           setSelectedUserForEdit(tu);
           setIsEditOpen(true);
@@ -110,7 +112,7 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
         />
       )}
 
-      {/* 4. Complete Tenant Invite Modal (Rich Operational ISP Fields) */}
+      {/* 4. Complete Tenant Invite Modal (100% Dynamic Roles from Database) */}
       <InviteMemberModal
         open={inviteOpen}
         onOpenChange={setInviteOpen}
@@ -123,8 +125,9 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
         setPhone={setInvitePhone}
         jobTitle={inviteJobTitle}
         setJobTitle={setInviteJobTitle}
-        role={inviteRole}
-        setRole={setInviteRole}
+        roles={availableRoles}
+        selectedRoleId={selectedRoleId}
+        onRoleChange={setSelectedRoleId}
         creationMode={creationMode}
         setCreationMode={setCreationMode}
         customPassword={customPassword}
@@ -136,11 +139,12 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
         onSendInvite={handleSendInvite}
       />
 
-      {/* 5. Edit Member Dialog (Role, Job Title, Phone, Status) */}
+      {/* 5. Edit Member Dialog (100% Dynamic Roles from Database) */}
       <EditMemberDialog
         user={selectedUserForEdit}
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
+        roles={availableRoles}
         token={session?.accessToken || undefined}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["tenant-team-users", org.slug] });
