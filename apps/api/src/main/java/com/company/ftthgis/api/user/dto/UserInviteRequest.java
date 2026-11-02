@@ -8,6 +8,8 @@ import java.util.UUID;
 public class UserInviteRequest {
     private String fullName;
     private String email;
+    private String phone;
+    private String jobTitle;
     private Long globalRoleId; // Maps to Organization Role
     private String creationMode; // "INVITE" (default) or "DIRECT"
     private String customPassword; // Used when creationMode is "DIRECT"

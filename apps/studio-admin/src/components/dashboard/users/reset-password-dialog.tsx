@@ -45,7 +45,7 @@ function generateRandom(minLength = 8): string {
   password += num.charAt(Math.floor(Math.random() * num.length));
   password += sym.charAt(Math.floor(Math.random() * sym.length));
 
-  const targetLength = Math.max(12, minLength);
+  const targetLength = Math.max(14, minLength);
   for (let i = 4; i < targetLength; i++) {
     password += all.charAt(Math.floor(Math.random() * all.length));
   }
@@ -53,7 +53,7 @@ function generateRandom(minLength = 8): string {
 }
 
 function validatePasswordRules(password: string, policy: PasswordPolicy | null): string | null {
-  const minLen = policy?.minLength || 8;
+  const minLen = policy?.minLength || 14;
   if (!password || password.length < minLen) {
     return `Password must be at least ${minLen} characters long.`;
   }
@@ -135,7 +135,7 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
   }, [open, token, session]);
 
   const handleGenerate = () => {
-    setNewPassword(generateRandom(passwordPolicy?.minLength || 8));
+    setNewPassword(generateRandom(passwordPolicy?.minLength || 14));
     setShowPassword(true);
   };
 

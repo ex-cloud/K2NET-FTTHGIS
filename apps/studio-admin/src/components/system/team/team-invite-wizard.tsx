@@ -29,8 +29,17 @@ interface WizardProps {
   organizationId?: string;
 }
 
-function getDialogText(step: number, creationMode: "INVITE" | "DIRECT") {
+function getDialogText(step: number, creationMode: "INVITE" | "DIRECT", isPlatformStaff = false) {
   if (step === 1) {
+    if (isPlatformStaff) {
+      return {
+        title: creationMode === "DIRECT" ? "Create Platform Staff Directly" : "Invite Platform Staff",
+        description:
+          creationMode === "DIRECT"
+            ? "Enter root administrative credentials and temporary password."
+            : "Send an official invite to join platform operations (system-gis.kdua.net).",
+      };
+    }
     return {
       title: creationMode === "DIRECT" ? "Create New User Directly" : "Invite New Member",
       description:
@@ -41,14 +50,18 @@ function getDialogText(step: number, creationMode: "INVITE" | "DIRECT") {
   }
   if (step === 2) {
     return {
-      title: "Primary Role",
-      description: "Select the main professional role in the organization.",
+      title: isPlatformStaff ? "Platform Administrative Role" : "Primary Role",
+      description: isPlatformStaff
+        ? "Select the SYSTEM-scoped role for this platform staff member."
+        : "Select the main professional role in the organization.",
     };
   }
   if (step === 3) {
     return {
-      title: "Project Access",
-      description: "Optional: Assign specific project-level permissions.",
+      title: isPlatformStaff ? "Administrative Scope" : "Project Access",
+      description: isPlatformStaff
+        ? "Review cross-workspace root authority and system privileges."
+        : "Optional: Assign specific project-level permissions.",
     };
   }
   return {
@@ -60,7 +73,9 @@ function getDialogText(step: number, creationMode: "INVITE" | "DIRECT") {
 function checkCanContinue(step: number, formData: WizardFormData): boolean {
   if (step === 1) {
     const hasBase = Boolean(formData.fullName && formData.email);
-    return formData.creationMode === "DIRECT" ? Boolean(hasBase && formData.customPassword) : hasBase;
+    return formData.creationMode === "DIRECT"
+      ? Boolean(hasBase && formData.customPassword && formData.customPassword.length >= 14)
+      : hasBase;
   }
   if (step === 2) return Boolean(formData.globalRole);
   return true;
@@ -80,6 +95,7 @@ interface StepBodyProps {
   projects: ProjectData[];
   projectRoles: Record<string, string>;
   setProjectRoles: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  isPlatformStaff?: boolean;
 }
 
 function WizardStepBody({
@@ -96,6 +112,7 @@ function WizardStepBody({
   projects,
   projectRoles,
   setProjectRoles,
+  isPlatformStaff,
 }: StepBodyProps) {
   if (isLoading) {
     return (
@@ -116,6 +133,7 @@ function WizardStepBody({
         selectedOrgId={selectedOrgId}
         setSelectedOrgId={setSelectedOrgId}
         orgList={orgList}
+        isPlatformStaff={isPlatformStaff}
       />
     );
   }
@@ -137,6 +155,7 @@ function WizardStepBody({
         globalRoles={globalRoles}
         projectRoles={projectRoles}
         onProjectRoleChange={(pId, rId) => setProjectRoles((prev) => ({ ...prev, [pId]: rId }))}
+        isPlatformStaff={isPlatformStaff}
       />
     );
   }
@@ -146,6 +165,7 @@ function WizardStepBody({
       formData={formData}
       globalRoles={globalRoles}
       projectRoles={projectRoles}
+      isPlatformStaff={isPlatformStaff}
     />
   );
 }
@@ -154,6 +174,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
   const { data: session } = useSession();
   const params = useParams();
   const [selectedOrgId, setSelectedOrgId] = React.useState("");
+  const isPlatformStaff = !organizationId && !params.orgId;
   const orgId = organizationId || (params.orgId as string) || selectedOrgId;
 
   const [step, setStep] = React.useState(1);
@@ -181,11 +202,11 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
       try {
         const config = { headers: { Authorization: `Bearer ${session.accessToken}` } };
         const baseUrl = getBackendBaseUrl();
-        const rolesRes = await axios.get(`${baseUrl}/roles`, config);
+        const rolesUrl = isPlatformStaff ? `${baseUrl}/roles?scope=SYSTEM` : `${baseUrl}/roles?scope=TENANT`;
+        const rolesRes = await axios.get(rolesUrl, config);
         setGlobalRoles(rolesRes.data || []);
 
-        const isGlobal = !organizationId && !params.orgId;
-        if (isGlobal) {
+        if (!isPlatformStaff && !organizationId && !params.orgId) {
           const orgsRes = await axios.get(`${baseUrl}/organizations`, config);
           setOrgList(orgsRes.data || []);
           if (orgsRes.data?.length > 0) {
@@ -200,10 +221,10 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
       }
     };
     fetchInitial();
-  }, [open, session?.accessToken, organizationId, params.orgId]);
+  }, [open, session?.accessToken, organizationId, params.orgId, isPlatformStaff]);
 
   React.useEffect(() => {
-    if (!open || !session?.accessToken || !orgId) return;
+    if (!open || !session?.accessToken || isPlatformStaff || !orgId) return;
 
     const fetchProjects = async () => {
       try {
@@ -216,7 +237,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
       }
     };
     fetchProjects();
-  }, [open, session?.accessToken, orgId]);
+  }, [open, session?.accessToken, orgId, isPlatformStaff]);
 
   const canContinue = checkCanContinue(step, formData);
 
@@ -231,17 +252,25 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
         globalRoleId: Number(formData.globalRole),
         creationMode: formData.creationMode,
         customPassword: formData.creationMode === "DIRECT" ? formData.customPassword : "",
-        projectRoles: Object.entries(projectRoles)
-          .filter(([, roleId]) => roleId !== "")
-          .map(([projectId, roleId]) => ({
-            projectId,
-            roleId: Number(roleId),
-          })),
+        projectRoles: isPlatformStaff
+          ? []
+          : Object.entries(projectRoles)
+              .filter(([, roleId]) => roleId !== "")
+              .map(([projectId, roleId]) => ({
+                projectId,
+                roleId: Number(roleId),
+              })),
       };
 
-      await axios.post(`${baseUrl}/organizations/${orgId}/users/invite`, payload, {
-        headers: { Authorization: `Bearer ${session.accessToken}` },
-      });
+      if (isPlatformStaff) {
+        await axios.post(`${baseUrl}/users/invite`, payload, {
+          headers: { Authorization: `Bearer ${session.accessToken}` },
+        });
+      } else {
+        await axios.post(`${baseUrl}/organizations/${orgId}/users/invite`, payload, {
+          headers: { Authorization: `Bearer ${session.accessToken}` },
+        });
+      }
 
       toast.success(formData.creationMode === "DIRECT" ? "User created successfully!" : "Invitation sent successfully!");
       onOpenChange(false);
@@ -260,7 +289,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
     }
   };
 
-  const { title: dialogTitle, description: dialogDescription } = getDialogText(step, formData.creationMode);
+  const { title: dialogTitle, description: dialogDescription } = getDialogText(step, formData.creationMode, isPlatformStaff);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -302,6 +331,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
             projects={projects}
             projectRoles={projectRoles}
             setProjectRoles={setProjectRoles}
+            isPlatformStaff={isPlatformStaff}
           />
         </div>
 

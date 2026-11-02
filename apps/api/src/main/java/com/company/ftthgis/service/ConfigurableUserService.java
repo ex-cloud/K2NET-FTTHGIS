@@ -13,6 +13,7 @@ import com.company.ftthgis.domain.user.entity.UserAuditLog;
 import com.company.ftthgis.domain.user.repository.UserAuditLogRepository;
 import com.company.ftthgis.api.user.dto.UserInviteRequest;
 import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.entity.OrganizationMember;
 import com.company.ftthgis.domain.tenant.entity.Project;
 import com.company.ftthgis.domain.tenant.entity.ProjectMember;
 import com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository;
@@ -64,6 +65,11 @@ public class ConfigurableUserService {
      * System staff (ex-cloud-org or null org) reside in 'ftth-realm'.
      * Tenant staff reside in their respective organization slug realm.
      */
+    /**
+     * Resolves the canonical Keycloak realm for a given organization in the 2-Realm Architecture:
+     * - System staff (null org or system/ex-cloud-org) reside in 'ftth-realm' (Platform Realm).
+     * - Tenant staff reside in 'k2net-tenants' (Consolidated Multi-Tenant Realm).
+     */
     private String resolveKeycloakRealm(Organization org) {
         if (org == null) {
             return "ftth-realm";
@@ -72,7 +78,7 @@ public class ConfigurableUserService {
         if ("ex-cloud-org".equals(slug) || "system".equals(slug)) {
             return "ftth-realm";
         }
-        return slug;
+        return "k2net-tenants";
     }
 
     private final jakarta.persistence.EntityManager entityManager;
@@ -142,18 +148,21 @@ public class ConfigurableUserService {
     @Transactional
     @AuditRequired(action = "USER_INVITED", resourceType = "USER", tenantSlugExpression = "#orgIdOrSlug", scope = "ORGANIZATION", category = "IAM")
     public UserDto inviteUser(String orgIdOrSlug, UserInviteRequest request) {
-        // 1. Get Organization
-        Organization organization;
-        try {
-            UUID orgId = UUID.fromString(orgIdOrSlug);
-            organization = organizationRepository.findById(orgId)
-                    .orElseThrow(() -> new RuntimeException("Organization not found: " + orgId));
-        } catch (IllegalArgumentException e) {
-            organization = organizationRepository.findBySlug(orgIdOrSlug)
-                    .orElseThrow(() -> new RuntimeException("Organization not found: " + orgIdOrSlug));
+        // 1. Get Organization (null if creating a platform staff user via "system" or "platform")
+        Organization organization = null;
+        UUID finalOrgId = null;
+        boolean isPlatformStaff = orgIdOrSlug == null || "system".equalsIgnoreCase(orgIdOrSlug) || "platform".equalsIgnoreCase(orgIdOrSlug);
+        if (!isPlatformStaff) {
+            try {
+                UUID orgId = UUID.fromString(orgIdOrSlug);
+                organization = organizationRepository.findById(orgId)
+                        .orElseThrow(() -> new RuntimeException("Organization not found: " + orgId));
+            } catch (IllegalArgumentException e) {
+                organization = organizationRepository.findBySlug(orgIdOrSlug)
+                        .orElseThrow(() -> new RuntimeException("Organization not found: " + orgIdOrSlug));
+            }
+            finalOrgId = organization.getId();
         }
-
-        final UUID finalOrgId = organization.getId();
 
         // 2. Get Global Role
         Role globalRole = roleRepository.findById(request.getGlobalRoleId())
@@ -170,7 +179,7 @@ public class ConfigurableUserService {
         
         String defaultPassword = "DIRECT".equalsIgnoreCase(request.getCreationMode()) && customPassword != null && !customPassword.isEmpty()
                 ? customPassword
-                : "Password123!"; 
+                : "Password@123456"; 
         String targetRealm = resolveKeycloakRealm(organization);
         log.info("🔑 Creating user in Keycloak realm: {} (Mode: {})", targetRealm, request.getCreationMode());
         String keycloakIdStr = keycloakAdminService.inviteUserInRealm(
@@ -195,6 +204,12 @@ public class ConfigurableUserService {
         user.setEmail(request.getEmail());
         user.setUsername(request.getEmail());
         user.setFullName(request.getFullName());
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            user.setPhone(request.getPhone().trim());
+        }
+        if (request.getJobTitle() != null && !request.getJobTitle().isBlank()) {
+            user.setJobTitle(request.getJobTitle().trim());
+        }
         user.setRole(globalRole);
         user.setOrganization(organization);
         user.setStatus("ACTIVE"); 
@@ -202,18 +217,31 @@ public class ConfigurableUserService {
         user = userRepository.save(user);
         log.info("✅ Successfully invited and saved local user record for: {}", request.getEmail());
 
+        if (organization != null) {
+            OrganizationMember orgMember = new OrganizationMember();
+            orgMember.setUser(user);
+            orgMember.setOrganization(organization);
+            orgMember.setRole(globalRole);
+            orgMember.setRoleName(globalRole.getName());
+            orgMember.setStatus("ACTIVE");
+            orgMember.setDefault(true);
+            orgMember.setJoinedAt(java.time.LocalDateTime.now());
+            organizationMemberRepository.save(orgMember);
+        }
+
         // Sync role to Keycloak specifically in the user's organization realm
         log.info("🛡️ Syncing role '{}' to Keycloak for {}", globalRole.getName(), request.getEmail());
         keycloakAdminService.updateUserRoleInRealm(targetRealm, request.getEmail(), globalRole.getName());
 
-        // 5. Create Project Role Assignments
-        if (request.getProjectRoles() != null && !request.getProjectRoles().isEmpty()) {
+        // 5. Create Project Role Assignments (only for tenant users with an active organization)
+        if (organization != null && request.getProjectRoles() != null && !request.getProjectRoles().isEmpty()) {
+            final UUID orgIdForProjects = finalOrgId;
             for (UserInviteRequest.ProjectRoleAssignment assignment : request.getProjectRoles()) {
                 Project project = projectRepository.findById(assignment.getProjectId())
                         .orElseThrow(() -> new RuntimeException("Project not found: " + assignment.getProjectId()));
                 
                 // Ensure project belongs to the same organization
-                if (!project.getOrganization().getId().equals(finalOrgId)) {
+                if (!project.getOrganization().getId().equals(orgIdForProjects)) {
                     throw new RuntimeException("Cannot assign user to a project in a different organization");
                 }
 
@@ -243,6 +271,12 @@ public class ConfigurableUserService {
     @Transactional
     @AuditRequired(action = "USER_UPDATED", resourceType = "USER", resourceIdExpression = "#id.toString()", scope = "ORGANIZATION", category = "IAM")
     public UserDto updateUser(UUID id, String roleName, String status, String reason, String modifiedBySubject) {
+        return updateUser(id, roleName, status, reason, null, null, modifiedBySubject);
+    }
+
+    @Transactional
+    @AuditRequired(action = "USER_UPDATED", resourceType = "USER", resourceIdExpression = "#id.toString()", scope = "ORGANIZATION", category = "IAM")
+    public UserDto updateUser(UUID id, String roleName, String status, String reason, String jobTitle, String phone, String modifiedBySubject) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -250,7 +284,7 @@ public class ConfigurableUserService {
         String oldStatus = user.getStatus();
 
         if (roleName != null && !roleName.isEmpty() && !roleName.equals(oldRole)) {
-            Role role = roleRepository.findByNameAndOrganizationId(roleName, user.getOrganization().getId())
+            Role role = roleRepository.findByNameAndOrganizationId(roleName, user.getOrganization() != null ? user.getOrganization().getId() : null)
                     .orElseGet(() -> roleRepository.findByNameAndIsSystemRoleTrue(roleName)
                             .orElseThrow(() -> new RuntimeException("Role not found: " + roleName)));
             user.setRole(role);
@@ -260,8 +294,9 @@ public class ConfigurableUserService {
                 keycloakAdminService.updateUserRoleInRealm(targetRealm, user.getEmail(), roleName);
             } catch (Exception e) {
                 if (e.getMessage() != null && e.getMessage().contains("404")) {
-                    log.warn("User {} not found in realm {}, falling back to master realm", user.getEmail(), targetRealm);
-                    keycloakAdminService.updateUserRoleInRealm("master", user.getEmail(), roleName);
+                    String fallbackRealm = "ftth-realm".equals(targetRealm) ? "k2net-tenants" : "ftth-realm";
+                    log.warn("User {} not found in realm {}, falling back to {}", user.getEmail(), targetRealm, fallbackRealm);
+                    keycloakAdminService.updateUserRoleInRealm(fallbackRealm, user.getEmail(), roleName);
                 } else {
                     throw e;
                 }
@@ -296,6 +331,13 @@ public class ConfigurableUserService {
             userAuditLogRepository.save(auditLog);
         }
 
+        if (jobTitle != null) {
+            user.setJobTitle(jobTitle.trim());
+        }
+        if (phone != null) {
+            user.setPhone(phone.trim());
+        }
+
         return mapToDto(userRepository.save(user));
     }
 
@@ -312,13 +354,19 @@ public class ConfigurableUserService {
         // Ensure Keycloak ID format (UUID to String)
         String keycloakId = user.getId().toString();
         
-        // Reset password in Keycloak with fallback
+        // Reset password in Keycloak with smart multi-realm fallback (ftth-realm <-> k2net-tenants)
         try {
             keycloakAdminService.resetUserPasswordInRealm(realm, keycloakId, newPassword, temporary);
         } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().contains("404")) {
-                log.warn("User {} not found in realm {}, falling back to master realm", keycloakId, realm);
-                keycloakAdminService.resetUserPasswordInRealm("master", keycloakId, newPassword, temporary);
+                String fallbackRealm = "ftth-realm".equals(realm) ? "k2net-tenants" : "ftth-realm";
+                log.warn("User {} not found in realm {}, falling back to {}", keycloakId, realm, fallbackRealm);
+                try {
+                    keycloakAdminService.resetUserPasswordInRealm(fallbackRealm, keycloakId, newPassword, temporary);
+                } catch (Exception ex) {
+                    log.error("Failed to reset password for user {} in both realms ({} and {}): {}", keycloakId, realm, fallbackRealm, ex.getMessage());
+                    throw ex;
+                }
             } else {
                 throw e;
             }
@@ -357,8 +405,14 @@ public class ConfigurableUserService {
             keycloakAdminService.resetUserPasswordInRealm(realm, keycloakId, newPassword, false);
         } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().contains("404")) {
-                log.warn("User {} not found in realm {}, falling back to master realm", keycloakId, realm);
-                keycloakAdminService.resetUserPasswordInRealm("master", keycloakId, newPassword, false);
+                String fallbackRealm = "ftth-realm".equals(realm) ? "k2net-tenants" : "ftth-realm";
+                log.warn("User {} not found in realm {}, falling back to {}", keycloakId, realm, fallbackRealm);
+                try {
+                    keycloakAdminService.resetUserPasswordInRealm(fallbackRealm, keycloakId, newPassword, false);
+                } catch (Exception ex) {
+                    log.error("Failed to change password for user {} in both realms ({} and {}): {}", keycloakId, realm, fallbackRealm, ex.getMessage());
+                    throw ex;
+                }
             } else {
                 throw e;
             }
@@ -378,8 +432,20 @@ public class ConfigurableUserService {
     }
 
     public Page<UserDto> findAll(String search, String role, String status, String org, Pageable pageable) {
+        return findAll(search, role, status, org, null, pageable);
+    }
+
+    public Page<UserDto> findAll(String search, String role, String status, String org, String scope, Pageable pageable) {
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            if (scope != null && !scope.isEmpty()) {
+                if ("system".equalsIgnoreCase(scope) || "platform".equalsIgnoreCase(scope)) {
+                    predicates.add(cb.isNull(root.get("organization")));
+                } else if ("tenant".equalsIgnoreCase(scope)) {
+                    predicates.add(cb.isNotNull(root.get("organization")));
+                }
+            }
 
             if (search != null && !search.isEmpty()) {
                 String likePattern = "%" + search.toLowerCase() + "%";
@@ -398,11 +464,15 @@ public class ConfigurableUserService {
             }
 
             if (org != null && !org.isEmpty() && !org.equals("all")) {
-                String likeOrg = "%" + org.toLowerCase() + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("organization").get("name")), likeOrg),
-                        cb.like(cb.lower(root.get("organization").get("slug")), likeOrg)
-                ));
+                if ("system".equalsIgnoreCase(org) || "platform".equalsIgnoreCase(org)) {
+                    predicates.add(cb.isNull(root.get("organization")));
+                } else {
+                    String likeOrg = "%" + org.toLowerCase() + "%";
+                    predicates.add(cb.or(
+                            cb.like(cb.lower(root.get("organization").get("name")), likeOrg),
+                            cb.like(cb.lower(root.get("organization").get("slug")), likeOrg)
+                    ));
+                }
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

@@ -54,9 +54,11 @@ export function UserFilters() {
   const roles = [
     { id: "all", label: t("users.all_roles") },
     { id: "super_admin", label: t("users.role_super_admin") },
-    { id: "admin", label: t("users.role_tenant_admin") },
-    { id: "technician", label: t("users.role_technician") },
-    { id: "viewer", label: t("users.role_viewer") },
+    { id: "platform_engineer", label: t("users.role_platform_engineer") },
+    { id: "system_support", label: t("users.role_system_support") },
+    { id: "system_billing", label: t("users.role_system_billing") },
+    { id: "system_auditor", label: t("users.role_system_auditor") },
+    { id: "account_manager", label: t("users.role_account_manager") },
   ];
 
   const statuses = [

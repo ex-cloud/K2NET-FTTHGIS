@@ -1,5 +1,16 @@
-export type TenantUserRole = "TENANT_ADMIN" | "NOC_OPERATOR" | "FIELD_TECH" | "VIEWER";
-export type TenantUserStatus = "ACTIVE" | "PENDING";
+export type TenantUserRole =
+  | "TENANT_ADMIN"
+  | "NOC_OPERATOR"
+  | "FIELD_TECH"
+  | "SURVEYOR"
+  | "SUPERVISOR"
+  | "WAREHOUSE"
+  | "FINANCE"
+  | "HELPDESK"
+  | "VIEWER"
+  | string;
+
+export type TenantUserStatus = "ACTIVE" | "PENDING" | "SUSPENDED" | string;
 
 export interface TenantUser {
   id: string;

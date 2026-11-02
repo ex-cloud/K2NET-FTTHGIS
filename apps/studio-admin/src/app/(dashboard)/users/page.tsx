@@ -18,8 +18,8 @@ export default function GlobalUsersPage() {
   const { token } = useAuth();
 
   const { data: usersData } = useQuery({
-    queryKey: ["users", page, search, role, status, org, token],
-    queryFn: () => getUsers({ page, size: 10, search, role, status, org, token: token || "" }),
+    queryKey: ["users", page, search, role, status, org, "platform", token],
+    queryFn: () => getUsers({ page, size: 10, search, role, status, org, scope: "platform", token: token || "" }),
     enabled: !!token,
   });
 

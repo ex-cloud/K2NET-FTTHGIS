@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.user;
 
 import com.company.ftthgis.api.user.dto.UserDto;
+import com.company.ftthgis.api.user.dto.UserInviteRequest;
 import com.company.ftthgis.api.user.dto.UserStatsDto;
 import com.company.ftthgis.service.ConfigurableUserService;
 import lombok.RequiredArgsConstructor;
@@ -73,17 +74,24 @@ public class UserController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String org) {
-        return userService.findAll(search, role, status, org, pageable);
+            @RequestParam(required = false) String org,
+            @RequestParam(required = false) String scope) {
+        return userService.findAll(search, role, status, org, scope, pageable);
+    }
+
+    @PostMapping("/invite")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.users.create') or hasAuthority('system.security.manage')")
+    public org.springframework.http.ResponseEntity<UserDto> invitePlatformUser(@RequestBody UserInviteRequest request) {
+        return org.springframework.http.ResponseEntity.ok(userService.inviteUser("system", request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('users.manage')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('users.manage') or hasAuthority('system.users.manage')")
     public UserDto update(
             @PathVariable UUID id,
             @RequestBody UpdateUserRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        return userService.updateUser(id, request.role(), request.status(), request.reason(), jwt.getSubject());
+        return userService.updateUser(id, request.role(), request.status(), request.reason(), request.jobTitle(), request.phone(), jwt.getSubject());
     }
 
     @PostMapping("/{id}/reset-password")
@@ -158,7 +166,7 @@ public class UserController {
     public record UpdateProfileRequest(String fullName, String email, String avatarUrl, String phone) {
     }
 
-    public record UpdateUserRequest(String role, String status, String reason) {
+    public record UpdateUserRequest(String role, String status, String reason, String jobTitle, String phone) {
     }
 
     public record ResetPasswordRequest(String newPassword, boolean temporary) {

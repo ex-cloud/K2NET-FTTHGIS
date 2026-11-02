@@ -200,7 +200,6 @@ export const NAVIGATION_MANIFEST: ManifestNavItem[] = [
       "/security/roles",
       "/security/permissions",
       "/security/auth",
-      "/security/password-policy",
     ],
   },
   {
@@ -212,7 +211,12 @@ export const NAVIGATION_MANIFEST: ManifestNavItem[] = [
     href: "/security/alerts",
     shortcut: "G then S",
     requiredPermission: "system.security.manage",
-    activePrefixes: ["/security/alerts", "/security/audit", "/security/compliance"],
+    activePrefixes: [
+      "/security/alerts",
+      "/security/audit",
+      "/security/compliance",
+      "/security/password-policy",
+    ],
   },
 
   // ── 6. BOTTOM (Configuration Center) ───────────────────────────────────────

@@ -11,6 +11,7 @@ export interface GetUsersParams {
   role?: string;
   status?: string;
   org?: string;
+  scope?: string;
   token?: string;
 }
 
@@ -22,6 +23,7 @@ export async function getUsers(params?: GetUsersParams): Promise<PaginatedRespon
     role,
     status,
     org,
+    scope,
     token,
   } = params || {};
 
@@ -36,6 +38,7 @@ export async function getUsers(params?: GetUsersParams): Promise<PaginatedRespon
   if (role && role !== "all") queryParams.append("role", role);
   if (status && status !== "all") queryParams.append("status", status);
   if (org && org !== "all") queryParams.append("org", org);
+  if (scope) queryParams.append("scope", scope);
 
   const res = await httpClient(`${BACKEND_URL}/users?${queryParams.toString()}`, {
     token,

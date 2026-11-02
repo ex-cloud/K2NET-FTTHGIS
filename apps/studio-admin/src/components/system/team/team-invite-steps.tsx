@@ -48,6 +48,7 @@ interface StepUserDetailsProps {
   selectedOrgId: string;
   setSelectedOrgId: (id: string) => void;
   orgList: { id: string; name: string }[];
+  isPlatformStaff?: boolean;
 }
 
 export function StepUserDetails({
@@ -58,7 +59,14 @@ export function StepUserDetails({
   selectedOrgId,
   setSelectedOrgId,
   orgList,
+  isPlatformStaff,
 }: StepUserDetailsProps) {
+  const generateStrongPassword = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    const pass = "Password@" + Math.floor(100000 + Math.random() * 900000);
+    setFormData((prev) => ({ ...prev, customPassword: pass }));
+  };
+
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-muted/30 border border-border">
@@ -77,7 +85,13 @@ export function StepUserDetails({
         </button>
         <button
           type="button"
-          onClick={() => setFormData((prev) => ({ ...prev, creationMode: "DIRECT" }))}
+          onClick={() => {
+            setFormData((prev) => ({
+              ...prev,
+              creationMode: "DIRECT",
+              customPassword: prev.customPassword || "Password@123456",
+            }));
+          }}
           className={cn(
             "py-2 px-3 rounded-md text-xs font-bold transition-all flex flex-col items-center gap-1 text-center",
             formData.creationMode === "DIRECT"
@@ -90,7 +104,15 @@ export function StepUserDetails({
         </button>
       </div>
 
-      {!organizationId && !paramsOrgId && (
+      {isPlatformStaff ? (
+        <div className="flex items-center gap-2.5 p-3 rounded-lg border border-primary/20 bg-primary/5 text-xs text-foreground animate-in fade-in duration-200">
+          <ShieldCheck className="size-4 shrink-0 text-primary" />
+          <div>
+            <div className="font-semibold text-primary">Platform Administrator Account</div>
+            <div className="text-[11px] text-muted-foreground font-mono">Scope: SYSTEM (system-gis.kdua.net) &bull; Realm: ftth-realm</div>
+          </div>
+        </div>
+      ) : !organizationId && !paramsOrgId ? (
         <div className="space-y-1.5 animate-in fade-in duration-200">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
             <Briefcase className="size-3" /> Target Organization
@@ -108,7 +130,7 @@ export function StepUserDetails({
             </SelectContent>
           </Select>
         </div>
-      )}
+      ) : null}
 
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
@@ -136,17 +158,28 @@ export function StepUserDetails({
 
       {formData.creationMode === "DIRECT" && (
         <div className="space-y-1.5 animate-in fade-in zoom-in-95 duration-200">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <Shield className="size-3 text-primary" /> Temporary Password
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Shield className="size-3 text-primary" /> Temporary Password
+            </label>
+            <button
+              type="button"
+              onClick={generateStrongPassword}
+              className="text-[11px] text-primary hover:underline font-mono"
+            >
+              Generate Strong
+            </button>
+          </div>
           <Input
             type="text"
             value={formData.customPassword}
             onChange={(e) => setFormData((prev) => ({ ...prev, customPassword: e.target.value }))}
-            placeholder="e.g. TeknisiJaya2026!"
+            placeholder="e.g. Password@123456"
             className="bg-muted/30 border-border focus:border-primary/50 focus:ring-primary/20 text-sm h-10 font-mono"
           />
-          <p className="text-[10px] text-muted-foreground">User will be forced to change this password upon first login.</p>
+          <p className="text-[10px] text-muted-foreground">
+            Must be &ge; 14 characters. User will be prompted to set their permanent password upon first login.
+          </p>
         </div>
       )}
     </div>
@@ -193,12 +226,28 @@ export function StepProjectAccess({
   globalRoles,
   projectRoles,
   onProjectRoleChange,
+  isPlatformStaff,
 }: {
   projects: ProjectData[];
   globalRoles: GlobalRole[];
   projectRoles: Record<string, string>;
   onProjectRoleChange: (projectId: string, roleId: string) => void;
+  isPlatformStaff?: boolean;
 }) {
+  if (isPlatformStaff) {
+    return (
+      <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+        <div className="p-6 text-center bg-primary/5 rounded-lg border border-primary/20 space-y-2">
+          <ShieldCheck className="size-8 text-primary mx-auto opacity-80" />
+          <h4 className="text-xs font-semibold text-foreground">Global Cross-Project Platform Scope</h4>
+          <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+            Platform staff accounts inherently operate with centralized administrative authority across all ISP workspaces, geographical regions, and project boundaries.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="flex items-center justify-between mb-2">
@@ -237,10 +286,12 @@ export function StepReviewSummary({
   formData,
   globalRoles,
   projectRoles,
+  isPlatformStaff,
 }: {
   formData: WizardFormData;
   globalRoles: GlobalRole[];
   projectRoles: Record<string, string>;
+  isPlatformStaff?: boolean;
 }) {
   const activeRoleName = globalRoles.find((r) => String(r.id) === formData.globalRole)?.name;
   const projectCount = Object.keys(projectRoles).filter((k) => projectRoles[k] !== "").length;
@@ -269,8 +320,10 @@ export function StepReviewSummary({
             <p className="font-bold text-primary">{activeRoleName}</p>
           </div>
           <div>
-            <p className="text-muted-foreground mb-0.5 uppercase tracking-tighter text-[9px]">Project Access</p>
-            <p className="font-bold text-foreground">{projectCount} Projects</p>
+            <p className="text-muted-foreground mb-0.5 uppercase tracking-tighter text-[9px]">Scope</p>
+            <p className="font-bold text-foreground">
+              {isPlatformStaff ? "Global Platform (All Workspaces)" : `${projectCount} Projects`}
+            </p>
           </div>
           {formData.creationMode === "DIRECT" && (
             <div className="col-span-2 pt-2 border-t border-border">

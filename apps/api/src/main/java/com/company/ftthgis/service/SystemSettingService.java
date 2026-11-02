@@ -84,7 +84,7 @@ public class SystemSettingService {
         defaults.put("device_verification_enabled", new String[]{"false", "SECURITY", "Enables step-up device verification with OTP for unrecognized browser/hardware fingerprints"});
         defaults.put("session_idle_timeout", new String[]{"30", "SECURITY", "Idle timeout in minutes before user session is auto-locked or logged out"});
         defaults.put("map_auto_lock_duration", new String[]{"10", "SECURITY", "Inactive duration in minutes before mapping canvas is auto-locked for security"});
-        defaults.put("password_min_length", new String[]{"8", "SECURITY", "Minimum password length requirement"});
+        defaults.put("password_min_length", new String[]{"14", "SECURITY", "Minimum password length requirement"});
         defaults.put("password_require_symbols", new String[]{"true", "SECURITY", "Require at least one special character"});
         defaults.put("password_require_numbers", new String[]{"true", "SECURITY", "Require at least one numeric digit"});
         defaults.put("password_require_uppercase", new String[]{"true", "SECURITY", "Require at least one uppercase letter"});
@@ -127,6 +127,13 @@ public class SystemSettingService {
 
         // P0 Security: One-time migration to encrypt existing plaintext secrets
         migratePlaintextSecrets();
+
+        // Ensure Keycloak password policies match system_settings on startup
+        try {
+            syncPasswordPoliciesToKeycloak();
+        } catch (Exception e) {
+            log.warn("Could not sync password policy to Keycloak on startup: {}", e.getMessage());
+        }
     }
 
     private void migratePlaintextSecrets() {
@@ -233,7 +240,7 @@ public class SystemSettingService {
 
     private void syncPasswordPoliciesToKeycloak() {
         try {
-            int minLength = Integer.parseInt(getSettingValue("password_min_length", "8"));
+            int minLength = Integer.parseInt(getSettingValue("password_min_length", "14"));
             boolean requireSymbols = "true".equalsIgnoreCase(getSettingValue("password_require_symbols", "true"));
             boolean requireNumbers = "true".equalsIgnoreCase(getSettingValue("password_require_numbers", "true"));
             boolean requireUppercase = "true".equalsIgnoreCase(getSettingValue("password_require_uppercase", "true"));
@@ -258,6 +265,7 @@ public class SystemSettingService {
             if (expiryDays > 0) {
                 sb.append(" and forceExpiredPasswordChange(").append(expiryDays).append(")");
             }
+            sb.append(" and notUsername and notEmail");
 
             String policyString = sb.toString();
             log.info("🔄 Triggering Keycloak sync for all realms with policy: {}", policyString);

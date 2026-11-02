@@ -1,5 +1,7 @@
 import {
   Badge,
+  Button,
+  ActionTooltip,
   Table,
   TableHeader,
   TableRow,
@@ -19,6 +21,8 @@ import {
 import {
   Users,
   ShieldCheck,
+  ShieldAlert,
+  History,
   Mail,
   KeyRound,
   Copy,
@@ -26,39 +30,63 @@ import {
   UserCheck,
   Loader2,
   Phone,
+  Edit,
 } from "lucide-react";
 import type { TenantUser, TenantUserRole } from "./types";
 import { useTranslation } from "@k2net/i18n";
+import { cn } from "@/lib/utils";
 
 interface TeamMembersTableProps {
   users: TenantUser[];
   isLoading: boolean;
   mfaEnforced?: boolean;
+  onEditMember?: (user: TenantUser) => void;
   onPasswordReset: (user: TenantUser) => void;
+  onToggleStatus?: (user: TenantUser) => void;
+  onViewAudit?: (user: TenantUser) => void;
   onResendInvite: (user: TenantUser) => void;
   onChangeRole: (userId: string, newRole: TenantUserRole) => void;
   onCopy: (text: string, label: string) => void;
   onRemoveUser: (userId: string, userName: string) => void;
 }
 
-function getRoleBadge(role: TenantUserRole) {
-  switch (role) {
-    case "TENANT_ADMIN":
-      return <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-[10px]">Tenant Admin</Badge>;
-    case "NOC_OPERATOR":
-      return <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px]">NOC Operator</Badge>;
-    case "FIELD_TECH":
-      return <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-500 font-mono text-[10px]">Field Tech</Badge>;
-    default:
-      return <Badge variant="outline" className="border-border text-muted-foreground font-mono text-[10px]">Viewer</Badge>;
+function getRoleBadge(role: TenantUserRole | string) {
+  const norm = (role || "").toUpperCase();
+  if (norm.includes("ADMIN")) {
+    return <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-400 font-mono text-[10px]">Tenant Admin</Badge>;
   }
+  if (norm.includes("NOC")) {
+    return <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px]">NOC Operator</Badge>;
+  }
+  if (norm.includes("TECH")) {
+    return <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-400 font-mono text-[10px]">Field Tech</Badge>;
+  }
+  if (norm.includes("SUPERVIS")) {
+    return <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-400 font-mono text-[10px]">Supervisor</Badge>;
+  }
+  if (norm.includes("SURVEY")) {
+    return <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px]">Surveyor</Badge>;
+  }
+  if (norm.includes("FINANCE") || norm.includes("BILLING")) {
+    return <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px]">Finance</Badge>;
+  }
+  if (norm.includes("WAREHOUSE")) {
+    return <Badge variant="outline" className="border-orange-500/30 bg-orange-500/10 text-orange-400 font-mono text-[10px]">Warehouse</Badge>;
+  }
+  if (norm.includes("HELP")) {
+    return <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-cyan-400 font-mono text-[10px]">Helpdesk</Badge>;
+  }
+  return <Badge variant="outline" className="border-border text-muted-foreground font-mono text-[10px]">Viewer</Badge>;
 }
 
 export function TeamMembersTable({
   users,
   isLoading,
   mfaEnforced,
+  onEditMember,
   onPasswordReset,
+  onToggleStatus,
+  onViewAudit,
   onResendInvite,
   onChangeRole,
   onCopy,
@@ -99,8 +127,11 @@ export function TeamMembersTable({
               <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 {t("organizations.col_status")}
               </TableHead>
-              <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider pr-6">
+              <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 {t("organizations.col_last_login")}
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right pr-6">
+                {t("organizations.col_actions")}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -108,7 +139,7 @@ export function TeamMembersTable({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs font-mono">
+                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground text-xs font-mono">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
                     <span>{t("organizations.loading_team_members")}</span>
@@ -117,7 +148,7 @@ export function TeamMembersTable({
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs font-mono">
+                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground text-xs font-mono">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Users className="h-6 w-6 text-muted-foreground/40" />
                     <span>{t("organizations.team_empty_members")}</span>
@@ -189,7 +220,7 @@ export function TeamMembersTable({
                         </Badge>
                       </TableCell>
 
-                      <TableCell className="py-3.5 pr-6 font-mono text-[11px] text-muted-foreground">
+                      <TableCell className="py-3.5 font-mono text-[11px] text-muted-foreground">
                         <div>
                           <span>{u.lastLogin}</span>
                           {u.lastLoginIp && (
@@ -197,6 +228,91 @@ export function TeamMembersTable({
                               IP: {u.lastLoginIp}
                             </span>
                           )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-2.5 pr-6 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-end items-center gap-1">
+                          <ActionTooltip label={t("organizations.action_edit_role")}>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground hover:text-foreground h-6 w-6"
+                              onClick={() => (onEditMember ? onEditMember(u) : onChangeRole(u.id, "TENANT_ADMIN"))}
+                            >
+                              <Edit className="size-3" />
+                            </Button>
+                          </ActionTooltip>
+
+                          <ActionTooltip label={t("organizations.action_reset_password")}>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground hover:text-foreground h-6 w-6"
+                              onClick={() => onPasswordReset(u)}
+                            >
+                              <KeyRound className="size-3" />
+                            </Button>
+                          </ActionTooltip>
+
+                          <ActionTooltip
+                            label={
+                              u.status === "ACTIVE"
+                                ? t("organizations.action_suspend_account")
+                                : t("organizations.action_activate_account")
+                            }
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className={cn(
+                                "h-6 w-6 text-muted-foreground",
+                                u.status === "ACTIVE"
+                                  ? "hover:text-amber-400 hover:bg-amber-500/10"
+                                  : "hover:text-primary hover:bg-primary/10"
+                              )}
+                              onClick={() => onToggleStatus?.(u)}
+                            >
+                              <ShieldAlert className="size-3" />
+                            </Button>
+                          </ActionTooltip>
+
+                          <ActionTooltip label={t("organizations.action_view_audit")}>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground hover:text-foreground hover:bg-muted/40 h-6 w-6"
+                              onClick={() =>
+                                onViewAudit
+                                  ? onViewAudit(u)
+                                  : window.location.assign(`/security/audit?user=${encodeURIComponent(u.email)}`)
+                              }
+                            >
+                              <History className="size-3" />
+                            </Button>
+                          </ActionTooltip>
+
+                          <ActionTooltip label={t("organizations.action_copy_contact")}>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground hover:text-foreground h-6 w-6"
+                              onClick={() => onCopy(u.email, "Email")}
+                            >
+                              <Copy className="size-3" />
+                            </Button>
+                          </ActionTooltip>
+
+                          <ActionTooltip label={t("organizations.action_remove_member")}>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-6 w-6"
+                              onClick={() => onRemoveUser(u.id, u.name)}
+                            >
+                              <Trash2 className="size-3" />
+                            </Button>
+                          </ActionTooltip>
                         </div>
                       </TableCell>
                     </TableRow>

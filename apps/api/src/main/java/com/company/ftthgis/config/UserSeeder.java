@@ -228,7 +228,7 @@ public class UserSeeder implements CommandLineRunner {
         if ("ex-cloud-org".equals(slug) || "system".equals(slug)) {
             return "ftth-realm";
         }
-        return slug;
+        return "k2net-tenants";
     }
 
     private void createUserIfNotExists(String email, String username, String fullName, String roleName, String password,

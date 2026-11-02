@@ -171,7 +171,7 @@ public class OrganizationController {
     }
 
     @PostMapping("/{orgId}/users/invite")
-    @PreAuthorize("@tenantSecurity.isOwnerById(#orgId) and hasAuthority('users.invite')")
+    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwnerById(#orgId) and hasAuthority('users.invite'))")
     public org.springframework.http.ResponseEntity<com.company.ftthgis.api.user.dto.UserDto> inviteUser(
             @PathVariable String orgId,
             @RequestBody com.company.ftthgis.api.user.dto.UserInviteRequest request) {
