@@ -5,6 +5,16 @@ export { z };
 // ==========================================
 // User & Auth Types
 // ==========================================
+export interface UserMembership {
+  organizationId: string;
+  organizationName: string;
+  organizationSlug: string;
+  roleName: string;
+  status: "ACTIVE" | "INVITED" | "SUSPENDED" | string;
+  isDefault: boolean;
+  joinedAt?: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -17,6 +27,7 @@ export interface User {
   organizationName?: string;
   organizationId?: string;
   organizationSlug?: string;
+  memberships?: UserMembership[];
   createdAt: string;
   updatedAt: string;
 }

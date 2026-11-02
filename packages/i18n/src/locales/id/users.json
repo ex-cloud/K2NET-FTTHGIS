@@ -65,5 +65,15 @@
   "role_operator_desc": "Mengelola topologi jaringan, monitoring kesehatan OLT, dan operasional inventaris.",
   "role_field_tech_desc": "Akses ke tiket gangguan dan pemetaan ODP pada area proyek yang ditugaskan.",
   "role_surveyor_desc": "Menggambar jalur kabel baru, validasi survey lapangan, dan import KML/CAD.",
-  "manage_team_subtitle": "Kelola direktori anggota tim, hak akses berbasis peran, dan riwayat aktivitas organisasi Anda."
+  "manage_team_subtitle": "Kelola direktori anggota tim, hak akses berbasis peran, dan riwayat aktivitas organisasi Anda.",
+  "col_workspaces": "Workspace",
+  "workspace_primary": "Utama",
+  "workspace_count_more": "+{{count}} workspace",
+  "workspace_status_active": "Aktif",
+  "workspace_status_invited": "Undangan",
+  "workspace_status_suspended": "Ditangguhkan",
+  "workspace_all_header": "Daftar Workspace ISP Terafiliasi",
+  "workspace_joined_at": "Bergabung",
+  "workspace_invited_at": "Diundang",
+  "workspace_total_count": "{{count}} total workspace"
 }

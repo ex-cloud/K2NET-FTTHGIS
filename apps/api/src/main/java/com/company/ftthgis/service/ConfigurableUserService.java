@@ -15,6 +15,7 @@ import com.company.ftthgis.api.user.dto.UserInviteRequest;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.Project;
 import com.company.ftthgis.domain.tenant.entity.ProjectMember;
+import com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.tenant.repository.ProjectMemberRepository;
 import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
@@ -43,6 +44,7 @@ public class ConfigurableUserService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final OrganizationRepository organizationRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
     private final UserAuditLogRepository userAuditLogRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final com.company.ftthgis.config.tenant.KeycloakService keycloakService;
@@ -82,6 +84,7 @@ public class ConfigurableUserService {
             ProjectRepository projectRepository,
             ProjectMemberRepository projectMemberRepository,
             OrganizationRepository organizationRepository,
+            OrganizationMemberRepository organizationMemberRepository,
             UserAuditLogRepository userAuditLogRepository,
             com.fasterxml.jackson.databind.ObjectMapper objectMapper,
             com.company.ftthgis.config.tenant.KeycloakService keycloakService,
@@ -93,6 +96,7 @@ public class ConfigurableUserService {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.organizationRepository = organizationRepository;
+        this.organizationMemberRepository = organizationMemberRepository;
         this.userAuditLogRepository = userAuditLogRepository;
         this.objectMapper = objectMapper;
         this.keycloakService = keycloakService;
@@ -546,6 +550,38 @@ public class ConfigurableUserService {
             }
         }
 
+        List<UserDto.UserMembershipDto> memberships = new ArrayList<>();
+        if (organizationMemberRepository != null && user.getId() != null) {
+            try {
+                memberships = organizationMemberRepository.findAllWorkspacesByUserId(user.getId())
+                    .stream()
+                    .map(om -> UserDto.UserMembershipDto.builder()
+                        .organizationId(om.getOrganization() != null ? om.getOrganization().getId() : null)
+                        .organizationName(om.getOrganization() != null ? om.getOrganization().getName() : null)
+                        .organizationSlug(om.getOrganization() != null ? om.getOrganization().getSlug() : null)
+                        .roleName(om.getRoleName() != null ? om.getRoleName() : (om.getRole() != null ? om.getRole().getName() : "viewer"))
+                        .status(om.getStatus())
+                        .isDefault(om.isDefault())
+                        .joinedAt(om.getJoinedAt())
+                        .build())
+                    .collect(Collectors.toList());
+            } catch (Exception e) {
+                log.debug("Could not load organization memberships for user {}: {}", user.getId(), e.getMessage());
+            }
+        }
+
+        if (memberships.isEmpty() && user.getOrganization() != null) {
+            memberships.add(UserDto.UserMembershipDto.builder()
+                .organizationId(user.getOrganization().getId())
+                .organizationName(user.getOrganization().getName())
+                .organizationSlug(user.getOrganization().getSlug())
+                .roleName(user.getRole() != null ? user.getRole().getName() : "viewer")
+                .status(user.getStatus())
+                .isDefault(true)
+                .joinedAt(user.getCreatedAt())
+                .build());
+        }
+
         return UserDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -570,6 +606,7 @@ public class ConfigurableUserService {
                 .updatedAt(user.getUpdatedAt())
                 .projectRoles(projectRoles)
                 .permissions(new ArrayList<>(permissionsSet))
+                .memberships(memberships)
                 .build();
     }
 

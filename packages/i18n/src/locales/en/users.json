@@ -65,5 +65,15 @@
   "role_operator_desc": "Manage network topology, monitor OLT health, and inventory operations.",
   "role_field_tech_desc": "Access to trouble tickets and ODP mapping in assigned project areas.",
   "role_surveyor_desc": "Draw new cable routes, validate field surveys, and import KML/CAD files.",
-  "manage_team_subtitle": "Manage member directory, role-based access, and audit log activities for your organization."
+  "manage_team_subtitle": "Manage member directory, role-based access, and audit log activities for your organization.",
+  "col_workspaces": "Workspaces",
+  "workspace_primary": "Primary",
+  "workspace_count_more": "+{{count}} workspaces",
+  "workspace_status_active": "Active",
+  "workspace_status_invited": "Invited",
+  "workspace_status_suspended": "Suspended",
+  "workspace_all_header": "Associated ISP Workspaces",
+  "workspace_joined_at": "Joined",
+  "workspace_invited_at": "Invited",
+  "workspace_total_count": "{{count}} total workspaces"
 }

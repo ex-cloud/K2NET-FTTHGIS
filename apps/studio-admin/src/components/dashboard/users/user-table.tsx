@@ -4,7 +4,6 @@ import {
   Key,
   ChevronLeft,
   ChevronRight,
-  Building2,
   UserPlus,
   ShieldAlert,
   History,
@@ -36,6 +35,7 @@ import { useTranslation, type TranslationKey } from "@k2net/i18n";
 import { UpdateUserDialog } from "./update-user-dialog";
 import { UserSearch } from "./user-search";
 import { ResetPasswordDialog } from "./reset-password-dialog";
+import { UserWorkspaceBadges } from "./user-workspace-badges";
 import { TeamInviteWizard } from "@/components/system/team/team-invite-wizard";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -185,16 +185,7 @@ function UserTableRowItem({
         </TableCell>
         {isGlobalView && (
           <TableCell className="px-4 py-2">
-            <div className="text-[12px] text-muted-foreground flex items-center gap-2">
-              <Building2 className="w-3.5 h-3.5 text-muted-foreground/80" />
-              {user.organizationId ? (
-                <Link href={`/org/${user.organizationId}`} className="hover:text-primary hover:underline font-medium transition-colors">
-                  {user.organizationName}
-                </Link>
-              ) : (
-                <span>{user.organizationName || "System"}</span>
-              )}
-            </div>
+            <UserWorkspaceBadges user={user} />
           </TableCell>
         )}
         <TableCell className="px-4 py-2">
@@ -356,7 +347,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                   <TableHead className="w-[300px] h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_user")}</TableHead>
                   <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_role")}</TableHead>
                   {isGlobalView && (
-                    <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_organization")}</TableHead>
+                    <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_workspaces")}</TableHead>
                   )}
                   <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_status")}</TableHead>
                   <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_created_at")}</TableHead>

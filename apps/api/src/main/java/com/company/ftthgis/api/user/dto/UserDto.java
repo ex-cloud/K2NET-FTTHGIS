@@ -36,6 +36,21 @@ public class UserDto {
     private LocalDateTime updatedAt;
     private List<ProjectRoleDto> projectRoles;
     private List<String> permissions;
+    private List<UserMembershipDto> memberships;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserMembershipDto {
+        private UUID organizationId;
+        private String organizationName;
+        private String organizationSlug;
+        private String roleName;
+        private String status;
+        private boolean isDefault;
+        private LocalDateTime joinedAt;
+    }
 
     @Data
     @Builder

@@ -37,6 +37,13 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
     List<OrganizationMember> findActiveWorkspacesByUserId(@Param("userId") UUID userId);
 
     @Query("SELECT om FROM OrganizationMember om " +
+           "JOIN FETCH om.organization org " +
+           "LEFT JOIN FETCH om.role r " +
+           "WHERE om.user.id = :userId AND org.deletedAt IS NULL " +
+           "ORDER BY om.isDefault DESC, om.joinedAt ASC")
+    List<OrganizationMember> findAllWorkspacesByUserId(@Param("userId") UUID userId);
+
+    @Query("SELECT om FROM OrganizationMember om " +
            "JOIN FETCH om.user u " +
            "LEFT JOIN FETCH om.role r " +
            "WHERE om.organization.id = :organizationId " +
