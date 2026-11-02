@@ -23,8 +23,8 @@ import com.company.ftthgis.service.LicenseManagementService;
 import com.company.ftthgis.util.EncryptionUtils;
 import com.company.ftthgis.util.RandomSlugGenerator;
 import jakarta.persistence.EntityManager;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class OrganizationProvisioningService {
 
@@ -58,6 +57,45 @@ public class OrganizationProvisioningService {
     private final UserRepository userRepository;
     private final TenantPurgeService tenantPurgeService;
 
+    @Autowired
+    public OrganizationProvisioningService(
+            OrganizationRepository organizationRepository,
+            SubscriptionPlanRepository subscriptionPlanRepository,
+            OrganizationSlugAliasRepository organizationSlugAliasRepository,
+            RandomSlugGenerator randomSlugGenerator,
+            OrganizationConfigRepository organizationConfigRepository,
+            EncryptionUtils encryptionUtils,
+            KeycloakService keycloakService,
+            RoleRepository roleRepository,
+            EntityManager entityManager,
+            org.springframework.transaction.PlatformTransactionManager transactionManager,
+            FileStorageService fileStorageService,
+            AuditLoggingService auditLoggingService,
+            LicenseManagementService licenseManagementService,
+            BillingInvoiceRepository billingInvoiceRepository,
+            TenantActivationService tenantActivationService,
+            UserRepository userRepository,
+            TenantPurgeService tenantPurgeService
+    ) {
+        this.organizationRepository = organizationRepository;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
+        this.organizationSlugAliasRepository = organizationSlugAliasRepository;
+        this.randomSlugGenerator = randomSlugGenerator;
+        this.organizationConfigRepository = organizationConfigRepository;
+        this.encryptionUtils = encryptionUtils;
+        this.keycloakService = keycloakService;
+        this.roleRepository = roleRepository;
+        this.entityManager = entityManager;
+        this.transactionManager = transactionManager;
+        this.fileStorageService = fileStorageService;
+        this.auditLoggingService = auditLoggingService;
+        this.licenseManagementService = licenseManagementService;
+        this.billingInvoiceRepository = billingInvoiceRepository;
+        this.tenantActivationService = tenantActivationService;
+        this.userRepository = userRepository;
+        this.tenantPurgeService = tenantPurgeService;
+    }
+
     // Backward-compatible constructor for existing tests
     public OrganizationProvisioningService(
             OrganizationRepository organizationRepository,
@@ -76,23 +114,25 @@ public class OrganizationProvisioningService {
             BillingInvoiceRepository billingInvoiceRepository,
             TenantActivationService tenantActivationService
     ) {
-        this.organizationRepository = organizationRepository;
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.organizationSlugAliasRepository = organizationSlugAliasRepository;
-        this.randomSlugGenerator = randomSlugGenerator;
-        this.organizationConfigRepository = organizationConfigRepository;
-        this.encryptionUtils = encryptionUtils;
-        this.keycloakService = keycloakService;
-        this.roleRepository = roleRepository;
-        this.entityManager = entityManager;
-        this.transactionManager = transactionManager;
-        this.fileStorageService = fileStorageService;
-        this.auditLoggingService = auditLoggingService;
-        this.licenseManagementService = licenseManagementService;
-        this.billingInvoiceRepository = billingInvoiceRepository;
-        this.tenantActivationService = tenantActivationService;
-        this.userRepository = null;
-        this.tenantPurgeService = null;
+        this(
+            organizationRepository,
+            subscriptionPlanRepository,
+            organizationSlugAliasRepository,
+            randomSlugGenerator,
+            organizationConfigRepository,
+            encryptionUtils,
+            keycloakService,
+            roleRepository,
+            entityManager,
+            transactionManager,
+            fileStorageService,
+            auditLoggingService,
+            licenseManagementService,
+            billingInvoiceRepository,
+            tenantActivationService,
+            null,
+            null
+        );
     }
 
     @Transactional
