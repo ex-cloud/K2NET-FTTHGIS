@@ -366,6 +366,7 @@ jobs:
           build-args: |
             VITE_GIT_BRANCH=${{ github.ref_name }}
             VITE_GIT_COMMIT=${{ github.sha }}
+            VITE_TURNSTILE_SITE_KEY=0x4AAAAAAFqzoRy-yUZNkjii
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
@@ -413,6 +414,7 @@ jobs:
           build-args: |
             VITE_GIT_BRANCH=${{ github.ref_name }}
             VITE_GIT_COMMIT=${{ github.sha }}
+            VITE_TURNSTILE_SITE_KEY=0x4AAAAAAFq1LAd5fwZMDgz5
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64

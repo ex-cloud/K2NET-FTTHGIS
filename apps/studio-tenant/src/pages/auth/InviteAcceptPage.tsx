@@ -10,7 +10,7 @@ export function InviteAcceptPage() {
   const turnstileSiteKey =
     (import.meta.env.VITE_TURNSTILE_TENANT_SITE_KEY as string | undefined)?.trim() ||
     (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ||
-    "";
+    "0x4AAAAAAFq1LAd5fwZMDgz5";
 
   return (
     <AuthLoginLayout

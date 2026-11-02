@@ -33,7 +33,7 @@ export default function AdminLoginPage() {
   const turnstileSiteKey =
     (import.meta.env.VITE_TURNSTILE_ADMIN_SITE_KEY as string | undefined)?.trim() ||
     (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ||
-    "";
+    "0x4AAAAAAFqzoRy-yUZNkjii";
 
   useEffect(() => {
     if (initialized && authenticated) {
