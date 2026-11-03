@@ -11,6 +11,7 @@ import com.company.ftthgis.domain.tenant.entity.TenantLicense;
 import com.company.ftthgis.domain.tenant.repository.BillingInvoiceRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.service.LicenseManagementService;
+import com.company.ftthgis.util.RandomSlugGenerator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -246,10 +247,7 @@ public class TenantLicenseController {
                 } else if (sub.contains(".gis.kdua.net")) {
                     candidateSlug = sub.split("\\.")[0];
                 }
-                if (candidateSlug != null && !candidateSlug.equalsIgnoreCase("system")
-                        && !candidateSlug.equalsIgnoreCase("api")
-                        && !candidateSlug.equalsIgnoreCase("gis")
-                        && !candidateSlug.equalsIgnoreCase("auth")) {
+                if (candidateSlug != null && ("ops".equalsIgnoreCase(candidateSlug) || !RandomSlugGenerator.isReservedKeyword(candidateSlug))) {
                     var orgByHost = organizationRepository.findBySlug(candidateSlug.trim().toLowerCase());
                     if (orgByHost.isPresent()) {
                         UUID id = orgByHost.get().getId();

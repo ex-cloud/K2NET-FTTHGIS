@@ -58,7 +58,7 @@ function resolveLogHost(log: AuditStreamEntry): string {
   if (log.metadata?.["context.host"]) return String(log.metadata["context.host"]);
   if (log.metadata?.host) return String(log.metadata.host);
   if (typeof window !== "undefined") return window.location.hostname;
-  return "system.gis.kdua.net";
+  return "system-gis.kdua.net";
 }
 
 function resolveLogResponseTime(log: AuditStreamEntry): string {

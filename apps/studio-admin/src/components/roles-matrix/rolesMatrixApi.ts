@@ -85,6 +85,30 @@ export async function createRole(
   return (await res.json()) as Role;
 }
 
+export async function updateRole(
+  roleId: number,
+  data: {
+    name?: string;
+    displayName: string;
+    description?: string;
+  },
+  token: string
+): Promise<Role> {
+  const baseUrl = getBackendBaseUrl();
+  const res = await httpClient(`${baseUrl}/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+    token,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Failed to update role" }));
+    throw new Error(errorData.message || "Failed to update role");
+  }
+
+  return (await res.json()) as Role;
+}
+
 export async function deleteRole(roleId: number, token: string): Promise<void> {
   const baseUrl = getBackendBaseUrl();
   const res = await httpClient(`${baseUrl}/roles/${roleId}`, {

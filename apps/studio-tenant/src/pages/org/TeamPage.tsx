@@ -121,28 +121,65 @@ export function TeamPage() {
     setInviteModalOpen(true);
   };
 
-  const rolesList = [
-    {
-      title: t("users.role_org_admin"),
-      description: t("users.role_org_admin_desc"),
-      permissions: ["projects.*", "network.*", "team.*", "billing.*", "settings.*"],
+  interface LiveRoleDto {
+    id: number;
+    name: string;
+    displayName?: string;
+    code?: string;
+    description?: string;
+    isSystemRole?: boolean;
+    permissions?: Array<{ id: number; code: string }>;
+  }
+
+  const { data: liveTenantRoles } = useQuery<LiveRoleDto[]>({
+    queryKey: ["tenant-roles-catalog", orgSlug],
+    queryFn: async () => {
+      try {
+        return await apiClient<LiveRoleDto[]>("/api/v1/roles?scope=TENANT");
+      } catch {
+        return [];
+      }
     },
-    {
-      title: t("users.role_operator"),
-      description: t("users.role_operator_desc"),
-      permissions: ["projects.view", "network.manage", "gis.edit", "issues.manage"],
-    },
-    {
-      title: t("users.role_field_tech"),
-      description: t("users.role_field_tech_desc"),
-      permissions: ["projects.view", "network.view", "issues.execute", "geom.update"],
-    },
-    {
-      title: t("users.role_surveyor"),
-      description: t("users.role_surveyor_desc"),
-      permissions: ["gis.survey", "cad.import", "projects.view"],
-    },
-  ];
+    enabled: subView === "roles",
+    staleTime: 60 * 1000,
+  });
+
+  const rolesList = React.useMemo(() => {
+    if (Array.isArray(liveTenantRoles) && liveTenantRoles.length > 0) {
+      return liveTenantRoles.map((r) => ({
+        code: r.code || `TENT-${r.id}`,
+        title: r.displayName || r.name,
+        description: r.description || r.name,
+        permissions: (r.permissions || []).map((p) => p.code),
+      }));
+    }
+    return [
+      {
+        code: "TENT-01",
+        title: t("users.role_org_admin"),
+        description: t("users.role_org_admin_desc"),
+        permissions: ["projects.*", "network.*", "team.*", "billing.*", "settings.*"],
+      },
+      {
+        code: "TENT-06",
+        title: t("users.role_operator"),
+        description: t("users.role_operator_desc"),
+        permissions: ["projects.view", "network.manage", "gis.edit", "issues.manage"],
+      },
+      {
+        code: "TENT-03",
+        title: t("users.role_field_tech"),
+        description: t("users.role_field_tech_desc"),
+        permissions: ["projects.view", "network.view", "issues.execute", "geom.update"],
+      },
+      {
+        code: "TENT-07",
+        title: t("users.role_surveyor"),
+        description: t("users.role_surveyor_desc"),
+        permissions: ["gis.survey", "cad.import", "projects.view"],
+      },
+    ];
+  }, [liveTenantRoles, t]);
 
   return (
     <PageLayout variant="workspace" spaceY="space-y-6">
@@ -324,6 +361,11 @@ export function TeamPage() {
                     </div>
                     <h3 className="text-sm font-bold text-foreground">{role.title}</h3>
                   </div>
+                  {role.code && (
+                    <Badge variant="outline" className="text-[10px] font-mono bg-primary/10 text-primary border-primary/20">
+                      {role.code}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed min-h-[36px]">
                   {role.description}

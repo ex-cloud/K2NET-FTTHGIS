@@ -62,8 +62,8 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 		return nil, ErrTenantNotFound
 	}
 
-	// Special sentinel / platform plane check
-	if slug == "system" || slug == "admin" || slug == "default" {
+	// Special sentinel / platform plane check (strictly "system" control plane only)
+	if slug == "system" {
 		return &TenantContextResponse{
 			ID:              sentinelPlatformOrgID,
 			Name:            "K2NET Platform Admin",
@@ -268,9 +268,9 @@ func (r *PostgresRepository) SyncUserJIT(ctx context.Context, in JITUserSyncInpu
 		return nil
 	}
 
-	orgID := strings.TrimSpace(in.OrganizationID)
-	if orgID == "" {
-		orgID = sentinelPlatformOrgID
+	var orgIDPtr *string
+	if cleanOrgID := strings.TrimSpace(in.OrganizationID); cleanOrgID != "" {
+		orgIDPtr = &cleanOrgID
 	}
 
 	targetRoleName := resolveCanonicalRoleName(in.Roles)
@@ -341,7 +341,7 @@ func (r *PostgresRepository) SyncUserJIT(ctx context.Context, in JITUserSyncInpu
 		strings.TrimSpace(in.Email),
 		username,
 		fullName,
-		orgID,
+		orgIDPtr,
 		roleID,
 		in.MFAUsed,
 		clientIP,
@@ -353,23 +353,13 @@ func resolveCanonicalRoleName(roles []string) string {
 	set := make(map[string]struct{}, len(roles))
 	for _, r := range roles {
 		low := strings.ToLower(strings.TrimSpace(r))
-		set[low] = struct{}{}
-		switch low {
-		case "tenant_owner", "tenant_admin":
-			set["admin"] = struct{}{}
-		case "noc_operator":
-			set["noc"] = struct{}{}
-		case "network_engineer":
-			set["surveyor"] = struct{}{}
-		case "field_technician":
-			set["technician"] = struct{}{}
-		case "billing_staff":
-			set["finance"] = struct{}{}
+		if low != "" {
+			set[low] = struct{}{}
 		}
 	}
 	priority := []string{
-		"super_admin", "admin", "noc", "finance", "surveyor",
-		"warehouse", "technician", "auditor", "helpdesk", "vendor", "viewer",
+		"super_admin", "system_support", "account_manager", "system_auditor",
+		"admin", "noc", "finance", "surveyor", "technician", "helpdesk", "viewer",
 	}
 	for _, p := range priority {
 		if _, ok := set[p]; ok {
@@ -396,7 +386,7 @@ func (r *PostgresRepository) FindUserForPasswordReset(
 	var query string
 	var args []any
 
-	if strings.EqualFold(plane, "PLATFORM") || tenantSlug == "system" || tenantSlug == "admin" {
+	if strings.EqualFold(plane, "PLATFORM") || tenantSlug == "system" {
 		query = `
 			SELECT u.id::text, u.email, u.username,
 			       COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS full_name,

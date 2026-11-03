@@ -17,6 +17,12 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     Optional<Role> findByNameAndOrganizationId(String name, UUID organizationId);
     
     Optional<Role> findByNameAndIsSystemRoleTrue(String name);
+
+    /**
+     * Scope-strict canonical template lookup (Scope Air-Gap): resolves a global template role
+     * (organization_id IS NULL) by name within the given scope ('SYSTEM' or 'TENANT').
+     */
+    Optional<Role> findByNameAndScopeAndOrganizationIsNull(String name, String scope);
     
     List<Role> findByNameAndIsSystemRoleFalse(String name);
 

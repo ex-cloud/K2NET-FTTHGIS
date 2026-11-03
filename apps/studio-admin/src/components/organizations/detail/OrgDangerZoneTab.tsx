@@ -182,7 +182,7 @@ export function OrgDangerZoneTab({
         </Card>
 
         {/* 4. Delete Organization Permanently */}
-        {org.slug === "default" || org.id === "00000000-0000-0000-0000-000000000001" ? (
+        {Boolean(org.isPlatformRoot) || org.slug === "ops" || org.id === "00000000-0000-0000-0000-000000000001" ? (
           <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 p-3.5">
             <div className="space-y-0.5 max-w-xl">
               <div className="flex items-center gap-2">

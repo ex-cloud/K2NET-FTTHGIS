@@ -307,14 +307,17 @@ public class SecurityConfig {
                 java.util.Optional<com.company.ftthgis.domain.user.entity.Role> roleOpt = java.util.Optional.empty();
 
                 if (isPlatformRealm) {
-                    // Platform Realm Allowlist:
-                    // Only recognize roles that exist as System Roles in DB or general fallback
-                    roleOpt = roleRepository.findByNameAndIsSystemRoleTrue(cleanRole);
+                    // Platform Realm Allowlist (Scope Air-Gap):
+                    // Only recognize roles that exist with SYSTEM scope in DB
+                    roleOpt = roleRepository.findByNameAndIsSystemRoleTrue(cleanRole)
+                            .filter(r -> "SYSTEM".equalsIgnoreCase(r.getScope()));
                     if (roleOpt.isEmpty()) {
-                        roleOpt = roleRepository.findByName(cleanRole);
+                        roleOpt = roleRepository.findByName(cleanRole)
+                                .filter(r -> "SYSTEM".equalsIgnoreCase(r.getScope()));
                     }
                     if (roleOpt.isEmpty()) {
-                        roleOpt = roleRepository.findByName(roleName);
+                        roleOpt = roleRepository.findByName(roleName)
+                                .filter(r -> "SYSTEM".equalsIgnoreCase(r.getScope()));
                     }
 
                     if (roleOpt.isPresent()) {

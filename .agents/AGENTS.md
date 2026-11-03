@@ -9,11 +9,11 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 > ⚠️ **MIGRASI VITE (Sept 2026)**: `studio-admin` & `studio-tenant` adalah **React 19 + Vite 6 + TanStack Router (CSR SPA)**. Dilarang pola Next.js (SSR, API routes, `loading.tsx`). Satu-satunya Next.js adalah `apps/www` (SSG).
 
 - **Frontend Admin**: Vite 6 CSR SPA — [apps/studio-admin](file:///opt/project5/apps/studio-admin) (port 3001)
-- **Frontend Tenant**: Vite 6 CSR SPA — [apps/studio-tenant](file:///opt/project5/apps/studio-tenant) (port 3000)
+- **Frontend Tenant**: Vite 6 CSR SPA — [apps/studio-tenant](file:///opt/project5/apps/studio-tenant) (port 3002 di Docker / 3000 di lokal dev)
 - **Backend Core**: Spring Boot 3.x — [apps/api](file:///opt/project5/apps/api) (port 9090)
 - **14 Go/Python Gateways**: [services/](file:///opt/project5/services/) (ports: 5001–5014)
 - **Gateway & Proxy**: Kong (port 8000), Traefik (port 80/443)
-- **Identity & DB**: Keycloak 26 (port 8081), PostgreSQL 17 (`ftth_gis`), MinIO S3 (`:9005`), Redis
+- **Identity & DB**: Keycloak 26 (port 8081), PostgreSQL 16 + PostGIS 3.5 + pgRouting 4.0 (`ftth_gis` & `keycloak_db`), MinIO S3 (`:9005`), Redis
 
 ---
 
@@ -77,7 +77,8 @@ Prosedur langkah-demi-langkah (*Progressive Disclosure*) beserta dokumentasi ref
 - **MinIO Connection**: Terikat pada Tailscale IP `100.110.205.109:9005`. Dilarang `localhost:9005`.
 - **Zero Hardcoded Strings (`@k2net/i18n`)**: Seluruh teks antarmuka wajib `useTranslation()` terdaftar simultan di `en/*.json` & `id/*.json`.
 - **CI Security Gate**: 100% endpoint dilindungi PBAC (`ComprehensiveControllerSecurityCoverageTest`). Dilarang `isAuthenticated()`.
-- **Scope Air-Gap & Anti-Leakage (`PermissionSeeder` & `SecurityConfig`)**: Role `TENANT` haram memiliki permission berscope `SYSTEM`. Seeder wajib fail-close 4-argumen (`code, name, module, scope`), perbandingan Set code equality (`currentCodes.equals(targetCodes)`), dan ingress `SecurityConfig.java` double-defense memblokir seluruh prefix berscope `SYSTEM` (`platform.*`, `support.*`, `catalog.*`, `licensing.*`, `billing.subscriptions.*`, `billing.invoices.*`, `billing.read`, `orgs.*`) dari token non-platform realm.
+- **Scope Air-Gap & Anti-Leakage (`PermissionSeeder` & `SecurityConfig`)**: Role `TENANT` haram memiliki permission berscope `SYSTEM`. Terdapat tepat **11 Role Template Kanonikal** (4 `SYSTEM` di `ftth-realm`: `super_admin`, `account_manager`, `system_auditor`, `system_support`; 7 `TENANT` di `k2net-tenants`: `admin`, `viewer`, `technician`, `finance`, `helpdesk`, `noc`, `surveyor`). Seeder wajib fail-close 4-argumen (`code, name, module, scope`), perbandingan Set code equality (`currentCodes.equals(targetCodes)`), dan ingress `SecurityConfig.java` double-defense memblokir seluruh prefix berscope `SYSTEM` (`platform.*`, `support.*`, `catalog.*`, `licensing.*`, `billing.subscriptions.*`, `billing.invoices.*`, `billing.read`, `orgs.*`) dari token non-platform realm.
+- **Multi-Plane Domain & Shared Error Pages Standard**: Control Plane (`https://system-gis.kdua.net`) menggunakan rute login `/auth/console/login` (rute `/login` merender 404 `<NotFoundError />`). Workspace operasional internal K2NET berjalan di `https://ops.kdua.net` (`is_platform_root = true`, `k2net-tenants` realm; dilarang hardcode slug `"default"`). Subdomain tenant liar merender 404 `<TenantDomainError />`. Seluruh layar error (`403`, `404`, `419`, `500/502`, `503`) terpusat di `@k2net/ui`.
 - **Larangan Halusinasi & Konfirmasi Improvisasi**: AI Agent DILARANG KERAS berhalusinasi atau keluar dari konteks monorepo K2NET. Segala bentuk ide perbaikan di luar tugas aktif atau improvisasi arsitektural WAJIB dikonfirmasikan terlebih dahulu ke pengguna sebelum dieksekusi.
 - **Ukuran Kontrol Baku**: Toolbar & card footer wajib `size="sm"` (`h-7 px-2.5`, icon `size-3.5`). Tabel data padat wajib `size="xs"` (`h-6 px-2`, icon `size-3`).
 - **Shared Layout Shell**: Sub-sidebar wajib `<SecondarySidebarHeader />` (`h-12 py-2 px-4`). Kanvas wajib `<PageLayout>` + `<PageHero>`.

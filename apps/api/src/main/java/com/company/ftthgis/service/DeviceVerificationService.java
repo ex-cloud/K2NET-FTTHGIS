@@ -123,13 +123,14 @@ public class DeviceVerificationService {
         String formattedTime = LocalDateTime.now().format(TIME_FORMATTER);
         String userEmail = user.getEmail();
         String userPhone = user.getPhone();
+        String preferencesUrl = resolvePreferencesUrl(user);
 
         // 1. Send HTML Security Alert Email
         if (userEmail != null && !userEmail.isBlank()) {
             String subject = "Peringatan Keamanan K2NET: Deteksi Masuk dari Perangkat Baru";
             String emailBody = buildSecurityAlertEmailHtml(
                     user.getFullName() != null ? user.getFullName() : user.getUsername(),
-                    browser, os, ipAddress, formattedTime
+                    browser, os, ipAddress, formattedTime, preferencesUrl
             );
             try {
                 emailService.sendEmail(userEmail, subject, emailBody);
@@ -148,11 +149,12 @@ public class DeviceVerificationService {
                     "• *Perangkat*: %s (%s)\n" +
                     "• *Alamat IP*: %s\n" +
                     "• *Waktu*: %s\n\n" +
-                    "Jika ini adalah Anda, abaikan pesan ini. Jika Anda tidak mengenali aktivitas ini, segera amankan akun Anda dengan mencabut sesi di menu Preferensi Akun: https://gis.kdua.net/account/preferences",
+                    "Jika ini adalah Anda, abaikan pesan ini. Jika Anda tidak mengenali aktivitas ini, segera amankan akun Anda dengan mencabut sesi di menu Preferensi Akun: %s",
                     user.getUsername(),
                     browser, os,
                     ipAddress,
-                    formattedTime
+                    formattedTime,
+                    preferencesUrl
             );
             try {
                 whatsAppService.sendMessage(userPhone, waMessage);
@@ -163,7 +165,17 @@ public class DeviceVerificationService {
         }
     }
 
-    private String buildSecurityAlertEmailHtml(String displayName, String browser, String os, String ipAddress, String timestamp) {
+    private String resolvePreferencesUrl(User user) {
+        if (user != null && user.getOrganization() != null
+                && user.getOrganization().getSlug() != null
+                && !user.getOrganization().getSlug().isBlank()
+                && !"system".equalsIgnoreCase(user.getOrganization().getSlug())) {
+            return "https://" + user.getOrganization().getSlug().trim().toLowerCase() + ".kdua.net/account/preferences";
+        }
+        return "https://system-gis.kdua.net/account/preferences";
+    }
+
+    private String buildSecurityAlertEmailHtml(String displayName, String browser, String os, String ipAddress, String timestamp, String preferencesUrl) {
         return "<!DOCTYPE html>" +
                 "<html><head><meta charset='UTF-8'></head>" +
                 "<body style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 24px; color: #1e293b;'>" +
@@ -182,7 +194,7 @@ public class DeviceVerificationService {
                 "    <p style='font-size: 13px; line-height: 1.5; color: #64748b;'>Jika aktivitas ini dilakukan oleh Anda, Anda dapat mengabaikan email ini. Perangkat tersebut telah ditambahkan ke daftar sesi aktif Anda.</p>" +
                 "    <div style='margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;'>" +
                 "      <p style='font-size: 12px; color: #e11d48; margin: 0 0 12px 0;'><strong>Bukan Anda?</strong> Amankan akun Anda segera:</p>" +
-                "      <a href='https://gis.kdua.net/account/preferences' style='display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 6px;'>Cabut Akses Sesi di Preferensi Akun</a>" +
+                "      <a href='" + preferencesUrl + "' style='display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 6px;'>Cabut Akses Sesi di Preferensi Akun</a>" +
                 "    </div>" +
                 "  </div>" +
                 "</body></html>";

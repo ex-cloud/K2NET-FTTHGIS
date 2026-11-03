@@ -82,8 +82,7 @@ public class OrganizationJanitorJob {
                 if (org.getStatus() == Organization.OrganizationStatus.TRIAL_EXPIRED) {
                     if (org.getGracePeriodUntil() != null && org.getGracePeriodUntil().isBefore(now)) {
                         // Safety Guards: Never purge system/root organization or paid active tenants
-                        boolean isProtectedRoot = "default".equalsIgnoreCase(org.getSlug()) ||
-                                "00000000-0000-0000-0000-000000000001".equals(org.getId().toString());
+                        boolean isProtectedRoot = org.isPlatformRootOrg();
                         boolean isPaidPlan = org.getSubscriptionPlan() != null &&
                                 !"FREE".equalsIgnoreCase(org.getSubscriptionPlan().getName()) &&
                                 !"TRIAL".equalsIgnoreCase(org.getSubscriptionPlan().getName());

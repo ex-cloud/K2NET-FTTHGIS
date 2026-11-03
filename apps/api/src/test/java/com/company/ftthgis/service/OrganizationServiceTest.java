@@ -194,21 +194,22 @@ class OrganizationServiceTest {
     }
 
     @Test
-    @DisplayName("Root Organization: Attempting to delete default root platform org must throw IllegalArgumentException")
+    @DisplayName("Root Organization: Attempting to delete ops root platform org must throw IllegalArgumentException")
     void testRootOrganizationDeletionProtection() {
-        Organization defaultOrg = Organization.builder()
+        Organization rootOrg = Organization.builder()
                 .id(UUID.fromString("00000000-0000-0000-0000-000000000001"))
-                .name("Main Organization")
-                .slug("default")
-                .realmKey("ftth-realm")
+                .name("K2NET Network Operations")
+                .slug("ops")
+                .isPlatformRoot(true)
+                .realmKey("k2net-tenants")
                 .build();
 
-        when(organizationRepository.findBySlug("default")).thenReturn(Optional.of(defaultOrg));
+        when(organizationRepository.findBySlug("ops")).thenReturn(Optional.of(rootOrg));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                organizationService.deleteOrganization("default", "nuclear", "Malicious attack"));
+                organizationService.deleteOrganization("ops", "nuclear", "Malicious attack"));
 
-        assertTrue(ex.getMessage().contains("Root Platform Organization (default) is immutable"));
+        assertTrue(ex.getMessage().contains("Root Platform Organization (ops) is immutable"));
         verifyNoInteractions(jdbcTemplate);
         verifyNoInteractions(keycloakService);
     }

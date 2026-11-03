@@ -27,7 +27,7 @@ public class KeycloakStartupReconciliationRunner implements ApplicationRunner {
 
         try {
             // 1. Reconcile the 2 permanent realms ONLY (zero per-organization realm creation)
-            keycloakService.ensureRealmExists(KongConfigSyncService.PLATFORM_REALM);
+            keycloakService.ensurePlatformRealmExists();
             keycloakService.ensureTenantSharedRealmExists();
 
             kongConfigSyncService.syncRealmToKong(KongConfigSyncService.PLATFORM_REALM);

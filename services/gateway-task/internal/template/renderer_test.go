@@ -155,6 +155,9 @@ func TestRenderTaskTicketWithSubtasks(t *testing.T) {
 	if !strings.Contains(content, "Splicing core 1-12") {
 		t.Error("expected parsed subtask in rendered output")
 	}
+	if !strings.Contains(content, "https://ops.kdua.net/tasks/TCK-101") {
+		t.Errorf("expected default ops.kdua.net link when TenantSlug is empty, got: %s", content)
+	}
 }
 
 func TestRenderTaskPlatformIssue(t *testing.T) {

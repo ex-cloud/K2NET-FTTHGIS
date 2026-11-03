@@ -255,7 +255,7 @@ public class SecurityPolicyService {
 
         auditLoggingService.logEvent(org.getSlug(), "TENANT_SECURITY_POLICY_UPDATE", "TENANT_POLICY",
                 saved.getId().toString(), Map.of(), Map.of("mfaEnforced", saved.isMfaEnforced()),
-                Map.of("actor", actor != null ? actor : "tenant_admin"));
+                Map.of("actor", actor != null ? actor : "admin"));
 
         log.info("🛡️ Tenant security policy updated for org '{}' by {}: MFA={}, SessionIdle={}m",
                 orgSlug, actor, saved.isMfaEnforced(), saved.getSessionIdleMinutes());
@@ -343,9 +343,9 @@ public class SecurityPolicyService {
     public EffectiveSecurityPolicyDto resolveEffectivePolicy(String orgSlug) {
         PlatformSecurityPolicyDto platform = getPlatformPolicy();
 
-        if (orgSlug == null || orgSlug.isBlank() || "default".equalsIgnoreCase(orgSlug)) {
+        if (orgSlug == null || orgSlug.isBlank() || "system".equalsIgnoreCase(orgSlug) || "default".equalsIgnoreCase(orgSlug)) {
             return EffectiveSecurityPolicyDto.builder()
-                    .organizationSlug("default")
+                    .organizationSlug("system")
                     .mfaRequired(platform.isMfaEnforced())
                     .allowedMethods(platform.getAllowedMethods())
                     .gracePeriodDays(platform.getGracePeriodDays())

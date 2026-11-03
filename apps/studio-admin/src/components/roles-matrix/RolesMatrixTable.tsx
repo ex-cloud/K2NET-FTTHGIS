@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, Layers, Trash2 } from "lucide-react";
+import { Check, Layers, Pencil, Trash2 } from "lucide-react";
 import { Badge, ActionTooltip } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ interface RolesMatrixTableProps {
   isRoleModified: (roleId: number) => boolean;
   togglePermission: (roleId: number, permissionId: number) => void;
   canEdit: boolean;
+  onEditRole?: (role: Role) => void;
   onDeleteRole?: (role: Role) => void;
 }
 
@@ -24,6 +25,7 @@ export function RolesMatrixTable({
   isRoleModified,
   togglePermission,
   canEdit,
+  onEditRole,
   onDeleteRole,
 }: RolesMatrixTableProps) {
   const { t } = useTranslation();
@@ -46,11 +48,14 @@ export function RolesMatrixTable({
                   key={role.id}
                   className="sticky top-0 z-30 px-3 py-3 font-medium text-center min-w-[130px] max-w-[170px] border-b border-r border-border last:border-r-0 bg-muted"
                 >
-                  <span className="block text-xs font-semibold text-foreground truncate" title={role.displayName || role.name}>
+                  <span
+                    className="block text-xs font-semibold text-foreground truncate"
+                    title={role.description || role.displayName || role.name}
+                  >
                     {role.displayName || role.name}
                   </span>
 
-                  <div className="flex items-center justify-center gap-1.5 mt-1">
+                  <div className="flex items-center justify-center gap-1 mt-1">
                     <Badge
                       variant="outline"
                       className="text-[9px] font-mono font-medium px-1.5 py-0 h-4 border-primary/30 bg-primary/10 text-primary"
@@ -58,8 +63,20 @@ export function RolesMatrixTable({
                       {role.code || (selectedScope === "SYSTEM" ? `SYS-${role.id}` : `TENT-${role.id}`)}
                     </Badge>
 
+                    {onEditRole && canEdit && (
+                      <ActionTooltip label={t("security.edit_role_tooltip", { name: role.displayName || role.name })}>
+                        <button
+                          type="button"
+                          onClick={() => onEditRole(role)}
+                          className="size-4 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer flex items-center justify-center"
+                        >
+                          <Pencil className="size-3" />
+                        </button>
+                      </ActionTooltip>
+                    )}
+
                     {!role.isSystemRole && onDeleteRole && canEdit && (
-                      <ActionTooltip label={`Delete custom role "${role.displayName || role.name}"`}>
+                      <ActionTooltip label={t("security.delete_role_tooltip", { name: role.displayName || role.name })}>
                         <button
                           type="button"
                           onClick={() => onDeleteRole(role)}
@@ -136,9 +153,9 @@ export function RolesMatrixTable({
                               title={
                                 canEdit
                                   ? isChecked
-                                    ? `Cabut ${perm.code} dari ${role.name}`
-                                    : `Berikan ${perm.code} ke ${role.name}`
-                                  : "Akses Read-Only: Memerlukan izin roles.update"
+                                    ? t("security.revoke_perm_tooltip", { perm: perm.code, role: role.name })
+                                    : t("security.grant_perm_tooltip", { perm: perm.code, role: role.name })
+                                  : t("security.readonly_perm_tooltip")
                               }
                             >
                               {isChecked && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}

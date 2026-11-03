@@ -3,26 +3,45 @@
 import React, { useState } from "react";
 import { ServerCrash, RefreshCw, Copy, Check, Send } from "lucide-react";
 import { Button } from "../button";
+import { resolveErrorCopy, type ErrorLocale } from "./error-i18n";
 
-interface ServerErrorProps {
-  error: Error & { digest?: string };
-  reset: () => void;
+export interface ServerErrorProps {
+  statusCode?: number;
+  error?: (Error & { digest?: string }) | null;
+  reset?: () => void;
+  onRetry?: () => void;
+  title?: string;
+  description?: string;
+  retryLabel?: string;
   accessToken?: string;
   supportTicketUrl?: string;
+  locale?: ErrorLocale;
 }
 
 export function ServerError({
+  statusCode = 500,
   error,
   reset,
+  onRetry,
+  title,
+  description,
+  retryLabel,
   accessToken,
   supportTicketUrl = "/api/v1/tasks",
+  locale,
 }: ServerErrorProps) {
+  const copy = resolveErrorCopy(locale);
   const [copied, setCopied] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [reported, setReported] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
 
-  const traceId = error.digest || "unknown-trace";
+  const traceId = error?.digest || "unknown-trace";
+  const handleRetryAction = onRetry || reset || (() => {
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
+  });
 
   const handleCopyTrace = () => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -40,16 +59,14 @@ export function ServerError({
         type: "TICKET",
         scope: "TENANT_TO_PLATFORM",
         priority: "HIGH",
-        title: "Auto-Report: 500 Internal Server Error",
-        description: `### 🚨 Laporan Gangguan Otomatis (Auto-Report 500)
+        title: `Auto-Report: ${statusCode} Internal Server Error`,
+        description: `### Auto-Report ${statusCode}
 
 **Trace ID / Digest:** \`${traceId}\`
-**Pesan Error:** \`${error.message || "No error message provided"}\`
+**Message:** \`${error?.message || "No error message provided"}\`
 **Path URL:** \`${typeof window !== "undefined" ? window.location.pathname : "N/A"}\`
-**Browser / User Agent:** \`${typeof navigator !== "undefined" ? navigator.userAgent : "N/A"}\`
-**Waktu Kejadian:** \`${new Date().toISOString()}\`
-
-*Mohon segera ditindaklanjuti. Kendala ini memicu error boundary di sisi klien.*`,
+**User Agent:** \`${typeof navigator !== "undefined" ? navigator.userAgent : "N/A"}\`
+**Timestamp:** \`${new Date().toISOString()}\``,
       };
 
       const headers: Record<string, string> = {
@@ -69,13 +86,10 @@ export function ServerError({
       if (res.ok) {
         setReported(true);
       } else {
-        const errText = await res.text();
-        console.error("Gagal mengirim tiket otomatis:", errText);
-        setReportError("Gagal mengirim laporan otomatis ke pusat. Silakan coba lagi.");
+        setReportError(copy.error500ReportFailed);
       }
-    } catch (err) {
-      console.error("Kesalahan jaringan saat mengirim laporan:", err);
-      setReportError("Kesalahan jaringan saat menghubungi pusat support.");
+    } catch {
+      setReportError(copy.error500ReportNetworkError);
     } finally {
       setIsReporting(false);
     }
@@ -83,7 +97,6 @@ export function ServerError({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-6 relative overflow-hidden">
-      {/* Background Glow */}
       <div className="absolute inset-0 bg-linear-to-br from-background via-muted/20 to-background z-0" />
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl z-0 pointer-events-none" />
 
@@ -93,23 +106,23 @@ export function ServerError({
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-4xl font-extrabold tracking-tight text-destructive">500</h1>
-          <h2 className="text-xl font-bold tracking-tight text-foreground/90">Koneksi Server Terputus</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Terjadi kesalahan internal pada server pusat saat memproses permintaan Anda. Sistem telah membatasi dampak kesalahan ini demi keamanan data Anda.
-          </p>
+          <div className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-muted border border-border text-[11px] font-mono text-muted-foreground">
+            {copy.statusCodeLabel(statusCode)}
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-destructive">{statusCode}</h1>
+          <h2 className="text-xl font-bold tracking-tight text-foreground/90">{title || copy.error500Title}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">{description || copy.error500Desc}</p>
         </div>
 
-        {/* Trace ID box */}
         <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-muted border border-border text-xs text-foreground font-mono text-left">
           <div className="truncate flex-1">
-            <span className="text-muted-foreground select-none">Trace ID: </span>
+            <span className="text-muted-foreground select-none">{copy.error500TraceLabel} </span>
             <code className="text-primary font-bold">{traceId}</code>
           </div>
           <button
             onClick={handleCopyTrace}
             className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors shrink-0"
-            title="Salin Trace ID"
+            title={copy.error500CopyTrace}
           >
             {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
           </button>
@@ -117,36 +130,37 @@ export function ServerError({
 
         {reportError && (
           <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 p-3 rounded-lg text-left">
-            ⚠️ {reportError}
+            {reportError}
           </div>
         )}
 
         <div className="pt-4 flex flex-col sm:flex-row gap-3">
-          <Button variant="outline" className="flex-1 gap-2" onClick={reset}>
-            <RefreshCw className="w-4 h-4" />
-            Coba Ulang Halaman
+          <Button variant="outline" size="sm" className="flex-1 gap-2" onClick={handleRetryAction}>
+            <RefreshCw className="size-3.5" />
+            {retryLabel || copy.error500RetryButton}
           </Button>
 
           <Button
             variant="default"
+            size="sm"
             className="flex-1 gap-2"
             onClick={handleAutoReport}
             disabled={isReporting || reported}
           >
             {reported ? (
               <>
-                <Check className="w-4 h-4 text-primary-foreground" />
-                Laporan Terkirim
+                <Check className="size-3.5 text-primary-foreground" />
+                {copy.error500Reported}
               </>
             ) : isReporting ? (
               <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Mengirim...
+                <RefreshCw className="size-3.5 animate-spin" />
+                {copy.error500Reporting}
               </>
             ) : (
               <>
-                <Send className="w-4 h-4" />
-                Laporkan ke Pusat
+                <Send className="size-3.5" />
+                {copy.error500ReportButton}
               </>
             )}
           </Button>

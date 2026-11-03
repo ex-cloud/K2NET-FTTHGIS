@@ -22,7 +22,7 @@ func TestRequireRoleMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
-	r.Use(RequireRole("admin", "tenant_admin"))
+	r.Use(RequireRole("admin", "noc"))
 	r.GET("/api/v1/metrics", func(c *gin.Context) {
 		tenantID := c.GetString("tenant_id")
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "tenant_id": tenantID})

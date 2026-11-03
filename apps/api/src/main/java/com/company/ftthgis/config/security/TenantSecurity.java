@@ -26,6 +26,9 @@ public class TenantSecurity {
     private final com.company.ftthgis.service.TenantPackageSubscriptionService packageSubscriptionService;
     private final PlatformRealmValidator platformRealmValidator;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository organizationMemberRepository;
+
     /**
      * Checks if the currently authenticated user belongs to the specified organization slug,
      * or if the user is a super_admin from the global system realm.
@@ -75,10 +78,16 @@ public class TenantSecurity {
                 if (org != null) {
                     // Force initialization if it's a proxy to avoid "no Session" error
                     String userOrgSlug = org.getSlug(); 
-                    if (userOrgSlug.equals(orgSlug)) {
+                    if (userOrgSlug != null && userOrgSlug.equalsIgnoreCase(orgSlug.trim())) {
                         log.debug("🛡️ TenantSecurity: Access granted. User belongs to organization slug: {}", orgSlug);
                         return true;
                     }
+                }
+                if (organizationMemberRepository != null
+                        && organizationMemberRepository.existsByUserIdAndOrganizationSlugAndStatus(
+                                user.getId(), orgSlug.trim().toLowerCase(), "ACTIVE")) {
+                    log.debug("🛡️ TenantSecurity: Access granted via active organization membership for slug: {}", orgSlug);
+                    return true;
                 }
                 log.warn("🛡️ TenantSecurity: Access DENIED. User's org slug mismatch for user: {}", subject);
             } else {
@@ -131,6 +140,11 @@ public class TenantSecurity {
                 var user = userOpt.get();
                 Organization org = user.getOrganization();
                 if (org != null && org.getId().equals(orgId)) {
+                    return true;
+                }
+                if (organizationMemberRepository != null
+                        && organizationMemberRepository.existsByUserIdAndOrganizationIdAndStatus(
+                                user.getId(), orgId, "ACTIVE")) {
                     return true;
                 }
             }

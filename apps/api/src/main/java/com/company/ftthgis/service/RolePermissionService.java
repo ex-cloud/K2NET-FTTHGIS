@@ -2,6 +2,7 @@ package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.user.dto.CreateRoleRequest;
 import com.company.ftthgis.api.user.dto.UpdateRoleRequest;
+import com.company.ftthgis.config.tenant.KeycloakService;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository;
 import com.company.ftthgis.domain.user.entity.Permission;
@@ -14,6 +15,7 @@ import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.company.ftthgis.config.logging.AuditRequired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +40,24 @@ public class RolePermissionService {
     private final OrganizationMemberRepository organizationMemberRepository;
     private final JdbcTemplate jdbcTemplate;
     private final EntityManagerFactory entityManagerFactory;
+    private final KeycloakService keycloakService;
+
+    private static final Comparator<Role> ROLE_MATRIX_COMPARATOR = Comparator
+            .comparing(Role::isSystemRole).reversed()
+            .thenComparing(r -> r.getCode() != null && !r.getCode().isBlank() ? r.getCode() : "ZZZ")
+            .thenComparing(r -> r.getId() != null ? r.getId() : Long.MAX_VALUE);
+
+    private boolean isPlatformSecurityAdmin(Authentication auth, Jwt jwt) {
+        if (hasRole(jwt, "super_admin")) {
+            return true;
+        }
+        if (auth == null || auth.getAuthorities() == null) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch("system.security.manage"::equals);
+    }
 
     @Transactional(readOnly = true)
     public List<Role> getRoles(String scopeFilter) {
@@ -46,10 +67,10 @@ public class RolePermissionService {
         }
         
         Jwt jwt = (Jwt) auth.getPrincipal();
-        boolean isSuperAdmin = hasRole(jwt, "super_admin");
+        boolean isPlatformAdmin = isPlatformSecurityAdmin(auth, jwt);
 
         List<Role> rawRoles;
-        if (isSuperAdmin) {
+        if (isPlatformAdmin) {
             if (scopeFilter != null && !scopeFilter.isEmpty()) {
                 rawRoles = roleRepository.findByScopeAndOrganizationIsNull(scopeFilter.toUpperCase());
             } else {
@@ -93,17 +114,21 @@ public class RolePermissionService {
         if (scopeFilter != null && !scopeFilter.isEmpty()) {
             return rawRoles.stream()
                     .filter(r -> scopeFilter.equalsIgnoreCase(r.getScope()))
+                    .sorted(ROLE_MATRIX_COMPARATOR)
                     .toList();
         }
         
-        // Fallback: Non-super_admin defaults to TENANT scope
-        if (!isSuperAdmin) {
+        // Fallback: Non-platform admin defaults to TENANT scope
+        if (!isPlatformAdmin) {
             return rawRoles.stream()
                     .filter(r -> "TENANT".equalsIgnoreCase(r.getScope()))
+                    .sorted(ROLE_MATRIX_COMPARATOR)
                     .toList();
         }
         
-        return rawRoles;
+        return rawRoles.stream()
+                .sorted(ROLE_MATRIX_COMPARATOR)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -115,11 +140,11 @@ public class RolePermissionService {
                     .toList();
         }
         
-        // Fallback: if not super admin, only return TENANT scope permissions
+        // Fallback: if not platform admin, only return TENANT scope permissions
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) auth.getPrincipal();
-            if (!hasRole(jwt, "super_admin")) {
+            if (!isPlatformSecurityAdmin(auth, jwt)) {
                 return allPerms.stream()
                         .filter(p -> "TENANT".equalsIgnoreCase(p.getScope()))
                         .toList();
@@ -136,10 +161,10 @@ public class RolePermissionService {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Jwt jwt = (Jwt) auth.getPrincipal();
-        boolean isSuperAdmin = hasRole(jwt, "super_admin");
+        boolean isPlatformAdmin = isPlatformSecurityAdmin(auth, jwt);
 
         // Authorization & Lazy Cloning Logic
-        if (!isSuperAdmin) {
+        if (!isPlatformAdmin) {
             UUID userId = UUID.fromString(jwt.getSubject());
             var user = userRepository.findById(userId)
                     .orElseThrow(() -> new SecurityException("User not found"));
@@ -164,6 +189,7 @@ public class RolePermissionService {
                             .name(role.getName())
                             .displayName(role.getDisplayName())
                             .description("Customized from " + role.getName())
+                            .scope("TENANT")
                             .organization(user.getOrganization())
                             .isSystemRole(false)
                             .build();
@@ -177,12 +203,28 @@ public class RolePermissionService {
             }
         }
 
-        // Proceed to update permissions (either on the existing custom role or the newly cloned one)
-        List<Permission> permissions = permissionRepository.findAllById(permissionIds);
-        role.setPermissions(new java.util.HashSet<>(permissions));
+        // Proceed to update permissions with strict Scope Air-Gap enforcement
+        List<Permission> requestedPermissions = permissionRepository.findAllById(permissionIds);
+        String roleScope = role.getScope() != null ? role.getScope().toUpperCase() : "TENANT";
+        boolean isSuperAdminRole = "super_admin".equalsIgnoreCase(role.getName());
+        Set<Permission> filteredPermissions = new HashSet<>();
+        for (Permission p : requestedPermissions) {
+            if ("TENANT".equals(roleScope) && "SYSTEM".equalsIgnoreCase(p.getScope())) {
+                log.warn("Blocked SYSTEM permission '{}' from being attached to TENANT role '{}'", p.getCode(), role.getName());
+                continue;
+            }
+            if ("SYSTEM".equals(roleScope) && !isSuperAdminRole && "TENANT".equalsIgnoreCase(p.getScope())) {
+                log.warn("Blocked TENANT permission '{}' from being attached to SYSTEM role '{}'", p.getCode(), role.getName());
+                continue;
+            }
+            filteredPermissions.add(p);
+        }
+        role.setPermissions(filteredPermissions);
         
         log.info("✅ Finalized permissions for role {} (ID: {})", role.getName(), role.getId());
-        return roleRepository.save(role);
+        Role saved = roleRepository.save(role);
+        evictSecondLevelCache();
+        return saved;
     }
 
     private boolean hasRole(Jwt jwt, String roleName) {
@@ -260,9 +302,11 @@ public class RolePermissionService {
             throw new org.springframework.security.access.AccessDeniedException("Authentication required");
         }
         Jwt jwt = (Jwt) auth.getPrincipal();
-        boolean isSuperAdmin = hasRole(jwt, "super_admin");
+        boolean isPlatformAdmin = isPlatformSecurityAdmin(auth, jwt);
 
-        String cleanName = request.getName().trim().toLowerCase().replaceAll("[^a-z0-9_]", "_");
+        String cleanName = request.getName() != null
+                ? request.getName().trim().toLowerCase().replaceAll("[^a-z0-9_]", "_")
+                : "";
         if (cleanName.isEmpty()) {
             throw new IllegalArgumentException("Role name cannot be empty");
         }
@@ -272,13 +316,13 @@ public class RolePermissionService {
             throw new IllegalArgumentException("Invalid role scope: " + scope);
         }
 
-        // Scope Air-Gap: Non-super_admin cannot create SYSTEM scope roles
-        if ("SYSTEM".equals(scope) && !isSuperAdmin) {
-            throw new org.springframework.security.access.AccessDeniedException("Only Super Admin can create SYSTEM scope roles");
+        // Scope Air-Gap: Non-platform admin cannot create SYSTEM scope roles
+        if ("SYSTEM".equals(scope) && !isPlatformAdmin) {
+            throw new org.springframework.security.access.AccessDeniedException("Only Platform Security Admin can create SYSTEM scope roles");
         }
 
         Organization org = null;
-        if (!isSuperAdmin) {
+        if (!isPlatformAdmin) {
             UUID userId = UUID.fromString(jwt.getSubject());
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("User not found"));
@@ -302,9 +346,13 @@ public class RolePermissionService {
         if (request.getPermissionIds() != null && !request.getPermissionIds().isEmpty()) {
             List<Permission> perms = permissionRepository.findAllById(request.getPermissionIds());
             for (Permission p : perms) {
-                // Scope Air-Gap Defense: TENANT roles cannot have SYSTEM permissions!
+                // Bidirectional Scope Air-Gap Defense
                 if ("TENANT".equals(scope) && "SYSTEM".equalsIgnoreCase(p.getScope())) {
                     log.warn("Blocked SYSTEM permission {} from being attached to TENANT role {}", p.getCode(), cleanName);
+                    continue;
+                }
+                if ("SYSTEM".equals(scope) && "TENANT".equalsIgnoreCase(p.getScope())) {
+                    log.warn("Blocked TENANT permission {} from being attached to SYSTEM role {}", p.getCode(), cleanName);
                     continue;
                 }
                 assignedPermissions.add(p);
@@ -325,6 +373,8 @@ public class RolePermissionService {
                 .build();
 
         Role saved = roleRepository.save(newRole);
+        String targetRealm = "SYSTEM".equalsIgnoreCase(scope) ? "ftth-realm" : "k2net-tenants";
+        keycloakService.ensureRoleInRealm(targetRealm, saved.getName(), saved.getDescription());
         evictSecondLevelCache();
         return saved;
     }
@@ -335,6 +385,23 @@ public class RolePermissionService {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new IllegalArgumentException("Role not found with id: " + roleId));
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
+            boolean isPlatformAdmin = isPlatformSecurityAdmin(auth, jwt);
+            if (!isPlatformAdmin) {
+                if ("SYSTEM".equalsIgnoreCase(role.getScope())) {
+                    throw new org.springframework.security.access.AccessDeniedException("Cannot modify SYSTEM scope role");
+                }
+                UUID userId = UUID.fromString(jwt.getSubject());
+                User user = userRepository.findById(userId)
+                        .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("User not found"));
+                if (role.getOrganization() == null || user.getOrganization() == null
+                        || !role.getOrganization().getId().equals(user.getOrganization().getId())) {
+                    throw new org.springframework.security.access.AccessDeniedException("Cannot modify global template or another organization's role");
+                }
+            }
+        }
+
         if (request.getDisplayName() != null && !request.getDisplayName().isBlank()) {
             role.setDisplayName(request.getDisplayName().trim());
         }
@@ -343,10 +410,14 @@ public class RolePermissionService {
         }
         if (!role.isSystemRole() && request.getName() != null && !request.getName().isBlank()) {
             String cleanName = request.getName().trim().toLowerCase().replaceAll("[^a-z0-9_]", "_");
-            role.setName(cleanName);
+            if (!cleanName.isEmpty()) {
+                role.setName(cleanName);
+            }
         }
 
         Role updated = roleRepository.save(role);
+        String targetRealm = "SYSTEM".equalsIgnoreCase(updated.getScope()) ? "ftth-realm" : "k2net-tenants";
+        keycloakService.ensureRoleInRealm(targetRealm, updated.getName(), updated.getDescription());
         evictSecondLevelCache();
         return updated;
     }
@@ -361,6 +432,23 @@ public class RolePermissionService {
             throw new IllegalStateException("Cannot delete core system baseline role: " + role.getName());
         }
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
+            boolean isPlatformAdmin = isPlatformSecurityAdmin(auth, jwt);
+            if (!isPlatformAdmin) {
+                if ("SYSTEM".equalsIgnoreCase(role.getScope())) {
+                    throw new org.springframework.security.access.AccessDeniedException("Cannot delete SYSTEM scope role");
+                }
+                UUID userId = UUID.fromString(jwt.getSubject());
+                User user = userRepository.findById(userId)
+                        .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("User not found"));
+                if (role.getOrganization() == null || user.getOrganization() == null
+                        || !role.getOrganization().getId().equals(user.getOrganization().getId())) {
+                    throw new org.springframework.security.access.AccessDeniedException("Cannot delete global template or another organization's role");
+                }
+            }
+        }
+
         long userCount = userRepository.countByRoleId(roleId);
         if (userCount > 0) {
             throw new IllegalStateException("Cannot delete role '" + role.getDisplayName() + "' because it is currently assigned to " + userCount + " user(s). Reassign them first.");
@@ -371,9 +459,17 @@ public class RolePermissionService {
             throw new IllegalStateException("Cannot delete role '" + role.getDisplayName() + "' because it is currently assigned to " + memberCount + " organization member(s). Reassign them first.");
         }
 
+        String roleName = role.getName();
+        String targetRealm = "SYSTEM".equalsIgnoreCase(role.getScope()) ? "ftth-realm" : "k2net-tenants";
+
         role.getPermissions().clear();
         roleRepository.saveAndFlush(role);
         roleRepository.delete(role);
+        roleRepository.flush();
+
+        if (!roleRepository.existsByName(roleName)) {
+            keycloakService.deleteRoleFromRealmIfUnassigned(targetRealm, roleName);
+        }
         evictSecondLevelCache();
     }
 

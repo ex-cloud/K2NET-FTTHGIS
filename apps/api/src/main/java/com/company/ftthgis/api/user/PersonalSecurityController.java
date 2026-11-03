@@ -137,8 +137,8 @@ public class PersonalSecurityController {
         String username = jwt.getClaimAsString("preferred_username");
         String phone = user != null ? user.getPhone() : "";
 
-        // Resolve organization slug
-        String orgSlug = "default";
+        // Resolve organization slug ("system" for platform internal staff, or tenant slug)
+        String orgSlug = "system";
         if (user != null && user.getOrganization() != null) {
             orgSlug = user.getOrganization().getSlug();
         }

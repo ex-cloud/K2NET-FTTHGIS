@@ -190,6 +190,10 @@ public class RandomSlugGenerator {
      * would be ambiguous with a legacy host and with platform hosts (system-gis, auth-gis, api-gis).
      */
     public boolean isReserved(String slug) {
+        return isReservedKeyword(slug);
+    }
+
+    public static boolean isReservedKeyword(String slug) {
         if (slug == null) {
             return false;
         }

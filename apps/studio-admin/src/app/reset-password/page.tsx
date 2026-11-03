@@ -52,8 +52,8 @@ export default function AdminResetPasswordPage() {
             backToSignIn: t("auth.back_to_sign_in"),
             operationFailed: t("auth.login_error_server_error"),
           }}
-          onSuccessRedirect={() => router.push("/login")}
-          onBackToLogin={() => router.push("/login")}
+          onSuccessRedirect={() => router.push("/auth/console/login")}
+          onBackToLogin={() => router.push("/auth/console/login")}
         />
       </div>
     </AuthLoginLayout>

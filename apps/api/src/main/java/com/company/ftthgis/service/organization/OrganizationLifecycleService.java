@@ -99,9 +99,9 @@ public class OrganizationLifecycleService {
         String slug = org.getSlug();
 
         // ROOT PLATFORM DEFENSE: Prevent deletion of Main / System Organization
-        if ("default".equalsIgnoreCase(slug) || "00000000-0000-0000-0000-000000000001".equals(org.getId().toString())) {
+        if (org.isPlatformRootOrg()) {
             log.warn("🛡️ PREVENTED: Attempt to delete root platform organization '{}' (ID: {})", slug, org.getId());
-            throw new IllegalArgumentException("Root Platform Organization (default) is immutable and protected from deletion.");
+            throw new IllegalArgumentException("Root Platform Organization (ops) is immutable and protected from deletion.");
         }
 
         // SECONDARY DEFENSE: Prevent unauthorized deletion
@@ -163,9 +163,9 @@ public class OrganizationLifecycleService {
         String orgIdStr = orgId.toString();
 
         // ROOT PLATFORM DEFENSE: Prevent deletion of Main / System Organization
-        if ("default".equalsIgnoreCase(slug) || "00000000-0000-0000-0000-000000000001".equals(orgIdStr)) {
+        if (org.isPlatformRootOrg()) {
             log.warn("🛡️ PREVENTED: Attempt to delete root platform organization '{}' (ID: {})", slug, orgIdStr);
-            throw new IllegalArgumentException("Root Platform Organization (default) is immutable and protected from deletion.");
+            throw new IllegalArgumentException("Root Platform Organization (ops) is immutable and protected from deletion.");
         }
 
         log.warn("💥 NUCLEAR PURGE INITIATED: {} (Slug: {}) - Reason: {}", org.getName(), slug, reason);

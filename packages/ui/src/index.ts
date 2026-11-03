@@ -76,3 +76,4 @@ export * from "./components/errors/TenantDomainError";
 export * from "./components/errors/ForbiddenError";
 export * from "./components/errors/ServerError";
 export * from "./components/errors/MaintenanceMode";
+export * from "./components/errors/SessionExpiredError";

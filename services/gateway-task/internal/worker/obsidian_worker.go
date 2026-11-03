@@ -157,7 +157,7 @@ func (w *ObsidianWorker) processTaskWithRetry(ctx context.Context, payload templ
 func (w *ObsidianWorker) logSyncSuccess(ctx context.Context, payload template.TaskPayload, filePath string) {
 	tenantSlug := payload.TenantSlug
 	scope := "ORGANIZATION"
-	if payload.Scope == "PLATFORM_INTERNAL" || tenantSlug == "default" || tenantSlug == "" || tenantSlug == "system" {
+	if payload.Scope == "PLATFORM_INTERNAL" || tenantSlug == "" || tenantSlug == "system" {
 		tenantSlug = "system"
 		scope = "SYSTEM"
 	}
@@ -182,7 +182,7 @@ func (w *ObsidianWorker) logSyncSuccess(ctx context.Context, payload template.Ta
 func (w *ObsidianWorker) logSyncError(ctx context.Context, payload template.TaskPayload, err error) {
 	tenantSlug := payload.TenantSlug
 	scope := "ORGANIZATION"
-	if payload.Scope == "PLATFORM_INTERNAL" || tenantSlug == "default" || tenantSlug == "" || tenantSlug == "system" {
+	if payload.Scope == "PLATFORM_INTERNAL" || tenantSlug == "" || tenantSlug == "system" {
 		tenantSlug = "system"
 		scope = "SYSTEM"
 	}

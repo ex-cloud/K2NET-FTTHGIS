@@ -13,7 +13,12 @@ import {
 function sanitizeCallbackPath(raw: string | null): string {
   if (!raw) return "/overview";
   const trimmed = raw.trim();
-  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed === "/login") {
+  if (
+    !trimmed.startsWith("/") ||
+    trimmed.startsWith("//") ||
+    trimmed === "/login" ||
+    trimmed.startsWith("/auth/console/login")
+  ) {
     return "/overview";
   }
   return trimmed;

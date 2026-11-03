@@ -132,7 +132,7 @@ func (h *Handler) Login(c *gin.Context) {
 	req.TenantSlug = strings.ToLower(strings.TrimSpace(req.TenantSlug))
 	plane := strings.ToUpper(strings.TrimSpace(req.Plane))
 	if plane == "" {
-		if req.TenantSlug != "" && req.TenantSlug != "system" && req.TenantSlug != "admin" && req.TenantSlug != "default" {
+		if req.TenantSlug != "" && req.TenantSlug != "system" {
 			plane = "TENANT"
 		} else {
 			plane = "PLATFORM"
@@ -347,11 +347,10 @@ func (h *Handler) Login(c *gin.Context) {
 		resolvedOrgID = tenantCtx.ID
 		resolvedTenantSlug = expectedSlug
 	} else {
-		if resolvedOrgID == "" {
-			resolvedOrgID = sentinelPlatformOrgID
-		}
+		// Platform Control Plane (ftth-realm): SYSTEM operators must NOT be bound to any tenant organization_id
+		resolvedOrgID = ""
 		if resolvedTenantSlug == "" {
-			resolvedTenantSlug = "default"
+			resolvedTenantSlug = "system"
 		}
 	}
 
@@ -439,12 +438,21 @@ func (h *Handler) Refresh(c *gin.Context) {
 
 	targetRealm := h.resolveRealmFromCookieOrBody(c, body.Realm, body.Plane)
 
-	kcTokens, kcErr, _ := h.exchangeRefreshToken(c.Request.Context(), targetRealm, refreshToken)
+	kcTokens, kcErr, statusCode := h.exchangeRefreshToken(c.Request.Context(), targetRealm, refreshToken)
 	if kcErr != nil || kcTokens == nil {
+		if statusCode == http.StatusBadGateway || statusCode == http.StatusGatewayTimeout || statusCode == http.StatusServiceUnavailable {
+			c.JSON(http.StatusBadGateway, gin.H{
+				"status":  http.StatusBadGateway,
+				"error":   "UPSTREAM_UNAVAILABLE",
+				"message": "Layanan autentikasi sedang tidak tersedia sementara. Silakan coba lagi.",
+			})
+			return
+		}
 		h.clearSessionCookies(c)
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "SESSION_EXPIRED",
-			"message": "Sesi autentikasi telah berakhir. Silakan masuk kembali.",
+		c.JSON(419, gin.H{
+			"status":  419,
+			"error":   "SESSION_TERMINATED",
+			"message": "Akun Anda telah terdeteksi melakukan login di perangkat atau browser lain. Sesi di perangkat ini demi keamanan otomatis dihentikan.",
 		})
 		return
 	}

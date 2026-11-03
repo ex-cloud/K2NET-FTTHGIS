@@ -223,7 +223,7 @@ tags:
 - **Objek GIS**: {{.ReferenceType}} (ID: ` + "`{{.ReferenceID}}`" + `)
 {{if eq .Scope "TENANT_TO_PLATFORM"}}- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://system-gis.kdua.net/support/tickets/{{.TaskID}})
 {{else if eq .Scope "PLATFORM_INTERNAL"}}- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://system-gis.kdua.net/workspace/issues/{{.TaskID}})
-{{else}}- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://tenant-gis.kdua.net/tasks/{{.TaskID}})
+{{else}}- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://{{if .TenantSlug}}{{.TenantSlug}}{{else}}ops{{end}}.kdua.net/tasks/{{.TaskID}})
 {{end}}{{end}}
 
 ---
@@ -238,7 +238,7 @@ tags:
 ### 🔗 Quick Links
 {{if eq .Scope "TENANT_TO_PLATFORM"}}- 🌐 [Buka Tiket di Support Portal](https://system-gis.kdua.net/support/tickets/{{.TaskID}})
 {{else if eq .Scope "PLATFORM_INTERNAL"}}- 🌐 [Buka Issue di Workspace](https://system-gis.kdua.net/workspace/issues/{{.TaskID}})
-{{else}}- 🌐 [Buka Tiket di Web Studio](https://tenant-gis.kdua.net/tasks/{{.TaskID}})
+{{else}}- 🌐 [Buka Tiket di Web Studio](https://{{if .TenantSlug}}{{.TenantSlug}}{{else}}ops{{end}}.kdua.net/tasks/{{.TaskID}})
 {{end}}`
 
 type TaskPayload struct {

@@ -512,10 +512,10 @@ public class KeycloakAdminService {
         realms.add("ftth-realm"); // Explicitly add system realm where google users reside
         try {
             for (String slug : organizationRepository.findAllSlugs()) {
-                if ("ex-cloud-org".equals(slug) || "system".equals(slug) || "default".equals(slug)) {
+                if ("ex-cloud-org".equals(slug) || "system".equals(slug)) {
                     realms.add("ftth-realm");
                 } else {
-                    realms.add(slug);
+                    realms.add("k2net-tenants");
                 }
             }
         } catch (Exception e) {
@@ -574,7 +574,8 @@ public class KeycloakAdminService {
             log.info("⚙️ Syncing SSO Session Idle Timeout to Keycloak realm {}: {} seconds", realmName, idleTimeoutSeconds);
             RealmRepresentation realm = keycloak.realm(realmName).toRepresentation();
             realm.setSsoSessionIdleTimeout(idleTimeoutSeconds);
-            realm.setSsoSessionIdleTimeoutRememberMe(idleTimeoutSeconds);
+            // Remember-Me idle lifespan is intentionally NOT overridden here: it is governed by
+            // KeycloakService.applySecurityAndTierPolicies (30 days) so both sync paths stay consistent.
             keycloak.realm(realmName).update(realm);
             log.info("✅ SSO Session Idle Timeout synced successfully to realm {}", realmName);
         } catch (Exception e) {

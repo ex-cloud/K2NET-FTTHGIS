@@ -6,6 +6,7 @@ import { useTranslation } from "@k2net/i18n";
 import {
   AuthLoginForm,
   AuthLoginLayout,
+  TenantDomainError,
   saveAccountProfile,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
@@ -63,6 +64,103 @@ function mapAllowedMethods(methods?: string[], hasSso?: boolean): AuthMethod[] {
   return out;
 }
 
+async function fetchTenantAuthContext(tenantSlug: string): Promise<TenantAuthContextDto | null> {
+  if (!tenantSlug || tenantSlug === "__invalid_reserved__") {
+    return null;
+  }
+  try {
+    const res = await fetch(
+      `/api/v1/auth/tenant-context?slug=${encodeURIComponent(tenantSlug)}`
+    );
+    if (!res.ok) {
+      return null;
+    }
+    return (await res.json()) as TenantAuthContextDto;
+  } catch {
+    return null;
+  }
+}
+
+function redirectIfAliasSubdomain(
+  tenantCtx: TenantAuthContextDto | null | undefined,
+  tenantSlug: string
+): void {
+  if (
+    typeof window === "undefined" ||
+    !tenantCtx?.isAlias ||
+    !tenantCtx.targetSlug ||
+    tenantCtx.targetSlug === tenantSlug
+  ) {
+    return;
+  }
+  const port = window.location.port ? `:${window.location.port}` : "";
+  const isLocal =
+    window.location.host.endsWith(".localhost") ||
+    window.location.host.startsWith("localhost");
+  const nextHost = isLocal
+    ? `${tenantCtx.targetSlug}.localhost${port}`
+    : `${tenantCtx.targetSlug}.kdua.net${port}`;
+  window.location.replace(
+    `${window.location.protocol}//${nextHost}${window.location.pathname}${window.location.search}`
+  );
+}
+
+function buildTenantFormLabels(t: (key: string) => string): AuthLoginFormLabels {
+  return {
+    loginFailedTitle: t("auth.login_failed_title"),
+    accountEmailOrUsername: t("auth.account_email_or_username"),
+    accountPlaceholder: t("auth.account_placeholder"),
+    requiredBadge: t("auth.required_badge"),
+    passwordUpper: t("auth.password_upper"),
+    passwordPlaceholder: t("auth.password_placeholder"),
+    forgotPassword: t("auth.forgot_password"),
+    forgotPasswordNotice: t("auth.forgot_password_notice"),
+    showPassword: t("auth.show_password"),
+    hidePassword: t("auth.hide_password"),
+    rememberMeBrowser: t("auth.remember_me_browser"),
+    orContinueWith: t("auth.or_continue_with"),
+    continueWithGoogle: t("auth.continue_with_google"),
+    continueWithGithub: t("auth.continue_with_github"),
+    continueWithProviderPrefix: t("auth.continue_with_provider_prefix"),
+    signInPlatformAdmin: t("auth.sign_in_platform_admin"),
+    continueIspWorkspace: t("auth.continue_isp_workspace"),
+    mfaCodeLabel: t("auth.mfa_code_label"),
+    mfaCodePlaceholder: t("auth.mfa_code_placeholder"),
+    mfaCodeHint: t("auth.mfa_code_hint"),
+    mfaVerifySubmit: t("auth.mfa_verify_submit"),
+    mfaBackToLogin: t("auth.mfa_back_to_login"),
+    turnstileVerifying: t("auth.turnstile_verifying"),
+    suspendedTitle: t("auth.suspended_title"),
+    suspendedDesc: t("auth.suspended_desc"),
+    tierFreeLabel: t("auth.tier_free_label"),
+    tierFreeValue: t("auth.tier_free_value"),
+    tierFreeDesc: t("auth.tier_free_desc"),
+    tierProLabel: t("auth.tier_pro_label"),
+    tierProValue: t("auth.tier_pro_value"),
+    tierProDesc: t("auth.tier_pro_desc"),
+    tierEnterpriseLabel: t("auth.tier_enterprise_label"),
+    tierEnterpriseValue: t("auth.tier_enterprise_value"),
+    tierEnterpriseDesc: t("auth.tier_enterprise_desc"),
+    complianceBanner: t("auth.compliance_banner"),
+    signInWithAnotherProfile: t("auth.sign_in_with_another_profile"),
+    viewSavedProfiles: t("auth.view_saved_profiles"),
+    saveEmailOnDevice: t("auth.save_email_on_device"),
+    lastUsed: t("auth.last_used"),
+    removeSavedProfile: t("auth.remove_saved_profile"),
+    savedProfilesTitle: t("auth.saved_profiles_title"),
+    savedProfilesOr: t("auth.saved_profiles_or"),
+    forgotPasswordTitle: t("auth.forgot_password_title"),
+    forgotPasswordSubtitle: t("auth.forgot_password_subtitle"),
+    sendResetLink: t("auth.send_reset_link"),
+    sendingResetLink: t("auth.sending_reset_link"),
+    backToSignIn: t("auth.back_to_sign_in"),
+    checkInboxTitle: t("auth.check_inbox_title"),
+    checkInboxDesc: t("auth.check_inbox_desc"),
+    resendInstructions: t("auth.resend_instructions"),
+    resendCooldown: t("auth.resend_cooldown"),
+  };
+}
+
 export function LoginPage() {
   const { t, locale, setLocale } = useTranslation();
   const { authenticated, initialized, login, loginWithCredentials } = useAuth();
@@ -111,63 +209,15 @@ export function LoginPage() {
     }
   }, [authenticated, callbackUrl, initialized, navigate]);
 
-  const { data: tenantCtx } = useQuery<TenantAuthContextDto>({
+  const { data: tenantCtx, isLoading: isTenantCtxLoading } = useQuery<TenantAuthContextDto | null>({
     queryKey: ["tenant-auth-context", tenantSlug],
-    queryFn: async () => {
-      try {
-        const res = await fetch(
-          `/api/v1/auth/tenant-context?slug=${encodeURIComponent(tenantSlug)}`
-        );
-        if (!res.ok) {
-          return {
-            slug: tenantSlug,
-            name: tenantSlug === "default" ? "Main GIS" : tenantSlug,
-            plan: "FREE",
-            planDisplayName: "STARTER TRIAL",
-            authMode: "PASSWORD_ONLY",
-            allowedMethods: ["password"],
-            mfaRequired: false,
-            status: "ACTIVE",
-          };
-        }
-        return (await res.json()) as TenantAuthContextDto;
-      } catch {
-        return {
-          slug: tenantSlug,
-          name: tenantSlug === "default" ? "Main GIS" : tenantSlug,
-          plan: "FREE",
-          planDisplayName: "STARTER TRIAL",
-          authMode: "PASSWORD_ONLY",
-          allowedMethods: ["password"],
-          mfaRequired: false,
-          status: "ACTIVE",
-        };
-      }
-    },
+    retry: false,
+    queryFn: () => fetchTenantAuthContext(tenantSlug),
   });
 
-  // Smoothly redirect migrated alias subdomains to active Clean Slug domain
   useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      tenantCtx?.isAlias &&
-      tenantCtx.targetSlug &&
-      tenantCtx.targetSlug !== tenantSlug
-    ) {
-      const port = window.location.port ? `:${window.location.port}` : "";
-      if (window.location.host.endsWith(".localhost") || window.location.host.startsWith("localhost")) {
-        const nextHost = `${tenantCtx.targetSlug}.localhost${port}`;
-        window.location.replace(
-          `${window.location.protocol}//${nextHost}${window.location.pathname}${window.location.search}`
-        );
-      } else {
-        const nextHost = `${tenantCtx.targetSlug}.kdua.net${port}`;
-        window.location.replace(
-          `${window.location.protocol}//${nextHost}${window.location.pathname}${window.location.search}`
-        );
-      }
-    }
-  }, [tenantCtx?.isAlias, tenantCtx?.targetSlug, tenantSlug]);
+    redirectIfAliasSubdomain(tenantCtx, tenantSlug);
+  }, [tenantCtx, tenantSlug]);
 
   const socialMethods = useMemo(
     () => mapAllowedMethods(tenantCtx?.allowedMethods, tenantCtx?.hasSso),
@@ -175,59 +225,7 @@ export function LoginPage() {
   );
 
   const formLabels = useMemo<AuthLoginFormLabels>(
-    () => ({
-      loginFailedTitle: t("auth.login_failed_title"),
-      accountEmailOrUsername: t("auth.account_email_or_username"),
-      accountPlaceholder: t("auth.account_placeholder"),
-      requiredBadge: t("auth.required_badge"),
-      passwordUpper: t("auth.password_upper"),
-      passwordPlaceholder: t("auth.password_placeholder"),
-      forgotPassword: t("auth.forgot_password"),
-      forgotPasswordNotice: t("auth.forgot_password_notice"),
-      showPassword: t("auth.show_password"),
-      hidePassword: t("auth.hide_password"),
-      rememberMeBrowser: t("auth.remember_me_browser"),
-      orContinueWith: t("auth.or_continue_with"),
-      continueWithGoogle: t("auth.continue_with_google"),
-      continueWithGithub: t("auth.continue_with_github"),
-      continueWithProviderPrefix: t("auth.continue_with_provider_prefix"),
-      signInPlatformAdmin: t("auth.sign_in_platform_admin"),
-      continueIspWorkspace: t("auth.continue_isp_workspace"),
-      mfaCodeLabel: t("auth.mfa_code_label"),
-      mfaCodePlaceholder: t("auth.mfa_code_placeholder"),
-      mfaCodeHint: t("auth.mfa_code_hint"),
-      mfaVerifySubmit: t("auth.mfa_verify_submit"),
-      mfaBackToLogin: t("auth.mfa_back_to_login"),
-      turnstileVerifying: t("auth.turnstile_verifying"),
-      suspendedTitle: t("auth.suspended_title"),
-      suspendedDesc: t("auth.suspended_desc"),
-      tierFreeLabel: t("auth.tier_free_label"),
-      tierFreeValue: t("auth.tier_free_value"),
-      tierFreeDesc: t("auth.tier_free_desc"),
-      tierProLabel: t("auth.tier_pro_label"),
-      tierProValue: t("auth.tier_pro_value"),
-      tierProDesc: t("auth.tier_pro_desc"),
-      tierEnterpriseLabel: t("auth.tier_enterprise_label"),
-      tierEnterpriseValue: t("auth.tier_enterprise_value"),
-      tierEnterpriseDesc: t("auth.tier_enterprise_desc"),
-      complianceBanner: t("auth.compliance_banner"),
-      signInWithAnotherProfile: t("auth.sign_in_with_another_profile"),
-      viewSavedProfiles: t("auth.view_saved_profiles"),
-      saveEmailOnDevice: t("auth.save_email_on_device"),
-      lastUsed: t("auth.last_used"),
-      removeSavedProfile: t("auth.remove_saved_profile"),
-      savedProfilesTitle: t("auth.saved_profiles_title"),
-      savedProfilesOr: t("auth.saved_profiles_or"),
-      forgotPasswordTitle: t("auth.forgot_password_title"),
-      forgotPasswordSubtitle: t("auth.forgot_password_subtitle"),
-      sendResetLink: t("auth.send_reset_link"),
-      sendingResetLink: t("auth.sending_reset_link"),
-      backToSignIn: t("auth.back_to_sign_in"),
-      checkInboxTitle: t("auth.check_inbox_title"),
-      checkInboxDesc: t("auth.check_inbox_desc"),
-      resendInstructions: t("auth.resend_instructions"),
-      resendCooldown: t("auth.resend_cooldown"),
-    }),
+    () => buildTenantFormLabels((key) => t(key as Parameters<typeof t>[0])),
     [t]
   );
 
@@ -284,9 +282,22 @@ export function LoginPage() {
     });
   };
 
+  if (isTenantCtxLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background text-muted-foreground">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!tenantCtx || tenantSlug === "__invalid_reserved__") {
+    const currentHost = typeof window !== "undefined" ? window.location.hostname : tenantSlug;
+    return <TenantDomainError statusCode={404} subdomain={currentHost} />;
+  }
+
   return (
     <AuthLoginLayout
-      portalName={tenantCtx?.name || t("auth.tenant_portal_fallback")}
+      portalName={tenantCtx.name}
       portalSubtitle={t("auth.tenant_portal_subtitle")}
       welcomeTitle={t("auth.welcome_back")}
       docsUrl="https://system-gis.kdua.net/gateways/overview"
@@ -308,14 +319,14 @@ export function LoginPage() {
       policyCloseButton={t("auth.policy_close_button")}
     >
       <AuthLoginForm
-        orgName={tenantCtx?.name || t("auth.tenant_org_fallback")}
+        orgName={tenantCtx.name}
         description={t("auth.tenant_org_subtitle")}
-        logoUrl={tenantCtx?.logoUrl}
-        plan={tenantCtx?.plan || "FREE"}
-        planDisplayName={tenantCtx?.planDisplayName || "STARTER TRIAL"}
-        authMode={tenantCtx?.authMode}
-        status={tenantCtx?.status || "ACTIVE"}
-        tenantSlug={tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug}
+        logoUrl={tenantCtx.logoUrl}
+        plan={tenantCtx.plan || "FREE"}
+        planDisplayName={tenantCtx.planDisplayName || "STARTER TRIAL"}
+        authMode={tenantCtx.authMode}
+        status={tenantCtx.status || "ACTIVE"}
+        tenantSlug={tenantCtx.targetSlug || tenantCtx.slug || tenantSlug}
         plane="TENANT"
         allowedMethods={socialMethods}
         locale={locale}

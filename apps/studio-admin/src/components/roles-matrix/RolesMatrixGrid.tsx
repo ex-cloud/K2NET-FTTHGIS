@@ -1,4 +1,5 @@
-import { Lock, ShieldCheck, Check, Loader2, Save } from "lucide-react";
+import { Lock, ShieldCheck, Check, Loader2, Save, Pencil, Trash2 } from "lucide-react";
+import { ActionTooltip, Button } from "@k2net/ui";
 import type { Role, Permission } from "./types";
 import { useTranslation } from "@k2net/i18n";
 
@@ -12,6 +13,8 @@ interface RolesMatrixGridProps {
   isRoleModified: (roleId: number) => boolean;
   togglePermission: (roleId: number, permissionId: number) => void;
   onSaveRole: (role: Role) => void;
+  onEditRole?: (role: Role) => void;
+  onDeleteRole?: (role: Role) => void;
 }
 
 export function RolesMatrixGrid({
@@ -24,6 +27,8 @@ export function RolesMatrixGrid({
   isRoleModified,
   togglePermission,
   onSaveRole,
+  onEditRole,
+  onDeleteRole,
 }: RolesMatrixGridProps) {
   const { t } = useTranslation();
   const moduleEntries = Object.entries(filteredGroupedPermissions);
@@ -54,13 +59,37 @@ export function RolesMatrixGrid({
 
                 <div className="flex items-center gap-1.5">
                   {role.isSystemRole ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium uppercase">
-                      <Lock className="w-2.5 h-2.5" /> Template
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border font-medium uppercase">
+                      <Lock className="w-2.5 h-2.5" /> {t("security.role_badge_template")}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium uppercase">
-                      <ShieldCheck className="w-2.5 h-2.5" /> Custom
+                      <ShieldCheck className="w-2.5 h-2.5" /> {t("security.role_badge_custom")}
                     </span>
+                  )}
+
+                  {onEditRole && canEdit && (
+                    <ActionTooltip label={t("security.edit_role_tooltip", { name: role.displayName || role.name })}>
+                      <button
+                        type="button"
+                        onClick={() => onEditRole(role)}
+                        className="size-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer flex items-center justify-center"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                    </ActionTooltip>
+                  )}
+
+                  {!role.isSystemRole && onDeleteRole && canEdit && (
+                    <ActionTooltip label={t("security.delete_role_tooltip", { name: role.displayName || role.name })}>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteRole(role)}
+                        className="size-6 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer flex items-center justify-center"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </ActionTooltip>
                   )}
                 </div>
               </div>
@@ -74,10 +103,12 @@ export function RolesMatrixGrid({
               <div className="mt-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase block">
-                    Daftar Hak Akses:
+                    {t("security.permissions_list_label")}
                   </span>
                   {modified && (
-                    <span className="text-[10px] text-amber-500 animate-pulse font-medium">Ada perubahan</span>
+                    <span className="text-[10px] text-amber-500 animate-pulse font-medium">
+                      {t("security.unsaved_changes")}
+                    </span>
                   )}
                 </div>
 
@@ -85,7 +116,7 @@ export function RolesMatrixGrid({
                   {moduleEntries.map(([moduleName, perms]) => (
                     <div key={moduleName} className="pt-2 first:pt-0">
                       <span className="text-[9px] text-primary/80 font-semibold tracking-wide uppercase block mb-1">
-                        📦 {moduleName}
+                        {moduleName}
                       </span>
 
                       {perms.map((perm) => {
@@ -124,19 +155,20 @@ export function RolesMatrixGrid({
 
             {modified && canEdit && (
               <div className="mt-4 pt-3 border-t border-border">
-                <button
+                <Button
                   type="button"
+                  size="sm"
                   onClick={() => onSaveRole(role)}
                   disabled={saving === role.id}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-lg transition-all"
+                  className="w-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium cursor-pointer"
                 >
                   {saving === role.id ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="size-3.5 animate-spin" />
                   ) : (
-                    <Save className="w-3.5 h-3.5" />
+                    <Save className="size-3.5" />
                   )}
-                  {t("security.save_role_changes")}
-                </button>
+                  <span>{t("security.save_role_changes")}</span>
+                </Button>
               </div>
             )}
           </div>

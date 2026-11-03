@@ -57,7 +57,7 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
                         {org.name}
                       </h3>
                       <p className="mt-0.5 text-[10px] font-mono text-muted-foreground truncate">
-                        {org.slug}.gis.kdua.net
+                        {org.slug}.kdua.net
                       </p>
                     </div>
                   </div>

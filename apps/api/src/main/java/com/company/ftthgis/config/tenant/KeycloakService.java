@@ -31,6 +31,7 @@ public class KeycloakService {
     private final KeycloakProperties properties;
     private final SystemSettingService settingsService;
     private final KongConfigSyncService kongConfigSyncService;
+    private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
 
     @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-id:ftth-gis-frontend}")
     private String provisionClientId;
@@ -56,9 +57,20 @@ public class KeycloakService {
     public static final String PLATFORM_REALM = KongConfigSyncService.PLATFORM_REALM;
     public static final String TENANT_SHARED_REALM = KongConfigSyncService.TENANT_SHARED_REALM;
 
-    private static final List<String> STANDARD_TENANT_ROLES = List.of(
-            "tenant_owner", "tenant_admin", "network_engineer", "noc_operator",
-            "field_technician", "billing_staff", "viewer", "admin"
+    /**
+     * Canonical TENANT role templates (7) — must mirror ftth_gis.roles WHERE scope = 'TENANT' (V78).
+     * Provisioned exclusively in the shared tenant realm ('k2net-tenants').
+     */
+    static final List<String> STANDARD_TENANT_ROLES = List.of(
+            "admin", "viewer", "technician", "finance", "helpdesk", "noc", "surveyor"
+    );
+
+    /**
+     * Canonical SYSTEM role templates (4) — must mirror ftth_gis.roles WHERE scope = 'SYSTEM' (V78).
+     * Provisioned exclusively in the platform realm ('ftth-realm').
+     */
+    static final List<String> STANDARD_SYSTEM_ROLES = List.of(
+            "super_admin", "account_manager", "system_auditor", "system_support"
     );
 
     public boolean isProtectedRealm(String realmName) {
@@ -73,27 +85,160 @@ public class KeycloakService {
      */
     public void ensureTenantSharedRealmExists() {
         ensureRealmExists(TENANT_SHARED_REALM, true, "K2NET ISP Tenants", "STARTER", "K2NET ISP Tenants", null);
-        ensureStandardTenantRoles(TENANT_SHARED_REALM);
+        reconcileCanonicalRealmRoles(TENANT_SHARED_REALM);
     }
 
-    private void ensureStandardTenantRoles(String realmName) {
+    /**
+     * Ensures the platform realm ('ftth-realm') exists and carries ONLY the 4 canonical SYSTEM roles.
+     */
+    public void ensurePlatformRealmExists() {
+        ensureRealmExists(PLATFORM_REALM);
+        reconcileCanonicalRealmRoles(PLATFORM_REALM);
+    }
+
+    static boolean isKeycloakBuiltInRealmRole(String roleName, String realmName) {
+        if (roleName == null) {
+            return false;
+        }
+        return "offline_access".equalsIgnoreCase(roleName)
+                || "uma_authorization".equalsIgnoreCase(roleName)
+                || roleName.toLowerCase().startsWith("default-roles-");
+    }
+
+    static List<String> canonicalRolesForRealm(String realmName) {
+        if (PLATFORM_REALM.equalsIgnoreCase(realmName)) {
+            return STANDARD_SYSTEM_ROLES;
+        }
+        if (TENANT_SHARED_REALM.equalsIgnoreCase(realmName)) {
+            return STANDARD_TENANT_ROLES;
+        }
+        return List.of();
+    }
+
+    /**
+     * Reconciles realm roles against the canonical 11-role template set (V78) plus any
+     * active custom roles persisted in {@code ftth_gis.roles} for that scope:
+     * creates missing roles and removes any out-of-scope or obsolete role
+     * (fail-safe: never removes a role that still has assigned users).
+     */
+    private void reconcileCanonicalRealmRoles(String realmName) {
+        List<String> canonical = canonicalRolesForRealm(realmName);
+        if (canonical.isEmpty()) {
+            return;
+        }
+        String scopeLabel = PLATFORM_REALM.equalsIgnoreCase(realmName) ? "SYSTEM" : "TENANT";
+        java.util.Set<String> allowedRoles = new java.util.LinkedHashSet<>(canonical);
+        if (roleRepository != null) {
+            try {
+                roleRepository.findByScopeAndOrganizationIsNull(scopeLabel).stream()
+                        .map(com.company.ftthgis.domain.user.entity.Role::getName)
+                        .filter(name -> name != null && !name.isBlank())
+                        .forEach(allowedRoles::add);
+            } catch (Exception ex) {
+                log.debug("Could not query custom DB roles during Keycloak reconciliation: {}", ex.getMessage());
+            }
+        }
         try {
             var rolesResource = keycloak.realm(realmName).roles();
             List<String> existingNames = rolesResource.list().stream()
                     .map(org.keycloak.representations.idm.RoleRepresentation::getName)
                     .toList();
-            for (String roleName : STANDARD_TENANT_ROLES) {
+
+            for (String roleName : allowedRoles) {
                 if (!existingNames.contains(roleName)) {
                     org.keycloak.representations.idm.RoleRepresentation role =
                             new org.keycloak.representations.idm.RoleRepresentation();
                     role.setName(roleName);
-                    role.setDescription("Standard K2NET ISP Tenant Role: " + roleName);
+                    role.setDescription("K2NET " + scopeLabel + " Role: " + roleName);
                     rolesResource.create(role);
+                    log.info("✅ Created {} role '{}' in realm '{}'", scopeLabel, roleName, realmName);
                 }
             }
+
+            for (String roleName : existingNames) {
+                if (allowedRoles.contains(roleName) || isKeycloakBuiltInRealmRole(roleName, realmName)) {
+                    continue;
+                }
+                var assigned = rolesResource.get(roleName).getUserMembers(0, 1);
+                if (assigned != null && !assigned.isEmpty()) {
+                    log.warn("⚠️ Non-canonical role '{}' in realm '{}' still has assigned users — skipped removal (manual remediation required)",
+                            roleName, realmName);
+                    continue;
+                }
+                rolesResource.deleteRole(roleName);
+                log.info("🧹 Removed non-canonical role '{}' from realm '{}' (Scope Air-Gap / V78 canonical set)", roleName, realmName);
+            }
         } catch (Exception e) {
-            log.warn("⚠️ Failed to ensure standard tenant roles in realm '{}': {}", realmName, e.getMessage());
+            log.warn("⚠️ Failed to reconcile canonical roles in realm '{}': {}", realmName, e.getMessage());
         }
+    }
+
+    /**
+     * Ensures a role exists in the specified Keycloak realm (`ftth-realm` or `k2net-tenants`).
+     */
+    public void ensureRoleInRealm(String realmName, String roleName, String description) {
+        if (realmName == null || realmName.isBlank() || roleName == null || roleName.isBlank()) {
+            return;
+        }
+        try {
+            var rolesResource = keycloak.realm(realmName).roles();
+            boolean exists = rolesResource.list().stream()
+                    .anyMatch(r -> roleName.equalsIgnoreCase(r.getName()));
+            if (!exists) {
+                org.keycloak.representations.idm.RoleRepresentation role =
+                        new org.keycloak.representations.idm.RoleRepresentation();
+                role.setName(roleName);
+                role.setDescription(description != null && !description.isBlank()
+                        ? description
+                        : "K2NET Custom Role: " + roleName);
+                rolesResource.create(role);
+                log.info("✅ Synchronized custom role '{}' into Keycloak realm '{}'", roleName, realmName);
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Could not synchronize role '{}' to Keycloak realm '{}': {}", roleName, realmName, e.getMessage());
+        }
+    }
+
+    /**
+     * Deletes a custom role from the specified Keycloak realm if it is not a built-in/canonical role
+     * and has no assigned users.
+     */
+    public void deleteRoleFromRealmIfUnassigned(String realmName, String roleName) {
+        if (realmName == null || realmName.isBlank() || roleName == null || roleName.isBlank()) {
+            return;
+        }
+        if (canonicalRolesForRealm(realmName).contains(roleName) || isKeycloakBuiltInRealmRole(roleName, realmName)) {
+            return;
+        }
+        try {
+            var rolesResource = keycloak.realm(realmName).roles();
+            boolean exists = rolesResource.list().stream()
+                    .anyMatch(r -> roleName.equalsIgnoreCase(r.getName()));
+            if (!exists) {
+                return;
+            }
+            var assigned = rolesResource.get(roleName).getUserMembers(0, 1);
+            if (assigned == null || assigned.isEmpty()) {
+                rolesResource.deleteRole(roleName);
+                log.info("🗑️ Removed custom role '{}' from Keycloak realm '{}'", roleName, realmName);
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Could not delete role '{}' from Keycloak realm '{}': {}", roleName, realmName, e.getMessage());
+        }
+    }
+
+    /**
+     * Resolves the SSO session idle timeout (seconds) from the single source of truth
+     * ({@code system_settings.session_idle_timeout}, minutes; floor 5 minutes).
+     */
+    private int resolveSsoSessionIdleTimeoutSeconds() {
+        int minutes;
+        try {
+            minutes = Integer.parseInt(settingsService.getSettingValue("session_idle_timeout", "30").trim());
+        } catch (Exception e) {
+            minutes = 30;
+        }
+        return Math.max(minutes, 5) * 60;
     }
 
     /**
@@ -209,7 +354,7 @@ public class KeycloakService {
                         existingRealm.setSmtpServer(smtpServer);
 
                         // === Session & Token Lifespan Configuration ===
-                        existingRealm.setSsoSessionIdleTimeout(28800);   // 8 hours idle timeout
+                        existingRealm.setSsoSessionIdleTimeout(resolveSsoSessionIdleTimeoutSeconds()); // SSOT: system_settings.session_idle_timeout
                         existingRealm.setSsoSessionMaxLifespan(86400);   // 24 hours absolute SSO lifespan
                         existingRealm.setSsoSessionIdleTimeoutRememberMe(2592000); // 30 days idle timeout when Remember Me is checked
                         existingRealm.setSsoSessionMaxLifespanRememberMe(2592000); // 30 days max lifespan when Remember Me is checked
@@ -233,6 +378,8 @@ public class KeycloakService {
 
                     syncIdentityProvidersForPlan(realmName, hasSso);
                 } else {
+                    // Platform realm: idle timeout follows the same SSOT (system_settings.session_idle_timeout)
+                    existingRealm.setSsoSessionIdleTimeout(resolveSsoSessionIdleTimeoutSeconds());
                     keycloak.realm(realmName).update(existingRealm);
                 }
 
@@ -361,7 +508,7 @@ public class KeycloakService {
 
                 // === Session & Token Lifespan Configuration ===
                 // SSO Session: controls browser SSO cookie lifetime
-                realm.setSsoSessionIdleTimeout(28800);   // 8 hours idle timeout
+                realm.setSsoSessionIdleTimeout(resolveSsoSessionIdleTimeoutSeconds()); // SSOT: system_settings.session_idle_timeout
                 realm.setSsoSessionMaxLifespan(86400);   // 24 hours absolute SSO lifespan
                 realm.setSsoSessionIdleTimeoutRememberMe(2592000); // 30 days idle timeout when Remember Me is checked
                 realm.setSsoSessionMaxLifespanRememberMe(2592000); // 30 days max lifespan when Remember Me is checked
@@ -458,11 +605,8 @@ public class KeycloakService {
             // Comprehensive Valid Redirect URIs covering production multi-tenant subdomains & local development
             List<String> redirects = new ArrayList<>();
             redirects.add("https://system-gis.kdua.net/*");
-            redirects.add("https://system.gis.kdua.net/*");
-            redirects.add("https://gis.kdua.net/*");
+            redirects.add("https://ops.kdua.net/*");
             redirects.add("https://*.kdua.net/*");
-            redirects.add("https://*.gis.kdua.net/*");
-            redirects.add("https://*-gis.kdua.net/*");
             redirects.add("http://localhost:3000/*");
             redirects.add("http://localhost:3001/*");
             redirects.add("http://localhost:3002/*");
@@ -474,10 +618,8 @@ public class KeycloakService {
                 redirects.add(normalized + "/*");
             }
 
-            if (!"ftth-realm".equals(realmName) && !"master".equals(realmName)) {
+            if (!PLATFORM_REALM.equals(realmName) && !TENANT_SHARED_REALM.equals(realmName) && !"master".equals(realmName)) {
                 redirects.add("https://" + realmName + ".kdua.net/*");
-                redirects.add("https://" + realmName + "-gis.kdua.net/*");
-                redirects.add("https://" + realmName + ".gis.kdua.net/*");
             }
 
             client.setRedirectUris(redirects);

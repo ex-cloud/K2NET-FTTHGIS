@@ -154,7 +154,7 @@ func (c *Client) Log(ctx context.Context, event Event, logGroup, serviceSource s
 	}
 
 	// Normalize tenantSlug and auto-derive scope if missing
-	if event.TenantSlug == "" || event.TenantSlug == "default" || event.TenantSlug == "none" {
+	if event.TenantSlug == "" || event.TenantSlug == "none" {
 		event.TenantSlug = "system"
 	}
 	if _, hasScope := event.Metadata["scope"]; !hasScope {

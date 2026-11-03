@@ -410,10 +410,10 @@ func (h *HTTPHandler) resolveTenant(ctx context.Context, phoneNumberID string) (
 	key := "wa:tenant:mapping:" + phoneNumberID
 	val, err := h.rdb.Get(ctx, key).Result()
 	if err == redis.Nil {
-		// Fallback to "default" tenant or lookup from configuration
+		// Fallback to "ops" tenant or lookup from configuration
 		fallback := os.Getenv("DEFAULT_TENANT_SLUG")
 		if fallback == "" {
-			fallback = "garut"
+			fallback = "ops"
 		}
 		return fallback, nil
 	}

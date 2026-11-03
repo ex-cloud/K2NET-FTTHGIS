@@ -3,8 +3,7 @@ import { createRootRoute, createRoute, createRouter, Navigate, Outlet, useParams
 import { ProtectedRoute } from "@k2net/auth/client";
 import { TenantOrgLayout } from "./components/layout/TenantOrgLayout";
 import { TenantProjectLayout } from "./components/layout/TenantProjectLayout";
-import { Button } from "@k2net/ui";
-import { AlertTriangle, RefreshCcw } from "lucide-react";
+import { ForbiddenError, NotFoundError, ServerError, SessionExpiredError } from "@k2net/ui";
 import * as React from "react";
 import { useTranslation } from "@k2net/i18n";
 import {
@@ -198,37 +197,19 @@ const ProjectAuditLogsPage = lazyWithRetry(() =>
 // Suspense fallback & Error Handlers
 // ----------------------------------------------------------------
 function PageFallback() {
+  const { t } = useTranslation();
   return (
     <div className="flex h-full w-full items-center justify-center bg-background min-h-[300px]">
       <div className="flex flex-col items-center gap-3">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <span className="text-xs font-mono text-muted-foreground">Memuat modul FTTH GIS...</span>
+        <span className="text-xs font-mono text-muted-foreground">{t("common.page_loading")}</span>
       </div>
     </div>
   );
 }
 
 function NotFoundFallback() {
-  const { t } = useTranslation();
-  return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
-      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-lg backdrop-blur-sm max-w-md w-full space-y-4">
-        <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
-          <span className="font-mono font-bold text-lg">404</span>
-        </div>
-        <h2 className="text-lg font-bold text-foreground">Halaman Tidak Ditemukan</h2>
-        <p className="text-xs text-muted-foreground">
-          Rute yang Anda tuju tidak tersedia atau telah dipindahkan ke modul baru.
-        </p>
-        <a
-          href="/projects"
-          className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          {t("common.back_to_projects")}
-        </a>
-      </div>
-    </div>
-  );
+  return <NotFoundError statusCode={404} backUrl="/projects" />;
 }
 
 function RouterErrorComponent({ error, reset }: { error: unknown; reset?: () => void }) {
@@ -250,42 +231,21 @@ function RouterErrorComponent({ error, reset }: { error: unknown; reset?: () => 
   }
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
-      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-lg backdrop-blur-sm max-w-md w-full space-y-4 animate-in zoom-in duration-300">
-        <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-bold text-foreground">
-          {isChunkError ? "Pembaruan Aplikasi Tersedia" : "Terjadi Kendala Sistem"}
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          {isChunkError
-            ? t("common.chunk_update_available")
-            : t("common.chunk_load_error")}
-        </p>
-        <div className="flex flex-col gap-2 pt-2">
-          <Button
-            onClick={() => {
-              sessionStorage.removeItem("k2net_tenant_chunk_force_refreshed");
-              window.location.reload();
-            }}
-            className="w-full text-xs font-semibold gap-2"
-          >
-            <RefreshCcw className="w-3.5 h-3.5" />
-            Muat Ulang Halaman
-          </Button>
-          {reset && (
-            <Button
-              variant="ghost"
-              onClick={reset}
-              className="w-full text-xs text-muted-foreground"
-            >
-              Coba Lagi
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
+    <ServerError
+      statusCode={isChunkError ? 502 : 500}
+      error={error instanceof Error ? error : new Error(message)}
+      title={isChunkError ? t("common.app_update_available") : t("common.system_issue")}
+      description={isChunkError ? t("common.app_update_desc") : t("common.system_issue_desc")}
+      retryLabel={t("common.reload_page")}
+      onRetry={() => {
+        sessionStorage.removeItem("k2net_tenant_chunk_force_refreshed");
+        if (reset && !isChunkError) {
+          reset();
+        } else {
+          window.location.reload();
+        }
+      }}
+    />
   );
 }
 
@@ -353,7 +313,10 @@ const orgAuthenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "tenant-org-authenticated",
   component: () => (
-    <ProtectedRoute>
+    <ProtectedRoute
+      unauthorizedFallback={<ForbiddenError statusCode={403} backUrl="/projects" />}
+      sessionExpiredFallback={<SessionExpiredError statusCode={419} loginUrl="/login" />}
+    >
       <TenantOrgLayout />
     </ProtectedRoute>
   ),
@@ -642,7 +605,10 @@ const projectAuthenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/project/$projectId",
   component: () => (
-    <ProtectedRoute>
+    <ProtectedRoute
+      unauthorizedFallback={<ForbiddenError statusCode={403} backUrl="/projects" />}
+      sessionExpiredFallback={<SessionExpiredError statusCode={419} loginUrl="/login" />}
+    >
       <TenantProjectLayout />
     </ProtectedRoute>
   ),

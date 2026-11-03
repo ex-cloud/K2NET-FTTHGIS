@@ -44,6 +44,7 @@ export interface KeycloakAuthConfig {
   clientId: string;
   plane?: AuthPlane;
   tenantSlug?: string;
+  loginPath?: string;
   onTokens?: (tokens: { token?: string; refreshToken?: string; idToken?: string }) => void;
   onAuthSuccess?: (user: KeycloakUser) => void;
   onAuthError?: (error: unknown) => void;
@@ -53,12 +54,15 @@ export interface KeycloakAuthContextValue {
   keycloak: Keycloak | null;
   initialized: boolean;
   authenticated: boolean;
+  sessionTerminated: boolean;
+  loginPath: string;
   token: string | null;
   user: KeycloakUser | null;
   roles: string[];
   login: (options?: KeycloakLoginOptions) => Promise<void>;
   loginWithCredentials: (input: CredentialLoginInput) => Promise<CredentialLoginResult>;
   logout: (options?: KeycloakLogoutOptions) => Promise<void>;
+  clearSessionTerminated: () => void;
   hasRole: (role: string) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
   isSuperAdmin: () => boolean;

@@ -196,6 +196,10 @@ export function getSystemUrl(path: string = "/organizations"): string {
       const hostname = window.location.hostname;
       const port = window.location.port;
       
+      if (hostname.endsWith(".kdua.net") || hostname === "kdua.net") {
+        return `${protocol}//system-gis.kdua.net${path}`;
+      }
+
       const { baseDomain, isHyphen } = parseDomain(hostname);
       const portSuffix = port ? `:${port}` : "";
       
@@ -208,6 +212,9 @@ export function getSystemUrl(path: string = "/organizations"): string {
     
     const baseUrl = getBaseUrl();
     const url = new URL(baseUrl);
+    if (url.hostname.endsWith(".kdua.net") || url.hostname === "kdua.net") {
+      return `${url.protocol}//system-gis.kdua.net${path}`;
+    }
     if (url.host.startsWith("system-") || url.host.startsWith("system.")) {
       return `${url.protocol}//${url.host}${path}`;
     }

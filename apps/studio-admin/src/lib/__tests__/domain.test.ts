@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { getTenantUrl, getDefaultTenantHost } from "../domain";
+import { getTenantUrl, getDefaultTenantHost, getSystemUrl } from "../domain";
 
 function setLocation(href: string) {
   Object.defineProperty(window, "location", {
@@ -36,6 +36,13 @@ describe("Tenant URL generation (plan pillar 2 — canonical <slug>.kdua.net)", 
   it("keeps working on localhost development", () => {
     setLocation("http://localhost:3001/organizations");
     expect(getTenantUrl("dev")).toBe("http://dev.localhost:3002");
+  });
+
+  it("always resolves getSystemUrl to https://system-gis.kdua.net on production *.kdua.net hosts", () => {
+    setLocation("https://ops.kdua.net/projects");
+    expect(getSystemUrl("/organizations")).toBe("https://system-gis.kdua.net/organizations");
+    setLocation("https://system-gis.kdua.net/overview");
+    expect(getSystemUrl("/security/roles")).toBe("https://system-gis.kdua.net/security/roles");
   });
 });
 

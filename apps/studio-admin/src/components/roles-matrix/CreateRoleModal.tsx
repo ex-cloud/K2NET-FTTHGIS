@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Button,
   Dialog,
@@ -10,15 +10,18 @@ import {
   Label,
   Textarea,
 } from "@k2net/ui";
-import { ShieldPlus, Server, Users, Loader2 } from "lucide-react";
+import { useTranslation } from "@k2net/i18n";
+import { ShieldPlus, Pencil, Server, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { createRole } from "./rolesMatrixApi";
+import { createRole, updateRole } from "./rolesMatrixApi";
+import type { Role } from "./types";
 import { cn } from "@/lib/utils";
 
 interface CreateRoleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultScope: "SYSTEM" | "TENANT";
+  editingRole?: Role | null;
   token?: string;
   onSuccess: () => void;
 }
@@ -27,14 +30,33 @@ export function CreateRoleModal({
   open,
   onOpenChange,
   defaultScope,
+  editingRole,
   token,
   onSuccess,
 }: CreateRoleModalProps) {
+  const { t } = useTranslation();
   const [scope, setScope] = useState<"SYSTEM" | "TENANT">(defaultScope);
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isEditMode = Boolean(editingRole);
+
+  useEffect(() => {
+    if (!open) return;
+    if (editingRole) {
+      setScope(editingRole.scope === "SYSTEM" ? "SYSTEM" : "TENANT");
+      setName(editingRole.name || "");
+      setDisplayName(editingRole.displayName || editingRole.name || "");
+      setDescription(editingRole.description || "");
+    } else {
+      setScope(defaultScope);
+      setName("");
+      setDisplayName("");
+      setDescription("");
+    }
+  }, [open, editingRole, defaultScope]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,25 +64,40 @@ export function CreateRoleModal({
 
     setIsSubmitting(true);
     try {
-      await createRole(
-        {
-          name: name.trim().toLowerCase().replaceAll(/[^a-z0-9_]/g, "_"),
-          displayName: displayName.trim() || name.trim().toUpperCase(),
-          description: description.trim() || undefined,
-          scope,
-          permissionIds: [],
-        },
-        token
-      );
+      const cleanKey = name.trim().toLowerCase().replaceAll(/[^a-z0-9_]/g, "_");
+      const cleanDisplay = displayName.trim() || name.trim().toUpperCase();
+      const cleanDesc = description.trim() || undefined;
 
-      toast.success(`Role "${displayName || name}" created successfully!`);
+      if (editingRole) {
+        await updateRole(
+          editingRole.id,
+          {
+            name: editingRole.isSystemRole ? undefined : cleanKey,
+            displayName: cleanDisplay,
+            description: cleanDesc,
+          },
+          token
+        );
+        toast.success(t("security.role_updated_success", { name: cleanDisplay }));
+      } else {
+        await createRole(
+          {
+            name: cleanKey,
+            displayName: cleanDisplay,
+            description: cleanDesc,
+            scope,
+            permissionIds: [],
+          },
+          token
+        );
+        toast.success(t("security.role_created_success", { name: cleanDisplay }));
+      }
+
       onOpenChange(false);
-      setName("");
-      setDisplayName("");
-      setDescription("");
       onSuccess();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to create role";
+      const fallback = editingRole ? t("security.failed_update_role") : t("security.failed_create_role");
+      const msg = err instanceof Error ? err.message : fallback;
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
@@ -72,44 +109,54 @@ export function CreateRoleModal({
       <DialogContent className="bg-popover/95 backdrop-blur-xl border-border sm:max-w-[460px] p-0 overflow-hidden shadow-xl text-foreground">
         <DialogHeader className="p-6 pb-2 text-foreground">
           <DialogTitle className="text-base font-bold flex items-center gap-2">
-            <ShieldPlus className="w-4 h-4 text-primary" />
-            <span>Create Custom PBAC Role</span>
+            {isEditMode ? (
+              <Pencil className="w-4 h-4 text-primary" />
+            ) : (
+              <ShieldPlus className="w-4 h-4 text-primary" />
+            )}
+            <span>
+              {isEditMode ? t("security.edit_role_modal_title") : t("security.create_role_modal_title")}
+            </span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Add a new professional role to the authorization matrix and customize its permissions.
+            {isEditMode ? t("security.edit_role_modal_desc") : t("security.create_role_modal_desc")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* 1. Scope Selector */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Security Scope</Label>
+            <Label className="text-xs font-semibold text-foreground">{t("security.role_scope")}</Label>
             <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-muted/40 border border-border">
               <button
                 type="button"
+                disabled={isEditMode}
                 onClick={() => setScope("TENANT")}
                 className={cn(
-                  "py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                  "py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5",
+                  isEditMode ? "cursor-not-allowed opacity-70" : "cursor-pointer",
                   scope === "TENANT"
-                    ? "bg-blue-500/15 text-blue-400 border border-blue-500/30 shadow-xs"
+                    ? "bg-primary/15 text-primary border border-primary/30 shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Users className="size-3.5" />
-                <span>Tenant Template</span>
+                <span>{t("security.tenant_templates")}</span>
               </button>
               <button
                 type="button"
+                disabled={isEditMode}
                 onClick={() => setScope("SYSTEM")}
                 className={cn(
-                  "py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                  "py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5",
+                  isEditMode ? "cursor-not-allowed opacity-70" : "cursor-pointer",
                   scope === "SYSTEM"
                     ? "bg-primary/15 text-primary border border-primary/30 shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Server className="size-3.5" />
-                <span>System Plane</span>
+                <span>{t("security.system_plane")}</span>
               </button>
             </div>
           </div>
@@ -117,14 +164,15 @@ export function CreateRoleModal({
           {/* 2. Identifier Name */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground">
-              Role Key / Identifier <span className="text-destructive">*</span>
+              {t("security.role_identifier_label")} <span className="text-destructive">*</span>
             </Label>
             <Input
-              placeholder="e.g. field_supervisor, cabling_tech"
+              placeholder={t("security.role_identifier_placeholder")}
               value={name}
+              disabled={Boolean(editingRole?.isSystemRole)}
               onChange={(e) => {
                 setName(e.target.value);
-                if (!displayName) {
+                if (!displayName && !isEditMode) {
                   setDisplayName(e.target.value.replace(/_/g, " ").toUpperCase());
                 }
               }}
@@ -135,9 +183,9 @@ export function CreateRoleModal({
 
           {/* 3. Display Name */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Display Name</Label>
+            <Label className="text-xs font-semibold text-foreground">{t("security.role_display_name")}</Label>
             <Input
-              placeholder="e.g. Field Supervisor"
+              placeholder={t("security.role_display_name_placeholder")}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="bg-card border-border text-foreground h-9 text-xs"
@@ -146,9 +194,9 @@ export function CreateRoleModal({
 
           {/* 4. Description */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Description / Responsibility</Label>
+            <Label className="text-xs font-semibold text-foreground">{t("security.role_description_label")}</Label>
             <Textarea
-              placeholder="Describe the operational role and expected responsibilities..."
+              placeholder={t("security.role_description_placeholder")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="bg-card border-border text-foreground text-xs min-h-[70px]"
@@ -164,7 +212,7 @@ export function CreateRoleModal({
               disabled={isSubmitting}
               className="text-xs cursor-pointer"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -174,11 +222,13 @@ export function CreateRoleModal({
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="size-3 animate-spin" />
-                  <span>Creating...</span>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>{isEditMode ? t("security.saving_role") : t("security.creating_role")}</span>
                 </>
+              ) : isEditMode ? (
+                t("common.save")
               ) : (
-                "Create Role"
+                t("security.create_role")
               )}
             </Button>
           </div>
@@ -187,4 +237,3 @@ export function CreateRoleModal({
     </Dialog>
   );
 }
-

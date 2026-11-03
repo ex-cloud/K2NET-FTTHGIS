@@ -116,7 +116,7 @@ function buildRequestUrl(
 
 function resolveTenantSlug(): string | null {
   const slug = extractTenantSlug();
-  return slug && slug !== "default" ? slug : null;
+  return slug && slug !== "__invalid_reserved__" ? slug : null;
 }
 
 export async function apiClient<T = unknown>(endpoint: string, options: FetchOptions = {}): Promise<T> {

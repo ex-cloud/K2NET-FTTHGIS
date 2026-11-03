@@ -71,9 +71,10 @@ public class TenantLicenseSeeder implements CommandLineRunner {
                 }
 
                 String slug = org.getSlug();
+                boolean isRootOrg = org.isPlatformRootOrg();
                 SubscriptionPlan plan = org.getSubscriptionPlan();
                 if (plan == null) {
-                    plan = subscriptionPlanRepository.findByName("default".equals(slug) ? "ENTERPRISE" : "FREE")
+                    plan = subscriptionPlanRepository.findByName(isRootOrg ? "ENTERPRISE" : "FREE")
                             .orElse(null);
                 }
 
@@ -90,8 +91,8 @@ public class TenantLicenseSeeder implements CommandLineRunner {
                 LicenseStatus status;
                 String notes;
 
-                if ("default".equals(slug)) {
-                    // 1. Main Organization -> Enterprise Tier 24 Bulan
+                if (isRootOrg) {
+                    // 1. K2NET Network Operations (ops) -> Enterprise Tier 24 Bulan
                     validUntil = now.plusMonths(24);
                     status = LicenseStatus.ACTIVE;
                     licenseKey = licenseCryptoService.generateLicenseKey("ENTERPRISE");
@@ -154,7 +155,7 @@ public class TenantLicenseSeeder implements CommandLineRunner {
                     boolean isFree = "FREE".equalsIgnoreCase(planName);
                     BigDecimal amount = isFree || plan == null || plan.getPrice() == null
                             ? BigDecimal.ZERO
-                            : plan.getPrice().multiply(BigDecimal.valueOf("default".equals(slug) ? 24 : 12));
+                            : plan.getPrice().multiply(BigDecimal.valueOf(isRootOrg ? 24 : 12));
 
                     String invNumber = "INV/" + now.getYear() + "/" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
                     BillingInvoice invoice = BillingInvoice.builder()

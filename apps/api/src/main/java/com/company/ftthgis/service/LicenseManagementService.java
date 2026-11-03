@@ -773,7 +773,7 @@ public class LicenseManagementService {
                             expiringIn7Days++;
                         }
                     }
-                    boolean isInternal = lic.getOrganization() != null && "default".equalsIgnoreCase(lic.getOrganization().getSlug());
+                    boolean isInternal = lic.getOrganization() != null && lic.getOrganization().isPlatformRootOrg();
                     boolean isTestTenant = (lic.getSubscription() != null && lic.getSubscription().isTest())
                             || (lic.getOrganization() != null && lic.getOrganization().getName() != null && lic.getOrganization().getName().toLowerCase().contains("uji coba"));
                     boolean isPaying = lic.getSubscriptionPlan() != null && lic.getSubscriptionPlan().getPrice() != null && lic.getSubscriptionPlan().getPrice().doubleValue() > 0.0;
@@ -786,7 +786,7 @@ public class LicenseManagementService {
                     }
                 } else if (status == LicenseStatus.GRACE_PERIOD) {
                     grace++;
-                    boolean isInternal = lic.getOrganization() != null && "default".equalsIgnoreCase(lic.getOrganization().getSlug());
+                    boolean isInternal = lic.getOrganization() != null && lic.getOrganization().isPlatformRootOrg();
                     boolean isTestTenant = (lic.getSubscription() != null && lic.getSubscription().isTest())
                             || (lic.getOrganization() != null && lic.getOrganization().getName() != null && lic.getOrganization().getName().toLowerCase().contains("uji coba"));
                     if (!isInternal && !isTestTenant) {

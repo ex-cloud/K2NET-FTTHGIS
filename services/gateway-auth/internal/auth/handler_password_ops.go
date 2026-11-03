@@ -206,7 +206,7 @@ func (h *Handler) ForgotPassword(c *gin.Context) {
 	} else if user.TenantSlug != "" {
 		resetURL = fmt.Sprintf("https://%s.kdua.net/reset-password?token=%s", user.TenantSlug, resetToken)
 	} else {
-		resetURL = fmt.Sprintf("https://gis.kdua.net/reset-password?token=%s", resetToken)
+		resetURL = fmt.Sprintf("https://ops.kdua.net/reset-password?token=%s", resetToken)
 	}
 
 	// 8. Dispatch Email via Notification Gateway asynchronously

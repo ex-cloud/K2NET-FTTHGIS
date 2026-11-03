@@ -172,7 +172,11 @@ export function getSystemUrl(path: string = "/organizations"): string {
       const hostname = window.location.hostname;
       
       // In production, system admin is always system-gis.kdua.net
-      if (hostname.includes("gis.kdua.net") || hostname.includes("gis-staging.kdua.net")) {
+      if (
+        hostname.endsWith(".kdua.net") ||
+        hostname.includes("gis.kdua.net") ||
+        hostname.includes("gis-staging.kdua.net")
+      ) {
         const adminHost = hostname.includes("gis-staging")
           ? "system-gis-staging.kdua.net"
           : "system-gis.kdua.net";
@@ -198,7 +202,7 @@ export function getCurrentOrgSlug(): string | null {
   const hostname = window.location.hostname;
   const { subdomain } = parseDomain(hostname);
   
-  const reservedSubdomains = ["system", "auth", "www", "api", "mail", "cdn"];
+  const reservedSubdomains = ["system", "system-gis", "auth", "auth-gis", "www", "api", "api-gis", "gis", "console", "admin", "default", "mail", "cdn"];
   if (subdomain && !reservedSubdomains.includes(subdomain)) {
     return subdomain;
   }

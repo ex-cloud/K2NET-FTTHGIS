@@ -1,8 +1,7 @@
 
 
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
-import { AlertTriangle, RefreshCcw } from "lucide-react";
-import { Button } from "@k2net/ui";
+import { ServerError } from "@k2net/ui";
 
 interface Props {
   children: ReactNode;
@@ -64,41 +63,14 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-background p-6">
-          <div className="max-w-md w-full bg-background/80 backdrop-blur-xl border border-border/10 shadow-lg rounded-2xl p-8 text-center animate-in zoom-in duration-300">
-            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle className="w-8 h-8 text-destructive" />
-            </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">Something went wrong</h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              The application encountered an unexpected error. Our team has been notified.
-            </p>
-            <div className="flex flex-col gap-3">
-              <Button 
-                onClick={() => window.location.reload()} 
-                variant="default"
-                className="w-full gap-2"
-              >
-                <RefreshCcw className="w-4 h-4" />
-                Reload Application
-              </Button>
-              <Button 
-                onClick={() => this.setState({ hasError: false })} 
-                variant="ghost"
-                className="w-full text-xs text-muted-foreground"
-              >
-                Try to recover
-              </Button>
-            </div>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <div className="mt-8 text-left p-4 bg-muted/50 rounded-lg border border-border/40 overflow-auto max-h-40">
-                <p className="text-[10px] font-mono text-destructive break-all whitespace-pre-wrap">
-                  {this.state.error.stack}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        <ServerError
+          statusCode={500}
+          error={this.state.error}
+          onRetry={() => {
+            this.setState({ hasError: false, error: null });
+            window.location.reload();
+          }}
+        />
       );
     }
 

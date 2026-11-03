@@ -504,7 +504,7 @@ public class LicenseNotificationService {
 
         List<TenantLicense> candidates = licenseRepository.findAll().stream()
                 .filter(lic -> {
-                    if (lic.getOrganization() != null && "default".equalsIgnoreCase(lic.getOrganization().getSlug())) {
+                    if (lic.getOrganization() != null && lic.getOrganization().isPlatformRootOrg()) {
                         return false;
                     }
                     if (lic.getStatus() == LicenseStatus.GRACE_PERIOD || lic.getStatus() == LicenseStatus.RESTRICTED_READ_ONLY) {

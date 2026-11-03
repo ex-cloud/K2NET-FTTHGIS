@@ -28,6 +28,7 @@ Gunakan skill ini setiap kali membuat atau mengubah tampilan frontend di `packag
 - **Kanvas Halaman**: Wajib menggunakan `<PageLayout variant="workspace" | "dashboard">` + `<PageHero>` (atau `<PageHeader>` + `<PageContentShell>`).
 - **KPI Strip**: Gunakan `<Card glowingEffect>` atau `<MetricCard variant="groove" />`.
 - **Loading State (Vite CSR)**: Gunakan komponen skeleton dari `@k2net/ui` (`TablePageSkeleton`, `DashboardPageSkeleton`, `CardGridSkeleton`) secara kondisional di dalam komponen (dilarang membuat `loading.tsx` ala Next.js).
+- **Shared Error Pages (`@k2net/ui`)**: Gunakan `<NotFoundError />` (404), `<TenantDomainError />` (404 Unregistered Subdomain), `<ForbiddenError />` (403), `<SessionExpiredError />` (419 Sesi Kedaluwarsa / Login Perangkat Lain), `<ServerError />` (500/502), dan `<MaintenanceMode />` (503) dari `@k2net/ui`.
 
 ### 2. Anatomi Ukuran Kontrol & Estetika Monokrom
 - **Toolbar & Card Footer Buttons**: Wajib `size="sm"` (`h-7 px-2.5 text-xs font-medium`, ikon `size-3.5`).

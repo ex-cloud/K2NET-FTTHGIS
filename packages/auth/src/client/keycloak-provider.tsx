@@ -183,6 +183,7 @@ export function KeycloakProvider({
   const [keycloakInstance, setKeycloakInstance] = useState<Keycloak | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
+  const [sessionTerminated, setSessionTerminated] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<KeycloakUser | null>(null);
 
@@ -193,6 +194,13 @@ export function KeycloakProvider({
   const inflightRefreshRef = useRef<Promise<boolean> | null>(null);
 
   const plane = useMemo(() => resolvePlane(config), [config]);
+  const loginPath = useMemo(
+    () => config.loginPath || (plane === "PLATFORM" ? "/auth/console/login" : "/login"),
+    [config.loginPath, plane]
+  );
+  const clearSessionTerminated = useCallback(() => {
+    setSessionTerminated(false);
+  }, []);
 
   const clearRefreshTimer = useCallback(() => {
     if (refreshTimerRef.current) {
@@ -233,7 +241,12 @@ export function KeycloakProvider({
           plane,
         }),
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        if (res.status === 419 || activeTokenRef.current !== null) {
+          setSessionTerminated(true);
+        }
+        return null;
+      }
       const data = (await res.json()) as BffLoginApiResponse;
       return data.accessToken ? data : null;
     } catch {
@@ -291,6 +304,7 @@ export function KeycloakProvider({
       setToken(accessToken);
       setUser(resolvedUser);
       setAuthenticated(true);
+      setSessionTerminated(false);
       syncWindowBridge(accessToken, resolvedUser);
 
       config.onTokens?.({
@@ -391,17 +405,17 @@ export function KeycloakProvider({
         return;
       }
 
-      // Native Cloudflare-style login: navigate internally to /login without redirecting to auth-gis.kdua.net
-      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+      // Native Cloudflare-style login: navigate internally to canonical loginPath without redirecting to auth-gis.kdua.net
+      if (typeof window !== "undefined" && window.location.pathname !== loginPath) {
         const currentPath = window.location.pathname + window.location.search;
         const target =
           currentPath && currentPath !== "/"
-            ? `/login?callbackUrl=${encodeURIComponent(currentPath)}`
-            : "/login";
+            ? `${loginPath}?callbackUrl=${encodeURIComponent(currentPath)}`
+            : loginPath;
         window.location.replace(target);
       }
     },
-    [config.clientId, config.realm, config.url, keycloakInstance]
+    [config.clientId, config.realm, config.url, keycloakInstance, loginPath]
   );
 
   const loginWithCredentials = useCallback(
@@ -494,21 +508,22 @@ export function KeycloakProvider({
         // Proceed with local state cleanup even if network is offline
       }
 
+      setSessionTerminated(false);
       clearSessionState();
 
       if (keycloakInstance?.authenticated) {
         await keycloakInstance.logout({
-          redirectUri: options?.redirectUri || window.location.origin + "/login",
+          redirectUri: options?.redirectUri || window.location.origin + loginPath,
           ...options,
         });
         return;
       }
 
       if (typeof window !== "undefined") {
-        window.location.replace(options?.redirectUri || "/login");
+        window.location.replace(options?.redirectUri || loginPath);
       }
     },
-    [clearSessionState, config.realm, config.tenantSlug, keycloakInstance, plane]
+    [clearSessionState, config.realm, config.tenantSlug, keycloakInstance, loginPath, plane]
   );
 
   useEffect(() => {
@@ -644,13 +659,7 @@ export function KeycloakProvider({
   }, [roles]);
 
   const isTenantAdmin = useCallback((): boolean => {
-    return (
-      roles.includes("super_admin") ||
-      roles.includes("admin") ||
-      roles.includes("tenant_owner") ||
-      roles.includes("tenant_admin") ||
-      roles.includes("isp_admin")
-    );
+    return roles.includes("super_admin") || roles.includes("admin");
   }, [roles]);
 
   const value = useMemo<KeycloakAuthContextValue>(
@@ -658,12 +667,15 @@ export function KeycloakProvider({
       keycloak: keycloakInstance,
       initialized,
       authenticated,
+      sessionTerminated,
+      loginPath,
       token,
       user,
       roles,
       login,
       loginWithCredentials,
       logout,
+      clearSessionTerminated,
       hasRole,
       hasAnyRole,
       isSuperAdmin,
@@ -672,6 +684,7 @@ export function KeycloakProvider({
     }),
     [
       authenticated,
+      clearSessionTerminated,
       hasAnyRole,
       hasRole,
       initialized,
@@ -679,10 +692,12 @@ export function KeycloakProvider({
       isTenantAdmin,
       keycloakInstance,
       login,
+      loginPath,
       loginWithCredentials,
       logout,
       refreshToken,
       roles,
+      sessionTerminated,
       token,
       user,
     ]

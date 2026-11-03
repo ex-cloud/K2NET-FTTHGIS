@@ -334,6 +334,19 @@ func TestTenantContextAnd2RealmLoginFlows(t *testing.T) {
 		t.Fatalf("expected 200 on silent refresh, got %d: %s", wRefresh.Code, wRefresh.Body.String())
 	}
 
+	// 6b. Terminated / Concurrent Session Refresh -> 419 SESSION_TERMINATED & clears cookie
+	wTerminated := httptest.NewRecorder()
+	reqTerminated := httptest.NewRequest(http.MethodPost, "/api/v1/auth/refresh", nil)
+	reqTerminated.AddCookie(&http.Cookie{Name: refreshCookieName, Value: "revoked-by-other-device-token"})
+	reqTerminated.AddCookie(&http.Cookie{Name: realmCookieName, Value: config.TenantSharedRealm})
+	router.ServeHTTP(wTerminated, reqTerminated)
+	if wTerminated.Code != 419 {
+		t.Fatalf("expected 419 on terminated session refresh, got %d: %s", wTerminated.Code, wTerminated.Body.String())
+	}
+	if !strings.Contains(wTerminated.Body.String(), `"SESSION_TERMINATED"`) {
+		t.Fatalf("expected SESSION_TERMINATED error code on 419, got %s", wTerminated.Body.String())
+	}
+
 	// 7. Logout -> revokes session & clears HttpOnly cookie (MaxAge < 0)
 	wLogout := httptest.NewRecorder()
 	reqLogout := httptest.NewRequest(http.MethodPost, "/api/v1/auth/logout", nil)

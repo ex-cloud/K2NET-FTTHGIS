@@ -1,8 +1,8 @@
-# Next.js Studio Frontend Coding Rules (Split Architecture)
+# React 19 + Vite 6 + TanStack Router CSR SPA Coding Rules (Split Architecture)
 
-Halaman ini mendefinisikan aturan dan pola wajib untuk pengembangan frontend Next.js pada kedua portal yang telah dipisah:
-1. **System Admin Portal (`apps/studio-admin`)** — Portal pengelola sistem utama (super_admin).
-2. **Tenant Portal (`apps/studio-tenant`)** — Portal operasional untuk tenant/organisasi (org_admin, member).
+Halaman ini mendefinisikan aturan dan pola wajib untuk pengembangan frontend React 19 + Vite 6 + TanStack Router (CSR SPA) pada kedua portal yang telah dipisah:
+1. **System Admin Portal (`apps/studio-admin`, `https://system-gis.kdua.net`)** — Portal Control Plane pengelola sistem utama (`SYSTEM` scope roles: `super_admin`, `account_manager`, `system_auditor`, `system_support`). Rute login khusus: `/auth/console/login` (akses langsung ke `/login` merender `<NotFoundError />` 404 anti-enumeration).
+2. **Tenant Portal (`apps/studio-tenant`, `https://<slug>.kdua.net`, termasuk `https://ops.kdua.net`)** — Portal operasional FTTH untuk tenant/organisasi (`TENANT` scope roles: `admin`, `viewer`, `technician`, `finance`, `helpdesk`, `noc`, `surveyor`). Subdomain yang tidak terdaftar di database merender `<TenantDomainError />` 404 (form login dikunci penuh).
 
 ---
 
@@ -44,6 +44,13 @@ Rute pada tenant portal dipetakan di bawah scope organisasi dan proyek:
   * **Tab Halaman Linear**: Gunakan `<PageHeaderTabs tabs={[...]} activeTab={...} onTabChange={...} />`.
   * **Body Konten Halaman**: Gunakan `<PageContentShell maxWidth="7xl">` untuk padding responsif standar (`p-6 md:p-8`).
   * **Kartu Metrik / KPI**: Gunakan `<MetricCard variant="groove" label="..." value="..." />` dengan dukungan varian `.border-groove-t` dan `.border-groove-b`.
+  * **Komponen Halaman Error Terpusat (`@k2net/ui`)**: Seluruh layar status error di `studio-admin` dan `studio-tenant` wajib mengimpor komponen shared dari `@k2net/ui` (dilarang membuat halaman error lokal duplikat):
+    * `404 Route Not Found`: `<NotFoundError />`
+    * `404 Unregistered Tenant Subdomain`: `<TenantDomainError />`
+    * `403 Access Denied / Insufficient Permission`: `<ForbiddenError />`
+    * `419 Session Expired / Concurrent Device Login`: `<SessionExpiredError />`
+    * `500 / 502 Server or Bad Gateway Error`: `<ServerError />`
+    * `503 System Maintenance`: `<MaintenanceMode />`
 * **Siklus Modifikasi Komponen**: Jika komponen primitif/layout perlu disesuaikan, modifikasi harus dilakukan langsung di `packages/ui/src/components/...` kemudian diverifikasi dengan `bash packages/ui/scripts/audit-design-system.sh all`.
 * **Pemetaan Impor**: Selalu gunakan path `@k2net/ui` alih-alih import path lokal relative (`../../ui`) untuk menjaga integritas bundler Vite/CSR.
 

@@ -11,6 +11,7 @@ import java.util.Optional;
 public interface OrganizationRepository extends JpaRepository<Organization, UUID> {
     Optional<Organization> findBySlug(String slug);
     boolean existsBySlug(String slug);
+    Optional<Organization> findFirstByIsPlatformRootTrue();
 
     java.util.List<Organization> findAllByRealmKey(String realmKey);
     Optional<Organization> findFirstByRealmKey(String realmKey);

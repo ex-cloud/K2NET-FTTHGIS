@@ -1,4 +1,4 @@
-import { AlertTriangle, ShieldAlert, UserCheck } from "lucide-react";
+import { AlertTriangle, ShieldAlert, Trash2, UserCheck, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,10 @@ interface RolesMatrixModalsProps {
   setImpactModalOpen: (open: boolean) => void;
   impactData: ImpactData | null;
   onConfirmImpact: (data: ImpactData) => void;
+  roleToDelete?: Role | null;
+  setRoleToDelete?: (role: Role | null) => void;
+  onConfirmDeleteRole?: (role: Role) => void;
+  isDeletingRole?: boolean;
 }
 
 export function RolesMatrixModals({
@@ -31,6 +35,10 @@ export function RolesMatrixModals({
   setImpactModalOpen,
   impactData,
   onConfirmImpact,
+  roleToDelete,
+  setRoleToDelete,
+  onConfirmDeleteRole,
+  isDeletingRole = false,
 }: RolesMatrixModalsProps) {
   const { t } = useTranslation();
 
@@ -41,26 +49,17 @@ export function RolesMatrixModals({
         <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-full bg-blue-500/10">
-                <AlertTriangle className="w-6 h-6 text-blue-400" />
+              <div className="p-2 rounded-full bg-primary/10">
+                <AlertTriangle className="w-6 h-6 text-primary" />
               </div>
               <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
                 {t("security.standard_template_title")}
               </DialogTitle>
             </div>
-            <DialogDescription className="text-muted-foreground text-base leading-relaxed">
-              Ini adalah template standar global untuk role{" "}
-              <span className="text-blue-400 font-semibold uppercase">
-                {pendingRoleToSave?.displayName || pendingRoleToSave?.name}
-              </span>
-              . Menyimpan perubahan akan membuat{" "}
-              <span className="text-primary font-semibold underline decoration-primary/30 underline-offset-4">
-                versi kustom
-              </span>{" "}
-              khusus untuk organisasi Anda.
-              <br />
-              <br />
-              Seluruh anggota tim yang memiliki role ini akan otomatis dimigrasikan ke versi kustom yang baru.
+            <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
+              {t("security.standard_template_desc", {
+                role: pendingRoleToSave?.displayName || pendingRoleToSave?.name || "",
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -80,7 +79,7 @@ export function RolesMatrixModals({
                   onConfirmStandardTemplate(pendingRoleToSave);
                 }
               }}
-              className="bg-blue-600 hover:bg-blue-500 text-primary-foreground"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {t("common.save")}
             </Button>
@@ -155,6 +154,61 @@ export function RolesMatrixModals({
               className="bg-amber-600 hover:bg-amber-500 text-primary-foreground"
             >
               {t("security.impact_confirm_btn")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DELETE CUSTOM ROLE CONFIRMATION MODAL */}
+      <Dialog
+        open={Boolean(roleToDelete)}
+        onOpenChange={(open) => {
+          if (!open && setRoleToDelete) setRoleToDelete(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-full bg-destructive/10 text-destructive">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <DialogTitle className="text-base font-bold tracking-tight text-foreground">
+                {t("security.delete_role_confirm_title")}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-muted-foreground text-xs leading-relaxed">
+              {t("security.delete_role_confirm_desc", {
+                name: roleToDelete?.displayName || roleToDelete?.name || "",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isDeletingRole}
+              onClick={() => setRoleToDelete?.(null)}
+              className="border-border/80 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={isDeletingRole}
+              onClick={() => {
+                if (roleToDelete && onConfirmDeleteRole) {
+                  onConfirmDeleteRole(roleToDelete);
+                }
+              }}
+              className="gap-1.5 cursor-pointer"
+            >
+              {isDeletingRole ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="size-3.5" />
+              )}
+              <span>{t("security.delete_role")}</span>
             </Button>
           </DialogFooter>
         </DialogContent>

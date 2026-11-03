@@ -41,7 +41,7 @@ export function CreateInvoiceModal({
   // Auto-select first org if available
   React.useEffect(() => {
     if (organizations.length > 0 && !selectedOrgId) {
-      const firstActive = organizations.find((o: Organization) => o.id && o.slug !== "default") || organizations[0];
+      const firstActive = organizations.find((o: Organization) => o.id && !o.isPlatformRoot && o.slug !== "ops") || organizations[0];
       if (firstActive?.id) {
         setSelectedOrgId(firstActive.id);
       }

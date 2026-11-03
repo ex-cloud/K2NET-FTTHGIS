@@ -1,9 +1,8 @@
 import { createRootRoute, createRoute, createRouter, Navigate, Outlet } from "@tanstack/react-router";
 import { ProtectedRoute } from "@k2net/auth/client";
 import { AdminLayout } from "./layouts/AdminLayout";
-import { Button } from "@k2net/ui";
+import { ForbiddenError, NotFoundError, ServerError, SessionExpiredError } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
-import { AlertTriangle, RefreshCcw } from "lucide-react";
 import * as React from "react";
 
 // ----------------------------------------------------------------
@@ -297,26 +296,7 @@ function PageFallback() {
 }
 
 function NotFoundFallback() {
-  const { t } = useTranslation();
-  return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
-      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-lg backdrop-blur-sm max-w-md w-full space-y-4">
-        <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
-          <span className="font-mono font-bold text-lg">404</span>
-        </div>
-        <h2 className="text-lg font-bold text-foreground">{t("common.page_not_found")}</h2>
-        <p className="text-xs text-muted-foreground">
-          {t("common.page_not_found_desc")}
-        </p>
-        <a
-          href="/overview"
-          className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          {t("common.back_to_overview")}
-        </a>
-      </div>
-    </div>
-  );
+  return <NotFoundError statusCode={404} backUrl="/overview" />;
 }
 
 function RouterErrorComponent({ error, reset }: { error: unknown; reset?: () => void }) {
@@ -338,42 +318,21 @@ function RouterErrorComponent({ error, reset }: { error: unknown; reset?: () => 
   }
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
-      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-lg backdrop-blur-sm max-w-md w-full space-y-4 animate-in zoom-in duration-300">
-        <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-bold text-foreground">
-          {isChunkError ? t("common.app_update_available") : t("common.system_issue")}
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          {isChunkError
-            ? t("common.app_update_desc")
-            : t("common.system_issue_desc")}
-        </p>
-        <div className="flex flex-col gap-2 pt-2">
-          <Button
-            onClick={() => {
-              sessionStorage.removeItem("k2net_chunk_force_refreshed");
-              window.location.reload();
-            }}
-            className="w-full text-xs font-semibold gap-2"
-          >
-            <RefreshCcw className="w-3.5 h-3.5" />
-            {t("common.reload_page")}
-          </Button>
-          {reset && (
-            <Button
-              variant="ghost"
-              onClick={reset}
-              className="w-full text-xs text-muted-foreground"
-            >
-              {t("common.try_again")}
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
+    <ServerError
+      statusCode={isChunkError ? 502 : 500}
+      error={error instanceof Error ? error : new Error(message)}
+      title={isChunkError ? t("common.app_update_available") : t("common.system_issue")}
+      description={isChunkError ? t("common.app_update_desc") : t("common.system_issue_desc")}
+      retryLabel={t("common.reload_page")}
+      onRetry={() => {
+        sessionStorage.removeItem("k2net_chunk_force_refreshed");
+        if (reset && !isChunkError) {
+          reset();
+        } else {
+          window.location.reload();
+        }
+      }}
+    />
   );
 }
 
@@ -390,10 +349,17 @@ const rootRoute = createRootRoute({
   errorComponent: RouterErrorComponent,
 });
 
+const consoleLoginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/auth/console/login",
+  component: () => <Lazy><LoginPage /></Lazy>,
+  errorComponent: RouterErrorComponent,
+});
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
-  component: () => <Lazy><LoginPage /></Lazy>,
+  component: () => <NotFoundFallback />,
   errorComponent: RouterErrorComponent,
 });
 
@@ -408,7 +374,11 @@ const authenticatedLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "admin-authenticated",
   component: () => (
-    <ProtectedRoute requiredRoles={["super_admin"]}>
+    <ProtectedRoute
+      requiredRoles={["super_admin"]}
+      unauthorizedFallback={<ForbiddenError statusCode={403} backUrl="/overview" />}
+      sessionExpiredFallback={<SessionExpiredError statusCode={419} loginUrl="/auth/console/login" />}
+    >
       <AdminLayout />
     </ProtectedRoute>
   ),
@@ -678,7 +648,12 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   auditRedirectRoute, alertsRedirectRoute, healthRedirectRoute, subscriptionsRedirectRoute, systemSettingsRedirectRoute,
 ]);
 
-const routeTree = rootRoute.addChildren([authenticatedTree, loginRoute, resetPasswordRoute]);
+const routeTree = rootRoute.addChildren([
+  authenticatedTree,
+  consoleLoginRoute,
+  loginRoute,
+  resetPasswordRoute,
+]);
 
 export const router = createRouter({
   routeTree,

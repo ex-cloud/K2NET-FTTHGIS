@@ -1,7 +1,7 @@
 http:
   routers:
     sms-webhook-router:
-      rule: "(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && PathPrefix(`/webhooks/sms`)"
+      rule: "(Host(`ops.kdua.net`) || Host(`api-gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.kdua\\.net$`)) && PathPrefix(`/webhooks/sms`)"
       entrypoints:
         - websecure
       tls: {}

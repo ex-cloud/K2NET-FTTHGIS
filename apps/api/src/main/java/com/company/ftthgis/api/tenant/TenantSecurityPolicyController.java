@@ -30,7 +30,7 @@ public class TenantSecurityPolicyController {
             @RequestBody UpdateTenantSecurityPolicyRequest request,
             @AuthenticationPrincipal Jwt jwt) {
         try {
-            String actor = jwt != null ? (jwt.getClaimAsString("email") != null ? jwt.getClaimAsString("email") : jwt.getSubject()) : "tenant_admin";
+            String actor = jwt != null ? (jwt.getClaimAsString("email") != null ? jwt.getClaimAsString("email") : jwt.getSubject()) : "admin";
             return ResponseEntity.ok(policyService.updateTenantPolicy(slug, request, actor));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(java.util.Map.of(
@@ -47,7 +47,7 @@ public class TenantSecurityPolicyController {
             @PathVariable java.util.UUID memberId,
             @AuthenticationPrincipal Jwt jwt) {
         try {
-            String actor = jwt != null ? (jwt.getClaimAsString("email") != null ? jwt.getClaimAsString("email") : jwt.getSubject()) : "tenant_admin";
+            String actor = jwt != null ? (jwt.getClaimAsString("email") != null ? jwt.getClaimAsString("email") : jwt.getSubject()) : "admin";
             policyService.resetMemberMfa(slug, memberId, actor);
             return ResponseEntity.ok(java.util.Map.of(
                     "success", true,

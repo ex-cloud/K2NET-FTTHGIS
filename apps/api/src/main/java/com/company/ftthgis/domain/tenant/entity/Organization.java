@@ -129,6 +129,14 @@ public class Organization {
     @lombok.Builder.Default
     private Boolean customDomainVerified = false;
 
+    @Column(name = "is_platform_root", nullable = false)
+    @lombok.Builder.Default
+    private Boolean isPlatformRoot = false;
+
+    public boolean isPlatformRootOrg() {
+        return Boolean.TRUE.equals(isPlatformRoot) || "ops".equalsIgnoreCase(slug);
+    }
+
     public enum OrganizationStatus {
         ACTIVE,
         TRIAL,

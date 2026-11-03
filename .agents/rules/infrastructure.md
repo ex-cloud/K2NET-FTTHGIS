@@ -22,17 +22,18 @@ Kong mengelola CORS, rate-limiting global, dan validasi token JWT.
 
 ---
 
-## 🔑 3. Keycloak Identity Access Management (IAM)
+## 🔑 3. Keycloak Identity Access Management (IAM — 2-Realm Architecture)
 
-Keycloak mengelola otentikasi pengguna global dan tenant.
-* **Endpoint Dynamic**: NextAuth Studio menggunakan dynamic issuer matching subdomain tenant untuk merujuk ke Realm Keycloak yang sesuai (contoh: `system-gis.kdua.net` -> `ftth-realm`, `garut-gis.kdua.net` -> `garut` realm).
-* **Bypass Cloudflare**: Komunikasi server-to-server (misal refresh token dari Next.js ke Keycloak) wajib menggunakan URL internal Keycloak (`http://ftth-keycloak:8080` atau `http://localhost:8081`) untuk memotong proteksi Cloudflare WAF/403.
+Keycloak mengelola otentikasi pengguna melalui **2-Realm Architecture** yang terisolasi ketat:
+* **`ftth-realm` (Platform Control Plane)**: Khusus untuk staf internal K2NET di `https://system-gis.kdua.net/auth/console/login`. Hanya memiliki 4 role kanonikal berscope `SYSTEM`: `super_admin`, `account_manager`, `system_auditor`, `system_support`.
+* **`k2net-tenants` (Consolidated Shared Tenant Plane)**: Untuk seluruh workspace operasional tenant di `https://<slug>.kdua.net/login` (termasuk workspace operasional K2NET `https://ops.kdua.net` yang ditandai `is_platform_root = true`). Hanya memiliki 7 role kanonikal berscope `TENANT`: `admin`, `viewer`, `technician`, `finance`, `helpdesk`, `noc`, `surveyor`.
+* **Bypass Cloudflare**: Komunikasi server-to-server (antara `gateway-auth`, `ftth-backend`, dan Keycloak) wajib menggunakan URL internal Docker (`http://keycloak:8080`) untuk memotong proteksi Cloudflare WAF/403.
 
 ---
 
 ## 🗄️ 4. Databases & Cache
 
-* **PostgreSQL Spatial**: PostgreSQL 17 (`ftth_gis` database) berjalan di port `5432` dengan ekstensi PostGIS aktif untuk spatial queries.
+* **PostgreSQL Spatial**: PostgreSQL 16 + PostGIS 3.5 + pgRouting 4.0 (`ftth_gis` & `keycloak_db` database) berjalan di port `5432` dengan ekstensi PostGIS aktif untuk spatial queries.
 * **Redis Cache**: Redis digunakan untuk session store, rate-limiting, event store, dan queue logs. Pastikan koneksi Redis menggunakan format target `host:port` (contoh `redis:6379` internal docker, atau localhost jika dev).
 
 ---
@@ -46,8 +47,8 @@ Keycloak mengelola otentikasi pengguna global dan tenant.
 
 ## 🚀 6. Prosedur Rebuild & Hot-reload Container
 
-* **Pembersihan Cache NPM/PNPM**: Saat melakukan pembaruan pada paket `@k2net/design-system` atau `@k2net/ui`, proses build Docker **wajib** menyertakan argumen `--no-cache` pada container frontend bersangkutan (contoh: `docker compose build --no-cache frontend-admin` atau `docker compose build --no-cache frontend-tenant`).
-* **Siklus Dependensi Kontainer**: Saat kontainer frontend diperbarui, pastikan reverse proxy **Traefik** dan **Kong API Gateway** dalam kondisi aktif terlebih dahulu untuk menghindari kegagalan otentikasi NextAuth saat kontainer baru melakukan booting awal.
+* **Pembersihan Cache NPM/PNPM**: Saat melakukan pembaruan pada paket `@k2net/design-system` atau `@k2net/ui`, proses build Docker di GitHub Actions Runner menggunakan layer caching yang bersih.
+* **Siklus Dependensi Kontainer**: Saat kontainer frontend diperbarui, pastikan reverse proxy **Traefik**, **Kong API Gateway**, dan **gateway-auth** dalam kondisi aktif terlebih dahulu untuk menghindari kegagalan otentikasi OIDC BFF saat kontainer baru melakukan booting awal.
 
 ---
 
@@ -60,11 +61,11 @@ Untuk mencegah insiden CPU spike (`load average > 30`) dan RAM OOM (`8GB` limit)
    - Script pemeliharaan `/opt/project5/scripts/cleanup.sh` memiliki **Kong Memory Guard** otomatis yang merekstrak restart Kong apabila pemakaian RAM melebihi 420MiB.
 
 2. **Mitigasi Zombie Processes (Docker Healthcheck)**:
-   - Dilarang keras menggunakan `CMD-SHELL` dengan `wget --spider` berfrekuensi tinggi (30s) pada container Next.js tanpa init process. Ini menyebabkan akumulasi child process `zombie` (`<defunct>`).
-   - Gunakan format array `["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/login"]` dengan interval minimal **60s**.
+   - Dilarang keras menggunakan `CMD-SHELL` dengan `wget --spider` berfrekuensi tinggi (30s) pada container SPA nginx tanpa init process. Ini menyebabkan akumulasi child process `zombie` (`<defunct>`).
+   - Gunakan format array `["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/auth/console/login"]` (atau root `/`) dengan interval minimal **60s**.
 
 3. **Keycloak Production vs Dev Mode**:
-   - Mode `start-dev` hanya untuk lokal dev. Di server produksi, Keycloak wajib dikonfigurasi dengan cache `local` dan level log `WARN` untuk menghindari overhead query DB berulang pada setiap refresh token NextAuth.
+   - Mode `start-dev` hanya untuk lokal dev. Di server produksi, Keycloak wajib dikonfigurasi dengan cache `local` dan level log `WARN` untuk menghindari overhead query DB berulang pada setiap refresh token OIDC.
 
 4. **Docker Log Truncation & Cleanup Maintenance**:
    - Pemeliharaan rutin via `/opt/project5/scripts/cleanup.sh` mencakup:

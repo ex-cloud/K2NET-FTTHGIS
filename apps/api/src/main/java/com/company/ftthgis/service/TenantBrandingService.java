@@ -279,7 +279,7 @@ public class TenantBrandingService {
         if (org == null) return false;
 
         // 1. Organisasi platform internal (Main Organization / system root) selalu diizinkan
-        if ("default".equalsIgnoreCase(org.getSlug()) || "system".equalsIgnoreCase(org.getSlug())) {
+        if (org.isPlatformRootOrg() || "system".equalsIgnoreCase(org.getSlug())) {
             return true;
         }
 
@@ -322,7 +322,7 @@ public class TenantBrandingService {
 
     private TenantBranding createDefaultBranding(Organization org) {
         boolean isEnt = org.getSubscriptionPlan() != null && "ENTERPRISE".equalsIgnoreCase(org.getSubscriptionPlan().getName());
-        boolean isPlatformRoot = "default".equalsIgnoreCase(org.getSlug()) || "system".equalsIgnoreCase(org.getSlug());
+        boolean isPlatformRoot = org.isPlatformRootOrg() || "system".equalsIgnoreCase(org.getSlug());
         String defaultFooter = isEnt || isPlatformRoot ? "" : "Powered by FTTH GIS";
 
         TenantBranding branding = TenantBranding.builder()

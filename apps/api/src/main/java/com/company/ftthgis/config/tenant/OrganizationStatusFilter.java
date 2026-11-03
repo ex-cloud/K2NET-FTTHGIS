@@ -45,7 +45,7 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
                 String slug = parts[parts.length - 1];
 
                 // Set organization context for default system realm or tenant realm
-                if ("ftth-realm".equals(slug) || "master".equals(slug) || "default".equals(slug)) {
+                if ("ftth-realm".equals(slug) || "master".equals(slug)) {
                     String tenantHeader = request.getHeader("X-Tenant-ID");
                     UUID tenantUuid = null;
                     if (tenantHeader != null && !tenantHeader.isBlank()) {
@@ -60,7 +60,8 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
                     }
 
                     if (OrganizationContext.getOrganizationId() == null) {
-                        organizationRepository.findBySlug("default")
+                        organizationRepository.findFirstByIsPlatformRootTrue()
+                                .or(() -> organizationRepository.findBySlug("ops"))
                                 .or(() -> organizationRepository.findBySlug("system"))
                                 .ifPresent(org -> OrganizationContext.setOrganizationId(org.getId()));
                     }

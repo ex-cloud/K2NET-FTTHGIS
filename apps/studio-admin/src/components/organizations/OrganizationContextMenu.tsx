@@ -232,7 +232,7 @@ export function OrganizationContextMenu({
         <ContextMenuSeparator className="bg-border/40 my-1" />
 
         {/* 9. Delete Organization */}
-        {organization.slug === "default" || organization.id === "00000000-0000-0000-0000-000000000001" ? (
+        {Boolean(organization.isPlatformRoot) || organization.slug === "ops" || organization.id === "00000000-0000-0000-0000-000000000001" ? (
           <ContextMenuItem
             disabled
             className="opacity-50 cursor-not-allowed gap-2 text-muted-foreground select-none"

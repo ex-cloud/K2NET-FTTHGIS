@@ -43,7 +43,9 @@ class AuditClient:
             return
 
         tenant_slug = str(tenant_id) if tenant_id else "system"
-        if tenant_slug in ("default", "00000000-0000-0000-0000-000000000001", "none", ""):
+        if tenant_slug == "00000000-0000-0000-0000-000000000001":
+            tenant_slug = "ops"
+        elif tenant_slug in ("00000000-0000-0000-0000-000000000000", "none", "", "system"):
             tenant_slug = "system"
 
         meta = dict(metadata or {})

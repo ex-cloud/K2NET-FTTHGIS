@@ -28,6 +28,14 @@ public class UserSyncService {
     private final KeycloakAdminService keycloakAdminService;
     private final SystemSettingService settingsService;
 
+    private static final List<String> SYSTEM_ROLE_PRIORITY = List.of(
+            "super_admin", "system_support", "account_manager", "system_auditor"
+    );
+
+    private static final List<String> TENANT_ROLE_PRIORITY = List.of(
+            "admin", "noc", "finance", "surveyor", "technician", "helpdesk", "viewer"
+    );
+
     /**
      * Synchronize ALL users from Keycloak to Local Database.
      * Useful for initial migration or manual sync.
@@ -57,23 +65,48 @@ public class UserSyncService {
             if (email == null)
                 continue;
 
-            // Resolve organization for this realm
-            Organization org = targetRealm != null ? 
-                organizationRepository.findBySlug(targetRealm).orElse(null) : null;
+            if (username != null && (username.equalsIgnoreCase("k2net-master-admin")
+                    || username.toLowerCase().startsWith("service-account-"))) {
+                continue;
+            }
 
+            // Resolve organization for this user (2-Realm Architecture aware)
+            Organization org = null;
+            if (targetRealm != null && !"ftth-realm".equalsIgnoreCase(targetRealm) && !"master".equalsIgnoreCase(targetRealm)) {
+                java.util.Map<String, List<String>> attrs = kUser.getAttributes();
+                if (attrs != null) {
+                    List<String> orgIds = attrs.getOrDefault("organization_id", attrs.get("tenant_id"));
+                    if (orgIds != null && !orgIds.isEmpty() && orgIds.get(0) != null && !orgIds.get(0).isBlank()) {
+                        try {
+                            org = organizationRepository.findById(UUID.fromString(orgIds.get(0).trim())).orElse(null);
+                        } catch (IllegalArgumentException ignored) {}
+                    }
+                    if (org == null) {
+                        List<String> slugs = attrs.get("tenant_slug");
+                        if (slugs != null && !slugs.isEmpty() && slugs.get(0) != null && !slugs.get(0).isBlank()) {
+                            org = organizationRepository.findBySlug(slugs.get(0).trim().toLowerCase()).orElse(null);
+                        }
+                    }
+                }
+                if (org == null && !com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM.equalsIgnoreCase(targetRealm)) {
+                    org = organizationRepository.findBySlug(targetRealm).orElse(null);
+                }
+            }
+
+            final Organization resolvedOrg = org;
             UUID uuid = UUID.fromString(keycloakId);
             Optional<User> existingUser = userRepository.findById(uuid);
             if (existingUser.isPresent()) {
-                updateExistingUser(existingUser.get(), email, name, username, org);
+                updateExistingUser(existingUser.get(), email, name, username, resolvedOrg);
             } else {
                 userRepository.findByEmail(email)
                         .map(user -> {
                             log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
                             userRepository.delete(user);
                             userRepository.flush();
-                            return createNewUser(keycloakId, email, name, username, org);
+                            return createNewUser(keycloakId, email, name, username, resolvedOrg);
                         })
-                        .orElseGet(() -> createNewUser(keycloakId, email, name, username, org));
+                        .orElseGet(() -> createNewUser(keycloakId, email, name, username, resolvedOrg));
             }
         }
         log.info("Full User Synchronization Complete. Synced {} users.", keycloakUsers.size());
@@ -101,18 +134,20 @@ public class UserSyncService {
             realmName = issuer.substring(issuer.lastIndexOf("/") + 1);
         }
 
-        boolean isSystemRealm = "ftth-realm".equalsIgnoreCase(realmName)
-                || "master".equalsIgnoreCase(realmName)
-                || "default".equalsIgnoreCase(realmName);
+        // Never JIT-provision Keycloak 'master' realm CLI/service accounts into ftth_gis.users
+        if ("master".equalsIgnoreCase(realmName)
+                || (username != null && (username.equalsIgnoreCase("k2net-master-admin")
+                        || username.toLowerCase().startsWith("service-account-")))) {
+            log.debug("Skipping local JIT user provisioning for Keycloak master/service account: {} (realm: {})", username, realmName);
+            return null;
+        }
+
+        boolean isSystemRealm = "ftth-realm".equalsIgnoreCase(realmName);
         boolean isSharedTenantRealm = com.company.ftthgis.config.tenant.KeycloakService.TENANT_SHARED_REALM
                 .equalsIgnoreCase(realmName);
 
         Organization org = null;
-        if (isSystemRealm) {
-            org = organizationRepository.findBySlug("default")
-                    .or(() -> organizationRepository.findBySlug("system"))
-                    .orElse(null);
-        } else {
+        if (!isSystemRealm) {
             String orgIdClaim = jwt.getClaimAsString("organization_id");
             if (orgIdClaim == null || orgIdClaim.isBlank()) {
                 orgIdClaim = jwt.getClaimAsString("tenant_id");
@@ -149,28 +184,12 @@ public class UserSyncService {
             }
         }
 
-        // Normalize canonical shared tenant role aliases
-        if (roleNames.contains("tenant_owner") || roleNames.contains("tenant_admin")) {
-            roleNames.add("admin");
-        }
-        if (roleNames.contains("noc_operator")) {
-            roleNames.add("noc");
-        }
-        if (roleNames.contains("network_engineer")) {
-            roleNames.add("surveyor");
-        }
-        if (roleNames.contains("field_technician")) {
-            roleNames.add("technician");
-        }
-        if (roleNames.contains("billing_staff")) {
-            roleNames.add("finance");
-        }
-
-        List<String> priorityRoles = List.of(
-            "super_admin", "admin", "noc", "finance", "surveyor", 
-            "warehouse", "technician", "auditor", "helpdesk", "vendor", "viewer"
-        );
-        String resolvedRole = "viewer";
+        // Resolve the highest-priority canonical role strictly within the realm's scope (Scope Air-Gap, V78):
+        //   - Platform realm ('ftth-realm') → SYSTEM templates only (never falls back to a TENANT role)
+        //   - Tenant realm ('k2net-tenants') → TENANT templates only (falls back to 'viewer')
+        String roleScope = isSystemRealm ? "SYSTEM" : "TENANT";
+        List<String> priorityRoles = isSystemRealm ? SYSTEM_ROLE_PRIORITY : TENANT_ROLE_PRIORITY;
+        String resolvedRole = isSystemRealm ? null : "viewer";
         for (String r : priorityRoles) {
             if (roleNames.contains(r)) {
                 resolvedRole = r;
@@ -178,9 +197,22 @@ public class UserSyncService {
             }
         }
 
-        final String finalResolvedRole = resolvedRole;
-        Role jwtRole = roleRepository.findByNameAndIsSystemRoleTrue(finalResolvedRole)
-                .orElseGet(() -> roleRepository.findByName(finalResolvedRole).orElse(null));
+        Role jwtRole = null;
+        if (resolvedRole != null) {
+            final String targetRole = resolvedRole;
+            final UUID targetOrgId = org != null ? org.getId() : null;
+            if (!isSystemRealm && targetOrgId != null) {
+                jwtRole = roleRepository.findByNameAndOrganizationId(targetRole, targetOrgId)
+                        .filter(r -> "TENANT".equalsIgnoreCase(r.getScope()))
+                        .orElse(null);
+            }
+            if (jwtRole == null) {
+                jwtRole = roleRepository.findByNameAndScopeAndOrganizationIsNull(targetRole, roleScope)
+                        .or(() -> roleRepository.findByNameAndIsSystemRoleTrue(targetRole)
+                                .filter(r -> roleScope.equalsIgnoreCase(r.getScope())))
+                        .orElse(null);
+            }
+        }
 
         UUID uuid = UUID.fromString(keycloakId);
         Optional<User> existingUser = userRepository.findById(uuid);
@@ -202,7 +234,7 @@ public class UserSyncService {
         if (targetUser != null) {
             Organization userOrg = targetUser.getOrganization();
             String userOrgSlug = (userOrg != null) ? userOrg.getSlug() : "system";
-            boolean isSystemOrg = "system".equalsIgnoreCase(userOrgSlug) || "default".equalsIgnoreCase(userOrgSlug);
+            boolean isSystemOrg = userOrg == null || "system".equalsIgnoreCase(userOrgSlug);
 
             if (isSystemRealm) {
                 if (!isSystemOrg) {
@@ -240,6 +272,7 @@ public class UserSyncService {
         }
 
         final Organization resolvedOrg = org;
+        final Role resolvedJwtRole = jwtRole;
 
         if (existingUser.isPresent()) {
             boolean isJwtStale = false;
@@ -248,16 +281,16 @@ public class UserSyncService {
                 java.time.Instant updatedAtInstant = user.getUpdatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant();
                 isJwtStale = jwt.getIssuedAt().isBefore(updatedAtInstant.minusSeconds(5));
             }
-            return updateExistingUser(user, email, name, username, resolvedOrg, isJwtStale, jwtRole);
+            return updateExistingUser(user, email, name, username, resolvedOrg, isJwtStale, resolvedJwtRole);
         } else {
             return userRepository.findByEmail(email)
                     .map(user -> {
                         log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
                         userRepository.delete(user);
                         userRepository.flush();
-                        return createNewUser(keycloakId, email, name, username, resolvedOrg, jwtRole);
+                        return createNewUser(keycloakId, email, name, username, resolvedOrg, resolvedJwtRole);
                     })
-                    .orElseGet(() -> createNewUser(keycloakId, email, name, username, resolvedOrg, jwtRole));
+                    .orElseGet(() -> createNewUser(keycloakId, email, name, username, resolvedOrg, resolvedJwtRole));
         }
     }
 
@@ -340,8 +373,16 @@ public class UserSyncService {
 
         Role userRole = role;
         if (userRole == null) {
-            userRole = roleRepository.findByNameAndIsSystemRoleTrue("viewer")
-                    .orElseThrow(() -> new RuntimeException("Default 'viewer' role not found in database"));
+            if (org == null) {
+                // Scope Air-Gap: Platform (SYSTEM) users must never receive a TENANT role
+                userRole = roleRepository.findByNameAndScopeAndOrganizationIsNull("system_auditor", "SYSTEM")
+                        .or(() -> roleRepository.findByNameAndIsSystemRoleTrue("system_auditor"))
+                        .orElseThrow(() -> new RuntimeException("Default 'system_auditor' role not found in database"));
+            } else {
+                userRole = roleRepository.findByNameAndScopeAndOrganizationIsNull("viewer", "TENANT")
+                        .or(() -> roleRepository.findByNameAndIsSystemRoleTrue("viewer"))
+                        .orElseThrow(() -> new RuntimeException("Default 'viewer' role not found in database"));
+            }
         }
 
         User user = new User();

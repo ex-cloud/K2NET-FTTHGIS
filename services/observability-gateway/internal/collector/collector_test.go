@@ -19,7 +19,7 @@ func TestCollectorInitializationAndDnsCheck(t *testing.T) {
 	}
 
 	// Test CheckDns with valid domain
-	res, err := c.CheckDns(context.Background(), "gis.kdua.net")
+	res, err := c.CheckDns(context.Background(), "ops.kdua.net")
 	if err != nil {
 		t.Fatalf("expected nil error from CheckDns, got: %v", err)
 	}

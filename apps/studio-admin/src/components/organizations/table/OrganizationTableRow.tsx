@@ -97,8 +97,8 @@ export function OrganizationTableRow({
                 <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
                   {org.name}
                 </span>
-                {(org.slug === "default" || org.slug === "system") && (
-                  <Badge variant="outline" className="border-cyan-500/40 text-cyan-400 bg-cyan-500/10 text-[9px] px-1.5 py-0 font-mono font-medium tracking-wide">
+                {(Boolean(org.isPlatformRoot) || org.slug === "ops" || org.slug === "system") && (
+                  <Badge variant="outline" className="border-primary/40 text-primary bg-primary/10 text-[9px] px-1.5 py-0 font-mono font-medium tracking-wide">
                     SYSTEM PLATFORM
                   </Badge>
                 )}

@@ -124,10 +124,7 @@ export function usePermissions() {
     r.toLowerCase().replace(/^role_/, "")
   );
 
-  const isOwner =
-    roles.includes("owner") ||
-    roles.includes("tenant_admin") ||
-    roles.includes("admin");
+  const isOwner = roles.includes("owner") || roles.includes("admin");
 
   const isEnabled = Boolean(authenticated || (isImpersonating && sessionId));
 

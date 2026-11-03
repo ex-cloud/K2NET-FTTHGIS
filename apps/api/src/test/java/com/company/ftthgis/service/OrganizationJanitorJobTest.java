@@ -107,13 +107,14 @@ class OrganizationJanitorJobTest {
     }
 
     @Test
-    @DisplayName("Root platform organization (default) is protected from auto-purge even if grace period elapsed")
+    @DisplayName("Root platform organization (ops) is protected from auto-purge even if grace period elapsed")
     void testRootOrganizationProtectionFromAutoPurge() {
         LocalDateTime now = LocalDateTime.now();
         Organization rootOrg = Organization.builder()
                 .id(UUID.fromString("00000000-0000-0000-0000-000000000001"))
-                .name("Root Organization")
-                .slug("default")
+                .name("K2NET Network Operations")
+                .slug("ops")
+                .isPlatformRoot(true)
                 .status(Organization.OrganizationStatus.TRIAL_EXPIRED)
                 .gracePeriodUntil(now.minusDays(1))
                 .build();

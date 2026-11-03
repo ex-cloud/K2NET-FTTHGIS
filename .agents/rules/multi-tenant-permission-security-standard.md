@@ -4,7 +4,7 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
 
 ---
 
-## 🛡️ 1. Hukum Scope Air-Gap Mutlak (Absolute Invariants)
+## 🛡️ 1. Hukum Scope Air-Gap Mutlak & 11 Role Template Kanonikal (Absolute Invariants)
 
 1. **Dua Alam Otorisasi Terpisah**:
    - **`SCOPE_SYSTEM`**: Hak akses platform internal K2NET (Manajemen tenant, arsitektur workspace, billing global, lisensi Ed25519, audit sistem, AI internal, observabilitas).
@@ -13,6 +13,15 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
    - Role dengan `scope = 'TENANT'` atau yang memiliki `organization_id IS NOT NULL` **DILARANG KERAS** memiliki permission berscope `SYSTEM`.
    - Role dengan `scope = 'SYSTEM'` (selain `super_admin`) **DILARANG KERAS** memiliki permission berscope `TENANT`.
    - Satu-satunya entitas yang memiliki hak lintas-alam secara legal adalah `super_admin` (God-Mode) dan sesi aktif **Impersonation Engine** via header bertandatangan ganda (`X-Impersonating-User` + token scoped).
+3. **11 Role Template Kanonikal (`ftth_gis.roles` & `keycloak_db.keycloak_role` — V78)**:
+   - **4 Role `SYSTEM` (`ftth-realm`)**: `super_admin`, `account_manager`, `system_auditor`, `system_support`.
+   - **7 Role `TENANT` (`k2net-tenants`)**: `admin`, `viewer`, `technician`, `finance`, `helpdesk`, `noc`, `surveyor`.
+   - Dilarang keras menambahkan kembali role pra-V78 (`tenant_owner`, `tenant_admin`, `network_engineer`, `noc_operator`, `field_technician`, `billing_staff`, `warehouse`) ke dalam `keycloak_db` maupun kode sumber.
+4. **Arsitektur 3-Plane Domain & 6 Komponen Shared Error (`@k2net/ui`)**:
+   - **Control Plane (`https://system-gis.kdua.net`)**: Rute login khusus `/auth/console/login` (rute `/login` merender 404 `<NotFoundError />`).
+   - **K2NET Operational FTTH Workspace (`https://ops.kdua.net`)**: Diidentifikasi dengan atribut semantik `is_platform_root = true` (`realm_key = 'k2net-tenants'`, seluruh 21 paket marketplace aktif permanen; dilarang hardcode string `"default"`).
+   - **Tenant ISP Plane (`https://<slug>.kdua.net`)**: Subdomain yang tidak terdaftar di database merender 404 `<TenantDomainError />` (form login dikunci penuh).
+   - **6 Komponen Shared Error (`@k2net/ui`)**: `<NotFoundError />` (404), `<TenantDomainError />` (404 Unregistered Subdomain), `<ForbiddenError />` (403), `<SessionExpiredError />` (419 Sesi Kedaluwarsa / Login Perangkat Lain), `<ServerError />` (500/502), dan `<MaintenanceMode />` (503).
 
 ---
 
@@ -61,11 +70,13 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
 
 ## 🔒 4. Pertahanan Berlapis Ingress Token (`SecurityConfig.java`)
 
-1. **Penyaringan Ingress Non-Platform Realm**:
+1. **Penyaringan Ingress Platform Realm (`ftth-realm`)**:
+   Resolusi nama role dari token `ftth-realm` wajib difilter dengan `.filter(r -> "SYSTEM".equalsIgnoreCase(r.getScope()))` agar tidak pernah memetakan ke role `TENANT`.
+2. **Penyaringan Ingress Non-Platform Realm (`k2net-tenants`)**:
    Token dari realm non-platform (tenant) yang masuk ke backend Spring Boot wajib disaring dengan metode `isSystemScopedPermission(permission)`:
    - Memeriksa nilai database `permission.getScope() = 'SYSTEM'`.
    - Memeriksa fallback prefix menyeluruh: `system.*`, `platform.*`, `support.*`, `catalog.*`, `licensing.*`, `billing.subscriptions.*`, `billing.invoices.*`, `billing.read`, `orgs.*`.
-2. **Drop Otomatis**:
+3. **Drop Otomatis**:
    Setiap permission berscope `SYSTEM` yang terdeteksi pada token non-platform wajib di-drop sebelum `SimpleGrantedAuthority` dimasukkan ke dalam `SecurityContextHolder`.
 
 ---

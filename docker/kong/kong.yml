@@ -593,7 +593,12 @@ plugins:
           local PLATFORM_REALM  = "ftth-realm"
           local PLATFORM_TENANT = "00000000-0000-0000-0000-000000000000"
           local BASE_DOMAIN     = "kdua%.net"
-          local RESERVED        = { system = true, api = true, gis = true, auth = true }
+          local RESERVED        = {
+            system = true, ["system-gis"] = true,
+            api = true, ["api-gis"] = true,
+            gis = true, auth = true, ["auth-gis"] = true,
+            console = true, admin = true, www = true, default = true,
+          }
 
           local req, svc = kong.request, kong.service.request
 
@@ -675,6 +680,7 @@ plugins:
             local host = (req.get_host() or ""):lower()
             local slug = host:match("^([a-z0-9%-]+)%-gis%." .. BASE_DOMAIN .. "$")
                       or host:match("^([a-z0-9%-]+)%.gis%." .. BASE_DOMAIN .. "$")
+                      or host:match("^([a-z0-9%-]+)%." .. BASE_DOMAIN .. "$")
             if slug and not RESERVED[slug] then
               tenant = slug
               svc.set_header("X-Tenant-Slug", slug)
@@ -692,6 +698,7 @@ plugins:
               local host = (req.get_host() or ""):lower()
               local slug = host:match("^([a-z0-9%-]+)%-gis%." .. BASE_DOMAIN .. "$")
                         or host:match("^([a-z0-9%-]+)%.gis%." .. BASE_DOMAIN .. "$")
+                        or host:match("^([a-z0-9%-]+)%." .. BASE_DOMAIN .. "$")
               if slug and not RESERVED[slug] then
                 tenant = slug
                 svc.set_header("X-Tenant-Slug", slug)

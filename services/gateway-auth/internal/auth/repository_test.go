@@ -17,34 +17,39 @@ func TestResolveCanonicalRoleName(t *testing.T) {
 			expected: "super_admin",
 		},
 		{
-			name:     "Tenant owner maps to admin",
-			roles:    []string{"default-roles-k2net-tenants", "tenant_owner"},
+			name:     "System support priority over account manager",
+			roles:    []string{"account_manager", "system_support"},
+			expected: "system_support",
+		},
+		{
+			name:     "Canonical admin priority over noc",
+			roles:    []string{"default-roles-k2net-tenants", "noc", "admin"},
 			expected: "admin",
 		},
 		{
-			name:     "Tenant admin maps to admin",
-			roles:    []string{"tenant_admin", "noc_operator"},
-			expected: "admin",
-		},
-		{
-			name:     "NOC operator maps to noc",
-			roles:    []string{"noc_operator"},
+			name:     "Canonical noc role",
+			roles:    []string{"noc", "viewer"},
 			expected: "noc",
 		},
 		{
-			name:     "Network engineer maps to surveyor",
-			roles:    []string{"network_engineer"},
+			name:     "Canonical surveyor role",
+			roles:    []string{"surveyor"},
 			expected: "surveyor",
 		},
 		{
-			name:     "Field technician maps to technician",
-			roles:    []string{"field_technician"},
+			name:     "Canonical technician role",
+			roles:    []string{"technician"},
 			expected: "technician",
 		},
 		{
-			name:     "Billing staff maps to finance",
-			roles:    []string{"billing_staff"},
+			name:     "Canonical finance role",
+			roles:    []string{"finance"},
 			expected: "finance",
+		},
+		{
+			name:     "Canonical helpdesk role",
+			roles:    []string{"helpdesk"},
+			expected: "helpdesk",
 		},
 		{
 			name:     "Fallback to viewer when no known roles",
@@ -77,8 +82,8 @@ func TestResolveTenantContext_SentinelSlugs(t *testing.T) {
 		t.Errorf("expected ErrTenantNotFound for empty slug, got %v", err)
 	}
 
-	// 2. Sentinel slugs ("system", "admin", "default")
-	sentinels := []string{"system", "admin", "default", "SYSTEM", "  admin  "}
+	// 2. Sentinel slug ("system" only)
+	sentinels := []string{"system", "SYSTEM", "  system  "}
 	for _, slug := range sentinels {
 		res, err := repo.ResolveTenantContext(context.Background(), slug)
 		if err != nil {
@@ -98,6 +103,15 @@ func TestResolveTenantContext_SentinelSlugs(t *testing.T) {
 		}
 		if !res.MFARequired {
 			t.Errorf("expected MFARequired=true for sentinel platform operator, got false")
+		}
+	}
+
+	// 3. Legacy/unregistered slugs ("default", "admin", "console", "gis") must return ErrTenantNotFound when not in DB
+	unregistered := []string{"default", "admin", "console", "gis"}
+	for _, slug := range unregistered {
+		_, err := repo.ResolveTenantContext(context.Background(), slug)
+		if err != ErrTenantNotFound {
+			t.Errorf("expected ErrTenantNotFound for unregistered slug %q, got %v", slug, err)
 		}
 	}
 }

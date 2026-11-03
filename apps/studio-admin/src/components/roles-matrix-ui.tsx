@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@k2net/i18n";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useAuth } from "@k2net/auth/client";
 import {
@@ -18,10 +19,14 @@ import {
 import { deleteRole } from "./roles-matrix/rolesMatrixApi";
 
 export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
+  const { t } = useTranslation();
   const { canAccess } = usePermissions();
   const { token } = useAuth();
   const state = useRolesMatrixState(context);
-  const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+  const [isDeletingRole, setIsDeletingRole] = useState(false);
 
   if (state.loading) {
     return (
@@ -53,20 +58,35 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
     }
   };
 
-  const canEdit = canAccess("roles.update");
+  const canEdit = canAccess(["system.security.manage", "roles.update"]);
 
-  const handleDeleteRole = async (role: Role) => {
+  const handleOpenCreateRole = () => {
+    setEditingRole(null);
+    setIsRoleModalOpen(true);
+  };
+
+  const handleOpenEditRole = (role: Role) => {
+    setEditingRole(role);
+    setIsRoleModalOpen(true);
+  };
+
+  const handleConfirmDeleteRole = async (role: Role) => {
     if (!token) return;
-    if (!confirm(`Are you sure you want to permanently delete custom role "${role.displayName || role.name}"?`)) {
-      return;
-    }
+    setIsDeletingRole(true);
     try {
       await deleteRole(role.id, token);
-      toast.success(`Role "${role.displayName || role.name}" deleted successfully!`);
+      toast.success(
+        t("security.role_deleted_success", {
+          name: role.displayName || role.name,
+        })
+      );
+      setRoleToDelete(null);
       await state.fetchData();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to delete role";
+      const msg = err instanceof Error ? err.message : t("security.failed_delete_role");
       toast.error(msg);
+    } finally {
+      setIsDeletingRole(false);
     }
   };
 
@@ -82,7 +102,7 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
         batchSaving={state.batchSaving}
         canUpdateRoles={canEdit}
         handleSaveAll={state.handleSaveAll}
-        onCreateRole={() => setIsCreateRoleOpen(true)}
+        onCreateRole={handleOpenCreateRole}
       />
 
       <RolesMatrixToolbar
@@ -103,7 +123,8 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
           isRoleModified={state.isRoleModified}
           togglePermission={state.togglePermission}
           canEdit={canEdit}
-          onDeleteRole={handleDeleteRole}
+          onEditRole={handleOpenEditRole}
+          onDeleteRole={(role) => setRoleToDelete(role)}
         />
       ) : (
         <RolesMatrixGrid
@@ -116,6 +137,8 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
           isRoleModified={state.isRoleModified}
           togglePermission={state.togglePermission}
           onSaveRole={handleGridSaveRole}
+          onEditRole={handleOpenEditRole}
+          onDeleteRole={(role) => setRoleToDelete(role)}
         />
       )}
 
@@ -128,12 +151,20 @@ export function RolesMatrixUI({ context }: RolesMatrixUIProps) {
         setImpactModalOpen={state.setImpactModalOpen}
         impactData={state.impactData}
         onConfirmImpact={handleConfirmImpact}
+        roleToDelete={roleToDelete}
+        setRoleToDelete={setRoleToDelete}
+        onConfirmDeleteRole={handleConfirmDeleteRole}
+        isDeletingRole={isDeletingRole}
       />
 
       <CreateRoleModal
-        open={isCreateRoleOpen}
-        onOpenChange={setIsCreateRoleOpen}
+        open={isRoleModalOpen}
+        onOpenChange={(open) => {
+          setIsRoleModalOpen(open);
+          if (!open) setEditingRole(null);
+        }}
         defaultScope={state.selectedScope}
+        editingRole={editingRole}
         token={token || undefined}
         onSuccess={() => state.fetchData()}
       />

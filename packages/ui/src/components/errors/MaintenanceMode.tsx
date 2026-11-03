@@ -2,11 +2,18 @@
 
 import React from "react";
 import { Wrench } from "lucide-react";
+import { resolveErrorCopy, type ErrorLocale } from "./error-i18n";
 
-export function MaintenanceMode() {
+export interface MaintenanceModeProps {
+  statusCode?: number;
+  locale?: ErrorLocale;
+}
+
+export function MaintenanceMode({ statusCode = 503, locale }: MaintenanceModeProps) {
+  const copy = resolveErrorCopy(locale);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-6 relative overflow-hidden">
-      {/* Background Gradient & Glow */}
       <div className="absolute inset-0 bg-linear-to-br from-background via-muted/20 to-background z-0" />
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl z-0 pointer-events-none" />
 
@@ -16,11 +23,12 @@ export function MaintenanceMode() {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-4xl font-extrabold tracking-tight text-primary">503</h1>
-          <h2 className="text-xl font-bold tracking-tight text-foreground/90">Pemeliharaan Terjadwal</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Platform sedang meningkatkan performa dan menerapkan migrasi sistem database rutin. Silakan coba beberapa saat lagi.
-          </p>
+          <div className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-muted border border-border text-[11px] font-mono text-muted-foreground">
+            {copy.statusCodeLabel(statusCode)}
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-primary">{statusCode}</h1>
+          <h2 className="text-xl font-bold tracking-tight text-foreground/90">{copy.error503Title}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">{copy.error503Desc}</p>
         </div>
       </div>
     </div>

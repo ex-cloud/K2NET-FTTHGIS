@@ -15,5 +15,6 @@ export function getAdminKeycloakConfig(): KeycloakAuthConfig {
     clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "ftth-gis-frontend",
     plane: "PLATFORM",
     tenantSlug: "system",
+    loginPath: "/auth/console/login",
   };
 }

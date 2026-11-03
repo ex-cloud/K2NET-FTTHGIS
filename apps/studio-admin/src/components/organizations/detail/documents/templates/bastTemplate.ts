@@ -26,7 +26,7 @@ export function getBastTemplate(
           headers: ["Komponen Sistem", "Detail Konfigurasi", "Status Verifikasi"],
           rows: [
             ["Keycloak Identity Realm", `Realm: ${org.slug}, Protocol OpenID Connect`, "ACTIVE / READY"],
-            ["Custom Domain & SSL", `${org.slug}.gis.kdua.net (Let's Encrypt TLS 1.3)`, "VERIFIED (A Record)"],
+            ["Custom Domain & SSL", `${org.slug}.kdua.net (Let's Encrypt TLS 1.3)`, "VERIFIED (A Record)"],
             ["Spatial PostGIS Schema", "Multi-tenant tenant_id scoped isolation", "INITIALIZED"],
             ["OLT SNMP Telemetry", "Polling engine agent port 5010 (15s interval)", "CONNECTED (100% OK)"],
             ["MikroTik BRAS Gateway", "Radius Accounting port 1812 / 1813", "TEST PACKET OK"],

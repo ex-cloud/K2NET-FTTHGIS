@@ -31,6 +31,7 @@ export interface Organization {
   adminPassword?: string;
   plan?: string;
   mfaEnforced?: boolean;
+  isPlatformRoot?: boolean;
   status?: 'ACTIVE' | 'SUSPENDED' | 'TRIAL' | 'PROVISIONING' | 'OVERDUE' | 'TRIAL_EXPIRED' | 'PENDING_APPROVAL' | 'DELETED';
   trialExpiresAt?: string;
   createdAt?: string;

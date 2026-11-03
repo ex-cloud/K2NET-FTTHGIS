@@ -100,6 +100,7 @@ export interface EnrichedOrganization {
 
   // Security Policy
   mfaEnforced?: boolean;
+  isPlatformRoot?: boolean;
 
   // Telemetry & Rate Limiting
   apiRateLimitUsed: number;
@@ -140,6 +141,7 @@ export interface RawOrganizationInput {
   adminUsername?: string;
   adminEmail?: string;
   trialExpiresAt?: string;
+  isPlatformRoot?: boolean;
   subscriptionPlan?: {
     name?: string;
     maxProjects?: number;
@@ -181,10 +183,11 @@ function resolveFeatureFlags(
 function resolveMaxQuotas(
   tier: PlanTier,
   plan?: RawOrganizationInput["subscriptionPlan"],
-  slug?: string
+  slug?: string,
+  isPlatformRoot?: boolean
 ) {
-  // Organisasi platform internal (Main Organization / default / system)
-  if (slug === "default" || slug === "system") {
+  // Organisasi platform internal (Main Organization / ops / system)
+  if (Boolean(isPlatformRoot) || slug === "ops" || slug === "system") {
     return {
       maxOlts: 1000,
       maxOdps: 12000,
@@ -265,7 +268,7 @@ export function enrichOrganization(
   const planTier = normalizePlanTier(rawOrg.subscriptionPlan?.name);
   const status = (rawOrg.status || "ACTIVE") as OrganizationStatus;
   const featureFlags = resolveFeatureFlags(stats?.featureFlags as Partial<OrganizationFeatureFlags> | undefined, planTier);
-  const quotas = resolveMaxQuotas(planTier, rawOrg.subscriptionPlan, rawOrg.slug);
+  const quotas = resolveMaxQuotas(planTier, rawOrg.subscriptionPlan, rawOrg.slug, rawOrg.isPlatformRoot);
   const { customDomain, hasCustomDomain } = resolveCustomDomain(rawOrg.website);
   const { picName, picEmail, picPhone } = resolvePicInfo(rawOrg);
   const used = resolveUsedQuotas(stats);
@@ -299,6 +302,7 @@ export function enrichOrganization(
     domainSslActive: hasCustomDomain,
 
     featureFlags,
+    isPlatformRoot: Boolean(rawOrg.isPlatformRoot) || rawOrg.slug === "ops",
 
     apiRateLimitUsed: used.apiRateLimitUsed,
     apiRateLimitMax: quotas.apiRateLimitMax,

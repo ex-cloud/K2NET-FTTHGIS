@@ -29,6 +29,14 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
 
     boolean existsByUserIdAndOrganizationIdAndStatus(UUID userId, UUID organizationId, String status);
 
+    @Query("SELECT CASE WHEN COUNT(om) > 0 THEN true ELSE false END FROM OrganizationMember om " +
+           "WHERE om.user.id = :userId AND LOWER(om.organization.slug) = LOWER(:slug) AND om.status = :status")
+    boolean existsByUserIdAndOrganizationSlugAndStatus(
+            @Param("userId") UUID userId,
+            @Param("slug") String slug,
+            @Param("status") String status
+    );
+
     @Query("SELECT om FROM OrganizationMember om " +
            "JOIN FETCH om.organization org " +
            "LEFT JOIN FETCH om.role r " +
