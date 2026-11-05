@@ -464,6 +464,81 @@ public class KeycloakAdminService {
         }
     }
 
+    /**
+     * Upsert konfigurasi Identity Provider pada realm spesifik (e.g. 'k2net-tenants').
+     *
+     * @param realm        Target realm Keycloak
+     * @param alias        Alias unik IdP (e.g. 'sso-fibernet')
+     * @param providerId   Tipe IdP Keycloak ('oidc', 'saml', 'google')
+     * @param displayName  Label yang ditampilkan pada UI Keycloak
+     * @param customConfig Konfigurasi parameter IdP (clientId, clientSecret, discoveryUrl, metadataUrl, dsb)
+     */
+    public void upsertRealmIdentityProvider(String realm, String alias, String providerId, String displayName, Map<String, String> customConfig) {
+        try {
+            log.info("Configuring Identity Provider {} ({}) in Keycloak realm: {}", alias, providerId, realm);
+            var idpsResource = keycloak.realm(realm).identityProviders();
+
+            List<IdentityProviderRepresentation> existing = idpsResource.findAll();
+            Optional<IdentityProviderRepresentation> providerOpt = existing.stream()
+                    .filter(i -> alias.equalsIgnoreCase(i.getAlias()))
+                    .findFirst();
+
+            IdentityProviderRepresentation idp = providerOpt.orElseGet(() -> {
+                IdentityProviderRepresentation newIdp = new IdentityProviderRepresentation();
+                newIdp.setAlias(alias);
+                newIdp.setProviderId(providerId);
+                newIdp.setEnabled(true);
+                return newIdp;
+            });
+
+            if (displayName != null && !displayName.isBlank()) {
+                idp.setDisplayName(displayName);
+            }
+            idp.setProviderId(providerId);
+            idp.setEnabled(true);
+
+            Map<String, String> config = idp.getConfig();
+            if (config == null) {
+                config = new java.util.HashMap<>();
+            }
+            if (customConfig != null) {
+                config.putAll(customConfig);
+            }
+            if (!config.containsKey("syncMode")) {
+                config.put("syncMode", "IMPORT");
+            }
+            idp.setConfig(config);
+
+            if (providerOpt.isPresent()) {
+                idpsResource.get(alias).update(idp);
+                log.info("Successfully updated Identity Provider: {} in realm: {}", alias, realm);
+            } else {
+                idpsResource.create(idp);
+                log.info("Successfully created Identity Provider: {} in realm: {}", alias, realm);
+            }
+        } catch (Exception e) {
+            log.error("Failed to upsert Identity Provider {} in realm {}: {}", alias, realm, e.getMessage(), e);
+            throw new RuntimeException("Failed to upsert Identity Provider in Keycloak: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Menghapus Identity Provider dari realm tertentu (idempoten).
+     *
+     * @param realm Target realm Keycloak
+     * @param alias Alias unik IdP yang akan dihapus
+     */
+    public void deleteRealmIdentityProvider(String realm, String alias) {
+        try {
+            log.info("Removing Identity Provider: {} from realm: {}", alias, realm);
+            var idpsResource = keycloak.realm(realm).identityProviders();
+            idpsResource.get(alias).remove();
+            log.info("Successfully removed Identity Provider: {} from realm: {}", alias, realm);
+        } catch (Exception e) {
+            log.warn("Identity Provider {} not found or already removed from realm {}: {}", alias, realm, e.getMessage());
+        }
+    }
+
     public List<FederatedIdentityRepresentation> getUserFederatedIdentities(String realm, String userId) {
         try {
             return keycloak.realm(realm).users().get(userId).getFederatedIdentity();

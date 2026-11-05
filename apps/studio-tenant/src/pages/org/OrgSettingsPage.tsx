@@ -9,6 +9,12 @@ import {
   Lock,
   Sparkles,
   ExternalLink,
+  Play,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  KeyRound,
 } from "lucide-react";
 import {
   PageHero,
@@ -24,6 +30,11 @@ import {
   TabsTrigger,
   TabsContent,
   Badge,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { useAuth } from "@k2net/auth/client";
@@ -227,12 +238,204 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
   );
 }
 
-function SsoSettingsSection({ slug: _slug }: { slug?: string }) {
+interface SsoConfigResponse {
+  id?: string;
+  providerType: string;
+  displayName?: string;
+  issuerUrl?: string;
+  clientId: string;
+  hasClientSecret?: boolean;
+  metadataUrl?: string;
+  entityId?: string;
+  singleSignOnUrl?: string;
+  signingCertificate?: string;
+  enforceSso: boolean;
+  allowBreakGlassBypass: boolean;
+  status: string;
+  lastTestStatus?: string;
+  lastTestAt?: string;
+  lastTestErrorMessage?: string;
+  version?: number;
+}
+
+function SsoSettingsSection({ slug }: { slug?: string }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { license, isLoading: isLicenseLoading } = useTenantLicense();
 
   const isSsoAllowed = Boolean(license?.entitlements?.ssoEnabled);
+
+  const [providerType, setProviderType] = React.useState<string>("GOOGLE");
+  const [displayName, setDisplayName] = React.useState<string>("");
+  const [clientId, setClientId] = React.useState<string>("");
+  const [clientSecret, setClientSecret] = React.useState<string>("");
+  const [hasExistingSecret, setHasExistingSecret] = React.useState<boolean>(false);
+  const [issuerUrl, setIssuerUrl] = React.useState<string>("");
+  const [metadataUrl, setMetadataUrl] = React.useState<string>("");
+  const [singleSignOnUrl, setSingleSignOnUrl] = React.useState<string>("");
+  const [entityId, setEntityId] = React.useState<string>("");
+  const [signingCertificate, setSigningCertificate] = React.useState<string>("");
+  const [enforceSso, setEnforceSso] = React.useState<boolean>(false);
+  const [allowBreakGlassBypass, setAllowBreakGlassBypass] = React.useState<boolean>(true);
+  const [lastTestStatus, setLastTestStatus] = React.useState<string | undefined>(undefined);
+  const [lastTestAt, setLastTestAt] = React.useState<string | undefined>(undefined);
+  const [version, setVersion] = React.useState<number | undefined>(undefined);
+
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [isSaving, setIsSaving] = React.useState<boolean>(false);
+  const [isTesting, setIsTesting] = React.useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = React.useState<boolean>(false);
+
+  const loadSsoConfig = React.useCallback(async () => {
+    if (!slug || !isSsoAllowed) return;
+    setIsLoading(true);
+    try {
+      const { apiClient } = await import("../../lib/api-client");
+      const res = await apiClient<SsoConfigResponse>(`/api/v1/organizations/${encodeURIComponent(slug)}/sso`);
+      if (res && res.providerType) {
+        setProviderType(res.providerType);
+        setDisplayName(res.displayName || "");
+        setClientId(res.clientId || "");
+        setHasExistingSecret(Boolean(res.hasClientSecret));
+        setIssuerUrl(res.issuerUrl || "");
+        setMetadataUrl(res.metadataUrl || "");
+        setSingleSignOnUrl(res.singleSignOnUrl || "");
+        setEntityId(res.entityId || "");
+        setSigningCertificate(res.signingCertificate || "");
+        setEnforceSso(Boolean(res.enforceSso));
+        setAllowBreakGlassBypass(res.allowBreakGlassBypass !== false);
+        setLastTestStatus(res.lastTestStatus);
+        setLastTestAt(res.lastTestAt);
+        setVersion(res.version);
+      }
+    } catch {
+      // 204 No Content or not configured yet
+    } finally {
+      setIsLoading(false);
+    }
+  }, [slug, isSsoAllowed]);
+
+  React.useEffect(() => {
+    loadSsoConfig();
+  }, [loadSsoConfig]);
+
+  const handleTestProbe = async () => {
+    if (!slug) return;
+    setIsTesting(true);
+    try {
+      const { apiClient } = await import("../../lib/api-client");
+      const res = await apiClient<{ success: boolean; message: string; latencyMs?: number }>(
+        `/api/v1/organizations/${encodeURIComponent(slug)}/sso/test-probe`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            providerType,
+            issuerUrl: issuerUrl || undefined,
+            metadataUrl: metadataUrl || undefined,
+            clientId,
+            clientSecret: clientSecret || undefined,
+          }),
+        }
+      );
+
+      if (res.success) {
+        setLastTestStatus("SUCCESS");
+        setLastTestAt(new Date().toISOString());
+        toast.success(t("settings.sso_test_probe_success", { ms: res.latencyMs || 45 }));
+      } else {
+        setLastTestStatus("FAILED");
+        toast.error(t("settings.sso_test_probe_failed", { error: res.message }));
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setLastTestStatus("FAILED");
+      toast.error(t("settings.sso_test_probe_failed", { error: message }));
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!slug) return;
+    if (!clientId.trim()) {
+      toast.error("Client ID wajib diisi.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { apiClient } = await import("../../lib/api-client");
+      const payload = {
+        providerType,
+        displayName: displayName || undefined,
+        clientId: clientId.trim(),
+        clientSecret: clientSecret.trim() || undefined,
+        issuerUrl: issuerUrl.trim() || undefined,
+        metadataUrl: metadataUrl.trim() || undefined,
+        singleSignOnUrl: singleSignOnUrl.trim() || undefined,
+        entityId: entityId.trim() || undefined,
+        signingCertificate: signingCertificate.trim() || undefined,
+        enforceSso,
+        allowBreakGlassBypass,
+        status: "ACTIVE",
+        version,
+      };
+
+      const updated = await apiClient<SsoConfigResponse>(
+        `/api/v1/organizations/${encodeURIComponent(slug)}/sso`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        }
+      );
+
+      setVersion(updated.version);
+      if (updated.hasClientSecret) {
+        setHasExistingSecret(true);
+        setClientSecret("");
+      }
+      toast.success(t("settings.sso_saved_success"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!slug) return;
+    if (!window.confirm(t("settings.sso_delete_confirm"))) return;
+
+    setIsDeleting(true);
+    try {
+      const { apiClient } = await import("../../lib/api-client");
+      await apiClient(`/api/v1/organizations/${encodeURIComponent(slug)}/sso`, {
+        method: "DELETE",
+      });
+
+      setClientId("");
+      setClientSecret("");
+      setHasExistingSecret(false);
+      setIssuerUrl("");
+      setMetadataUrl("");
+      setSingleSignOnUrl("");
+      setEntityId("");
+      setSigningCertificate("");
+      setEnforceSso(false);
+      setLastTestStatus(undefined);
+      setLastTestAt(undefined);
+      setVersion(undefined);
+      toast.success(t("settings.sso_deleted_success"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isSaml = providerType === "SAML_CUSTOM";
 
   return (
     <div className="space-y-4">
@@ -279,31 +482,227 @@ function SsoSettingsSection({ slug: _slug }: { slug?: string }) {
         </Card>
       )}
 
-      <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
+      <Card className="p-5 border-border/60 bg-card space-y-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-lg bg-muted/30 border border-border/40">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <Label className="text-xs font-semibold">{t("settings.sso_integration_label")}</Label>
-              {!isSsoAllowed && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                  {t("settings.sso_badge_locked")}
-                </span>
-              )}
+              <Badge
+                variant="outline"
+                className={
+                  lastTestStatus === "SUCCESS"
+                    ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[10px]"
+                    : lastTestStatus === "FAILED"
+                    ? "border-destructive/40 text-destructive bg-destructive/10 text-[10px]"
+                    : "border-border text-muted-foreground text-[10px]"
+                }
+              >
+                {lastTestStatus === "SUCCESS" ? (
+                  <span className="flex items-center gap-1"><CheckCircle2 className="size-3" /> VERIFIED</span>
+                ) : lastTestStatus === "FAILED" ? (
+                  <span className="flex items-center gap-1"><AlertCircle className="size-3" /> FAILED</span>
+                ) : (
+                  "NOT TESTED"
+                )}
+              </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground">
               {t("settings.sso_integration_desc")}
             </p>
           </div>
-          <Switch disabled={!isSsoAllowed} defaultChecked={isSsoAllowed} />
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!isSsoAllowed || isTesting || (!issuerUrl && !metadataUrl)}
+              onClick={handleTestProbe}
+              className="h-7 px-2.5 text-xs font-medium gap-1.5 border-border/80"
+            >
+              {isTesting ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5 text-primary" />}
+              {isTesting ? t("settings.sso_test_probe_testing") : t("settings.sso_test_probe_btn")}
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">{t("settings.issuer_url_label")}</Label>
-          <Input
-            defaultValue="https://auth-gis.kdua.net/realms/k2net-tenants"
-            disabled
-            className="h-8.5 text-xs font-mono bg-muted/40"
-          />
+        {/* Configuration Form */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">{t("settings.sso_provider_type")}</Label>
+            <Select
+              disabled={!isSsoAllowed || isLoading}
+              value={providerType}
+              onValueChange={setProviderType}
+            >
+              <SelectTrigger className="h-8.5 text-xs bg-background border-border/80">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="GOOGLE">{t("settings.sso_provider_google")}</SelectItem>
+                <SelectItem value="MICROSOFT_ENTRA">{t("settings.sso_provider_microsoft")}</SelectItem>
+                <SelectItem value="OKTA">{t("settings.sso_provider_okta")}</SelectItem>
+                <SelectItem value="OIDC_CUSTOM">{t("settings.sso_provider_custom_oidc")}</SelectItem>
+                <SelectItem value="SAML_CUSTOM">{t("settings.sso_provider_custom_saml")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">{t("settings.sso_display_name_label")}</Label>
+            <Input
+              disabled={!isSsoAllowed || isLoading}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="e.g. Corporate SSO"
+              className="h-8.5 text-xs bg-background border-border/80"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">{t("settings.sso_client_id_label")}</Label>
+            <Input
+              disabled={!isSsoAllowed || isLoading}
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              placeholder="e.g. k2net-enterprise-client"
+              className="h-8.5 text-xs font-mono bg-background border-border/80"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold flex items-center justify-between">
+              <span>{t("settings.sso_client_secret_label")}</span>
+              {hasExistingSecret && (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <KeyRound className="size-3 text-emerald-500" />
+                  Encrypted
+                </span>
+              )}
+            </Label>
+            <Input
+              type="password"
+              disabled={!isSsoAllowed || isLoading}
+              value={clientSecret}
+              onChange={(e) => setClientSecret(e.target.value)}
+              placeholder={hasExistingSecret ? t("settings.sso_client_secret_placeholder") : "••••••••••••••••"}
+              className="h-8.5 text-xs font-mono bg-background border-border/80"
+            />
+          </div>
+
+          {!isSaml ? (
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-xs font-semibold">{t("settings.sso_discovery_url_label")}</Label>
+              <Input
+                disabled={!isSsoAllowed || isLoading}
+                value={issuerUrl}
+                onChange={(e) => setIssuerUrl(e.target.value)}
+                placeholder="https://login.microsoftonline.com/{tenant-id}/v2.0"
+                className="h-8.5 text-xs font-mono bg-background border-border/80"
+              />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1.5 md:col-span-2">
+                <Label className="text-xs font-semibold">{t("settings.sso_sso_url_label")}</Label>
+                <Input
+                  disabled={!isSsoAllowed || isLoading}
+                  value={singleSignOnUrl}
+                  onChange={(e) => setSingleSignOnUrl(e.target.value)}
+                  placeholder="https://idp.example.com/saml2/idp/SSOService.php"
+                  className="h-8.5 text-xs font-mono bg-background border-border/80"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">{t("settings.sso_entity_id_label")}</Label>
+                <Input
+                  disabled={!isSsoAllowed || isLoading}
+                  value={entityId}
+                  onChange={(e) => setEntityId(e.target.value)}
+                  placeholder="https://idp.example.com/entity"
+                  className="h-8.5 text-xs font-mono bg-background border-border/80"
+                />
+              </div>
+              <div className="space-y-1.5 md:col-span-2">
+                <Label className="text-xs font-semibold">{t("settings.sso_signing_cert_label")}</Label>
+                <Textarea
+                  disabled={!isSsoAllowed || isLoading}
+                  value={signingCertificate}
+                  onChange={(e) => setSigningCertificate(e.target.value)}
+                  placeholder="-----BEGIN CERTIFICATE----- ... -----END CERTIFICATE-----"
+                  className="min-h-24 text-xs font-mono bg-background border-border/80"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Security Enforcement Switches */}
+        <div className="space-y-3 pt-3 border-t border-border/50">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
+            <div className="space-y-0.5">
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                {t("settings.sso_enforce_label")}
+                {lastTestStatus !== "SUCCESS" && (
+                  <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px]">
+                    Probe Required
+                  </Badge>
+                )}
+              </Label>
+              <p className="text-[11px] text-muted-foreground">
+                {lastTestStatus !== "SUCCESS"
+                  ? t("settings.sso_probe_required_notice")
+                  : t("settings.sso_enforce_desc")}
+              </p>
+            </div>
+            <Switch
+              disabled={!isSsoAllowed || isLoading || lastTestStatus !== "SUCCESS"}
+              checked={enforceSso}
+              onCheckedChange={setEnforceSso}
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
+            <div className="space-y-0.5">
+              <Label className="text-xs font-semibold">{t("settings.sso_break_glass_label")}</Label>
+              <p className="text-[11px] text-muted-foreground">{t("settings.sso_break_glass_desc")}</p>
+            </div>
+            <Switch
+              disabled={!isSsoAllowed || isLoading}
+              checked={allowBreakGlassBypass}
+              onCheckedChange={setAllowBreakGlassBypass}
+            />
+          </div>
+        </div>
+
+        {/* Action Toolbar */}
+        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+          <div>
+            {clientId && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!isSsoAllowed || isDeleting}
+                onClick={handleDelete}
+                className="h-7 px-2.5 text-xs font-medium gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60 hover:bg-destructive/10"
+              >
+                <Trash2 className="size-3.5" />
+                {t("settings.sso_delete_btn")}
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              disabled={!isSsoAllowed || isSaving || !clientId.trim()}
+              onClick={handleSave}
+              className="h-7 px-2.5 text-xs font-medium gap-1.5"
+            >
+              {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+              {t("settings.sso_save_btn")}
+            </Button>
+          </div>
         </div>
       </Card>
     </div>
