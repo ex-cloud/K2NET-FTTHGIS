@@ -72,14 +72,19 @@ if [ "$DRY_RUN" = false ] && [ -z "$(docker ps -q --filter "name=^kong$" 2>/dev/
   log "   ✅ Container Kong telah dihidupkan kembali."
 fi
 
-# 1a-2. Hapus container sementara yang sudah berhenti (exited/dead), kecuali container bernama ftth-*/kong/traefik
-STOPPED_CONTAINERS=$(docker ps -aq --filter "status=exited" --filter "status=dead" 2>/dev/null | wc -l)
-log "🗑️  Container berhenti ditemukan: $STOPPED_CONTAINERS"
-if [ "$DRY_RUN" = false ] && [ "$STOPPED_CONTAINERS" -gt 0 ]; then
-  docker container prune -f >> "$LOG_FILE" 2>&1
-  log "   ✅ Container berhenti dihapus."
+# 1a-2. Hapus container sementara yang sudah berhenti (exited/dead), kecuali container bernama ftth-*/kong/traefik/cloudflared
+NON_CORE_STOPPED=$(docker ps -a --filter "status=exited" --filter "status=dead" --format '{{.ID}} {{.Names}}' 2>/dev/null | grep -vE ' (ftth-|kong$|traefik$|cloudflared$)' | awk '{print $1}' || true)
+if [ -n "$NON_CORE_STOPPED" ]; then
+  STOPPED_COUNT=$(echo "$NON_CORE_STOPPED" | grep -c .)
+else
+  STOPPED_COUNT=0
+fi
+log "🗑️  Container sementara berhenti ditemukan: $STOPPED_COUNT"
+if [ "$DRY_RUN" = false ] && [ "$STOPPED_COUNT" -gt 0 ]; then
+  echo "$NON_CORE_STOPPED" | xargs -r docker rm >> "$LOG_FILE" 2>&1
+  log "   ✅ Container sementara berhenti dihapus (container ftth-*/kong/traefik aman)."
 elif [ "$DRY_RUN" = true ]; then
-  log "   [DRY RUN] Akan hapus $STOPPED_CONTAINERS container."
+  log "   [DRY RUN] Akan hapus $STOPPED_COUNT container sementara."
 fi
 
 # 1b. Hapus image yang tidak digunakan container manapun (dangling + unreferenced)

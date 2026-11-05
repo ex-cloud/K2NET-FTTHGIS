@@ -608,6 +608,13 @@ jobs:
               bash scripts/deploy.sh production frontend-tenant
             fi
 
+            # [Step D: Self-Healing Assurance] Pastikan semua 12 Core Gateways & BFF tetap berjalan aktif
+            echo "Memvalidasi keberadaan seluruh Core Gateways (Self-Healing)..."
+            docker compose -f docker-compose.gateways.yml up -d --no-build \
+              map-gateway notification-gateway payment-gateway storage-gateway \
+              gateway-whatsapp gateway-scheduler gateway-export gateway-olt \
+              gateway-audit poller gateway-task observability-gateway gateway-auth 2>/dev/null || true
+
             echo "=== [3/3] Verifikasi Container Status ==="
             docker ps --filter "name=ftth-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
