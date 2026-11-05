@@ -178,4 +178,43 @@ class LicenseCryptoServiceTest {
         assertTrue(cryptoService.verifyMachineFingerprint(null, "any-machine"));
         assertTrue(cryptoService.verifyMachineFingerprint("", "any-machine"));
     }
+
+    @Test
+    @DisplayName("encryptSecret and decryptSecret should perform authenticated AES-256 GCM roundtrip")
+    void testAesGcmSecretEncryptionRoundTrip() {
+        String secret = "super-secret-client-credential-xyz123!@#$";
+
+        String encrypted = cryptoService.encryptSecret(secret);
+        assertNotNull(encrypted);
+        assertTrue(encrypted.startsWith("v1:"), "Encrypted secret must start with version prefix 'v1:'");
+        assertNotEquals(secret, encrypted, "Ciphertext must not match plaintext");
+
+        // Two encryptions of the same plaintext must produce different ciphertexts (random IV)
+        String encryptedAgain = cryptoService.encryptSecret(secret);
+        assertNotEquals(encrypted, encryptedAgain, "Different IVs must yield distinct ciphertexts");
+
+        String decrypted = cryptoService.decryptSecret(encrypted);
+        assertEquals(secret, decrypted, "Decrypted secret must match original plaintext");
+
+        String decryptedAgain = cryptoService.decryptSecret(encryptedAgain);
+        assertEquals(secret, decryptedAgain);
+    }
+
+    @Test
+    @DisplayName("encryptSecret and decryptSecret should handle null, empty, and tampered payloads safely")
+    void testAesGcmSecretEncryptionEdgeCases() {
+        assertNull(cryptoService.encryptSecret(null));
+        assertEquals("", cryptoService.encryptSecret(""));
+        assertNull(cryptoService.decryptSecret(null));
+        assertEquals("", cryptoService.decryptSecret(""));
+
+        // Fallback for unencrypted legacy strings (without 'v1:' prefix)
+        assertEquals("legacy-unencrypted-secret", cryptoService.decryptSecret("legacy-unencrypted-secret"));
+
+        // Tampered ciphertext must fail GCM authentication tag verification
+        String validEncrypted = cryptoService.encryptSecret("secret-key-12345");
+        String tampered = validEncrypted.substring(0, validEncrypted.length() - 2) + "==";
+
+        assertThrows(IllegalStateException.class, () -> cryptoService.decryptSecret(tampered));
+    }
 }

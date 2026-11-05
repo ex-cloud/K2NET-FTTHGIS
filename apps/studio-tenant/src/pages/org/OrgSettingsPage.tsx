@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useRouterState } from "@tanstack/react-router";
+import { useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   Building,
   Save,
@@ -7,6 +7,8 @@ import {
   Palette,
   Globe,
   Lock,
+  Sparkles,
+  ExternalLink,
 } from "lucide-react";
 import {
   PageHero,
@@ -21,11 +23,13 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  Badge,
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { useAuth } from "@k2net/auth/client";
 import { useTenantInfo } from "../../hooks/useTenantInfo";
 import { useTenantBranding } from "../../hooks/useTenantBranding";
+import { useTenantLicense } from "../../hooks/useTenantLicense";
 import { parseDomain } from "../../lib/domain";
 import { useTranslation } from "@k2net/i18n";
 import { BrandingSettingsSection } from "../../components/settings/BrandingSettingsSection";
@@ -225,27 +229,84 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
 
 function SsoSettingsSection({ slug: _slug }: { slug?: string }) {
   const { t } = useTranslation();
-  return (
-    <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
-      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
-        <div className="space-y-0.5">
-          <Label className="text-xs font-semibold">{t("settings.sso_integration_label")}</Label>
-          <p className="text-[11px] text-muted-foreground">
-            {t("settings.sso_integration_desc")}
-          </p>
-        </div>
-        <Switch defaultChecked />
-      </div>
+  const navigate = useNavigate();
+  const { license, isLoading: isLicenseLoading } = useTenantLicense();
 
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold">{t("settings.issuer_url_label")}</Label>
-        <Input
-          defaultValue="https://auth-gis.kdua.net/realms/k2net-tenants"
-          disabled
-          className="h-8.5 text-xs font-mono bg-muted/40"
-        />
-      </div>
-    </Card>
+  const isSsoAllowed = Boolean(license?.entitlements?.ssoEnabled);
+
+  return (
+    <div className="space-y-4">
+      {!isSsoAllowed && !isLicenseLoading && (
+        <Card className="border-amber-500/40 bg-amber-500/5 p-4 sm:p-5 relative overflow-hidden shadow-xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+                <Lock className="size-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  {t("settings.sso_locked_title")}
+                  <Badge variant="outline" className="border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] px-1.5 py-0 font-mono">
+                    {t("settings.sso_badge_locked")}
+                  </Badge>
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+                  {t("settings.sso_locked_desc")}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2.5 text-xs font-medium gap-1.5 border-border/80"
+                onClick={() => navigate({ to: "/billing/marketplace" as unknown as string })}
+              >
+                <ExternalLink className="size-3.5" />
+                {t("settings.sso_marketplace_btn")}
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-7 px-2.5 text-xs font-medium gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                onClick={() => navigate({ to: "/billing/license" as unknown as string })}
+              >
+                <Sparkles className="size-3.5" />
+                {t("settings.sso_upgrade_btn")}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs font-semibold">{t("settings.sso_integration_label")}</Label>
+              {!isSsoAllowed && (
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  {t("settings.sso_badge_locked")}
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {t("settings.sso_integration_desc")}
+            </p>
+          </div>
+          <Switch disabled={!isSsoAllowed} defaultChecked={isSsoAllowed} />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">{t("settings.issuer_url_label")}</Label>
+          <Input
+            defaultValue="https://auth-gis.kdua.net/realms/k2net-tenants"
+            disabled
+            className="h-8.5 text-xs font-mono bg-muted/40"
+          />
+        </div>
+      </Card>
+    </div>
   );
 }
 

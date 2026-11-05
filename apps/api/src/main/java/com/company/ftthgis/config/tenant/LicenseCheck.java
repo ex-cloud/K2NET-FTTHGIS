@@ -16,6 +16,12 @@ import java.lang.annotation.*;
 public @interface LicenseCheck {
 
     /**
+     * Fitur spesifik yang diuji ketersediaannya pada lisensi/paket tenant (misal: "sso", "api", "ai_copilot").
+     * Jika kosong (""), hanya memeriksa status siklus hidup lisensi (Read-Only Guard / Suspended).
+     */
+    String feature() default "";
+
+    /**
      * Jika {@code true}, operasi baca (GET, HEAD, OPTIONS) tetap diizinkan
      * meskipun lisensi berstatus RESTRICTED_READ_ONLY.
      */

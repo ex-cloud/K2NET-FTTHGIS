@@ -1,11 +1,15 @@
 package com.company.ftthgis.config.tenant;
 
 import com.company.ftthgis.api.exception.LicenseReadOnlyException;
+import com.company.ftthgis.api.tenant.dto.LicenseEntitlementsDto;
 import com.company.ftthgis.domain.tenant.entity.LicenseStatus;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.tenant.repository.TenantLicenseRepository;
+import com.company.ftthgis.service.LicenseManagementService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,9 +19,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,7 +37,16 @@ class LicenseEnforcementAspectTest {
     private TenantLicenseRepository tenantLicenseRepository;
 
     @Mock
+    private OrganizationRepository organizationRepository;
+
+    @Mock
+    private LicenseManagementService licenseManagementService;
+
+    @Mock
     private JoinPoint joinPoint;
+
+    @Mock
+    private MethodSignature methodSignature;
 
     @InjectMocks
     private LicenseEnforcementAspect aspect;
@@ -125,5 +140,55 @@ class LicenseEnforcementAspectTest {
         );
 
         assertEquals("SUSPENDED", ex.getReason());
+    }
+
+    static class SsoSampleController {
+        @LicenseCheck(feature = "sso")
+        public void updateSsoConfig() {}
+    }
+
+    @Test
+    @DisplayName("Feature entitlement check should block SSO operation when ssoEnabled is false")
+    void testFeatureEntitlementBlocksSsoWhenNotEntitled() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/v1/organizations/isp-garut/sso");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        Method updateMethod = SsoSampleController.class.getMethod("updateSsoConfig");
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(methodSignature.getMethod()).thenReturn(updateMethod);
+
+        LicenseEntitlementsDto entitlements = LicenseEntitlementsDto.builder()
+                .ssoEnabled(false)
+                .build();
+        when(licenseManagementService.getEffectiveLicenseEntitlements(testOrgId)).thenReturn(entitlements);
+
+        AccessDeniedException ex = assertThrows(AccessDeniedException.class, () ->
+                aspect.enforceLicenseReadOnlyGuard(joinPoint)
+        );
+        assertTrue(ex.getMessage().contains("Single Sign-On (SSO)"));
+    }
+
+    @Test
+    @DisplayName("Feature entitlement check should allow SSO operation when ssoEnabled is true")
+    void testFeatureEntitlementAllowsSsoWhenEntitled() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/v1/organizations/isp-garut/sso");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        Method updateMethod = SsoSampleController.class.getMethod("updateSsoConfig");
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(methodSignature.getMethod()).thenReturn(updateMethod);
+
+        LicenseEntitlementsDto entitlements = LicenseEntitlementsDto.builder()
+                .ssoEnabled(true)
+                .build();
+        when(licenseManagementService.getEffectiveLicenseEntitlements(testOrgId)).thenReturn(entitlements);
+
+        TenantLicense activeLicense = TenantLicense.builder()
+                .status(LicenseStatus.ACTIVE)
+                .build();
+        when(tenantLicenseRepository.findFirstByOrganizationIdOrderByCreatedAtDesc(testOrgId))
+                .thenReturn(Optional.of(activeLicense));
+
+        assertDoesNotThrow(() -> aspect.enforceLicenseReadOnlyGuard(joinPoint));
     }
 }

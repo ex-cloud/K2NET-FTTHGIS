@@ -12,9 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.Cipher;
 import javax.crypto.Mac;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -252,6 +255,93 @@ public class LicenseCryptoService {
             return false;
         }
         return expectedFingerprint.trim().equalsIgnoreCase(actualFingerprint.trim());
+    }
+
+    // ── Enkripsi Rahasia Kredensial SSO / API (AES-256 GCM) ──────────────────
+
+    /**
+     * Mengenkripsi string rahasia (misal: SSO client secret, private key, token pihak ketiga)
+     * menggunakan algoritma simetris berstandar enterprise AES-256 GCM (Galois/Counter Mode).
+     *
+     * <p>Mencegah penyimpanan cleartext pada database sesuai mandat ISO 27001 dan SOC 2.
+     * Output memiliki format berversi {@code v1:{base64(iv_12bytes + ciphertext + tag_16bytes)}}.
+     *
+     * @param plaintext String rahasia yang akan dienkripsi
+     * @return String terenkripsi berformat {@code v1:...} atau string asal jika kosong/null
+     */
+    public String encryptSecret(String plaintext) {
+        if (plaintext == null || plaintext.isEmpty()) {
+            return plaintext;
+        }
+        try {
+            byte[] iv = new byte[12];
+            secureRandom.nextBytes(iv);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.ENCRYPT_MODE, getAesGcmKey(), spec);
+
+            byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+
+            byte[] combined = new byte[iv.length + ciphertext.length];
+            System.arraycopy(iv, 0, combined, 0, iv.length);
+            System.arraycopy(ciphertext, 0, combined, iv.length, ciphertext.length);
+
+            return "v1:" + Base64.getEncoder().encodeToString(combined);
+        } catch (Exception e) {
+            log.error("Failed to encrypt secret: {}", e.getMessage());
+            throw new IllegalStateException("Gagal mengenkripsi secret konfigurasi: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Mendekripsi string rahasia terenkripsi AES-256 GCM kembali ke bentuk plaintext.
+     *
+     * @param encryptedPayload String ciphertext berformat {@code v1:...}
+     * @return Plaintext string hasil dekripsi, atau string asal jika bukan format {@code v1:...}
+     */
+    public String decryptSecret(String encryptedPayload) {
+        if (encryptedPayload == null || encryptedPayload.isEmpty()) {
+            return encryptedPayload;
+        }
+        if (!encryptedPayload.startsWith("v1:")) {
+            return encryptedPayload;
+        }
+        try {
+            String base64Data = encryptedPayload.substring(3);
+            byte[] combined = Base64.getDecoder().decode(base64Data);
+
+            if (combined.length < 12) {
+                throw new IllegalArgumentException("Payload ciphertext terlalu pendek untuk AES-GCM IV.");
+            }
+
+            byte[] iv = new byte[12];
+            System.arraycopy(combined, 0, iv, 0, 12);
+
+            int cipherLen = combined.length - 12;
+            byte[] ciphertext = new byte[cipherLen];
+            System.arraycopy(combined, 12, ciphertext, 0, cipherLen);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.DECRYPT_MODE, getAesGcmKey(), spec);
+
+            byte[] decrypted = cipher.doFinal(ciphertext);
+            return new String(decrypted, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.error("Failed to decrypt secret: {}", e.getMessage());
+            throw new IllegalStateException("Gagal mendekripsi secret konfigurasi: " + e.getMessage(), e);
+        }
+    }
+
+    private SecretKeySpec getAesGcmKey() {
+        try {
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            byte[] keyBytes = sha256.digest(secretKeyBytes);
+            return new SecretKeySpec(keyBytes, "AES");
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to derive AES-256 key: " + e.getMessage(), e);
+        }
     }
 
     // ── Internal Helpers ────────────────────────────────────────────────────

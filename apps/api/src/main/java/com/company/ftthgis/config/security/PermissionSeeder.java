@@ -100,6 +100,8 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("users.invite", "Invite Users",             "security", SCOPE_TENANT),
             new PermissionData("security.policy.view",   "View Tenant Security Policy",   "security", SCOPE_TENANT),
             new PermissionData("security.policy.manage", "Manage Tenant Security Policy", "security", SCOPE_TENANT),
+            new PermissionData("security.sso.view",      "View Tenant SSO Configuration",   "security", SCOPE_TENANT),
+            new PermissionData("security.sso.manage",    "Manage Tenant SSO Configuration", "security", SCOPE_TENANT),
 
             // organizations (tenant) — tenant-scoped organization settings
             new PermissionData("organizations.view",            "View Organization Details",    "organizations", SCOPE_TENANT),
@@ -125,6 +127,7 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("system.security.manage",      "Manage Platform Security",     "system", SCOPE_SYSTEM),
             new PermissionData("system.security.policy.view",   "View Platform Security Policies",   "system", SCOPE_SYSTEM),
             new PermissionData("system.security.policy.manage", "Manage Platform Security Policies", "system", SCOPE_SYSTEM),
+            new PermissionData("system.security.sso.manage",    "Manage Platform Global SSO Settings", "system", SCOPE_SYSTEM),
             new PermissionData("system.trash.manage",         "Manage Recycle Bin",           "system", SCOPE_SYSTEM),
             new PermissionData("system.settings.manage",      "Manage Platform Settings",     "system", SCOPE_SYSTEM),
             new PermissionData("system.backup.manage",        "Manage Backups",               "system", SCOPE_SYSTEM),
