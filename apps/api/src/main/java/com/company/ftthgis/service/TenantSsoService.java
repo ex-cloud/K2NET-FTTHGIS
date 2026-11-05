@@ -41,12 +41,13 @@ public class TenantSsoService {
     private final ObjectMapper objectMapper;
     private final LicenseManagementService licenseManagementService;
 
+    @Autowired
     public TenantSsoService(OrganizationRepository organizationRepository,
                             OrganizationSsoConfigRepository ssoConfigRepository,
                             LicenseCryptoService licenseCryptoService,
                             KeycloakAdminService keycloakAdminService,
                             ObjectMapper objectMapper,
-                            LicenseManagementService licenseManagementService) {
+                            @Autowired(required = false) LicenseManagementService licenseManagementService) {
         this.organizationRepository = organizationRepository;
         this.ssoConfigRepository = ssoConfigRepository;
         this.licenseCryptoService = licenseCryptoService;
