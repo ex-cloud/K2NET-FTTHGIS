@@ -270,23 +270,12 @@ public class SystemSettingService {
             String policyString = sb.toString();
             log.info("🔄 Triggering Keycloak sync for all realms with policy: {}", policyString);
             
-            // Sync default realm
+            // Canonical 2-Realm Architecture (ADR-0007):
+            // 1. Sync Platform Realm (ftth-realm) for system staff
             keycloakAdminService.syncPasswordPolicyToRealm("ftth-realm", policyString);
             
-            // Sync consolidated tenant realm
+            // 2. Sync Consolidated Multi-Tenant Realm (k2net-tenants) for all tenant operators
             keycloakAdminService.syncPasswordPolicyToRealm("k2net-tenants", policyString);
-            
-            // Sync any dedicated organization realms (if any)
-            try {
-                List<String> slugs = organizationRepository.findAllSlugs();
-                for (String slug : slugs) {
-                    if (!"ftth-realm".equals(slug) && !"ex-cloud-org".equals(slug) && !"system".equals(slug)) {
-                        keycloakAdminService.syncPasswordPolicyToRealm(slug, policyString);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Failed to sync password policy to organization realms: {}", e.getMessage());
-            }
         } catch (Exception e) {
             log.error("Failed to compile or sync password policy: {}", e.getMessage(), e);
         }
