@@ -108,25 +108,57 @@ Gunakan struktur template berikut:
 
 ---
 
-### Langkah 5: Verifikasi Quality Gate Monorepo
-Sebelum menyatakan perbaikan selesai, wajib menjalankan perintah verifikasi yang relevan:
-* **Microservices & Gateways**:
-  ```bash
-  bash scripts/verify-all.sh gateways
-  ```
-* **Spring Boot API**:
-  ```bash
-  mvn test-compile -q
-  ```
-* **Frontend Admin / Tenant**:
-  ```bash
-  pnpm lint
-  pnpm --filter @k2net/studio-admin typecheck
-  ```
-* **API Versioning & Flyway**:
-  ```bash
-  pnpm audit:versioning
-  ```
+### Langkah 5: Verifikasi Quality Gate Domain-Aware (WAJIB)
+
+> 🛑 **ATURAN MUTLAK**: AI Agent **DILARANG** memindahkan plan ke `completed/` atau mengumumkan "selesai" sebelum menjalankan seluruh perintah QG yang relevan dan mencatat hasilnya.
+
+**Langkah 5.1** — Identifikasi domain yang disentuh selama sesi kerja (file/folder apa yang berubah?):
+
+| Domain | Trigger File/Folder | Gunakan QG Set |
+|---|---|---|
+| Frontend | `apps/studio-*/`, `packages/` | QG Set 1 |
+| Backend Spring Boot | `apps/api/src/`, `*.java`, Flyway SQL | QG Set 2 |
+| Go Microservices | `services/gateway-*/`, `*.go` | QG Set 3 |
+| Infrastruktur | `docker-compose*.yml`, `docker/kong/` | QG Set 4 |
+| PBAC / Security | `PermissionSeeder.java`, `SecurityConfig.java` | QG Set 5 |
+| ADR / Docs | `docs/adr/`, `docs/rfc/` | QG Set 6 |
+
+**Langkah 5.2** — Jalankan perintah QG sesuai domain yang teridentifikasi:
+
+> 📋 **Referensi lengkap perintah per domain**: [`docs/qa/quality-gate-checklist.md`](file:///opt/project5/docs/qa/quality-gate-checklist.md)
+
+```bash
+# ⚠️ WAJIB: Set environment variable sebelum perintah Java/Go
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+export PATH=$PATH:/usr/local/go/bin
+
+# Frontend (jalankan jika domain Frontend tersentuh)
+pnpm --filter @k2net/studio-admin typecheck
+pnpm --filter @k2net/studio-tenant typecheck
+pnpm audit:i18n && pnpm audit:colors && pnpm audit:design-system
+
+# Backend Spring Boot (jalankan jika domain Backend tersentuh)
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk mvn -f apps/api/pom.xml test-compile -q
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk mvn -f apps/api/pom.xml test
+pnpm audit:versioning
+
+# Go Microservices (jalankan jika domain Go tersentuh)
+bash scripts/verify-all.sh gateways
+
+# Infrastruktur (jalankan jika docker/kong config berubah)
+docker compose config -q
+docker exec kong kong config parse /usr/local/kong/declarative/kong.yml
+
+# PBAC/Security (jalankan jika Permission atau SecurityConfig berubah)
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk bash scripts/audit-security-matrix.sh
+
+# ADR/Docs (jalankan jika docs/adr berubah)
+pnpm audit:adr
+```
+
+**Langkah 5.3** — Catat hasil eksekusi di tabel `## ✅ Verifikasi Quality Gate` pada berkas plan aktif:
+- Ganti `🔲 PENDING` → `✅ PASS` atau `❌ FAIL`
+- Jika ada `❌ FAIL`, **perbaiki masalahnya terlebih dahulu** sebelum melanjutkan ke Langkah 6.
 
 ---
 
