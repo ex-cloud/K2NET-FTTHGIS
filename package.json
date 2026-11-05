@@ -32,7 +32,10 @@
     "services:status": "bash scripts/staged-startup.sh status",
     "services:start": "bash scripts/staged-startup.sh start",
     "services:stop": "bash scripts/staged-startup.sh stop",
-    "services:restart": "bash scripts/staged-startup.sh restart"
+    "services:restart": "bash scripts/staged-startup.sh restart",
+    "preflight": "bash scripts/preflight-check.sh",
+    "cicd:status": "bash scripts/check-cicd-status.sh",
+    "cicd:watch": "bash scripts/check-cicd-status.sh --watch"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "^5.102.8",
