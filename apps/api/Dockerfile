@@ -9,12 +9,12 @@ RUN mvn package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Copy mc (MinIO Client) CLI from official Docker image (prevents external download timeouts)
-COPY --from=minio/mc:latest /bin/mc /usr/local/bin/mc
-
-# Install bash and postgresql-client
-RUN apk add --no-cache bash postgresql-client && \
-    chmod +x /usr/local/bin/mc
+# Install bash, postgresql-client, and download mc (MinIO Client) CLI with resilient retry
+RUN apk add --no-cache bash postgresql-client curl && \
+    curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
+      https://github.com/minio/mc/releases/download/RELEASE.2025-08-13T08-35-41Z/mc.linux-amd64.RELEASE.2025-08-13T08-35-41Z -o /usr/local/bin/mc && \
+    chmod +x /usr/local/bin/mc && \
+    apk del curl
 
 RUN addgroup -S spring && adduser -S spring -G spring
 COPY --from=builder /app/target/*.jar app.jar
