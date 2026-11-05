@@ -1,5 +1,6 @@
 package com.company.ftthgis.service;
 
+import com.company.ftthgis.api.auth.dto.SsoDiscoveryResponse;
 import com.company.ftthgis.api.security.dto.*;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.OrganizationSsoConfig;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +29,6 @@ import java.util.*;
  * sinkronisasi federasi IdP ke Keycloak realm 'k2net-tenants', dan proteksi anti-lockout.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TenantSsoService {
 
@@ -38,6 +39,29 @@ public class TenantSsoService {
     private final LicenseCryptoService licenseCryptoService;
     private final KeycloakAdminService keycloakAdminService;
     private final ObjectMapper objectMapper;
+    private final LicenseManagementService licenseManagementService;
+
+    public TenantSsoService(OrganizationRepository organizationRepository,
+                            OrganizationSsoConfigRepository ssoConfigRepository,
+                            LicenseCryptoService licenseCryptoService,
+                            KeycloakAdminService keycloakAdminService,
+                            ObjectMapper objectMapper,
+                            LicenseManagementService licenseManagementService) {
+        this.organizationRepository = organizationRepository;
+        this.ssoConfigRepository = ssoConfigRepository;
+        this.licenseCryptoService = licenseCryptoService;
+        this.keycloakAdminService = keycloakAdminService;
+        this.objectMapper = objectMapper;
+        this.licenseManagementService = licenseManagementService;
+    }
+
+    public TenantSsoService(OrganizationRepository organizationRepository,
+                            OrganizationSsoConfigRepository ssoConfigRepository,
+                            LicenseCryptoService licenseCryptoService,
+                            KeycloakAdminService keycloakAdminService,
+                            ObjectMapper objectMapper) {
+        this(organizationRepository, ssoConfigRepository, licenseCryptoService, keycloakAdminService, objectMapper, null);
+    }
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
@@ -360,6 +384,94 @@ public class TenantSsoService {
                 .version(entity.getVersion())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * Domain-Based Home Realm Discovery (HRD) untuk menentukan provider SSO
+     * berdasarkan domain email pengguna (misal: user@meganet.id -> meganet.id).
+     */
+    @Transactional(readOnly = true)
+    public SsoDiscoveryResponse discoverSsoByEmail(String email) {
+        if (email == null || email.isBlank() || !email.contains("@")) {
+            return SsoDiscoveryResponse.builder()
+                    .ssoAvailable(false)
+                    .enforceSso(false)
+                    .allowBreakGlass(false)
+                    .build();
+        }
+
+        String cleanEmail = email.trim().toLowerCase(Locale.ROOT);
+        String domain = cleanEmail.substring(cleanEmail.lastIndexOf('@') + 1).trim();
+
+        if (domain.isBlank()) {
+            return SsoDiscoveryResponse.builder()
+                    .ssoAvailable(false)
+                    .enforceSso(false)
+                    .allowBreakGlass(false)
+                    .build();
+        }
+
+        Optional<OrganizationSsoConfig> configOpt = ssoConfigRepository.findActiveConfigByEmailDomainNative(domain);
+        if (configOpt.isEmpty()) {
+            return SsoDiscoveryResponse.builder()
+                    .ssoAvailable(false)
+                    .enforceSso(false)
+                    .allowBreakGlass(false)
+                    .emailDomain(domain)
+                    .build();
+        }
+
+        OrganizationSsoConfig config = configOpt.get();
+        Organization org = config.getOrganization();
+        if (org == null && config.getOrganizationIdValue() != null) {
+            org = organizationRepository.findById(config.getOrganizationIdValue()).orElse(null);
+        }
+
+        if (org == null || org.getStatus() == Organization.OrganizationStatus.SUSPENDED || org.getStatus() == Organization.OrganizationStatus.DELETED) {
+            return SsoDiscoveryResponse.builder()
+                    .ssoAvailable(false)
+                    .enforceSso(false)
+                    .allowBreakGlass(false)
+                    .emailDomain(domain)
+                    .build();
+        }
+
+        // Validasi entitlement lisensi (jika service tersedia)
+        if (licenseManagementService != null) {
+            try {
+                var entitlements = licenseManagementService.getEffectiveLicenseEntitlements(org.getId());
+                if (entitlements != null && !entitlements.isSsoEnabled()) {
+                    log.warn("⚠️ SSO discovery requested for org '{}' but SSO entitlement is disabled in license", org.getSlug());
+                    return SsoDiscoveryResponse.builder()
+                            .ssoAvailable(false)
+                            .enforceSso(false)
+                            .allowBreakGlass(false)
+                            .emailDomain(domain)
+                            .build();
+                }
+            } catch (Exception e) {
+                log.warn("Could not verify license SSO entitlement for org '{}': {}", org.getSlug(), e.getMessage());
+            }
+        }
+
+        String providerName = config.getDisplayName() != null && !config.getDisplayName().isBlank()
+                ? config.getDisplayName()
+                : config.getProviderType();
+
+        String idpHint = org.getSlug() + "-" + config.getProviderType().toLowerCase(Locale.ROOT).replace('_', '-');
+
+        return SsoDiscoveryResponse.builder()
+                .ssoAvailable(true)
+                .enforceSso(config.isEnforceSso())
+                .allowBreakGlass(config.isAllowBreakGlassBypass())
+                .providerType(config.getProviderType())
+                .displayName(providerName)
+                .organizationSlug(org.getSlug())
+                .organizationName(org.getName())
+                .idpHint(idpHint)
+                .redirectUrl("/auth/sso/redirect?provider=" + idpHint)
+                .emailDomain(domain)
                 .build();
     }
 }

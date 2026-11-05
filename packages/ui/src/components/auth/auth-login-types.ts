@@ -15,6 +15,7 @@ export interface AuthCredentialsSubmitPayload {
   saveEmailOnDevice?: boolean;
   totp?: string;
   turnstileToken?: string;
+  isBreakGlass?: boolean;
 }
 
 export interface AuthLoginFormLabels {
@@ -74,6 +75,16 @@ export interface AuthLoginFormLabels {
   checkInboxDesc?: string;
   resendInstructions?: string;
   resendCooldown?: string;
+  // SSO Discovery & Break-Glass Emergency Access Labels
+  ssoDiscoveredTitle?: string;
+  ssoDiscoveredDesc?: string;
+  continueWithSso?: string;
+  breakGlassModeActive?: string;
+  breakGlassNotice?: string;
+  breakGlassToggle?: string;
+  cancelBreakGlass?: string;
+  ipNotAllowedTitle?: string;
+  ipNotAllowedDesc?: string;
 }
 
 export interface AuthLoginFormProps {
@@ -86,6 +97,10 @@ export interface AuthLoginFormProps {
   authMode?: string;
   status?: string;
   tenantSlug?: string;
+  enforceSso?: boolean;
+  allowBreakGlass?: boolean;
+  ssoProviderType?: string;
+  ssoDisplayName?: string;
   allowedMethods?: AuthMethod[];
   primaryAuthMethod?: string;
   submitLabel?: string;

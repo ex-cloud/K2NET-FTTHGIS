@@ -87,6 +87,24 @@ func (m *mockRepo) SwitchUserContext(_ context.Context, userID, targetOrgID stri
 	}, nil
 }
 
+func (m *mockRepo) DiscoverSsoByEmail(_ context.Context, email string) (*SsoDiscoveryResponse, error) {
+	if strings.HasSuffix(email, "@fibernet.net") {
+		return &SsoDiscoveryResponse{
+			SSOAvailable:     true,
+			EnforceSSO:       true,
+			AllowBreakGlass:  true,
+			ProviderType:     "GOOGLE",
+			DisplayName:      "Google Workspace",
+			OrganizationSlug: "fibernet",
+			OrganizationName: "Fibernet ISP",
+			IDPHint:          "google",
+			RedirectURL:      "https://fibernet.kdua.net/login",
+			EmailDomain:      "fibernet.net",
+		}, nil
+	}
+	return &SsoDiscoveryResponse{SSOAvailable: false, EmailDomain: "example.com"}, nil
+}
+
 func buildTestJWT(claims map[string]any) string {
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
 	bodyBytes, _ := json.Marshal(claims)
@@ -541,6 +559,76 @@ func TestMultiTenantWorkspacesAndSwitchContext(t *testing.T) {
 
 	if wInvalid.Code != http.StatusForbidden {
 		t.Fatalf("expected 403 Forbidden for invalid org switch, got %d", wInvalid.Code)
+	}
+}
+
+func TestIsIPInCIDRList(t *testing.T) {
+	allowlist := "192.168.1.0/24, 10.0.0.1, 2001:db8::/32"
+
+	if !isIPInCIDRList("192.168.1.50", allowlist) {
+		t.Fatalf("expected 192.168.1.50 to match allowlist")
+	}
+	if !isIPInCIDRList("10.0.0.1", allowlist) {
+		t.Fatalf("expected 10.0.0.1 to match allowlist")
+	}
+	if !isIPInCIDRList("2001:db8:1234::1", allowlist) {
+		t.Fatalf("expected 2001:db8:1234::1 to match allowlist")
+	}
+	if isIPInCIDRList("192.168.2.1", allowlist) {
+		t.Fatalf("expected 192.168.2.1 to be rejected")
+	}
+	if isIPInCIDRList("10.0.0.2", allowlist) {
+		t.Fatalf("expected 10.0.0.2 to be rejected")
+	}
+	if !isIPInCIDRList("1.2.3.4", "") {
+		t.Fatalf("expected empty allowlist to allow any IP")
+	}
+}
+
+func TestGetSsoDiscovery(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &mockRepo{
+		tenants: map[string]*TenantContextResponse{},
+	}
+	handler := &Handler{
+		repo: repo,
+	}
+
+	r := gin.New()
+	r.GET("/api/v1/auth/sso-discovery", handler.GetSsoDiscovery)
+
+	// 1. Missing email
+	w1 := httptest.NewRecorder()
+	req1 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/sso-discovery", nil)
+	r.ServeHTTP(w1, req1)
+	if w1.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for missing email, got %d", w1.Code)
+	}
+
+	// 2. Discovered email
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/sso-discovery?email=user@fibernet.net", nil)
+	r.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected 200 for fibernet.net, got %d", w2.Code)
+	}
+	var res2 SsoDiscoveryResponse
+	_ = json.Unmarshal(w2.Body.Bytes(), &res2)
+	if !res2.SSOAvailable || res2.OrganizationSlug != "fibernet" {
+		t.Fatalf("expected fibernet SSO, got %+v", res2)
+	}
+
+	// 3. Unknown email
+	w3 := httptest.NewRecorder()
+	req3 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/sso-discovery?email=user@gmail.com", nil)
+	r.ServeHTTP(w3, req3)
+	if w3.Code != http.StatusOK {
+		t.Fatalf("expected 200 for unknown domain, got %d", w3.Code)
+	}
+	var res3 SsoDiscoveryResponse
+	_ = json.Unmarshal(w3.Body.Bytes(), &res3)
+	if res3.SSOAvailable {
+		t.Fatalf("expected SSO not available for gmail.com, got %+v", res3)
 	}
 }
 

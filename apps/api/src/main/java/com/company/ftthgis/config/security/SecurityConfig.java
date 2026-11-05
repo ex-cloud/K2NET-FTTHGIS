@@ -76,7 +76,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/public/invitations/**").permitAll() // Public member invitation acceptance
                         .requestMatchers("/api/v1/public/files/**").permitAll() // Public whitelabel assets (logos, favicons)
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
-                        .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public
+                        .requestMatchers("/api/v1/auth/discovery/**", "/api/v1/auth/sso-discovery/**", "/api/v1/auth/sso-discovery").permitAll() // Discovery stays public
                         .requestMatchers("/api/v1/auth/oauth-gate/**").permitAll() // Internal OAuth gate (protected by secret header)
                         .requestMatchers("/api/v1/system/impersonate/exchange").permitAll() // Exchange code is public (single-use 60s)
                         .requestMatchers("/api/v1/system/impersonate/refresh-token").permitAll() // Refresh token relay guarded by session ID

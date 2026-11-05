@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -39,6 +40,7 @@ type Repository interface {
 	CompleteAccountActivation(ctx context.Context, userID, orgID string) error
 	GetUserWorkspaces(ctx context.Context, userID, email string) ([]UserWorkspace, error)
 	SwitchUserContext(ctx context.Context, userID, targetOrgID string) (*TenantContextResponse, error)
+	DiscoverSsoByEmail(ctx context.Context, email string) (*SsoDiscoveryResponse, error)
 }
 
 // PostgresRepository implements Repository backed by pgxpool and optional Redis cache.
@@ -104,11 +106,17 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
 			COALESCE(sp.has_sso, false) AS has_sso,
 			COALESCE(o.status, 'ACTIVE') AS org_status,
-			(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required
+			(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required,
+			COALESCE(osc.enforce_sso, false) AS enforce_sso,
+			COALESCE(osc.allow_break_glass_bypass, true) AS allow_break_glass,
+			COALESCE(osc.provider_type, '') AS sso_provider_type,
+			COALESCE(osc.display_name, '') AS sso_display_name,
+			COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs
 		FROM organizations o
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 		LEFT JOIN tenant_branding tb ON tb.organization_id = o.id
 		LEFT JOIN tenant_security_policies tsp ON tsp.organization_id = o.id
+		LEFT JOIN organization_sso_configs osc ON osc.organization_id = o.id AND osc.status = 'ACTIVE'
 		LEFT JOIN system_settings ss ON ss.config_key = 'enforce_mfa'
 		WHERE o.slug = $1
 		  AND o.deleted_at IS NULL
@@ -127,12 +135,18 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 				UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
 				COALESCE(sp.has_sso, false) AS has_sso,
 				COALESCE(o.status, 'ACTIVE') AS org_status,
-				(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required
+				(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required,
+				COALESCE(osc.enforce_sso, false) AS enforce_sso,
+				COALESCE(osc.allow_break_glass_bypass, true) AS allow_break_glass,
+				COALESCE(osc.provider_type, '') AS sso_provider_type,
+				COALESCE(osc.display_name, '') AS sso_display_name,
+				COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs
 			FROM organization_slug_aliases osa
 			JOIN organizations o ON osa.organization_id = o.id
 			LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 			LEFT JOIN tenant_branding tb ON tb.organization_id = o.id
 			LEFT JOIN tenant_security_policies tsp ON tsp.organization_id = o.id
+			LEFT JOIN organization_sso_configs osc ON osc.organization_id = o.id AND osc.status = 'ACTIVE'
 			LEFT JOIN system_settings ss ON ss.config_key = 'enforce_mfa'
 			WHERE osa.old_slug = $1
 			  AND o.deleted_at IS NULL
@@ -173,6 +187,11 @@ func (r *PostgresRepository) scanTenantRow(
 		hasSSO               bool
 		status               string
 		effectiveMfaRequired bool
+		enforceSso           bool
+		allowBreakGlass      bool
+		ssoProviderType      string
+		ssoDisplayName       string
+		ipAllowlistCidrs     string
 	)
 	err := r.db.QueryRow(ctx, query, querySlug).Scan(
 		&id,
@@ -184,6 +203,11 @@ func (r *PostgresRepository) scanTenantRow(
 		&hasSSO,
 		&status,
 		&effectiveMfaRequired,
+		&enforceSso,
+		&allowBreakGlass,
+		&ssoProviderType,
+		&ssoDisplayName,
+		&ipAllowlistCidrs,
 	)
 	if err != nil {
 		return nil, err
@@ -195,22 +219,30 @@ func (r *PostgresRepository) scanTenantRow(
 	if effectiveSSO {
 		allowedMethods = []string{"password", "google", "github"}
 		authMode = "HYBRID_SSO"
+		if enforceSso {
+			authMode = "SSO_ENFORCED"
+		}
 	}
 
 	out := &TenantContextResponse{
-		ID:              id,
-		Name:            name,
-		Slug:            requestedSlug,
-		IsAlias:         isAlias,
-		RealmKey:        realmKey,
-		LogoURL:         logoURL,
-		Plan:            planCode,
-		PlanDisplayName: mapPlanDisplayName(planCode),
-		AuthMode:        authMode,
-		Status:          status,
-		HasSSO:          effectiveSSO,
-		AllowedMethods:  allowedMethods,
-		MFARequired:     effectiveMfaRequired,
+		ID:               id,
+		Name:             name,
+		Slug:             requestedSlug,
+		IsAlias:          isAlias,
+		RealmKey:         realmKey,
+		LogoURL:          logoURL,
+		Plan:             planCode,
+		PlanDisplayName:  mapPlanDisplayName(planCode),
+		AuthMode:         authMode,
+		Status:           status,
+		HasSSO:           effectiveSSO,
+		AllowedMethods:   allowedMethods,
+		MFARequired:      effectiveMfaRequired,
+		EnforceSSO:       enforceSso && effectiveSSO,
+		AllowBreakGlass:  allowBreakGlass,
+		SSOProviderType:  ssoProviderType,
+		SSODisplayName:   ssoDisplayName,
+		IPAllowlistCIDRs: ipAllowlistCidrs,
 	}
 	if isAlias && activeSlg != requestedSlug {
 		out.TargetSlug = activeSlg
@@ -552,6 +584,111 @@ func (r *PostgresRepository) SwitchUserContext(ctx context.Context, userID, targ
 
 	return r.ResolveTenantContext(ctx, orgSlug)
 }
+
+// DiscoverSsoByEmail inspects email domain mappings and resolves tenant SSO IdP context.
+func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email string) (*SsoDiscoveryResponse, error) {
+	email = strings.TrimSpace(email)
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 || parts[1] == "" {
+		return &SsoDiscoveryResponse{SSOAvailable: false}, nil
+	}
+	domain := strings.ToLower(strings.TrimSpace(parts[1]))
+
+	cacheKey := "auth:sso-disc:" + domain
+	if r.rdb != nil {
+		if cached, err := r.rdb.Get(ctx, cacheKey).Result(); err == nil && cached != "" {
+			var out SsoDiscoveryResponse
+			if jsonErr := json.Unmarshal([]byte(cached), &out); jsonErr == nil {
+				return &out, nil
+			}
+		}
+	}
+
+	if r.db == nil {
+		return &SsoDiscoveryResponse{SSOAvailable: false, EmailDomain: domain}, nil
+	}
+
+	const discoverySQL = `
+		SELECT
+			osc.enforce_sso,
+			osc.allow_break_glass_bypass,
+			COALESCE(osc.provider_type, 'OIDC_CUSTOM'),
+			COALESCE(osc.display_name, ''),
+			o.slug,
+			o.name,
+			(COALESCE(sp.has_sso, false) OR UPPER(COALESCE(sp.name, 'FREE')) IN ('PRO', 'PROFESSIONAL', 'ENTERPRISE')) AS sso_entitled
+		FROM organization_sso_configs osc
+		JOIN organizations o ON osc.organization_id = o.id
+		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
+		WHERE osc.status = 'ACTIVE'
+		  AND o.deleted_at IS NULL
+		  AND o.status = 'ACTIVE'
+		  AND osc.domain_mappings @> to_jsonb(CAST($1 AS text))
+		LIMIT 1
+	`
+
+	var (
+		enforceSso      bool
+		allowBreakGlass bool
+		providerType    string
+		displayName     string
+		orgSlug         string
+		orgName         string
+		ssoEntitled     bool
+	)
+
+	err := r.db.QueryRow(ctx, discoverySQL, domain).Scan(
+		&enforceSso,
+		&allowBreakGlass,
+		&providerType,
+		&displayName,
+		&orgSlug,
+		&orgName,
+		&ssoEntitled,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			res := &SsoDiscoveryResponse{SSOAvailable: false, EmailDomain: domain}
+			if r.rdb != nil {
+				if raw, mErr := json.Marshal(res); mErr == nil {
+					_ = r.rdb.Set(ctx, cacheKey, string(raw), 60*time.Second).Err()
+				}
+			}
+			return res, nil
+		}
+		return nil, err
+	}
+
+	if !ssoEntitled {
+		return &SsoDiscoveryResponse{SSOAvailable: false, EmailDomain: domain}, nil
+	}
+
+	if displayName == "" {
+		displayName = providerType
+	}
+
+	resp := &SsoDiscoveryResponse{
+		SSOAvailable:     true,
+		EnforceSSO:       enforceSso,
+		AllowBreakGlass:  allowBreakGlass,
+		ProviderType:     providerType,
+		DisplayName:      displayName,
+		OrganizationSlug: orgSlug,
+		OrganizationName: orgName,
+		IDPHint:          strings.ToLower(providerType),
+		RedirectURL:      fmt.Sprintf("https://%s.kdua.net/login", orgSlug),
+		EmailDomain:      domain,
+	}
+
+	if r.rdb != nil {
+		if raw, mErr := json.Marshal(resp); mErr == nil {
+			_ = r.rdb.Set(ctx, cacheKey, string(raw), 60*time.Second).Err()
+		}
+	}
+
+	return resp, nil
+}
+
 
 
 

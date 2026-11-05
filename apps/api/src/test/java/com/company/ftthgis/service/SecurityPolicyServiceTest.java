@@ -382,4 +382,33 @@ public class SecurityPolicyServiceTest {
         verify(auditLoggingService).logEvent(eq("fibernet"), eq("MFA_RESET"), eq("USER"),
                 eq(memberId.toString()), anyMap(), anyMap(), anyMap());
     }
+
+    @Test
+    @DisplayName("S15: Anti-Lockout Protection - Blocks saving CIDR when admin IP is outside allowlist")
+    void testUpdateTenantPolicy_AntiLockout_BlocksWhenIpOutsideCidr() {
+        when(organizationRepository.findBySlug("fibernet")).thenReturn(Optional.of(testOrg));
+        when(settingService.getSettingBoolean(eq("enforce_mfa"), anyBoolean())).thenReturn(false);
+        when(settingService.getSettingValue(eq("security.mfa.allowed_methods"), anyString())).thenReturn("totp,webauthn");
+        when(settingService.getSettingValue(eq("session_idle_timeout"), anyString())).thenReturn("30");
+        when(settingService.getSettingValue(eq("security.mfa.grace_period_days"), anyString())).thenReturn("7");
+
+        TenantSecurityPolicy policy = TenantSecurityPolicy.builder().id(UUID.randomUUID()).organization(testOrg).build();
+        when(tenantPolicyRepository.findByOrganizationIdNative(testOrgId)).thenReturn(Optional.of(policy));
+
+        UpdateTenantSecurityPolicyRequest req = new UpdateTenantSecurityPolicyRequest(
+                false, List.of("totp"), 7, 30, false, "192.168.1.0/24"
+        );
+
+        // Caller IP is 10.0.0.5 which is OUTSIDE 192.168.1.0/24 -> must throw IllegalArgumentException!
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                securityPolicyService.updateTenantPolicy("fibernet", req, "admin@fibernet.net", "10.0.0.5")
+        );
+        assertTrue(ex.getMessage().contains("Anti-Lockout Protection"));
+
+        // Caller IP is 192.168.1.50 which is INSIDE 192.168.1.0/24 -> must succeed!
+        when(tenantPolicyRepository.save(any(TenantSecurityPolicy.class))).thenAnswer(inv -> inv.getArgument(0));
+        var res = securityPolicyService.updateTenantPolicy("fibernet", req, "admin@fibernet.net", "192.168.1.50");
+        assertNotNull(res);
+        assertEquals("192.168.1.0/24", res.getIpAllowlistCidrs());
+    }
 }

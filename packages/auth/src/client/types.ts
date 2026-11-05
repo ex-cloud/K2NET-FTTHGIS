@@ -28,6 +28,7 @@ export interface CredentialLoginInput {
   totp?: string;
   rememberMe?: boolean;
   turnstileToken?: string;
+  isBreakGlass?: boolean;
 }
 
 export interface CredentialLoginResult {

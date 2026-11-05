@@ -29,6 +29,10 @@ interface TenantAuthContextDto {
   hasSso?: boolean;
   allowedMethods?: string[];
   mfaRequired?: boolean;
+  enforceSso?: boolean;
+  allowBreakGlass?: boolean;
+  ssoProviderType?: string;
+  ssoDisplayName?: string;
 }
 
 function sanitizeCallbackPath(raw: string | null): string {
@@ -158,6 +162,15 @@ function buildTenantFormLabels(t: (key: string) => string): AuthLoginFormLabels 
     checkInboxDesc: t("auth.check_inbox_desc"),
     resendInstructions: t("auth.resend_instructions"),
     resendCooldown: t("auth.resend_cooldown"),
+    ssoDiscoveredTitle: t("auth.sso_discovered_title"),
+    ssoDiscoveredDesc: t("auth.sso_discovered_desc"),
+    continueWithSso: t("auth.continue_with_sso"),
+    breakGlassModeActive: t("auth.break_glass_mode_active"),
+    breakGlassNotice: t("auth.break_glass_notice"),
+    breakGlassToggle: t("auth.break_glass_toggle"),
+    cancelBreakGlass: t("auth.cancel_break_glass"),
+    ipNotAllowedTitle: t("auth.ip_not_allowed_title"),
+    ipNotAllowedDesc: t("auth.ip_not_allowed_desc"),
   };
 }
 
@@ -242,6 +255,7 @@ export function LoginPage() {
         totp: payload.totp,
         rememberMe: payload.rememberMe,
         turnstileToken: payload.turnstileToken,
+        isBreakGlass: payload.isBreakGlass,
       });
 
       if (result.mfaRequired) {
@@ -328,6 +342,10 @@ export function LoginPage() {
         status={tenantCtx.status || "ACTIVE"}
         tenantSlug={tenantCtx.targetSlug || tenantCtx.slug || tenantSlug}
         plane="TENANT"
+        enforceSso={tenantCtx.enforceSso}
+        allowBreakGlass={tenantCtx.allowBreakGlass}
+        ssoProviderType={tenantCtx.ssoProviderType}
+        ssoDisplayName={tenantCtx.ssoDisplayName}
         allowedMethods={socialMethods}
         locale={locale}
         labels={formLabels}

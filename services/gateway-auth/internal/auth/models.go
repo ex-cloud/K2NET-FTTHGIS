@@ -24,6 +24,25 @@ type TenantContextResponse struct {
 	HasSSO          bool     `json:"hasSso"`
 	AllowedMethods  []string `json:"allowedMethods"`
 	MFARequired     bool     `json:"mfaRequired"`
+	EnforceSSO      bool     `json:"enforceSso"`
+	AllowBreakGlass bool     `json:"allowBreakGlass"`
+	SSOProviderType string   `json:"ssoProviderType,omitempty"`
+	SSODisplayName  string   `json:"ssoDisplayName,omitempty"`
+	IPAllowlistCIDRs string  `json:"ipAllowlistCidrs,omitempty"`
+}
+
+// SsoDiscoveryResponse represents Domain-Based Home Realm Discovery metadata.
+type SsoDiscoveryResponse struct {
+	SSOAvailable     bool   `json:"ssoAvailable"`
+	EnforceSSO       bool   `json:"enforceSso"`
+	AllowBreakGlass  bool   `json:"allowBreakGlass"`
+	ProviderType     string `json:"providerType,omitempty"`
+	DisplayName      string `json:"displayName,omitempty"`
+	OrganizationSlug string `json:"organizationSlug,omitempty"`
+	OrganizationName string `json:"organizationName,omitempty"`
+	IDPHint          string `json:"idpHint,omitempty"`
+	RedirectURL      string `json:"redirectUrl,omitempty"`
+	EmailDomain      string `json:"emailDomain,omitempty"`
 }
 
 // LoginRequest is the payload submitted by native React AuthLoginForm to POST /api/v1/auth/login.
@@ -35,6 +54,7 @@ type LoginRequest struct {
 	TOTP           string `json:"totp,omitempty"` // Optional 6-digit MFA OTP code
 	RememberMe     bool   `json:"rememberMe"`
 	TurnstileToken string `json:"turnstileToken,omitempty"`
+	IsBreakGlass   bool   `json:"isBreakGlass,omitempty"` // Emergency bypass for tenant admins
 }
 
 // RefreshRequest is an optional fallback payload for POST /api/v1/auth/refresh when cookies are unavailable.

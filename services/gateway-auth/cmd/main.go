@@ -101,6 +101,7 @@ func main() {
 	authAPI.Use(auth.SecurityHeadersAndCSRFMiddleware())
 	{
 		authAPI.GET("/tenant-context", handler.GetTenantContext)
+		authAPI.GET("/sso-discovery", handler.GetSsoDiscovery)
 		authAPI.POST("/login", mutationLimiter, handler.Login)
 		authAPI.POST("/mfa/verify", mutationLimiter, handler.VerifyMFA)
 		authAPI.POST("/refresh", handler.Refresh)

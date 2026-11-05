@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.InetAddress;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -192,6 +193,14 @@ public class SecurityPolicyService {
      */
     @Transactional
     public TenantSecurityPolicyDto updateTenantPolicy(String orgSlug, UpdateTenantSecurityPolicyRequest request, String actor) {
+        return updateTenantPolicy(orgSlug, request, actor, null);
+    }
+
+    /**
+     * Updates tenant security policy with Anti-Loosening and Anti-Lockout validation.
+     */
+    @Transactional
+    public TenantSecurityPolicyDto updateTenantPolicy(String orgSlug, UpdateTenantSecurityPolicyRequest request, String actor, String clientIp) {
         Organization org = organizationRepository.findBySlug(orgSlug)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant organization not found: " + orgSlug));
 
@@ -243,8 +252,41 @@ public class SecurityPolicyService {
         if (request.deviceVerificationRequired() != null) {
             policy.setDeviceVerificationRequired(request.deviceVerificationRequired());
         }
+
+        // IP Allowlist & Anti-Lockout Validation
         if (request.ipAllowlistCidrs() != null) {
-            policy.setIpAllowlistCidrs(request.ipAllowlistCidrs().trim());
+            String rawCidrs = request.ipAllowlistCidrs().trim();
+            if (!rawCidrs.isBlank()) {
+                String[] entries = rawCidrs.split("[,\\s\n\r]+");
+                List<String> validCidrs = new ArrayList<>();
+                for (String entry : entries) {
+                    if (entry.isBlank()) continue;
+                    String normalized = normalizeCidr(entry);
+                    if (normalized == null) {
+                        throw new IllegalArgumentException("Format CIDR subnet tidak valid: " + entry + ". Contoh format valid: 192.168.1.0/24 atau 10.0.0.1/32");
+                    }
+                    validCidrs.add(normalized);
+                }
+
+                // Anti-Lockout: Jangan biarkan admin mengunci diri sendiri keluar!
+                if (clientIp != null && !clientIp.isBlank() && !clientIp.equals("127.0.0.1") && !clientIp.equals("0:0:0:0:0:0:0:1")) {
+                    boolean callerMatches = false;
+                    for (String cidr : validCidrs) {
+                        if (isIpInCidr(clientIp, cidr)) {
+                            callerMatches = true;
+                            break;
+                        }
+                    }
+                    if (!callerMatches) {
+                        throw new IllegalArgumentException(String.format(
+                                "Anti-Lockout Protection: Alamat IP Anda saat ini (%s) tidak termasuk dalam daftar CIDR yang dimasukkan. Penyimpanan dibatalkan untuk mencegah Anda terkunci dari sistem.",
+                                clientIp));
+                    }
+                }
+                policy.setIpAllowlistCidrs(String.join(",", validCidrs));
+            } else {
+                policy.setIpAllowlistCidrs(null);
+            }
         }
 
         TenantSecurityPolicy saved = tenantPolicyRepository.save(policy);
@@ -254,13 +296,79 @@ public class SecurityPolicyService {
         }
 
         auditLoggingService.logEvent(org.getSlug(), "TENANT_SECURITY_POLICY_UPDATE", "TENANT_POLICY",
-                saved.getId().toString(), Map.of(), Map.of("mfaEnforced", saved.isMfaEnforced()),
+                saved.getId() != null ? saved.getId().toString() : "unknown", Map.of(), Map.of("mfaEnforced", saved.isMfaEnforced()),
                 Map.of("actor", actor != null ? actor : "admin"));
 
         log.info("🛡️ Tenant security policy updated for org '{}' by {}: MFA={}, SessionIdle={}m",
                 orgSlug, actor, saved.isMfaEnforced(), saved.getSessionIdleMinutes());
 
         return getTenantPolicy(orgSlug);
+    }
+
+    /**
+     * Memvalidasi dan menormalkan format CIDR (IPv4/IPv6).
+     */
+    public static String normalizeCidr(String input) {
+        if (input == null) return null;
+        input = input.trim();
+        try {
+            if (!input.contains("/")) {
+                InetAddress addr = InetAddress.getByName(input);
+                return input + (addr.getAddress().length == 16 ? "/128" : "/32");
+            }
+            String[] parts = input.split("/");
+            if (parts.length != 2) return null;
+            InetAddress addr = InetAddress.getByName(parts[0].trim());
+            int prefix = Integer.parseInt(parts[1].trim());
+            int maxBits = addr.getAddress().length == 16 ? 128 : 32;
+            if (prefix < 0 || prefix > maxBits) return null;
+            return addr.getHostAddress() + "/" + prefix;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Memeriksa apakah alamat IP berada di dalam jangkauan subnet CIDR.
+     */
+    public static boolean isIpInCidr(String ipStr, String cidr) {
+        try {
+            cidr = cidr.trim();
+            if (!cidr.contains("/")) {
+                cidr = cidr + (cidr.contains(":") ? "/128" : "/32");
+            }
+            String[] parts = cidr.split("/");
+            InetAddress ip = InetAddress.getByName(ipStr.trim());
+            InetAddress network = InetAddress.getByName(parts[0].trim());
+            int prefixLength = Integer.parseInt(parts[1].trim());
+
+            byte[] ipBytes = ip.getAddress();
+            byte[] netBytes = network.getAddress();
+
+            if (ipBytes.length != netBytes.length) {
+                return false;
+            }
+
+            int byteCount = prefixLength / 8;
+            int bitCount = prefixLength % 8;
+
+            for (int i = 0; i < byteCount; i++) {
+                if (ipBytes[i] != netBytes[i]) {
+                    return false;
+                }
+            }
+
+            if (bitCount > 0 && byteCount < ipBytes.length) {
+                int mask = (0xFF << (8 - bitCount)) & 0xFF;
+                if ((ipBytes[byteCount] & mask) != (netBytes[byteCount] & mask)) {
+                    return false;
+                }
+            }
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

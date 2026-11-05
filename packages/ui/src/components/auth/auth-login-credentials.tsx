@@ -9,6 +9,8 @@ import {
   EyeOff,
   Smartphone,
   ArrowLeft,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import { Button } from "../button";
 import { Input } from "../input";
@@ -48,6 +50,9 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
     socialMethods,
     isSubmitDisabled,
     isSuspended,
+    isBreakGlass,
+    setIsBreakGlass,
+    discoveredSso,
   } = form;
 
   const {
@@ -55,6 +60,10 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
     turnstileSiteKey,
     isLoading = false,
     onContinueWithProvider,
+    enforceSso = false,
+    allowBreakGlass = true,
+    ssoProviderType,
+    ssoDisplayName,
   } = props;
 
   return (
@@ -102,38 +111,130 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
       )}
 
       {/* Credentials & Inline MFA Form */}
-      <form onSubmit={handleSubmit} className="space-y-3.5">
-        {!mfaRequired ? (
-          <>
-            {/* Account Email or Username Input */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <Label
-                  htmlFor="usernameOrEmail"
-                  className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
-                >
-                  {copy.accountEmailOrUsername}
-                </Label>
-                <span className="text-[10px] text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded font-mono">
-                  {copy.requiredBadge}
-                </span>
-              </div>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                <Input
-                  id="usernameOrEmail"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  placeholder={copy.accountPlaceholder}
-                  value={usernameOrEmail}
-                  onChange={(e) => setUsernameOrEmail(e.target.value)}
-                  className="pl-9 h-9 bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
-                  disabled={isLoading || isSuspended}
-                  required
-                />
-              </div>
+      {enforceSso && !isBreakGlass && !mfaRequired ? (
+        <div className="space-y-4 py-2 animate-in fade-in duration-150">
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-center space-y-2">
+            <div className="inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto">
+              <KeyRound className="size-5" />
             </div>
+            <div className="space-y-1">
+              <h4 className="text-xs font-semibold text-foreground">
+                {ssoDisplayName || "Enterprise Single Sign-On"}
+              </h4>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                {copy.ssoDiscoveredDesc}
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              className="w-full h-8 text-xs font-medium justify-center gap-2 mt-2"
+              onClick={() => onContinueWithProvider && onContinueWithProvider(ssoProviderType || "sso")}
+              disabled={isLoading || isSuspended}
+            >
+              <KeyRound className="size-3.5" />
+              <span>{copy.continueWithSso}</span>
+            </Button>
+          </div>
+
+          {allowBreakGlass && (
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => setIsBreakGlass(true)}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <ShieldAlert className="size-3 text-amber-500" />
+                <span>{copy.breakGlassToggle}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          {!mfaRequired ? (
+            <>
+              {/* Break-Glass Emergency Warning Banner */}
+              {enforceSso && isBreakGlass && (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-1 text-xs text-amber-600 dark:text-amber-400 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <ShieldAlert className="size-4" />
+                      <span>{copy.breakGlassModeActive}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsBreakGlass(false)}
+                      className="text-[11px] underline hover:no-underline font-normal cursor-pointer"
+                    >
+                      {copy.cancelBreakGlass}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-amber-600/90 dark:text-amber-400/90 leading-relaxed">
+                    {copy.breakGlassNotice}
+                  </p>
+                </div>
+              )}
+
+              {/* Account Email or Username Input */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label
+                    htmlFor="usernameOrEmail"
+                    className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    {copy.accountEmailOrUsername}
+                  </Label>
+                  <span className="text-[10px] text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded font-mono">
+                    {copy.requiredBadge}
+                  </span>
+                </div>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    id="usernameOrEmail"
+                    name="username"
+                    type="text"
+                    autoComplete="username webauthn"
+                    placeholder={copy.accountPlaceholder}
+                    value={usernameOrEmail}
+                    onChange={(e) => setUsernameOrEmail(e.target.value)}
+                    className="pl-9 h-9 bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [color-scheme:dark] [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#09090b_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white"
+                    disabled={isLoading || isSuspended}
+                    required
+                  />
+                </div>
+
+                {/* Discovered SSO IdP Suggestion */}
+                {discoveredSso && !enforceSso && (
+                  <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 flex items-center justify-between gap-2 animate-in fade-in mt-1.5">
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] font-semibold text-primary block">
+                        {copy.ssoDiscoveredTitle}
+                      </span>
+                      <p className="text-[10px] text-muted-foreground">
+                        {discoveredSso.displayName || discoveredSso.providerType}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      className="h-6 text-[11px] px-2 font-medium gap-1"
+                      onClick={() => {
+                        if (discoveredSso.redirectUrl && typeof window !== "undefined") {
+                          window.location.href = discoveredSso.redirectUrl;
+                        } else if (onContinueWithProvider) {
+                          onContinueWithProvider(discoveredSso.providerType || "sso");
+                        }
+                      }}
+                    >
+                      <KeyRound className="size-3" />
+                      <span>{copy.continueWithSso}</span>
+                    </Button>
+                  </div>
+                )}
+              </div>
 
             {/* Password Input + Forgot Password + Show/Hide Toggle */}
             <div className="space-y-1.5">
@@ -294,6 +395,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
           </div>
         )}
       </form>
+      )}
     </>
   );
 }

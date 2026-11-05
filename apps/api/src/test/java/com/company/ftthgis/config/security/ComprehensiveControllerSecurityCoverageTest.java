@@ -35,6 +35,7 @@ public class ComprehensiveControllerSecurityCoverageTest {
             "OrganizationAuthController.refreshToken",
             "OrganizationAuthController.getAuthMethods",
             "AuthDiscoveryController.discover",
+            "AuthDiscoveryController.discoverSso",
             "AuthDiscoveryController.getRealmConfig",
             "OAuthGateController.exchangeToken",
             "OAuthGateController.getOAuthConfig",

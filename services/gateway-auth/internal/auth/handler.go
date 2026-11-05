@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -116,6 +117,77 @@ func (h *Handler) GetTenantContext(c *gin.Context) {
 	c.JSON(http.StatusOK, tenantCtx)
 }
 
+// GetSsoDiscovery handles GET /api/v1/auth/sso-discovery?email={email} (Domain-based HRD).
+func (h *Handler) GetSsoDiscovery(c *gin.Context) {
+	email := strings.TrimSpace(c.Query("email"))
+	if email == "" || !strings.Contains(email, "@") {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "INVALID_EMAIL",
+			"message": "Parameter email wajib disertakan dengan format valid.",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Second)
+	defer cancel()
+
+	resp, err := h.repo.DiscoverSsoByEmail(ctx, email)
+	if err != nil {
+		logger.Error(c.Request.Context(), "Failed discovering SSO by email", zap.String("email", email), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "INTERNAL_ERROR",
+			"message": "Gagal memeriksa ketersediaan SSO domain email.",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// isIPInCIDRList checks whether the client IP matches any allowed CIDRs (IPv4 and IPv6).
+func isIPInCIDRList(clientIPStr string, cidrListStr string) bool {
+	clientIPStr = strings.TrimSpace(clientIPStr)
+	if clientIPStr == "" {
+		return true
+	}
+	clientIP := net.ParseIP(clientIPStr)
+	if clientIP == nil {
+		return false
+	}
+
+	rawTokens := strings.FieldsFunc(cidrListStr, func(r rune) bool {
+		return r == ',' || r == '\n' || r == '\r' || r == ';'
+	})
+
+	validCIDRsCount := 0
+	for _, token := range rawTokens {
+		token = strings.TrimSpace(token)
+		if token == "" {
+			continue
+		}
+		if !strings.Contains(token, "/") {
+			if strings.Contains(token, ":") {
+				token = token + "/128"
+			} else {
+				token = token + "/32"
+			}
+		}
+		_, ipNet, err := net.ParseCIDR(token)
+		if err != nil {
+			continue
+		}
+		validCIDRsCount++
+		if ipNet.Contains(clientIP) {
+			return true
+		}
+	}
+
+	if validCIDRsCount == 0 {
+		return true
+	}
+	return false
+}
+
 // Login handles POST /api/v1/auth/login (Cloudflare-style native credentials + Turnstile + MFA + JIT Sync).
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
@@ -223,6 +295,49 @@ func (h *Handler) Login(c *gin.Context) {
 				"message": "Workspace organisasi Anda sedang ditangguhkan atau menunggu persetujuan aktivasi.",
 			})
 			return
+		}
+
+		// Enforce IP Allowlist / CIDR restriction
+		if tenantCtx.IPAllowlistCIDRs != "" {
+			if !isIPInCIDRList(clientIP, tenantCtx.IPAllowlistCIDRs) {
+				h.emitAudit(c.Request.Context(), auditSlug, req.Username, "", clientIP, "AUTH_LOGIN_BLOCKED_IP_CIDR", map[string]any{
+					"clientIP": clientIP,
+					"plane":    plane,
+				})
+				c.JSON(http.StatusForbidden, gin.H{
+					"error":   "IP_NOT_ALLOWED",
+					"message": "Akses ditolak: Alamat IP perangkat Anda tidak terdaftar dalam daftar IP yang diizinkan organisasi.",
+				})
+				return
+			}
+		}
+
+		// Enforce SSO & Break-Glass Emergency Access
+		if tenantCtx.EnforceSSO {
+			if !req.IsBreakGlass {
+				c.JSON(http.StatusForbidden, gin.H{
+					"error":           "SSO_ENFORCED",
+					"message":         "Organisasi ini mewajibkan masuk menggunakan Single Sign-On (SSO).",
+					"ssoProviderType": tenantCtx.SSOProviderType,
+					"ssoDisplayName":  tenantCtx.SSODisplayName,
+				})
+				return
+			}
+			if !tenantCtx.AllowBreakGlass {
+				c.JSON(http.StatusForbidden, gin.H{
+					"error":   "BREAK_GLASS_NOT_ALLOWED",
+					"message": "Akses darurat Break-Glass dinonaktifkan oleh kebijakan organisasi.",
+				})
+				return
+			}
+			// Mandatory Step-Up TOTP for Break-Glass
+			if req.TOTP == "" {
+				c.JSON(http.StatusOK, LoginResponse{
+					MFARequired: true,
+					Message:     "Akses darurat Break-Glass mewajibkan verifikasi TOTP MFA lapis kedua.",
+				})
+				return
+			}
 		}
 	}
 
@@ -346,6 +461,31 @@ func (h *Handler) Login(c *gin.Context) {
 
 		resolvedOrgID = tenantCtx.ID
 		resolvedTenantSlug = expectedSlug
+
+		if req.IsBreakGlass {
+			hasAdminRole := false
+			for _, r := range roles {
+				cleanRole := strings.ToLower(strings.TrimPrefix(r, "ROLE_"))
+				if cleanRole == "admin" || cleanRole == "super_admin" {
+					hasAdminRole = true
+					break
+				}
+			}
+			if !hasAdminRole {
+				h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+				h.emitAudit(c.Request.Context(), auditSlug, claims.Sub, joinRoles(roles), clientIP, "AUTH_BREAK_GLASS_UNAUTHORIZED", map[string]any{
+					"roles": roles,
+				})
+				c.JSON(http.StatusForbidden, gin.H{
+					"error":   "BREAK_GLASS_UNAUTHORIZED",
+					"message": "Akses darurat Break-Glass hanya diizinkan untuk Admin Organisasi.",
+				})
+				return
+			}
+			h.emitAudit(c.Request.Context(), auditSlug, claims.Sub, joinRoles(roles), clientIP, "AUTH_BREAK_GLASS_LOGIN_SUCCESS", map[string]any{
+				"roles": roles,
+			})
+		}
 	} else {
 		// Platform Control Plane (ftth-realm): SYSTEM operators must NOT be bound to any tenant organization_id
 		resolvedOrgID = ""

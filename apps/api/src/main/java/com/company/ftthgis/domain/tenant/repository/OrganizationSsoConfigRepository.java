@@ -30,5 +30,8 @@ public interface OrganizationSsoConfigRepository extends JpaRepository<Organizat
 
     @Query(value = "SELECT osc.* FROM organization_sso_configs osc JOIN organizations o ON osc.organization_id = o.id WHERE o.slug = :slug AND osc.provider_type = :providerType LIMIT 1", nativeQuery = true)
     Optional<OrganizationSsoConfig> findByOrganizationSlugAndProviderTypeNative(@Param("slug") String slug, @Param("providerType") String providerType);
+
+    @Query(value = "SELECT osc.* FROM organization_sso_configs osc JOIN organizations o ON osc.organization_id = o.id WHERE osc.status = 'ACTIVE' AND o.deleted_at IS NULL AND osc.domain_mappings @> to_jsonb(CAST(:domain AS text)) ORDER BY osc.enforce_sso DESC, osc.created_at DESC LIMIT 1", nativeQuery = true)
+    Optional<OrganizationSsoConfig> findActiveConfigByEmailDomainNative(@Param("domain") String domain);
 }
 

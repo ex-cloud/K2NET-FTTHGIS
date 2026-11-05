@@ -436,6 +436,7 @@ export function KeycloakProvider({
             totp: input.totp?.trim() || undefined,
             rememberMe: Boolean(input.rememberMe),
             turnstileToken: input.turnstileToken || undefined,
+            isBreakGlass: input.isBreakGlass || undefined,
           }),
         });
 

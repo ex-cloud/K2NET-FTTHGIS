@@ -28,16 +28,36 @@ public class TenantSecurityPolicyController {
     public ResponseEntity<?> updateTenantPolicy(
             @PathVariable String slug,
             @RequestBody UpdateTenantSecurityPolicyRequest request,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
         try {
             String actor = jwt != null ? (jwt.getClaimAsString("email") != null ? jwt.getClaimAsString("email") : jwt.getSubject()) : "admin";
-            return ResponseEntity.ok(policyService.updateTenantPolicy(slug, request, actor));
+            String clientIp = resolveClientIp(httpRequest);
+            return ResponseEntity.ok(policyService.updateTenantPolicy(slug, request, actor, clientIp));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(java.util.Map.of(
                     "success", false,
                     "message", e.getMessage()
             ));
         }
+    }
+
+    private String resolveClientIp(jakarta.servlet.http.HttpServletRequest req) {
+        if (req == null) return null;
+        String ip = req.getHeader("CF-Connecting-IP");
+        if (ip == null || ip.isBlank()) {
+            ip = req.getHeader("X-Forwarded-For");
+            if (ip != null && !ip.isBlank() && ip.contains(",")) {
+                ip = ip.split(",")[0].trim();
+            }
+        }
+        if (ip == null || ip.isBlank()) {
+            ip = req.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isBlank()) {
+            ip = req.getRemoteAddr();
+        }
+        return ip != null ? ip.trim() : null;
     }
 
     @PostMapping("/members/{memberId}/reset-mfa")

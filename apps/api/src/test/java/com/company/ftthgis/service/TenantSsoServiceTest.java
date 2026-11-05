@@ -249,5 +249,46 @@ public class TenantSsoServiceTest {
         assertNotNull(existing.getLastTestErrorMessage());
         verify(ssoConfigRepository).save(existing);
     }
+
+    @Test
+    @DisplayName("S9: discoverSsoByEmail returns active SSO config when domain matches")
+    void testDiscoverSsoByEmail_WhenDomainMatches_ReturnsSsoResponse() {
+        OrganizationSsoConfig config = OrganizationSsoConfig.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .providerType("MICROSOFT_ENTRA")
+                .displayName("Microsoft 365 (Entra ID)")
+                .enforceSso(true)
+                .allowBreakGlassBypass(true)
+                .status("ACTIVE")
+                .domainMappings("[\"fibernet.id\", \"fibernet.com\"]")
+                .build();
+
+        when(ssoConfigRepository.findActiveConfigByEmailDomainNative("fibernet.id")).thenReturn(Optional.of(config));
+
+        var res = ssoService.discoverSsoByEmail("user@fibernet.id");
+
+        assertTrue(res.isSsoAvailable());
+        assertTrue(res.isEnforceSso());
+        assertTrue(res.isAllowBreakGlass());
+        assertEquals("MICROSOFT_ENTRA", res.getProviderType());
+        assertEquals("Microsoft 365 (Entra ID)", res.getDisplayName());
+        assertEquals("fibernet", res.getOrganizationSlug());
+        assertEquals("fibernet.id", res.getEmailDomain());
+    }
+
+    @Test
+    @DisplayName("S10: discoverSsoByEmail returns ssoAvailable=false when domain not found or invalid email")
+    void testDiscoverSsoByEmail_WhenDomainNotFound_ReturnsSsoUnavailable() {
+        when(ssoConfigRepository.findActiveConfigByEmailDomainNative("unknown.com")).thenReturn(Optional.empty());
+
+        var res = ssoService.discoverSsoByEmail("user@unknown.com");
+        assertFalse(res.isSsoAvailable());
+        assertFalse(res.isEnforceSso());
+        assertEquals("unknown.com", res.getEmailDomain());
+
+        var resInvalid = ssoService.discoverSsoByEmail("invalid-email-no-at");
+        assertFalse(resInvalid.isSsoAvailable());
+    }
 }
 

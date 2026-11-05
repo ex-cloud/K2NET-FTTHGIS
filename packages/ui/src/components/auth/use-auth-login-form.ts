@@ -49,6 +49,39 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   const [showForgotHelp, setShowForgotHelp] = useState(false);
   const [forgotSubmitted, setForgotSubmitted] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [isBreakGlass, setIsBreakGlass] = useState(false);
+  const [discoveredSso, setDiscoveredSso] = useState<{
+    ssoAvailable: boolean;
+    providerType?: string;
+    displayName?: string;
+    organizationSlug?: string;
+    redirectUrl?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const trimmed = usernameOrEmail.trim();
+    if (!trimmed.includes("@") || (trimmed.split("@")[1]?.length ?? 0) < 3) {
+      setDiscoveredSso(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/v1/auth/sso-discovery?email=${encodeURIComponent(trimmed)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.ssoAvailable) {
+            setDiscoveredSso(data);
+          } else {
+            setDiscoveredSso(null);
+          }
+        }
+      } catch {
+        setDiscoveredSso(null);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [usernameOrEmail]);
 
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
@@ -184,6 +217,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
         saveEmailOnDevice,
         totp: mfaRequired ? totpCode.trim() : undefined,
         turnstileToken,
+        isBreakGlass: isBreakGlass || undefined,
       });
       return;
     }
@@ -346,6 +380,19 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
       "If an account matches this identity, we've sent password reset instructions to your inbox.",
     resendInstructions: labels?.resendInstructions || "Resend instructions",
     resendCooldown: labels?.resendCooldown || "Resend available in {seconds}s",
+    ssoDiscoveredTitle: labels?.ssoDiscoveredTitle || "Single Sign-On Available",
+    ssoDiscoveredDesc: labels?.ssoDiscoveredDesc || "Your email domain is configured with corporate SSO.",
+    continueWithSso: labels?.continueWithSso || "Continue with SSO",
+    breakGlassModeActive: labels?.breakGlassModeActive || "Emergency Break-Glass Mode Active",
+    breakGlassNotice:
+      labels?.breakGlassNotice ||
+      "Emergency access for administrators only when IdP is down. Step-Up TOTP is mandatory.",
+    breakGlassToggle: labels?.breakGlassToggle || "Sign in with Break-Glass Emergency Access",
+    cancelBreakGlass: labels?.cancelBreakGlass || "Cancel Break-Glass & return to SSO",
+    ipNotAllowedTitle: labels?.ipNotAllowedTitle || "Access Denied: IP Not Allowed",
+    ipNotAllowedDesc:
+      labels?.ipNotAllowedDesc ||
+      "Your device IP address is not included in this organization's allowed CIDR list.",
   };
 
   const resolvedSubmitLabel =
@@ -363,6 +410,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   const isSubmitDisabled =
     isLoading ||
     isSuspended ||
+    (Boolean(props.enforceSso) && !isBreakGlass) ||
     !usernameOrEmail.trim() ||
     !password ||
     (mfaRequired && totpCode.trim().length < 6) ||
@@ -403,6 +451,9 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     showForgotHelp,
     forgotSubmitted,
     forgotLoading,
+    isBreakGlass,
+    setIsBreakGlass,
+    discoveredSso,
     // Refs
     turnstileContainerRef,
     passwordInputRef,

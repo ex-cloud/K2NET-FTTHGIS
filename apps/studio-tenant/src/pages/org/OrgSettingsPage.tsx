@@ -137,6 +137,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
   const [mfaEnforced, setMfaEnforced] = React.useState(false);
   const [sessionTimeout, setSessionTimeout] = React.useState(30);
   const [isPlatformEnforced, setIsPlatformEnforced] = React.useState(false);
+  const [ipAllowlistCidrs, setIpAllowlistCidrs] = React.useState<string>("");
 
   React.useEffect(() => {
     if (!slug) return;
@@ -149,11 +150,13 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           mfaEnforced: boolean;
           sessionIdleTimeoutMinutes: number;
           isMfaEnforcedByPlatform: boolean;
+          ipAllowlistCidrs?: string;
         }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`);
         if (res && isMounted) {
           setMfaEnforced(res.mfaEnforced);
           setSessionTimeout(res.sessionIdleTimeoutMinutes || 30);
           setIsPlatformEnforced(res.isMfaEnforcedByPlatform);
+          setIpAllowlistCidrs(res.ipAllowlistCidrs || "");
         }
       } catch (e) {
         console.warn("Failed to load tenant security policy:", e);
@@ -176,6 +179,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         body: JSON.stringify({
           mfaEnforced: isPlatformEnforced ? true : mfaEnforced,
           sessionIdleTimeoutMinutes: sessionTimeout,
+          ipAllowlistCidrs: ipAllowlistCidrs.trim() || undefined,
         }),
       });
       toast.success(t("common.saved_successfully"));
@@ -220,7 +224,25 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           disabled={loading || isSaving}
           className="h-8.5 text-xs font-mono"
         />
-        <p className="text-[10px] text-muted-foreground">Inactivity duration in minutes before session auto-lock.</p>
+        <p className="text-[10px] text-muted-foreground">{t("settings.session_timeout_desc")}</p>
+      </div>
+
+      <div className="space-y-1.5 pt-2 border-t border-border/40">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-semibold">{t("settings.ip_allowlist_label")}</Label>
+          <span className="text-[10px] text-muted-foreground font-mono">IPv4 / IPv6 CIDR</span>
+        </div>
+        <textarea
+          rows={3}
+          value={ipAllowlistCidrs}
+          onChange={(e) => setIpAllowlistCidrs(e.target.value)}
+          disabled={loading || isSaving}
+          placeholder={t("settings.ip_allowlist_placeholder")}
+          className="w-full rounded-md border border-border/60 bg-background/50 px-3 py-2 text-xs font-mono placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+        />
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          {t("settings.ip_allowlist_desc")}
+        </p>
       </div>
 
       <div className="flex justify-end pt-2 border-t border-border/40">
@@ -251,6 +273,7 @@ interface SsoConfigResponse {
   signingCertificate?: string;
   enforceSso: boolean;
   allowBreakGlassBypass: boolean;
+  domainMappings?: string[];
   status: string;
   lastTestStatus?: string;
   lastTestAt?: string;
@@ -277,6 +300,7 @@ function SsoSettingsSection({ slug }: { slug?: string }) {
   const [signingCertificate, setSigningCertificate] = React.useState<string>("");
   const [enforceSso, setEnforceSso] = React.useState<boolean>(false);
   const [allowBreakGlassBypass, setAllowBreakGlassBypass] = React.useState<boolean>(true);
+  const [domainMappings, setDomainMappings] = React.useState<string>("");
   const [lastTestStatus, setLastTestStatus] = React.useState<string | undefined>(undefined);
   const [lastTestAt, setLastTestAt] = React.useState<string | undefined>(undefined);
   const [version, setVersion] = React.useState<number | undefined>(undefined);
@@ -304,6 +328,7 @@ function SsoSettingsSection({ slug }: { slug?: string }) {
         setSigningCertificate(res.signingCertificate || "");
         setEnforceSso(Boolean(res.enforceSso));
         setAllowBreakGlassBypass(res.allowBreakGlassBypass !== false);
+        setDomainMappings(Array.isArray(res.domainMappings) ? res.domainMappings.join(", ") : "");
         setLastTestStatus(res.lastTestStatus);
         setLastTestAt(res.lastTestAt);
         setVersion(res.version);
@@ -377,6 +402,10 @@ function SsoSettingsSection({ slug }: { slug?: string }) {
         signingCertificate: signingCertificate.trim() || undefined,
         enforceSso,
         allowBreakGlassBypass,
+        domainMappings: domainMappings
+          .split(/[,\n]/)
+          .map((d) => d.trim().toLowerCase())
+          .filter((d) => d.length > 0),
         status: "ACTIVE",
         version,
       };
@@ -634,6 +663,20 @@ function SsoSettingsSection({ slug }: { slug?: string }) {
               </div>
             </>
           )}
+
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className="text-xs font-semibold">{t("settings.sso_domains_label")}</Label>
+            <Input
+              disabled={!isSsoAllowed || isLoading}
+              value={domainMappings}
+              onChange={(e) => setDomainMappings(e.target.value)}
+              placeholder={t("settings.sso_domains_placeholder")}
+              className="h-8.5 text-xs font-mono bg-background border-border/80"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              {t("settings.sso_domains_desc")}
+            </p>
+          </div>
         </div>
 
         {/* Security Enforcement Switches */}

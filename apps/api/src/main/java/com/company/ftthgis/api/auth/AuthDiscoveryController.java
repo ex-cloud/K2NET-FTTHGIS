@@ -1,7 +1,9 @@
 package com.company.ftthgis.api.auth;
 
+import com.company.ftthgis.api.auth.dto.SsoDiscoveryResponse;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.company.ftthgis.service.TenantSsoService;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -13,12 +15,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1/auth/discovery")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Slf4j
 public class AuthDiscoveryController {
 
     private final OrganizationRepository organizationRepository;
+    private final TenantSsoService tenantSsoService;
 
     @Value("${keycloak.server-url}")
     private String keycloakServerUrl;
@@ -26,7 +29,7 @@ public class AuthDiscoveryController {
     @Value("${keycloak.realm}")
     private String defaultRealm;
 
-    @GetMapping("/{slug}")
+    @GetMapping("/discovery/{slug}")
     public ResponseEntity<DiscoveryResponse> discover(@PathVariable String slug) {
         log.info("🔍 Discovery request for organization slug: {}", slug);
 
@@ -55,6 +58,23 @@ public class AuthDiscoveryController {
         }
 
         return ResponseEntity.notFound().build();
+    }
+
+    /**
+     * Domain-Based Home Realm Discovery (HRD) untuk login SSO enterprise.
+     * Mengembalikan status federasi identitas dan konfigurasi SSO berdasarkan domain email.
+     */
+    @GetMapping({"/sso-discovery", "/discovery/sso"})
+    public ResponseEntity<SsoDiscoveryResponse> discoverSso(@RequestParam(required = false) String email) {
+        log.info("🔍 SSO discovery request for email: {}", email);
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(SsoDiscoveryResponse.builder()
+                    .ssoAvailable(false)
+                    .enforceSso(false)
+                    .allowBreakGlass(false)
+                    .build());
+        }
+        return ResponseEntity.ok(tenantSsoService.discoverSsoByEmail(email));
     }
 
     @Data
