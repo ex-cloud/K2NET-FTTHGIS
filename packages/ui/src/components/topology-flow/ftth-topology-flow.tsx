@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import gsap from "gsap";
 import {
   Globe2,
   Network,
-  Server,
   Layers,
   Box,
-  Radio,
   Wifi,
   Activity,
-  CheckCircle2,
-  Zap,
-  Cable,
+  Tv,
+  PhoneCall,
   ShieldCheck,
-  ChevronRight,
+  Cpu,
+  Radio,
+  Zap,
 } from "lucide-react";
 import { cn } from "../../utils";
 
@@ -26,23 +26,22 @@ export interface FtthTopologyFlowProps {
   interactive?: boolean;
 }
 
-interface NodeData {
+interface NodeItem {
   id: string;
-  column: number; // 0, 1, 2, 3
-  row: number; // 0, 1
-  label: string;
-  sublabel: string;
-  category: string;
-  icon: React.ElementType;
-  badge?: string;
-  metric?: string;
-  status: "ONLINE" | "ACTIVE" | "OPTIMAL" | "STANDBY";
+  title: string;
+  subtitle: string;
+  meta: string;
+  icon?: React.ElementType;
 }
 
-interface CableConnection {
+interface CablePath {
   id: string;
-  from: string;
-  to: string;
+  fromId: string;
+  toId: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
 }
 
 export function FtthTopologyFlow({
@@ -53,297 +52,655 @@ export function FtthTopologyFlow({
   interactive = true,
 }: FtthTopologyFlowProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const heroCardRef = useRef<HTMLDivElement>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const [activeSignalIndex, setActiveSignalIndex] = useState(0);
-  const [liveLatency, setLiveLatency] = useState(realtimeLatencyMs);
 
-  // Subtle real-time ping jitter for ultra-realistic telemetry feel
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const jitter = Math.floor(Math.random() * 5) - 2; // -2 to +2
-      setLiveLatency((prev) => Math.max(7, Math.min(24, prev + jitter)));
-      setActiveSignalIndex((prev) => (prev + 1) % 6);
-    }, 2800);
-    return () => clearInterval(interval);
-  }, []);
-
-  // ── Node Definitions (FTTH End-to-End Pipeline) ────────────────────────
-  const nodes: NodeData[] = useMemo(
+  // ── Column 1: Core Uplink & Backbone (Equivalent to "STEAM" in Bridgeplay) ─
+  const col1Nodes: NodeItem[] = useMemo(
     () => [
-      // ── Stage 0: Core & Upstream
       {
         id: "ixp-upstream",
-        column: 0,
-        row: 0,
-        label: "Tier-1 Upstream IXP",
-        sublabel: "OpenIXP / Dual 100G Trunk",
-        category: "CORE BACKBONE",
+        title: "Tier-1 Upstream IXP",
+        subtitle: "OpenIXP • Dual 100G Trunk",
+        meta: "100G QSFP28",
         icon: Globe2,
-        badge: "100G QSFP28",
-        metric: "99.99% SLA",
-        status: "ONLINE",
       },
       {
         id: "bgp-router",
-        column: 0,
-        row: 1,
-        label: "Core BGP Router",
-        sublabel: "AS-59310 Peering Fabric",
-        category: "ROUTING GATEWAY",
+        title: "Core BGP Router",
+        subtitle: "AS-59310 Peering Fabric",
+        meta: "0.2ms Core",
         icon: Network,
-        badge: "0.2ms Core",
-        metric: "10G SFP+ Link",
-        status: "ONLINE",
       },
-
-      // ── Stage 1: Central Office / OLT Core
-      {
-        id: "olt-chassis",
-        column: 1,
-        row: 0,
-        label: "OLT Core Chassis",
-        sublabel: `${tenantName} Aggregation OLT`,
-        category: "CENTRAL OFFICE",
-        icon: Server,
-        badge: "GPON 2.5G",
-        metric: "16 PON Ports",
-        status: "ONLINE",
-      },
-      {
-        id: "odf-bay",
-        column: 1,
-        row: 1,
-        label: "ODF Main Bay",
-        sublabel: "Optical Trunk SC/APC Patch",
-        category: "OPTICAL INTERFACE",
-        icon: Cable,
-        badge: "0.12 dB Loss",
-        metric: "Feeder 96-Core",
-        status: "ACTIVE",
-      },
-
-      // ── Stage 2: Passive ODN (Outside Plant)
-      {
-        id: "fdt-cabinet",
-        column: 2,
-        row: 0,
-        label: "FDT Street Cabinet",
-        sublabel: "FDT-04 • Primary 1:4 PLC Splitter",
-        category: "PASSIVE ODN",
-        icon: Layers,
-        badge: "1:4 PLC",
-        metric: "Trunk Feeder",
-        status: "ACTIVE",
-      },
-      {
-        id: "fat-pole",
-        column: 2,
-        row: 1,
-        label: "FAT Pole Terminal",
-        sublabel: "FAT-12 • Secondary 1:8 Splitter",
-        category: "DISTRIBUTION",
-        icon: Box,
-        badge: "1:8 Drop",
-        metric: "Aerial Fiber",
-        status: "ACTIVE",
-      },
-
-      // ── Stage 3: Subscriber & Edge Diagnostics
-      {
-        id: "customer-ont",
-        column: 3,
-        row: 0,
-        label: "Customer ONT Gateway",
-        sublabel: "Dual-Band WiFi 6 GPON ONT",
-        category: "CUSTOMER PREMISES",
-        icon: Wifi,
-        badge: "Active Client",
-        metric: `${liveLatency}ms Ping`,
-        status: "ACTIVE",
-      },
-      {
-        id: "rx-power",
-        column: 3,
-        row: 1,
-        label: "Optical Rx Telemetry",
-        sublabel: `${rxPowerDbm} dBm (Optimal Class B+)`,
-        category: "SIGNAL DIAGNOSTICS",
-        icon: Activity,
-        badge: "0 Frame Loss",
-        metric: "Optic Pass",
-        status: "OPTIMAL",
-      },
-    ],
-    [tenantName, rxPowerDbm, liveLatency]
-  );
-
-  // ── Network Cable Interconnections ────────────────────────────────────
-  const connections: CableConnection[] = useMemo(
-    () => [
-      // Core -> OLT
-      { id: "c1", from: "ixp-upstream", to: "olt-chassis" },
-      { id: "c2", from: "bgp-router", to: "olt-chassis" },
-
-      // OLT -> ODF
-      { id: "c3", from: "olt-chassis", to: "odf-bay" },
-
-      // ODF -> FDT
-      { id: "c4", from: "odf-bay", to: "fdt-cabinet" },
-
-      // FDT -> FAT
-      { id: "c5", from: "fdt-cabinet", to: "fat-pole" },
-
-      // FAT -> ONT & Rx Telemetry
-      { id: "c6", from: "fat-pole", to: "customer-ont" },
-      { id: "c7", from: "fat-pole", to: "rx-power" },
     ],
     []
   );
 
-  // Calculate if a cable is connected to the hovered node (highlight path)
-  const isCableHighlighted = (cable: CableConnection) => {
+  // ── Column 3: Passive ODN Outside Plant (Equivalent to "ENGINES" in Bridgeplay)
+  const col3Nodes: NodeItem[] = useMemo(
+    () => [
+      {
+        id: "odf-bay",
+        title: "ODF Main Bay",
+        subtitle: "SC/APC Trunk Patch",
+        meta: "0.12 dB Loss",
+        icon: Layers,
+      },
+      {
+        id: "fdt-cabinet",
+        title: "FDT Street Cabinet",
+        subtitle: "FDT-04 • 1:4 PLC Splitter",
+        meta: "Feeder Trunk",
+        icon: Box,
+      },
+      {
+        id: "fat-pole",
+        title: "FAT Pole Terminal",
+        subtitle: "FAT-12 • 1:8 Drop Splitter",
+        meta: "Aerial Drop",
+        icon: Radio,
+      },
+    ],
+    []
+  );
+
+  // ── Column 4: Subscriber Services (Equivalent to "GRAPHICS" in Bridgeplay) ─
+  const col4Nodes: NodeItem[] = useMemo(
+    () => [
+      {
+        id: "svc-internet",
+        title: "Gigabit Internet",
+        subtitle: "PPPoE / IPoE Dual Stack",
+        meta: "IPv6 Native",
+        icon: Activity,
+      },
+      {
+        id: "svc-iptv",
+        title: "IPTV Multicast 4K",
+        subtitle: "IGMP Snooping v3 Stream",
+        meta: "Zero Jitter",
+        icon: Tv,
+      },
+      {
+        id: "svc-voip",
+        title: "VoIP SIP Trunk",
+        subtitle: "G.711 Telephony Gateway",
+        meta: "QoS High",
+        icon: PhoneCall,
+      },
+      {
+        id: "svc-vlan",
+        title: "VLAN Q-in-Q Trunk",
+        subtitle: "802.1Q Isolated Tenant VLAN",
+        meta: "PBAC Scoped",
+        icon: ShieldCheck,
+      },
+    ],
+    []
+  );
+
+  // ── Column 5: End Subscriber (Equivalent to "YOUR MAC" in Bridgeplay) ──────
+  const col5Node: NodeItem = useMemo(
+    () => ({
+      id: "customer-ont",
+      title: "Customer ONT",
+      subtitle: `${tenantName} GPON WiFi 6`,
+      meta: `${rxPowerDbm} dBm • ${realtimeLatencyMs}ms`,
+      icon: Wifi,
+    }),
+    [tenantName, rxPowerDbm, realtimeLatencyMs]
+  );
+
+  // ── Precision Bézier Optical Fiber Cables & Hollow Pin Connectors ─────────
+  // Canvas coordinate space: 980 x 360 px
+  const cables: CablePath[] = useMemo(
+    () => [
+      // 1. From Col 1 -> Center Hero Card inputs
+      {
+        id: "c-ixp-hero",
+        fromId: "ixp-upstream",
+        toId: "hero-olt",
+        x1: 170,
+        y1: 94,
+        x2: 240,
+        y2: 80,
+      },
+      {
+        id: "c-bgp-hero",
+        fromId: "bgp-router",
+        toId: "hero-olt",
+        x1: 170,
+        y1: 184,
+        x2: 240,
+        y2: 145,
+      },
+
+      // 2. From Center Hero Card outputs -> Col 3 ODN
+      {
+        id: "c-hero-odf",
+        fromId: "hero-olt",
+        toId: "odf-bay",
+        x1: 420,
+        y1: 75,
+        x2: 485,
+        y2: 74,
+      },
+      {
+        id: "c-hero-fdt",
+        fromId: "hero-olt",
+        toId: "fdt-cabinet",
+        x1: 420,
+        y1: 115,
+        x2: 485,
+        y2: 154,
+      },
+      {
+        id: "c-hero-fat",
+        fromId: "hero-olt",
+        toId: "fat-pole",
+        x1: 420,
+        y1: 155,
+        x2: 485,
+        y2: 234,
+      },
+
+      // 3. From Col 3 ODN -> Col 4 Services
+      {
+        id: "c-odf-net",
+        fromId: "odf-bay",
+        toId: "svc-internet",
+        x1: 635,
+        y1: 74,
+        x2: 700,
+        y2: 46,
+      },
+      {
+        id: "c-fdt-iptv",
+        fromId: "fdt-cabinet",
+        toId: "svc-iptv",
+        x1: 635,
+        y1: 154,
+        x2: 700,
+        y2: 122,
+      },
+      {
+        id: "c-fdt-voip",
+        fromId: "fdt-cabinet",
+        toId: "svc-voip",
+        x1: 635,
+        y1: 154,
+        x2: 700,
+        y2: 198,
+      },
+      {
+        id: "c-fat-vlan",
+        fromId: "fat-pole",
+        toId: "svc-vlan",
+        x1: 635,
+        y1: 234,
+        x2: 700,
+        y2: 274,
+      },
+
+      // 4. From Col 4 Services -> Col 5 Customer ONT
+      {
+        id: "c-net-ont",
+        fromId: "svc-internet",
+        toId: "customer-ont",
+        x1: 850,
+        y1: 46,
+        x2: 910,
+        y2: 145,
+      },
+      {
+        id: "c-iptv-ont",
+        fromId: "svc-iptv",
+        toId: "customer-ont",
+        x1: 850,
+        y1: 122,
+        x2: 910,
+        y2: 155,
+      },
+      {
+        id: "c-voip-ont",
+        fromId: "svc-voip",
+        toId: "customer-ont",
+        x1: 850,
+        y1: 198,
+        x2: 910,
+        y2: 165,
+      },
+      {
+        id: "c-vlan-ont",
+        fromId: "svc-vlan",
+        toId: "customer-ont",
+        x1: 850,
+        y1: 274,
+        x2: 910,
+        y2: 175,
+      },
+    ],
+    []
+  );
+
+  // Helper to determine active connection
+  const isCableActive = (cable: CablePath) => {
     if (!hoveredNode) return false;
-    return cable.from === hoveredNode || cable.to === hoveredNode;
+    if (cable.fromId === hoveredNode || cable.toId === hoveredNode) return true;
+    if (hoveredNode === "hero-olt") return true;
+    return false;
   };
 
-  // Node position coordinates for SVG Bezier connectors (Normalized on 820 x 380 canvas)
-  // 4 columns: x = 110, 310, 510, 710. Rows: y = 95, 265
-  const getNodeAnchor = (nodeId: string, side: "input" | "output") => {
-    const colX = [105, 305, 505, 705];
-    const rowY = [90, 260];
-    const cardWidth = 160;
+  // ── GSAP Initial Staggered Mount Timeline & Ambient Idle Motion ───────────
+  useEffect(() => {
+    if (!containerRef.current) return;
 
-    const n = nodes.find((item) => item.id === nodeId);
-    if (!n) return { x: 0, y: 0 };
+    const ctx = gsap.context(() => {
+      // 1. Initial configuration of states
+      gsap.set(".topology-header-badge", { opacity: 0, y: -8 });
+      gsap.set(".topology-col1-node", { opacity: 0, x: -24 });
+      if (heroCardRef.current) {
+        gsap.set(heroCardRef.current, { opacity: 0, scale: 0.9, y: 15 });
+      }
+      gsap.set(".topology-hero-spec-item", { opacity: 0, x: -8 });
+      gsap.set(".topology-cable-base", { opacity: 0 });
+      gsap.set(".topology-cable-pulse", { opacity: 0 });
+      gsap.set(".topology-cable-pin", { scale: 0, transformOrigin: "center center" });
+      gsap.set(".topology-col3-node", { opacity: 0, y: 16 });
+      gsap.set(".topology-col4-node", { opacity: 0, y: 16 });
+      gsap.set(".topology-col5-node", { opacity: 0, x: 24 });
 
-    const baseY = rowY[n.row] + 45; // center of card height
-    if (side === "input") {
-      return { x: colX[n.column], y: baseY };
-    }
-    return { x: colX[n.column] + cardWidth, y: baseY };
-  };
+      // 2. Staggered Orchestrated Entrance
+      const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+
+      tl.to(".topology-header-badge", {
+        opacity: 1,
+        y: 0,
+        duration: 0.45,
+        stagger: 0.08,
+      })
+        .to(
+          ".topology-col1-node",
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.5,
+            stagger: 0.1,
+          },
+          "-=0.2"
+        );
+
+      if (heroCardRef.current) {
+        tl.to(
+          heroCardRef.current,
+          {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            duration: 0.65,
+            ease: "back.out(1.4)",
+          },
+          "-=0.3"
+        );
+      }
+
+      tl.to(
+        ".topology-hero-spec-item",
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.35,
+          stagger: 0.05,
+        },
+        "-=0.3"
+      )
+        .to(
+          ".topology-cable-base",
+          {
+            opacity: 0.85,
+            duration: 0.45,
+            stagger: 0.02,
+          },
+          "-=0.35"
+        )
+        .to(
+          ".topology-cable-pin",
+          {
+            scale: 1,
+            duration: 0.35,
+            stagger: 0.015,
+            ease: "back.out(2)",
+          },
+          "-=0.3"
+        )
+        .to(
+          ".topology-col3-node",
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.45,
+            stagger: 0.07,
+          },
+          "-=0.35"
+        )
+        .to(
+          ".topology-col4-node",
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.45,
+            stagger: 0.06,
+          },
+          "-=0.3"
+        )
+        .to(
+          ".topology-col5-node",
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.5,
+          },
+          "-=0.25"
+        )
+        .to(
+          ".topology-cable-pulse",
+          {
+            opacity: 0.75,
+            duration: 0.4,
+          },
+          "-=0.2"
+        );
+
+      // 3. Continuous Optical Light Stream Animation (Infinite smooth loop)
+      gsap.to(".topology-cable-pulse", {
+        strokeDashoffset: -40,
+        duration: 1.5,
+        repeat: -1,
+        ease: "none",
+      });
+
+      // 4. Subtle ambient floating breathing motion on Hero card
+      if (heroCardRef.current) {
+        gsap.to(heroCardRef.current, {
+          y: "-=3",
+          duration: 2.8,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: 1.2,
+        });
+      }
+    }, containerRef);
+
+    return () => {
+      ctx.revert();
+    };
+  }, []);
+
+  // ── GSAP Interactive Node & Cable Highlight Transitions ───────────────────
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const ctx = gsap.context(() => {
+      const allCards = containerRef.current?.querySelectorAll<HTMLElement>(".topology-node-card");
+      if (!allCards) return;
+
+      if (!hoveredNode) {
+        // Reset all node cards to full normal opacity and natural scale
+        gsap.to(allCards, {
+          opacity: 1,
+          scale: 1,
+          duration: 0.3,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+
+        // Reset all cables
+        gsap.to(".topology-cable-base", {
+          opacity: 0.45,
+          strokeWidth: 1.1,
+          duration: 0.3,
+          overwrite: "auto",
+        });
+        gsap.to(".topology-cable-pulse", {
+          opacity: 0.65,
+          strokeWidth: 1.4,
+          duration: 0.3,
+          overwrite: "auto",
+        });
+        gsap.to(".topology-cable-pin", {
+          scale: 1,
+          duration: 0.3,
+          overwrite: "auto",
+        });
+        return;
+      }
+
+      // Active Node Hover State:
+      allCards.forEach((card) => {
+        const cardId = card.getAttribute("data-node-id");
+        const isTarget = cardId === hoveredNode;
+        const isConnected =
+          hoveredNode === "hero-olt" ||
+          cables.some(
+            (c) =>
+              (c.fromId === hoveredNode && c.toId === cardId) ||
+              (c.toId === hoveredNode && c.fromId === cardId)
+          );
+
+        if (isTarget) {
+          gsap.to(card, {
+            scale: 1.03,
+            opacity: 1,
+            duration: 0.25,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
+        } else if (isConnected) {
+          gsap.to(card, {
+            scale: 1.01,
+            opacity: 1,
+            duration: 0.25,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
+        } else {
+          gsap.to(card, {
+            scale: 0.98,
+            opacity: 0.25,
+            duration: 0.3,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
+        }
+      });
+
+      // Highlight active Bézier cables and dim background cables
+      cables.forEach((cable) => {
+        const active = isCableActive(cable);
+        const baseEl = containerRef.current?.querySelector(`.cable-base-${cable.id}`);
+        const pulseEl = containerRef.current?.querySelector(`.cable-pulse-${cable.id}`);
+        const pin1El = containerRef.current?.querySelector(`.cable-pin-from-${cable.id}`);
+        const pin2El = containerRef.current?.querySelector(`.cable-pin-to-${cable.id}`);
+
+        if (active) {
+          if (baseEl) {
+            gsap.to(baseEl, {
+              opacity: 1,
+              strokeWidth: 2.0,
+              duration: 0.25,
+              overwrite: "auto",
+            });
+          }
+          if (pulseEl) {
+            gsap.to(pulseEl, {
+              opacity: 1,
+              strokeWidth: 2.6,
+              duration: 0.25,
+              overwrite: "auto",
+            });
+          }
+          if (pin1El) {
+            gsap.to(pin1El, {
+              scale: 1.35,
+              duration: 0.25,
+              overwrite: "auto",
+            });
+          }
+          if (pin2El) {
+            gsap.to(pin2El, {
+              scale: 1.35,
+              duration: 0.25,
+              overwrite: "auto",
+            });
+          }
+        } else {
+          if (baseEl) {
+            gsap.to(baseEl, {
+              opacity: 0.12,
+              strokeWidth: 0.9,
+              duration: 0.3,
+              overwrite: "auto",
+            });
+          }
+          if (pulseEl) {
+            gsap.to(pulseEl, {
+              opacity: 0.08,
+              duration: 0.3,
+              overwrite: "auto",
+            });
+          }
+          if (pin1El) {
+            gsap.to(pin1El, {
+              scale: 0.8,
+              duration: 0.3,
+              overwrite: "auto",
+            });
+          }
+          if (pin2El) {
+            gsap.to(pin2El, {
+              scale: 0.8,
+              duration: 0.3,
+              overwrite: "auto",
+            });
+          }
+        }
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, [hoveredNode, cables]);
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full max-w-4xl mx-auto flex flex-col items-center select-none font-sans",
+        "relative w-full max-w-[1040px] mx-auto select-none font-sans text-foreground overflow-visible py-4",
         className
       )}
     >
-      {/* ── Top Telemetry Status Header Bar ──────────────────────────────── */}
-      <div className="w-full flex items-center justify-between pb-3 mb-2 px-2 border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-          </div>
-          <span className="text-[11px] font-bold font-mono tracking-wider uppercase text-foreground">
-            FTTH Optical & Physical Network Topology
+      {/* ── Top Micro-Status Ribbon (Monochrome Enterprise Standard) ────────── */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex items-center gap-2 topology-header-badge">
+          <span className="size-2 rounded-full bg-foreground shadow-xs animate-pulse" />
+          <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-foreground">
+            FTTH OPTICAL & PHYSICAL NETWORK TOPOLOGY
           </span>
         </div>
 
-        <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
-          <span className="hidden sm:inline-flex items-center gap-1 bg-accent/80 px-2 py-0.5 rounded border border-border/60">
-            <Zap className="h-3 w-3 text-primary" />
-            Latency: <strong className="text-foreground">{liveLatency}ms</strong>
-          </span>
-          <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/25 font-semibold">
-            <CheckCircle2 className="h-3 w-3" />
-            Signal: Optimal (-19.4 dBm)
-          </span>
+        <div className="flex items-center gap-2">
+          <div className="topology-header-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-border/80 bg-muted/60 text-[10px] font-mono text-muted-foreground shadow-xs">
+            <Zap className="size-3 text-foreground" />
+            <span>Latency: {realtimeLatencyMs}ms</span>
+          </div>
+
+          <div className="topology-header-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-border/80 bg-muted/60 text-[10px] font-mono text-foreground font-semibold shadow-xs">
+            <span className="size-1.5 rounded-full bg-foreground" />
+            <span>Signal: {rxPowerDbm} dBm (Optimal)</span>
+          </div>
         </div>
       </div>
 
-      {/* ── Main Topology Grid Viewport (SVG Connectors + Node Cards) ─────── */}
+      {/* ── Relative Viewport Canvas (Exact 980 x 360 Ratio matching Bridgeplay) ── */}
       <div className="relative w-full h-[360px] overflow-visible">
-        {/* Background SVG Canvas for Precision Bezier Curved Optical Fibers */}
+        {/* ── SVG Curved Optical Fiber Connectors with Hollow Terminal Pins ── */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-0"
-          viewBox="0 0 820 380"
+          viewBox="0 0 980 360"
           preserveAspectRatio="xMidYMid meet"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            {/* Glow Filter for Active Fiber Line */}
-            <filter id="fiberGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
+            {/* Subtle glow filter for active path illumination */}
+            <filter id="monochromeGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
-
-            {/* Gradient for Laser Optical Path */}
-            <linearGradient id="laserGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#4ade80" stopOpacity="0.4" />
-              <stop offset="50%" stopColor="#bef264" stopOpacity="1" />
-              <stop offset="100%" stopColor="#22c55e" stopOpacity="0.8" />
-            </linearGradient>
-
-            <linearGradient id="passiveFiberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="currentColor" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="currentColor" stopOpacity="0.25" />
-            </linearGradient>
           </defs>
 
-          {/* Render All Cable Curves */}
-          {connections.map((cable) => {
-            const p1 = getNodeAnchor(cable.from, "output");
-            const p2 = getNodeAnchor(cable.to, "input");
-            const isHighlighted = isCableHighlighted(cable);
-
-            // Calculate natural S-curve cubic bezier control points
-            const dx = Math.abs(p2.x - p1.x) * 0.55;
-            const pathData = `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}`;
+          {cables.map((cable) => {
+            const active = isCableActive(cable);
+            const dx = Math.abs(cable.x2 - cable.x1) * 0.55;
+            const pathD = `M ${cable.x1} ${cable.y1} C ${cable.x1 + dx} ${cable.y1}, ${cable.x2 - dx} ${cable.y2}, ${cable.x2} ${cable.y2}`;
 
             return (
-              <g key={cable.id} className="transition-all duration-300">
-                {/* Base Optical Cable Line (Subtle Neutral Seam) */}
+              <g key={cable.id}>
+                {/* 1. Base Thin Cable Seam (Hairline neutral wire matching Bridgeplay) */}
                 <path
-                  d={pathData}
+                  d={pathD}
                   stroke="currentColor"
-                  strokeWidth={isHighlighted ? "2" : "1.2"}
+                  strokeWidth="1.1"
                   className={cn(
-                    "transition-colors duration-300 text-border",
-                    isHighlighted ? "text-primary opacity-90" : "opacity-35"
+                    "topology-cable-base",
+                    `cable-base-${cable.id}`,
+                    active
+                      ? "text-foreground opacity-90"
+                      : "text-muted-foreground/35 opacity-45 dark:opacity-35"
                   )}
                 />
 
-                {/* Animated Pulsing Laser Data Beam Flowing through Fiber */}
+                {/* 2. Animated Flowing Data Pulse (Monochrome light pulse along curve) */}
                 <path
-                  d={pathData}
-                  stroke="url(#laserGrad)"
-                  strokeWidth={isHighlighted ? "3" : "1.8"}
-                  strokeDasharray="6 14"
+                  d={pathD}
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeDasharray="4 16"
                   className={cn(
-                    "animate-fiber-pulse transition-opacity duration-300",
-                    isHighlighted ? "opacity-100" : "opacity-60"
+                    "topology-cable-pulse",
+                    `cable-pulse-${cable.id}`,
+                    active
+                      ? "text-foreground opacity-100"
+                      : "text-muted-foreground opacity-60 dark:opacity-65"
                   )}
                   style={{
-                    filter: isHighlighted ? "url(#fiberGlow)" : undefined,
+                    filter: active ? "url(#monochromeGlow)" : undefined,
                   }}
                 />
 
-                {/* Connection Pin Terminal Dots */}
+                {/* 3. Terminal Hollow Pins at cable ends (Exact match to Bridgeplay circle ports) */}
                 <circle
-                  cx={p1.x}
-                  cy={p1.y}
-                  r={isHighlighted ? "3.5" : "2.5"}
+                  cx={cable.x1}
+                  cy={cable.y1}
+                  r="3.5"
                   className={cn(
-                    "transition-all duration-300",
-                    isHighlighted
-                      ? "fill-primary stroke-background stroke-2"
-                      : "fill-border/80"
+                    "topology-cable-pin",
+                    `cable-pin-from-${cable.id}`,
+                    active
+                      ? "fill-background stroke-foreground stroke-2"
+                      : "fill-background stroke-muted-foreground/60 stroke-[1.2]"
                   )}
                 />
                 <circle
-                  cx={p2.x}
-                  cy={p2.y}
-                  r={isHighlighted ? "3.5" : "2.5"}
+                  cx={cable.x2}
+                  cy={cable.y2}
+                  r="3.5"
                   className={cn(
-                    "transition-all duration-300",
-                    isHighlighted
-                      ? "fill-primary stroke-background stroke-2"
-                      : "fill-border/80"
+                    "topology-cable-pin",
+                    `cable-pin-to-${cable.id}`,
+                    active
+                      ? "fill-background stroke-foreground stroke-2"
+                      : "fill-background stroke-muted-foreground/60 stroke-[1.2]"
                   )}
                 />
               </g>
@@ -351,126 +708,199 @@ export function FtthTopologyFlow({
           })}
         </svg>
 
-        {/* ── Overlay Interactive HTML Node Cards ─────────────────────────── */}
-        <div className="absolute inset-0 grid grid-cols-4 gap-4 px-2 z-10 pointer-events-none">
-          {[0, 1, 2, 3].map((colIndex) => {
-            const colNodes = nodes.filter((n) => n.column === colIndex);
-            const stageTitles = [
-              "1. CORE UPLINK",
-              "2. CENTRAL OFFICE",
-              "3. PASSIVE ODN",
-              "4. EDGE PREMISES",
-            ];
-
-            return (
-              <div
-                key={colIndex}
-                className="flex flex-col justify-between h-full py-1"
-              >
-                {/* Column Section Tag */}
-                <div className="text-[9px] font-mono font-bold tracking-wider uppercase text-muted-foreground/75 px-1 pb-1">
-                  {stageTitles[colIndex]}
+        {/* ── HTML Node Cards Layer (Identical 5-Column Grid Anatomy) ───────── */}
+        <div className="absolute inset-0 flex justify-between items-start z-10 pointer-events-none px-1">
+          {/* ── 1. COLUMN 1: STEAM / BACKBONE UPLINK (Left) ── */}
+          <div className="flex flex-col w-[160px] pt-4 space-y-4">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1">
+              BACKBONE
+            </span>
+            <div className="space-y-3.5 pointer-events-auto">
+              {col1Nodes.map((n) => (
+                <div key={n.id} className="topology-col1-node">
+                  <NodeCard
+                    node={n}
+                    isHovered={hoveredNode === n.id}
+                    isDimmed={Boolean(hoveredNode && hoveredNode !== n.id && hoveredNode !== "hero-olt")}
+                    onHover={(h) => interactive && setHoveredNode(h ? n.id : null)}
+                  />
                 </div>
+              ))}
+            </div>
+          </div>
 
-                {colNodes.map((node) => {
-                  const Icon = node.icon;
-                  const isHovered = hoveredNode === node.id;
-                  const isDimmed = hoveredNode !== null && !isHovered;
+          {/* ── 2. COLUMN 2: CENTER HERO CARD (Bridgeplay equivalent) ── */}
+          <div className="flex flex-col items-center w-[185px] -mt-1 pointer-events-auto">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pb-1.5">
+              FTTH CORE
+            </span>
 
-                  return (
-                    <div
-                      key={node.id}
-                      onMouseEnter={() => interactive && setHoveredNode(node.id)}
-                      onMouseLeave={() => interactive && setHoveredNode(null)}
-                      className={cn(
-                        "pointer-events-auto group relative w-full rounded-xl border p-2.5 transition-all duration-300 cursor-pointer shadow-xs",
-                        "bg-card/90 backdrop-blur-md",
-                        isHovered
-                          ? "border-primary/80 shadow-md shadow-primary/10 -translate-y-0.5 scale-[1.02]"
-                          : isDimmed
-                          ? "opacity-50 border-border/50 scale-[0.98]"
-                          : "border-border/80 hover:border-primary/60"
-                      )}
-                    >
-                      {/* Card Header Row: Icon + Label + Badge */}
-                      <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <div
-                            className={cn(
-                              "h-6 w-6 rounded-md flex items-center justify-center shrink-0 transition-colors",
-                              isHovered
-                                ? "bg-primary text-primary-foreground shadow-xs"
-                                : "bg-primary/10 border border-primary/25 text-primary"
-                            )}
-                          >
-                            <Icon className="h-3.5 w-3.5" />
-                          </div>
-                          <span className="text-[11px] font-bold text-foreground truncate font-sans tracking-tight">
-                            {node.label}
-                          </span>
-                        </div>
-
-                        {node.badge && (
-                          <span
-                            className={cn(
-                              "text-[9px] font-mono px-1 py-0.2 rounded border shrink-0 font-medium",
-                              isHovered
-                                ? "bg-primary/20 text-primary border-primary/40 font-semibold"
-                                : "bg-muted/70 text-muted-foreground border-border/60"
-                            )}
-                          >
-                            {node.badge}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Card Body: Subtitle Description */}
-                      <p className="text-[10px] text-muted-foreground leading-tight line-clamp-1 mb-2 font-mono">
-                        {node.sublabel}
-                      </p>
-
-                      {/* Card Footer: Category Tag & Metric */}
-                      <div className="flex items-center justify-between pt-1.5 border-t border-border/40 text-[9px] font-mono">
-                        <span className="text-muted-foreground/75 truncate">
-                          {node.category}
-                        </span>
-                        <span
-                          className={cn(
-                            "font-semibold flex items-center gap-0.5 text-primary"
-                          )}
-                        >
-                          <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />
-                          {node.metric}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* Dominant Hero Card with Subtle Inset Rim Glow */}
+            <div
+              ref={heroCardRef}
+              data-node-id="hero-olt"
+              onMouseEnter={() => interactive && setHoveredNode("hero-olt")}
+              onMouseLeave={() => interactive && setHoveredNode(null)}
+              className={cn(
+                "topology-node-card group relative w-full rounded-2xl p-4 cursor-pointer text-center",
+                "bg-[#111115] dark:bg-[#0c0c0f] border border-white/20 dark:border-white/25",
+                "shadow-[0_0_28px_rgba(255,255,255,0.06)] hover:shadow-[0_0_36px_rgba(255,255,255,0.12)]",
+                hoveredNode === "hero-olt" && "border-foreground/80"
+              )}
+            >
+              {/* Top Hero Icon Badge */}
+              <div className="size-9 rounded-xl bg-muted/80 border border-border/80 flex items-center justify-center text-foreground mx-auto mb-2 shadow-xs group-hover:scale-105 transition-transform">
+                <Cpu className="size-5" />
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* ── Bottom Micro-Legend: Guide for Optical Flow ───────────────────── */}
-      <div className="w-full flex items-center justify-between pt-3 mt-1 text-[10px] font-mono text-muted-foreground border-t border-border/40">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-4 rounded-full bg-primary inline-block" />
-            Laser Optical Path
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full border border-primary inline-block" />
-            Active SC/APC Port
-          </span>
-        </div>
+              {/* Title & Description */}
+              <h3 className="text-sm font-bold text-foreground tracking-tight mb-1 font-sans">
+                Core OLT Engine
+              </h3>
+              <p className="text-[10px] text-muted-foreground leading-tight mb-2.5 font-mono px-0.5">
+                FTTH Aggregation, provision & telemetry
+              </p>
 
-        <div className="flex items-center gap-1 text-[9px] text-muted-foreground/80">
-          <span>Hover node to trace optical fiber route</span>
-          <ChevronRight className="h-3 w-3" />
+              {/* License/Status Badge at Bottom of Card */}
+              <span className="inline-block text-[9px] font-mono text-muted-foreground/90 bg-muted/70 border border-border/60 px-2 py-0.5 rounded font-medium">
+                GPON-XGS • 2.5G
+              </span>
+            </div>
+
+            {/* Exact "BUILT ON" Micro-Specification Stack underneath */}
+            <div className="w-full mt-3 px-1 text-left space-y-1 font-mono text-[9px]">
+              <span className="text-[9px] font-bold text-muted-foreground/60 tracking-wider uppercase block">
+                BUILT ON
+              </span>
+              <div className="topology-hero-spec-item flex justify-between text-muted-foreground hover:text-foreground transition-colors">
+                <span>ZTE & Huawei Core</span>
+                <span className="text-muted-foreground/75">SNMP-v3</span>
+              </div>
+              <div className="topology-hero-spec-item flex justify-between text-muted-foreground hover:text-foreground transition-colors">
+                <span>PostGIS 3.5 pgRouting</span>
+                <span className="text-muted-foreground/75">GeoTracer</span>
+              </div>
+              <div className="topology-hero-spec-item flex justify-between text-muted-foreground hover:text-foreground transition-colors">
+                <span>14 Polyglot Gateways</span>
+                <span className="text-muted-foreground/75">Go/FastAPI</span>
+              </div>
+              <div className="topology-hero-spec-item flex justify-between text-muted-foreground hover:text-foreground transition-colors">
+                <span>Telemetry Daemon</span>
+                <span className="text-muted-foreground/75">1-Sec Ping</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 3. COLUMN 3: ENGINES / PASSIVE ODN (Middle Right) ── */}
+          <div className="flex flex-col w-[150px] pt-4 space-y-3">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1">
+              PASSIVE ODN
+            </span>
+            <div className="space-y-2.5 pointer-events-auto">
+              {col3Nodes.map((n) => (
+                <div key={n.id} className="topology-col3-node">
+                  <NodeCard
+                    node={n}
+                    isHovered={hoveredNode === n.id}
+                    isDimmed={Boolean(hoveredNode && hoveredNode !== n.id && hoveredNode !== "hero-olt")}
+                    onHover={(h) => interactive && setHoveredNode(h ? n.id : null)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 4. COLUMN 4: GRAPHICS / SERVICES (Right) ── */}
+          <div className="flex flex-col w-[150px] pt-0.5 space-y-2">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1">
+              SERVICES
+            </span>
+            <div className="space-y-2 pointer-events-auto">
+              {col4Nodes.map((n) => (
+                <div key={n.id} className="topology-col4-node">
+                  <NodeCard
+                    node={n}
+                    isHovered={hoveredNode === n.id}
+                    isDimmed={Boolean(hoveredNode && hoveredNode !== n.id && hoveredNode !== "hero-olt")}
+                    onHover={(h) => interactive && setHoveredNode(h ? n.id : null)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 5. COLUMN 5: YOUR MAC / END SUBSCRIBER (Far Right) ── */}
+          <div className="flex flex-col w-[140px] pt-14 space-y-2.5">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1">
+              SUBSCRIBER
+            </span>
+            <div className="pointer-events-auto topology-col5-node">
+              <NodeCard
+                node={col5Node}
+                isHovered={hoveredNode === col5Node.id}
+                isDimmed={Boolean(hoveredNode && hoveredNode !== col5Node.id && hoveredNode !== "hero-olt")}
+                onHover={(h) => interactive && setHoveredNode(h ? col5Node.id : null)}
+                highlightBadge
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+// ── Reusable Monochromatic Node Card (Exact Match to Bridgeplay Item Cards) ─
+function NodeCard({
+  node,
+  isHovered,
+  isDimmed,
+  onHover,
+  highlightBadge = false,
+}: {
+  node: NodeItem;
+  isHovered: boolean;
+  isDimmed: boolean;
+  onHover: (hovered: boolean) => void;
+  highlightBadge?: boolean;
+}) {
+  return (
+    <div
+      data-node-id={node.id}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      className={cn(
+        "topology-node-card group relative w-full rounded-xl p-2.5 cursor-pointer",
+        "bg-[#0f0f13]/90 dark:bg-[#0a0a0d]/90 border shadow-xs",
+        isHovered
+          ? "border-foreground/80 bg-accent/30 shadow-sm"
+          : isDimmed
+          ? "opacity-35 border-border/40"
+          : "border-border/70 hover:border-foreground/40 hover:bg-muted/30"
+      )}
+    >
+      <div className="flex items-start justify-between gap-1 mb-1">
+        <h4 className="text-xs font-semibold text-foreground tracking-tight truncate font-sans">
+          {node.title}
+        </h4>
+      </div>
+
+      <p className="text-[10px] text-muted-foreground leading-tight line-clamp-1 mb-1.5 font-mono">
+        {node.subtitle}
+      </p>
+
+      <div className="flex items-center justify-end">
+        <span
+          className={cn(
+            "text-[9px] font-mono px-1 py-0.2 rounded border",
+            highlightBadge || isHovered
+              ? "bg-foreground/10 text-foreground border-foreground/30 font-semibold"
+              : "text-muted-foreground/70 border-border/40 bg-muted/40"
+          )}
+        >
+          {node.meta}
+        </span>
+      </div>
+    </div>
+  );
+}

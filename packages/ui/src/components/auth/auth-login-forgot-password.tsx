@@ -54,8 +54,8 @@ export function AuthLoginForgotPassword({ form, props }: AuthLoginForgotPassword
   if (forgotSubmitted) {
     return (
       <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200 text-center py-2">
-        <div className="size-12 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary mx-auto mb-1">
-          <Check className="size-6 text-primary" />
+        <div className="size-12 rounded-full bg-muted border border-border flex items-center justify-center text-foreground mx-auto mb-1">
+          <Check className="size-6 text-foreground" />
         </div>
         <div className="space-y-1">
           <h3 className="text-sm font-bold text-foreground">
@@ -141,7 +141,7 @@ export function AuthLoginForgotPassword({ form, props }: AuthLoginForgotPassword
               placeholder={copy.accountPlaceholder}
               value={usernameOrEmail}
               onChange={(e) => setUsernameOrEmail(e.target.value)}
-              className="pl-9 h-9 bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
+              className="pl-9 h-9 bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
               disabled={forgotLoading}
               required
               autoFocus
@@ -159,7 +159,7 @@ export function AuthLoginForgotPassword({ form, props }: AuthLoginForgotPassword
         <Button
           type="submit"
           size="sm"
-          className="w-full h-8 text-xs font-semibold justify-center gap-1.5 rounded-md shadow-sm transition-all cursor-pointer"
+          className="w-full h-8 bg-foreground hover:bg-foreground/90 text-background font-medium text-xs justify-center gap-1.5 rounded-md shadow-xs transition-all cursor-pointer"
           disabled={forgotLoading || !usernameOrEmail.trim()}
         >
           <span>{forgotLoading ? copy.sendingResetLink : copy.sendResetLink}</span>

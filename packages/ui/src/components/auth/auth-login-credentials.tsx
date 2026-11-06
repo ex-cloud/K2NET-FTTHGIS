@@ -185,7 +185,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                   >
                     {copy.accountEmailOrUsername}
                   </Label>
-                  <span className="text-[10px] text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded font-mono">
+                  <span className="text-[10px] text-muted-foreground bg-muted/60 border border-border px-1.5 py-0.5 rounded font-mono">
                     {copy.requiredBadge}
                   </span>
                 </div>
@@ -199,7 +199,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                     placeholder={copy.accountPlaceholder}
                     value={usernameOrEmail}
                     onChange={(e) => setUsernameOrEmail(e.target.value)}
-                    className="pl-9 h-9 bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
+                    className="pl-9 h-9 bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
                     disabled={isLoading || isSuspended}
                     required
                   />
@@ -248,7 +248,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                 <button
                   type="button"
                   onClick={handleForgotClick}
-                  className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                  className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 >
                   {copy.forgotPassword}
                 </button>
@@ -264,7 +264,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                   placeholder={copy.passwordPlaceholder}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-9 pr-9 h-9 bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
+                  className="pl-9 pr-9 h-9 bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
                   disabled={isLoading || isSuspended}
                   required
                 />
@@ -295,7 +295,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                   checked={saveEmailOnDevice}
                   onChange={(e) => setSaveEmailOnDevice(e.target.checked)}
                   disabled={isLoading || isSuspended}
-                  className="size-3.5 rounded border-border bg-background accent-primary cursor-pointer"
+                  className="size-3.5 rounded border-border bg-background accent-foreground cursor-pointer"
                 />
                 <span>{copy.saveEmailOnDevice}</span>
               </label>
@@ -308,7 +308,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
                     disabled={isLoading || isSuspended}
-                    className="size-3.5 rounded border-border bg-background accent-primary cursor-pointer"
+                    className="size-3.5 rounded border-border bg-background accent-foreground cursor-pointer"
                   />
                   <span>{copy.rememberMeBrowser}</span>
                 </label>
@@ -325,9 +325,9 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
         ) : (
           /* Inline 6-Digit MFA OTP Mode */
           <div className="space-y-3 animate-in fade-in duration-150">
-            <div className="rounded-md border border-primary/25 bg-primary/5 p-3 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-                <Smartphone className="size-3.5" />
+            <div className="rounded-md border border-border bg-muted/40 p-3 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <Smartphone className="size-3.5 text-muted-foreground" />
                 <span>{copy.mfaCodeLabel}</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -348,7 +348,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                 placeholder={copy.mfaCodePlaceholder}
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
-                className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
+                className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
                 disabled={isLoading || isSuspended}
                 required
               />
@@ -365,12 +365,12 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
           </div>
         )}
 
-        {/* Primary Submit Button */}
+        {/* Primary Submit Button (Monochrome High-Contrast: Black on Light, White on Dark) */}
         <Button
           type="submit"
           size="sm"
           disabled={isSubmitDisabled}
-          className="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 transition-all duration-200 group cursor-pointer"
+          className="w-full h-8 bg-foreground hover:bg-foreground/90 text-background font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 transition-all duration-200 group cursor-pointer"
         >
           {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

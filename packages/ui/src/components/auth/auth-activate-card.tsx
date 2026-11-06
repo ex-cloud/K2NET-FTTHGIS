@@ -185,10 +185,10 @@ export function AuthActivateCard({
   }, [criteria.score, l.passwordStrengthWeak, l.passwordStrengthFair, l.passwordStrengthGood, l.passwordStrengthStrong]);
 
   const strengthColor = useMemo(() => {
-    if (criteria.score <= 1) return "bg-destructive";
-    if (criteria.score === 2) return "bg-amber-500";
-    if (criteria.score === 3) return "bg-blue-500";
-    return "bg-emerald-500";
+    if (criteria.score <= 1) return "bg-muted-foreground/40";
+    if (criteria.score === 2) return "bg-muted-foreground/60";
+    if (criteria.score === 3) return "bg-muted-foreground/80";
+    return "bg-foreground";
   }, [criteria.score]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,9 +253,9 @@ export function AuthActivateCard({
   if (isSuccess) {
     return (
       <div className="w-full space-y-4">
-        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-center space-y-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-5 h-5" />
+        <div className="rounded-lg border border-border/80 bg-muted/30 p-5 text-center space-y-3">
+          <div className="w-10 h-10 rounded-full bg-muted text-foreground border border-border flex items-center justify-center mx-auto shadow-xs">
+            <CheckCircle2 className="w-5 h-5 text-foreground" />
           </div>
           <div className="space-y-1">
             <h3 className="text-sm font-semibold text-foreground">{l.activateSuccessTitle}</h3>
@@ -400,21 +400,21 @@ export function AuthActivateCard({
               <div className={`h-full ${criteria.score >= 3 ? strengthColor : "bg-transparent"}`} />
               <div className={`h-full ${criteria.score >= 4 ? strengthColor : "bg-transparent"}`} />
             </div>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1 text-[10px] text-muted-foreground">
-              <span className={`flex items-center gap-1 ${criteria.hasMinLength ? "text-emerald-500 font-medium" : ""}`}>
-                {criteria.hasMinLength ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1 text-[10px] text-muted-foreground font-mono">
+              <span className={`flex items-center gap-1 ${criteria.hasMinLength ? "text-foreground font-semibold" : ""}`}>
+                {criteria.hasMinLength ? <Check className="w-2.5 h-2.5 text-foreground" /> : <X className="w-2.5 h-2.5" />}
                 {l.passwordRequirementMin}
               </span>
-              <span className={`flex items-center gap-1 ${criteria.hasUpper ? "text-emerald-500 font-medium" : ""}`}>
-                {criteria.hasUpper ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
+              <span className={`flex items-center gap-1 ${criteria.hasUpper ? "text-foreground font-semibold" : ""}`}>
+                {criteria.hasUpper ? <Check className="w-2.5 h-2.5 text-foreground" /> : <X className="w-2.5 h-2.5" />}
                 {l.passwordRequirementUpper}
               </span>
-              <span className={`flex items-center gap-1 ${criteria.hasDigit ? "text-emerald-500 font-medium" : ""}`}>
-                {criteria.hasDigit ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
+              <span className={`flex items-center gap-1 ${criteria.hasDigit ? "text-foreground font-semibold" : ""}`}>
+                {criteria.hasDigit ? <Check className="w-2.5 h-2.5 text-foreground" /> : <X className="w-2.5 h-2.5" />}
                 {l.passwordRequirementDigit}
               </span>
-              <span className={`flex items-center gap-1 ${criteria.hasSpecial ? "text-emerald-500 font-medium" : ""}`}>
-                {criteria.hasSpecial ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
+              <span className={`flex items-center gap-1 ${criteria.hasSpecial ? "text-foreground font-semibold" : ""}`}>
+                {criteria.hasSpecial ? <Check className="w-2.5 h-2.5 text-foreground" /> : <X className="w-2.5 h-2.5" />}
                 {l.passwordRequirementSpecial}
               </span>
             </div>

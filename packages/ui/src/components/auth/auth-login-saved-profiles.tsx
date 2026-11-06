@@ -32,10 +32,10 @@ export function AuthLoginSavedProfiles({ form }: AuthLoginSavedProfilesProps) {
             <div
               key={profile.email}
               onClick={() => handleSelectProfile(profile)}
-              className="group relative flex items-center justify-between p-3 rounded-lg border border-border/70 bg-background/50 hover:bg-accent/40 hover:border-primary/40 transition-all cursor-pointer shadow-2xs"
+              className="group relative flex items-center justify-between p-3 rounded-lg border border-border/70 bg-background/50 hover:bg-accent/40 hover:border-foreground/30 transition-all cursor-pointer shadow-2xs"
             >
               <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                <div className="size-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <div className="size-7 rounded-full bg-muted border border-border flex items-center justify-center text-foreground shrink-0">
                   {profile.avatarUrl ? (
                     <img
                       src={profile.avatarUrl}
@@ -60,11 +60,11 @@ export function AuthLoginSavedProfiles({ form }: AuthLoginSavedProfilesProps) {
 
               <div className="flex items-center gap-2 shrink-0">
                 {isLastUsed && (
-                  <span className="text-[10px] font-medium font-mono text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-medium font-mono text-foreground bg-muted border border-border px-1.5 py-0.5 rounded">
                     {copy.lastUsed}
                   </span>
                 )}
-                <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
                 <button
                   type="button"
                   onClick={(e) => handleRemoveProfile(e, profile.email)}

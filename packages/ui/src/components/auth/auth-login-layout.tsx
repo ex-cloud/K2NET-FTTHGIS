@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ShieldCheck, BookOpen, Quote, Sparkles, X, CheckCircle2, Lock } from "lucide-react";
 import { ModeToggle } from "../mode-toggle";
 import { renderIsometricFigureById, ISOMETRIC_FIGURES_LIST } from "../linear-isometric/figure-registry";
+import { FtthTopologyFlow } from "../topology-flow/ftth-topology-flow";
 
 export type AuthLocale = "en" | "id";
 
@@ -77,8 +78,8 @@ export function AuthLoginLayout({
         {/* Top Header Row (Logo + Language Switcher EN|ID + Docs + Theme Toggle) */}
         <div className="flex items-center justify-between w-full z-20 gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 border border-primary/25 shrink-0">
-              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted/80 border border-border shrink-0">
+              <ShieldCheck className="h-3.5 w-3.5 text-foreground" />
             </div>
             <span className="text-xs font-bold tracking-wider uppercase text-foreground font-mono truncate">
               {portalName}
@@ -124,15 +125,15 @@ export function AuthLoginLayout({
 
         {/* Ambient Mobile Glow & Grid (visible only on mobile) */}
         <div
-          className="lg:hidden absolute top-36 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full blur-3xl pointer-events-none opacity-85"
+          className="lg:hidden absolute top-36 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full blur-3xl pointer-events-none opacity-40 dark:opacity-20"
           style={{
-            background: "radial-gradient(circle, rgba(34,197,94,0.22) 0%, rgba(16,185,129,0.08) 45%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(120,120,120,0.15) 0%, rgba(80,80,80,0.05) 45%, transparent 70%)",
           }}
         />
         <div
-          className="lg:hidden absolute top-0 left-0 right-0 h-[320px] pointer-events-none opacity-[0.32]"
+          className="lg:hidden absolute top-0 left-0 right-0 h-[320px] pointer-events-none opacity-[0.18]"
           style={{
-            backgroundImage: "radial-gradient(circle, rgba(74,222,128,0.4) 1.1px, transparent 1.1px)",
+            backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
             backgroundSize: "18px 18px",
             maskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
             WebkitMaskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
@@ -168,7 +169,7 @@ export function AuthLoginLayout({
             <button
               type="button"
               onClick={() => setActivePolicyModal("terms")}
-              className="underline text-primary hover:text-primary/80 transition-colors font-medium cursor-pointer"
+              className="underline text-foreground/80 hover:text-foreground transition-colors font-medium cursor-pointer"
             >
               {resolvedTerms}
             </button>{" "}
@@ -176,7 +177,7 @@ export function AuthLoginLayout({
             <button
               type="button"
               onClick={() => setActivePolicyModal("privacy")}
-              className="underline text-primary hover:text-primary/80 transition-colors font-medium cursor-pointer"
+              className="underline text-foreground/80 hover:text-foreground transition-colors font-medium cursor-pointer"
             >
               {resolvedPrivacy}
             </button>{" "}
@@ -190,26 +191,26 @@ export function AuthLoginLayout({
 
       {/* ─── RIGHT COLUMN: 3D Isometric Figure & Testimonial ───────────── */}
       <div className="hidden lg:flex flex-1 bg-background flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
-        {/* Global Ambient Radial Illumination */}
+        {/* Global Ambient Radial Illumination (Monochrome Subtle) */}
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[580px] h-[580px] rounded-full blur-3xl pointer-events-none opacity-85"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[580px] h-[580px] rounded-full blur-3xl pointer-events-none opacity-20 dark:opacity-10"
           style={{
-            background: "radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.07) 38%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(140,140,140,0.18) 0%, rgba(100,100,100,0.05) 45%, transparent 70%)",
           }}
         />
 
-        {/* Global Tech Dot-Matrix Pattern Background Overlay */}
+        {/* Global Tech Dot-Matrix Pattern Background Overlay (Monochrome) */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.32]"
+          className="absolute inset-0 pointer-events-none opacity-[0.16] dark:opacity-[0.20]"
           style={{
-            backgroundImage: "radial-gradient(circle, rgba(74,222,128,0.4) 1.1px, transparent 1.1px)",
+            backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
             backgroundSize: "18px 18px",
             maskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
             WebkitMaskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
           }}
         />
 
-        {/* Top Right: System Docs Button (Replacing FIG QUANTUM ORB) */}
+        {/* Top Right: System Docs Button */}
         <div className="w-full flex justify-end z-10">
           {docsUrl && (
             <a
@@ -218,7 +219,7 @@ export function AuthLoginLayout({
               rel="noopener noreferrer"
               className="inline-flex h-8 items-center gap-1.5 px-3 rounded-md border border-border/80 bg-card/60 backdrop-blur-md hover:bg-accent hover:text-foreground transition-all text-xs font-medium text-muted-foreground shadow-xs cursor-pointer"
             >
-              <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+              <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span>{resolvedDocsLabel}</span>
             </a>
           )}
@@ -227,19 +228,19 @@ export function AuthLoginLayout({
         {/* Center Hero: Network Topology Flow or Isometric 3D Figure */}
         <div className="my-auto flex flex-col items-center justify-center py-4 w-full transition-transform duration-500 z-10">
           <div className="w-full max-w-4xl px-2 flex justify-center">
-            {figureComponent || renderIsometricFigureById(figureId, "hero")}
+            {figureComponent || <FtthTopologyFlow tenantName={portalName} />}
           </div>
         </div>
 
-        {/* Bottom Right Testimonial Card */}
+        {/* Bottom Right Testimonial Card (Monochrome Clean) */}
         <div className="w-full max-w-lg mx-auto z-10">
           <div className="relative rounded-2xl border border-border/70 bg-card/75 p-6 backdrop-blur-xl shadow-lg shadow-black/20">
-            <Quote className="h-6 w-6 text-primary/60 mb-3 transform rotate-180" />
+            <Quote className="h-6 w-6 text-muted-foreground/60 mb-3 transform rotate-180" />
             <blockquote className="text-xs sm:text-sm font-normal text-foreground/90 leading-relaxed mb-4 font-sans">
               &ldquo;{testimonialQuote}&rdquo;
             </blockquote>
             <div className="flex items-center gap-3 pt-1 border-t border-border/40">
-              <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-bold text-xs shadow-xs">
+              <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center text-foreground font-bold text-xs shadow-xs">
                 {testimonialAuthor.charAt(0)}
               </div>
               <div>
@@ -269,7 +270,7 @@ export function AuthLoginLayout({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 border-b border-border/60 bg-muted/30 gap-3">
               <div className="flex items-center justify-between w-full sm:w-auto">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0">
+                  <div className="w-8 h-8 rounded-md bg-muted border border-border flex items-center justify-center text-foreground shrink-0">
                     <ShieldCheck className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
@@ -277,7 +278,7 @@ export function AuthLoginLayout({
                       <h2 className="text-base font-bold text-foreground truncate">
                         {activePolicyModal === "terms" ? resolvedTerms : resolvedPrivacy}
                       </h2>
-                      <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded shrink-0">
+                      <span className="font-mono text-[10px] font-bold text-foreground bg-muted border border-border px-1.5 py-0.5 rounded shrink-0">
                         v2026.3
                       </span>
                     </div>
