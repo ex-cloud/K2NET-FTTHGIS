@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTheme } from "../theme-provider";
 import type {
   AuthLoginFormProps,
   TurnstileWindow,
@@ -48,6 +49,17 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   const [turnstileToken, setTurnstileToken] = useState<string | undefined>(undefined);
   const [showForgotHelp, setShowForgotHelp] = useState(false);
   const [forgotSubmitted, setForgotSubmitted] = useState(false);
+
+  // Theme detection for Turnstile synchronization (Light/Dark mode)
+  let activeTheme: "light" | "dark" = "dark";
+  try {
+    const themeCtx = useTheme();
+    activeTheme = themeCtx.resolvedTheme;
+  } catch {
+    if (typeof document !== "undefined") {
+      activeTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    }
+  }
   const [forgotLoading, setForgotLoading] = useState(false);
   const [isBreakGlass, setIsBreakGlass] = useState(false);
   const [discoveredSso, setDiscoveredSso] = useState<{
@@ -151,7 +163,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
       turnstileWidgetIdRef.current = win.turnstile.render(turnstileContainerRef.current, {
         sitekey: cleanKey,
         action: "login",
-        theme: "auto",
+        theme: activeTheme,
         size: "flexible",
         callback: (token: string) => setTurnstileToken(token),
         "expired-callback": () => setTurnstileToken(undefined),
@@ -191,7 +203,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
       // backend would reject it (TURNSTILE_FAILED) — a UI/backend mismatch.
       setTurnstileToken(undefined);
     };
-  }, [turnstileSiteKey, authView]);
+  }, [turnstileSiteKey, authView, activeTheme]);
 
   // Reset single-use Turnstile token when login attempts result in an error
   useEffect(() => {

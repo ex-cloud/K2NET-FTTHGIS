@@ -361,8 +361,10 @@ export function LinearQuantumOrbFigure({
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full flex items-center justify-center select-none overflow-hidden cursor-pointer group",
-        isHero ? "h-[320px] max-w-[440px] bg-transparent border-0" : "h-[240px] rounded-2xl bg-gradient-to-b from-[#060e09]/90 via-[#030604]/95 to-card border border-border/60 shadow-sm",
+        "relative w-full flex items-center justify-center select-none cursor-pointer group",
+        isHero
+          ? "h-[360px] max-w-[440px] bg-transparent border-0 overflow-visible"
+          : "h-[240px] rounded-2xl bg-gradient-to-b from-[#060e09]/90 via-[#030604]/95 to-card border border-border/60 shadow-sm overflow-hidden",
         className
       )}
       onMouseMove={handleMouseMove}
@@ -513,7 +515,7 @@ export function LinearQuantumOrbFigure({
       >
         {/* Deep ambient drop shadow under the orb */}
         <div
-          className="absolute -bottom-6 w-3/4 h-8 bg-black/90 rounded-full blur-xl pointer-events-none transform scale-y-50"
+          className="absolute -bottom-6 w-3/4 h-8 rounded-full blur-2xl pointer-events-none transform scale-y-50 dark:bg-black/90 bg-primary/20 dark:opacity-100 opacity-30"
         />
 
         {/* High-fidelity Canvas Renderer */}

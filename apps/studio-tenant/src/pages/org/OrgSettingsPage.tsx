@@ -520,7 +520,7 @@ function SsoSettingsSection({ slug }: { slug?: string }) {
                 variant="outline"
                 className={
                   lastTestStatus === "SUCCESS"
-                    ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[10px]"
+                    ? "border-primary/40 text-primary bg-primary/10 text-[10px]"
                     : lastTestStatus === "FAILED"
                     ? "border-destructive/40 text-destructive bg-destructive/10 text-[10px]"
                     : "border-border text-muted-foreground text-[10px]"
@@ -603,7 +603,7 @@ function SsoSettingsSection({ slug }: { slug?: string }) {
               <span>{t("settings.sso_client_secret_label")}</span>
               {hasExistingSecret && (
                 <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <KeyRound className="size-3 text-emerald-500" />
+                  <KeyRound className="size-3 text-primary" />
                   Encrypted
                 </span>
               )}

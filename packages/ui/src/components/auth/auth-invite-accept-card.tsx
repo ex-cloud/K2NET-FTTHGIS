@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Eye, EyeOff, ShieldCheck, CheckCircle2, AlertCircle, ArrowRight, Loader2, Check, X, Building2, Globe, Mail, UserCheck } from "lucide-react";
+import { useTheme } from "../theme-provider";
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
@@ -142,6 +143,17 @@ export function AuthInviteAcceptCard({
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
 
+  // Theme detection for Turnstile synchronization (Light/Dark mode)
+  let activeTheme: "light" | "dark" = "dark";
+  try {
+    const themeCtx = useTheme();
+    activeTheme = themeCtx.resolvedTheme;
+  } catch {
+    if (typeof document !== "undefined") {
+      activeTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    }
+  }
+
   useEffect(() => {
     const cleanKey = turnstileSiteKey?.trim();
     if (!cleanKey || typeof window === "undefined") return;
@@ -167,7 +179,7 @@ export function AuthInviteAcceptCard({
       try {
         turnstileWidgetIdRef.current = win.turnstile.render(turnstileContainerRef.current, {
           sitekey: cleanKey,
-          theme: "dark",
+          theme: activeTheme,
           size: "normal",
           callback: (tokenString: string) => {
             if (!cancelled) setTurnstileToken(tokenString);
@@ -212,7 +224,7 @@ export function AuthInviteAcceptCard({
         turnstileWidgetIdRef.current = null;
       }
     };
-  }, [turnstileSiteKey, validation.isValid]);
+  }, [turnstileSiteKey, validation.isValid, activeTheme]);
 
   // Validate invitation token on mount
   useEffect(() => {
