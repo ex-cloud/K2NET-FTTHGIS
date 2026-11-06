@@ -141,7 +141,7 @@ export function AuthLoginForgotPassword({ form, props }: AuthLoginForgotPassword
               placeholder={copy.accountPlaceholder}
               value={usernameOrEmail}
               onChange={(e) => setUsernameOrEmail(e.target.value)}
-              className="pl-9 h-9 bg-black/90 dark:bg-black/90 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-black focus-visible:bg-black dark:focus:bg-black dark:focus-visible:bg-black focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+              className="pl-9 h-9 bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
               disabled={forgotLoading}
               required
               autoFocus

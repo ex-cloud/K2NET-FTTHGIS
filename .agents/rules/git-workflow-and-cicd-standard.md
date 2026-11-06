@@ -55,3 +55,73 @@ Setelah menyelesaikan tugas dan menjalankan Quality Gate:
    `## main...origin/main` (tanpa ada `[ahead N]`).
 4. **Catat Commit Hash di Plan**:
    Cantumkan commit SHA (misal `02380d86`) pada berkas plan aktif sebagai bukti kepatuhan audit trail SDLC.
+
+
+---
+
+## 🤝 4. Protokol Koordinasi Multi-Agent Otomatis (Wajib)
+
+Berlaku untuk semua agent (Antigravity, Cursor, Claude Code, Copilot, CLI) di semua perangkat. Rujukan: `docs/plans/SOP-KOLABORASI-MULTI-AGENT.md`.
+
+### 4.1. Awal Sesi / Awal Perintah Kerja (sebelum menyentuh berkas apa pun)
+```bash
+bash scripts/preflight-check.sh                  # kondisi lokal, remote, CI/CD, container
+python3 scripts/agent-collab.py who-is-working   # lock plan, commit terakhir, working tree, dokumen terbaru, activity log
+bash scripts/check-cicd-status.sh                # status GitHub Actions live
+```
+- Plan berstatus `[LOCKED]` oleh agent lain → **DILARANG** mengedit domain plan tersebut. Pilih tugas lain atau minta `handoff`.
+- Working tree kotor yang bukan milik Anda → hentikan dan konfirmasi ke pengguna.
+- Pipeline CI/CD `in_progress` → **DILARANG** menjalankan `scripts/deploy.sh` manual (bentrok dengan runner SSH). Tunggu sampai `completed`.
+
+### 4.2. Saat Mulai Mengerjakan
+```bash
+python3 scripts/agent-collab.py lock <plan> --agent "<Agent>" --device "<Device>"
+python3 scripts/agent-collab.py reserve-flyway --name "<nama>" --agent "<Agent>"   # jika butuh migrasi baru
+```
+`lock`, `unlock`, `claim`, `handoff`, dan `log` otomatis menulis jejak ke `docs/plans/ACTIVITY-LOG.md` (append-only; dilarang mengedit baris lama).
+
+### 4.3. Saat Plan Selesai (setelah Quality Gate PASS)
+```bash
+python3 scripts/agent-collab.py doc-eval [--base <git-ref>]
+```
+Output `doc-eval` bersifat menentukan — ikuti levelnya:
+
+| Level | Arti | Tindakan |
+|---|---|---|
+| `WAJIB` | Dokumen harus dibuat/diubah | Selesaikan sebelum plan dipindah ke `completed/` |
+| `CEK` | Perlu penilaian agent | Putuskan dan catat alasan di laporan akhir |
+| `LEWATI` | Tidak relevan | Tidak ada aksi |
+
+Matriks pemicu: migrasi Flyway/domain/layanan baru → ADR + registri sumber daya; event/pubsub → `specs/events`; alert rule → `runbooks`; berkas keamanan inti → `security`; RFC belum final → ubah ke `Implemented`; versi `pom.xml` berubah → `releases`; setiap plan → `reports`. `docs/qa` hanya berubah jika jenis pengujian baru disepakati.
+
+### 4.4. Penutupan & Serah Terima
+1. Pindahkan plan ke `docs/plans/completed/`, terbitkan `docs/reports/YYYY-MM-DD-<slug>.md`, jalankan `pnpm audit:adr`.
+2. Perbarui `docs/specs/registry-alokasi-sumber-daya.md` (Flyway → `Terpakai di DB`, lock → `COMPLETED & ARCHIVED`).
+3. Catat: `python3 scripts/agent-collab.py log --action done --agent "<Agent>" --target "<plan>" --note "<commit sha>"`.
+4. Belum tuntas → `python3 scripts/agent-collab.py handoff <plan> --to "<Agent>" --task "<tugas>"`; agent penerima menjalankan `claim`.
+
+> `docs/` tidak ter-track git publik (anti-leakage), sehingga sinkronisasi dokumen antar-perangkat dilakukan lewat salinan server/backup, bukan `git pull`. Karena itu `ACTIVITY-LOG.md` dan papan registri adalah sumber kebenaran tunggal status kerja.
+
+### 4.5. Aturan Diskusi (Pencatatan di `docs/discussions/`)
+
+Riwayat chat tidak terbaca agent lain atau perangkat lain. Kesimpulan diskusi penting wajib dituliskan ke berkas.
+
+**Pemicu eksplisit (A)** — jika pengguna menulis frasa seperti *"ini diskusi"*, *"catat di discussions"*, atau *"buka diskusi"*, agent WAJIB langsung membuat berkas:
+```bash
+python3 scripts/agent-collab.py new-discussion --title "<judul>" --agent "<Agent>"
+```
+lalu mengisi opsi, tradeoff, dan rekomendasi sesuai `docs/discussions/TEMPLATE.md`.
+
+**Pemicu otomatis (B)** — tanpa diminta, agent WAJIB membuat berkas diskusi jika percakapan memenuhi KEDUANYA:
+1. Menyangkut salah satu: arsitektur, skema DB/Flyway, keamanan/PBAC, kontrak API/event, atau pilihan teknologi; dan
+2. Menghasilkan pilihan di antara ≥2 opsi, atau keputusan yang akan memengaruhi plan/ADR.
+
+**Tidak perlu dicatat:** tanya jawab ringan, penjelasan kode, debugging rutin, dan pertanyaan operasional sekali pakai.
+
+Jika ragu apakah suatu percakapan memenuhi ambang, agent bertanya singkat: *"Catat sebagai diskusi di docs/discussions/?"* — bukan menebak.
+
+**Siklus:**
+1. Berkas diskusi dibuat di `docs/discussions/active/`; keputusan akhir tetap di tangan pengguna (Human Architect).
+2. Setelah konsensus: `python3 scripts/agent-collab.py resolve-discussion <nama> --link "<plan atau ADR hasilnya>" --agent "<Agent>"`.
+3. Hasil diturunkan ke `docs/rfc/` (proposal), `docs/adr/` (keputusan mengikat), atau `docs/plans/active/` (eksekusi). Dilarang memodifikasi kode produksi sebelum konsensus tercatat.
+4. Awal sesi: `who-is-working` / `status` menampilkan diskusi aktif; agent wajib membacanya sebelum mengusulkan arah baru pada topik yang sama.
