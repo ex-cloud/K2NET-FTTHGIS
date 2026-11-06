@@ -73,7 +73,7 @@ export function AuthLoginLayout({
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans">
       {/* ─── LEFT COLUMN: Login Form & Header ─────────────────────────── */}
-      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-4 sm:p-10 md:p-14 relative bg-sidebar border-r border-border/80 dark:border-black/90 shadow-none dark:shadow-[1px_0_0_0_rgba(255,255,255,0.065)] z-10">
+      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-4 sm:p-10 md:p-14 relative bg-sidebar border-r border-border/90 dark:border-black/90 shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.04),1px_0_0_0_#ffffff] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.065)] z-10">
         {/* Top Header Row (Logo + Language Switcher EN|ID + Docs + Theme Toggle) */}
         <div className="flex items-center justify-between w-full z-20 gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -162,7 +162,7 @@ export function AuthLoginLayout({
         </div>
 
         {/* Bottom Footer Row */}
-        <div className="text-[11px] text-muted-foreground z-20 flex flex-col gap-1.5 border-t border-border/80 dark:border-black/90 shadow-none dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.065)] pt-5">
+        <div className="text-[11px] text-muted-foreground z-20 flex flex-col gap-1.5 border-t border-border/90 dark:border-black/90 shadow-[inset_0_1px_0_0_#ffffff,0_-1px_0_0_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.065)] pt-5">
           <p>
             {resolvedAgreePrefix}{" "}
             <button
