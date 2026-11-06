@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import gsap from "gsap";
 import {
   Globe2,
@@ -34,15 +34,10 @@ interface NodeItem {
   icon?: React.ElementType;
 }
 
-interface CableConnectionDef {
+interface PrecisionCable {
   id: string;
   fromId: string;
   toId: string;
-  fromPin: string;
-  toPin: string;
-}
-
-interface MeasuredPoint {
   x1: number;
   y1: number;
   x2: number;
@@ -59,7 +54,7 @@ export function FtthTopologyFlow({
   const containerRef = useRef<HTMLDivElement>(null);
   const heroCardRef = useRef<HTMLDivElement>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const [cableCoords, setCableCoords] = useState<Record<string, MeasuredPoint>>({});
+  const [scaleFactor, setScaleFactor] = useState(1);
 
   // ── Column 1: Core Uplink & Backbone (Equivalent to "STEAM" in Bridgeplay) ─
   const col1Nodes: NodeItem[] = useMemo(
@@ -157,167 +152,164 @@ export function FtthTopologyFlow({
     [tenantName, rxPowerDbm, realtimeLatencyMs]
   );
 
-  // ── 11 Precision Cable Definitions Matching Image 3 Topology Flow ────────
-  const cableDefs: CableConnectionDef[] = useMemo(
+  // ── Mathematically Aligned 1040 x 340 Pixel-Perfect Cable Connections ─────
+  // Every column gap is equidistant (70px) and every port sits exactly on the pin.
+  const cables: PrecisionCable[] = useMemo(
     () => [
-      // 1. Col 1 -> Hero OLT
+      // 1. Col 1 (Backbone) -> Col 2 (Core OLT Hero)
       {
         id: "c-ixp-hero",
         fromId: "ixp-upstream",
         toId: "hero-olt",
-        fromPin: "out-ixp-upstream",
-        toPin: "in-hero-0",
+        x1: 165,
+        y1: 105,
+        x2: 235,
+        y2: 105, // Perfectly horizontal!
       },
       {
         id: "c-bgp-hero",
         fromId: "bgp-router",
         toId: "hero-olt",
-        fromPin: "out-bgp-router",
-        toPin: "in-hero-1",
+        x1: 165,
+        y1: 205,
+        x2: 235,
+        y2: 175, // Smooth 30px S-curve!
       },
 
-      // 2. Hero OLT -> Col 3 ODN
+      // 2. Col 2 (Core OLT Hero) -> Col 3 (Passive ODN)
       {
         id: "c-hero-odf",
         fromId: "hero-olt",
         toId: "odf-bay",
-        fromPin: "out-hero-0",
-        toPin: "in-odf-bay",
+        x1: 430,
+        y1: 75,
+        x2: 505,
+        y2: 75, // Perfectly horizontal!
       },
       {
         id: "c-hero-fdt",
         fromId: "hero-olt",
         toId: "fdt-cabinet",
-        fromPin: "out-hero-1",
-        toPin: "in-fdt-cabinet",
+        x1: 430,
+        y1: 135,
+        x2: 505,
+        y2: 145, // Gentle 10px S-curve!
       },
       {
         id: "c-hero-fat",
         fromId: "hero-olt",
         toId: "fat-pole",
-        fromPin: "out-hero-2",
-        toPin: "in-fat-pole",
+        x1: 430,
+        y1: 195,
+        x2: 505,
+        y2: 215, // Gentle 20px S-curve!
       },
 
-      // 3. Col 3 ODN -> Col 4 Services
+      // 3. Col 3 (Passive ODN) -> Col 4 (Services)
       {
         id: "c-odf-net",
         fromId: "odf-bay",
         toId: "svc-internet",
-        fromPin: "out-odf-bay",
-        toPin: "in-svc-internet",
+        x1: 655,
+        y1: 75,
+        x2: 725,
+        y2: 57,
       },
       {
         id: "c-fdt-iptv",
         fromId: "fdt-cabinet",
         toId: "svc-iptv",
-        fromPin: "out-fdt-cabinet-0",
-        toPin: "in-svc-iptv",
+        x1: 655,
+        y1: 135,
+        x2: 725,
+        y2: 121,
       },
       {
         id: "c-fdt-voip",
         fromId: "fdt-cabinet",
         toId: "svc-voip",
-        fromPin: "out-fdt-cabinet-1",
-        toPin: "in-svc-voip",
+        x1: 655,
+        y1: 155,
+        x2: 725,
+        y2: 185,
       },
       {
         id: "c-fat-vlan",
         fromId: "fat-pole",
         toId: "svc-vlan",
-        fromPin: "out-fat-pole",
-        toPin: "in-svc-vlan",
+        x1: 655,
+        y1: 215,
+        x2: 725,
+        y2: 249,
       },
 
-      // 4. Col 4 Services -> Col 5 Subscriber ONT
+      // 4. Col 4 (Services) -> Col 5 (Customer ONT)
       {
         id: "c-net-ont",
         fromId: "svc-internet",
         toId: "customer-ont",
-        fromPin: "out-svc-internet",
-        toPin: "in-ont-0",
+        x1: 875,
+        y1: 57,
+        x2: 945,
+        y2: 118,
       },
       {
         id: "c-iptv-ont",
         fromId: "svc-iptv",
         toId: "customer-ont",
-        fromPin: "out-svc-iptv",
-        toPin: "in-ont-1",
+        x1: 875,
+        y1: 121,
+        x2: 945,
+        y2: 135,
       },
       {
         id: "c-voip-ont",
         fromId: "svc-voip",
         toId: "customer-ont",
-        fromPin: "out-svc-voip",
-        toPin: "in-ont-2",
+        x1: 875,
+        y1: 185,
+        x2: 945,
+        y2: 152,
       },
       {
         id: "c-vlan-ont",
         fromId: "svc-vlan",
         toId: "customer-ont",
-        fromPin: "out-svc-vlan",
-        toPin: "in-ont-3",
+        x1: 875,
+        y1: 249,
+        x2: 945,
+        y2: 169,
       },
     ],
     []
   );
 
-  // ── Dynamic Sub-Pixel DOM Measurement of Connecting Pins ────────────────
-  const measureConnections = useCallback(() => {
-    if (!containerRef.current) return;
-    const canvasEl = containerRef.current.querySelector<HTMLElement>(".topology-canvas");
-    if (!canvasEl) return;
-
-    const canvasRect = canvasEl.getBoundingClientRect();
-    const nextCoords: Record<string, MeasuredPoint> = {};
-
-    cableDefs.forEach((def) => {
-      const fromEl = containerRef.current?.querySelector<HTMLElement>(`[data-pin="${def.fromPin}"]`);
-      const toEl = containerRef.current?.querySelector<HTMLElement>(`[data-pin="${def.toPin}"]`);
-
-      if (fromEl && toEl) {
-        const fromRect = fromEl.getBoundingClientRect();
-        const toRect = toEl.getBoundingClientRect();
-
-        nextCoords[def.id] = {
-          x1: fromRect.left + fromRect.width / 2 - canvasRect.left,
-          y1: fromRect.top + fromRect.height / 2 - canvasRect.top,
-          x2: toRect.left + toRect.width / 2 - canvasRect.left,
-          y2: toRect.top + toRect.height / 2 - canvasRect.top,
-        };
+  // Responsive Auto-Scaling (Always preserves exact pixel grid, scales to container)
+  useEffect(() => {
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      const available = containerRef.current.clientWidth;
+      const target = 1040;
+      if (available < target) {
+        setScaleFactor(Math.max(0.68, available / target));
+      } else {
+        setScaleFactor(1);
       }
-    });
+    };
 
-    if (Object.keys(nextCoords).length > 0) {
-      setCableCoords(nextCoords);
-    }
-  }, [cableDefs]);
-
-  useLayoutEffect(() => {
-    measureConnections();
-    const timer = setTimeout(measureConnections, 50);
-    const timer2 = setTimeout(measureConnections, 250);
-
-    const resizeObserver = new ResizeObserver(() => {
-      measureConnections();
-    });
-
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    window.addEventListener("resize", measureConnections);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    const ro = new ResizeObserver(handleResize);
+    if (containerRef.current) ro.observe(containerRef.current);
 
     return () => {
-      clearTimeout(timer);
-      clearTimeout(timer2);
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", measureConnections);
+      window.removeEventListener("resize", handleResize);
+      ro.disconnect();
     };
-  }, [measureConnections]);
+  }, []);
 
   // Helper to determine active connection
-  const isCableActive = (cable: CableConnectionDef) => {
+  const isCableActive = (cable: PrecisionCable) => {
     if (!hoveredNode) return false;
     if (cable.fromId === hoveredNode || cable.toId === hoveredNode) return true;
     if (hoveredNode === "hero-olt") return true;
@@ -329,11 +321,11 @@ export function FtthTopologyFlow({
     if (!containerRef.current) return;
 
     const ctx = gsap.context(() => {
-      // 1. Initial configuration of states
-      gsap.set(".topology-header-badge", { opacity: 0, y: -8 });
-      gsap.set(".topology-col1-node", { opacity: 0, x: -20 });
+      // 1. Initial setup of states
+      gsap.set(".topology-badge-item", { opacity: 0, y: -8 });
+      gsap.set(".topology-col1-node", { opacity: 0, x: -18 });
       if (heroCardRef.current) {
-        gsap.set(heroCardRef.current, { opacity: 0, scale: 0.9, y: 12 });
+        gsap.set(heroCardRef.current, { opacity: 0, scale: 0.92, y: 12 });
       }
       gsap.set(".topology-hero-spec-item", { opacity: 0, x: -6 });
       gsap.set(".topology-cable-base", { opacity: 0 });
@@ -341,12 +333,12 @@ export function FtthTopologyFlow({
       gsap.set(".topology-cable-pin", { scale: 0, transformOrigin: "center center" });
       gsap.set(".topology-col3-node", { opacity: 0, y: 14 });
       gsap.set(".topology-col4-node", { opacity: 0, y: 14 });
-      gsap.set(".topology-col5-node", { opacity: 0, x: 20 });
+      gsap.set(".topology-col5-node", { opacity: 0, x: 18 });
 
       // 2. Staggered Orchestrated Entrance
       const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
-      tl.to(".topology-header-badge", {
+      tl.to(".topology-badge-item", {
         opacity: 1,
         y: 0,
         duration: 0.4,
@@ -447,7 +439,7 @@ export function FtthTopologyFlow({
       // 3. Continuous Optical Light Stream Animation (Infinite smooth loop)
       gsap.to(".topology-cable-pulse", {
         strokeDashoffset: -40,
-        duration: 1.5,
+        duration: 1.4,
         repeat: -1,
         ease: "none",
       });
@@ -470,373 +462,218 @@ export function FtthTopologyFlow({
     };
   }, []);
 
-  // ── GSAP Interactive Node & Cable Highlight Transitions ───────────────────
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const ctx = gsap.context(() => {
-      const allCards = containerRef.current?.querySelectorAll<HTMLElement>(".topology-node-card");
-      if (!allCards) return;
-
-      if (!hoveredNode) {
-        // Reset all node cards to full normal opacity and natural scale
-        gsap.to(allCards, {
-          opacity: 1,
-          scale: 1,
-          duration: 0.25,
-          ease: "power2.out",
-          overwrite: "auto",
-        });
-
-        // Reset all cables
-        gsap.to(".topology-cable-base", {
-          opacity: 0.45,
-          strokeWidth: 1.1,
-          duration: 0.25,
-          overwrite: "auto",
-        });
-        gsap.to(".topology-cable-pulse", {
-          opacity: 0.65,
-          strokeWidth: 1.4,
-          duration: 0.25,
-          overwrite: "auto",
-        });
-        gsap.to(".topology-cable-pin", {
-          scale: 1,
-          duration: 0.25,
-          overwrite: "auto",
-        });
-        return;
-      }
-
-      // Active Node Hover State:
-      allCards.forEach((card) => {
-        const cardId = card.getAttribute("data-node-id");
-        const isTarget = cardId === hoveredNode;
-        const isConnected =
-          hoveredNode === "hero-olt" ||
-          cableDefs.some(
-            (c) =>
-              (c.fromId === hoveredNode && c.toId === cardId) ||
-              (c.toId === hoveredNode && c.fromId === cardId)
-          );
-
-        if (isTarget) {
-          gsap.to(card, {
-            scale: 1.03,
-            opacity: 1,
-            duration: 0.22,
-            ease: "power2.out",
-            overwrite: "auto",
-          });
-        } else if (isConnected) {
-          gsap.to(card, {
-            scale: 1.01,
-            opacity: 1,
-            duration: 0.22,
-            ease: "power2.out",
-            overwrite: "auto",
-          });
-        } else {
-          gsap.to(card, {
-            scale: 0.98,
-            opacity: 0.25,
-            duration: 0.25,
-            ease: "power2.out",
-            overwrite: "auto",
-          });
-        }
-      });
-
-      // Highlight active Bézier cables and dim background cables
-      cableDefs.forEach((cable) => {
-        const active = isCableActive(cable);
-        const baseEl = containerRef.current?.querySelector(`.cable-base-${cable.id}`);
-        const pulseEl = containerRef.current?.querySelector(`.cable-pulse-${cable.id}`);
-        const pin1El = containerRef.current?.querySelector(`.cable-pin-from-${cable.id}`);
-        const pin2El = containerRef.current?.querySelector(`.cable-pin-to-${cable.id}`);
-
-        if (active) {
-          if (baseEl) {
-            gsap.to(baseEl, {
-              opacity: 1,
-              strokeWidth: 2.0,
-              duration: 0.22,
-              overwrite: "auto",
-            });
-          }
-          if (pulseEl) {
-            gsap.to(pulseEl, {
-              opacity: 1,
-              strokeWidth: 2.5,
-              duration: 0.22,
-              overwrite: "auto",
-            });
-          }
-          if (pin1El) {
-            gsap.to(pin1El, {
-              scale: 1.35,
-              duration: 0.22,
-              overwrite: "auto",
-            });
-          }
-          if (pin2El) {
-            gsap.to(pin2El, {
-              scale: 1.35,
-              duration: 0.22,
-              overwrite: "auto",
-            });
-          }
-        } else {
-          if (baseEl) {
-            gsap.to(baseEl, {
-              opacity: 0.12,
-              strokeWidth: 0.9,
-              duration: 0.25,
-              overwrite: "auto",
-            });
-          }
-          if (pulseEl) {
-            gsap.to(pulseEl, {
-              opacity: 0.08,
-              duration: 0.25,
-              overwrite: "auto",
-            });
-          }
-          if (pin1El) {
-            gsap.to(pin1El, {
-              scale: 0.8,
-              duration: 0.25,
-              overwrite: "auto",
-            });
-          }
-          if (pin2El) {
-            gsap.to(pin2El, {
-              scale: 0.8,
-              duration: 0.25,
-              overwrite: "auto",
-            });
-          }
-        }
-      });
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, [hoveredNode, cableDefs]);
-
   return (
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full max-w-[1000px] mx-auto select-none font-sans text-foreground overflow-visible py-2",
+        "relative w-full max-w-[1060px] mx-auto select-none font-sans text-foreground overflow-visible py-2",
         className
       )}
     >
       {/* ── Top Micro-Status Ribbon (Monochrome Enterprise Standard) ────────── */}
-      <div className="flex items-center justify-between mb-2.5 px-1">
-        <div className="flex items-center gap-2 topology-header-badge">
-          <span className="size-2 rounded-full bg-foreground shadow-xs animate-pulse" />
+      <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center gap-2 topology-badge-item">
+          <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(56,189,248,0.8)] animate-pulse" />
           <span className="text-[10.5px] font-mono font-bold tracking-wider uppercase text-foreground">
             FTTH OPTICAL & PHYSICAL NETWORK TOPOLOGY
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="topology-header-badge inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-border/80 bg-muted/60 text-[9.5px] font-mono text-muted-foreground shadow-xs">
-            <Zap className="size-3 text-foreground" />
+          <div className="topology-badge-item inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-border/80 bg-muted/60 text-[9.5px] font-mono text-muted-foreground shadow-xs">
+            <Zap className="size-3 text-cyan-400" />
             <span>Latency: {realtimeLatencyMs}ms</span>
           </div>
 
-          <div className="topology-header-badge inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-border/80 bg-muted/60 text-[9.5px] font-mono text-foreground font-semibold shadow-xs">
-            <span className="size-1.5 rounded-full bg-foreground" />
+          <div className="topology-badge-item inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-border/80 bg-muted/60 text-[9.5px] font-mono text-foreground font-semibold shadow-xs">
+            <span className="size-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(56,189,248,0.9)]" />
             <span>Signal: {rxPowerDbm} dBm (Optimal)</span>
           </div>
         </div>
       </div>
 
-      {/* ── Relative Viewport Canvas (Centered Vertical Alignment) ─────────── */}
-      <div className="topology-canvas relative w-full h-[320px] overflow-visible">
-        {/* ── SVG Curved Optical Fiber Connectors with Sub-Pixel Pins ───────── */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-0"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
+      {/* ── Scaled Reference Canvas (Always 1040 x 340, scaled cleanly) ──────── */}
+      <div
+        className="w-full flex justify-center overflow-visible"
+        style={{ height: `${340 * scaleFactor}px` }}
+      >
+        <div
+          style={{
+            width: "1040px",
+            height: "340px",
+            transform: `scale(${scaleFactor})`,
+            transformOrigin: "top center",
+          }}
+          className="relative select-none overflow-visible"
         >
-          <defs>
-            <filter id="monochromeGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2.5" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
+          {/* ── SVG Curved Optical Fiber Connectors with Multi-Color Glow ───────── */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-0"
+            viewBox="0 0 1040 340"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              {/* Bridgeplay-style Multi-Color Neon Gradient for Active Paths */}
+              <linearGradient id="bridgeplayNeon" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#38bdf8" />
+                <stop offset="35%" stopColor="#6366f1" />
+                <stop offset="70%" stopColor="#a855f7" />
+                <stop offset="100%" stopColor="#ec4899" />
+              </linearGradient>
 
-          {cableDefs.map((cable) => {
-            const active = isCableActive(cable);
-            const coords = cableCoords[cable.id];
-            if (!coords) return null;
+              {/* Glowing Blur Filter for Active Illumination */}
+              <filter id="neonBeamGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="3.2" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
 
-            const dx = Math.max(28, Math.abs(coords.x2 - coords.x1) * 0.52);
-            const pathD = `M ${coords.x1} ${coords.y1} C ${coords.x1 + dx} ${coords.y1}, ${coords.x2 - dx} ${coords.y2}, ${coords.x2} ${coords.y2}`;
+            {cables.map((cable) => {
+              const active = isCableActive(cable);
+              const dx = (cable.x2 - cable.x1) * 0.52;
+              const pathD = `M ${cable.x1} ${cable.y1} C ${cable.x1 + dx} ${cable.y1}, ${cable.x2 - dx} ${cable.y2}, ${cable.x2} ${cable.y2}`;
 
-            return (
-              <g key={cable.id}>
-                {/* 1. Base Thin Cable Seam (Hairline neutral wire matching Bridgeplay) */}
-                <path
-                  d={pathD}
-                  stroke="currentColor"
-                  strokeWidth="1.1"
-                  className={cn(
-                    "topology-cable-base",
-                    `cable-base-${cable.id}`,
-                    active
-                      ? "text-foreground opacity-90"
-                      : "text-muted-foreground/35 opacity-45 dark:opacity-35"
-                  )}
-                />
+              return (
+                <g key={cable.id} className="transition-all duration-300">
+                  {/* 1. Base Thin Cable Seam */}
+                  <path
+                    d={pathD}
+                    stroke={active ? "url(#bridgeplayNeon)" : "currentColor"}
+                    strokeWidth={active ? "2.2" : "1.1"}
+                    className={cn(
+                      "topology-cable-base transition-all duration-300",
+                      active
+                        ? "opacity-100"
+                        : "text-muted-foreground/35 opacity-40 dark:opacity-30"
+                    )}
+                    style={{
+                      filter: active ? "url(#neonBeamGlow)" : undefined,
+                    }}
+                  />
 
-                {/* 2. Animated Flowing Data Pulse (Monochrome light pulse along curve) */}
-                <path
-                  d={pathD}
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  strokeDasharray="4 16"
-                  className={cn(
-                    "topology-cable-pulse",
-                    `cable-pulse-${cable.id}`,
-                    active
-                      ? "text-foreground opacity-100"
-                      : "text-muted-foreground opacity-60 dark:opacity-65"
-                  )}
-                  style={{
-                    filter: active ? "url(#monochromeGlow)" : undefined,
-                  }}
-                />
+                  {/* 2. Animated Flowing Data Pulse */}
+                  <path
+                    d={pathD}
+                    stroke={active ? "#ffffff" : "currentColor"}
+                    strokeWidth={active ? "2.4" : "1.4"}
+                    strokeDasharray="4 16"
+                    className={cn(
+                      "topology-cable-pulse transition-opacity duration-300",
+                      active
+                        ? "opacity-100"
+                        : "text-muted-foreground opacity-55 dark:opacity-60"
+                    )}
+                  />
 
-                {/* 3. Terminal Hollow Pins at cable ends (Sub-pixel perfect anchor) */}
-                <circle
-                  cx={coords.x1}
-                  cy={coords.y1}
-                  r="3.5"
-                  className={cn(
-                    "topology-cable-pin",
-                    `cable-pin-from-${cable.id}`,
-                    active
-                      ? "fill-background stroke-foreground stroke-2"
-                      : "fill-background stroke-muted-foreground/60 stroke-[1.2]"
-                  )}
-                />
-                <circle
-                  cx={coords.x2}
-                  cy={coords.y2}
-                  r="3.5"
-                  className={cn(
-                    "topology-cable-pin",
-                    `cable-pin-to-${cable.id}`,
-                    active
-                      ? "fill-background stroke-foreground stroke-2"
-                      : "fill-background stroke-muted-foreground/60 stroke-[1.2]"
-                  )}
-                />
-              </g>
-            );
-          })}
-        </svg>
+                  {/* 3. Terminal Hollow Pins at cable ends */}
+                  <circle
+                    cx={cable.x1}
+                    cy={cable.y1}
+                    r={active ? "4" : "3.5"}
+                    className="topology-cable-pin transition-all duration-300"
+                    style={{
+                      fill: active ? "#0b0c14" : "var(--background)",
+                      stroke: active ? "#38bdf8" : "rgba(255,255,255,0.4)",
+                      strokeWidth: active ? "2.2" : "1.2",
+                      filter: active
+                        ? "drop-shadow(0 0 6px rgba(56,189,248,0.8))"
+                        : undefined,
+                    }}
+                  />
+                  <circle
+                    cx={cable.x2}
+                    cy={cable.y2}
+                    r={active ? "4" : "3.5"}
+                    className="topology-cable-pin transition-all duration-300"
+                    style={{
+                      fill: active ? "#0b0c14" : "var(--background)",
+                      stroke: active ? "#a855f7" : "rgba(255,255,255,0.4)",
+                      strokeWidth: active ? "2.2" : "1.2",
+                      filter: active
+                        ? "drop-shadow(0 0 6px rgba(168,85,247,0.8))"
+                        : undefined,
+                    }}
+                  />
+                </g>
+              );
+            })}
+          </svg>
 
-        {/* ── HTML Node Cards Layer (5 Balanced Centered Columns) ───────────── */}
-        <div className="absolute inset-0 flex justify-between items-center z-10 pointer-events-none px-0.5">
-          {/* ── 1. COLUMN 1: STEAM / BACKBONE UPLINK (Left) ── */}
-          <div className="flex flex-col w-[150px] space-y-3 justify-center">
-            <span className="text-[9.5px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1 mb-0.5">
+          {/* ── HTML Node Cards Layer (Pixel-Exact Absolute Placement) ───────── */}
+
+          {/* ── 1. COLUMN 1: STEAM / BACKBONE UPLINK (x = 10, w = 155) ── */}
+          <div
+            style={{ left: "10px", width: "155px" }}
+            className="absolute top-0 bottom-0 flex flex-col justify-center pointer-events-none"
+          >
+            <span className="text-[9.5px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1 mb-2">
               BACKBONE
             </span>
-            <div className="space-y-2.5 pointer-events-auto">
+            <div className="space-y-4 pointer-events-auto">
               <div className="topology-col1-node">
-                <NodeCard
+                <TactileNodeCard
                   node={col1Nodes[0]}
                   isHovered={hoveredNode === col1Nodes[0].id}
                   isDimmed={Boolean(hoveredNode && hoveredNode !== col1Nodes[0].id && hoveredNode !== "hero-olt")}
                   onHover={(h) => interactive && setHoveredNode(h ? col1Nodes[0].id : null)}
-                >
-                  <span
-                    data-pin="out-ixp-upstream"
-                    className="absolute -right-1 top-1/2 -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                  />
-                </NodeCard>
+                />
               </div>
 
               <div className="topology-col1-node">
-                <NodeCard
+                <TactileNodeCard
                   node={col1Nodes[1]}
                   isHovered={hoveredNode === col1Nodes[1].id}
                   isDimmed={Boolean(hoveredNode && hoveredNode !== col1Nodes[1].id && hoveredNode !== "hero-olt")}
                   onHover={(h) => interactive && setHoveredNode(h ? col1Nodes[1].id : null)}
-                >
-                  <span
-                    data-pin="out-bgp-router"
-                    className="absolute -right-1 top-1/2 -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                  />
-                </NodeCard>
+                />
               </div>
             </div>
           </div>
 
-          {/* ── 2. COLUMN 2: CENTER HERO CARD (Bridgeplay equivalent) ── */}
-          <div className="flex flex-col items-center w-[180px] pointer-events-auto justify-center">
+          {/* ── 2. COLUMN 2: CENTER HERO CARD (x = 235, w = 195) ── */}
+          <div
+            style={{ left: "235px", width: "195px" }}
+            className="absolute top-0 bottom-0 flex flex-col items-center justify-center pointer-events-auto"
+          >
             <span className="text-[9.5px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pb-1.5">
               FTTH CORE
             </span>
 
-            {/* Dominant Hero Card with Subtle Inset Rim Glow */}
+            {/* Dominant Hero Card with Multi-Color Neon Glowing Rim */}
             <div
               ref={heroCardRef}
-              data-node-id="hero-olt"
               onMouseEnter={() => interactive && setHoveredNode("hero-olt")}
               onMouseLeave={() => interactive && setHoveredNode(null)}
               className={cn(
-                "topology-node-card group relative w-full rounded-2xl p-3.5 cursor-pointer text-center",
-                "bg-[#111115] dark:bg-[#0c0c0f] border border-white/20 dark:border-white/25",
-                "shadow-[0_0_24px_rgba(255,255,255,0.06)] hover:shadow-[0_0_32px_rgba(255,255,255,0.12)]",
-                hoveredNode === "hero-olt" && "border-foreground/80"
+                "group relative w-full rounded-2xl p-4 text-center cursor-pointer transition-all duration-300",
+                "bg-[#0d0d14]/95 text-foreground border border-transparent",
+                hoveredNode === "hero-olt"
+                  ? "shadow-[0_0_40px_rgba(99,102,241,0.55),0_0_20px_rgba(56,189,248,0.4)] scale-[1.02]"
+                  : "shadow-[0_0_28px_rgba(99,102,241,0.3)] hover:shadow-[0_0_36px_rgba(99,102,241,0.45)]"
               )}
+              style={{
+                background:
+                  "linear-gradient(#0c0d14, #0c0d14) padding-box, linear-gradient(135deg, #38bdf8 0%, #6366f1 35%, #a855f7 70%, #ec4899 100%) border-box",
+                borderWidth: "1.5px",
+                borderStyle: "solid",
+              }}
             >
-              {/* Input Pins on Left */}
-              <span
-                data-pin="in-hero-0"
-                className="absolute -left-1 top-[35%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-              />
-              <span
-                data-pin="in-hero-1"
-                className="absolute -left-1 top-[65%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-              />
-
-              {/* Output Pins on Right */}
-              <span
-                data-pin="out-hero-0"
-                className="absolute -right-1 top-[25%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-              />
-              <span
-                data-pin="out-hero-1"
-                className="absolute -right-1 top-[50%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-              />
-              <span
-                data-pin="out-hero-2"
-                className="absolute -right-1 top-[75%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-              />
-
               {/* Top Hero Icon Badge */}
-              <div className="size-8 rounded-xl bg-muted/80 border border-border/80 flex items-center justify-center text-foreground mx-auto mb-2 shadow-xs group-hover:scale-105 transition-transform">
-                <Cpu className="size-4" />
+              <div className="size-9 rounded-xl bg-muted/80 border border-border/80 flex items-center justify-center text-foreground mx-auto mb-2 shadow-xs group-hover:scale-105 transition-transform">
+                <Cpu className="size-5 text-cyan-400" />
               </div>
 
               {/* Title & Description */}
-              <h3 className="text-xs font-bold text-foreground tracking-tight mb-0.5 font-sans">
+              <h3 className="text-sm font-bold text-foreground tracking-tight mb-0.5 font-sans">
                 Core OLT Engine
               </h3>
-              <p className="text-[9.5px] text-muted-foreground leading-tight mb-2 font-mono px-0.5">
+              <p className="text-[9.5px] text-muted-foreground leading-tight mb-2.5 font-mono px-0.5">
                 FTTH Aggregation, provision & telemetry
               </p>
 
               {/* License/Status Badge at Bottom of Card */}
-              <span className="inline-block text-[8.5px] font-mono text-muted-foreground/90 bg-muted/70 border border-border/60 px-1.5 py-0.5 rounded font-medium">
+              <span className="inline-block text-[8.5px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-800/60 px-2 py-0.5 rounded font-medium shadow-xs">
                 GPON-XGS • 2.5G
               </span>
             </div>
@@ -865,130 +702,66 @@ export function FtthTopologyFlow({
             </div>
           </div>
 
-          {/* ── 3. COLUMN 3: ENGINES / PASSIVE ODN (Middle Right) ── */}
-          <div className="flex flex-col w-[145px] space-y-2 justify-center">
-            <span className="text-[9.5px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1 mb-0.5">
+          {/* ── 3. COLUMN 3: ENGINES / PASSIVE ODN (x = 505, w = 150) ── */}
+          <div
+            style={{ left: "505px", width: "150px" }}
+            className="absolute top-0 bottom-0 flex flex-col justify-center pointer-events-none"
+          >
+            <span className="text-[9.5px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1 mb-2">
               PASSIVE ODN
             </span>
-            <div className="space-y-2 pointer-events-auto">
-              <div className="topology-col3-node">
-                <NodeCard
-                  node={col3Nodes[0]}
-                  isHovered={hoveredNode === col3Nodes[0].id}
-                  isDimmed={Boolean(hoveredNode && hoveredNode !== col3Nodes[0].id && hoveredNode !== "hero-olt")}
-                  onHover={(h) => interactive && setHoveredNode(h ? col3Nodes[0].id : null)}
-                >
-                  <span
-                    data-pin="in-odf-bay"
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                  />
-                  <span
-                    data-pin="out-odf-bay"
-                    className="absolute -right-1 top-1/2 -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                  />
-                </NodeCard>
-              </div>
-
-              <div className="topology-col3-node">
-                <NodeCard
-                  node={col3Nodes[1]}
-                  isHovered={hoveredNode === col3Nodes[1].id}
-                  isDimmed={Boolean(hoveredNode && hoveredNode !== col3Nodes[1].id && hoveredNode !== "hero-olt")}
-                  onHover={(h) => interactive && setHoveredNode(h ? col3Nodes[1].id : null)}
-                >
-                  <span
-                    data-pin="in-fdt-cabinet"
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                  />
-                  <span
-                    data-pin="out-fdt-cabinet-0"
-                    className="absolute -right-1 top-[35%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                  />
-                  <span
-                    data-pin="out-fdt-cabinet-1"
-                    className="absolute -right-1 top-[65%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                  />
-                </NodeCard>
-              </div>
-
-              <div className="topology-col3-node">
-                <NodeCard
-                  node={col3Nodes[2]}
-                  isHovered={hoveredNode === col3Nodes[2].id}
-                  isDimmed={Boolean(hoveredNode && hoveredNode !== col3Nodes[2].id && hoveredNode !== "hero-olt")}
-                  onHover={(h) => interactive && setHoveredNode(h ? col3Nodes[2].id : null)}
-                >
-                  <span
-                    data-pin="in-fat-pole"
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                  />
-                  <span
-                    data-pin="out-fat-pole"
-                    className="absolute -right-1 top-1/2 -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                  />
-                </NodeCard>
-              </div>
-            </div>
-          </div>
-
-          {/* ── 4. COLUMN 4: GRAPHICS / SERVICES (Right) ── */}
-          <div className="flex flex-col w-[145px] space-y-1.5 justify-center">
-            <span className="text-[9.5px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1 mb-0.5">
-              SERVICES
-            </span>
-            <div className="space-y-1.5 pointer-events-auto">
-              {col4Nodes.map((n) => (
-                <div key={n.id} className="topology-col4-node">
-                  <NodeCard
+            <div className="space-y-3 pointer-events-auto">
+              {col3Nodes.map((n) => (
+                <div key={n.id} className="topology-col3-node">
+                  <TactileNodeCard
                     node={n}
                     isHovered={hoveredNode === n.id}
                     isDimmed={Boolean(hoveredNode && hoveredNode !== n.id && hoveredNode !== "hero-olt")}
                     onHover={(h) => interactive && setHoveredNode(h ? n.id : null)}
-                  >
-                    <span
-                      data-pin={`in-${n.id}`}
-                      className="absolute -left-1 top-1/2 -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                    />
-                    <span
-                      data-pin={`out-${n.id}`}
-                      className="absolute -right-1 top-1/2 -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                    />
-                  </NodeCard>
+                  />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ── 5. COLUMN 5: YOUR MAC / END SUBSCRIBER (Far Right) ── */}
-          <div className="flex flex-col w-[140px] justify-center">
+          {/* ── 4. COLUMN 4: GRAPHICS / SERVICES (x = 725, w = 150) ── */}
+          <div
+            style={{ left: "725px", width: "150px" }}
+            className="absolute top-0 bottom-0 flex flex-col justify-center pointer-events-none"
+          >
             <span className="text-[9.5px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1 mb-1.5">
+              SERVICES
+            </span>
+            <div className="space-y-2 pointer-events-auto">
+              {col4Nodes.map((n) => (
+                <div key={n.id} className="topology-col4-node">
+                  <TactileNodeCard
+                    node={n}
+                    isHovered={hoveredNode === n.id}
+                    isDimmed={Boolean(hoveredNode && hoveredNode !== n.id && hoveredNode !== "hero-olt")}
+                    onHover={(h) => interactive && setHoveredNode(h ? n.id : null)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 5. COLUMN 5: YOUR MAC / END SUBSCRIBER (x = 945, w = 145) ── */}
+          <div
+            style={{ left: "945px", width: "145px" }}
+            className="absolute top-0 bottom-0 flex flex-col justify-center pointer-events-none"
+          >
+            <span className="text-[9.5px] font-mono font-bold tracking-widest text-muted-foreground/75 uppercase pl-1 mb-2">
               SUBSCRIBER
             </span>
             <div className="pointer-events-auto topology-col5-node">
-              <NodeCard
+              <TactileNodeCard
                 node={col5Node}
                 isHovered={hoveredNode === col5Node.id}
                 isDimmed={Boolean(hoveredNode && hoveredNode !== col5Node.id && hoveredNode !== "hero-olt")}
                 onHover={(h) => interactive && setHoveredNode(h ? col5Node.id : null)}
                 highlightBadge
-              >
-                <span
-                  data-pin="in-ont-0"
-                  className="absolute -left-1 top-[20%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                />
-                <span
-                  data-pin="in-ont-1"
-                  className="absolute -left-1 top-[40%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                />
-                <span
-                  data-pin="in-ont-2"
-                  className="absolute -left-1 top-[60%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                />
-                <span
-                  data-pin="in-ont-3"
-                  className="absolute -left-1 top-[80%] -translate-y-1/2 size-2 rounded-full border border-muted-foreground/60 bg-background pointer-events-none"
-                />
-              </NodeCard>
+              />
             </div>
           </div>
         </div>
@@ -997,40 +770,40 @@ export function FtthTopologyFlow({
   );
 }
 
-// ── Reusable Monochromatic Node Card (Exact Match to Bridgeplay Item Cards) ─
-function NodeCard({
+// ── Reusable Tactile Node Card with 3D Convex Bevel Highlight ───────────────
+function TactileNodeCard({
   node,
   isHovered,
   isDimmed,
   onHover,
   highlightBadge = false,
-  children,
 }: {
   node: NodeItem;
   isHovered: boolean;
   isDimmed: boolean;
   onHover: (hovered: boolean) => void;
   highlightBadge?: boolean;
-  children?: React.ReactNode;
 }) {
   return (
     <div
-      data-node-id={node.id}
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
       className={cn(
-        "topology-node-card group relative w-full rounded-xl px-2.5 py-1.5 cursor-pointer transition-colors",
-        "bg-[#0f0f13]/95 dark:bg-[#0a0a0d]/95 border shadow-xs",
-        isHovered
-          ? "border-foreground/80 bg-accent/30 shadow-sm"
-          : isDimmed
-          ? "opacity-35 border-border/40"
-          : "border-border/70 hover:border-foreground/40 hover:bg-muted/30"
+        "group relative w-full rounded-xl px-2.5 py-1.5 cursor-pointer transition-all duration-200 border",
+        isDimmed && "opacity-25 scale-[0.98]"
       )}
+      style={{
+        // 3D Convex Embossed Bevel: top white sheen fading to charcoal dark
+        background: isHovered
+          ? "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.035) 45%, rgba(14,14,20,0.98) 100%)"
+          : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.015) 35%, rgba(10,10,15,0.96) 100%)",
+        boxShadow: isHovered
+          ? "inset 0 1.5px 0 0 rgba(255,255,255,0.45), 0 0 16px -2px rgba(56,189,248,0.35), 0 8px 24px rgba(0,0,0,0.7)"
+          : "inset 0 1px 0 0 rgba(255,255,255,0.15), 0 4px 12px rgba(0,0,0,0.45)",
+        borderColor: isHovered ? "rgba(56,189,248,0.6)" : "rgba(255,255,255,0.12)",
+        transform: isHovered ? "translateY(-1px) scale(1.02)" : "none",
+      }}
     >
-      {/* Anchor Port Pins */}
-      {children}
-
       <div className="flex items-start justify-between gap-1 mb-0.5">
         <h4 className="text-[11px] font-semibold text-foreground tracking-tight truncate font-sans">
           {node.title}
@@ -1044,10 +817,10 @@ function NodeCard({
       <div className="flex items-center justify-end">
         <span
           className={cn(
-            "text-[8.5px] font-mono px-1 py-0.2 rounded border",
+            "text-[8.5px] font-mono px-1 py-0.2 rounded border transition-colors",
             highlightBadge || isHovered
-              ? "bg-foreground/10 text-foreground border-foreground/30 font-semibold"
-              : "text-muted-foreground/70 border-border/40 bg-muted/40"
+              ? "bg-cyan-950/40 text-cyan-300 border-cyan-800/60 font-semibold"
+              : "text-muted-foreground/70 border-white/10 bg-white/5"
           )}
         >
           {node.meta}
