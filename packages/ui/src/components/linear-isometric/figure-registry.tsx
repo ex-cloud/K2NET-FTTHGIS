@@ -9,6 +9,7 @@ import { LinearSpatialTopologyFigure } from "./figures/fig-04-spatial-topology";
 import { LinearVectorMatrixFigure } from "./figures/fig-05-vector-matrix";
 import { LinearMicroserviceBusFigure } from "./figures/fig-06-microservice-bus";
 import { LinearQuantumOrbFigure } from "./figures/fig-07-quantum-orb";
+import { FtthTopologyFlow } from "../topology-flow/ftth-topology-flow";
 
 export const ISOMETRIC_FIGURES_LIST: IsometricFigureMeta[] = [
   {
@@ -84,6 +85,8 @@ export function renderIsometricFigureById(id: string, size: "card" | "hero" = "h
       return <LinearMicroserviceBusFigure size={size} interactive={true} />;
     case "fig-07":
       return <LinearQuantumOrbFigure size={size} interactive={true} />;
+    case "fig-topology":
+      return <FtthTopologyFlow />;
     case "fig-01":
     default:
       return <LinearPurposeBuiltFigure size={size} interactive={true} />;

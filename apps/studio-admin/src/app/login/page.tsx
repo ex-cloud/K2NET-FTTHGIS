@@ -5,6 +5,7 @@ import { useTranslation } from "@k2net/i18n";
 import {
   AuthLoginForm,
   AuthLoginLayout,
+  FtthTopologyFlow,
   saveAccountProfile,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
@@ -148,7 +149,7 @@ export default function AdminLoginPage() {
       testimonialQuote={t("auth.admin_testimonial_quote")}
       testimonialAuthor={t("auth.admin_testimonial_author")}
       testimonialRole={t("auth.admin_testimonial_role")}
-      figureId="fig-07"
+      figureComponent={<FtthTopologyFlow tenantName="K2NET Platform Admin" />}
       locale={locale}
       onLocaleChange={setLocale}
       footerAgreePrefix={t("auth.footer_agree_prefix")}

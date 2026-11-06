@@ -6,6 +6,7 @@ import { useTranslation } from "@k2net/i18n";
 import {
   AuthLoginForm,
   AuthLoginLayout,
+  FtthTopologyFlow,
   TenantDomainError,
   saveAccountProfile,
   type AuthCredentialsSubmitPayload,
@@ -319,7 +320,7 @@ export function LoginPage() {
       testimonialQuote={t("auth.tenant_testimonial_quote")}
       testimonialAuthor={t("auth.tenant_testimonial_author")}
       testimonialRole={t("auth.tenant_testimonial_role")}
-      figureId="fig-07"
+      figureComponent={<FtthTopologyFlow tenantName={tenantCtx.name} />}
       locale={locale}
       onLocaleChange={setLocale}
       footerAgreePrefix={t("auth.footer_agree_prefix")}

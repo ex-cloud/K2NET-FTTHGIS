@@ -224,9 +224,9 @@ export function AuthLoginLayout({
           )}
         </div>
 
-        {/* Center Isometric 3D Figure */}
-        <div className="my-auto flex flex-col items-center justify-center py-6 scale-100 xl:scale-110 transition-transform duration-500 z-10">
-          <div className="w-full max-w-[440px]">
+        {/* Center Hero: Network Topology Flow or Isometric 3D Figure */}
+        <div className="my-auto flex flex-col items-center justify-center py-4 w-full transition-transform duration-500 z-10">
+          <div className="w-full max-w-4xl px-2 flex justify-center">
             {figureComponent || renderIsometricFigureById(figureId, "hero")}
           </div>
         </div>

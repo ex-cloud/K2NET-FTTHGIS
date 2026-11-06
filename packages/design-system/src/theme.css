@@ -276,6 +276,20 @@
   animation: hud-rotate-reverse 120s linear infinite;
 }
 
+/* Animated Optical Fiber Laser Pulse */
+@keyframes fiber-flow {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-fiber-pulse {
+  animation: fiber-flow 1.6s linear infinite;
+}
+
 /* ==========================================
    🎨 Brand Styles (Dynamic Selectors - End of file for override specificity)
    ========================================== */

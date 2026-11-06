@@ -61,6 +61,9 @@ export * from "./components/ai";
 // Shared Auth Components (Linear Style)
 export * from "./components/auth";
 
+// Shared Topology Flow & Live Infrastructure Network Components
+export * from "./components/topology-flow";
+
 // Shared Account Preferences Suite (Profile, Password, 2FA/Passkeys, Sessions, IDPs)
 export * from "./components/account";
 
