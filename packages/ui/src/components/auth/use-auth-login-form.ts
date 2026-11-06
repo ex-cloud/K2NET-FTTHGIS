@@ -395,6 +395,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     ssoDiscoveredTitle: labels?.ssoDiscoveredTitle || "Single Sign-On Available",
     ssoDiscoveredDesc: labels?.ssoDiscoveredDesc || "Your email domain is configured with corporate SSO.",
     continueWithSso: labels?.continueWithSso || "Continue with SSO",
+    defaultSsoDisplayName: labels?.defaultSsoDisplayName || "Enterprise Single Sign-On",
     breakGlassModeActive: labels?.breakGlassModeActive || "Emergency Break-Glass Mode Active",
     breakGlassNotice:
       labels?.breakGlassNotice ||

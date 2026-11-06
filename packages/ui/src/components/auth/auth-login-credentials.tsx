@@ -73,12 +73,13 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
         <div className="space-y-3">
           <div className="grid gap-2">
             {socialMethods.map((method) => {
-              const methodLabel =
-                method.icon === "google"
-                  ? copy.continueWithGoogle
-                  : method.icon === "github"
-                  ? copy.continueWithGithub
-                  : `${copy.continueWithProviderPrefix} ${method.name}`;
+              const isGoogle = method.icon === "google" || method.id?.toLowerCase() === "google";
+              const isGithub = method.icon === "github" || method.id?.toLowerCase() === "github";
+              const methodLabel = isGoogle
+                ? copy.continueWithGoogle
+                : isGithub
+                ? copy.continueWithGithub
+                : `${copy.continueWithProviderPrefix} ${method.name}`;
 
               return (
                 <Button
@@ -90,10 +91,10 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                   onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
                   disabled={isLoading || isSuspended}
                 >
-                  {method.icon === "google" && <GoogleIcon className="size-3.5" />}
-                  {method.icon === "github" && <GithubIcon className="size-3.5" />}
-                  {method.icon !== "google" && method.icon !== "github" && (
-                    <KeyRound className="size-3.5 text-primary" />
+                  {isGoogle && <GoogleIcon className="size-3.5" />}
+                  {isGithub && <GithubIcon className="size-3.5" />}
+                  {!isGoogle && !isGithub && (
+                    <KeyRound className="size-3.5 text-muted-foreground" />
                   )}
                   <span>{methodLabel}</span>
                 </Button>
@@ -113,13 +114,13 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
       {/* Credentials & Inline MFA Form */}
       {enforceSso && !isBreakGlass && !mfaRequired ? (
         <div className="space-y-4 py-2 animate-in fade-in duration-150">
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-center space-y-2">
-            <div className="inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto">
+          <div className="rounded-lg border border-border/80 bg-muted/40 p-4 text-center space-y-2">
+            <div className="inline-flex size-10 items-center justify-center rounded-full bg-muted border border-border text-foreground mx-auto">
               <KeyRound className="size-5" />
             </div>
             <div className="space-y-1">
               <h4 className="text-xs font-semibold text-foreground">
-                {ssoDisplayName || "Enterprise Single Sign-On"}
+                {ssoDisplayName || copy.defaultSsoDisplayName}
               </h4>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 {copy.ssoDiscoveredDesc}
@@ -129,7 +130,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
               type="button"
               size="sm"
               className="w-full h-8 text-xs font-medium justify-center gap-2 mt-2"
-              onClick={() => onContinueWithProvider && onContinueWithProvider(ssoProviderType || "sso")}
+              onClick={() => onContinueWithProvider && onContinueWithProvider(ssoProviderType || discoveredSso?.providerType || "sso")}
               disabled={isLoading || isSuspended}
             >
               <KeyRound className="size-3.5" />
@@ -199,7 +200,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                     placeholder={copy.accountPlaceholder}
                     value={usernameOrEmail}
                     onChange={(e) => setUsernameOrEmail(e.target.value)}
-                    className="pl-9 h-9 bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
+                    className="pl-9 h-9 bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
                     disabled={isLoading || isSuspended}
                     required
                   />
@@ -207,13 +208,13 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
 
                 {/* Discovered SSO IdP Suggestion */}
                 {discoveredSso && !enforceSso && (
-                  <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 flex items-center justify-between gap-2 animate-in fade-in mt-1.5">
+                  <div className="rounded-md border border-border/80 bg-muted/40 p-2.5 flex items-center justify-between gap-2 animate-in fade-in mt-1.5">
                     <div className="space-y-0.5">
-                      <span className="text-[11px] font-semibold text-primary block">
+                      <span className="text-[11px] font-semibold text-foreground block">
                         {copy.ssoDiscoveredTitle}
                       </span>
                       <p className="text-[10px] text-muted-foreground">
-                        {discoveredSso.displayName || discoveredSso.providerType}
+                        {discoveredSso.displayName || discoveredSso.providerType || copy.defaultSsoDisplayName}
                       </p>
                     </div>
                     <Button
@@ -225,7 +226,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                         if (discoveredSso.redirectUrl && typeof window !== "undefined") {
                           window.location.href = discoveredSso.redirectUrl;
                         } else if (onContinueWithProvider) {
-                          onContinueWithProvider(discoveredSso.providerType || "sso");
+                          onContinueWithProvider(discoveredSso.providerType || ssoProviderType || "sso");
                         }
                       }}
                     >
@@ -264,7 +265,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                   placeholder={copy.passwordPlaceholder}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-9 pr-9 h-9 bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
+                  className="pl-9 pr-9 h-9 bg-background/80 border-border/70 rounded-md text-xs sm:text-sm text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
                   disabled={isLoading || isSuspended}
                   required
                 />
@@ -348,7 +349,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                 placeholder={copy.mfaCodePlaceholder}
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
-                className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-background/80 dark:bg-background/80 border-border/70 rounded-md text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
+                className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-background/80 border-border/70 rounded-md text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
                 disabled={isLoading || isSuspended}
                 required
               />
@@ -370,7 +371,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
           type="submit"
           size="sm"
           disabled={isSubmitDisabled}
-          className="w-full h-8 bg-foreground hover:bg-foreground/90 text-background font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 transition-all duration-200 group cursor-pointer"
+          className="w-full h-8 font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 group cursor-pointer"
         >
           {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -382,7 +383,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
           )}
         </Button>
 
-        {/* Link below submit button: "View saved profiles" (ONLY rendered if savedProfiles.length > 0) */}
+        {/* "View saved profiles" (ONLY rendered if savedProfiles.length > 0) */}
         {!mfaRequired && savedProfiles.length > 0 && (
           <div className="pt-2 text-center">
             <button

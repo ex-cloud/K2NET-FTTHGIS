@@ -166,6 +166,7 @@ function buildTenantFormLabels(t: (key: string) => string): AuthLoginFormLabels 
     ssoDiscoveredTitle: t("auth.sso_discovered_title"),
     ssoDiscoveredDesc: t("auth.sso_discovered_desc"),
     continueWithSso: t("auth.continue_with_sso"),
+    defaultSsoDisplayName: t("auth.default_sso_display_name"),
     breakGlassModeActive: t("auth.break_glass_mode_active"),
     breakGlassNotice: t("auth.break_glass_notice"),
     breakGlassToggle: t("auth.break_glass_toggle"),

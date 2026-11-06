@@ -79,6 +79,7 @@ export interface AuthLoginFormLabels {
   ssoDiscoveredTitle?: string;
   ssoDiscoveredDesc?: string;
   continueWithSso?: string;
+  defaultSsoDisplayName?: string;
   breakGlassModeActive?: string;
   breakGlassNotice?: string;
   breakGlassToggle?: string;
