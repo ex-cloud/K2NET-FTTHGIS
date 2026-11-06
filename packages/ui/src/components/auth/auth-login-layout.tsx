@@ -74,7 +74,7 @@ export function AuthLoginLayout({
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans">
       {/* ─── LEFT COLUMN: Login Form & Header ─────────────────────────── */}
-      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-4 sm:p-10 md:p-14 relative bg-sidebar border-r border-border/90 dark:border-black/90 shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.04),1px_0_0_0_#ffffff] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.065)] z-10">
+      <div className="w-full lg:w-[40%] xl:w-[40%] flex flex-col justify-between p-4 sm:p-10 md:p-14 relative bg-sidebar border-r border-border/90 dark:border-black/90 shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.04),1px_0_0_0_#ffffff] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.065)] z-10">
         {/* Top Header Row (Logo + Language Switcher EN|ID + Docs + Theme Toggle) */}
         <div className="flex items-center justify-between w-full z-20 gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -226,8 +226,8 @@ export function AuthLoginLayout({
         </div>
 
         {/* Center Hero: Network Topology Flow or Isometric 3D Figure */}
-        <div className="my-auto flex flex-col items-center justify-center py-4 w-full transition-transform duration-500 z-10">
-          <div className="w-full max-w-4xl px-2 flex justify-center">
+        <div className="my-auto flex flex-col items-center justify-center py-2 w-full transition-transform duration-500 z-10">
+          <div className="w-full max-w-[1060px] px-1 flex justify-center">
             {figureComponent || <FtthTopologyFlow tenantName={portalName} />}
           </div>
         </div>
