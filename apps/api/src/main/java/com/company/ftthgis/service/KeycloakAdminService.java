@@ -496,6 +496,7 @@ public class KeycloakAdminService {
             }
             idp.setProviderId(providerId);
             idp.setEnabled(true);
+            idp.setTrustEmail(true);
 
             Map<String, String> config = idp.getConfig();
             if (config == null) {
@@ -516,9 +517,54 @@ public class KeycloakAdminService {
                 idpsResource.create(idp);
                 log.info("Successfully created Identity Provider: {} in realm: {}", alias, realm);
             }
+
+            // Ensure explicit tenant subdomain redirect URI is registered on ftth-gis-frontend
+            if (alias != null && alias.startsWith("sso-")) {
+                ensureTenantRedirectUri(realm, alias.substring(4));
+            }
         } catch (Exception e) {
             log.error("Failed to upsert Identity Provider {} in realm {}: {}", alias, realm, e.getMessage(), e);
             throw new RuntimeException("Failed to upsert Identity Provider in Keycloak: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Ensures explicit subdomain redirect URIs (https://<slug>.kdua.net/*) are registered
+     * on the frontend OIDC client, since Keycloak 26 rejects wildcard subdomain hostnames.
+     */
+    public void ensureTenantRedirectUri(String realm, String orgSlug) {
+        if (realm == null || realm.isBlank() || orgSlug == null || orgSlug.isBlank()) {
+            return;
+        }
+        String cleanSlug = orgSlug.trim().toLowerCase();
+        try {
+            var clientsResource = keycloak.realm(realm).clients();
+            var clients = clientsResource.findByClientId("ftth-gis-frontend");
+            if (clients == null || clients.isEmpty()) {
+                return;
+            }
+            var clientRep = clients.get(0);
+            List<String> redirects = clientRep.getRedirectUris() != null
+                    ? new java.util.ArrayList<>(clientRep.getRedirectUris())
+                    : new java.util.ArrayList<>();
+            String prodUri = "https://" + cleanSlug + ".kdua.net/*";
+            String devUri = "http://" + cleanSlug + ".localhost:3002/*";
+            boolean changed = false;
+            if (!redirects.contains(prodUri)) {
+                redirects.add(prodUri);
+                changed = true;
+            }
+            if (!redirects.contains(devUri)) {
+                redirects.add(devUri);
+                changed = true;
+            }
+            if (changed) {
+                clientRep.setRedirectUris(redirects);
+                clientsResource.get(clientRep.getId()).update(clientRep);
+                log.info("✅ Added explicit tenant redirect URIs ({}) to client 'ftth-gis-frontend' in realm '{}'", prodUri, realm);
+            }
+        } catch (Exception e) {
+            log.warn("Could not ensure tenant redirect URI for '{}' in realm '{}': {}", cleanSlug, realm, e.getMessage());
         }
     }
 
@@ -663,7 +709,16 @@ public class KeycloakAdminService {
             UsersResource usersResource = keycloak.realm(targetRealm).users();
             List<UserRepresentation> users = usersResource.searchByEmail(email, true);
             if (!users.isEmpty()) {
-                UserResource userResource = usersResource.get(users.get(0).getId());
+                UserRepresentation userRep = users.get(0);
+                if (userRep.getAttributes() != null) {
+                    List<String> totpEnabled = userRep.getAttributes().get("k2net_totp_enabled");
+                    List<String> totpSecret = userRep.getAttributes().get("k2net_totp_secret");
+                    if (totpEnabled != null && totpEnabled.contains("true")
+                            && totpSecret != null && !totpSecret.isEmpty() && !totpSecret.get(0).isBlank()) {
+                        return true;
+                    }
+                }
+                UserResource userResource = usersResource.get(userRep.getId());
                 List<CredentialRepresentation> credentials = userResource.credentials();
                 if (credentials != null) {
                     return credentials.stream().anyMatch(c ->
@@ -677,6 +732,63 @@ public class KeycloakAdminService {
             log.warn("Could not check Keycloak MFA credentials for user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
         }
         return false;
+    }
+
+    public void saveUserTotpSecret(String targetRealm, String email, String base32Secret) {
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (users.isEmpty()) {
+                users = usersResource.searchByUsername(email, true);
+            }
+            if (!users.isEmpty()) {
+                UserRepresentation user = usersResource.get(users.get(0).getId()).toRepresentation();
+                Map<String, List<String>> attrs = user.getAttributes() != null
+                        ? new java.util.HashMap<>(user.getAttributes())
+                        : new java.util.HashMap<>();
+                attrs.put("k2net_totp_secret", List.of(base32Secret));
+                attrs.put("k2net_totp_enabled", List.of("true"));
+                user.setAttributes(attrs);
+
+                if (user.getRequiredActions() != null && user.getRequiredActions().contains("CONFIGURE_TOTP")) {
+                    List<String> updatedActions = new java.util.ArrayList<>(user.getRequiredActions());
+                    updatedActions.remove("CONFIGURE_TOTP");
+                    user.setRequiredActions(updatedActions);
+                }
+
+                usersResource.get(user.getId()).update(user);
+                log.info("Keycloak: Activated TOTP 2FA secret for user '{}' in realm '{}'", email, targetRealm);
+            } else {
+                throw new IllegalArgumentException("User not found in Keycloak realm: " + targetRealm);
+            }
+        } catch (Exception e) {
+            log.error("Failed to save TOTP secret for user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
+            throw new RuntimeException("Failed to activate Authenticator App 2FA: " + e.getMessage(), e);
+        }
+    }
+
+    public void disableUserTotp(String targetRealm, String email) {
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (users.isEmpty()) {
+                users = usersResource.searchByUsername(email, true);
+            }
+            if (!users.isEmpty()) {
+                UserRepresentation user = usersResource.get(users.get(0).getId()).toRepresentation();
+                if (user.getAttributes() != null) {
+                    Map<String, List<String>> attrs = new java.util.HashMap<>(user.getAttributes());
+                    attrs.remove("k2net_totp_secret");
+                    attrs.put("k2net_totp_enabled", List.of("false"));
+                    user.setAttributes(attrs);
+                    usersResource.get(user.getId()).update(user);
+                }
+                log.info("Keycloak: Disabled TOTP 2FA for user '{}' in realm '{}'", email, targetRealm);
+            }
+        } catch (Exception e) {
+            log.error("Failed to disable TOTP for user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
+            throw new RuntimeException("Failed to disable Authenticator App 2FA: " + e.getMessage(), e);
+        }
     }
 
     public void addRequiredActionToUser(String targetRealm, String email, String requiredAction) {
@@ -736,8 +848,8 @@ public class KeycloakAdminService {
                         }
                     }
                 }
-                // Add back CONFIGURE_TOTP required action so user must re-enroll
-                addRequiredActionToUser(targetRealm, email, "CONFIGURE_TOTP");
+                disableUserTotp(targetRealm, email);
+                removeRequiredActionFromUser(targetRealm, email, "CONFIGURE_TOTP");
             } else {
                 log.warn("User '{}' not found in Keycloak realm '{}' for MFA reset", email, targetRealm);
             }

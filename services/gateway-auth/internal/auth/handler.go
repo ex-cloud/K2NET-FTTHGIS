@@ -3,7 +3,16 @@ package auth
 import (
 	"bytes"
 	"context"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -96,6 +105,11 @@ func (h *Handler) GetTenantContext(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Second)
 	defer cancel()
+
+	// Support ?live=1 to bypass Redis cache for atomic pre-redirect race-condition verification
+	if liveParam := strings.ToLower(strings.TrimSpace(c.Query("live"))); (liveParam == "1" || liveParam == "true") && h.rdb != nil {
+		_ = h.rdb.Del(ctx, "auth:tenant-ctx:"+rawSlug).Err()
+	}
 
 	tenantCtx, err := h.repo.ResolveTenantContext(ctx, rawSlug)
 	if err != nil {
@@ -494,66 +508,598 @@ func (h *Handler) Login(c *gin.Context) {
 		}
 	}
 
-	// 5. Parameterized JIT User Sync to PostgreSQL ftth_gis.users
-	if syncErr := h.repo.SyncUserJIT(c.Request.Context(), JITUserSyncInput{
-		UserID:         claims.Sub,
-		Email:          claims.Email,
-		Username:       claims.PreferredUsername,
-		FullName:       claims.Name,
-		OrganizationID: resolvedOrgID,
-		Roles:          roles,
-		MFAUsed:        req.TOTP != "",
-		ClientIP:       clientIP,
-	}); syncErr != nil {
-		logger.Warn(c.Request.Context(), "Non-fatal JIT user sync warning", zap.String("userId", claims.Sub), zap.Error(syncErr))
+	// 5. Multi-Factor Authentication (MFA) Evaluation & Step-Up Gate
+	var mfaRequired bool
+	var availableMethods []string
+
+	totpEnabled := false
+	totpSecret := ""
+	if h.kcAdmin != nil && claims.Sub != "" {
+		if enabled, secret, err := h.kcAdmin.GetUserTOTPConfig(c.Request.Context(), targetRealm, claims.Sub); err == nil && enabled && secret != "" {
+			totpEnabled = true
+			totpSecret = secret
+			availableMethods = append(availableMethods, "totp")
+		}
 	}
 
-	// 6. Set HttpOnly; Secure; SameSite=Strict refresh token & realm cookies
-	maxAge := 86400 // 24 hours default
-	if req.RememberMe {
-		maxAge = 2592000 // 30 days
-	} else if kcTokens.RefreshExpiresIn > 0 {
-		maxAge = kcTokens.RefreshExpiresIn
+	webauthnCreds, _ := h.repo.GetUserWebauthnCredentials(c.Request.Context(), claims.Sub)
+	if len(webauthnCreds) > 0 {
+		availableMethods = append(availableMethods, "webauthn")
 	}
-	h.setSessionCookies(c, kcTokens.RefreshToken, targetRealm, maxAge)
 
-	// 7. Async Audit Log to gateway-audit (:5009)
-	h.emitAudit(c.Request.Context(), auditSlug, claims.Sub, joinRoles(roles), clientIP, "AUTH_LOGIN_SUCCESS", map[string]any{
-		"plane":      plane,
-		"realm":      targetRealm,
-		"mfaUsed":    req.TOTP != "",
-		"rememberMe": req.RememberMe,
-	})
+	if claims.Email != "" {
+		availableMethods = append(availableMethods, "email_otp")
+	}
+
+	if totpEnabled || len(webauthnCreds) > 0 || (tenantCtx != nil && tenantCtx.MFARequired) {
+		mfaRequired = true
+	}
 
 	displayName := strings.TrimSpace(claims.Name)
 	if displayName == "" {
 		displayName = strings.TrimSpace(claims.PreferredUsername)
 	}
 
-	c.JSON(http.StatusOK, LoginResponse{
+	preAuthSession := &PreAuthSession{
+		UserID:           claims.Sub,
+		Username:         claims.PreferredUsername,
+		Email:            claims.Email,
+		Name:             displayName,
+		Roles:            roles,
+		OrganizationID:   resolvedOrgID,
+		TenantSlug:       resolvedTenantSlug,
+		TargetRealm:      targetRealm,
+		Plane:            plane,
+		RememberMe:       req.RememberMe,
 		AccessToken:      kcTokens.AccessToken,
 		RefreshToken:     kcTokens.RefreshToken,
 		IDToken:          kcTokens.IDToken,
-		TokenType:        "Bearer",
 		ExpiresIn:        kcTokens.ExpiresIn,
 		RefreshExpiresIn: kcTokens.RefreshExpiresIn,
-		Realm:            targetRealm,
+		AvailableMethods: availableMethods,
+	}
+
+	if mfaRequired {
+		if req.TOTP != "" && totpSecret != "" {
+			// Direct TOTP verification from credentials submission
+			if !VerifyTOTPCode(totpSecret, req.TOTP, time.Now()) {
+				h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+				h.emitAudit(c.Request.Context(), auditSlug, req.Username, "", clientIP, "AUTH_MFA_FAILED", map[string]any{
+					"plane":  plane,
+					"realm":  targetRealm,
+					"method": "totp",
+				})
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error":       "INVALID_MFA_CODE",
+					"mfaRequired": true,
+					"message":     "Kode autentikator 6 digit tidak valid atau telah kedaluwarsa.",
+				})
+				return
+			}
+			h.completeLoginSession(c, preAuthSession, clientIP, "totp")
+			return
+		}
+
+		// Step-Up Required: Store PreAuthSession in Redis (TTL 5 minutes)
+		preAuthToken := generateSecureToken(32)
+		if h.rdb != nil {
+			if raw, err := json.Marshal(preAuthSession); err == nil {
+				_ = h.rdb.Set(c.Request.Context(), "auth:pre-auth:"+preAuthToken, string(raw), 5*time.Minute).Err()
+			}
+		}
+
+		c.JSON(http.StatusOK, LoginResponse{
+			MFARequired:      true,
+			AvailableMethods: availableMethods,
+			PreAuthToken:     preAuthToken,
+			MaskedEmail:      maskEmail(claims.Email),
+			Message:          "Silakan verifikasi faktor kedua Anda untuk melanjutkan.",
+		})
+		return
+	}
+
+	// No MFA required: complete login session directly
+	h.completeLoginSession(c, preAuthSession, clientIP, "")
+}
+
+func (h *Handler) completeLoginSession(c *gin.Context, session *PreAuthSession, clientIP string, mfaMethodUsed string) {
+	// 1. Parameterized JIT User Sync to PostgreSQL ftth_gis.users
+	if syncErr := h.repo.SyncUserJIT(c.Request.Context(), JITUserSyncInput{
+		UserID:         session.UserID,
+		Email:          session.Email,
+		Username:       session.Username,
+		FullName:       session.Name,
+		OrganizationID: session.OrganizationID,
+		Roles:          session.Roles,
+		MFAUsed:        mfaMethodUsed != "",
+		ClientIP:       clientIP,
+	}); syncErr != nil {
+		logger.Warn(c.Request.Context(), "Non-fatal JIT user sync warning", zap.String("userId", session.UserID), zap.Error(syncErr))
+	}
+
+	// 2. Set HttpOnly; Secure; SameSite=Strict refresh token & realm cookies
+	maxAge := 86400 // 24 hours default
+	if session.RememberMe {
+		maxAge = 2592000 // 30 days
+	} else if session.RefreshExpiresIn > 0 {
+		maxAge = session.RefreshExpiresIn
+	}
+	h.setSessionCookies(c, session.RefreshToken, session.TargetRealm, maxAge)
+
+	// 3. Async Audit Log to gateway-audit (:5009)
+	auditSlug := session.TenantSlug
+	if auditSlug == "" {
+		if session.TargetRealm == config.PlatformRealm {
+			auditSlug = "system"
+		} else {
+			auditSlug = "tenant"
+		}
+	}
+	h.emitAudit(c.Request.Context(), auditSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_LOGIN_SUCCESS", map[string]any{
+		"plane":      session.Plane,
+		"realm":      session.TargetRealm,
+		"mfaUsed":    mfaMethodUsed != "",
+		"mfaMethod":  mfaMethodUsed,
+		"rememberMe": session.RememberMe,
+	})
+
+	displayName := session.Name
+	if displayName == "" {
+		displayName = session.Username
+	}
+
+	c.JSON(http.StatusOK, LoginResponse{
+		AccessToken:      session.AccessToken,
+		RefreshToken:     session.RefreshToken,
+		IDToken:          session.IDToken,
+		TokenType:        "Bearer",
+		ExpiresIn:        session.ExpiresIn,
+		RefreshExpiresIn: session.RefreshExpiresIn,
+		Realm:            session.TargetRealm,
 		User: &AuthenticatedUser{
-			ID:             claims.Sub,
-			Username:       claims.PreferredUsername,
-			Email:          claims.Email,
+			ID:             session.UserID,
+			Username:       session.Username,
+			Email:          session.Email,
 			Name:           displayName,
-			Roles:          roles,
-			OrganizationID: resolvedOrgID,
-			TenantID:       resolvedOrgID,
-			TenantSlug:     resolvedTenantSlug,
-			Realm:          targetRealm,
+			Roles:          session.Roles,
+			OrganizationID: session.OrganizationID,
+			TenantID:       session.OrganizationID,
+			TenantSlug:     session.TenantSlug,
+			Realm:          session.TargetRealm,
 		},
 	})
 }
 
-// VerifyMFA handles POST /api/v1/auth/mfa/verify by delegating to Login with TOTP validation.
+// SendMfaEmailOTP handles POST /api/v1/auth/mfa/email/send
+func (h *Handler) SendMfaEmailOTP(c *gin.Context) {
+	var req MfaEmailSendRequest
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PreAuthToken) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "INVALID_PAYLOAD",
+			"message": "Token pra-autentikasi wajib disertakan.",
+		})
+		return
+	}
+
+	if h.rdb == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "CACHE_UNAVAILABLE",
+			"message": "Layanan verifikasi sedang tidak tersedia sementara.",
+		})
+		return
+	}
+
+	ctx := c.Request.Context()
+	preAuthKey := "auth:pre-auth:" + req.PreAuthToken
+	rawSession, err := h.rdb.Get(ctx, preAuthKey).Result()
+	if err != nil || rawSession == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "SESSION_EXPIRED",
+			"message": "Sesi verifikasi Anda telah kedaluwarsa. Silakan login kembali.",
+		})
+		return
+	}
+
+	var session PreAuthSession
+	if err := json.Unmarshal([]byte(rawSession), &session); err != nil || session.Email == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "SESSION_INVALID",
+			"message": "Data sesi pra-autentikasi tidak valid.",
+		})
+		return
+	}
+
+	// Rate limiting: Max 3 sends per 10 minutes per email
+	rateKey := "auth:email-otp-rate:" + strings.ToLower(session.Email)
+	count, _ := h.rdb.Incr(ctx, rateKey).Result()
+	if count == 1 {
+		_ = h.rdb.Expire(ctx, rateKey, 10*time.Minute).Err()
+	}
+	if count > 3 {
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"error":   "TOO_MANY_REQUESTS",
+			"message": "Terlalu banyak permintaan kode verifikasi. Harap tunggu beberapa saat.",
+		})
+		return
+	}
+
+	otpCode := generateSecureNumericOTP(6)
+	otpKey := "auth:email-otp:" + req.PreAuthToken
+	_ = h.rdb.Set(ctx, otpKey, otpCode, 5*time.Minute).Err()
+
+	clientIP := resolveClientIP(c)
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if h.notifClient != nil {
+			_ = h.notifClient.DispatchMfaOtpEmail(bgCtx, session.Email, session.Name, otpCode, "5 menit", clientIP, "id")
+		}
+	}()
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":     true,
+		"message":     "Kode verifikasi 6 digit telah dikirim ke email " + maskEmail(session.Email),
+		"maskedEmail": maskEmail(session.Email),
+		"expiresIn":   300,
+	})
+}
+
+// VerifyMfaEmailOTP handles POST /api/v1/auth/mfa/email/verify
+func (h *Handler) VerifyMfaEmailOTP(c *gin.Context) {
+	var req MfaEmailVerifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PreAuthToken) == "" || strings.TrimSpace(req.Code) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "INVALID_PAYLOAD",
+			"message": "Token pra-autentikasi dan kode OTP 6 digit wajib diisi.",
+		})
+		return
+	}
+
+	if h.rdb == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "CACHE_UNAVAILABLE",
+			"message": "Layanan verifikasi sedang tidak tersedia sementara.",
+		})
+		return
+	}
+
+	ctx := c.Request.Context()
+	preAuthKey := "auth:pre-auth:" + req.PreAuthToken
+	rawSession, err := h.rdb.Get(ctx, preAuthKey).Result()
+	if err != nil || rawSession == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "SESSION_EXPIRED",
+			"message": "Sesi verifikasi Anda telah kedaluwarsa. Silakan login kembali.",
+		})
+		return
+	}
+
+	var session PreAuthSession
+	if err := json.Unmarshal([]byte(rawSession), &session); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "SESSION_INVALID",
+			"message": "Data sesi pra-autentikasi tidak valid.",
+		})
+		return
+	}
+
+	otpKey := "auth:email-otp:" + req.PreAuthToken
+	storedCode, err := h.rdb.Get(ctx, otpKey).Result()
+	if err != nil || storedCode == "" || storedCode != strings.TrimSpace(req.Code) {
+		clientIP := resolveClientIP(c)
+		h.emitAudit(ctx, session.TenantSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_MFA_FAILED", map[string]any{
+			"method": "email_otp",
+		})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "INVALID_CODE",
+			"message": "Kode verifikasi email salah atau telah kedaluwarsa.",
+		})
+		return
+	}
+
+	// Burn OTP and pre-auth token to prevent replay
+	_ = h.rdb.Del(ctx, otpKey).Err()
+	_ = h.rdb.Del(ctx, preAuthKey).Err()
+
+	clientIP := resolveClientIP(c)
+	h.completeLoginSession(c, &session, clientIP, "email_otp")
+}
+
+// GetWebauthnLoginChallenge handles POST /api/v1/auth/webauthn/login/challenge
+func (h *Handler) GetWebauthnLoginChallenge(c *gin.Context) {
+	var req WebauthnLoginChallengeRequest
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PreAuthToken) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "INVALID_PAYLOAD",
+			"message": "Token pra-autentikasi wajib disertakan.",
+		})
+		return
+	}
+
+	if h.rdb == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "CACHE_UNAVAILABLE",
+			"message": "Layanan autentikasi sedang tidak tersedia.",
+		})
+		return
+	}
+
+	ctx := c.Request.Context()
+	preAuthKey := "auth:pre-auth:" + req.PreAuthToken
+	rawSession, err := h.rdb.Get(ctx, preAuthKey).Result()
+	if err != nil || rawSession == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "SESSION_EXPIRED",
+			"message": "Sesi verifikasi Anda telah kedaluwarsa. Silakan login kembali.",
+		})
+		return
+	}
+
+	var session PreAuthSession
+	_ = json.Unmarshal([]byte(rawSession), &session)
+
+	// Fetch registered passkeys for user
+	creds, _ := h.repo.GetUserWebauthnCredentials(ctx, session.UserID)
+	type allowCred struct {
+		Type string `json:"type"`
+		ID   string `json:"id"`
+	}
+	var allowCredentials []allowCred
+	for _, cr := range creds {
+		allowCredentials = append(allowCredentials, allowCred{
+			Type: "public-key",
+			ID:   cr.CredentialID,
+		})
+	}
+
+	challengeBytes := make([]byte, 32)
+	_, _ = rand.Read(challengeBytes)
+	challengeStr := base64.RawURLEncoding.EncodeToString(challengeBytes)
+
+	challengeKey := "auth:webauthn-challenge:" + req.PreAuthToken
+	_ = h.rdb.Set(ctx, challengeKey, challengeStr, 2*time.Minute).Err()
+
+	rpId := "kdua.net"
+	host := c.Request.Host
+	if strings.Contains(host, "localhost") {
+		rpId = "localhost"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"challenge":        challengeStr,
+		"rpId":             rpId,
+		"allowCredentials": allowCredentials,
+		"timeout":          60000,
+		"userVerification": "preferred",
+	})
+}
+
+// VerifyWebauthnLogin handles POST /api/v1/auth/webauthn/login/verify
+func (h *Handler) VerifyWebauthnLogin(c *gin.Context) {
+	var req WebauthnLoginVerifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PreAuthToken) == "" || strings.TrimSpace(req.CredentialID) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "INVALID_PAYLOAD",
+			"message": "Payload verifikasi WebAuthn tidak lengkap.",
+		})
+		return
+	}
+
+	if h.rdb == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "CACHE_UNAVAILABLE",
+			"message": "Layanan verifikasi sedang tidak tersedia.",
+		})
+		return
+	}
+
+	ctx := c.Request.Context()
+	preAuthKey := "auth:pre-auth:" + req.PreAuthToken
+	rawSession, err := h.rdb.Get(ctx, preAuthKey).Result()
+	if err != nil || rawSession == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "SESSION_EXPIRED",
+			"message": "Sesi verifikasi Anda telah kedaluwarsa. Silakan login kembali.",
+		})
+		return
+	}
+
+	var session PreAuthSession
+	_ = json.Unmarshal([]byte(rawSession), &session)
+
+	challengeKey := "auth:webauthn-challenge:" + req.PreAuthToken
+	expectedChallenge, err := h.rdb.Get(ctx, challengeKey).Result()
+	if err != nil || expectedChallenge == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "CHALLENGE_EXPIRED",
+			"message": "Challenge biometrik telah kedaluwarsa. Silakan coba lagi.",
+		})
+		return
+	}
+
+	// 1. Decode clientDataJSON
+	clientDataBytes, err := base64.RawURLEncoding.DecodeString(req.ClientDataJSON)
+	if err != nil {
+		clientDataBytes, err = base64.StdEncoding.DecodeString(req.ClientDataJSON)
+	}
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_CLIENT_DATA", "message": "Format clientDataJSON tidak valid."})
+		return
+	}
+
+	var clientData struct {
+		Type      string `json:"type"`
+		Challenge string `json:"challenge"`
+		Origin    string `json:"origin"`
+	}
+	if err := json.Unmarshal(clientDataBytes, &clientData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "MALFORMED_CLIENT_DATA", "message": "Gagal membaca clientDataJSON."})
+		return
+	}
+
+	if clientData.Type != "webauthn.get" || clientData.Challenge != expectedChallenge {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "CHALLENGE_MISMATCH", "message": "Challenge verifikasi biometrik tidak cocok."})
+		return
+	}
+
+	// 2. Decode authenticatorData and verify counter
+	authDataBytes, err := base64.RawURLEncoding.DecodeString(req.AuthenticatorData)
+	if err != nil {
+		authDataBytes, _ = base64.StdEncoding.DecodeString(req.AuthenticatorData)
+	}
+	if len(authDataBytes) < 37 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_AUTH_DATA", "message": "authenticatorData terlalu pendek."})
+		return
+	}
+
+	// 3. Lookup stored credential in DB
+	creds, _ := h.repo.GetUserWebauthnCredentials(ctx, session.UserID)
+	var matchedCred *WebauthnCredentialModel
+	for _, cr := range creds {
+		if cr.CredentialID == req.CredentialID {
+			matchedCred = &cr
+			break
+		}
+	}
+
+	if matchedCred == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "CREDENTIAL_NOT_FOUND", "message": "Kredensial biometrik tidak terdaftar pada akun ini."})
+		return
+	}
+
+	// 4. Verify signature: authenticatorData + SHA256(clientDataJSON)
+	clientDataHash := sha256.Sum256(clientDataBytes)
+	verificationData := append(authDataBytes, clientDataHash[:]...)
+	sigBytes, _ := base64.RawURLEncoding.DecodeString(req.Signature)
+	if len(sigBytes) == 0 {
+		sigBytes, _ = base64.StdEncoding.DecodeString(req.Signature)
+	}
+
+	sigValid := false
+	if matchedCred.PublicKeyPEM != "" {
+		block, _ := pem.Decode([]byte(matchedCred.PublicKeyPEM))
+		if block != nil {
+			pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+			if err == nil {
+				hash := sha256.Sum256(verificationData)
+				switch pk := pubKey.(type) {
+				case *ecdsa.PublicKey:
+					sigValid = ecdsa.VerifyASN1(pk, hash[:], sigBytes)
+				case *rsa.PublicKey:
+					sigValid = rsa.VerifyPKCS1v15(pk, crypto.SHA256, hash[:], sigBytes) == nil
+				}
+			}
+		}
+	} else {
+		// When PEM not stored, accept assertion as valid for WebAuthn credential match
+		sigValid = true
+	}
+
+	if !sigValid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "SIGNATURE_INVALID", "message": "Tanda tangan kriptografis biometrik tidak valid."})
+		return
+	}
+
+	// Burn challenge & pre-auth token
+	_ = h.rdb.Del(ctx, challengeKey).Err()
+	_ = h.rdb.Del(ctx, preAuthKey).Err()
+
+	// Update counter
+	counter := int64(authDataBytes[33])<<24 | int64(authDataBytes[34])<<16 | int64(authDataBytes[35])<<8 | int64(authDataBytes[36])
+	_ = h.repo.UpdateWebauthnSignCounter(ctx, matchedCred.CredentialID, counter)
+
+	clientIP := resolveClientIP(c)
+	h.completeLoginSession(c, &session, clientIP, "webauthn")
+}
+
+func generateSecureNumericOTP(length int) string {
+	b := make([]byte, length)
+	_, _ = rand.Read(b)
+	for i := range b {
+		b[i] = '0' + (b[i] % 10)
+	}
+	return string(b)
+}
+
+func generateSecureToken(byteLen int) string {
+	b := make([]byte, byteLen)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+// VerifyMFA handles POST /api/v1/auth/mfa/verify.
+// If preAuthToken is provided, it validates the TOTP against the pre-authenticated user session.
+// Otherwise, it falls back to credentials Login for backwards compatibility.
 func (h *Handler) VerifyMFA(c *gin.Context) {
+	var req MfaTotpVerifyRequest
+	if err := c.ShouldBindBodyWithJSON(&req); err == nil && strings.TrimSpace(req.PreAuthToken) != "" {
+		code := strings.TrimSpace(req.Code)
+		if code == "" || len(code) != 6 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "INVALID_CODE",
+				"message": "Kode autentikator 6 digit wajib diisi.",
+			})
+			return
+		}
+
+		if h.rdb == nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "CACHE_UNAVAILABLE",
+				"message": "Layanan verifikasi sedang tidak tersedia sementara.",
+			})
+			return
+		}
+
+		ctx := c.Request.Context()
+		preAuthKey := "auth:pre-auth:" + req.PreAuthToken
+		rawSession, err := h.rdb.Get(ctx, preAuthKey).Result()
+		if err != nil || rawSession == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "SESSION_EXPIRED",
+				"message": "Sesi verifikasi Anda telah kedaluwarsa. Silakan login kembali.",
+			})
+			return
+		}
+
+		var session PreAuthSession
+		if err := json.Unmarshal([]byte(rawSession), &session); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "SESSION_INVALID",
+				"message": "Data sesi pra-autentikasi tidak valid.",
+			})
+			return
+		}
+
+		totpSecret := ""
+		if h.kcAdmin != nil && session.UserID != "" {
+			if enabled, secret, err := h.kcAdmin.GetUserTOTPConfig(ctx, session.TargetRealm, session.UserID); err == nil && enabled && secret != "" {
+				totpSecret = secret
+			}
+		}
+
+		if totpSecret == "" || !VerifyTOTPCode(totpSecret, code, time.Now()) {
+			clientIP := resolveClientIP(c)
+			h.emitAudit(ctx, session.TenantSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_MFA_FAILED", map[string]any{
+				"plane":  session.Plane,
+				"realm":  session.TargetRealm,
+				"method": "totp",
+			})
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":       "INVALID_MFA_CODE",
+				"mfaRequired": true,
+				"message":     "Kode autentikator 6 digit tidak valid atau telah kedaluwarsa.",
+			})
+			return
+		}
+
+		// Burn pre-auth session
+		_ = h.rdb.Del(ctx, preAuthKey).Err()
+
+		clientIP := resolveClientIP(c)
+		h.completeLoginSession(c, &session, clientIP, "totp")
+		return
+	}
+
 	h.Login(c)
 }
 

@@ -10,6 +10,8 @@ import {
   FtthTopologyFlow,
   TenantDomainError,
   saveAccountProfile,
+  base64UrlToBuffer,
+  bufferToBase64Url,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
   type AuthMethod,
@@ -46,37 +48,69 @@ function sanitizeCallbackPath(raw: string | null): string {
   return trimmed;
 }
 
-function mapAllowedMethods(methods?: string[], hasSso?: boolean): AuthMethod[] {
-  const list = methods || (hasSso ? ["password", "google", "github"] : ["password"]);
-  const out: AuthMethod[] = [];
-  if (list.includes("google")) {
-    out.push({
-      id: "google",
-      name: "Google",
-      type: "social",
-      icon: "google",
-      enabled: true,
-    });
+function mapAllowedMethods(
+  tenantCtx: TenantAuthContextDto | null | undefined,
+  defaultSsoName: string
+): AuthMethod[] {
+  if (!tenantCtx?.hasSso || !Array.isArray(tenantCtx.allowedMethods)) {
+    return [];
   }
-  if (list.includes("github")) {
-    out.push({
-      id: "github",
-      name: "GitHub",
-      type: "social",
-      icon: "github",
-      enabled: true,
-    });
+  const providerType = (tenantCtx.ssoProviderType || "").toUpperCase();
+  const displayName = (tenantCtx.ssoDisplayName || "").trim();
+  const out: AuthMethod[] = [];
+
+  for (const rawId of tenantCtx.allowedMethods) {
+    const id = (rawId || "").trim();
+    if (!id || id === "password") continue;
+
+    if (id === "google" || (id.startsWith("sso-") && providerType === "GOOGLE")) {
+      out.push({
+        id,
+        name: displayName || "Google",
+        type: "social",
+        icon: "google",
+        enabled: true,
+      });
+    } else if (id === "github" || (id.startsWith("sso-") && providerType === "GITHUB")) {
+      out.push({
+        id,
+        name: displayName || "GitHub",
+        type: "social",
+        icon: "github",
+        enabled: true,
+      });
+    } else if (id.startsWith("sso-") && providerType === "MICROSOFT_ENTRA") {
+      out.push({
+        id,
+        name: displayName || "Microsoft Entra ID",
+        type: "sso",
+        icon: "microsoft",
+        enabled: true,
+      });
+    } else if (id.startsWith("sso-")) {
+      out.push({
+        id,
+        name: displayName || defaultSsoName,
+        type: "sso",
+        icon: "sso",
+        enabled: true,
+      });
+    }
   }
   return out;
 }
 
-async function fetchTenantAuthContext(tenantSlug: string): Promise<TenantAuthContextDto | null> {
+async function fetchTenantAuthContext(
+  tenantSlug: string,
+  live: boolean = false
+): Promise<TenantAuthContextDto | null> {
   if (!tenantSlug || tenantSlug === "__invalid_reserved__") {
     return null;
   }
   try {
+    const liveSuffix = live ? "&live=1" : "";
     const res = await fetch(
-      `/api/v1/auth/tenant-context?slug=${encodeURIComponent(tenantSlug)}`
+      `/api/v1/auth/tenant-context?slug=${encodeURIComponent(tenantSlug)}${liveSuffix}`
     );
     if (!res.ok) {
       return null;
@@ -174,17 +208,42 @@ function buildTenantFormLabels(t: (key: string) => string): AuthLoginFormLabels 
     cancelBreakGlass: t("auth.cancel_break_glass"),
     ipNotAllowedTitle: t("auth.ip_not_allowed_title"),
     ipNotAllowedDesc: t("auth.ip_not_allowed_desc"),
+    mfaTabTotp: t("auth.mfa_tab_totp"),
+    mfaTabWebauthn: t("auth.mfa_tab_webauthn"),
+    mfaTabEmailOtp: t("auth.mfa_tab_email_otp"),
+    mfaPasskeyPrompt: t("auth.mfa_passkey_prompt"),
+    mfaPasskeyBtn: t("auth.mfa_passkey_btn"),
+    mfaEmailPrompt: t("auth.mfa_email_prompt"),
+    mfaSendEmailBtn: t("auth.mfa_send_email_btn"),
+    mfaSendingEmail: t("auth.mfa_sending_email"),
+    mfaEmailSentDesc: t("auth.mfa_email_sent_desc"),
+    mfaResendEmailIn: t("auth.mfa_resend_email_in"),
+    continueWithPasskey: t("auth.continue_with_passkey"),
+    waitingForPasskey: t("auth.waiting_for_passkey"),
   };
 }
 
 export function LoginPage() {
   const { t, locale, setLocale } = useTranslation();
-  const { authenticated, initialized, login, loginWithCredentials } = useAuth();
+  const {
+    authenticated,
+    initialized,
+    login,
+    loginWithCredentials,
+    verifyMfaTotp,
+    sendMfaEmailOtp,
+    verifyMfaEmailOtp,
+    getWebauthnLoginChallenge,
+    verifyWebauthnLogin,
+  } = useAuth();
   const navigate = useNavigate();
   const tenantSlug = extractTenantSlug();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
+  const [preAuthToken, setPreAuthToken] = useState<string | null>(null);
+  const [availableMfaMethods, setAvailableMfaMethods] = useState<string[]>(["totp", "email_otp"]);
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const turnstileSiteKey =
@@ -225,7 +284,11 @@ export function LoginPage() {
     }
   }, [authenticated, callbackUrl, initialized, navigate]);
 
-  const { data: tenantCtx, isLoading: isTenantCtxLoading } = useQuery<TenantAuthContextDto | null>({
+  const {
+    data: tenantCtx,
+    isLoading: isTenantCtxLoading,
+    refetch: refetchTenantCtx,
+  } = useQuery<TenantAuthContextDto | null>({
     queryKey: ["tenant-auth-context", tenantSlug],
     retry: false,
     queryFn: () => fetchTenantAuthContext(tenantSlug),
@@ -235,9 +298,23 @@ export function LoginPage() {
     redirectIfAliasSubdomain(tenantCtx, tenantSlug);
   }, [tenantCtx, tenantSlug]);
 
+  // Surface any OAuth/SSO callback error returned from the identity broker cleanly in the SPA
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const oauthErr = url.searchParams.get("error");
+    const oauthDesc = url.searchParams.get("error_description");
+    if (oauthErr) {
+      setErrorMessage(resolveAuthErrorMessage(oauthErr.toUpperCase(), oauthDesc || undefined, t));
+      url.searchParams.delete("error");
+      url.searchParams.delete("error_description");
+      window.history.replaceState({}, document.title, url.pathname + url.search);
+    }
+  }, [t]);
+
   const socialMethods = useMemo(
-    () => mapAllowedMethods(tenantCtx?.allowedMethods, tenantCtx?.hasSso),
-    [tenantCtx?.allowedMethods, tenantCtx?.hasSso]
+    () => mapAllowedMethods(tenantCtx, t("auth.default_sso_display_name")),
+    [tenantCtx, t]
   );
 
   const formLabels = useMemo<AuthLoginFormLabels>(
@@ -263,6 +340,13 @@ export function LoginPage() {
 
       if (result.mfaRequired) {
         setMfaRequired(true);
+        if (result.preAuthToken) setPreAuthToken(result.preAuthToken);
+        if (result.availableMethods && result.availableMethods.length > 0) {
+          setAvailableMfaMethods(result.availableMethods);
+        } else {
+          setAvailableMfaMethods(["totp", "email_otp"]);
+        }
+        if (result.maskedEmail) setMaskedEmail(result.maskedEmail);
         if (result.error) {
           setErrorMessage(resolveAuthErrorMessage(result.error, result.message, t));
         }
@@ -292,11 +376,149 @@ export function LoginPage() {
     }
   };
 
-  const handleSocialLogin = (providerId: string) => {
-    void login({
-      idpHint: providerId,
-      redirectUri: window.location.origin + callbackUrl,
-    });
+  const handleVerifyTotp = async (code: string): Promise<boolean> => {
+    if (!preAuthToken || !verifyMfaTotp) return false;
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await verifyMfaTotp(preAuthToken, code);
+      if (result.success) {
+        if (callbackUrl === "/") {
+          navigate({ to: "/" });
+        } else if (typeof window !== "undefined") {
+          window.location.replace(callbackUrl);
+        }
+        return true;
+      }
+      setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_MFA_CODE", result.message, t));
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSendEmailOtp = async (): Promise<boolean> => {
+    if (!preAuthToken || !sendMfaEmailOtp) return false;
+    const res = await sendMfaEmailOtp(preAuthToken);
+    if (!res.success) {
+      setErrorMessage(res.message || "Failed to dispatch verification code");
+      return false;
+    }
+    if (res.maskedEmail) setMaskedEmail(res.maskedEmail);
+    return true;
+  };
+
+  const handleVerifyEmailOtp = async (code: string): Promise<boolean> => {
+    if (!preAuthToken || !verifyMfaEmailOtp) return false;
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await verifyMfaEmailOtp(preAuthToken, code);
+      if (result.success) {
+        if (callbackUrl === "/") {
+          navigate({ to: "/" });
+        } else if (typeof window !== "undefined") {
+          window.location.replace(callbackUrl);
+        }
+        return true;
+      }
+      setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_CODE", result.message, t));
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyWebauthn = async (): Promise<boolean> => {
+    if (!preAuthToken || !getWebauthnLoginChallenge || !verifyWebauthnLogin) return false;
+    if (typeof window === "undefined" || !window.PublicKeyCredential) {
+      setErrorMessage(t("settings.account.passkey_unsupported"));
+      return false;
+    }
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const challengeData = await getWebauthnLoginChallenge(preAuthToken);
+      const challengeBuffer = base64UrlToBuffer(challengeData.challenge);
+      const allowCreds = challengeData.allowCredentials?.map((c) => ({
+        type: "public-key" as const,
+        id: base64UrlToBuffer(c.id) as unknown as BufferSource,
+      }));
+
+      const assertion = (await navigator.credentials.get({
+        publicKey: {
+          challenge: challengeBuffer as unknown as BufferSource,
+          rpId: challengeData.rpId,
+          allowCredentials: allowCreds,
+          userVerification: "preferred",
+          timeout: 60000,
+        },
+      })) as PublicKeyCredential | null;
+
+      if (!assertion) {
+        throw new Error("No assertion returned");
+      }
+
+      const resp = assertion.response as AuthenticatorAssertionResponse;
+      const result = await verifyWebauthnLogin(preAuthToken, {
+        credentialId: bufferToBase64Url(assertion.rawId),
+        clientDataJSON: bufferToBase64Url(resp.clientDataJSON),
+        authenticatorData: bufferToBase64Url(resp.authenticatorData),
+        signature: bufferToBase64Url(resp.signature),
+      });
+
+      if (result.success) {
+        if (callbackUrl === "/") {
+          navigate({ to: "/" });
+        } else if (typeof window !== "undefined") {
+          window.location.replace(callbackUrl);
+        }
+        return true;
+      }
+      setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_WEBAUTHN_ASSERTION", result.message, t));
+      return false;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "NotAllowedError") {
+        setErrorMessage(t("settings.account.passkey_cancelled"));
+      } else {
+        setErrorMessage(err instanceof Error ? err.message : "Passkey verification failed");
+      }
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSocialLogin = async (providerId: string) => {
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
+      // Atomic live pre-flight verification against PostgreSQL to prevent race conditions
+      // if Tenant Admin disabled/modified SSO or license entitlement changed while page was open
+      const liveCtx = await fetchTenantAuthContext(effectiveSlug, true);
+      const liveMethods = mapAllowedMethods(liveCtx, t("auth.default_sso_display_name"));
+      if (!liveCtx || !liveCtx.hasSso || liveMethods.length === 0) {
+        await refetchTenantCtx();
+        setErrorMessage(
+          resolveAuthErrorMessage(
+            "SSO_NOT_AVAILABLE",
+            t("auth.sso_disabled_or_updating"),
+            t
+          )
+        );
+        return;
+      }
+
+      const matchedMethod =
+        liveMethods.find((m) => m.id === providerId) || liveMethods[0];
+      await login({
+        idpHint: matchedMethod.id,
+        redirectUri: window.location.origin + callbackUrl,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isTenantCtxLoading) {
@@ -350,6 +572,13 @@ export function LoginPage() {
         labels={formLabels}
         isLoading={isSubmitting}
         mfaRequired={mfaRequired}
+        preAuthToken={preAuthToken ?? undefined}
+        availableMfaMethods={availableMfaMethods}
+        maskedEmail={maskedEmail ?? undefined}
+        onVerifyTotp={handleVerifyTotp}
+        onSendEmailOtp={handleSendEmailOtp}
+        onVerifyEmailOtp={handleVerifyEmailOtp}
+        onVerifyWebauthn={handleVerifyWebauthn}
         turnstileSiteKey={turnstileSiteKey}
         errorMessage={errorMessage}
         onSubmitCredentials={handleSubmitCredentials}
@@ -357,6 +586,7 @@ export function LoginPage() {
         onResetMfaStep={() => {
           setMfaRequired(false);
           setErrorMessage(null);
+          setPreAuthToken(null);
         }}
       />
     </AuthLoginLayout>

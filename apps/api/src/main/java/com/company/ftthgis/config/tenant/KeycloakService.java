@@ -33,13 +33,16 @@ public class KeycloakService {
     private final KongConfigSyncService kongConfigSyncService;
     private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.company.ftthgis.domain.tenant.repository.OrganizationRepository organizationRepository;
+
     @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-id:ftth-gis-frontend}")
     private String provisionClientId;
 
     @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-secret:}")
     private String provisionClientSecret;
 
-    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:localhost:3000}")
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:localhost:3002}")
     private String frontendUrl;
 
     @org.springframework.beans.factory.annotation.Value("${app.security.oauth2.google.client-id}")
@@ -291,8 +294,8 @@ public class KeycloakService {
                 disableReviewProfileInFirstBrokerLogin(realmName);
                 ensureUserProfileConfig(realmName);
                 
-                // Sync theme and metadata attributes
-                existingRealm.setLoginTheme("ftth-gis");
+                // Headless OIDC engine mode (100% Pure React SPA auth UI)
+                existingRealm.setLoginTheme(null);
                 java.util.Map<String, String> attributes = existingRealm.getAttributes();
                 if (attributes == null) {
                     attributes = new java.util.HashMap<>();
@@ -407,7 +410,7 @@ public class KeycloakService {
                 String effectiveDisplayName = (displayName != null && !displayName.trim().isEmpty()) ? displayName : "Organization: " + realmName;
                 realm.setDisplayName(effectiveDisplayName);
                 realm.setDisplayNameHtml(effectiveDisplayName);
-                realm.setLoginTheme("ftth-gis");
+                realm.setLoginTheme(null);
 
                 java.util.Map<String, String> attributes = realm.getAttributes();
                 if (attributes == null) {
@@ -607,10 +610,8 @@ public class KeycloakService {
             redirects.add("https://system-gis.kdua.net/*");
             redirects.add("https://ops.kdua.net/*");
             redirects.add("https://*.kdua.net/*");
-            redirects.add("http://localhost:3000/*");
             redirects.add("http://localhost:3001/*");
             redirects.add("http://localhost:3002/*");
-            redirects.add("http://*.localhost:3000/*");
             redirects.add("http://*.localhost:3002/*");
             
             if (frontendUrl != null && !frontendUrl.isBlank()) {
@@ -620,6 +621,26 @@ public class KeycloakService {
 
             if (!PLATFORM_REALM.equals(realmName) && !TENANT_SHARED_REALM.equals(realmName) && !"master".equals(realmName)) {
                 redirects.add("https://" + realmName + ".kdua.net/*");
+            }
+
+            if (TENANT_SHARED_REALM.equalsIgnoreCase(realmName) && organizationRepository != null) {
+                try {
+                    for (String slug : organizationRepository.findAllSlugs()) {
+                        if (slug != null && !slug.isBlank()) {
+                            String cleanSlug = slug.trim().toLowerCase();
+                            String prodUri = "https://" + cleanSlug + ".kdua.net/*";
+                            String devUri = "http://" + cleanSlug + ".localhost:3002/*";
+                            if (!redirects.contains(prodUri)) {
+                                redirects.add(prodUri);
+                            }
+                            if (!redirects.contains(devUri)) {
+                                redirects.add(devUri);
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.debug("Could not enumerate tenant slugs during client provisioning: {}", ex.getMessage());
+                }
             }
 
             client.setRedirectUris(redirects);
@@ -1214,7 +1235,7 @@ public class KeycloakService {
      * Called during realm creation, startup reconciliation, and plan upgrade/downgrade.
      */
     public void syncIdentityProvidersForPlan(String realmName, boolean hasSso) {
-        if ("master".equalsIgnoreCase(realmName) || "ftth-realm".equalsIgnoreCase(realmName)) {
+        if (isProtectedRealm(realmName)) {
             return;
         }
         log.info("🛡️ Synchronizing Identity Providers for realm '{}' (SSO Enabled: {})", realmName, hasSso);

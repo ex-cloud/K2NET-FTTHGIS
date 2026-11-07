@@ -76,6 +76,7 @@ export function SsoFormFields({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="GOOGLE">{t("settings.sso_provider_google")}</SelectItem>
+            <SelectItem value="GITHUB">{t("settings.sso_provider_github")}</SelectItem>
             <SelectItem value="MICROSOFT_ENTRA">{t("settings.sso_provider_microsoft")}</SelectItem>
             <SelectItem value="OKTA">{t("settings.sso_provider_okta")}</SelectItem>
             <SelectItem value="OIDC_CUSTOM">{t("settings.sso_provider_custom_oidc")}</SelectItem>
@@ -112,7 +113,7 @@ export function SsoFormFields({
           {hasExistingSecret && (
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
               <KeyRound className="size-3 text-primary" />
-              Encrypted
+              {t("settings.sso_encrypted_badge")}
             </span>
           )}
         </Label>

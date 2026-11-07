@@ -144,7 +144,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
   const handleSave = async () => {
     if (!slug) return;
     if (!clientId.trim()) {
-      toast.error("Client ID wajib diisi.");
+      toast.error(t("settings.sso_client_id_required"));
       return;
     }
 
@@ -233,7 +233,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         <SsoProbeHeader
           isSsoAllowed={isSsoAllowed}
           isTesting={isTesting}
-          canProbe={Boolean(issuerUrl || metadataUrl)}
+          canProbe={Boolean(issuerUrl || metadataUrl || singleSignOnUrl || providerType === "GOOGLE" || providerType === "GITHUB")}
           lastTestStatus={lastTestStatus}
           lastTestAt={lastTestAt}
           onTestProbe={handleTestProbe}
@@ -390,11 +390,11 @@ function SsoProbeHeader({
             }
           >
             {lastTestStatus === "SUCCESS" ? (
-              <span className="flex items-center gap-1"><CheckCircle2 className="size-3" /> VERIFIED</span>
+              <span className="flex items-center gap-1"><CheckCircle2 className="size-3" /> {t("settings.sso_status_verified")}</span>
             ) : lastTestStatus === "FAILED" ? (
-              <span className="flex items-center gap-1"><AlertCircle className="size-3" /> FAILED</span>
+              <span className="flex items-center gap-1"><AlertCircle className="size-3" /> {t("settings.sso_status_failed")}</span>
             ) : (
-              "NOT TESTED"
+              t("settings.sso_status_not_tested")
             )}
           </Badge>
           {lastTestAt && (
@@ -451,7 +451,7 @@ function SsoEnforcementSwitches({
             {t("settings.sso_enforce_label")}
             {lastTestStatus !== "SUCCESS" && (
               <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px]">
-                Probe Required
+                {t("settings.sso_probe_required_badge")}
               </Badge>
             )}
           </Label>

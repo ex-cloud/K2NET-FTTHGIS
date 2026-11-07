@@ -1,25 +1,31 @@
 import * as React from "react";
-import { ShieldCheck, ShieldAlert, Lock, Smartphone, Key, Info, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, ShieldAlert, Lock, Smartphone, Key, Info, CheckCircle2, Trash2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../card";
 import { Button } from "../button";
 import { Badge } from "../badge";
-import { PlaneType, PersonalSecuritySummaryData, AccountLabels } from "./account-types";
+import { PlaneType, PersonalSecuritySummaryData, AccountLabels, WebauthnCredentialData } from "./account-types";
 
 export interface MfaPasskeyCardProps {
   plane?: PlaneType;
   summary?: PersonalSecuritySummaryData;
+  passkeys?: WebauthnCredentialData[];
   labels?: AccountLabels;
   onSetupTotp?: () => void;
+  onDisableTotp?: () => void;
   onSetupPasskey?: () => void;
+  onDeletePasskey?: (credentialId: string) => void;
   isLoading?: boolean;
 }
 
 export function MfaPasskeyCard({
   plane = "TENANT",
   summary,
+  passkeys,
   labels,
   onSetupTotp,
+  onDisableTotp,
   onSetupPasskey,
+  onDeletePasskey,
   isLoading = false,
 }: MfaPasskeyCardProps) {
   const isSystemPlane = plane === "SYSTEM";
@@ -128,17 +134,45 @@ export function MfaPasskeyCard({
                 Google Authenticator, Microsoft Authenticator, 1Password, or Bitwarden.
               </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onSetupTotp}
-              disabled={isLoading}
-              className="w-full gap-1.5 text-xs"
-            >
-              <Smartphone className="size-3.5" />
-              <span>{labels?.mfaSetupTotp || "Set Up Authenticator App"}</span>
-            </Button>
+            {isMfaActive ? (
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onSetupTotp}
+                  disabled={isLoading}
+                  className="w-full gap-1.5 text-xs"
+                >
+                  <Smartphone className="size-3.5" />
+                  <span>{labels?.mfaReconfigureBtn || "Re-configure Authenticator"}</span>
+                </Button>
+                {!isEnforced && onDisableTotp && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onDisableTotp}
+                    disabled={isLoading}
+                    className="w-full gap-1.5 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <span>{labels?.mfaDisableBtn || "Disable 2FA"}</span>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onSetupTotp}
+                disabled={isLoading}
+                className="w-full gap-1.5 text-xs"
+              >
+                <Smartphone className="size-3.5" />
+                <span>{labels?.mfaSetupTotp || "Set Up Authenticator App"}</span>
+              </Button>
+            )}
           </div>
 
           <div className="p-3.5 rounded-lg border border-border/80 bg-background/50 flex flex-col justify-between space-y-3">
@@ -164,6 +198,43 @@ export function MfaPasskeyCard({
             </Button>
           </div>
         </div>
+
+        {/* Registered Passkeys List */}
+        {passkeys && passkeys.length > 0 && (
+          <div className="pt-3 space-y-2 border-t border-border/60">
+            <h4 className="text-xs font-semibold text-foreground flex items-center gap-2">
+              <Key className="size-3.5 text-muted-foreground" />
+              <span>{labels?.registeredPasskeysTitle || "Registered Passkeys & Security Keys"}</span>
+            </h4>
+            <div className="divide-y divide-border/60 rounded-lg border border-border/80 bg-background/50">
+              {passkeys.map((p) => (
+                <div key={p.credentialId} className="flex items-center justify-between p-3 gap-2">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium text-foreground">{p.deviceName}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {p.createdAt
+                        ? `Registered: ${new Date(p.createdAt).toLocaleDateString()}`
+                        : "Passkey Active"}
+                    </p>
+                  </div>
+                  {onDeletePasskey && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => onDeletePasskey(p.credentialId)}
+                      disabled={isLoading}
+                      className="h-6 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+                    >
+                      <Trash2 className="size-3" />
+                      <span>{labels?.removePasskeyBtn || "Remove"}</span>
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

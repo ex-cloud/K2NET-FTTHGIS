@@ -15,19 +15,23 @@ import {
   PasswordPolicyData,
   DeviceSessionData,
   AccountLabels,
+  WebauthnCredentialData,
 } from "./account-types";
 
 export interface AccountPreferencesShellProps {
   plane?: PlaneType;
   user?: UserProfileData;
   summary?: PersonalSecuritySummaryData;
+  passkeys?: WebauthnCredentialData[];
   policy?: PasswordPolicyData;
   devices?: DeviceSessionData[];
   labels?: AccountLabels;
   onSaveProfile?: (data: { name: string; phone: string }) => Promise<void> | void;
   onChangePassword?: (data: { currentPassword: string; newPassword: string }) => Promise<void> | void;
   onSetupTotp?: () => void;
+  onDisableTotp?: () => void;
   onSetupPasskey?: () => void;
+  onDeletePasskey?: (credentialId: string) => void;
   onRevokeDevice?: (deviceId: number) => Promise<void> | void;
   onRevokeAllSessions?: () => Promise<void> | void;
   onConnectProvider?: (provider: "google" | "github") => Promise<void> | void;
@@ -39,13 +43,16 @@ export function AccountPreferencesShell({
   plane = "TENANT",
   user,
   summary,
+  passkeys,
   policy,
   devices = [],
   labels,
   onSaveProfile,
   onChangePassword,
   onSetupTotp,
+  onDisableTotp,
   onSetupPasskey,
+  onDeletePasskey,
   onRevokeDevice,
   onRevokeAllSessions,
   onConnectProvider,
@@ -101,9 +108,12 @@ export function AccountPreferencesShell({
           <MfaPasskeyCard
             plane={plane}
             summary={summary}
+            passkeys={passkeys}
             labels={labels}
             onSetupTotp={onSetupTotp}
+            onDisableTotp={onDisableTotp}
             onSetupPasskey={onSetupPasskey}
+            onDeletePasskey={onDeletePasskey}
             isLoading={isLoading}
           />
           <PasswordSecurityCard

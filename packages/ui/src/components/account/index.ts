@@ -6,3 +6,7 @@ export * from "./active-sessions-card";
 export * from "./social-identities-card";
 export * from "./use-idle-timeout";
 export * from "./account-preferences-shell";
+export * from "./qr-generator";
+export * from "./qr-svg";
+export * from "./totp-setup-modal";
+export * from "./passkey-register-modal";

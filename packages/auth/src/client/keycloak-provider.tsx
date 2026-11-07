@@ -65,6 +65,9 @@ interface BffLoginApiResponse {
   expiresIn?: number;
   realm?: string;
   mfaRequired?: boolean;
+  preAuthToken?: string;
+  availableMethods?: string[];
+  maskedEmail?: string;
   error?: string;
   message?: string;
   user?: BffAuthUserPayload;
@@ -391,6 +394,13 @@ export function KeycloakProvider({
         const redirectTarget = options.redirectUri || window.location.origin + "/";
         if (keycloakInstance) {
           try {
+            if (!keycloakInstance.authenticated && !keycloakInstance.didInitialize) {
+              await keycloakInstance.init({
+                pkceMethod: "S256",
+                checkLoginIframe: false,
+                enableLogging: false,
+              });
+            }
             await keycloakInstance.login({
               ...options,
               redirectUri: redirectTarget,
@@ -446,6 +456,9 @@ export function KeycloakProvider({
           return {
             success: false,
             mfaRequired: true,
+            preAuthToken: data.preAuthToken,
+            availableMethods: data.availableMethods,
+            maskedEmail: data.maskedEmail,
             error: data.error,
             message: data.message,
           };
@@ -487,6 +500,153 @@ export function KeycloakProvider({
       }
     },
     [config, hydrateAuthenticatedSession, plane]
+  );
+
+  const verifyMfaTotp = useCallback(
+    async (preAuthToken: string, code: string): Promise<CredentialLoginResult> => {
+      try {
+        const res = await fetch("/api/v1/auth/mfa/verify", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "K2NET-BFF",
+          },
+          body: JSON.stringify({ preAuthToken, code, totp: code }),
+        });
+        const data = (await res.json().catch(() => ({}))) as BffLoginApiResponse;
+        if (!res.ok || !data.accessToken) {
+          return {
+            success: false,
+            error: data.error || "INVALID_MFA_CODE",
+            message: data.message,
+          };
+        }
+        const hydratedUser = hydrateAuthenticatedSession(
+          data.accessToken,
+          data.idToken,
+          data.expiresIn,
+          data.user
+        );
+        return { success: true, user: hydratedUser || undefined };
+      } catch {
+        return { success: false, error: "NETWORK_ERROR" };
+      }
+    },
+    [hydrateAuthenticatedSession]
+  );
+
+  const sendMfaEmailOtp = useCallback(
+    async (preAuthToken: string): Promise<{ success: boolean; message?: string; maskedEmail?: string }> => {
+      try {
+        const res = await fetch("/api/v1/auth/mfa/email/send", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "K2NET-BFF",
+          },
+          body: JSON.stringify({ preAuthToken }),
+        });
+        const data = await res.json().catch(() => ({}));
+        return {
+          success: res.ok,
+          message: data.message,
+          maskedEmail: data.maskedEmail,
+        };
+      } catch {
+        return { success: false, message: "Network communication error" };
+      }
+    },
+    []
+  );
+
+  const verifyMfaEmailOtp = useCallback(
+    async (preAuthToken: string, code: string): Promise<CredentialLoginResult> => {
+      try {
+        const res = await fetch("/api/v1/auth/mfa/email/verify", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "K2NET-BFF",
+          },
+          body: JSON.stringify({ preAuthToken, code }),
+        });
+        const data = (await res.json().catch(() => ({}))) as BffLoginApiResponse;
+        if (!res.ok || !data.accessToken) {
+          return {
+            success: false,
+            error: data.error || "INVALID_CODE",
+            message: data.message,
+          };
+        }
+        const hydratedUser = hydrateAuthenticatedSession(
+          data.accessToken,
+          data.idToken,
+          data.expiresIn,
+          data.user
+        );
+        return { success: true, user: hydratedUser || undefined };
+      } catch {
+        return { success: false, error: "NETWORK_ERROR" };
+      }
+    },
+    [hydrateAuthenticatedSession]
+  );
+
+  const getWebauthnLoginChallenge = useCallback(
+    async (preAuthToken: string): Promise<{ challenge: string; rpId: string; allowCredentials?: Array<{ type: string; id: string }> }> => {
+      const res = await fetch("/api/v1/auth/webauthn/login/challenge", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "K2NET-BFF",
+        },
+        body: JSON.stringify({ preAuthToken }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to obtain WebAuthn challenge");
+      }
+      return await res.json();
+    },
+    []
+  );
+
+  const verifyWebauthnLogin = useCallback(
+    async (preAuthToken: string, payload: { credentialId: string; clientDataJSON: string; authenticatorData: string; signature: string }): Promise<CredentialLoginResult> => {
+      try {
+        const res = await fetch("/api/v1/auth/webauthn/login/verify", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "K2NET-BFF",
+          },
+          body: JSON.stringify({ preAuthToken, ...payload }),
+        });
+        const data = (await res.json().catch(() => ({}))) as BffLoginApiResponse;
+        if (!res.ok || !data.accessToken) {
+          return {
+            success: false,
+            error: data.error || "INVALID_WEBAUTHN_ASSERTION",
+            message: data.message,
+          };
+        }
+        const hydratedUser = hydrateAuthenticatedSession(
+          data.accessToken,
+          data.idToken,
+          data.expiresIn,
+          data.user
+        );
+        return { success: true, user: hydratedUser || undefined };
+      } catch {
+        return { success: false, error: "NETWORK_ERROR" };
+      }
+    },
+    [hydrateAuthenticatedSession]
   );
 
   const logout = useCallback(
@@ -682,10 +842,16 @@ export function KeycloakProvider({
       isSuperAdmin,
       isTenantAdmin,
       refreshToken,
+      verifyMfaTotp,
+      sendMfaEmailOtp,
+      verifyMfaEmailOtp,
+      getWebauthnLoginChallenge,
+      verifyWebauthnLogin,
     }),
     [
       authenticated,
       clearSessionTerminated,
+      getWebauthnLoginChallenge,
       hasAnyRole,
       hasRole,
       initialized,
@@ -698,9 +864,13 @@ export function KeycloakProvider({
       logout,
       refreshToken,
       roles,
+      sendMfaEmailOtp,
       sessionTerminated,
       token,
       user,
+      verifyMfaEmailOtp,
+      verifyMfaTotp,
+      verifyWebauthnLogin,
     ]
   );
 

@@ -88,6 +88,9 @@ type AuthenticatedUser struct {
 // LoginResponse is returned by POST /api/v1/auth/login, /api/v1/auth/mfa/verify, and /api/v1/auth/refresh.
 type LoginResponse struct {
 	MFARequired      bool               `json:"mfaRequired,omitempty"`
+	AvailableMethods []string           `json:"availableMethods,omitempty"` // ["totp", "email_otp", "webauthn"]
+	PreAuthToken     string             `json:"preAuthToken,omitempty"`     // 5-minute temporary token for Step-Up challenge
+	MaskedEmail      string             `json:"maskedEmail,omitempty"`      // e.g. a***h@gmail.com for email OTP hint
 	Message          string             `json:"message,omitempty"`
 	AccessToken      string             `json:"accessToken,omitempty"`
 	RefreshToken     string             `json:"refreshToken,omitempty"`
@@ -98,6 +101,58 @@ type LoginResponse struct {
 	Realm            string             `json:"realm,omitempty"`
 	User             *AuthenticatedUser `json:"user,omitempty"`
 }
+
+// PreAuthSession represents the temporary challenge state stored in Redis (TTL 5m)
+type PreAuthSession struct {
+	UserID           string   `json:"userId"`
+	Username         string   `json:"username"`
+	Email            string   `json:"email"`
+	Name             string   `json:"name"`
+	Roles            []string `json:"roles"`
+	OrganizationID   string   `json:"organizationId"`
+	TenantSlug       string   `json:"tenantSlug"`
+	TargetRealm      string   `json:"targetRealm"`
+	Plane            string   `json:"plane"`
+	RememberMe       bool     `json:"rememberMe"`
+	AccessToken      string   `json:"accessToken"`
+	RefreshToken     string   `json:"refreshToken"`
+	IDToken          string   `json:"idToken"`
+	ExpiresIn        int      `json:"expiresIn"`
+	RefreshExpiresIn int      `json:"refreshExpiresIn"`
+	AvailableMethods []string `json:"availableMethods"`
+}
+
+// MfaEmailSendRequest triggers sending a 6-digit verification code to the pre-auth user's email
+type MfaEmailSendRequest struct {
+	PreAuthToken string `json:"preAuthToken" binding:"required"`
+}
+
+// MfaEmailVerifyRequest verifies the 6-digit OTP code sent to email
+type MfaEmailVerifyRequest struct {
+	PreAuthToken string `json:"preAuthToken" binding:"required"`
+	Code         string `json:"code" binding:"required"`
+}
+
+// MfaTotpVerifyRequest verifies the 6-digit RFC 6238 TOTP code using the pre-auth session
+type MfaTotpVerifyRequest struct {
+	PreAuthToken string `json:"preAuthToken" binding:"required"`
+	Code         string `json:"code" binding:"required"`
+}
+
+// WebauthnLoginChallengeRequest requests a WebAuthn challenge for Step-Up login
+type WebauthnLoginChallengeRequest struct {
+	PreAuthToken string `json:"preAuthToken" binding:"required"`
+}
+
+// WebauthnLoginVerifyRequest submits the assertion signature from navigator.credentials.get()
+type WebauthnLoginVerifyRequest struct {
+	PreAuthToken      string `json:"preAuthToken" binding:"required"`
+	CredentialID      string `json:"credentialId" binding:"required"`
+	ClientDataJSON    string `json:"clientDataJSON" binding:"required"`
+	AuthenticatorData string `json:"authenticatorData" binding:"required"`
+	Signature         string `json:"signature" binding:"required"`
+}
+
 
 // KeycloakTokenResponse maps Keycloak's /protocol/openid-connect/token JSON output.
 type KeycloakTokenResponse struct {

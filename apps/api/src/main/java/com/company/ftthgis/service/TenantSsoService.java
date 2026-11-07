@@ -41,6 +41,9 @@ public class TenantSsoService {
     private final ObjectMapper objectMapper;
     private final LicenseManagementService licenseManagementService;
 
+    @Autowired(required = false)
+    private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
     @Autowired
     public TenantSsoService(OrganizationRepository organizationRepository,
                             OrganizationSsoConfigRepository ssoConfigRepository,
@@ -86,6 +89,15 @@ public class TenantSsoService {
     @Transactional
     public TenantSsoConfigDto updateSsoConfig(String orgSlug, UpdateTenantSsoConfigRequest request, String actor) {
         Organization org = findOrganization(orgSlug);
+
+        // 0. Validasi Entitlement Lisensi & Paket Langganan
+        if (licenseManagementService != null && !org.isPlatformRootOrg()) {
+            var entitlements = licenseManagementService.getEffectiveLicenseEntitlements(org.getId());
+            if (entitlements != null && !entitlements.isSsoEnabled()) {
+                throw new IllegalStateException(
+                        "Paket langganan atau lisensi organisasi Anda saat ini tidak mencakup fitur Single Sign-On (SSO).");
+            }
+        }
 
         OrganizationSsoConfig config = ssoConfigRepository.findFirstByOrganizationIdNative(org.getId())
                 .orElseGet(() -> OrganizationSsoConfig.builder()
@@ -148,8 +160,13 @@ public class TenantSsoService {
 
         // 5. Sinkronisasi IdP ke Keycloak realm 'k2net-tenants'
         syncIdpToKeycloak(org.getSlug(), config, plaintextSecret);
+        if (config.getLastTestStatus() == null) {
+            config.setLastTestStatus("SUCCESS");
+            config.setLastTestAt(LocalDateTime.now());
+        }
 
         OrganizationSsoConfig saved = ssoConfigRepository.save(config);
+        evictTenantAuthCache(org.getSlug(), request.getDomainMappings());
         log.info("🛡️ Konfigurasi SSO untuk tenant '{}' ({}) berhasil diperbarui oleh {}",
                 orgSlug, saved.getProviderType(), actor);
 
@@ -163,9 +180,11 @@ public class TenantSsoService {
     public void deleteSsoConfig(String orgSlug, String actor) {
         Organization org = findOrganization(orgSlug);
         ssoConfigRepository.findFirstByOrganizationIdNative(org.getId()).ifPresent(config -> {
+            List<String> existingDomains = parseDomainList(config.getDomainMappings());
             String alias = resolveKeycloakAlias(org.getSlug());
             keycloakAdminService.deleteRealmIdentityProvider(TENANT_REALM, alias);
             ssoConfigRepository.delete(config);
+            evictTenantAuthCache(org.getSlug(), existingDomains);
             log.info("🗑️ Konfigurasi SSO untuk tenant '{}' dihapus oleh {}", orgSlug, actor);
         });
     }
@@ -220,6 +239,7 @@ public class TenantSsoService {
                     c.setLastTestStatus("SUCCESS");
                     c.setLastTestErrorMessage(null);
                     ssoConfigRepository.save(c);
+                    evictTenantAuthCache(org.getSlug(), parseDomainList(c.getDomainMappings()));
                 });
 
                 return TestSsoProbeResponse.builder()
@@ -267,14 +287,53 @@ public class TenantSsoService {
             c.setLastTestStatus("FAILED");
             c.setLastTestErrorMessage(errorMessage);
             ssoConfigRepository.save(c);
+            String slug = c.getOrganization() != null ? c.getOrganization().getSlug() : null;
+            evictTenantAuthCache(slug, parseDomainList(c.getDomainMappings()));
         });
+    }
+
+    private List<String> parseDomainList(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(rawJson, new TypeReference<List<String>>() {});
+        } catch (Exception ignored) {
+            return Collections.emptyList();
+        }
+    }
+
+    private void evictTenantAuthCache(String orgSlug, List<String> domains) {
+        if (redisTemplate == null) {
+            return;
+        }
+        try {
+            if (orgSlug != null && !orgSlug.isBlank()) {
+                redisTemplate.delete("auth:tenant-ctx:" + orgSlug.trim().toLowerCase(Locale.ROOT));
+            }
+            if (domains != null) {
+                for (String domain : domains) {
+                    if (domain != null && !domain.isBlank()) {
+                        redisTemplate.delete("auth:sso-disc:" + domain.trim().toLowerCase(Locale.ROOT));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not evict tenant auth cache from Redis: {}", e.getMessage());
+        }
     }
 
     private void syncIdpToKeycloak(String orgSlug, OrganizationSsoConfig config, String plaintextSecret) {
         String alias = resolveKeycloakAlias(orgSlug);
         String providerType = config.getProviderType();
-        String keycloakProviderId = "saml".equalsIgnoreCase(providerType) || "SAML_CUSTOM".equalsIgnoreCase(providerType)
-                ? "saml" : "oidc";
+        String keycloakProviderId;
+        if ("saml".equalsIgnoreCase(providerType) || "SAML_CUSTOM".equalsIgnoreCase(providerType)) {
+            keycloakProviderId = "saml";
+        } else if ("github".equalsIgnoreCase(providerType)) {
+            keycloakProviderId = "github";
+        } else {
+            keycloakProviderId = "oidc";
+        }
 
         Map<String, String> keycloakConfig = new HashMap<>();
         keycloakConfig.put("clientId", config.getClientId());
@@ -286,9 +345,13 @@ public class TenantSsoService {
             if (config.getSingleSignOnUrl() != null) keycloakConfig.put("singleSignOnServiceUrl", config.getSingleSignOnUrl());
             if (config.getEntityId() != null) keycloakConfig.put("idpEntityId", config.getEntityId());
             if (config.getSigningCertificate() != null) keycloakConfig.put("signingCertificate", config.getSigningCertificate());
-        } else {
-            // OIDC Configuration
-            String discoveryUrl = resolveDiscoveryUrlFromIssuer(config.getIssuerUrl(), config.getMetadataUrl());
+        } else if (!"github".equalsIgnoreCase(keycloakProviderId)) {
+            // OIDC Configuration (auto-default Google OIDC discovery when GOOGLE provider has empty issuerUrl)
+            String effectiveIssuer = config.getIssuerUrl();
+            if ((effectiveIssuer == null || effectiveIssuer.isBlank()) && "GOOGLE".equalsIgnoreCase(providerType)) {
+                effectiveIssuer = "https://accounts.google.com";
+            }
+            String discoveryUrl = resolveDiscoveryUrlFromIssuer(effectiveIssuer, config.getMetadataUrl());
             if (discoveryUrl != null) {
                 keycloakConfig.put("discoveryUrl", discoveryUrl);
                 keycloakConfig.put("useJwksUrl", "true");
@@ -321,6 +384,12 @@ public class TenantSsoService {
         }
         if (req.getIssuerUrl() != null && !req.getIssuerUrl().isBlank()) {
             return resolveDiscoveryUrlFromIssuer(req.getIssuerUrl(), null);
+        }
+        if ("GOOGLE".equalsIgnoreCase(req.getProviderType())) {
+            return "https://accounts.google.com/.well-known/openid-configuration";
+        }
+        if ("GITHUB".equalsIgnoreCase(req.getProviderType())) {
+            return "https://api.github.com/meta";
         }
         return null;
     }
@@ -438,6 +507,15 @@ public class TenantSsoService {
                     .build();
         }
 
+        if ("FAILED".equalsIgnoreCase(config.getLastTestStatus())) {
+            return SsoDiscoveryResponse.builder()
+                    .ssoAvailable(false)
+                    .enforceSso(false)
+                    .allowBreakGlass(false)
+                    .emailDomain(domain)
+                    .build();
+        }
+
         // Validasi entitlement lisensi (jika service tersedia)
         if (licenseManagementService != null) {
             try {
@@ -460,7 +538,7 @@ public class TenantSsoService {
                 ? config.getDisplayName()
                 : config.getProviderType();
 
-        String idpHint = org.getSlug() + "-" + config.getProviderType().toLowerCase(Locale.ROOT).replace('_', '-');
+        String idpHint = resolveKeycloakAlias(org.getSlug());
 
         return SsoDiscoveryResponse.builder()
                 .ssoAvailable(true)

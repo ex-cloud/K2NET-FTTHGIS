@@ -37,6 +37,10 @@ export function resolveAuthErrorMessage(
       return t("auth.login_error_tenant_access_denied");
     case "SESSION_EXPIRED":
       return t("auth.login_error_session_expired");
+    case "SSO_NOT_AVAILABLE":
+    case "SSO_BROKER_ERROR":
+    case "ACCESS_DENIED":
+      return rawMessage || t("auth.login_error_sso_not_available");
     case "NETWORK_ERROR":
       return t("auth.login_error_network");
     case "INTERNAL_ERROR":

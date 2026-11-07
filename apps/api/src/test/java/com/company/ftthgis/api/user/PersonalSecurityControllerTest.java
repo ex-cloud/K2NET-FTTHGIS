@@ -34,6 +34,7 @@ public class PersonalSecurityControllerTest {
     private UserRepository userRepository;
     private SecurityPolicyService securityPolicyService;
     private KeycloakAdminService keycloakAdminService;
+    private com.company.ftthgis.domain.user.repository.UserWebauthnCredentialRepository userWebauthnCredentialRepository;
 
     private PersonalSecurityController controller;
 
@@ -49,13 +50,16 @@ public class PersonalSecurityControllerTest {
         userRepository = mock(UserRepository.class);
         securityPolicyService = mock(SecurityPolicyService.class);
         keycloakAdminService = mock(KeycloakAdminService.class);
+        userWebauthnCredentialRepository = mock(com.company.ftthgis.domain.user.repository.UserWebauthnCredentialRepository.class);
 
         controller = new PersonalSecurityController(
                 userDeviceRepository,
                 deviceVerificationService,
                 userRepository,
                 securityPolicyService,
-                keycloakAdminService
+                keycloakAdminService,
+                userWebauthnCredentialRepository,
+                Optional.empty()
         );
 
         userId = UUID.randomUUID();

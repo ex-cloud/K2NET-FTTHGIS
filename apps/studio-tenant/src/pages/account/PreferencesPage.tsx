@@ -5,11 +5,15 @@ import {
   AccountPreferencesShell,
   useIdleTimeout,
   IdleLockModal,
+  TotpSetupModal,
+  PasskeyRegisterModal,
   type AccountLabels,
   type UserProfileData,
   type PersonalSecuritySummaryData,
   type PasswordPolicyData,
   type DeviceSessionData,
+  type WebauthnCredentialData,
+  type WebauthnRegisterChallengeData,
 } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 import { apiClient } from "../../lib/api-client";
@@ -23,6 +27,8 @@ export function PreferencesPage() {
   const [securitySummary, setSecuritySummary] = React.useState<PersonalSecuritySummaryData | undefined>(undefined);
   const [passwordPolicy, setPasswordPolicy] = React.useState<PasswordPolicyData | undefined>(undefined);
   const [devices, setDevices] = React.useState<DeviceSessionData[]>([]);
+  const [passkeys, setPasskeys] = React.useState<WebauthnCredentialData[]>([]);
+  const [isPasskeyModalOpen, setIsPasskeyModalOpen] = React.useState(false);
 
   const labels: AccountLabels = React.useMemo(
     () => ({
@@ -75,6 +81,25 @@ export function PreferencesPage() {
       mfaSetupTotp: t("settings.account.mfa_setup_totp"),
       mfaSetupPasskey: t("settings.account.mfa_setup_passkey"),
       mfaOptInNotice: t("settings.account.mfa_opt_in_notice"),
+      mfaReconfigureBtn: t("settings.account.mfa_reconfigure_btn"),
+      mfaDisableBtn: t("settings.account.mfa_disable_btn"),
+      mfaModalTitle: t("settings.account.mfa_modal_title"),
+      mfaModalDesc: t("settings.account.mfa_modal_desc"),
+      mfaStepScan: t("settings.account.mfa_step_scan"),
+      mfaStepVerify: t("settings.account.mfa_step_verify"),
+      mfaManualKeyLabel: t("settings.account.mfa_manual_key_label"),
+      mfaCopyKey: t("settings.account.mfa_copy_key"),
+      mfaKeyCopied: t("settings.account.mfa_key_copied"),
+      mfaCodeLabel: t("settings.account.mfa_code_label"),
+      mfaCodePlaceholder: t("settings.account.mfa_code_placeholder"),
+      mfaCodeInvalid: t("settings.account.mfa_code_invalid"),
+      mfaVerifyBtn: t("settings.account.mfa_verify_btn"),
+      mfaVerifying: t("settings.account.mfa_verifying"),
+      mfaActivatedSuccess: t("settings.account.mfa_activated_success"),
+      mfaDisabledSuccess: t("settings.account.mfa_disabled_success"),
+      mfaDisableConfirmTitle: t("settings.account.mfa_disable_confirm_title"),
+      mfaDisableConfirmDesc: t("settings.account.mfa_disable_confirm_desc"),
+      mfaPasskeyNotice: t("settings.account.mfa_passkey_notice"),
       sessionsTitle: t("settings.account.sessions_title"),
       sessionsDesc: t("settings.account.sessions_desc"),
       currentDeviceBadge: t("settings.account.current_device_badge"),
@@ -96,6 +121,27 @@ export function PreferencesPage() {
       idleLockTitle: t("settings.account.idle_lock_title"),
       idleLockDesc: t("settings.account.idle_lock_desc"),
       unlockSessionBtn: t("settings.account.unlock_session_btn"),
+      passkeyModalTitle: t("settings.account.passkey_modal_title"),
+      passkeyModalDesc: t("settings.account.passkey_modal_desc"),
+      passkeyDeviceNameLabel: t("settings.account.passkey_device_name_label"),
+      passkeyDeviceNamePlaceholder: t("settings.account.passkey_device_name_placeholder"),
+      passkeyDeviceNameHint: t("settings.account.passkey_device_name_hint"),
+      passkeyHowItWorksTitle: t("settings.account.passkey_how_it_works_title"),
+      passkeyHowItWorksDesc: t("settings.account.passkey_how_it_works_desc"),
+      passkeyRegisterBtn: t("settings.account.passkey_register_btn"),
+      passkeyRegistering: t("settings.account.passkey_registering"),
+      passkeySuccessTitle: t("settings.account.passkey_success_title"),
+      passkeySuccessDesc: t("settings.account.passkey_success_desc"),
+      passkeyUnsupported: t("settings.account.passkey_unsupported"),
+      passkeyCancelled: t("settings.account.passkey_cancelled"),
+      passkeyDeleteConfirmTitle: t("settings.account.passkey_delete_confirm_title"),
+      passkeyDeleteConfirmDesc: t("settings.account.passkey_delete_confirm_desc"),
+      passkeyDeletedSuccess: t("settings.account.passkey_deleted_success"),
+      passkeyDeleteFailed: t("settings.account.passkey_delete_failed"),
+      registeredPasskeysTitle: t("settings.account.registered_passkeys_title"),
+      removePasskeyBtn: t("settings.account.remove_passkey_btn"),
+      doneBtn: t("settings.account.done_btn"),
+      cancelBtn: t("settings.account.cancel_btn"),
     }),
     [t]
   );
@@ -110,10 +156,11 @@ export function PreferencesPage() {
     try {
       setIsLoading(true);
 
-      const [secData, devData, polData] = await Promise.all([
+      const [secData, devData, polData, passkeysData] = await Promise.all([
         apiClient<PersonalSecuritySummaryData>("/api/v1/me/security").catch(() => null),
         apiClient<DeviceSessionData[]>("/api/v1/me/devices").catch(() => []),
         apiClient<PasswordPolicyData>("/api/v1/users/password-policy").catch(() => null),
+        apiClient<WebauthnCredentialData[]>("/api/v1/me/webauthn/credentials").catch(() => []),
       ]);
 
       if (secData) {
@@ -134,6 +181,10 @@ export function PreferencesPage() {
 
       if (polData) {
         setPasswordPolicy(polData);
+      }
+
+      if (passkeysData) {
+        setPasskeys(passkeysData);
       }
     } catch (e) {
       console.warn("Failed to fetch tenant account security data:", e);
@@ -217,21 +268,131 @@ export function PreferencesPage() {
     }
   };
 
+  const [isTotpModalOpen, setIsTotpModalOpen] = React.useState(false);
+
+  const handleFetchTotpSetup = React.useCallback(async () => {
+    return await apiClient<{
+      secret: string;
+      formattedSecret: string;
+      otpauthUri: string;
+      accountName: string;
+      issuer: string;
+    }>("/api/v1/me/mfa/totp/setup", {
+      method: "POST",
+    });
+  }, []);
+
+  const handleVerifyTotp = React.useCallback(async (secret: string, code: string) => {
+    try {
+      const res = await apiClient<{ success: boolean; message?: string }>("/api/v1/me/mfa/totp/verify", {
+        method: "POST",
+        body: JSON.stringify({ secret, code }),
+      });
+      return res;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to verify code";
+      return { success: false, message: msg };
+    }
+  }, []);
+
+  const handleDisableTotp = async () => {
+    if (!window.confirm(labels.mfaDisableConfirmDesc || "Are you sure you want to disable two-factor authentication?")) {
+      return;
+    }
+    try {
+      await apiClient("/api/v1/me/mfa/totp", { method: "DELETE" });
+      toast.success(labels.mfaDisabledSuccess || "Two-factor authentication disabled.");
+      fetchData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to disable 2FA";
+      toast.error(msg);
+    }
+  };
+
+  const handleFetchPasskeyChallenge = React.useCallback(async () => {
+    return await apiClient<WebauthnRegisterChallengeData>("/api/v1/me/webauthn/register/challenge", {
+      method: "POST",
+    });
+  }, []);
+
+  const handleVerifyPasskey = React.useCallback(
+    async (payload: { credentialId: string; clientDataJSON: string; attestationObject: string; deviceName: string }) => {
+      try {
+        const res = await apiClient<{ success: boolean; message?: string }>("/api/v1/me/webauthn/register/verify", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        return res;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Failed to verify passkey registration";
+        return { success: false, message: msg };
+      }
+    },
+    []
+  );
+
+  const handleDeletePasskey = async (credentialId: string) => {
+    if (!window.confirm(labels.passkeyDeleteConfirmDesc || "Are you sure you want to remove this passkey?")) {
+      return;
+    }
+    try {
+      await apiClient(`/api/v1/me/webauthn/credentials/${encodeURIComponent(credentialId)}`, {
+        method: "DELETE",
+      });
+      toast.success(labels.passkeyDeletedSuccess || "Passkey removed successfully.");
+      fetchData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : labels.passkeyDeleteFailed || "Failed to remove passkey.";
+      toast.error(msg);
+    }
+  };
+
+  const handleSetupPasskey = () => {
+    setIsPasskeyModalOpen(true);
+  };
+
   return (
     <>
       <AccountPreferencesShell
         plane="TENANT"
         user={userProfile}
         summary={securitySummary}
+        passkeys={passkeys}
         policy={passwordPolicy}
         devices={devices}
         labels={labels}
         onSaveProfile={handleSaveProfile}
         onChangePassword={handleChangePassword}
+        onSetupTotp={() => setIsTotpModalOpen(true)}
+        onDisableTotp={handleDisableTotp}
+        onSetupPasskey={handleSetupPasskey}
+        onDeletePasskey={handleDeletePasskey}
         onRevokeDevice={handleRevokeDevice}
         onRevokeAllSessions={handleRevokeAllSessions}
         onDisconnectProvider={handleDisconnectProvider}
         isLoading={isLoading}
+      />
+      <TotpSetupModal
+        open={isTotpModalOpen}
+        onOpenChange={setIsTotpModalOpen}
+        labels={labels}
+        onFetchSetup={handleFetchTotpSetup}
+        onVerify={handleVerifyTotp}
+        onSuccess={() => {
+          toast.success(labels.mfaActivatedSuccess || "Two-factor authentication activated!");
+          fetchData();
+        }}
+      />
+      <PasskeyRegisterModal
+        open={isPasskeyModalOpen}
+        onOpenChange={setIsPasskeyModalOpen}
+        labels={labels}
+        onFetchChallenge={handleFetchPasskeyChallenge}
+        onVerify={handleVerifyPasskey}
+        onSuccess={() => {
+          toast.success(labels.passkeySuccessTitle || "Passkey registered successfully!");
+          fetchData();
+        }}
       />
       <IdleLockModal
         open={isIdle}

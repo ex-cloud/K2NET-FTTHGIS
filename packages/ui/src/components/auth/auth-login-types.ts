@@ -86,6 +86,19 @@ export interface AuthLoginFormLabels {
   cancelBreakGlass?: string;
   ipNotAllowedTitle?: string;
   ipNotAllowedDesc?: string;
+  // Multi-Option Step-Up MFA & Passwordless Labels
+  mfaTabTotp?: string;
+  mfaTabWebauthn?: string;
+  mfaTabEmailOtp?: string;
+  mfaPasskeyPrompt?: string;
+  mfaPasskeyBtn?: string;
+  mfaEmailPrompt?: string;
+  mfaSendEmailBtn?: string;
+  mfaSendingEmail?: string;
+  mfaEmailSentDesc?: string;
+  mfaResendEmailIn?: string;
+  continueWithPasskey?: string;
+  waitingForPasskey?: string;
 }
 
 export interface AuthLoginFormProps {
@@ -113,6 +126,14 @@ export interface AuthLoginFormProps {
   plane?: "PLATFORM" | "TENANT";
   onResetMfaStep?: () => void;
   mfaRequired?: boolean;
+  preAuthToken?: string;
+  availableMfaMethods?: string[];
+  maskedEmail?: string;
+  onVerifyTotp?: (code: string) => Promise<boolean>;
+  onSendEmailOtp?: () => Promise<boolean>;
+  onVerifyEmailOtp?: (code: string) => Promise<boolean>;
+  onVerifyWebauthn?: () => Promise<boolean>;
+  onPasswordlessPasskeyLogin?: () => Promise<boolean>;
   turnstileSiteKey?: string;
   isLoading?: boolean;
   defaultEmail?: string;

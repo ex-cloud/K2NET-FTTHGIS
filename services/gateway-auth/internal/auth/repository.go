@@ -41,6 +41,19 @@ type Repository interface {
 	GetUserWorkspaces(ctx context.Context, userID, email string) ([]UserWorkspace, error)
 	SwitchUserContext(ctx context.Context, userID, targetOrgID string) (*TenantContextResponse, error)
 	DiscoverSsoByEmail(ctx context.Context, email string) (*SsoDiscoveryResponse, error)
+	GetUserWebauthnCredentials(ctx context.Context, userID string) ([]WebauthnCredentialModel, error)
+	UpdateWebauthnSignCounter(ctx context.Context, credentialID string, newCounter int64) error
+}
+
+// WebauthnCredentialModel encapsulates a stored FIDO2 public key credential.
+type WebauthnCredentialModel struct {
+	ID           string `json:"id"`
+	UserID       string `json:"userId"`
+	CredentialID string `json:"credentialId"`
+	PublicKeyPEM string `json:"publicKeyPem"`
+	Algorithm    int    `json:"algorithm"`
+	SignCounter  int64  `json:"signCounter"`
+	DeviceName   string `json:"deviceName"`
 }
 
 // PostgresRepository implements Repository backed by pgxpool and optional Redis cache.
@@ -104,7 +117,13 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			COALESCE(NULLIF(TRIM(o.realm_key), ''), 'k2net-tenants') AS realm_key,
 			COALESCE(NULLIF(TRIM(tb.logo_url), ''), COALESCE(o.logo_url, '')) AS logo_url,
 			UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
-			COALESCE(sp.has_sso, false) AS has_sso,
+			(
+				COALESCE(o.is_platform_root, false) = true
+				OR CASE
+					WHEN lic.id IS NOT NULL THEN COALESCE(lic.feature_sso_enabled, false)
+					ELSE (COALESCE(sp.has_sso, false) OR UPPER(COALESCE(sp.name, 'FREE')) IN ('PRO', 'PROFESSIONAL', 'ENTERPRISE'))
+				END
+			) AS has_sso,
 			COALESCE(o.status, 'ACTIVE') AS org_status,
 			(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required,
 			COALESCE(osc.enforce_sso, false) AS enforce_sso,
@@ -114,9 +133,23 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs
 		FROM organizations o
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
+		LEFT JOIN LATERAL (
+			SELECT tl.id, tl.feature_sso_enabled
+			FROM tenant_licenses tl
+			WHERE tl.organization_id = o.id
+			  AND tl.status IN ('ACTIVE', 'GRACE_PERIOD')
+			  AND (tl.valid_until IS NULL OR tl.valid_until > NOW() OR (tl.grace_period_until IS NOT NULL AND tl.grace_period_until > NOW()))
+			ORDER BY tl.created_at DESC
+			LIMIT 1
+		) lic ON true
 		LEFT JOIN tenant_branding tb ON tb.organization_id = o.id
 		LEFT JOIN tenant_security_policies tsp ON tsp.organization_id = o.id
-		LEFT JOIN organization_sso_configs osc ON osc.organization_id = o.id AND osc.status = 'ACTIVE'
+		LEFT JOIN organization_sso_configs osc
+			ON osc.organization_id = o.id
+		   AND osc.status = 'ACTIVE'
+		   AND UPPER(COALESCE(osc.last_test_status, '')) = 'SUCCESS'
+		   AND TRIM(COALESCE(osc.provider_type, '')) <> ''
+		   AND (TRIM(COALESCE(osc.client_id, '')) <> '' OR TRIM(COALESCE(osc.single_sign_on_url, '')) <> '')
 		LEFT JOIN system_settings ss ON ss.config_key = 'enforce_mfa'
 		WHERE o.slug = $1
 		  AND o.deleted_at IS NULL
@@ -133,7 +166,13 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 				COALESCE(NULLIF(TRIM(o.realm_key), ''), 'k2net-tenants') AS realm_key,
 				COALESCE(NULLIF(TRIM(tb.logo_url), ''), COALESCE(o.logo_url, '')) AS logo_url,
 				UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
-				COALESCE(sp.has_sso, false) AS has_sso,
+				(
+					COALESCE(o.is_platform_root, false) = true
+					OR CASE
+						WHEN lic.id IS NOT NULL THEN COALESCE(lic.feature_sso_enabled, false)
+						ELSE (COALESCE(sp.has_sso, false) OR UPPER(COALESCE(sp.name, 'FREE')) IN ('PRO', 'PROFESSIONAL', 'ENTERPRISE'))
+					END
+				) AS has_sso,
 				COALESCE(o.status, 'ACTIVE') AS org_status,
 				(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required,
 				COALESCE(osc.enforce_sso, false) AS enforce_sso,
@@ -144,9 +183,23 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			FROM organization_slug_aliases osa
 			JOIN organizations o ON osa.organization_id = o.id
 			LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
+			LEFT JOIN LATERAL (
+				SELECT tl.id, tl.feature_sso_enabled
+				FROM tenant_licenses tl
+				WHERE tl.organization_id = o.id
+				  AND tl.status IN ('ACTIVE', 'GRACE_PERIOD')
+				  AND (tl.valid_until IS NULL OR tl.valid_until > NOW() OR (tl.grace_period_until IS NOT NULL AND tl.grace_period_until > NOW()))
+				ORDER BY tl.created_at DESC
+				LIMIT 1
+			) lic ON true
 			LEFT JOIN tenant_branding tb ON tb.organization_id = o.id
 			LEFT JOIN tenant_security_policies tsp ON tsp.organization_id = o.id
-			LEFT JOIN organization_sso_configs osc ON osc.organization_id = o.id AND osc.status = 'ACTIVE'
+			LEFT JOIN organization_sso_configs osc
+				ON osc.organization_id = o.id
+			   AND osc.status = 'ACTIVE'
+			   AND UPPER(COALESCE(osc.last_test_status, '')) = 'SUCCESS'
+			   AND TRIM(COALESCE(osc.provider_type, '')) <> ''
+			   AND (TRIM(COALESCE(osc.client_id, '')) <> '' OR TRIM(COALESCE(osc.single_sign_on_url, '')) <> '')
 			LEFT JOIN system_settings ss ON ss.config_key = 'enforce_mfa'
 			WHERE osa.old_slug = $1
 			  AND o.deleted_at IS NULL
@@ -163,7 +216,7 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 
 	if r.rdb != nil {
 		if raw, mErr := json.Marshal(resp); mErr == nil {
-			_ = r.rdb.Set(ctx, cacheKey, string(raw), 60*time.Second).Err()
+			_ = r.rdb.Set(ctx, cacheKey, string(raw), 15*time.Second).Err()
 		}
 	}
 
@@ -213,15 +266,24 @@ func (r *PostgresRepository) scanTenantRow(
 		return nil, err
 	}
 
-	effectiveSSO := hasSSO || planCode == "PRO" || planCode == "PROFESSIONAL" || planCode == "ENTERPRISE"
+	// Strict 3-Gate Evaluation:
+	// 1. Subscription Plan & Active License Entitlement (hasSSO)
+	// 2. Tenant Admin Explicit Activation & Verified Connection Probe (ssoProviderType != "")
+	cleanProviderType := strings.TrimSpace(ssoProviderType)
+	cleanDisplayName := strings.TrimSpace(ssoDisplayName)
+	effectiveSSO := hasSSO && cleanProviderType != ""
 	allowedMethods := []string{"password"}
 	authMode := "PASSWORD_ONLY"
 	if effectiveSSO {
-		allowedMethods = []string{"password", "google", "github"}
+		idpAlias := "sso-" + strings.ToLower(strings.TrimSpace(activeSlg))
+		allowedMethods = []string{"password", idpAlias}
 		authMode = "HYBRID_SSO"
 		if enforceSso {
 			authMode = "SSO_ENFORCED"
 		}
+	} else {
+		cleanProviderType = ""
+		cleanDisplayName = ""
 	}
 
 	out := &TenantContextResponse{
@@ -240,8 +302,8 @@ func (r *PostgresRepository) scanTenantRow(
 		MFARequired:      effectiveMfaRequired,
 		EnforceSSO:       enforceSso && effectiveSSO,
 		AllowBreakGlass:  allowBreakGlass,
-		SSOProviderType:  ssoProviderType,
-		SSODisplayName:   ssoDisplayName,
+		SSOProviderType:  cleanProviderType,
+		SSODisplayName:   cleanDisplayName,
 		IPAllowlistCIDRs: ipAllowlistCidrs,
 	}
 	if isAlias && activeSlg != requestedSlug {
@@ -616,11 +678,29 @@ func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email strin
 			COALESCE(osc.display_name, ''),
 			o.slug,
 			o.name,
-			(COALESCE(sp.has_sso, false) OR UPPER(COALESCE(sp.name, 'FREE')) IN ('PRO', 'PROFESSIONAL', 'ENTERPRISE')) AS sso_entitled
+			(
+				COALESCE(o.is_platform_root, false) = true
+				OR CASE
+					WHEN lic.id IS NOT NULL THEN COALESCE(lic.feature_sso_enabled, false)
+					ELSE (COALESCE(sp.has_sso, false) OR UPPER(COALESCE(sp.name, 'FREE')) IN ('PRO', 'PROFESSIONAL', 'ENTERPRISE'))
+				END
+			) AS sso_entitled
 		FROM organization_sso_configs osc
 		JOIN organizations o ON osc.organization_id = o.id
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
+		LEFT JOIN LATERAL (
+			SELECT tl.id, tl.feature_sso_enabled
+			FROM tenant_licenses tl
+			WHERE tl.organization_id = o.id
+			  AND tl.status IN ('ACTIVE', 'GRACE_PERIOD')
+			  AND (tl.valid_until IS NULL OR tl.valid_until > NOW() OR (tl.grace_period_until IS NOT NULL AND tl.grace_period_until > NOW()))
+			ORDER BY tl.created_at DESC
+			LIMIT 1
+		) lic ON true
 		WHERE osc.status = 'ACTIVE'
+		  AND UPPER(COALESCE(osc.last_test_status, '')) = 'SUCCESS'
+		  AND TRIM(COALESCE(osc.provider_type, '')) <> ''
+		  AND (TRIM(COALESCE(osc.client_id, '')) <> '' OR TRIM(COALESCE(osc.single_sign_on_url, '')) <> '')
 		  AND o.deleted_at IS NULL
 		  AND o.status = 'ACTIVE'
 		  AND osc.domain_mappings @> to_jsonb(CAST($1 AS text))
@@ -651,7 +731,7 @@ func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email strin
 			res := &SsoDiscoveryResponse{SSOAvailable: false, EmailDomain: domain}
 			if r.rdb != nil {
 				if raw, mErr := json.Marshal(res); mErr == nil {
-					_ = r.rdb.Set(ctx, cacheKey, string(raw), 60*time.Second).Err()
+					_ = r.rdb.Set(ctx, cacheKey, string(raw), 15*time.Second).Err()
 				}
 			}
 			return res, nil
@@ -667,6 +747,7 @@ func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email strin
 		displayName = providerType
 	}
 
+	idpAlias := "sso-" + strings.ToLower(strings.TrimSpace(orgSlug))
 	resp := &SsoDiscoveryResponse{
 		SSOAvailable:     true,
 		EnforceSSO:       enforceSso,
@@ -675,18 +756,59 @@ func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email strin
 		DisplayName:      displayName,
 		OrganizationSlug: orgSlug,
 		OrganizationName: orgName,
-		IDPHint:          strings.ToLower(providerType),
+		IDPHint:          idpAlias,
 		RedirectURL:      fmt.Sprintf("https://%s.kdua.net/login", orgSlug),
 		EmailDomain:      domain,
 	}
 
 	if r.rdb != nil {
 		if raw, mErr := json.Marshal(resp); mErr == nil {
-			_ = r.rdb.Set(ctx, cacheKey, string(raw), 60*time.Second).Err()
+			_ = r.rdb.Set(ctx, cacheKey, string(raw), 15*time.Second).Err()
 		}
 	}
 
 	return resp, nil
+}
+
+// GetUserWebauthnCredentials queries registered FIDO2 passkeys for a given user.
+func (r *PostgresRepository) GetUserWebauthnCredentials(ctx context.Context, userID string) ([]WebauthnCredentialModel, error) {
+	if r.db == nil || strings.TrimSpace(userID) == "" {
+		return nil, nil
+	}
+	query := `
+		SELECT id, user_id, credential_id, COALESCE(public_key_pem, ''), algorithm, sign_counter, device_name
+		FROM user_webauthn_credentials
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+	`
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var creds []WebauthnCredentialModel
+	for rows.Next() {
+		var c WebauthnCredentialModel
+		if err := rows.Scan(&c.ID, &c.UserID, &c.CredentialID, &c.PublicKeyPEM, &c.Algorithm, &c.SignCounter, &c.DeviceName); err == nil {
+			creds = append(creds, c)
+		}
+	}
+	return creds, nil
+}
+
+// UpdateWebauthnSignCounter updates the FIDO2 counter to prevent replay cloning attacks.
+func (r *PostgresRepository) UpdateWebauthnSignCounter(ctx context.Context, credentialID string, newCounter int64) error {
+	if r.db == nil || strings.TrimSpace(credentialID) == "" {
+		return nil
+	}
+	query := `
+		UPDATE user_webauthn_credentials
+		SET sign_counter = $2, last_used_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+		WHERE credential_id = $1
+	`
+	_, err := r.db.Exec(ctx, query, credentialID, newCounter)
+	return err
 }
 
 

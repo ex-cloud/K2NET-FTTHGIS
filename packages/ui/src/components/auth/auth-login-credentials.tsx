@@ -15,6 +15,7 @@ import {
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
+import { AuthMfaStepUp } from "./auth-mfa-step-up";
 import type { AuthLoginFormProps } from "./auth-login-types";
 import type { UseAuthLoginFormReturn } from "./use-auth-login-form";
 
@@ -56,6 +57,13 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
 
   const {
     mfaRequired = false,
+    availableMfaMethods,
+    maskedEmail,
+    onVerifyTotp,
+    onSendEmailOtp,
+    onVerifyEmailOtp,
+    onVerifyWebauthn,
+    onPasswordlessPasskeyLogin,
     turnstileSiteKey,
     isLoading = false,
     onContinueWithProvider,
@@ -67,49 +75,6 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
 
   return (
     <>
-      {/* Social SSO Buttons ABOVE Form (when supported & enabled) */}
-      {!mfaRequired && socialMethods.length > 0 && (
-        <div className="space-y-3">
-          <div className="grid gap-2">
-            {socialMethods.map((method) => {
-              const isGoogle = method.icon === "google" || method.id?.toLowerCase() === "google";
-              const isGithub = method.icon === "github" || method.id?.toLowerCase() === "github";
-              const methodLabel = isGoogle
-                ? copy.continueWithGoogle
-                : isGithub
-                ? copy.continueWithGithub
-                : `${copy.continueWithProviderPrefix} ${method.name}`;
-
-              return (
-                <Button
-                  key={method.id}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs cursor-pointer"
-                  onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
-                  disabled={isLoading || isSuspended}
-                >
-                  {isGoogle && <GoogleIcon className="size-3.5" />}
-                  {isGithub && <GithubIcon className="size-3.5" />}
-                  {!isGoogle && !isGithub && (
-                    <KeyRound className="size-3.5 text-muted-foreground" />
-                  )}
-                  <span>{methodLabel}</span>
-                </Button>
-              );
-            })}
-          </div>
-
-          <div className="relative flex items-center justify-center py-1">
-            <div className="w-full border-t border-border/60" />
-            <span className="absolute bg-sidebar px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
-              {copy.orContinueWith}
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Credentials & Inline MFA Form */}
       {enforceSso && !isBreakGlass && !mfaRequired ? (
         <div className="space-y-4 py-2 animate-in fade-in duration-150">
@@ -307,66 +272,108 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                 <div ref={turnstileContainerRef} className="min-h-[65px] w-full overflow-hidden rounded-md" />
               </div>
             )}
+
+            {/* Primary Submit Button (Monochrome High-Contrast: Black on Light, White on Dark) */}
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSubmitDisabled}
+              className="w-full h-8 font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 group cursor-pointer"
+            >
+              {isLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <>
+                  <span>{resolvedSubmitLabel}</span>
+                  <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </>
+              )}
+            </Button>
+
+            {/* Passkey Passwordless Login (Linear style) */}
+            {onPasswordlessPasskeyLogin && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onPasswordlessPasskeyLogin}
+                disabled={isLoading || isSuspended}
+                className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/70 bg-background/60 text-foreground/90 hover:bg-accent hover:text-foreground rounded-md transition-colors shadow-2xs cursor-pointer"
+              >
+                <KeyRound className="size-3.5" />
+                <span>{props.labels?.continueWithPasskey || "Log in with passkey"}</span>
+              </Button>
+            )}
           </>
         ) : (
-          /* Inline 6-Digit MFA OTP Mode */
-          <div className="space-y-3 animate-in fade-in duration-150">
-            <div className="rounded-md border border-border bg-muted/40 p-3 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <Smartphone className="size-3.5 text-muted-foreground" />
-                <span>{copy.mfaCodeLabel}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                {copy.mfaCodeHint}
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <Input
-                id="totpCode"
-                name="totp"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                autoComplete="one-time-code"
-                autoFocus
-                placeholder={copy.mfaCodePlaceholder}
-                value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
-                className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-background/80 border-border/70 rounded-md text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:hsl(var(--foreground))]"
-                disabled={isLoading || isSuspended}
-                required
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleBackFromMfa}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              <ArrowLeft className="size-3" />
-              <span>{copy.mfaBackToLogin}</span>
-            </button>
-          </div>
+          /* Multi-Option Step-Up MFA Gate (TOTP, WebAuthn Passkeys, Email OTP) */
+          <AuthMfaStepUp
+            availableMethods={availableMfaMethods}
+            maskedEmail={maskedEmail}
+            totpCode={totpCode}
+            setTotpCode={setTotpCode}
+            onVerifyTotp={onVerifyTotp}
+            onSendEmailOtp={onSendEmailOtp}
+            onVerifyEmailOtp={onVerifyEmailOtp}
+            onVerifyWebauthn={onVerifyWebauthn}
+            onBackToLogin={handleBackFromMfa}
+            labels={props.labels}
+            isLoading={isLoading}
+          />
         )}
 
-        {/* Primary Submit Button (Monochrome High-Contrast: Black on Light, White on Dark) */}
-        <Button
-          type="submit"
-          size="sm"
-          disabled={isSubmitDisabled}
-          className="w-full h-8 font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 group cursor-pointer"
-        >
-          {isLoading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <>
-              <span>{resolvedSubmitLabel}</span>
-              <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
-            </>
-          )}
-        </Button>
+        {/* Monochrome Social / Enterprise SSO Buttons BELOW Form (only when licensed & explicitly activated by Tenant Admin) */}
+        {!mfaRequired && socialMethods.length > 0 && (
+          <div className="space-y-3 pt-1.5">
+            <div className="relative flex items-center justify-center py-1">
+              <div className="w-full border-t border-border/60" />
+              <span className="absolute bg-sidebar px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
+                {copy.orContinueWith}
+              </span>
+            </div>
+
+            <div className={socialMethods.length === 2 ? "grid grid-cols-2 gap-2.5" : "grid grid-cols-1 gap-2"}>
+              {socialMethods.map((method) => {
+                const iconKey = (method.icon || method.id || "").toLowerCase();
+                const isGoogle = iconKey === "google";
+                const isGithub = iconKey === "github";
+                const isMicrosoft = iconKey === "microsoft" || iconKey === "microsoft_entra";
+                const hasCustomName =
+                  Boolean(method.name) &&
+                  method.name.toLowerCase() !== "google" &&
+                  method.name.toLowerCase() !== "github";
+                const methodLabel =
+                  socialMethods.length === 2 && !hasCustomName
+                    ? method.name
+                    : isGoogle && !hasCustomName
+                    ? copy.continueWithGoogle
+                    : isGithub && !hasCustomName
+                    ? copy.continueWithGithub
+                    : `${copy.continueWithProviderPrefix} ${method.name}`;
+
+                return (
+                  <Button
+                    key={method.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/70 bg-background/60 text-foreground/90 hover:bg-accent hover:text-foreground hover:border-border rounded-md transition-colors shadow-2xs cursor-pointer"
+                    onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
+                    disabled={isLoading || isSuspended}
+                  >
+                    {isGoogle && <GoogleIcon className="size-3.5 shrink-0" />}
+                    {isGithub && <GithubIcon className="size-3.5 shrink-0" />}
+                    {isMicrosoft && <MicrosoftIcon className="size-3.5 shrink-0" />}
+                    {!isGoogle && !isGithub && !isMicrosoft && (
+                      <KeyRound className="size-3.5 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="truncate">{methodLabel}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* "View saved profiles" (ONLY rendered if savedProfiles.length > 0) */}
         {!mfaRequired && savedProfiles.length > 0 && (
@@ -388,23 +395,16 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24">
-      <path
-        fill="#4285F4"
-        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.36 24 12 24Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.28 14.28c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28V6.57H1.25C.45 8.16 0 9.98 0 12s.45 3.84 1.25 5.43l4.03-3.15Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.57l4.03 3.15c.95-2.83 3.6-4.97 6.72-4.97Z"
-      />
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48Z" />
+    </svg>
+  );
+}
+
+function MicrosoftIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M11.4 2H2v9.4h9.4V2Zm10.6 0h-9.4v9.4H22V2ZM11.4 12.6H2V22h9.4v-9.4Zm10.6 0h-9.4V22H22v-9.4Z" />
     </svg>
   );
 }

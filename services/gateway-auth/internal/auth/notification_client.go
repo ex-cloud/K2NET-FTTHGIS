@@ -125,3 +125,48 @@ func (n *NotificationClient) DispatchPasswordResetEmail(
 		zap.String("to", to))
 	return nil
 }
+
+// DispatchMfaOtpEmail triggers sending a 6-digit MFA OTP verification email
+func (n *NotificationClient) DispatchMfaOtpEmail(
+	ctx context.Context,
+	to, recipientName, otpCode, expiresIn, clientIP, lang string,
+) error {
+	endpoint := fmt.Sprintf("%s/api/v1/notification/email/mfa-otp", n.baseURL)
+
+	payload := map[string]string{
+		"to":             to,
+		"recipient_name": recipientName,
+		"otp_code":       otpCode,
+		"expires_in":     expiresIn,
+		"client_ip":      clientIP,
+		"lang":           lang,
+	}
+
+	jsonBytes, _ := json.Marshal(payload)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(jsonBytes))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if n.gatewayToken != "" {
+		req.Header.Set("X-Gateway-Token", n.gatewayToken)
+	}
+
+	resp, err := n.httpClient.Do(req)
+	if err != nil {
+		logger.Error(ctx, "Failed contacting notification-gateway for MFA OTP email", zap.Error(err))
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return fmt.Errorf("notification-gateway returned HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	logger.Info(ctx, "MFA OTP email successfully dispatched via notification-gateway",
+		zap.String("to", to))
+	return nil
+}
+

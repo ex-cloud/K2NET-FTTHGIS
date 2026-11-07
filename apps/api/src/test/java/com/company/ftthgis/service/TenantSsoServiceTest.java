@@ -1,8 +1,10 @@
 package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.security.dto.*;
+import com.company.ftthgis.api.tenant.dto.LicenseEntitlementsDto;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.OrganizationSsoConfig;
+import com.company.ftthgis.domain.tenant.entity.SubscriptionPlan;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.tenant.repository.OrganizationSsoConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +28,7 @@ public class TenantSsoServiceTest {
     private LicenseCryptoService licenseCryptoService;
     private KeycloakAdminService keycloakAdminService;
     private ObjectMapper objectMapper;
+    private LicenseManagementService licenseManagementService;
 
     private TenantSsoService ssoService;
 
@@ -39,23 +42,32 @@ public class TenantSsoServiceTest {
         licenseCryptoService = mock(LicenseCryptoService.class);
         keycloakAdminService = mock(KeycloakAdminService.class);
         objectMapper = new ObjectMapper();
+        licenseManagementService = mock(LicenseManagementService.class);
 
         ssoService = new TenantSsoService(
                 organizationRepository,
                 ssoConfigRepository,
                 licenseCryptoService,
                 keycloakAdminService,
-                objectMapper
+                objectMapper,
+                licenseManagementService
         );
 
         testOrgId = UUID.randomUUID();
+        SubscriptionPlan proPlan = SubscriptionPlan.builder()
+                .name("PRO")
+                .hasSso(true)
+                .build();
         testOrg = Organization.builder()
                 .id(testOrgId)
                 .name("FiberNet ISP")
                 .slug("fibernet")
+                .subscriptionPlan(proPlan)
                 .build();
 
         when(organizationRepository.findBySlug("fibernet")).thenReturn(Optional.of(testOrg));
+        when(licenseManagementService.getEffectiveLicenseEntitlements(testOrgId))
+                .thenReturn(LicenseEntitlementsDto.builder().ssoEnabled(true).build());
     }
 
     @Test
@@ -289,6 +301,23 @@ public class TenantSsoServiceTest {
 
         var resInvalid = ssoService.discoverSsoByEmail("invalid-email-no-at");
         assertFalse(resInvalid.isSsoAvailable());
+    }
+
+    @Test
+    @DisplayName("S11: updateSsoConfig rejects SSO configuration when active license disables feature_sso_enabled")
+    void testUpdateSsoConfig_WhenLicenseDisablesSso_ThrowsIllegalStateException() {
+        when(licenseManagementService.getEffectiveLicenseEntitlements(testOrgId))
+                .thenReturn(LicenseEntitlementsDto.builder().ssoEnabled(false).build());
+
+        UpdateTenantSsoConfigRequest request = UpdateTenantSsoConfigRequest.builder()
+                .providerType("GOOGLE")
+                .clientId("client-123")
+                .build();
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
+                ssoService.updateSsoConfig("fibernet", request, "admin@fibernet.net")
+        );
+        assertTrue(ex.getMessage().contains("Single Sign-On"));
     }
 }
 

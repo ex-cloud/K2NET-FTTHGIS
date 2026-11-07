@@ -105,6 +105,14 @@ func (m *mockRepo) DiscoverSsoByEmail(_ context.Context, email string) (*SsoDisc
 	return &SsoDiscoveryResponse{SSOAvailable: false, EmailDomain: "example.com"}, nil
 }
 
+func (m *mockRepo) GetUserWebauthnCredentials(_ context.Context, _ string) ([]WebauthnCredentialModel, error) {
+	return nil, nil
+}
+
+func (m *mockRepo) UpdateWebauthnSignCounter(_ context.Context, _ string, _ int64) error {
+	return nil
+}
+
 func buildTestJWT(claims map[string]any) string {
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
 	bodyBytes, _ := json.Marshal(claims)

@@ -34,6 +34,9 @@ export interface CredentialLoginInput {
 export interface CredentialLoginResult {
   success: boolean;
   mfaRequired?: boolean;
+  preAuthToken?: string;
+  availableMethods?: string[];
+  maskedEmail?: string;
   error?: string;
   message?: string;
   user?: KeycloakUser;
@@ -69,4 +72,9 @@ export interface KeycloakAuthContextValue {
   isSuperAdmin: () => boolean;
   isTenantAdmin: () => boolean;
   refreshToken: (minValidity?: number) => Promise<boolean>;
+  verifyMfaTotp?: (preAuthToken: string, code: string) => Promise<CredentialLoginResult>;
+  sendMfaEmailOtp?: (preAuthToken: string) => Promise<{ success: boolean; message?: string; maskedEmail?: string }>;
+  verifyMfaEmailOtp?: (preAuthToken: string, code: string) => Promise<CredentialLoginResult>;
+  getWebauthnLoginChallenge?: (preAuthToken: string) => Promise<{ challenge: string; rpId: string; allowCredentials?: Array<{ type: string; id: string }> }>;
+  verifyWebauthnLogin?: (preAuthToken: string, payload: { credentialId: string; clientDataJSON: string; authenticatorData: string; signature: string }) => Promise<CredentialLoginResult>;
 }

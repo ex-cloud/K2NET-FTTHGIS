@@ -238,6 +238,14 @@ public class SecurityPolicyService {
                 .orElseGet(() -> TenantSecurityPolicy.builder().organization(org).build());
 
         if (request.mfaEnforced() != null) {
+            if (Boolean.TRUE.equals(request.mfaEnforced())
+                    && actor != null && !actor.isBlank() && !"admin".equalsIgnoreCase(actor)) {
+                boolean callerHasMfa = keycloakAdminService.hasMfaConfigured("k2net-tenants", actor);
+                if (!callerHasMfa) {
+                    throw new IllegalArgumentException(
+                            "Anti-Lockout Protection: Anda wajib mengaktifkan Authenticator App (2FA/TOTP) pada akun Anda terlebih dahulu di menu Account Preferences → Security & 2FA sebelum mewajibkan MFA untuk seluruh anggota organisasi.");
+                }
+            }
             policy.setMfaEnforced(request.mfaEnforced());
         }
         if (request.allowedMethods() != null && !request.allowedMethods().isEmpty()) {
@@ -382,16 +390,8 @@ public class SecurityPolicyService {
                 if (member.getEmail() == null || member.getEmail().isBlank()) continue;
                 boolean hasMfa = keycloakAdminService.hasMfaConfigured("k2net-tenants", member.getEmail());
                 member.setMfaEnabled(hasMfa);
-                if (mfaEnforced) {
-                    if (!hasMfa) {
-                        keycloakAdminService.addRequiredActionToUser("k2net-tenants", member.getEmail(), "CONFIGURE_TOTP");
-                    }
-                } else {
-                    PlatformSecurityPolicyDto platform = getPlatformPolicy();
-                    if (!platform.isMfaEnforced()) {
-                        keycloakAdminService.removeRequiredActionFromUser("k2net-tenants", member.getEmail(), "CONFIGURE_TOTP");
-                    }
-                }
+                // Ensure headless Direct Grant is never deadlocked by legacy CONFIGURE_TOTP required action
+                keycloakAdminService.removeRequiredActionFromUser("k2net-tenants", member.getEmail(), "CONFIGURE_TOTP");
                 userRepository.save(member);
             }
         } catch (Exception e) {

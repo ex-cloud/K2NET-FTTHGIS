@@ -40,6 +40,16 @@ export interface PersonalSecuritySummaryData {
   linkedProviders?: string[];
 }
 
+export interface WebauthnCredentialData {
+  id: string;
+  credentialId: string;
+  deviceName: string;
+  algorithm: number;
+  signCounter: number;
+  createdAt: string;
+  lastUsedAt: string;
+}
+
 export interface AccountLabels {
   title?: string;
   subtitle?: string;
@@ -90,6 +100,25 @@ export interface AccountLabels {
   mfaSetupTotp?: string;
   mfaSetupPasskey?: string;
   mfaOptInNotice?: string;
+  mfaDisableBtn?: string;
+  mfaReconfigureBtn?: string;
+  mfaModalTitle?: string;
+  mfaModalDesc?: string;
+  mfaStepScan?: string;
+  mfaStepVerify?: string;
+  mfaManualKeyLabel?: string;
+  mfaCopyKey?: string;
+  mfaKeyCopied?: string;
+  mfaCodeLabel?: string;
+  mfaCodePlaceholder?: string;
+  mfaCodeInvalid?: string;
+  mfaVerifyBtn?: string;
+  mfaVerifying?: string;
+  mfaActivatedSuccess?: string;
+  mfaDisabledSuccess?: string;
+  mfaDisableConfirmTitle?: string;
+  mfaDisableConfirmDesc?: string;
+  mfaPasskeyNotice?: string;
   sessionsTitle?: string;
   sessionsDesc?: string;
   currentDeviceBadge?: string;
@@ -111,4 +140,26 @@ export interface AccountLabels {
   idleLockTitle?: string;
   idleLockDesc?: string;
   unlockSessionBtn?: string;
+  passkeyModalTitle?: string;
+  passkeyModalDesc?: string;
+  passkeyDeviceNameLabel?: string;
+  passkeyDeviceNamePlaceholder?: string;
+  passkeyDeviceNameHint?: string;
+  passkeyHowItWorksTitle?: string;
+  passkeyHowItWorksDesc?: string;
+  passkeyRegisterBtn?: string;
+  passkeyRegistering?: string;
+  passkeySuccessTitle?: string;
+  passkeySuccessDesc?: string;
+  passkeyUnsupported?: string;
+  passkeyCancelled?: string;
+  passkeyDeleteConfirmTitle?: string;
+  passkeyDeleteConfirmDesc?: string;
+  passkeyDeletedSuccess?: string;
+  passkeyDeleteFailed?: string;
+  registeredPasskeysTitle?: string;
+  noPasskeysRegistered?: string;
+  removePasskeyBtn?: string;
+  doneBtn?: string;
+  cancelBtn?: string;
 }

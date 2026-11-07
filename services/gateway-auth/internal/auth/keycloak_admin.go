@@ -3,6 +3,10 @@ package auth
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base32"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -205,4 +209,97 @@ func (k *KeycloakAdminClient) LogoutUserSessions(ctx context.Context, realm, use
 		zap.String("realm", realm),
 		zap.String("userId", userID))
 	return nil
+}
+
+// GetUserTOTPConfig fetches the user's k2net_totp_enabled and k2net_totp_secret attributes from Keycloak.
+func (k *KeycloakAdminClient) GetUserTOTPConfig(ctx context.Context, realm, userID string) (bool, string, error) {
+	if k == nil || k.baseURL == "" || userID == "" {
+		return false, "", nil
+	}
+	adminToken, err := k.getAdminToken(ctx)
+	if err != nil {
+		return false, "", err
+	}
+
+	userURL := fmt.Sprintf("%s/admin/realms/%s/users/%s",
+		k.baseURL, url.PathEscape(realm), url.PathEscape(userID))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, userURL, nil)
+	if err != nil {
+		return false, "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+
+	resp, err := k.httpClient.Do(req)
+	if err != nil {
+		return false, "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, "", fmt.Errorf("keycloak get user returned HTTP %d", resp.StatusCode)
+	}
+
+	var parsed struct {
+		Attributes map[string][]string `json:"attributes"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+		return false, "", err
+	}
+	if parsed.Attributes == nil {
+		return false, "", nil
+	}
+
+	enabledVals := parsed.Attributes["k2net_totp_enabled"]
+	secretVals := parsed.Attributes["k2net_totp_secret"]
+	enabled := false
+	for _, v := range enabledVals {
+		if strings.EqualFold(strings.TrimSpace(v), "true") {
+			enabled = true
+			break
+		}
+	}
+	secret := ""
+	if len(secretVals) > 0 {
+		secret = strings.TrimSpace(secretVals[0])
+	}
+	return enabled && secret != "", secret, nil
+}
+
+// VerifyTOTPCode validates a 6-digit RFC 6238 TOTP code against a Base32 secret (±1 time step window).
+func VerifyTOTPCode(base32Secret, code string, now time.Time) bool {
+	cleanSecret := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(base32Secret), " ", ""))
+	cleanCode := strings.TrimSpace(code)
+	if len(cleanCode) != 6 || cleanSecret == "" {
+		return false
+	}
+
+	decoder := base32.StdEncoding.WithPadding(base32.NoPadding)
+	keyBytes, err := decoder.DecodeString(strings.TrimRight(cleanSecret, "="))
+	if err != nil || len(keyBytes) == 0 {
+		return false
+	}
+
+	currentStep := now.Unix() / 30
+	for offset := int64(-1); offset <= 1; offset++ {
+		if generateTOTPAtStep(keyBytes, currentStep+offset) == cleanCode {
+			return true
+		}
+	}
+	return false
+}
+
+func generateTOTPAtStep(key []byte, step int64) string {
+	var buf [8]byte
+	binary.BigEndian.PutUint64(buf[:], uint64(step))
+	mac := hmac.New(sha1.New, key)
+	_, _ = mac.Write(buf[:])
+	sum := mac.Sum(nil)
+	offset := sum[len(sum)-1] & 0x0f
+	binCode := (int(sum[offset]&0x7f) << 24) |
+		(int(sum[offset+1]&0xff) << 16) |
+		(int(sum[offset+2]&0xff) << 8) |
+		int(sum[offset+3]&0xff)
+	otp := binCode % 1000000
+	return fmt.Sprintf("%06d", otp)
 }
