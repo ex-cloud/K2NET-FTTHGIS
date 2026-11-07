@@ -5,6 +5,7 @@ import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
 import { Badge } from "../badge";
+import { AuthCardFormSkeleton } from "./auth-login-skeleton";
 
 export interface AuthInviteAcceptLabels {
   invitePageTitle?: string;
@@ -377,14 +378,9 @@ export function AuthInviteAcceptCard({
     }
   };
 
-  // 1. Loading state
+  // 1. Loading state (Contextual Card Skeleton instead of generic spinner)
   if (validation.isValidating) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-xs text-muted-foreground">{l.tokenVerifying}</p>
-      </div>
-    );
+    return <AuthCardFormSkeleton variant="invite" />;
   }
 
   // 2. Success state

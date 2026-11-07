@@ -36,13 +36,22 @@
       }
       (function () {
         try {
-          const theme = localStorage.getItem("k2net-admin-theme") || localStorage.getItem("theme");
+          const theme =
+            localStorage.getItem("k2net-admin-theme") ||
+            localStorage.getItem("k2net-theme") ||
+            localStorage.getItem("theme");
           const supportDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
-          if (theme === "dark" || (!theme && supportDarkMode)) {
-            document.documentElement.classList.add("dark");
-          } else {
-            document.documentElement.classList.remove("dark");
-          }
+          const resolved =
+            theme === "light"
+              ? "light"
+              : theme === "dark"
+                ? "dark"
+                : supportDarkMode
+                  ? "dark"
+                  : "light";
+          document.documentElement.classList.remove("light", "dark");
+          document.documentElement.classList.add(resolved);
+          document.documentElement.style.colorScheme = resolved;
         } catch (e) {}
       })();
     </script>

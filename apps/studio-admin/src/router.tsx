@@ -1,7 +1,16 @@
 import { createRootRoute, createRoute, createRouter, Navigate, Outlet } from "@tanstack/react-router";
 import { ProtectedRoute } from "@k2net/auth/client";
 import { AdminLayout } from "./layouts/AdminLayout";
-import { ForbiddenError, NotFoundError, ServerError, SessionExpiredError } from "@k2net/ui";
+import {
+  AppShellSkeleton,
+  AuthLoginSkeleton,
+  DashboardPageSkeleton,
+  ForbiddenError,
+  NotFoundError,
+  ServerError,
+  SessionExpiredError,
+  type AuthSkeletonVariant,
+} from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import * as React from "react";
 
@@ -284,15 +293,11 @@ const AccountPreferencesPage = lazyWithRetry(() =>
 // Suspense fallback & Error Handlers
 // ----------------------------------------------------------------
 function PageFallback() {
-  const { t } = useTranslation();
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-background min-h-[300px]">
-      <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <span className="text-xs font-mono text-muted-foreground">{t("common.page_loading")}</span>
-      </div>
-    </div>
-  );
+  return <DashboardPageSkeleton />;
+}
+
+function AuthPageFallback({ variant = "login" }: { variant?: AuthSkeletonVariant }) {
+  return <AuthLoginSkeleton variant={variant} />;
 }
 
 function NotFoundFallback() {
@@ -340,6 +345,16 @@ function Lazy({ children }: { children: React.ReactNode }) {
   return <React.Suspense fallback={<PageFallback />}>{children}</React.Suspense>;
 }
 
+function AuthLazy({
+  children,
+  variant = "login",
+}: {
+  children: React.ReactNode;
+  variant?: AuthSkeletonVariant;
+}) {
+  return <React.Suspense fallback={<AuthPageFallback variant={variant} />}>{children}</React.Suspense>;
+}
+
 // ----------------------------------------------------------------
 // Routes
 // ----------------------------------------------------------------
@@ -352,7 +367,7 @@ const rootRoute = createRootRoute({
 const consoleLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/auth/console/login",
-  component: () => <Lazy><LoginPage /></Lazy>,
+  component: () => <AuthLazy variant="login"><LoginPage /></AuthLazy>,
   errorComponent: RouterErrorComponent,
 });
 
@@ -366,7 +381,7 @@ const loginRoute = createRoute({
 const resetPasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reset-password",
-  component: () => <Lazy><ResetPasswordPage /></Lazy>,
+  component: () => <AuthLazy variant="reset-password"><ResetPasswordPage /></AuthLazy>,
   errorComponent: RouterErrorComponent,
 });
 
@@ -376,6 +391,7 @@ const authenticatedLayoutRoute = createRoute({
   component: () => (
     <ProtectedRoute
       requiredRoles={["super_admin"]}
+      fallback={<AppShellSkeleton />}
       unauthorizedFallback={<ForbiddenError statusCode={403} backUrl="/overview" />}
       sessionExpiredFallback={<SessionExpiredError statusCode={419} loginUrl="/auth/console/login" />}
     >

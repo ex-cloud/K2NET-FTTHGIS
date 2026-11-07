@@ -80,6 +80,27 @@ const PROCESSORS: ProcessorNode[] = [
   },
 ];
 
+// 8-Frame Silicon Data-Processing Wave Patterns across the 4x4 (16-dot) LED Matrix
+// Matches the exact dot illumination frames in Linear's reference video (frame_v7_02..08)
+const MATRIX_COMPUTE_FRAMES: Array<{ high: number[]; mid: number[] }> = [
+  // Frame 1: Ingress Top-Left 2x2 Quadrant (frame_v7_02)
+  { high: [0, 1, 4, 5], mid: [2, 8, 9] },
+  // Frame 2: Top-Left 3x2 Expansion (frame_v7_03)
+  { high: [0, 1, 2, 4, 5, 8], mid: [3, 6, 9, 12] },
+  // Frame 3: Diagonal Wave Propagation
+  { high: [1, 2, 5, 6, 8, 9], mid: [0, 3, 4, 10, 13] },
+  // Frame 4: Lower-Left Compute Core (frame_v7_04)
+  { high: [4, 8, 9, 12, 13], mid: [0, 1, 5, 14] },
+  // Frame 5: Center Matrix Shift (frame_v7_06)
+  { high: [4, 5, 8, 9, 13], mid: [1, 2, 6, 10, 12, 14] },
+  // Frame 6: Diamond Cluster Synthesis (frame_v7_07)
+  { high: [1, 4, 5, 6, 9, 10], mid: [0, 2, 7, 8, 13, 14] },
+  // Frame 7: Full 3x3 Active Core (frame_v7_08)
+  { high: [0, 1, 2, 4, 5, 6, 8, 9, 10], mid: [3, 7, 11, 13, 14] },
+  // Frame 8: Bottom Output Dispatch toward Return Pin
+  { high: [9, 10, 11, 13, 14, 15], mid: [5, 6, 7, 12] },
+];
+
 export function FtthTopologyFlow({
   className,
   tenantName: _tenantName = "PT Nusantara",
@@ -90,208 +111,200 @@ export function FtthTopologyFlow({
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredTarget, setHoveredTarget] = useState<string | null>(null);
 
-  // GSAP Animation Element References
-  const beam1Ref = useRef<SVGPathElement>(null);
-  const beam2Ref = useRef<SVGPathElement>(null);
-  const beam3Ref = useRef<SVGPathElement>(null);
-  const returnBeamRef = useRef<SVGPathElement>(null);
-  const matrix1Ref = useRef<HTMLDivElement>(null);
-  const matrix2Ref = useRef<HTMLDivElement>(null);
-  const matrix3Ref = useRef<HTMLDivElement>(null);
+  // Forward Beam Refs (Tail + Core Head for smooth 1px gradient comet)
+  const beam1TailRef = useRef<SVGPathElement>(null);
+  const beam1HeadRef = useRef<SVGPathElement>(null);
+  const beam2TailRef = useRef<SVGPathElement>(null);
+  const beam2HeadRef = useRef<SVGPathElement>(null);
+  const beam3TailRef = useRef<SVGPathElement>(null);
+  const beam3HeadRef = useRef<SVGPathElement>(null);
+
+  // Return Loop Beam Refs (One per Processor Node: Node 3, Node 2, Node 1)
+  const ret3TailRef = useRef<SVGPathElement>(null);
+  const ret3HeadRef = useRef<SVGPathElement>(null);
+  const ret2TailRef = useRef<SVGPathElement>(null);
+  const ret2HeadRef = useRef<SVGPathElement>(null);
+  const ret1TailRef = useRef<SVGPathElement>(null);
+  const ret1HeadRef = useRef<SVGPathElement>(null);
+
+  // 16 Individual LED Dot Refs per Processor Node (4x4 Matrix)
+  const node1DotsRef = useRef<(HTMLSpanElement | null)[]>([]);
+  const node2DotsRef = useRef<(HTMLSpanElement | null)[]>([]);
+  const node3DotsRef = useRef<(HTMLSpanElement | null)[]>([]);
+
+  // Processor Inner Card Refs & Trigger Pill Refs for subtle active pulse
+  const node1CardRef = useRef<HTMLDivElement>(null);
+  const node2CardRef = useRef<HTMLDivElement>(null);
+  const node3CardRef = useRef<HTMLDivElement>(null);
+  const pill1Ref = useRef<HTMLDivElement>(null);
+  const pill2Ref = useRef<HTMLDivElement>(null);
+  const pill3Ref = useRef<HTMLDivElement>(null);
   const returnArrowRef = useRef<SVGPolygonElement>(null);
 
-  // Linear-Style High-Precision Staggered GSAP Timeline (1:1 Pixel Blueprint)
+  // Helper: Schedule a Smooth Gradient Comet Pulse along any SVG Path (100% numeric tween)
+  const scheduleBeamPulse = (
+    tl: gsap.core.Timeline,
+    tailEl: SVGPathElement | null,
+    headEl: SVGPathElement | null,
+    exactLen: number,
+    duration: number,
+    startTime: number
+  ) => {
+    if (!tailEl || !headEl) return;
+    const len = tailEl.getTotalLength() || exactLen;
+    const tailDash = 78;
+    const headDash = 32;
+    const gap = Math.ceil(len + tailDash + 200);
+
+    gsap.set(tailEl, {
+      strokeDasharray: `${tailDash} ${gap}`,
+      strokeDashoffset: tailDash,
+      opacity: 0,
+    });
+    gsap.set(headEl, {
+      strokeDasharray: `${headDash} ${gap}`,
+      strokeDashoffset: headDash,
+      opacity: 0,
+    });
+
+    tl.set([tailEl, headEl], { opacity: 1 }, startTime)
+      .fromTo(
+        tailEl,
+        { strokeDashoffset: tailDash },
+        { strokeDashoffset: -len, duration, ease: "none", immediateRender: false },
+        startTime
+      )
+      .fromTo(
+        headEl,
+        { strokeDashoffset: headDash },
+        { strokeDashoffset: -len, duration, ease: "none", immediateRender: false },
+        startTime
+      )
+      .set([tailEl, headEl], { opacity: 0 }, startTime + duration);
+  };
+
+  // Helper: Schedule 8-Frame Silicon Data-Processing Wave on a Node's 16 LED Dots
+  const scheduleMatrixCompute = (
+    tl: gsap.core.Timeline,
+    dots: (HTMLSpanElement | null)[],
+    startTime: number
+  ) => {
+    const validDots = dots.filter((d): d is HTMLSpanElement => d !== null);
+    if (validDots.length === 0) return;
+
+    const stepDuration = 0.18;
+
+    MATRIX_COMPUTE_FRAMES.forEach((frame, fIdx) => {
+      const frameTime = startTime + fIdx * stepDuration;
+      validDots.forEach((dot, dotIdx) => {
+        const targetOpacity = frame.high.includes(dotIdx)
+          ? 1
+          : frame.mid.includes(dotIdx)
+          ? 0.5
+          : 0.16;
+        tl.to(
+          dot,
+          {
+            opacity: targetOpacity,
+            duration: stepDuration * 0.85,
+            ease: "none",
+          },
+          frameTime
+        );
+      });
+    });
+
+    // Settle all 16 LEDs back to idle dim state (0.18) after processing completes
+    const endTime = startTime + MATRIX_COMPUTE_FRAMES.length * stepDuration;
+    tl.to(
+      validDots,
+      {
+        opacity: 0.18,
+        duration: 0.25,
+        ease: "power2.out",
+      },
+      endTime
+    );
+  };
+
+  // Continuous Overlapping 3-Pipeline GSAP Master Timeline
   useEffect(() => {
     if (!interactive) return;
 
     const ctx = gsap.context(() => {
-      gsap.set([beam1Ref.current, beam2Ref.current, beam3Ref.current, returnBeamRef.current], {
-        opacity: 0,
-      });
-      gsap.set([matrix1Ref.current, matrix2Ref.current, matrix3Ref.current], {
-        opacity: 0.25,
-      });
-      gsap.set(returnArrowRef.current, {
-        opacity: 0.5,
-      });
+      const allDots = [
+        ...node1DotsRef.current,
+        ...node2DotsRef.current,
+        ...node3DotsRef.current,
+      ].filter((d): d is HTMLSpanElement => d !== null);
+
+      gsap.set(allDots, { opacity: 0.18 });
 
       const tl = gsap.timeline({
         repeat: -1,
-        repeatDelay: 0.45,
+        repeatDelay: 0.1,
       });
 
-      // ─────────────────────────────────────────────────────────────
-      // STAGE 1: Beam 1 (Trigger 1 -> Node 3, exact length: 789px)
-      // ─────────────────────────────────────────────────────────────
-      tl.set(beam1Ref.current, { strokeDashoffset: 56, opacity: 0 })
-        .to(beam1Ref.current, { opacity: 1, duration: 0.06 })
-        .to(beam1Ref.current, { strokeDashoffset: -789, duration: 1.25, ease: "power1.inOut" })
-        .to(beam1Ref.current, { opacity: 0, duration: 0.08 }, "-=0.08")
-        .fromTo(
-          matrix3Ref.current,
-          { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
-          {
-            opacity: 1,
-            filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
-            duration: 0.25,
-            yoyo: true,
-            repeat: 1,
-            ease: "power2.out",
-          },
-          "-=0.18"
-        )
-        .to({}, { duration: 0.35 })
+      // ─────────────────────────────────────────────────────────────────
+      // PIPELINE 1: Trigger 1 (TELEMETRY) -> Line 1 (789px) -> Node 3 -> Return 3 (975px)
+      // ─────────────────────────────────────────────────────────────────
+      scheduleBeamPulse(tl, beam1TailRef.current, beam1HeadRef.current, 789, 1.35, 0.0);
+      scheduleMatrixCompute(tl, node3DotsRef.current, 1.10);
+      scheduleBeamPulse(tl, ret3TailRef.current, ret3HeadRef.current, 975, 1.45, 2.30);
+      tl.fromTo(
+        returnArrowRef.current,
+        { opacity: 0.55 },
+        { opacity: 1, duration: 0.2, yoyo: true, repeat: 1 },
+        3.60
+      );
 
-        // ─────────────────────────────────────────────────────────────
-        // STAGE 2: Beam 2 (Trigger 2 -> Node 2, exact length: 552px)
-        // ─────────────────────────────────────────────────────────────
-        .set(beam2Ref.current, { strokeDashoffset: 52, opacity: 0 })
-        .to(beam2Ref.current, { opacity: 1, duration: 0.06 })
-        .to(beam2Ref.current, { strokeDashoffset: -552, duration: 1.05, ease: "power1.inOut" })
-        .to(beam2Ref.current, { opacity: 0, duration: 0.08 }, "-=0.08")
-        .fromTo(
-          matrix2Ref.current,
-          { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
-          {
-            opacity: 1,
-            filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
-            duration: 0.25,
-            yoyo: true,
-            repeat: 1,
-            ease: "power2.out",
-          },
-          "-=0.18"
-        )
-        .to({}, { duration: 0.35 })
+      // ─────────────────────────────────────────────────────────────────
+      // PIPELINE 2: Trigger 2 (PROVISION) -> Line 2 (552px) -> Node 2 -> Return 2 (783px)
+      // ─────────────────────────────────────────────────────────────────
+      scheduleBeamPulse(tl, beam2TailRef.current, beam2HeadRef.current, 552, 1.15, 1.40);
+      scheduleMatrixCompute(tl, node2DotsRef.current, 2.30);
+      scheduleBeamPulse(tl, ret2TailRef.current, ret2HeadRef.current, 783, 1.30, 3.50);
+      tl.fromTo(
+        returnArrowRef.current,
+        { opacity: 0.55 },
+        { opacity: 1, duration: 0.2, yoyo: true, repeat: 1 },
+        4.65
+      );
 
-        // ─────────────────────────────────────────────────────────────
-        // STAGE 3: Beam 3 (Trigger 3 -> Node 1, exact length: 314px)
-        // ─────────────────────────────────────────────────────────────
-        .set(beam3Ref.current, { strokeDashoffset: 44, opacity: 0 })
-        .to(beam3Ref.current, { opacity: 1, duration: 0.06 })
-        .to(beam3Ref.current, { strokeDashoffset: -314, duration: 0.85, ease: "power1.inOut" })
-        .to(beam3Ref.current, { opacity: 0, duration: 0.08 }, "-=0.08")
-        .fromTo(
-          matrix1Ref.current,
-          { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
-          {
-            opacity: 1,
-            filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
-            duration: 0.25,
-            yoyo: true,
-            repeat: 1,
-            ease: "power2.out",
-          },
-          "-=0.18"
-        )
-        .to({}, { duration: 0.35 })
-
-        // ─────────────────────────────────────────────────────────────
-        // STAGE 4: Return Loop (Nodes Bottom Bus -> Trigger Box, len: 975px)
-        // ─────────────────────────────────────────────────────────────
-        .set(returnBeamRef.current, { strokeDashoffset: 60, opacity: 0 })
-        .to(returnBeamRef.current, { opacity: 1, duration: 0.06 })
-        .to(returnBeamRef.current, { strokeDashoffset: -975, duration: 1.4, ease: "power1.inOut" })
-        .to(returnBeamRef.current, { opacity: 0, duration: 0.08 }, "-=0.08")
-        .fromTo(
-          returnArrowRef.current,
-          { opacity: 0.5 },
-          {
-            opacity: 1,
-            duration: 0.25,
-            yoyo: true,
-            repeat: 1,
-            ease: "power2.out",
-          },
-          "-=0.18"
-        );
+      // ─────────────────────────────────────────────────────────────────
+      // PIPELINE 3: Trigger 3 (OPTICAL) -> Line 3 (314px) -> Node 1 -> Return 1 (591px)
+      // ─────────────────────────────────────────────────────────────────
+      scheduleBeamPulse(tl, beam3TailRef.current, beam3HeadRef.current, 314, 0.95, 2.75);
+      scheduleMatrixCompute(tl, node1DotsRef.current, 3.45);
+      scheduleBeamPulse(tl, ret1TailRef.current, ret1HeadRef.current, 591, 1.15, 4.65);
+      tl.fromTo(
+        returnArrowRef.current,
+        { opacity: 0.55 },
+        { opacity: 1, duration: 0.2, yoyo: true, repeat: 1 },
+        5.65
+      );
     }, containerRef);
 
     return () => ctx.revert();
   }, [interactive]);
 
-  // Direct Interactive Click Handler with Instant GSAP Tween
+  // Direct Interactive Click Handler: Fires Instant Beam + Data Processing Wave
   const handleTriggerClick = (triggerId: string) => {
     if (!interactive) return;
 
-    if (triggerId === "trigger-1" && beam1Ref.current && matrix3Ref.current) {
-      gsap.killTweensOf([beam1Ref.current, matrix3Ref.current]);
-      gsap.fromTo(
-        beam1Ref.current,
-        { strokeDashoffset: 56, opacity: 1 },
-        {
-          strokeDashoffset: -789,
-          duration: 0.85,
-          ease: "power2.out",
-          onComplete: () => {
-            gsap.to(beam1Ref.current, { opacity: 0, duration: 0.1 });
-            gsap.fromTo(
-              matrix3Ref.current,
-              { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
-              {
-                opacity: 1,
-                filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
-                duration: 0.25,
-                yoyo: true,
-                repeat: 1,
-                ease: "power2.out",
-              }
-            );
-          },
-        }
-      );
-    } else if (triggerId === "trigger-2" && beam2Ref.current && matrix2Ref.current) {
-      gsap.killTweensOf([beam2Ref.current, matrix2Ref.current]);
-      gsap.fromTo(
-        beam2Ref.current,
-        { strokeDashoffset: 52, opacity: 1 },
-        {
-          strokeDashoffset: -552,
-          duration: 0.7,
-          ease: "power2.out",
-          onComplete: () => {
-            gsap.to(beam2Ref.current, { opacity: 0, duration: 0.1 });
-            gsap.fromTo(
-              matrix2Ref.current,
-              { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
-              {
-                opacity: 1,
-                filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
-                duration: 0.25,
-                yoyo: true,
-                repeat: 1,
-                ease: "power2.out",
-              }
-            );
-          },
-        }
-      );
-    } else if (triggerId === "trigger-3" && beam3Ref.current && matrix1Ref.current) {
-      gsap.killTweensOf([beam3Ref.current, matrix1Ref.current]);
-      gsap.fromTo(
-        beam3Ref.current,
-        { strokeDashoffset: 44, opacity: 1 },
-        {
-          strokeDashoffset: -314,
-          duration: 0.55,
-          ease: "power2.out",
-          onComplete: () => {
-            gsap.to(beam3Ref.current, { opacity: 0, duration: 0.1 });
-            gsap.fromTo(
-              matrix1Ref.current,
-              { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
-              {
-                opacity: 1,
-                filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
-                duration: 0.25,
-                yoyo: true,
-                repeat: 1,
-                ease: "power2.out",
-              }
-            );
-          },
-        }
-      );
+    const clickTl = gsap.timeline();
+    if (triggerId === "trigger-1") {
+      scheduleBeamPulse(clickTl, beam1TailRef.current, beam1HeadRef.current, 789, 0.9, 0);
+      scheduleMatrixCompute(clickTl, node3DotsRef.current, 0.7);
+      scheduleBeamPulse(clickTl, ret3TailRef.current, ret3HeadRef.current, 975, 1.0, 1.9);
+    } else if (triggerId === "trigger-2") {
+      scheduleBeamPulse(clickTl, beam2TailRef.current, beam2HeadRef.current, 552, 0.75, 0);
+      scheduleMatrixCompute(clickTl, node2DotsRef.current, 0.55);
+      scheduleBeamPulse(clickTl, ret2TailRef.current, ret2HeadRef.current, 783, 0.9, 1.75);
+    } else if (triggerId === "trigger-3") {
+      scheduleBeamPulse(clickTl, beam3TailRef.current, beam3HeadRef.current, 314, 0.6, 0);
+      scheduleMatrixCompute(clickTl, node1DotsRef.current, 0.45);
+      scheduleBeamPulse(clickTl, ret1TailRef.current, ret1HeadRef.current, 591, 0.8, 1.65);
     }
   };
 
@@ -321,7 +334,7 @@ export function FtthTopologyFlow({
             fill="none"
             className={cn(
               "stroke-foreground/20 transition-all duration-300",
-              hoveredTarget === "path-1" && "stroke-foreground/50"
+              hoveredTarget === "path-1" && "stroke-foreground/45"
             )}
             strokeWidth="1"
           />
@@ -332,7 +345,7 @@ export function FtthTopologyFlow({
             fill="none"
             className={cn(
               "stroke-foreground/20 transition-all duration-300",
-              hoveredTarget === "path-2" && "stroke-foreground/50"
+              hoveredTarget === "path-2" && "stroke-foreground/45"
             )}
             strokeWidth="1"
           />
@@ -343,12 +356,12 @@ export function FtthTopologyFlow({
             fill="none"
             className={cn(
               "stroke-foreground/20 transition-all duration-300",
-              hoveredTarget === "path-3" && "stroke-foreground/50"
+              hoveredTarget === "path-3" && "stroke-foreground/45"
             )}
             strokeWidth="1"
           />
 
-          {/* Return Loop Bus: Exits Node 3/2/1 (y:316) -> Bus at y:363 -> Ascends to Trigger Arrow Base (x:153, y:205) */}
+          {/* Return Loop Bus 3: Exits Node 3 (y:316) -> Bus at y:363 -> Ascends to Trigger Arrow Base (x:153, y:205) */}
           <path
             d="M 940 316 L 940 343 A 20 20 0 0 1 920 363 L 173 363 A 20 20 0 0 1 153 343 L 153 205"
             fill="none"
@@ -376,67 +389,127 @@ export function FtthTopologyFlow({
           />
 
           {/* ============================================================== */}
-          {/* ANIMATED PHOTON BEAMS (GSAP CONTROLLED OPTICAL PULSES)         */}
+          {/* ANIMATED GRADIENT COMET BEAMS (ALL 3 FORWARD + ALL 3 RETURN)   */}
           {/* ============================================================== */}
 
-          {/* Beam 1: Trigger 1 -> Node 3 */}
+          {/* Forward Beam 1 (Trigger 1 -> Node 3) */}
           <path
-            ref={beam1Ref}
+            ref={beam1TailRef}
+            d="M 278 65.5 L 920 65.5 A 20 20 0 0 1 940 85.5 L 940 201"
+            fill="none"
+            className="stroke-foreground/40"
+            strokeWidth="1"
+            strokeLinecap="round"
+            style={{ opacity: 0 }}
+          />
+          <path
+            ref={beam1HeadRef}
             d="M 278 65.5 L 920 65.5 A 20 20 0 0 1 940 85.5 L 940 201"
             fill="none"
             className="stroke-foreground"
-            strokeWidth="1.5"
+            strokeWidth="1.25"
             strokeLinecap="round"
-            strokeDasharray="56 850"
-            style={{
-              filter: "drop-shadow(0 0 2.5px hsl(var(--foreground)))",
-              opacity: 0,
-            }}
+            style={{ opacity: 0 }}
           />
 
-          {/* Beam 2: Trigger 2 -> Node 2 */}
+          {/* Forward Beam 2 (Trigger 2 -> Node 2) */}
           <path
-            ref={beam2Ref}
+            ref={beam2TailRef}
+            d="M 278 111 L 728 111 A 20 20 0 0 1 748 131 L 748 201"
+            fill="none"
+            className="stroke-foreground/40"
+            strokeWidth="1"
+            strokeLinecap="round"
+            style={{ opacity: 0 }}
+          />
+          <path
+            ref={beam2HeadRef}
             d="M 278 111 L 728 111 A 20 20 0 0 1 748 131 L 748 201"
             fill="none"
             className="stroke-foreground"
-            strokeWidth="1.5"
+            strokeWidth="1.25"
             strokeLinecap="round"
-            strokeDasharray="52 620"
-            style={{
-              filter: "drop-shadow(0 0 2.5px hsl(var(--foreground)))",
-              opacity: 0,
-            }}
+            style={{ opacity: 0 }}
           />
 
-          {/* Beam 3: Trigger 3 -> Node 1 */}
+          {/* Forward Beam 3 (Trigger 3 -> Node 1) */}
           <path
-            ref={beam3Ref}
+            ref={beam3TailRef}
+            d="M 278 156.5 L 536 156.5 A 20 20 0 0 1 556 176.5 L 556 201"
+            fill="none"
+            className="stroke-foreground/40"
+            strokeWidth="1"
+            strokeLinecap="round"
+            style={{ opacity: 0 }}
+          />
+          <path
+            ref={beam3HeadRef}
             d="M 278 156.5 L 536 156.5 A 20 20 0 0 1 556 176.5 L 556 201"
             fill="none"
             className="stroke-foreground"
-            strokeWidth="1.5"
+            strokeWidth="1.25"
             strokeLinecap="round"
-            strokeDasharray="44 380"
-            style={{
-              filter: "drop-shadow(0 0 2.5px hsl(var(--foreground)))",
-              opacity: 0,
-            }}
+            style={{ opacity: 0 }}
           />
 
-          {/* Return Beam along dashed bus */}
+          {/* Return Beam 3 (Node 3 Bottom Pin -> Trigger Bottom Arrow) */}
           <path
-            ref={returnBeamRef}
+            ref={ret3TailRef}
             d="M 940 316 L 940 343 A 20 20 0 0 1 920 363 L 173 363 A 20 20 0 0 1 153 343 L 153 205"
             fill="none"
-            className="stroke-foreground"
-            strokeWidth="1.5"
+            className="stroke-foreground/35"
+            strokeWidth="1"
             strokeLinecap="round"
-            strokeDasharray="60 1050"
-            style={{
-              filter: "drop-shadow(0 0 2.5px hsl(var(--foreground)))",
-              opacity: 0,
-            }}
+            style={{ opacity: 0 }}
+          />
+          <path
+            ref={ret3HeadRef}
+            d="M 940 316 L 940 343 A 20 20 0 0 1 920 363 L 173 363 A 20 20 0 0 1 153 343 L 153 205"
+            fill="none"
+            className="stroke-foreground/90"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            style={{ opacity: 0 }}
+          />
+
+          {/* Return Beam 2 (Node 2 Bottom Pin -> Trigger Bottom Arrow) */}
+          <path
+            ref={ret2TailRef}
+            d="M 748 316 L 748 343 A 20 20 0 0 1 728 363 L 173 363 A 20 20 0 0 1 153 343 L 153 205"
+            fill="none"
+            className="stroke-foreground/35"
+            strokeWidth="1"
+            strokeLinecap="round"
+            style={{ opacity: 0 }}
+          />
+          <path
+            ref={ret2HeadRef}
+            d="M 748 316 L 748 343 A 20 20 0 0 1 728 363 L 173 363 A 20 20 0 0 1 153 343 L 153 205"
+            fill="none"
+            className="stroke-foreground/90"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            style={{ opacity: 0 }}
+          />
+
+          {/* Return Beam 1 (Node 1 Bottom Pin -> Trigger Bottom Arrow) */}
+          <path
+            ref={ret1TailRef}
+            d="M 556 316 L 556 343 A 20 20 0 0 1 536 363 L 173 363 A 20 20 0 0 1 153 343 L 153 205"
+            fill="none"
+            className="stroke-foreground/35"
+            strokeWidth="1"
+            strokeLinecap="round"
+            style={{ opacity: 0 }}
+          />
+          <path
+            ref={ret1HeadRef}
+            d="M 556 316 L 556 343 A 20 20 0 0 1 536 363 L 173 363 A 20 20 0 0 1 153 343 L 153 205"
+            fill="none"
+            className="stroke-foreground/90"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            style={{ opacity: 0 }}
           />
 
           {/* ============================================================== */}
@@ -471,16 +544,18 @@ export function FtthTopologyFlow({
           <foreignObject x="44" y="38" width="218" height="146" className="overflow-visible">
             {/* Outer Black Container Frame (x:44..262, y:38..184, 10px padding) */}
             <div className="w-full h-full rounded-xl border border-border/60 bg-background p-[10px] flex flex-col justify-between">
-              {TRIGGERS.map((trigger) => {
+              {TRIGGERS.map((trigger, idx) => {
                 const Icon = trigger.icon;
                 const isHovered =
                   hoveredTarget === trigger.id ||
                   hoveredTarget === trigger.targetNodeId ||
                   hoveredTarget === trigger.pathId;
+                const pillRef = idx === 0 ? pill1Ref : idx === 1 ? pill2Ref : pill3Ref;
 
                 return (
                   <div
                     key={trigger.id}
+                    ref={pillRef}
                     onMouseEnter={() => setHoveredTarget(trigger.pathId)}
                     onMouseLeave={() => setHoveredTarget(null)}
                     onClick={() => handleTriggerClick(trigger.id)}
@@ -511,12 +586,19 @@ export function FtthTopologyFlow({
               hoveredTarget === node.triggerId ||
               hoveredTarget === node.pathId;
 
-            const matrixRef =
+            const dotsArrayRef =
               node.id === "node-1"
-                ? matrix1Ref
+                ? node1DotsRef
                 : node.id === "node-2"
-                ? matrix2Ref
-                : matrix3Ref;
+                ? node2DotsRef
+                : node3DotsRef;
+
+            const cardRef =
+              node.id === "node-1"
+                ? node1CardRef
+                : node.id === "node-2"
+                ? node2CardRef
+                : node3CardRef;
 
             return (
               <foreignObject
@@ -536,6 +618,7 @@ export function FtthTopologyFlow({
                 >
                   {/* Inner 58x58 Solid Silicon Square */}
                   <div
+                    ref={cardRef}
                     onMouseEnter={() => setHoveredTarget(node.pathId)}
                     onMouseLeave={() => setHoveredTarget(null)}
                     className={cn(
@@ -545,16 +628,16 @@ export function FtthTopologyFlow({
                         : "border-border/85 hover:border-foreground/30"
                     )}
                   >
-                    {/* Top-Left: 4x4 Micro-LED Matrix Controlled by GSAP */}
-                    <div
-                      ref={matrixRef}
-                      className="grid grid-cols-4 gap-[2.5px] w-fit"
-                      style={{ opacity: 0.25 }}
-                    >
+                    {/* Top-Left: 4x4 (16-Dot) Micro-LED Matrix with Per-Dot GSAP Data Processing */}
+                    <div className="grid grid-cols-4 gap-[2.5px] w-fit">
                       {Array.from({ length: 16 }).map((_, i) => (
                         <span
                           key={i}
-                          className="size-[2px] rounded-[0.5px] bg-foreground"
+                          ref={(el) => {
+                            dotsArrayRef.current[i] = el;
+                          }}
+                          className="size-[2.5px] rounded-[0.5px] bg-foreground"
+                          style={{ opacity: 0.2 }}
                         />
                       ))}
                     </div>

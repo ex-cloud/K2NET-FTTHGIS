@@ -3,6 +3,7 @@ import { Eye, EyeOff, Lock, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Check
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
+import { AuthCardFormSkeleton } from "./auth-login-skeleton";
 
 export interface AuthResetPasswordLabels {
   resetPasswordPageTitle?: string;
@@ -213,14 +214,9 @@ export function AuthResetPasswordCard({
     }
   };
 
-  // 1. Loading state
+  // 1. Loading state (Contextual Card Skeleton instead of generic spinner)
   if (validation.isValidating) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-xs text-muted-foreground">{l.tokenVerifying}</p>
-      </div>
-    );
+    return <AuthCardFormSkeleton variant="reset-password" />;
   }
 
   // 2. Success state

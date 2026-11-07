@@ -3,7 +3,16 @@ import { createRootRoute, createRoute, createRouter, Navigate, Outlet, useParams
 import { ProtectedRoute } from "@k2net/auth/client";
 import { TenantOrgLayout } from "./components/layout/TenantOrgLayout";
 import { TenantProjectLayout } from "./components/layout/TenantProjectLayout";
-import { ForbiddenError, NotFoundError, ServerError, SessionExpiredError } from "@k2net/ui";
+import {
+  AppShellSkeleton,
+  AuthLoginSkeleton,
+  DashboardPageSkeleton,
+  ForbiddenError,
+  NotFoundError,
+  ServerError,
+  SessionExpiredError,
+  type AuthSkeletonVariant,
+} from "@k2net/ui";
 import * as React from "react";
 import { useTranslation } from "@k2net/i18n";
 import {
@@ -197,15 +206,11 @@ const ProjectAuditLogsPage = lazyWithRetry(() =>
 // Suspense fallback & Error Handlers
 // ----------------------------------------------------------------
 function PageFallback() {
-  const { t } = useTranslation();
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-background min-h-[300px]">
-      <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <span className="text-xs font-mono text-muted-foreground">{t("common.page_loading")}</span>
-      </div>
-    </div>
-  );
+  return <DashboardPageSkeleton />;
+}
+
+function AuthPageFallback({ variant = "login" }: { variant?: AuthSkeletonVariant }) {
+  return <AuthLoginSkeleton variant={variant} />;
 }
 
 function NotFoundFallback() {
@@ -253,6 +258,16 @@ function Lazy({ children }: { children: React.ReactNode }) {
   return <React.Suspense fallback={<PageFallback />}>{children}</React.Suspense>;
 }
 
+function AuthLazy({
+  children,
+  variant = "login",
+}: {
+  children: React.ReactNode;
+  variant?: AuthSkeletonVariant;
+}) {
+  return <React.Suspense fallback={<AuthPageFallback variant={variant} />}>{children}</React.Suspense>;
+}
+
 // ----------------------------------------------------------------
 // Route Trees Definition
 // ----------------------------------------------------------------
@@ -266,9 +281,9 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: () => (
-    <Lazy>
+    <AuthLazy variant="login">
       <LoginPage />
-    </Lazy>
+    </AuthLazy>
   ),
   errorComponent: RouterErrorComponent,
 });
@@ -277,9 +292,9 @@ const resetPasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reset-password",
   component: () => (
-    <Lazy>
+    <AuthLazy variant="reset-password">
       <ResetPasswordPage />
-    </Lazy>
+    </AuthLazy>
   ),
   errorComponent: RouterErrorComponent,
 });
@@ -288,9 +303,9 @@ const activateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/activate",
   component: () => (
-    <Lazy>
+    <AuthLazy variant="activate">
       <ActivatePage />
-    </Lazy>
+    </AuthLazy>
   ),
   errorComponent: RouterErrorComponent,
 });
@@ -299,9 +314,9 @@ const inviteAcceptRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/invite/accept",
   component: () => (
-    <Lazy>
+    <AuthLazy variant="invite">
       <InviteAcceptPage />
-    </Lazy>
+    </AuthLazy>
   ),
   errorComponent: RouterErrorComponent,
 });
@@ -314,6 +329,7 @@ const orgAuthenticatedRoute = createRoute({
   id: "tenant-org-authenticated",
   component: () => (
     <ProtectedRoute
+      fallback={<AppShellSkeleton />}
       unauthorizedFallback={<ForbiddenError statusCode={403} backUrl="/projects" />}
       sessionExpiredFallback={<SessionExpiredError statusCode={419} loginUrl="/login" />}
     >
@@ -606,6 +622,7 @@ const projectAuthenticatedRoute = createRoute({
   path: "/project/$projectId",
   component: () => (
     <ProtectedRoute
+      fallback={<AppShellSkeleton />}
       unauthorizedFallback={<ForbiddenError statusCode={403} backUrl="/projects" />}
       sessionExpiredFallback={<SessionExpiredError statusCode={419} loginUrl="/login" />}
     >

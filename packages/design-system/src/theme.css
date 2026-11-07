@@ -384,3 +384,51 @@
   border: 1px solid hsl(0 0% 80%);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12), 0 1px 0 rgba(255, 255, 255, 0.95);
 }
+
+/* ============================================================
+   🌗 Smooth Enterprise Theme Transition (Linear / Vercel Architecture)
+   1. Native GPU View Transition compositor cross-fade (::view-transition)
+   2. Instantaneous target snapshot lock (data-view-transition-active)
+   3. Synchronized lockstep CSS fallback (data-theme-transitioning)
+   ============================================================ */
+::view-transition-group(root) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  mix-blend-mode: normal;
+}
+
+/* Freeze individual element transitions while capturing the View Transition new-state GPU texture */
+html[data-view-transition-active="true"],
+html[data-view-transition-active="true"] *,
+html[data-view-transition-active="true"] *::before,
+html[data-view-transition-active="true"] *::after {
+  transition: none !important;
+}
+
+/* Fallback for browsers without View Transitions API: lockstep CSS color interpolation */
+html[data-theme-transitioning="true"],
+html[data-theme-transitioning="true"] *,
+html[data-theme-transitioning="true"] *::before,
+html[data-theme-transitioning="true"] *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow !important;
+  transition-duration: 260ms !important;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition-delay: 0ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  html[data-theme-transitioning="true"],
+  html[data-theme-transitioning="true"] * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

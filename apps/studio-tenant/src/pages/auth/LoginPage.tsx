@@ -6,6 +6,7 @@ import { useTranslation } from "@k2net/i18n";
 import {
   AuthLoginForm,
   AuthLoginLayout,
+  AuthLoginSkeleton,
   FtthTopologyFlow,
   TenantDomainError,
   saveAccountProfile,
@@ -299,11 +300,7 @@ export function LoginPage() {
   };
 
   if (isTenantCtxLoading) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background text-muted-foreground">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
+    return <AuthLoginSkeleton variant="login" />;
   }
 
   if (!tenantCtx || tenantSlug === "__invalid_reserved__") {

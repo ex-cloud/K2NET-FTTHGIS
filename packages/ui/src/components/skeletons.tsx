@@ -173,3 +173,82 @@ export function CardGridSkeleton() {
     </div>
   );
 }
+
+/**
+ * Full-screen enterprise application shell skeleton (Sidebar + Top Header + Dashboard Content).
+ * Used during initial session hydration on authenticated routes so hard-refreshes feel seamless.
+ */
+export function AppShellSkeleton() {
+  return (
+    <div
+      className="flex h-screen w-screen overflow-hidden bg-background text-foreground antialiased select-none"
+      aria-busy="true"
+      aria-label="Loading workspace"
+    >
+      {/* Left Primary Sidebar Skeleton */}
+      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-sidebar p-3 gap-4">
+        {/* Workspace / Brand Switcher Header */}
+        <div className="flex items-center gap-2.5 px-1.5 py-1">
+          <Skeleton className="h-7 w-7 rounded-md shrink-0" />
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
+            <Skeleton className="h-3.5 w-28 rounded" />
+            <Skeleton className="h-2.5 w-20 rounded" />
+          </div>
+        </div>
+
+        {/* Search / Command Bar Skeleton */}
+        <Skeleton className="h-8 w-full rounded-md" />
+
+        {/* Navigation Groups */}
+        <div className="flex flex-col gap-5 mt-1 flex-1 overflow-hidden">
+          {Array.from({ length: 2 }).map((_, groupIdx) => (
+            <div key={groupIdx} className="flex flex-col gap-1.5">
+              <Skeleton className="h-2.5 w-20 rounded mx-1.5 mb-1" />
+              {Array.from({ length: 4 }).map((__, itemIdx) => (
+                <div
+                  key={itemIdx}
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-md"
+                >
+                  <Skeleton className="h-4 w-4 rounded-xs shrink-0" />
+                  <Skeleton className="h-3.5 w-28 rounded" />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom User Profile Pill */}
+        <div className="mt-auto pt-3 border-t border-border flex items-center gap-2.5 px-1.5">
+          <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
+            <Skeleton className="h-3 w-24 rounded" />
+            <Skeleton className="h-2.5 w-32 rounded" />
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
+        {/* Top Navbar Header (h-12) */}
+        <header className="h-12 shrink-0 border-b border-border px-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4 rounded-xs" />
+            <Skeleton className="h-3.5 w-24 rounded" />
+            <span className="text-border">/</span>
+            <Skeleton className="h-3.5 w-32 rounded" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-20 rounded-md" />
+            <Skeleton className="h-7 w-7 rounded-md" />
+            <Skeleton className="h-7 w-7 rounded-md" />
+          </div>
+        </header>
+
+        {/* Scrollable Canvas Body */}
+        <main className="flex-1 overflow-hidden">
+          <DashboardPageSkeleton />
+        </main>
+      </div>
+    </div>
+  );
+}
