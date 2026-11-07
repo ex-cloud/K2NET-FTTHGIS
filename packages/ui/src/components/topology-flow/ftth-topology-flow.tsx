@@ -28,6 +28,11 @@ interface ProcessorNode {
   triggerId: string;
 }
 
+interface MatrixFrame {
+  high: number[];
+  mid: number[];
+}
+
 const TRIGGERS: TriggerItem[] = [
   {
     id: "trigger-1",
@@ -80,25 +85,82 @@ const PROCESSORS: ProcessorNode[] = [
   },
 ];
 
-// 8-Frame Silicon Data-Processing Wave Patterns across the 4x4 (16-dot) LED Matrix
-// Matches the exact dot illumination frames in Linear's reference video (frame_v7_02..08)
-const MATRIX_COMPUTE_FRAMES: Array<{ high: number[]; mid: number[] }> = [
-  // Frame 1: Ingress Top-Left 2x2 Quadrant (frame_v7_02)
-  { high: [0, 1, 4, 5], mid: [2, 8, 9] },
-  // Frame 2: Top-Left 3x2 Expansion (frame_v7_03)
-  { high: [0, 1, 2, 4, 5, 8], mid: [3, 6, 9, 12] },
-  // Frame 3: Diagonal Wave Propagation
-  { high: [1, 2, 5, 6, 8, 9], mid: [0, 3, 4, 10, 13] },
-  // Frame 4: Lower-Left Compute Core (frame_v7_04)
-  { high: [4, 8, 9, 12, 13], mid: [0, 1, 5, 14] },
-  // Frame 5: Center Matrix Shift (frame_v7_06)
-  { high: [4, 5, 8, 9, 13], mid: [1, 2, 6, 10, 12, 14] },
-  // Frame 6: Diamond Cluster Synthesis (frame_v7_07)
-  { high: [1, 4, 5, 6, 9, 10], mid: [0, 2, 7, 8, 13, 14] },
-  // Frame 7: Full 3x3 Active Core (frame_v7_08)
-  { high: [0, 1, 2, 4, 5, 6, 8, 9, 10], mid: [3, 7, 11, 13, 14] },
-  // Frame 8: Bottom Output Dispatch toward Return Pin
-  { high: [9, 10, 11, 13, 14, 15], mid: [5, 6, 7, 12] },
+/**
+ * DISTINCT 4x4 (16-Dot) MATRIX ANIMATION STYLES PER PROCESSOR NODE
+ * Grid indices:
+ *   0  1  2  3
+ *   4  5  6  7
+ *   8  9 10 11
+ *  12 13 14 15
+ */
+
+// Node 1 (Left Box — Optical OTDR Audit):
+// Style A: "Corner-to-Core Radar, X-Crosshair & Perimeter Ring Scan"
+const NODE_1_OPTICAL_FRAMES: MatrixFrame[] = [
+  // Frame 1: Top-left ingress spark
+  { high: [0, 1, 4], mid: [2, 5, 8] },
+  // Frame 2: Diagonal X-Crosshair Lock
+  { high: [0, 3, 5, 6, 9, 10, 12, 15], mid: [1, 2, 4, 7, 8, 11, 13, 14] },
+  // Frame 3: Inner 2x2 Core Compression
+  { high: [5, 6, 9, 10], mid: [0, 3, 12, 15] },
+  // Frame 4: Outer Perimeter Ring Expansion
+  { high: [0, 1, 2, 3, 4, 7, 8, 11, 12, 13, 14, 15], mid: [5, 6, 9, 10] },
+  // Frame 5: Four Corner Brackets
+  { high: [0, 1, 4, 2, 3, 7, 8, 12, 13, 11, 14, 15], mid: [5, 6, 9, 10] },
+  // Frame 6: Plus (+) Axis Crosshair
+  { high: [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14], mid: [0, 3, 12, 15] },
+  // Frame 7: Diamond Cluster Synthesis
+  { high: [1, 2, 4, 7, 8, 11, 13, 14], mid: [5, 6, 9, 10] },
+  // Frame 8: Center Core Convergence
+  { high: [5, 6, 9, 10], mid: [8, 9, 10, 11, 13, 14] },
+  // Frame 9: Bottom Egress Funnel toward Return Pin
+  { high: [9, 10, 13, 14], mid: [12, 15] },
+];
+
+// Node 2 (Middle Box — Subscriber OMCI Provisioning):
+// Style B: "Sliding 2x2 Quadrant Window & Checkerboard Parity Synthesis"
+const NODE_2_PROVISION_FRAMES: MatrixFrame[] = [
+  // Frame 1: Top-Left 2x2 Quadrant
+  { high: [0, 1, 4, 5], mid: [2, 6, 8, 9] },
+  // Frame 2: Shift Right -> Top-Center 2x2
+  { high: [1, 2, 5, 6], mid: [0, 3, 4, 7] },
+  // Frame 3: Shift Right -> Top-Right 2x2 Quadrant
+  { high: [2, 3, 6, 7], mid: [1, 5, 10, 11] },
+  // Frame 4: Shift Down -> Bottom-Right 2x2 Quadrant
+  { high: [10, 11, 14, 15], mid: [6, 7, 9, 13] },
+  // Frame 5: Shift Left -> Bottom-Center 2x2
+  { high: [9, 10, 13, 14], mid: [5, 6, 8, 11, 12, 15] },
+  // Frame 6: Shift Left -> Bottom-Left 2x2 Quadrant
+  { high: [8, 9, 12, 13], mid: [4, 5, 10, 14] },
+  // Frame 7: Checkerboard Parity Verification A
+  { high: [0, 2, 5, 7, 8, 10, 13, 15], mid: [1, 4, 6, 9, 11, 14] },
+  // Frame 8: Checkerboard Parity Verification B (Inverse)
+  { high: [1, 3, 4, 6, 9, 11, 12, 14], mid: [0, 2, 5, 7, 8, 10, 13, 15] },
+  // Frame 9: Bottom Output Dispatch
+  { high: [8, 9, 12, 13, 14], mid: [4, 5, 10, 15] },
+];
+
+// Node 3 (Right Box — OLT Telemetry Sync):
+// Style C: "Sequential Scanline Cascade & Column Equalizer Sweep"
+const NODE_3_TELEMETRY_FRAMES: MatrixFrame[] = [
+  // Frame 1: Row 1 Top Ingress Scanline
+  { high: [0, 1, 2, 3], mid: [4, 5, 6, 7] },
+  // Frame 2: Row 2 Horizontal Scanline
+  { high: [4, 5, 6, 7], mid: [0, 1, 2, 3, 8, 9, 10, 11] },
+  // Frame 3: Row 3 Horizontal Scanline
+  { high: [8, 9, 10, 11], mid: [4, 5, 6, 7, 12, 13, 14, 15] },
+  // Frame 4: Row 4 Bottom Horizontal Scanline
+  { high: [12, 13, 14, 15], mid: [8, 9, 10, 11] },
+  // Frame 5: Column 1 & 2 Vertical Sweep
+  { high: [0, 4, 8, 12, 1, 5, 9, 13], mid: [2, 6, 10, 14] },
+  // Frame 6: Column 2 & 3 Vertical Sweep
+  { high: [1, 5, 9, 13, 2, 6, 10, 14], mid: [0, 4, 8, 12, 3, 7, 11, 15] },
+  // Frame 7: Column 3 & 4 Right Vertical Sweep
+  { high: [2, 6, 10, 14, 3, 7, 11, 15], mid: [1, 5, 9, 13] },
+  // Frame 8: Telemetry Bar Graph Spectrum
+  { high: [4, 8, 9, 11, 12, 13, 14, 15], mid: [0, 5, 7, 10] },
+  // Frame 9: Bottom Egress Dispatch Pulse
+  { high: [12, 13, 14, 15], mid: [8, 9, 10, 11] },
 ];
 
 export function FtthTopologyFlow({
@@ -127,34 +189,52 @@ export function FtthTopologyFlow({
   const ret1TailRef = useRef<SVGPathElement>(null);
   const ret1HeadRef = useRef<SVGPathElement>(null);
 
+  // Pin Refs for realistic arrival/departure handoff illumination
+  const trigPin1Ref = useRef<SVGCircleElement>(null);
+  const trigPin2Ref = useRef<SVGCircleElement>(null);
+  const trigPin3Ref = useRef<SVGCircleElement>(null);
+  const node1InPinRef = useRef<SVGPolygonElement>(null);
+  const node2InPinRef = useRef<SVGPolygonElement>(null);
+  const node3InPinRef = useRef<SVGPolygonElement>(null);
+  const node1OutPinRef = useRef<SVGCircleElement>(null);
+  const node2OutPinRef = useRef<SVGCircleElement>(null);
+  const node3OutPinRef = useRef<SVGCircleElement>(null);
+  const returnArrowRef = useRef<SVGPolygonElement>(null);
+
   // 16 Individual LED Dot Refs per Processor Node (4x4 Matrix)
   const node1DotsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const node2DotsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const node3DotsRef = useRef<(HTMLSpanElement | null)[]>([]);
 
-  // Processor Inner Card Refs & Trigger Pill Refs for subtle active pulse
+  // Processor Inner Card Refs & Trigger Pill Refs
   const node1CardRef = useRef<HTMLDivElement>(null);
   const node2CardRef = useRef<HTMLDivElement>(null);
   const node3CardRef = useRef<HTMLDivElement>(null);
   const pill1Ref = useRef<HTMLDivElement>(null);
   const pill2Ref = useRef<HTMLDivElement>(null);
   const pill3Ref = useRef<HTMLDivElement>(null);
-  const returnArrowRef = useRef<SVGPolygonElement>(null);
 
-  // Helper: Schedule a Smooth Gradient Comet Pulse along any SVG Path (100% numeric tween)
+  /**
+   * Schedule a Realistic Gradient Comet Pulse along an SVG Path.
+   * Locks the bright `head` to the exact leading tip of `tail` (`s_front_head === s_front_tail`)
+   * and uses `sine.inOut` easing so the pulse decelerates naturally as it drains into the target pin.
+   */
   const scheduleBeamPulse = (
     tl: gsap.core.Timeline,
     tailEl: SVGPathElement | null,
     headEl: SVGPathElement | null,
+    originPinEl: SVGElement | null,
+    targetPinEl: SVGElement | null,
     exactLen: number,
     duration: number,
     startTime: number
   ) => {
     if (!tailEl || !headEl) return;
     const len = tailEl.getTotalLength() || exactLen;
-    const tailDash = 78;
-    const headDash = 32;
-    const gap = Math.ceil(len + tailDash + 200);
+    const tailDash = 96;
+    const headDash = 28;
+    const totalTravel = len + tailDash;
+    const gap = Math.ceil(totalTravel + 240);
 
     gsap.set(tailEl, {
       strokeDasharray: `${tailDash} ${gap}`,
@@ -167,64 +247,101 @@ export function FtthTopologyFlow({
       opacity: 0,
     });
 
+    // Subtle origin pin spark on departure
+    if (originPinEl) {
+      tl.fromTo(
+        originPinEl,
+        { opacity: 0.55 },
+        { opacity: 1, duration: 0.25, yoyo: true, repeat: 1, ease: "sine.inOut" },
+        startTime
+      );
+    }
+
+    // Both tail and head travel exact `totalTravel` distance in lockstep with `sine.inOut`
     tl.set([tailEl, headEl], { opacity: 1 }, startTime)
       .fromTo(
         tailEl,
         { strokeDashoffset: tailDash },
-        { strokeDashoffset: -len, duration, ease: "none", immediateRender: false },
+        {
+          strokeDashoffset: tailDash - totalTravel,
+          duration,
+          ease: "sine.inOut",
+          immediateRender: false,
+        },
         startTime
       )
       .fromTo(
         headEl,
         { strokeDashoffset: headDash },
-        { strokeDashoffset: -len, duration, ease: "none", immediateRender: false },
+        {
+          strokeDashoffset: headDash - totalTravel,
+          duration,
+          ease: "sine.inOut",
+          immediateRender: false,
+        },
         startTime
       )
       .set([tailEl, headEl], { opacity: 0 }, startTime + duration);
+
+    // Target pin illuminates smoothly as the comet tip arrives and drains into the pin
+    if (targetPinEl) {
+      const arrivalTime = startTime + duration * 0.78;
+      tl.fromTo(
+        targetPinEl,
+        { opacity: 0.5 },
+        { opacity: 1, duration: duration * 0.24, yoyo: true, repeat: 1, ease: "sine.inOut" },
+        arrivalTime
+      );
+    }
   };
 
-  // Helper: Schedule 8-Frame Silicon Data-Processing Wave on a Node's 16 LED Dots
+  /**
+   * Schedule Node-Specific 4x4 Silicon Matrix Processing Choreography.
+   * Starts after the comet has realistically absorbed into the node's input pin.
+   */
   const scheduleMatrixCompute = (
     tl: gsap.core.Timeline,
     dots: (HTMLSpanElement | null)[],
-    startTime: number
-  ) => {
+    frames: MatrixFrame[],
+    startTime: number,
+    stepDuration = 0.24
+  ): number => {
     const validDots = dots.filter((d): d is HTMLSpanElement => d !== null);
-    if (validDots.length === 0) return;
+    if (validDots.length === 0) return startTime;
 
-    const stepDuration = 0.18;
-
-    MATRIX_COMPUTE_FRAMES.forEach((frame, fIdx) => {
+    frames.forEach((frame, fIdx) => {
       const frameTime = startTime + fIdx * stepDuration;
       validDots.forEach((dot, dotIdx) => {
         const targetOpacity = frame.high.includes(dotIdx)
           ? 1
           : frame.mid.includes(dotIdx)
-          ? 0.5
+          ? 0.48
           : 0.16;
         tl.to(
           dot,
           {
             opacity: targetOpacity,
             duration: stepDuration * 0.85,
-            ease: "none",
+            ease: "sine.inOut",
           },
           frameTime
         );
       });
     });
 
-    // Settle all 16 LEDs back to idle dim state (0.18) after processing completes
-    const endTime = startTime + MATRIX_COMPUTE_FRAMES.length * stepDuration;
+    // Smoothly settle all 16 LEDs back to idle dim state before dispatching return beam
+    const endTime = startTime + frames.length * stepDuration;
     tl.to(
       validDots,
       {
         opacity: 0.18,
-        duration: 0.25,
+        duration: 0.3,
         ease: "power2.out",
       },
       endTime
     );
+
+    return endTime + 0.18;
   };
 
   // Continuous Overlapping 3-Pipeline GSAP Master Timeline
@@ -242,69 +359,203 @@ export function FtthTopologyFlow({
 
       const tl = gsap.timeline({
         repeat: -1,
-        repeatDelay: 0.1,
+        repeatDelay: 0.25,
       });
 
       // ─────────────────────────────────────────────────────────────────
-      // PIPELINE 1: Trigger 1 (TELEMETRY) -> Line 1 (789px) -> Node 3 -> Return 3 (975px)
+      // PIPELINE 1: Trigger 1 (TELEMETRY) -> Line 1 (789px) -> Node 3 (Scanline & Equalizer) -> Return 3
       // ─────────────────────────────────────────────────────────────────
-      scheduleBeamPulse(tl, beam1TailRef.current, beam1HeadRef.current, 789, 1.35, 0.0);
-      scheduleMatrixCompute(tl, node3DotsRef.current, 1.10);
-      scheduleBeamPulse(tl, ret3TailRef.current, ret3HeadRef.current, 975, 1.45, 2.30);
-      tl.fromTo(
+      const p1Start = 0.0;
+      const p1ForwardDur = 2.45;
+      scheduleBeamPulse(
+        tl,
+        beam1TailRef.current,
+        beam1HeadRef.current,
+        trigPin1Ref.current,
+        node3InPinRef.current,
+        789,
+        p1ForwardDur,
+        p1Start
+      );
+      // Handoff to Node 3 Matrix right as comet tail finishes absorbing into pin
+      const p1ComputeEnd = scheduleMatrixCompute(
+        tl,
+        node3DotsRef.current,
+        NODE_3_TELEMETRY_FRAMES,
+        p1Start + p1ForwardDur - 0.12,
+        0.24
+      );
+      // Dispatch Return Beam 3 from Node 3 bottom pin back to Trigger Box
+      scheduleBeamPulse(
+        tl,
+        ret3TailRef.current,
+        ret3HeadRef.current,
+        node3OutPinRef.current,
         returnArrowRef.current,
-        { opacity: 0.55 },
-        { opacity: 1, duration: 0.2, yoyo: true, repeat: 1 },
-        3.60
+        975,
+        2.65,
+        p1ComputeEnd
       );
 
       // ─────────────────────────────────────────────────────────────────
-      // PIPELINE 2: Trigger 2 (PROVISION) -> Line 2 (552px) -> Node 2 -> Return 2 (783px)
+      // PIPELINE 2: Trigger 2 (PROVISION) -> Line 2 (552px) -> Node 2 (Sliding 2x2 & Checkerboard) -> Return 2
       // ─────────────────────────────────────────────────────────────────
-      scheduleBeamPulse(tl, beam2TailRef.current, beam2HeadRef.current, 552, 1.15, 1.40);
-      scheduleMatrixCompute(tl, node2DotsRef.current, 2.30);
-      scheduleBeamPulse(tl, ret2TailRef.current, ret2HeadRef.current, 783, 1.30, 3.50);
-      tl.fromTo(
+      const p2Start = 1.95;
+      const p2ForwardDur = 1.95;
+      scheduleBeamPulse(
+        tl,
+        beam2TailRef.current,
+        beam2HeadRef.current,
+        trigPin2Ref.current,
+        node2InPinRef.current,
+        552,
+        p2ForwardDur,
+        p2Start
+      );
+      const p2ComputeEnd = scheduleMatrixCompute(
+        tl,
+        node2DotsRef.current,
+        NODE_2_PROVISION_FRAMES,
+        p2Start + p2ForwardDur - 0.12,
+        0.24
+      );
+      scheduleBeamPulse(
+        tl,
+        ret2TailRef.current,
+        ret2HeadRef.current,
+        node2OutPinRef.current,
         returnArrowRef.current,
-        { opacity: 0.55 },
-        { opacity: 1, duration: 0.2, yoyo: true, repeat: 1 },
-        4.65
+        783,
+        2.25,
+        p2ComputeEnd
       );
 
       // ─────────────────────────────────────────────────────────────────
-      // PIPELINE 3: Trigger 3 (OPTICAL) -> Line 3 (314px) -> Node 1 -> Return 1 (591px)
+      // PIPELINE 3: Trigger 3 (OPTICAL) -> Line 3 (314px) -> Node 1 (Crosshair & Perimeter Ring) -> Return 1
       // ─────────────────────────────────────────────────────────────────
-      scheduleBeamPulse(tl, beam3TailRef.current, beam3HeadRef.current, 314, 0.95, 2.75);
-      scheduleMatrixCompute(tl, node1DotsRef.current, 3.45);
-      scheduleBeamPulse(tl, ret1TailRef.current, ret1HeadRef.current, 591, 1.15, 4.65);
-      tl.fromTo(
+      const p3Start = 3.85;
+      const p3ForwardDur = 1.50;
+      scheduleBeamPulse(
+        tl,
+        beam3TailRef.current,
+        beam3HeadRef.current,
+        trigPin3Ref.current,
+        node1InPinRef.current,
+        314,
+        p3ForwardDur,
+        p3Start
+      );
+      const p3ComputeEnd = scheduleMatrixCompute(
+        tl,
+        node1DotsRef.current,
+        NODE_1_OPTICAL_FRAMES,
+        p3Start + p3ForwardDur - 0.12,
+        0.24
+      );
+      scheduleBeamPulse(
+        tl,
+        ret1TailRef.current,
+        ret1HeadRef.current,
+        node1OutPinRef.current,
         returnArrowRef.current,
-        { opacity: 0.55 },
-        { opacity: 1, duration: 0.2, yoyo: true, repeat: 1 },
-        5.65
+        591,
+        1.90,
+        p3ComputeEnd
       );
     }, containerRef);
 
     return () => ctx.revert();
   }, [interactive]);
 
-  // Direct Interactive Click Handler: Fires Instant Beam + Data Processing Wave
+  // Direct Interactive Click Handler: Fires Smooth Beam + Node-Specific Data Processing Wave
   const handleTriggerClick = (triggerId: string) => {
     if (!interactive) return;
 
     const clickTl = gsap.timeline();
     if (triggerId === "trigger-1") {
-      scheduleBeamPulse(clickTl, beam1TailRef.current, beam1HeadRef.current, 789, 0.9, 0);
-      scheduleMatrixCompute(clickTl, node3DotsRef.current, 0.7);
-      scheduleBeamPulse(clickTl, ret3TailRef.current, ret3HeadRef.current, 975, 1.0, 1.9);
+      scheduleBeamPulse(
+        clickTl,
+        beam1TailRef.current,
+        beam1HeadRef.current,
+        trigPin1Ref.current,
+        node3InPinRef.current,
+        789,
+        1.75,
+        0
+      );
+      const end = scheduleMatrixCompute(
+        clickTl,
+        node3DotsRef.current,
+        NODE_3_TELEMETRY_FRAMES,
+        1.65,
+        0.2
+      );
+      scheduleBeamPulse(
+        clickTl,
+        ret3TailRef.current,
+        ret3HeadRef.current,
+        node3OutPinRef.current,
+        returnArrowRef.current,
+        975,
+        1.9,
+        end
+      );
     } else if (triggerId === "trigger-2") {
-      scheduleBeamPulse(clickTl, beam2TailRef.current, beam2HeadRef.current, 552, 0.75, 0);
-      scheduleMatrixCompute(clickTl, node2DotsRef.current, 0.55);
-      scheduleBeamPulse(clickTl, ret2TailRef.current, ret2HeadRef.current, 783, 0.9, 1.75);
+      scheduleBeamPulse(
+        clickTl,
+        beam2TailRef.current,
+        beam2HeadRef.current,
+        trigPin2Ref.current,
+        node2InPinRef.current,
+        552,
+        1.45,
+        0
+      );
+      const end = scheduleMatrixCompute(
+        clickTl,
+        node2DotsRef.current,
+        NODE_2_PROVISION_FRAMES,
+        1.35,
+        0.2
+      );
+      scheduleBeamPulse(
+        clickTl,
+        ret2TailRef.current,
+        ret2HeadRef.current,
+        node2OutPinRef.current,
+        returnArrowRef.current,
+        783,
+        1.65,
+        end
+      );
     } else if (triggerId === "trigger-3") {
-      scheduleBeamPulse(clickTl, beam3TailRef.current, beam3HeadRef.current, 314, 0.6, 0);
-      scheduleMatrixCompute(clickTl, node1DotsRef.current, 0.45);
-      scheduleBeamPulse(clickTl, ret1TailRef.current, ret1HeadRef.current, 591, 0.8, 1.65);
+      scheduleBeamPulse(
+        clickTl,
+        beam3TailRef.current,
+        beam3HeadRef.current,
+        trigPin3Ref.current,
+        node1InPinRef.current,
+        314,
+        1.15,
+        0
+      );
+      const end = scheduleMatrixCompute(
+        clickTl,
+        node1DotsRef.current,
+        NODE_1_OPTICAL_FRAMES,
+        1.05,
+        0.2
+      );
+      scheduleBeamPulse(
+        clickTl,
+        ret1TailRef.current,
+        ret1HeadRef.current,
+        node1OutPinRef.current,
+        returnArrowRef.current,
+        591,
+        1.4,
+        end
+      );
     }
   };
 
@@ -517,19 +768,31 @@ export function FtthTopologyFlow({
           {/* ============================================================== */}
 
           {/* Trigger Output Dots: Exact 16px air-gap to the right of Trigger Box (x:262 -> x:278) */}
-          <circle cx="278" cy="65.5" r="1.75" className="fill-muted-foreground/75" />
-          <circle cx="278" cy="111" r="1.75" className="fill-muted-foreground/75" />
-          <circle cx="278" cy="156.5" r="1.75" className="fill-muted-foreground/75" />
+          <circle ref={trigPin1Ref} cx="278" cy="65.5" r="1.75" className="fill-muted-foreground/75" />
+          <circle ref={trigPin2Ref} cx="278" cy="111" r="1.75" className="fill-muted-foreground/75" />
+          <circle ref={trigPin3Ref} cx="278" cy="156.5" r="1.75" className="fill-muted-foreground/75" />
 
           {/* Processor Input Arrowheads: Exact 16px air-gap above Processor Boxes (y:206 -> y:222) */}
-          <polygon points="553.5,201 558.5,201 556,206" className="fill-muted-foreground/65" />
-          <polygon points="745.5,201 750.5,201 748,206" className="fill-muted-foreground/65" />
-          <polygon points="937.5,201 942.5,201 940,206" className="fill-muted-foreground/65" />
+          <polygon
+            ref={node1InPinRef}
+            points="553.5,201 558.5,201 556,206"
+            className="fill-muted-foreground/65"
+          />
+          <polygon
+            ref={node2InPinRef}
+            points="745.5,201 750.5,201 748,206"
+            className="fill-muted-foreground/65"
+          />
+          <polygon
+            ref={node3InPinRef}
+            points="937.5,201 942.5,201 940,206"
+            className="fill-muted-foreground/65"
+          />
 
           {/* Processor Output Dots: Exact 16px air-gap below Processor Boxes (y:300 -> y:316) */}
-          <circle cx="556" cy="316" r="1.75" className="fill-muted-foreground/60" />
-          <circle cx="748" cy="316" r="1.75" className="fill-muted-foreground/60" />
-          <circle cx="940" cy="316" r="1.75" className="fill-muted-foreground/60" />
+          <circle ref={node1OutPinRef} cx="556" cy="316" r="1.75" className="fill-muted-foreground/60" />
+          <circle ref={node2OutPinRef} cx="748" cy="316" r="1.75" className="fill-muted-foreground/60" />
+          <circle ref={node3OutPinRef} cx="940" cy="316" r="1.75" className="fill-muted-foreground/60" />
 
           {/* Return Loop Upward Arrowhead: Exact 16px air-gap below Trigger Box (y:184 -> y:200) */}
           <polygon
@@ -628,16 +891,16 @@ export function FtthTopologyFlow({
                         : "border-border/85 hover:border-foreground/30"
                     )}
                   >
-                    {/* Top-Left: 4x4 (16-Dot) Micro-LED Matrix with Per-Dot GSAP Data Processing */}
-                    <div className="grid grid-cols-4 gap-[2.5px] w-fit">
+                    {/* Top-Left: 4x4 (16-Dot) Micro-LED Matrix with Node-Specific GSAP Choreography */}
+                    <div className="grid grid-cols-4 gap-[3px] w-fit">
                       {Array.from({ length: 16 }).map((_, i) => (
                         <span
                           key={i}
                           ref={(el) => {
                             dotsArrayRef.current[i] = el;
                           }}
-                          className="size-[2.5px] rounded-[0.5px] bg-foreground"
-                          style={{ opacity: 0.2 }}
+                          className="size-[2.75px] rounded-[0.5px] bg-foreground"
+                          style={{ opacity: 0.18 }}
                         />
                       ))}
                     </div>

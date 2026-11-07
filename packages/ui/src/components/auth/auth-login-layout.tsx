@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { ShieldCheck, BookOpen, Sparkles, X, CheckCircle2, Lock } from "lucide-react";
+import { ShieldCheck, BookOpen, X, CheckCircle2, Lock } from "lucide-react";
 import { ModeToggle } from "../mode-toggle";
-import { renderIsometricFigureById, ISOMETRIC_FIGURES_LIST } from "../linear-isometric/figure-registry";
 import { FtthTopologyFlow } from "../topology-flow/ftth-topology-flow";
 
 export type AuthLocale = "en" | "id";
@@ -45,8 +44,8 @@ export function AuthLoginLayout({
   testimonialRole: _testimonialRole,
   figureComponent,
   mobileFigureComponent,
-  hideMobileHero = false,
-  figureId = "fig-01",
+  hideMobileHero = true,
+  figureId: _figureId = "fig-01",
   locale = "en",
   onLocaleChange,
   footerAgreePrefix,
@@ -60,7 +59,6 @@ export function AuthLoginLayout({
   policyCloseButton,
 }: AuthLoginLayoutProps) {
   const [activePolicyModal, setActivePolicyModal] = useState<"terms" | "privacy" | null>(null);
-  const activeMeta = ISOMETRIC_FIGURES_LIST.find((f) => f.id === figureId) || ISOMETRIC_FIGURES_LIST[0];
 
   const resolvedWelcome = welcomeTitle || "Welcome back";
   const resolvedDocsLabel = docsLabel || "System Docs";
@@ -127,32 +125,29 @@ export function AuthLoginLayout({
           </div>
         </div>
 
-        {/* Ambient Mobile Glow & Grid (visible only on mobile) */}
+        {/* Ambient Mobile Peripheral Dot-Matrix & Soft Illumination (frames the form around all edges while keeping center clear) */}
         <div
-          className="lg:hidden absolute top-36 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full blur-3xl pointer-events-none opacity-40 dark:opacity-20"
+          className="lg:hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] rounded-full blur-3xl pointer-events-none opacity-25 dark:opacity-15"
           style={{
-            background: "radial-gradient(circle, rgba(120,120,120,0.15) 0%, rgba(80,80,80,0.05) 45%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(130,130,130,0.14) 0%, rgba(80,80,80,0.04) 45%, transparent 70%)",
           }}
         />
         <div
-          className="lg:hidden absolute top-0 left-0 right-0 h-[320px] pointer-events-none opacity-[0.08] dark:opacity-[0.10]"
+          className="lg:hidden absolute inset-0 pointer-events-none opacity-[0.07] dark:opacity-[0.10]"
           style={{
             backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-            maskImage: "radial-gradient(ellipse at 50% 50%, transparent 30%, black 80%)",
-            WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, transparent 30%, black 80%)",
+            backgroundSize: "24px 24px",
+            maskImage: "radial-gradient(ellipse 78% 54% at 50% 50%, transparent 48%, black 92%)",
+            WebkitMaskImage: "radial-gradient(ellipse 78% 54% at 50% 50%, transparent 48%, black 92%)",
           }}
         />
 
         {/* Center Form Area */}
         <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-5">
-          {/* Mobile 3D Hero (Frameless Monochrome 3D Isometric Object - visible only on mobile) */}
-          {!hideMobileHero && (
+          {!hideMobileHero && mobileFigureComponent && (
             <div className="lg:hidden flex flex-col items-center justify-center -mt-2 mb-1">
               <div className="w-full max-w-[180px] h-[150px] flex items-center justify-center overflow-visible">
-                {mobileFigureComponent !== undefined
-                  ? mobileFigureComponent
-                  : renderIsometricFigureById(figureId, "card")}
+                {mobileFigureComponent}
               </div>
             </div>
           )}

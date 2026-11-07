@@ -83,7 +83,7 @@ export function AuthLoginSavedProfiles({ form }: AuthLoginSavedProfilesProps) {
       {/* Divider */}
       <div className="relative flex items-center justify-center py-1">
         <div className="w-full border-t border-border/60" />
-        <span className="absolute bg-card px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
+        <span className="absolute bg-sidebar px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
           {copy.savedProfilesOr}
         </span>
       </div>

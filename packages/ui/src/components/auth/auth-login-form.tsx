@@ -30,8 +30,8 @@ export function AuthLoginForm(props: AuthLoginFormProps) {
         </div>
       )}
 
-      {/* Main Login Card */}
-      <div className="bg-card/60 border border-border/70 rounded-xl p-5 sm:p-6 shadow-sm backdrop-blur-md space-y-4">
+      {/* Frameless Login Form Content */}
+      <div className="space-y-4">
         {form.authView === "SAVED_PROFILES" && form.savedProfiles.length > 0 && !props.mfaRequired ? (
           <AuthLoginSavedProfiles form={form} />
         ) : form.authView === "FORGOT_PASSWORD" ? (

@@ -84,19 +84,13 @@ export function AuthCardFormSkeleton({
   }
 
   return (
-    <div
-      className={cn(
-        "w-full rounded-2xl border border-border/80 bg-card/50 p-5 sm:p-6 space-y-4 shadow-xs",
-        className
-      )}
-    >
+    <div className={cn("w-full space-y-3.5", className)}>
       {/* Account Email or Username Field */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Skeleton className="h-3 w-40 rounded" />
-          <Skeleton className="h-4 w-14 rounded-md" />
         </div>
-        <div className="h-9 w-full rounded-lg border border-border/60 bg-background/60 px-3 flex items-center gap-2.5">
+        <div className="h-9 w-full rounded-md border border-border/60 bg-background/60 px-3 flex items-center gap-2.5">
           <Skeleton className="h-3.5 w-3.5 rounded-xs shrink-0" />
           <Skeleton className="h-3 w-44 rounded" />
         </div>
@@ -108,7 +102,7 @@ export function AuthCardFormSkeleton({
           <Skeleton className="h-3 w-20 rounded" />
           <Skeleton className="h-3 w-24 rounded" />
         </div>
-        <div className="h-9 w-full rounded-lg border border-border/60 bg-background/60 px-3 flex items-center justify-between">
+        <div className="h-9 w-full rounded-md border border-border/60 bg-background/60 px-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Skeleton className="h-3.5 w-3.5 rounded-xs shrink-0" />
             <Skeleton className="h-2.5 w-28 rounded" />
@@ -117,20 +111,16 @@ export function AuthCardFormSkeleton({
         </div>
       </div>
 
-      {/* Remember Me & Save Profile Checkboxes */}
-      <div className="space-y-2 pt-0.5">
+      {/* Single Save Email & Login Method Checkbox */}
+      <div className="pt-0.5">
         <div className="flex items-center gap-2">
           <Skeleton className="h-3.5 w-3.5 rounded-xs shrink-0" />
           <Skeleton className="h-3 w-52 rounded" />
         </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-3.5 w-3.5 rounded-xs shrink-0" />
-          <Skeleton className="h-3 w-40 rounded" />
-        </div>
       </div>
 
       {/* Cloudflare Turnstile Verification Box Skeleton */}
-      <div className="h-[65px] w-full rounded-lg border border-border/60 bg-background/40 px-4 flex items-center justify-between">
+      <div className="h-[65px] w-full rounded-md border border-border/60 bg-background/40 px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Skeleton className="h-5 w-5 rounded-md shrink-0" />
           <div className="space-y-1.5">
@@ -142,7 +132,7 @@ export function AuthCardFormSkeleton({
       </div>
 
       {/* Primary Sign-In Button Skeleton */}
-      <Skeleton className="h-9 w-full rounded-lg bg-primary/20" />
+      <Skeleton className="h-8 w-full rounded-md bg-primary/20" />
     </div>
   );
 }
@@ -158,7 +148,7 @@ export interface AuthLoginSkeletonProps {
  */
 export function AuthLoginSkeleton({
   variant = "login",
-  hideMobileHero = false,
+  hideMobileHero: _hideMobileHero = true,
 }: AuthLoginSkeletonProps) {
   return (
     <div
@@ -167,7 +157,18 @@ export function AuthLoginSkeleton({
       aria-label="Loading authentication workspace"
     >
       {/* ─── LEFT COLUMN: Login Form & Header Skeleton (40%) ───────────── */}
-      <div className="w-full lg:w-[40%] xl:w-[40%] flex flex-col justify-between p-4 sm:p-10 md:p-14 relative bg-sidebar border-r border-border/90 z-10">
+      <div className="w-full lg:w-[40%] xl:w-[40%] flex flex-col justify-between p-4 sm:p-10 md:p-14 relative bg-sidebar border-r border-border/90 z-10 overflow-hidden">
+        {/* Ambient Mobile Peripheral Dot-Matrix (matches AuthLoginLayout) */}
+        <div
+          className="lg:hidden absolute inset-0 pointer-events-none opacity-[0.07] dark:opacity-[0.10]"
+          style={{
+            backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+            maskImage: "radial-gradient(ellipse 78% 54% at 50% 50%, transparent 48%, black 92%)",
+            WebkitMaskImage: "radial-gradient(ellipse 78% 54% at 50% 50%, transparent 48%, black 92%)",
+          }}
+        />
+
         {/* Top Header Row (Brand Logo + Language Switcher + Theme Toggle) */}
         <div className="flex items-center justify-between w-full z-20 gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -182,17 +183,6 @@ export function AuthLoginSkeleton({
 
         {/* Center Form Area */}
         <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-5">
-          {/* Mobile Isometric 3D Placeholder (visible only on mobile) */}
-          {!hideMobileHero && (
-            <div className="lg:hidden flex flex-col items-center justify-center -mt-2 mb-1">
-              <div className="w-[140px] h-[120px] flex items-center justify-center">
-                <div className="w-20 h-20 rounded-2xl border border-border/60 bg-muted/20 rotate-12 flex items-center justify-center animate-pulse">
-                  <div className="w-10 h-10 rounded-lg border border-border/80 bg-muted/40 -rotate-12" />
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Welcome Heading & Subtitle */}
           <div className="space-y-2">
             <Skeleton className="h-8 w-48 rounded-lg" />

@@ -43,7 +43,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   const [usernameOrEmail, setUsernameOrEmail] = useState(defaultEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [saveEmailOnDevice, setSaveEmailOnDevice] = useState(true);
   const [totpCode, setTotpCode] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | undefined>(undefined);

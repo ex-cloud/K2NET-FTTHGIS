@@ -32,7 +32,6 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
     setPassword,
     showPassword,
     setShowPassword,
-    rememberMe,
     setRememberMe,
     saveEmailOnDevice,
     setSaveEmailOnDevice,
@@ -104,7 +103,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
 
           <div className="relative flex items-center justify-center py-1">
             <div className="w-full border-t border-border/60" />
-            <span className="absolute bg-card px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
+            <span className="absolute bg-sidebar px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
               {copy.orContinueWith}
             </span>
           </div>
@@ -186,9 +185,6 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                   >
                     {copy.accountEmailOrUsername}
                   </Label>
-                  <span className="text-[10px] text-muted-foreground bg-muted/60 border border-border px-1.5 py-0.5 rounded font-mono">
-                    {copy.requiredBadge}
-                  </span>
                 </div>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -289,31 +285,20 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
             </div>
 
             {/* Checkbox: Save email and login method on this device */}
-            <div className="space-y-2 pt-0.5">
+            <div className="pt-0.5">
               <label className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={saveEmailOnDevice}
-                  onChange={(e) => setSaveEmailOnDevice(e.target.checked)}
+                  onChange={(e) => {
+                    setSaveEmailOnDevice(e.target.checked);
+                    setRememberMe(e.target.checked);
+                  }}
                   disabled={isLoading || isSuspended}
                   className="size-3.5 rounded border-border bg-background accent-foreground cursor-pointer"
                 />
                 <span>{copy.saveEmailOnDevice}</span>
               </label>
-
-              {/* Remember Me Browser */}
-              <div className="flex items-center justify-between">
-                <label className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    disabled={isLoading || isSuspended}
-                    className="size-3.5 rounded border-border bg-background accent-foreground cursor-pointer"
-                  />
-                  <span>{copy.rememberMeBrowser}</span>
-                </label>
-              </div>
             </div>
 
             {/* Optional Cloudflare Turnstile Anti-Bot Widget */}
