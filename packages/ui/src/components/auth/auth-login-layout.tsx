@@ -143,7 +143,7 @@ export function AuthLoginLayout({
         />
 
         {/* Center Form Area */}
-        <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-5">
+        <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-7 sm:space-y-8">
           {!hideMobileHero && mobileFigureComponent && (
             <div className="lg:hidden flex flex-col items-center justify-center -mt-2 mb-1">
               <div className="w-full max-w-[180px] h-[150px] flex items-center justify-center overflow-visible">
@@ -152,7 +152,7 @@ export function AuthLoginLayout({
             </div>
           )}
 
-          <div className="space-y-1">
+          <div className="space-y-1.5 pb-1 sm:pb-2">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
               {resolvedWelcome}
             </h1>

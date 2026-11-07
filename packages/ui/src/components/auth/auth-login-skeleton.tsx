@@ -182,9 +182,9 @@ export function AuthLoginSkeleton({
         </div>
 
         {/* Center Form Area */}
-        <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-5">
+        <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-7 sm:space-y-8">
           {/* Welcome Heading & Subtitle */}
-          <div className="space-y-2">
+          <div className="space-y-2 pb-1 sm:pb-2">
             <Skeleton className="h-8 w-48 rounded-lg" />
             <Skeleton className="h-3.5 w-64 max-w-full rounded-md" />
           </div>

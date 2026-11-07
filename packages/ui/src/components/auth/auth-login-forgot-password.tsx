@@ -149,10 +149,10 @@ export function AuthLoginForgotPassword({ form, props }: AuthLoginForgotPassword
           </div>
         </div>
 
-        {/* Cloudflare Turnstile anti-bot widget container */}
+        {/* Cloudflare Turnstile anti-bot widget container (Full-width aligned with input & submit button) */}
         {Boolean(turnstileSiteKey?.trim()) && (
-          <div className="flex flex-col items-center justify-center pt-1 min-h-[65px]">
-            <div ref={turnstileContainerRef} className="cf-turnstile" />
+          <div className="pt-1">
+            <div ref={turnstileContainerRef} className="min-h-[65px] w-full overflow-hidden rounded-md" />
           </div>
         )}
 

@@ -181,7 +181,7 @@ export function AuthInviteAcceptCard({
         turnstileWidgetIdRef.current = win.turnstile.render(turnstileContainerRef.current, {
           sitekey: cleanKey,
           theme: activeTheme,
-          size: "normal",
+          size: "flexible",
           callback: (tokenString: string) => {
             if (!cancelled) setTurnstileToken(tokenString);
           },
@@ -617,8 +617,8 @@ export function AuthInviteAcceptCard({
 
         {/* Turnstile verification container */}
         {Boolean(turnstileSiteKey?.trim()) && (
-          <div className="flex justify-center pt-1 pb-1">
-            <div ref={turnstileContainerRef} className="cf-turnstile min-h-[65px]" />
+          <div className="pt-1 pb-1">
+            <div ref={turnstileContainerRef} className="min-h-[65px] w-full overflow-hidden rounded-md" />
           </div>
         )}
 
