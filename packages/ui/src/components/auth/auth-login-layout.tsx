@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ShieldCheck, BookOpen, Quote, Sparkles, X, CheckCircle2, Lock } from "lucide-react";
+import { ShieldCheck, BookOpen, Sparkles, X, CheckCircle2, Lock } from "lucide-react";
 import { ModeToggle } from "../mode-toggle";
 import { renderIsometricFigureById, ISOMETRIC_FIGURES_LIST } from "../linear-isometric/figure-registry";
 import { FtthTopologyFlow } from "../topology-flow/ftth-topology-flow";
@@ -17,6 +17,8 @@ export interface AuthLoginLayoutProps {
   testimonialAuthor?: string;
   testimonialRole?: string;
   figureComponent?: React.ReactNode;
+  mobileFigureComponent?: React.ReactNode;
+  hideMobileHero?: boolean;
   figureId?: string;
   locale?: AuthLocale;
   onLocaleChange?: (locale: AuthLocale) => void;
@@ -38,10 +40,12 @@ export function AuthLoginLayout({
   welcomeTitle,
   docsUrl = "https://system-gis.kdua.net/gateways/overview",
   docsLabel,
-  testimonialQuote = "Managing enterprise fiber-to-the-home geodata networks has never been this seamless. Highly stable, fast geocoding, and fully isolated multi-tenancy.",
-  testimonialAuthor = "Andiansyah",
-  testimonialRole = "Chief Technology Officer, K2NET",
+  testimonialQuote: _testimonialQuote,
+  testimonialAuthor: _testimonialAuthor,
+  testimonialRole: _testimonialRole,
   figureComponent,
+  mobileFigureComponent,
+  hideMobileHero = false,
   figureId = "fig-07",
   locale = "en",
   onLocaleChange,
@@ -131,23 +135,27 @@ export function AuthLoginLayout({
           }}
         />
         <div
-          className="lg:hidden absolute top-0 left-0 right-0 h-[320px] pointer-events-none opacity-[0.18]"
+          className="lg:hidden absolute top-0 left-0 right-0 h-[320px] pointer-events-none opacity-[0.08] dark:opacity-[0.10]"
           style={{
             backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
-            backgroundSize: "18px 18px",
-            maskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
-            WebkitMaskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
+            backgroundSize: "28px 28px",
+            maskImage: "radial-gradient(ellipse at 50% 50%, transparent 30%, black 80%)",
+            WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, transparent 30%, black 80%)",
           }}
         />
 
         {/* Center Form Area */}
         <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-5">
           {/* Mobile 3D Hero (visible only on mobile) */}
-          <div className="lg:hidden flex flex-col items-center justify-center -mt-2 mb-2">
-            <div className="w-full max-w-[170px] flex items-center justify-center">
-              {figureComponent || renderIsometricFigureById(figureId, "card")}
+          {!hideMobileHero && (
+            <div className="lg:hidden flex flex-col items-center justify-center -mt-2 mb-2">
+              <div className="w-full max-w-[150px] flex items-center justify-center">
+                {mobileFigureComponent !== undefined
+                  ? mobileFigureComponent
+                  : renderIsometricFigureById(figureId, "card")}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
@@ -199,14 +207,14 @@ export function AuthLoginLayout({
           }}
         />
 
-        {/* Global Tech Dot-Matrix Pattern Background Overlay (Monochrome) */}
+        {/* Peripheral Tech Dot-Matrix Pattern (Corners & Edges Only - Center Cleared for Topology Flow) */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.16] dark:opacity-[0.20]"
+          className="absolute inset-0 pointer-events-none opacity-[0.08] dark:opacity-[0.12]"
           style={{
             backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
-            backgroundSize: "18px 18px",
-            maskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
-            WebkitMaskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
+            backgroundSize: "32px 32px",
+            maskImage: "radial-gradient(ellipse at 50% 50%, transparent 42%, black 82%)",
+            WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, transparent 42%, black 82%)",
           }}
         />
 
@@ -229,29 +237,6 @@ export function AuthLoginLayout({
         <div className="my-auto flex flex-col items-center justify-center py-2 w-full transition-transform duration-500 z-10">
           <div className="w-full max-w-[1060px] px-1 flex justify-center">
             {figureComponent || <FtthTopologyFlow tenantName={portalName} />}
-          </div>
-        </div>
-
-        {/* Bottom Right Testimonial Card (Monochrome Clean) */}
-        <div className="w-full max-w-lg mx-auto z-10">
-          <div className="relative rounded-2xl border border-border/70 bg-card/75 p-6 backdrop-blur-xl shadow-lg shadow-black/20">
-            <Quote className="h-6 w-6 text-muted-foreground/60 mb-3 transform rotate-180" />
-            <blockquote className="text-xs sm:text-sm font-normal text-foreground/90 leading-relaxed mb-4 font-sans">
-              &ldquo;{testimonialQuote}&rdquo;
-            </blockquote>
-            <div className="flex items-center gap-3 pt-1 border-t border-border/40">
-              <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center text-foreground font-bold text-xs shadow-xs">
-                {testimonialAuthor.charAt(0)}
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-foreground">
-                  {testimonialAuthor}
-                </div>
-                <div className="text-[10px] text-muted-foreground font-mono">
-                  {testimonialRole}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
