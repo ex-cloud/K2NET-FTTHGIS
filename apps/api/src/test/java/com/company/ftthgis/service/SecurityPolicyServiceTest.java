@@ -229,6 +229,7 @@ public class SecurityPolicyServiceTest {
                 .build();
         when(tenantPolicyRepository.findByOrganizationIdNative(testOrgId)).thenReturn(Optional.of(existing));
         when(tenantPolicyRepository.save(any(TenantSecurityPolicy.class))).thenAnswer(i -> i.getArgument(0));
+        when(keycloakAdminService.hasMfaConfigured("k2net-tenants", "admin@fibernet.net")).thenReturn(true);
 
         UpdateTenantSecurityPolicyRequest request = new UpdateTenantSecurityPolicyRequest(
                 true, // Tenant enforces MFA
@@ -341,7 +342,7 @@ public class SecurityPolicyServiceTest {
     }
 
     @Test
-    @DisplayName("S13: Reconcile organization members - Assign CONFIGURE_TOTP required action when MFA enforced")
+    @DisplayName("S13: Reconcile organization members - Removes legacy CONFIGURE_TOTP to ensure headless anti-lockout")
     void testReconcileOrganizationMfa_AssignsRequiredAction() {
         UUID memberId = UUID.randomUUID();
         com.company.ftthgis.domain.user.entity.User member = com.company.ftthgis.domain.user.entity.User.builder()
@@ -356,7 +357,7 @@ public class SecurityPolicyServiceTest {
 
         securityPolicyService.reconcileOrganizationMfa(testOrg, true);
 
-        verify(keycloakAdminService).addRequiredActionToUser("k2net-tenants", "tech@fibernet.net", "CONFIGURE_TOTP");
+        verify(keycloakAdminService).removeRequiredActionFromUser("k2net-tenants", "tech@fibernet.net", "CONFIGURE_TOTP");
         verify(userRepository).save(member);
         assertFalse(member.isMfaEnabled());
     }
