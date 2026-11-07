@@ -115,3 +115,59 @@ func TestRenderPasswordResetEmail_ID(t *testing.T) {
 		t.Errorf("expected ID CTA button")
 	}
 }
+
+func TestRenderMfaOtpEmail_EN(t *testing.T) {
+	data := MfaOtpEmailData{
+		RecipientName: "John Doe",
+		OtpCode:       "849201",
+		ExpiresIn:     "5 minutes",
+		ClientIP:      "192.168.1.100",
+		Lang:          "en",
+	}
+
+	subject, html, err := RenderMfaOtpEmail(data)
+	if err != nil {
+		t.Fatalf("unexpected error rendering MFA OTP email EN: %v", err)
+	}
+
+	if !strings.Contains(subject, "849201") {
+		t.Errorf("expected subject to contain OTP code, got: %s", subject)
+	}
+	if !strings.Contains(html, "John Doe") {
+		t.Errorf("expected html to contain recipient name")
+	}
+	if !strings.Contains(html, "849201") {
+		t.Errorf("expected html to contain OTP code")
+	}
+	if !strings.Contains(html, "192.168.1.100") {
+		t.Errorf("expected html to contain requesting IP")
+	}
+}
+
+func TestRenderMfaOtpEmail_ID(t *testing.T) {
+	data := MfaOtpEmailData{
+		RecipientName: "Andiansyah",
+		OtpCode:       "572190",
+		ExpiresIn:     "5 menit",
+		ClientIP:      "103.111.20.5",
+		Lang:          "id",
+	}
+
+	subject, html, err := RenderMfaOtpEmail(data)
+	if err != nil {
+		t.Fatalf("unexpected error rendering MFA OTP email ID: %v", err)
+	}
+
+	if !strings.Contains(subject, "Kode Verifikasi Masuk (MFA OTP): 572190") {
+		t.Errorf("expected ID subject with OTP, got: %s", subject)
+	}
+	if !strings.Contains(html, "Andiansyah") {
+		t.Errorf("expected ID recipient name in greeting")
+	}
+	if !strings.Contains(html, "572190") {
+		t.Errorf("expected ID OTP code in box")
+	}
+	if !strings.Contains(html, "103.111.20.5") {
+		t.Errorf("expected ID client IP in detail table")
+	}
+}

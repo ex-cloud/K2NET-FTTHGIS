@@ -547,6 +547,97 @@ func (h *HTTPHandler) SendPasswordResetEmail(c *gin.Context) {
 	})
 }
 
+// MfaOtpEmailRequest holds parameters for sending an MFA OTP verification email
+type MfaOtpEmailRequest struct {
+	To            string `json:"to" binding:"required"`
+	RecipientName string `json:"recipient_name"`
+	OtpCode       string `json:"otp_code" binding:"required"`
+	ExpiresIn     string `json:"expires_in"`
+	ClientIP      string `json:"client_ip"`
+	Lang          string `json:"lang"`
+}
+
+// SendMfaOtpEmail renders and dispatches an MFA OTP verification email
+func (h *HTTPHandler) SendMfaOtpEmail(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var req MfaOtpEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid MFA OTP request payload: " + err.Error(),
+		})
+		return
+	}
+
+	clientIP := req.ClientIP
+	if clientIP == "" {
+		clientIP = c.ClientIP()
+	}
+
+	subject, htmlBody, err := templates.RenderMfaOtpEmail(templates.MfaOtpEmailData{
+		RecipientName: req.RecipientName,
+		OtpCode:       req.OtpCode,
+		ExpiresIn:     req.ExpiresIn,
+		ClientIP:      clientIP,
+		Lang:          req.Lang,
+	})
+	if err != nil {
+		logger.Error(ctx, "Failed rendering MFA OTP email template", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Template rendering failed: " + err.Error(),
+		})
+		return
+	}
+
+	sender := NewSMTPEmailSender()
+	if !sender.IsConfigured() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"success": false,
+			"error":   "SMTP Gateway is not configured",
+		})
+		return
+	}
+
+	sendErr := sender.Send(ctx, req.To, subject, htmlBody)
+	payload := provider.NotificationPayload{
+		Type:    provider.TypeEmail,
+		To:      req.To,
+		Subject: subject,
+		Body:    subject,
+	}
+
+	if sendErr != nil {
+		h.appendNotificationLog(c, payload, "failed", sendErr.Error())
+		h.audit.LogError(ctx,
+			c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+			"EMAIL_MFA_OTP_FAILED", "NOTIFICATION", "",
+			auditclient.GroupOperations, "notification-gateway",
+			sendErr.Error(), map[string]any{"to": req.To},
+		)
+		logger.Error(ctx, "Failed to send MFA OTP email", zap.Error(sendErr), zap.String("to", req.To))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   sendErr.Error(),
+		})
+		return
+	}
+
+	h.appendNotificationLog(c, payload, "sent", "")
+	h.audit.LogSuccess(ctx,
+		c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+		"EMAIL_MFA_OTP_SENT", "NOTIFICATION", "",
+		auditclient.GroupOperations, "notification-gateway",
+		map[string]any{"to": req.To},
+	)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("MFA OTP email dispatched to %s", req.To),
+	})
+}
+
 
 
 

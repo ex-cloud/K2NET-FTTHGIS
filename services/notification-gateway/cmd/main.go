@@ -88,6 +88,8 @@ func main() {
 		notifyGroup.POST("/notifications/email/activation", handler.SendActivationEmail)
 		notifyGroup.POST("/notification/email/reset-password", handler.SendPasswordResetEmail)
 		notifyGroup.POST("/notifications/email/reset-password", handler.SendPasswordResetEmail)
+		notifyGroup.POST("/notification/email/mfa-otp", handler.SendMfaOtpEmail)
+		notifyGroup.POST("/notifications/email/mfa-otp", handler.SendMfaOtpEmail)
 	}
 
 	srv := &http.Server{

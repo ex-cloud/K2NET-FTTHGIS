@@ -431,3 +431,134 @@ func RenderPasswordResetEmail(data PasswordResetEmailData) (string, string, erro
 
 	return subject, buf.String(), nil
 }
+
+// MfaOtpEmailData holds parameters for rendering MFA 6-digit OTP verification email
+type MfaOtpEmailData struct {
+	RecipientName string
+	OtpCode       string
+	ExpiresIn     string
+	ClientIP      string
+	Lang          string
+}
+
+// RenderMfaOtpEmail generates localized subject and HTML email for MFA step-up verification.
+func RenderMfaOtpEmail(data MfaOtpEmailData) (string, string, error) {
+	lang := strings.ToLower(strings.TrimSpace(data.Lang))
+	if lang != "id" {
+		lang = "en"
+	}
+
+	recipientName := strings.TrimSpace(data.RecipientName)
+	if recipientName == "" {
+		if lang == "id" {
+			recipientName = "Pengguna K2NET"
+		} else {
+			recipientName = "K2NET User"
+		}
+	}
+
+	expiresIn := strings.TrimSpace(data.ExpiresIn)
+	if expiresIn == "" {
+		if lang == "id" {
+			expiresIn = "5 menit"
+		} else {
+			expiresIn = "5 minutes"
+		}
+	}
+
+	otpCode := strings.TrimSpace(data.OtpCode)
+	if otpCode == "" {
+		otpCode = "000000"
+	}
+
+	var subject string
+	var bodyHTML string
+	var footerHTML string
+
+	var ipRow string
+	if strings.TrimSpace(data.ClientIP) != "" {
+		label := "Alamat IP Peminta"
+		if lang != "id" {
+			label = "Requesting IP Address"
+		}
+		ipRow = fmt.Sprintf(`
+      <table class="detail-table">
+        <tr>
+          <td class="detail-label">%s</td>
+          <td class="detail-value mono">%s</td>
+        </tr>
+      </table>`, label, template.HTMLEscapeString(data.ClientIP))
+	}
+
+	if lang == "id" {
+		subject = fmt.Sprintf("[K2NET FTTH] Kode Verifikasi Masuk (MFA OTP): %s", otpCode)
+		bodyHTML = fmt.Sprintf(`
+      <h1>Verifikasi Dua Langkah (MFA)</h1>
+      <p>Halo <strong>%s</strong>,</p>
+      <p>Kami mendeteksi permintaan masuk ke akun Anda. Gunakan kode verifikasi 6 digit di bawah ini untuk melanjutkan:</p>
+
+      <div style="margin: 28px 0; text-align: center;">
+        <div style="display: inline-block; letter-spacing: 8px; font-size: 32px; font-weight: 700; color: #10b981; background-color: #18181b; border: 1px solid #27272a; padding: 14px 28px; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+          %s
+        </div>
+      </div>
+
+      %s
+
+      <div class="security-notice">
+        <strong>Pemberitahuan Keamanan:</strong> Kode ini hanya berlaku selama <strong>%s</strong> dan langsung hangus setelah digunakan 1x. Jangan pernah membagikan kode verifikasi ini kepada siapa pun, termasuk staf K2NET. Jika Anda tidak merasa mencoba masuk, segera amankan kata sandi akun Anda.
+      </div>
+    `,
+			template.HTMLEscapeString(recipientName),
+			template.HTMLEscapeString(otpCode),
+			ipRow,
+			template.HTMLEscapeString(expiresIn),
+		)
+
+		footerHTML = `&copy; 2026 K2NET Enterprise SaaS Platform. Hak cipta dilindungi undang-undang.<br>Pemberitahuan otomatis dikirim dari K2NET Security Plane (notify@kdua.net).`
+	} else {
+		subject = fmt.Sprintf("[K2NET FTTH] Login Verification Code (MFA OTP): %s", otpCode)
+		bodyHTML = fmt.Sprintf(`
+      <h1>Two-Factor Verification (MFA)</h1>
+      <p>Hello <strong>%s</strong>,</p>
+      <p>We received a sign-in request to your account. Enter the 6-digit verification code below to complete your login:</p>
+
+      <div style="margin: 28px 0; text-align: center;">
+        <div style="display: inline-block; letter-spacing: 8px; font-size: 32px; font-weight: 700; color: #10b981; background-color: #18181b; border: 1px solid #27272a; padding: 14px 28px; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+          %s
+        </div>
+      </div>
+
+      %s
+
+      <div class="security-notice">
+        <strong>Security Notice:</strong> This code is valid for <strong>%s</strong> and expires immediately after use. Never share this code with anyone, including K2NET staff. If you did not initiate this login, please secure your password immediately.
+      </div>
+    `,
+			template.HTMLEscapeString(recipientName),
+			template.HTMLEscapeString(otpCode),
+			ipRow,
+			template.HTMLEscapeString(expiresIn),
+		)
+
+		footerHTML = `&copy; 2026 K2NET Enterprise SaaS Platform. All rights reserved.<br>Automated notification dispatched from K2NET Security Plane (notify@kdua.net).`
+	}
+
+	tmpl, err := template.New("base").Parse(baseLayoutHTML)
+	if err != nil {
+		return "", "", err
+	}
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, map[string]any{
+		"Lang":    lang,
+		"Subject": subject,
+		"Body":    template.HTML(bodyHTML),
+		"Footer":  template.HTML(footerHTML),
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	return subject, buf.String(), nil
+}
