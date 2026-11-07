@@ -1,13 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import gsap from "gsap";
-import {
-  Activity,
-  Wifi,
-  Gauge,
-  Server,
-  Cpu,
-  Layers,
-} from "lucide-react";
+import { Activity, Wifi, Gauge } from "lucide-react";
 import { cn } from "../../utils";
 
 export interface FtthTopologyFlowProps {
@@ -20,73 +13,70 @@ export interface FtthTopologyFlowProps {
 
 interface TriggerItem {
   id: string;
-  label: string;
-  detail: string;
-  sub: string;
+  primaryText: string;
+  secondaryText: string;
   icon: React.ElementType;
   targetNodeId: string;
+  pathId: string;
 }
 
 interface ProcessorNode {
   id: string;
-  label: string;
-  title: string;
-  metric: string;
-  icon: React.ElementType;
   x: number;
+  centerX: number;
+  pathId: string;
+  triggerId: string;
 }
 
 const TRIGGERS: TriggerItem[] = [
   {
     id: "trigger-1",
-    label: "01. OLT TELEMETRY SYNC",
-    detail: "SNMP v3 Polling Engine",
-    sub: "SNMP • 10s",
+    primaryText: "TELEMETRY",
+    secondaryText: "SNMP CHECK",
     icon: Activity,
     targetNodeId: "node-3",
+    pathId: "path-1",
   },
   {
     id: "trigger-2",
-    label: "02. SUBSCRIBER PROVISIONING",
-    detail: "OMCI / TR-069 Auto-Bind",
-    sub: "OMCI • Auto",
+    primaryText: "PROVISION",
+    secondaryText: "OMCI BIND",
     icon: Wifi,
     targetNodeId: "node-2",
+    pathId: "path-2",
   },
   {
     id: "trigger-3",
-    label: "03. OPTICAL POWER AUDIT",
-    detail: "Class B+ dBm Diagnostics",
-    sub: "OTDR • Active",
+    primaryText: "OPTICAL",
+    secondaryText: "OTDR AUDIT",
     icon: Gauge,
     targetNodeId: "node-1",
+    pathId: "path-3",
   },
 ];
 
+// Exact pixel positions from Linear reference (78x78 outer dashed square, 192px center-to-center)
 const PROCESSORS: ProcessorNode[] = [
   {
     id: "node-1",
-    label: "NODE 1",
-    title: "BGP Routing Gateway",
-    metric: "100G Peering Fabric",
-    icon: Server,
-    x: 330,
+    x: 517,
+    centerX: 556,
+    pathId: "path-3",
+    triggerId: "trigger-3",
   },
   {
     id: "node-2",
-    label: "NODE 2",
-    title: "GPON / XGS-PON Chassis",
-    metric: "16-Port SFP+ OLT",
-    icon: Cpu,
-    x: 460,
+    x: 709,
+    centerX: 748,
+    pathId: "path-2",
+    triggerId: "trigger-2",
   },
   {
     id: "node-3",
-    label: "NODE 3",
-    title: "Passive ODN & Splitter",
-    metric: "1:64 Primary PLC",
-    icon: Layers,
-    x: 590,
+    x: 901,
+    centerX: 940,
+    pathId: "path-1",
+    triggerId: "trigger-1",
   },
 ];
 
@@ -108,44 +98,41 @@ export function FtthTopologyFlow({
   const matrix1Ref = useRef<HTMLDivElement>(null);
   const matrix2Ref = useRef<HTMLDivElement>(null);
   const matrix3Ref = useRef<HTMLDivElement>(null);
-  const returnDotRef = useRef<SVGCircleElement>(null);
+  const returnArrowRef = useRef<SVGPolygonElement>(null);
 
-  // Linear-Style High-Precision Staggered GSAP Timeline (60/120 FPS Subpixel Compositing)
+  // Linear-Style High-Precision Staggered GSAP Timeline (1:1 Pixel Blueprint)
   useEffect(() => {
     if (!interactive) return;
 
     const ctx = gsap.context(() => {
-      // Set initial element states
       gsap.set([beam1Ref.current, beam2Ref.current, beam3Ref.current, returnBeamRef.current], {
         opacity: 0,
       });
       gsap.set([matrix1Ref.current, matrix2Ref.current, matrix3Ref.current], {
-        opacity: 0.2,
+        opacity: 0.25,
       });
-      gsap.set(returnDotRef.current, {
-        opacity: 0.3,
-        scale: 1,
-        transformOrigin: "center center",
+      gsap.set(returnArrowRef.current, {
+        opacity: 0.5,
       });
 
       const tl = gsap.timeline({
         repeat: -1,
-        repeatDelay: 0.5,
+        repeatDelay: 0.45,
       });
 
       // ─────────────────────────────────────────────────────────────
-      // STAGE 1: Beam 1 (Trigger 1 -> Node 3 Passive ODN, len: ~505px)
+      // STAGE 1: Beam 1 (Trigger 1 -> Node 3, exact length: 789px)
       // ─────────────────────────────────────────────────────────────
-      tl.set(beam1Ref.current, { strokeDashoffset: 44, opacity: 0 })
-        .to(beam1Ref.current, { opacity: 1, duration: 0.05 })
-        .to(beam1Ref.current, { strokeDashoffset: -505, duration: 1.15, ease: "power1.inOut" })
+      tl.set(beam1Ref.current, { strokeDashoffset: 56, opacity: 0 })
+        .to(beam1Ref.current, { opacity: 1, duration: 0.06 })
+        .to(beam1Ref.current, { strokeDashoffset: -789, duration: 1.25, ease: "power1.inOut" })
         .to(beam1Ref.current, { opacity: 0, duration: 0.08 }, "-=0.08")
         .fromTo(
           matrix3Ref.current,
-          { opacity: 0.2, filter: "drop-shadow(0 0 0px transparent)" },
+          { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
           {
             opacity: 1,
-            filter: "drop-shadow(0 0 8px hsl(var(--foreground)))",
+            filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
             duration: 0.25,
             yoyo: true,
             repeat: 1,
@@ -156,18 +143,18 @@ export function FtthTopologyFlow({
         .to({}, { duration: 0.35 })
 
         // ─────────────────────────────────────────────────────────────
-        // STAGE 2: Beam 2 (Trigger 2 -> Node 2 GPON Chassis, len: ~320px)
+        // STAGE 2: Beam 2 (Trigger 2 -> Node 2, exact length: 552px)
         // ─────────────────────────────────────────────────────────────
-        .set(beam2Ref.current, { strokeDashoffset: 44, opacity: 0 })
-        .to(beam2Ref.current, { opacity: 1, duration: 0.05 })
-        .to(beam2Ref.current, { strokeDashoffset: -320, duration: 0.95, ease: "power1.inOut" })
+        .set(beam2Ref.current, { strokeDashoffset: 52, opacity: 0 })
+        .to(beam2Ref.current, { opacity: 1, duration: 0.06 })
+        .to(beam2Ref.current, { strokeDashoffset: -552, duration: 1.05, ease: "power1.inOut" })
         .to(beam2Ref.current, { opacity: 0, duration: 0.08 }, "-=0.08")
         .fromTo(
           matrix2Ref.current,
-          { opacity: 0.2, filter: "drop-shadow(0 0 0px transparent)" },
+          { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
           {
             opacity: 1,
-            filter: "drop-shadow(0 0 8px hsl(var(--foreground)))",
+            filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
             duration: 0.25,
             yoyo: true,
             repeat: 1,
@@ -178,18 +165,18 @@ export function FtthTopologyFlow({
         .to({}, { duration: 0.35 })
 
         // ─────────────────────────────────────────────────────────────
-        // STAGE 3: Beam 3 (Trigger 3 -> Node 1 BGP Gateway, len: ~135px)
+        // STAGE 3: Beam 3 (Trigger 3 -> Node 1, exact length: 314px)
         // ─────────────────────────────────────────────────────────────
-        .set(beam3Ref.current, { strokeDashoffset: 40, opacity: 0 })
-        .to(beam3Ref.current, { opacity: 1, duration: 0.05 })
-        .to(beam3Ref.current, { strokeDashoffset: -135, duration: 0.75, ease: "power1.inOut" })
+        .set(beam3Ref.current, { strokeDashoffset: 44, opacity: 0 })
+        .to(beam3Ref.current, { opacity: 1, duration: 0.06 })
+        .to(beam3Ref.current, { strokeDashoffset: -314, duration: 0.85, ease: "power1.inOut" })
         .to(beam3Ref.current, { opacity: 0, duration: 0.08 }, "-=0.08")
         .fromTo(
           matrix1Ref.current,
-          { opacity: 0.2, filter: "drop-shadow(0 0 0px transparent)" },
+          { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
           {
             opacity: 1,
-            filter: "drop-shadow(0 0 8px hsl(var(--foreground)))",
+            filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
             duration: 0.25,
             yoyo: true,
             repeat: 1,
@@ -200,17 +187,16 @@ export function FtthTopologyFlow({
         .to({}, { duration: 0.35 })
 
         // ─────────────────────────────────────────────────────────────
-        // STAGE 4: Return Loop (Nodes Bottom Bus -> Trigger Panel, len: ~685px)
+        // STAGE 4: Return Loop (Nodes Bottom Bus -> Trigger Box, len: 975px)
         // ─────────────────────────────────────────────────────────────
-        .set(returnBeamRef.current, { strokeDashoffset: 48, opacity: 0 })
-        .to(returnBeamRef.current, { opacity: 1, duration: 0.05 })
-        .to(returnBeamRef.current, { strokeDashoffset: -685, duration: 1.35, ease: "power1.inOut" })
+        .set(returnBeamRef.current, { strokeDashoffset: 60, opacity: 0 })
+        .to(returnBeamRef.current, { opacity: 1, duration: 0.06 })
+        .to(returnBeamRef.current, { strokeDashoffset: -975, duration: 1.4, ease: "power1.inOut" })
         .to(returnBeamRef.current, { opacity: 0, duration: 0.08 }, "-=0.08")
         .fromTo(
-          returnDotRef.current,
-          { scale: 1, opacity: 0.3 },
+          returnArrowRef.current,
+          { opacity: 0.5 },
           {
-            scale: 1.5,
             opacity: 1,
             duration: 0.25,
             yoyo: true,
@@ -232,19 +218,19 @@ export function FtthTopologyFlow({
       gsap.killTweensOf([beam1Ref.current, matrix3Ref.current]);
       gsap.fromTo(
         beam1Ref.current,
-        { strokeDashoffset: 44, opacity: 1 },
+        { strokeDashoffset: 56, opacity: 1 },
         {
-          strokeDashoffset: -505,
+          strokeDashoffset: -789,
           duration: 0.85,
           ease: "power2.out",
           onComplete: () => {
             gsap.to(beam1Ref.current, { opacity: 0, duration: 0.1 });
             gsap.fromTo(
               matrix3Ref.current,
-              { opacity: 0.2, filter: "drop-shadow(0 0 0px transparent)" },
+              { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
               {
                 opacity: 1,
-                filter: "drop-shadow(0 0 8px hsl(var(--foreground)))",
+                filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
                 duration: 0.25,
                 yoyo: true,
                 repeat: 1,
@@ -258,19 +244,19 @@ export function FtthTopologyFlow({
       gsap.killTweensOf([beam2Ref.current, matrix2Ref.current]);
       gsap.fromTo(
         beam2Ref.current,
-        { strokeDashoffset: 44, opacity: 1 },
+        { strokeDashoffset: 52, opacity: 1 },
         {
-          strokeDashoffset: -320,
+          strokeDashoffset: -552,
           duration: 0.7,
           ease: "power2.out",
           onComplete: () => {
             gsap.to(beam2Ref.current, { opacity: 0, duration: 0.1 });
             gsap.fromTo(
               matrix2Ref.current,
-              { opacity: 0.2, filter: "drop-shadow(0 0 0px transparent)" },
+              { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
               {
                 opacity: 1,
-                filter: "drop-shadow(0 0 8px hsl(var(--foreground)))",
+                filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
                 duration: 0.25,
                 yoyo: true,
                 repeat: 1,
@@ -284,19 +270,19 @@ export function FtthTopologyFlow({
       gsap.killTweensOf([beam3Ref.current, matrix1Ref.current]);
       gsap.fromTo(
         beam3Ref.current,
-        { strokeDashoffset: 40, opacity: 1 },
+        { strokeDashoffset: 44, opacity: 1 },
         {
-          strokeDashoffset: -135,
+          strokeDashoffset: -314,
           duration: 0.55,
           ease: "power2.out",
           onComplete: () => {
             gsap.to(beam3Ref.current, { opacity: 0, duration: 0.1 });
             gsap.fromTo(
               matrix1Ref.current,
-              { opacity: 0.2, filter: "drop-shadow(0 0 0px transparent)" },
+              { opacity: 0.25, filter: "drop-shadow(0 0 0px transparent)" },
               {
                 opacity: 1,
-                filter: "drop-shadow(0 0 8px hsl(var(--foreground)))",
+                filter: "drop-shadow(0 0 6px hsl(var(--foreground)))",
                 duration: 0.25,
                 yoyo: true,
                 repeat: 1,
@@ -313,120 +299,97 @@ export function FtthTopologyFlow({
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full max-w-[880px] xl:max-w-[960px] 2xl:max-w-[1020px] select-none flex flex-col justify-center items-center py-2 px-1",
+        "relative w-full max-w-[956px] select-none flex flex-col justify-center items-center py-2 px-1",
         className
       )}
     >
-      {/* Main Vector Canvas (Linear Staggered Layout with SVG-Anchored foreignObject) */}
-      <div className="relative w-full aspect-[720/380]">
+      {/* 1:1 Pixel Coordinate SVG Canvas Matching Linear's Exact Blueprint (viewBox="36 20 956 360") */}
+      <div className="relative w-full aspect-[956/360]">
         <svg
-          viewBox="0 0 720 380"
+          viewBox="36 20 956 360"
           className="w-full h-full overflow-visible"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <defs>
-            {/* Upward Arrow Marker for Return Loop */}
-            <marker
-              id="return-arrow"
-              viewBox="0 0 8 8"
-              refX="4"
-              refY="4"
-              markerWidth="5"
-              markerHeight="5"
-              orient="auto-start-reverse"
-            >
-              <path
-                d="M 1 7 L 4 1 L 7 7"
-                fill="none"
-                className="stroke-foreground"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </marker>
-          </defs>
-
           {/* ============================================================== */}
-          {/* ORTHOGONAL 90° CONNECTING TRACKS (BASE STATIC VISIBLE LINES)  */}
+          {/* ORTHOGONAL 90° CONNECTING TRACKS (1PX CRISP LINEAR HAIRLINES)  */}
           {/* ============================================================== */}
 
-          {/* Path 1: Trigger 1 (y:84) -> Node 3 (x:642, y:224) */}
+          {/* Path 1: Trigger 1 Dot (x:278, y:65.5) -> Node 3 Arrow Base (x:940, y:201) */}
           <path
-            d="M 270 84 L 624 84 A 18 18 0 0 1 642 102 L 642 224"
+            d="M 278 65.5 L 920 65.5 A 20 20 0 0 1 940 85.5 L 940 201"
             fill="none"
             className={cn(
               "stroke-foreground/20 transition-all duration-300",
-              hoveredTarget === "path-1" && "stroke-foreground/60 stroke-[2px]"
+              hoveredTarget === "path-1" && "stroke-foreground/50"
             )}
-            strokeWidth="1.5"
+            strokeWidth="1"
           />
 
-          {/* Path 2: Trigger 2 (y:140) -> Node 2 (x:512, y:224) */}
+          {/* Path 2: Trigger 2 Dot (x:278, y:111) -> Node 2 Arrow Base (x:748, y:201) */}
           <path
-            d="M 270 140 L 494 140 A 18 18 0 0 1 512 158 L 512 224"
+            d="M 278 111 L 728 111 A 20 20 0 0 1 748 131 L 748 201"
             fill="none"
             className={cn(
               "stroke-foreground/20 transition-all duration-300",
-              hoveredTarget === "path-2" && "stroke-foreground/60 stroke-[2px]"
+              hoveredTarget === "path-2" && "stroke-foreground/50"
             )}
-            strokeWidth="1.5"
+            strokeWidth="1"
           />
 
-          {/* Path 3: Trigger 3 (y:196) -> Node 1 (x:382, y:224) */}
+          {/* Path 3: Trigger 3 Dot (x:278, y:156.5) -> Node 1 Arrow Base (x:556, y:201) */}
           <path
-            d="M 270 196 L 364 196 A 18 18 0 0 1 382 214 L 382 224"
+            d="M 278 156.5 L 536 156.5 A 20 20 0 0 1 556 176.5 L 556 201"
             fill="none"
             className={cn(
               "stroke-foreground/20 transition-all duration-300",
-              hoveredTarget === "path-3" && "stroke-foreground/60 stroke-[2px]"
+              hoveredTarget === "path-3" && "stroke-foreground/50"
             )}
-            strokeWidth="1.5"
+            strokeWidth="1"
           />
 
-          {/* Return Loop Bus: Exits Node 3/2/1 bottom -> Drops -> Bus at y:356 -> Ascends to Trigger (x:100, y:230) */}
+          {/* Return Loop Bus: Exits Node 3/2/1 (y:316) -> Bus at y:363 -> Ascends to Trigger Arrow Base (x:153, y:205) */}
           <path
-            d="M 642 328 L 642 342 A 14 14 0 0 1 628 356 L 114 356 A 14 14 0 0 1 100 342 L 100 230"
+            d="M 940 316 L 940 343 A 20 20 0 0 1 920 363 L 173 363 A 20 20 0 0 1 153 343 L 153 205"
             fill="none"
             className="stroke-foreground/20"
-            strokeWidth="1.25"
-            strokeDasharray="4 4"
-            markerEnd="url(#return-arrow)"
+            strokeWidth="1"
+            strokeDasharray="3 3"
           />
 
           {/* Node 2 drop into return bus */}
           <path
-            d="M 512 328 L 512 342 A 14 14 0 0 1 498 356"
+            d="M 748 316 L 748 343 A 20 20 0 0 1 728 363"
             fill="none"
             className="stroke-foreground/20"
-            strokeWidth="1.25"
-            strokeDasharray="4 4"
+            strokeWidth="1"
+            strokeDasharray="3 3"
           />
 
           {/* Node 1 drop into return bus */}
           <path
-            d="M 382 328 L 382 342 A 14 14 0 0 1 368 356"
+            d="M 556 316 L 556 343 A 20 20 0 0 1 536 363"
             fill="none"
             className="stroke-foreground/20"
-            strokeWidth="1.25"
-            strokeDasharray="4 4"
+            strokeWidth="1"
+            strokeDasharray="3 3"
           />
 
           {/* ============================================================== */}
-          {/* ANIMATED PHOTON BEAMS (GSAP HIGH-PRECISION CONTROLLED TRACKS) */}
+          {/* ANIMATED PHOTON BEAMS (GSAP CONTROLLED OPTICAL PULSES)         */}
           {/* ============================================================== */}
 
           {/* Beam 1: Trigger 1 -> Node 3 */}
           <path
             ref={beam1Ref}
-            d="M 270 84 L 624 84 A 18 18 0 0 1 642 102 L 642 224"
+            d="M 278 65.5 L 920 65.5 A 20 20 0 0 1 940 85.5 L 940 201"
             fill="none"
             className="stroke-foreground"
-            strokeWidth="2.5"
+            strokeWidth="1.5"
             strokeLinecap="round"
-            strokeDasharray="44 550"
+            strokeDasharray="56 850"
             style={{
-              filter: "drop-shadow(0 0 3px hsl(var(--foreground)))",
+              filter: "drop-shadow(0 0 2.5px hsl(var(--foreground)))",
               opacity: 0,
             }}
           />
@@ -434,14 +397,14 @@ export function FtthTopologyFlow({
           {/* Beam 2: Trigger 2 -> Node 2 */}
           <path
             ref={beam2Ref}
-            d="M 270 140 L 494 140 A 18 18 0 0 1 512 158 L 512 224"
+            d="M 278 111 L 728 111 A 20 20 0 0 1 748 131 L 748 201"
             fill="none"
             className="stroke-foreground"
-            strokeWidth="2.5"
+            strokeWidth="1.5"
             strokeLinecap="round"
-            strokeDasharray="44 400"
+            strokeDasharray="52 620"
             style={{
-              filter: "drop-shadow(0 0 3px hsl(var(--foreground)))",
+              filter: "drop-shadow(0 0 2.5px hsl(var(--foreground)))",
               opacity: 0,
             }}
           />
@@ -449,14 +412,14 @@ export function FtthTopologyFlow({
           {/* Beam 3: Trigger 3 -> Node 1 */}
           <path
             ref={beam3Ref}
-            d="M 270 196 L 364 196 A 18 18 0 0 1 382 214 L 382 224"
+            d="M 278 156.5 L 536 156.5 A 20 20 0 0 1 556 176.5 L 556 201"
             fill="none"
             className="stroke-foreground"
-            strokeWidth="2.5"
+            strokeWidth="1.5"
             strokeLinecap="round"
-            strokeDasharray="40 250"
+            strokeDasharray="44 380"
             style={{
-              filter: "drop-shadow(0 0 3px hsl(var(--foreground)))",
+              filter: "drop-shadow(0 0 2.5px hsl(var(--foreground)))",
               opacity: 0,
             }}
           />
@@ -464,97 +427,74 @@ export function FtthTopologyFlow({
           {/* Return Beam along dashed bus */}
           <path
             ref={returnBeamRef}
-            d="M 642 328 L 642 342 A 14 14 0 0 1 628 356 L 114 356 A 14 14 0 0 1 100 342 L 100 230"
+            d="M 940 316 L 940 343 A 20 20 0 0 1 920 363 L 173 363 A 20 20 0 0 1 153 343 L 153 205"
             fill="none"
             className="stroke-foreground"
-            strokeWidth="2"
+            strokeWidth="1.5"
             strokeLinecap="round"
-            strokeDasharray="48 750"
+            strokeDasharray="60 1050"
             style={{
-              filter: "drop-shadow(0 0 3px hsl(var(--foreground)))",
+              filter: "drop-shadow(0 0 2.5px hsl(var(--foreground)))",
               opacity: 0,
             }}
           />
 
-          {/* Return Loop Target Dot Indicator */}
-          <circle
-            ref={returnDotRef}
-            cx="100"
-            cy="230"
-            r="3"
-            className="fill-foreground"
-            style={{ opacity: 0.3 }}
+          {/* ============================================================== */}
+          {/* UNIFORM 16PX AIR-GAPPED PINS & DIRECTIONAL CHEVRON ARROWS      */}
+          {/* ============================================================== */}
+
+          {/* Trigger Output Dots: Exact 16px air-gap to the right of Trigger Box (x:262 -> x:278) */}
+          <circle cx="278" cy="65.5" r="1.75" className="fill-muted-foreground/75" />
+          <circle cx="278" cy="111" r="1.75" className="fill-muted-foreground/75" />
+          <circle cx="278" cy="156.5" r="1.75" className="fill-muted-foreground/75" />
+
+          {/* Processor Input Arrowheads: Exact 16px air-gap above Processor Boxes (y:206 -> y:222) */}
+          <polygon points="553.5,201 558.5,201 556,206" className="fill-muted-foreground/65" />
+          <polygon points="745.5,201 750.5,201 748,206" className="fill-muted-foreground/65" />
+          <polygon points="937.5,201 942.5,201 940,206" className="fill-muted-foreground/65" />
+
+          {/* Processor Output Dots: Exact 16px air-gap below Processor Boxes (y:300 -> y:316) */}
+          <circle cx="556" cy="316" r="1.75" className="fill-muted-foreground/60" />
+          <circle cx="748" cy="316" r="1.75" className="fill-muted-foreground/60" />
+          <circle cx="940" cy="316" r="1.75" className="fill-muted-foreground/60" />
+
+          {/* Return Loop Upward Arrowhead: Exact 16px air-gap below Trigger Box (y:184 -> y:200) */}
+          <polygon
+            ref={returnArrowRef}
+            points="150.5,205 155.5,205 153,200"
+            className="fill-muted-foreground/75"
           />
 
           {/* ============================================================== */}
-          {/* PINS & CONNECTION PORTS                                       */}
+          {/* LEFT TRIGGER BOX: BLACK OUTER WRAPPER + 3 INNER PILL NODES     */}
           {/* ============================================================== */}
-
-          {/* Trigger Output Pins */}
-          <circle cx="270" cy="84" r="3.5" className="fill-background stroke-foreground" strokeWidth="1.5" />
-          <circle cx="270" cy="140" r="3.5" className="fill-background stroke-foreground" strokeWidth="1.5" />
-          <circle cx="270" cy="196" r="3.5" className="fill-background stroke-foreground" strokeWidth="1.5" />
-
-          {/* Processor Input Pins */}
-          <circle cx="642" cy="224" r="3.5" className="fill-background stroke-foreground" strokeWidth="1.5" />
-          <circle cx="512" cy="224" r="3.5" className="fill-background stroke-foreground" strokeWidth="1.5" />
-          <circle cx="382" cy="224" r="3.5" className="fill-background stroke-foreground" strokeWidth="1.5" />
-
-          {/* Processor Output Drops to Return Bus */}
-          <circle cx="642" cy="328" r="2.5" className="fill-muted stroke-border" strokeWidth="1" />
-          <circle cx="512" cy="328" r="2.5" className="fill-muted stroke-border" strokeWidth="1" />
-          <circle cx="382" cy="328" r="2.5" className="fill-muted stroke-border" strokeWidth="1" />
-
-          {/* ============================================================== */}
-          {/* LEFT TRIGGER CARD (FOREIGNOBJECT ANCHORED)                     */}
-          {/* ============================================================== */}
-          <foreignObject x="40" y="56" width="230" height="168" className="overflow-visible">
-            <div className="relative w-full h-full rounded-2xl border border-border/80 bg-card/95 backdrop-blur-md shadow-sm overflow-hidden flex flex-col justify-between">
-              {TRIGGERS.map((trigger, idx) => {
+          <foreignObject x="44" y="38" width="218" height="146" className="overflow-visible">
+            {/* Outer Black Container Frame (x:44..262, y:38..184, 10px padding) */}
+            <div className="w-full h-full rounded-xl border border-border/60 bg-background p-[10px] flex flex-col justify-between">
+              {TRIGGERS.map((trigger) => {
                 const Icon = trigger.icon;
                 const isHovered =
                   hoveredTarget === trigger.id ||
                   hoveredTarget === trigger.targetNodeId ||
-                  (trigger.id === "trigger-1" && hoveredTarget === "path-1") ||
-                  (trigger.id === "trigger-2" && hoveredTarget === "path-2") ||
-                  (trigger.id === "trigger-3" && hoveredTarget === "path-3");
+                  hoveredTarget === trigger.pathId;
 
                 return (
                   <div
                     key={trigger.id}
-                    onMouseEnter={() => {
-                      setHoveredTarget(
-                        trigger.id === "trigger-1"
-                          ? "path-1"
-                          : trigger.id === "trigger-2"
-                          ? "path-2"
-                          : "path-3"
-                      );
-                    }}
+                    onMouseEnter={() => setHoveredTarget(trigger.pathId)}
                     onMouseLeave={() => setHoveredTarget(null)}
                     onClick={() => handleTriggerClick(trigger.id)}
                     className={cn(
-                      "relative flex items-center justify-between px-3 py-2 transition-colors cursor-pointer select-none",
-                      idx > 0 && "border-t border-border/60",
-                      isHovered ? "bg-muted/80" : "hover:bg-muted/40"
+                      "h-[35px] px-3 rounded-md border flex items-center gap-2.5 transition-all duration-200 cursor-pointer select-none",
+                      isHovered
+                        ? "border-foreground/45 bg-muted/60"
+                        : "border-border/85 bg-card/95 hover:border-foreground/30 hover:bg-muted/35"
                     )}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="size-6 rounded-md bg-muted border border-border/70 flex items-center justify-center shrink-0">
-                        <Icon className="size-3.5 text-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[10px] font-semibold text-foreground tracking-tight leading-tight truncate">
-                          {trigger.label}
-                        </div>
-                        <div className="text-[8.5px] font-mono text-muted-foreground truncate leading-tight">
-                          {trigger.detail}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-[8px] font-mono text-muted-foreground/80 pl-2 shrink-0">
-                      {trigger.sub}
+                    <Icon className="size-3.5 text-muted-foreground shrink-0" />
+                    <div className="font-mono text-[10px] tracking-[0.05em] uppercase whitespace-nowrap leading-none">
+                      <span className="text-foreground font-medium">{trigger.primaryText}</span>{" "}
+                      <span className="text-muted-foreground">{trigger.secondaryText}</span>
                     </div>
                   </div>
                 );
@@ -563,15 +503,13 @@ export function FtthTopologyFlow({
           </foreignObject>
 
           {/* ============================================================== */}
-          {/* 3 BOTTOM PROCESSOR NODES (SQUARE SILICON DIE - LINEAR STYLE)   */}
+          {/* 3 BOTTOM PROCESSOR NODES (EXACT 78x78 OUTER / 58x58 INNER)     */}
           {/* ============================================================== */}
           {PROCESSORS.map((node) => {
-            const Icon = node.icon;
             const isHovered =
               hoveredTarget === node.id ||
-              (node.id === "node-3" && (hoveredTarget === "trigger-1" || hoveredTarget === "path-1")) ||
-              (node.id === "node-2" && (hoveredTarget === "trigger-2" || hoveredTarget === "path-2")) ||
-              (node.id === "node-1" && (hoveredTarget === "trigger-3" || hoveredTarget === "path-3"));
+              hoveredTarget === node.triggerId ||
+              hoveredTarget === node.pathId;
 
             const matrixRef =
               node.id === "node-1"
@@ -584,59 +522,41 @@ export function FtthTopologyFlow({
               <foreignObject
                 key={node.id}
                 x={node.x}
-                y="224"
-                width="104"
-                height="104"
+                y="222"
+                width="78"
+                height="78"
                 className="overflow-visible"
               >
-                {/* Outer Dashed Border Wrapper (Linear Style) */}
+                {/* Outer 78x78 Dashed Square (10px inset to 58x58 inner square) */}
                 <div
                   className={cn(
-                    "relative w-full h-full p-1.5 rounded-2xl border border-dashed transition-all duration-300",
-                    isHovered ? "border-foreground/60 bg-muted/20" : "border-border/60"
+                    "w-full h-full p-[10px] rounded-xl border border-dashed bg-background/50 transition-all duration-300",
+                    isHovered ? "border-foreground/50" : "border-border/65"
                   )}
                 >
-                  {/* Inner Solid Node Card */}
+                  {/* Inner 58x58 Solid Silicon Square */}
                   <div
-                    onMouseEnter={() => setHoveredTarget(node.id)}
+                    onMouseEnter={() => setHoveredTarget(node.pathId)}
                     onMouseLeave={() => setHoveredTarget(null)}
                     className={cn(
-                      "relative w-full h-full rounded-xl border bg-card/95 p-2 flex flex-col justify-between transition-all duration-300 shadow-2xs cursor-pointer",
+                      "w-full h-full rounded-lg border bg-card/95 p-2.5 flex items-start justify-start transition-all duration-300 cursor-pointer",
                       isHovered
-                        ? "border-foreground/60 shadow-sm"
-                        : "border-border/80 hover:border-foreground/40"
+                        ? "border-foreground/50"
+                        : "border-border/85 hover:border-foreground/30"
                     )}
                   >
-                    {/* Top Header: 4x4 Micro-LED Silicon Die Matrix */}
-                    <div className="flex items-start justify-between">
-                      {/* 4x4 LED Matrix Controlled by GSAP */}
-                      <div
-                        ref={matrixRef}
-                        className="grid grid-cols-4 gap-1 p-0.5"
-                        style={{ opacity: 0.2 }}
-                      >
-                        {Array.from({ length: 16 }).map((_, i) => (
-                          <span
-                            key={i}
-                            className="size-1 rounded-[0.5px] bg-foreground transition-all duration-200"
-                          />
-                        ))}
-                      </div>
-
-                      <div className="size-5 rounded-md bg-muted border border-border/70 flex items-center justify-center shrink-0">
-                        <Icon className="size-3 text-muted-foreground" />
-                      </div>
-                    </div>
-
-                    {/* Bottom Text & Metrics */}
-                    <div>
-                      <div className="text-[10px] font-semibold text-foreground tracking-tight truncate leading-tight">
-                        {node.title}
-                      </div>
-                      <div className="flex items-center justify-between text-[8.5px] font-mono text-muted-foreground mt-0.5">
-                        <span className="truncate pr-1">{node.metric}</span>
-                        <span className="size-1.5 rounded-full bg-foreground/80 inline-block shrink-0" />
-                      </div>
+                    {/* Top-Left: 4x4 Micro-LED Matrix Controlled by GSAP */}
+                    <div
+                      ref={matrixRef}
+                      className="grid grid-cols-4 gap-[2.5px] w-fit"
+                      style={{ opacity: 0.25 }}
+                    >
+                      {Array.from({ length: 16 }).map((_, i) => (
+                        <span
+                          key={i}
+                          className="size-[2px] rounded-[0.5px] bg-foreground"
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>

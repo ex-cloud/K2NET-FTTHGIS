@@ -46,7 +46,7 @@ export function AuthLoginLayout({
   figureComponent,
   mobileFigureComponent,
   hideMobileHero = false,
-  figureId = "fig-07",
+  figureId = "fig-01",
   locale = "en",
   onLocaleChange,
   footerAgreePrefix,
@@ -146,10 +146,10 @@ export function AuthLoginLayout({
 
         {/* Center Form Area */}
         <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-5">
-          {/* Mobile 3D Hero (visible only on mobile) */}
+          {/* Mobile 3D Hero (Frameless Monochrome 3D Isometric Object - visible only on mobile) */}
           {!hideMobileHero && (
-            <div className="lg:hidden flex flex-col items-center justify-center -mt-2 mb-2">
-              <div className="w-full max-w-[150px] flex items-center justify-center">
+            <div className="lg:hidden flex flex-col items-center justify-center -mt-2 mb-1">
+              <div className="w-full max-w-[180px] h-[150px] flex items-center justify-center overflow-visible">
                 {mobileFigureComponent !== undefined
                   ? mobileFigureComponent
                   : renderIsometricFigureById(figureId, "card")}
