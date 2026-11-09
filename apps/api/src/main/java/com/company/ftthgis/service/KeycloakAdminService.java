@@ -741,6 +741,14 @@ public class KeycloakAdminService {
             if (users.isEmpty()) {
                 users = usersResource.searchByUsername(email, true);
             }
+            if (users.isEmpty()) {
+                try {
+                    UserRepresentation direct = usersResource.get(email).toRepresentation();
+                    if (direct != null && direct.getId() != null) {
+                        users = List.of(direct);
+                    }
+                } catch (Exception ignored) {}
+            }
             if (!users.isEmpty()) {
                 UserRepresentation user = usersResource.get(users.get(0).getId()).toRepresentation();
                 Map<String, List<String>> attrs = user.getAttributes() != null
@@ -774,11 +782,19 @@ public class KeycloakAdminService {
             if (users.isEmpty()) {
                 users = usersResource.searchByUsername(email, true);
             }
+            if (users.isEmpty()) {
+                try {
+                    UserRepresentation direct = usersResource.get(email).toRepresentation();
+                    if (direct != null && direct.getId() != null) {
+                        users = List.of(direct);
+                    }
+                } catch (Exception ignored) {}
+            }
             if (!users.isEmpty()) {
                 UserRepresentation user = usersResource.get(users.get(0).getId()).toRepresentation();
                 if (user.getAttributes() != null) {
                     Map<String, List<String>> attrs = new java.util.HashMap<>(user.getAttributes());
-                    attrs.remove("k2net_totp_secret");
+                    attrs.put("k2net_totp_secret", List.of(""));
                     attrs.put("k2net_totp_enabled", List.of("false"));
                     user.setAttributes(attrs);
                     usersResource.get(user.getId()).update(user);
