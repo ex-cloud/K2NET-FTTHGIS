@@ -43,6 +43,7 @@ type Repository interface {
 	DiscoverSsoByEmail(ctx context.Context, email string) (*SsoDiscoveryResponse, error)
 	GetUserWebauthnCredentials(ctx context.Context, userID string) ([]WebauthnCredentialModel, error)
 	UpdateWebauthnSignCounter(ctx context.Context, credentialID string, newCounter int64) error
+	IsUserMfaEnabled(ctx context.Context, userID string) (bool, error)
 }
 
 // WebauthnCredentialModel encapsulates a stored FIDO2 public key credential.
@@ -809,6 +810,20 @@ func (r *PostgresRepository) UpdateWebauthnSignCounter(ctx context.Context, cred
 	`
 	_, err := r.db.Exec(ctx, query, credentialID, newCounter)
 	return err
+}
+
+// IsUserMfaEnabled checks if the user has mfa_enabled = true in users table.
+func (r *PostgresRepository) IsUserMfaEnabled(ctx context.Context, userID string) (bool, error) {
+	if r.db == nil || strings.TrimSpace(userID) == "" {
+		return false, nil
+	}
+	var enabled bool
+	query := `SELECT mfa_enabled FROM users WHERE id::text = $1 LIMIT 1`
+	err := r.db.QueryRow(ctx, query, strings.TrimSpace(userID)).Scan(&enabled)
+	if err != nil {
+		return false, nil
+	}
+	return enabled, nil
 }
 
 

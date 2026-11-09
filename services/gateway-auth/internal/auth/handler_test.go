@@ -113,6 +113,10 @@ func (m *mockRepo) UpdateWebauthnSignCounter(_ context.Context, _ string, _ int6
 	return nil
 }
 
+func (m *mockRepo) IsUserMfaEnabled(_ context.Context, _ string) (bool, error) {
+	return false, nil
+}
+
 func buildTestJWT(claims map[string]any) string {
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
 	bodyBytes, _ := json.Marshal(claims)

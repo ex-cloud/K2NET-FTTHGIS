@@ -161,6 +161,14 @@ export interface AccountLabels {
   registeredPasskeysTitle?: string;
   noPasskeysRegistered?: string;
   removePasskeyBtn?: string;
+  passkeyMethodTypeLabel?: string;
+  passkeyTypePlatformTitle?: string;
+  passkeyTypePlatformDesc?: string;
+  passkeyTypeCrossPlatformTitle?: string;
+  passkeyTypeCrossPlatformDesc?: string;
+  passkeyHowItWorksPlatformDesc?: string;
+  passkeyHowItWorksCrossPlatformDesc?: string;
+  passkeyPlatformNotSupported?: string;
   doneBtn?: string;
   cancelBtn?: string;
 }

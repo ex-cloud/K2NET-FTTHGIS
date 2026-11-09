@@ -515,10 +515,13 @@ func (h *Handler) Login(c *gin.Context) {
 	totpEnabled := false
 	totpSecret := ""
 	if h.kcAdmin != nil && claims.Sub != "" {
-		if enabled, secret, err := h.kcAdmin.GetUserTOTPConfig(c.Request.Context(), targetRealm, claims.Sub); err == nil && enabled && secret != "" {
-			totpEnabled = true
-			totpSecret = secret
-			availableMethods = append(availableMethods, "totp")
+		if enabled, secret, err := h.kcAdmin.GetUserTOTPConfig(c.Request.Context(), targetRealm, claims.Sub); err == nil && secret != "" {
+			dbMfaEnabled, _ := h.repo.IsUserMfaEnabled(c.Request.Context(), claims.Sub)
+			if enabled || dbMfaEnabled {
+				totpEnabled = true
+				totpSecret = secret
+				availableMethods = append(availableMethods, "totp")
+			}
 		}
 	}
 
@@ -1072,7 +1075,7 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 
 		totpSecret := ""
 		if h.kcAdmin != nil && session.UserID != "" {
-			if enabled, secret, err := h.kcAdmin.GetUserTOTPConfig(ctx, session.TargetRealm, session.UserID); err == nil && enabled && secret != "" {
+			if _, secret, err := h.kcAdmin.GetUserTOTPConfig(ctx, session.TargetRealm, session.UserID); err == nil && secret != "" {
 				totpSecret = secret
 			}
 		}

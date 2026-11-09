@@ -17,19 +17,9 @@ import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 
-export default function AdminAccountPreferencesPage() {
+function useAccountLabels(): AccountLabels {
   const { t } = useTranslation();
-  const { data: session } = useSession();
-
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [userProfile, setUserProfile] = React.useState<UserProfileData | undefined>(undefined);
-  const [securitySummary, setSecuritySummary] = React.useState<PersonalSecuritySummaryData | undefined>(undefined);
-  const [passwordPolicy, setPasswordPolicy] = React.useState<PasswordPolicyData | undefined>(undefined);
-  const [devices, setDevices] = React.useState<DeviceSessionData[]>([]);
-  const [passkeys, setPasskeys] = React.useState<WebauthnCredentialData[]>([]);
-  const [isPasskeyModalOpen, setIsPasskeyModalOpen] = React.useState(false);
-
-  const labels: AccountLabels = React.useMemo(
+  return React.useMemo(
     () => ({
       title: t("settings.account.title"),
       subtitle: t("settings.account.subtitle"),
@@ -139,11 +129,32 @@ export default function AdminAccountPreferencesPage() {
       passkeyDeleteFailed: t("settings.account.passkey_delete_failed"),
       registeredPasskeysTitle: t("settings.account.registered_passkeys_title"),
       removePasskeyBtn: t("settings.account.remove_passkey_btn"),
+      passkeyMethodTypeLabel: t("settings.account.passkey_method_type_label"),
+      passkeyTypePlatformTitle: t("settings.account.passkey_type_platform_title"),
+      passkeyTypePlatformDesc: t("settings.account.passkey_type_platform_desc"),
+      passkeyTypeCrossPlatformTitle: t("settings.account.passkey_type_cross_platform_title"),
+      passkeyTypeCrossPlatformDesc: t("settings.account.passkey_type_cross_platform_desc"),
+      passkeyHowItWorksPlatformDesc: t("settings.account.passkey_how_it_works_platform_desc"),
+      passkeyHowItWorksCrossPlatformDesc: t("settings.account.passkey_how_it_works_cross_platform_desc"),
+      passkeyPlatformNotSupported: t("settings.account.passkey_platform_not_supported"),
       doneBtn: t("settings.account.done_btn"),
       cancelBtn: t("settings.account.cancel_btn"),
     }),
     [t]
   );
+}
+
+export default function AdminAccountPreferencesPage() {
+  const labels = useAccountLabels();
+  const { data: session } = useSession();
+
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [userProfile, setUserProfile] = React.useState<UserProfileData | undefined>(undefined);
+  const [securitySummary, setSecuritySummary] = React.useState<PersonalSecuritySummaryData | undefined>(undefined);
+  const [passwordPolicy, setPasswordPolicy] = React.useState<PasswordPolicyData | undefined>(undefined);
+  const [devices, setDevices] = React.useState<DeviceSessionData[]>([]);
+  const [passkeys, setPasskeys] = React.useState<WebauthnCredentialData[]>([]);
+  const [isPasskeyModalOpen, setIsPasskeyModalOpen] = React.useState(false);
 
   const fetchData = React.useCallback(async () => {
     if (!session?.accessToken) return;
@@ -441,6 +452,16 @@ export default function AdminAccountPreferencesPage() {
         onVerify={handleVerifyTotp}
         onSuccess={() => {
           toast.success(labels.mfaActivatedSuccess || "Two-factor authentication activated!");
+          setSecuritySummary((prev) =>
+            prev
+              ? { ...prev, mfaEnabled: true }
+              : {
+                  mfaEnabled: true,
+                  mfaEnforced: false,
+                  trustedDevicesCount: 1,
+                  activeSessionsCount: 1,
+                }
+          );
           fetchData();
         }}
       />
@@ -452,6 +473,16 @@ export default function AdminAccountPreferencesPage() {
         onVerify={handleVerifyPasskey}
         onSuccess={() => {
           toast.success(labels.passkeySuccessTitle || "Passkey registered successfully!");
+          setSecuritySummary((prev) =>
+            prev
+              ? { ...prev, mfaEnabled: true }
+              : {
+                  mfaEnabled: true,
+                  mfaEnforced: false,
+                  trustedDevicesCount: 1,
+                  activeSessionsCount: 1,
+                }
+          );
           fetchData();
         }}
       />

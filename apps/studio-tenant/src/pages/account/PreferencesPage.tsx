@@ -140,6 +140,14 @@ export function PreferencesPage() {
       passkeyDeleteFailed: t("settings.account.passkey_delete_failed"),
       registeredPasskeysTitle: t("settings.account.registered_passkeys_title"),
       removePasskeyBtn: t("settings.account.remove_passkey_btn"),
+      passkeyMethodTypeLabel: t("settings.account.passkey_method_type_label"),
+      passkeyTypePlatformTitle: t("settings.account.passkey_type_platform_title"),
+      passkeyTypePlatformDesc: t("settings.account.passkey_type_platform_desc"),
+      passkeyTypeCrossPlatformTitle: t("settings.account.passkey_type_cross_platform_title"),
+      passkeyTypeCrossPlatformDesc: t("settings.account.passkey_type_cross_platform_desc"),
+      passkeyHowItWorksPlatformDesc: t("settings.account.passkey_how_it_works_platform_desc"),
+      passkeyHowItWorksCrossPlatformDesc: t("settings.account.passkey_how_it_works_cross_platform_desc"),
+      passkeyPlatformNotSupported: t("settings.account.passkey_platform_not_supported"),
       doneBtn: t("settings.account.done_btn"),
       cancelBtn: t("settings.account.cancel_btn"),
     }),
@@ -393,6 +401,16 @@ export function PreferencesPage() {
         onVerify={handleVerifyTotp}
         onSuccess={() => {
           toast.success(labels.mfaActivatedSuccess || "Two-factor authentication activated!");
+          setSecuritySummary((prev) =>
+            prev
+              ? { ...prev, mfaEnabled: true }
+              : {
+                  mfaEnabled: true,
+                  mfaEnforced: false,
+                  trustedDevicesCount: 1,
+                  activeSessionsCount: 1,
+                }
+          );
           fetchData();
         }}
       />
@@ -404,6 +422,16 @@ export function PreferencesPage() {
         onVerify={handleVerifyPasskey}
         onSuccess={() => {
           toast.success(labels.passkeySuccessTitle || "Passkey registered successfully!");
+          setSecuritySummary((prev) =>
+            prev
+              ? { ...prev, mfaEnabled: true }
+              : {
+                  mfaEnabled: true,
+                  mfaEnforced: false,
+                  trustedDevicesCount: 1,
+                  activeSessionsCount: 1,
+                }
+          );
           fetchData();
         }}
       />

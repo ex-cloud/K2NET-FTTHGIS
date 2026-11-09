@@ -116,7 +116,7 @@ export function TotpSetupModal({
       <DialogContent className="sm:max-w-md bg-card border border-border text-foreground p-5">
         <DialogHeader className="space-y-1.5 pb-2">
           <DialogTitle className="text-base font-semibold flex items-center gap-2">
-            <Smartphone className="size-4 text-emerald-500" />
+            <Smartphone className="size-4 text-primary" />
             {labels?.mfaModalTitle || "Set Up Two-Factor Authentication"}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
@@ -166,8 +166,8 @@ export function TotpSetupModal({
                   >
                     {isCopied ? (
                       <>
-                        <Check className="size-3 text-emerald-500" />
-                        <span className="text-emerald-500">{labels?.mfaKeyCopied || "Copied!"}</span>
+                        <Check className="size-3 text-primary" />
+                        <span className="text-primary">{labels?.mfaKeyCopied || "Copied!"}</span>
                       </>
                     ) : (
                       <>

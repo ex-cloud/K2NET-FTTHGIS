@@ -1,5 +1,5 @@
 import * as React from "react";
-import { generateQrMatrix } from "./qr-generator";
+import QRCode from "qrcode";
 
 export interface QrSvgProps {
   value: string;
@@ -8,54 +8,43 @@ export interface QrSvgProps {
 }
 
 export function QrSvg({ value, size = 180, className = "" }: QrSvgProps) {
-  const matrix = React.useMemo(() => {
-    try {
-      return generateQrMatrix(value);
-    } catch {
-      return [];
-    }
+  const [svgHtml, setSvgHtml] = React.useState<string>("");
+
+  React.useEffect(() => {
+    if (!value) return;
+    let isMounted = true;
+    QRCode.toString(value, {
+      type: "svg",
+      margin: 2,
+      errorCorrectionLevel: "M",
+    })
+      .then((svg) => {
+        if (isMounted) setSvgHtml(svg);
+      })
+      .catch((err) => {
+        console.error("QR Code generation error:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
   }, [value]);
 
-  if (!matrix || matrix.length === 0) {
+  if (!svgHtml) {
     return (
       <div
         style={{ width: size, height: size }}
         className="flex items-center justify-center bg-muted/40 rounded border border-border text-xs text-muted-foreground"
       >
-        QR Unavailable
+        Generating QR...
       </div>
     );
   }
 
-  const matrixSize = matrix.length;
-  // Add 4-module quiet zone border standard
-  const quietZone = 4;
-  const viewBoxSize = matrixSize + quietZone * 2;
-
-  // Construct SVG path for all dark modules
-  let pathD = "";
-  for (let r = 0; r < matrixSize; r++) {
-    for (let c = 0; c < matrixSize; c++) {
-      if (matrix[r][c]) {
-        const x = c + quietZone;
-        const y = r + quietZone;
-        pathD += `M${x},${y}h1v1h-1z `;
-      }
-    }
-  }
-
   return (
-    <svg
-      viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
-      width={size}
-      height={size}
-      className={`rounded bg-white p-1.5 shadow-sm ${className}`}
-      shapeRendering="crispEdges"
-      aria-label="TOTP QR Code"
-    >
-      <rect width="100%" height="100%" fill="#ffffff" />
-      <path d={pathD} fill="#000000" />
-    </svg>
+    <div
+      style={{ width: size, height: size }}
+      className={`rounded bg-white p-1.5 shadow-sm flex items-center justify-center overflow-hidden [&>svg]:w-full [&>svg]:h-full ${className}`}
+      dangerouslySetInnerHTML={{ __html: svgHtml }}
+    />
   );
 }
-

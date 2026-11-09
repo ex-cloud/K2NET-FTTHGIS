@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Key, ShieldCheck, AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
+import { Key, ShieldCheck, AlertCircle, Loader2, CheckCircle2, Laptop, Smartphone } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -86,6 +86,7 @@ export function PasskeyRegisterModal({
   onSuccess,
 }: PasskeyRegisterModalProps) {
   const [deviceName, setDeviceName] = React.useState("");
+  const [authenticatorType, setAuthenticatorType] = React.useState<"platform" | "cross-platform">("platform");
   const [isRegistering, setIsRegistering] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isSuccess, setIsSuccess] = React.useState(false);
@@ -93,6 +94,7 @@ export function PasskeyRegisterModal({
   React.useEffect(() => {
     if (open) {
       setDeviceName(detectDefaultDeviceName());
+      setAuthenticatorType("platform");
       setErrorMessage(null);
       setIsRegistering(false);
       setIsSuccess(false);
@@ -119,6 +121,17 @@ export function PasskeyRegisterModal({
       const challengeBuffer = base64UrlToBuffer(challengeData.challenge);
       const userIdBuffer = base64UrlToBuffer(challengeData.user.id);
 
+      const authSelection: AuthenticatorSelectionCriteria = {
+        residentKey: "preferred",
+        userVerification: authenticatorType === "platform" ? "required" : "preferred",
+      };
+
+      if (authenticatorType === "platform") {
+        authSelection.authenticatorAttachment = "platform";
+      } else {
+        authSelection.authenticatorAttachment = "cross-platform";
+      }
+
       const credential = (await navigator.credentials.create({
         publicKey: {
           challenge: challengeBuffer as unknown as BufferSource,
@@ -132,10 +145,7 @@ export function PasskeyRegisterModal({
             { alg: -7, type: "public-key" },
             { alg: -257, type: "public-key" },
           ],
-          authenticatorSelection: {
-            userVerification: "preferred",
-            residentKey: "preferred",
-          },
+          authenticatorSelection: authSelection,
           timeout: challengeData.timeout || 60000,
           attestation: (challengeData.attestation as AttestationConveyancePreference) || "none",
         },
@@ -170,6 +180,11 @@ export function PasskeyRegisterModal({
             labels?.passkeyCancelled ||
               "Passkey registration was cancelled or timed out. You can try again whenever you are ready."
           );
+        } else if (err.name === "NotSupportedError") {
+          setErrorMessage(
+            labels?.passkeyPlatformNotSupported ||
+              "Biometric sensor / Windows Hello is not configured for this Windows profile. Please create a 'Windows Hello PIN' in Windows Settings -> Accounts -> Sign-in options, or select 'Mobile Phone or USB Key'."
+          );
         } else {
           setErrorMessage(err.message);
         }
@@ -202,7 +217,7 @@ export function PasskeyRegisterModal({
 
         {isSuccess ? (
           <div className="py-6 space-y-4 text-center">
-            <div className="inline-flex size-12 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 mx-auto">
+            <div className="inline-flex size-12 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-primary mx-auto">
               <CheckCircle2 className="size-6" />
             </div>
             <div className="space-y-1">
@@ -232,6 +247,60 @@ export function PasskeyRegisterModal({
               </div>
             )}
 
+            {/* Authenticator Selection Type: Platform vs Cross-Platform */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">
+                {labels?.passkeyMethodTypeLabel || "Security Key / Passkey Method"}
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthenticatorType("platform");
+                    setDeviceName(detectDefaultDeviceName());
+                    setErrorMessage(null);
+                  }}
+                  className={`p-2.5 rounded-lg border text-left flex flex-col gap-1 transition-colors cursor-pointer ${
+                    authenticatorType === "platform"
+                      ? "border-primary bg-primary/10 text-foreground font-medium"
+                      : "border-border/80 bg-background/50 text-muted-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-semibold">
+                    <Laptop className="size-3.5" />
+                    <span>{labels?.passkeyTypePlatformTitle || "This Device (Biometrics / PIN)"}</span>
+                  </div>
+                  <p className="text-[10px] leading-tight text-muted-foreground">
+                    {labels?.passkeyTypePlatformDesc ||
+                      "Windows Hello, Touch ID, or built-in device fingerprint sensor."}
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthenticatorType("cross-platform");
+                    setDeviceName("Security Key / Phone");
+                    setErrorMessage(null);
+                  }}
+                  className={`p-2.5 rounded-lg border text-left flex flex-col gap-1 transition-colors cursor-pointer ${
+                    authenticatorType === "cross-platform"
+                      ? "border-primary bg-primary/10 text-foreground font-medium"
+                      : "border-border/80 bg-background/50 text-muted-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-semibold">
+                    <Smartphone className="size-3.5" />
+                    <span>{labels?.passkeyTypeCrossPlatformTitle || "Mobile Phone or USB Key"}</span>
+                  </div>
+                  <p className="text-[10px] leading-tight text-muted-foreground">
+                    {labels?.passkeyTypeCrossPlatformDesc ||
+                      "External YubiKey or scan QR code with your mobile phone camera."}
+                  </p>
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="passkeyDeviceName" className="text-xs font-medium">
                 {labels?.passkeyDeviceNameLabel || "Device / Passkey Name"}
@@ -257,8 +326,11 @@ export function PasskeyRegisterModal({
                 <span>{labels?.passkeyHowItWorksTitle || "How It Works"}</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                {labels?.passkeyHowItWorksDesc ||
-                  "When you click 'Register', your operating system will display a prompt to scan your fingerprint, facial scan, or enter your device PIN. Your biometrics never leave your device."}
+                {authenticatorType === "platform"
+                  ? labels?.passkeyHowItWorksPlatformDesc ||
+                    "Your operating system will display a prompt to scan your fingerprint, facial recognition, or enter your device PIN."
+                  : labels?.passkeyHowItWorksCrossPlatformDesc ||
+                    "Insert your USB security key or scan the QR code displayed on screen with your phone camera."}
               </p>
             </div>
 
