@@ -8,6 +8,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PersonalSecuritySummaryDto {
+    private String fullName;
     private String email;
     private String username;
     private String phone;

@@ -7,6 +7,8 @@ import {
   AuthLoginLayout,
   FtthTopologyFlow,
   saveAccountProfile,
+  base64UrlToBuffer,
+  bufferToBase64Url,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
 } from "@k2net/ui";
@@ -27,13 +29,25 @@ function sanitizeCallbackPath(raw: string | null): string {
 
 export default function AdminLoginPage() {
   const { t, locale, setLocale } = useTranslation();
-  const { authenticated, initialized, loginWithCredentials } = useAuth();
+  const {
+    authenticated,
+    initialized,
+    loginWithCredentials,
+    verifyMfaTotp,
+    sendMfaEmailOtp,
+    verifyMfaEmailOtp,
+    getWebauthnLoginChallenge,
+    verifyWebauthnLogin,
+  } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = sanitizeCallbackPath(searchParams?.get("callbackUrl") ?? null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
+  const [preAuthToken, setPreAuthToken] = useState<string | null>(null);
+  const [availableMfaMethods, setAvailableMfaMethods] = useState<string[]>(["totp", "email_otp"]);
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const turnstileSiteKey =
@@ -124,6 +138,11 @@ export default function AdminLoginPage() {
 
       if (result.mfaRequired) {
         setMfaRequired(true);
+        if (result.preAuthToken) setPreAuthToken(result.preAuthToken);
+        if (result.availableMethods && result.availableMethods.length > 0) {
+          setAvailableMfaMethods(result.availableMethods);
+        }
+        if (result.maskedEmail) setMaskedEmail(result.maskedEmail);
         if (result.error) {
           setErrorMessage(resolveAuthErrorMessage(result.error, result.message, t));
         }
@@ -144,6 +163,111 @@ export default function AdminLoginPage() {
       }
 
       router.replace(callbackUrl);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyTotp = async (code: string): Promise<boolean> => {
+    if (!preAuthToken || !verifyMfaTotp) return false;
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await verifyMfaTotp(preAuthToken, code);
+      if (result.success) {
+        router.replace(callbackUrl);
+        return true;
+      }
+      setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_MFA_CODE", result.message, t));
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSendEmailOtp = async (): Promise<boolean> => {
+    if (!preAuthToken || !sendMfaEmailOtp) return false;
+    const res = await sendMfaEmailOtp(preAuthToken);
+    if (!res.success) {
+      setErrorMessage(res.message || "Failed to dispatch verification code");
+      return false;
+    }
+    if (res.maskedEmail) setMaskedEmail(res.maskedEmail);
+    return true;
+  };
+
+  const handleVerifyEmailOtp = async (code: string): Promise<boolean> => {
+    if (!preAuthToken || !verifyMfaEmailOtp) return false;
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await verifyMfaEmailOtp(preAuthToken, code);
+      if (result.success) {
+        router.replace(callbackUrl);
+        return true;
+      }
+      setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_CODE", result.message, t));
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyWebauthn = async (): Promise<boolean> => {
+    if (!preAuthToken || !getWebauthnLoginChallenge || !verifyWebauthnLogin) return false;
+    if (typeof window === "undefined" || !window.PublicKeyCredential) {
+      setErrorMessage(t("settings.account.passkey_unsupported"));
+      return false;
+    }
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const challengeData = await getWebauthnLoginChallenge(preAuthToken);
+      const challengeBuffer = base64UrlToBuffer(challengeData.challenge);
+      const allowCreds = challengeData.allowCredentials?.map((c) => ({
+        type: "public-key" as const,
+        id: base64UrlToBuffer(c.id) as unknown as BufferSource,
+      }));
+
+      const assertion = (await navigator.credentials.get({
+        publicKey: {
+          challenge: challengeBuffer as unknown as BufferSource,
+          rpId: challengeData.rpId,
+          allowCredentials: allowCreds,
+          userVerification: "preferred",
+          timeout: 60000,
+        },
+      })) as PublicKeyCredential | null;
+
+      if (!assertion) {
+        throw new Error("No assertion returned");
+      }
+
+      const resp = assertion.response as AuthenticatorAssertionResponse;
+      const result = await verifyWebauthnLogin(preAuthToken, {
+        credentialId: bufferToBase64Url(assertion.rawId),
+        clientDataJSON: bufferToBase64Url(resp.clientDataJSON),
+        authenticatorData: bufferToBase64Url(resp.authenticatorData),
+        signature: bufferToBase64Url(resp.signature),
+      });
+
+      if (result.success) {
+        router.replace(callbackUrl);
+        return true;
+      }
+      setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_WEBAUTHN_ASSERTION", result.message, t));
+      return false;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err.name === "NotAllowedError") {
+          setErrorMessage(t("settings.account.passkey_cancelled"));
+        } else {
+          setErrorMessage(err.message);
+        }
+      } else {
+        setErrorMessage("WebAuthn verification failed");
+      }
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -184,12 +308,20 @@ export default function AdminLoginPage() {
         labels={formLabels}
         isLoading={isSubmitting}
         mfaRequired={mfaRequired}
+        preAuthToken={preAuthToken ?? undefined}
+        availableMfaMethods={availableMfaMethods}
+        maskedEmail={maskedEmail ?? undefined}
+        onVerifyTotp={handleVerifyTotp}
+        onSendEmailOtp={handleSendEmailOtp}
+        onVerifyEmailOtp={handleVerifyEmailOtp}
+        onVerifyWebauthn={handleVerifyWebauthn}
         turnstileSiteKey={turnstileSiteKey}
         errorMessage={errorMessage}
         onSubmitCredentials={handleSubmitCredentials}
         onResetMfaStep={() => {
           setMfaRequired(false);
           setErrorMessage(null);
+          setPreAuthToken(null);
         }}
       />
     </AuthLoginLayout>

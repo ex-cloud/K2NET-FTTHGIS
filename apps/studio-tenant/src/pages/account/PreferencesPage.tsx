@@ -165,14 +165,14 @@ export function PreferencesPage() {
 
       if (secData) {
         setSecuritySummary(secData);
-        setUserProfile({
-          id: user?.id,
-          username: secData.username || user?.username,
-          name: user?.name,
-          email: secData.email || user?.email,
-          phone: secData.phone || "",
-          avatarUrl: user?.avatarUrl,
-        });
+        setUserProfile((prev) => ({
+          id: user?.id || prev?.id,
+          username: secData.username || user?.username || prev?.username,
+          name: secData.fullName || user?.name || (user as { fullName?: string })?.fullName || prev?.name,
+          email: secData.email || user?.email || prev?.email,
+          phone: secData.phone || prev?.phone || "",
+          avatarUrl: user?.avatarUrl || prev?.avatarUrl,
+        }));
       }
 
       if (devData) {
@@ -190,6 +190,19 @@ export function PreferencesPage() {
       console.warn("Failed to fetch tenant account security data:", e);
     } finally {
       setIsLoading(false);
+    }
+  }, [user]);
+
+  React.useEffect(() => {
+    if (user) {
+      setUserProfile((prev) => ({
+        id: user.id || prev?.id,
+        username: user.username || prev?.username,
+        name: user.name || (user as { fullName?: string })?.fullName || prev?.name,
+        email: user.email || prev?.email,
+        phone: (user as { phone?: string })?.phone || prev?.phone || "",
+        avatarUrl: user.avatarUrl || prev?.avatarUrl,
+      }));
     }
   }, [user]);
 

@@ -259,6 +259,16 @@ export function generateQrMatrix(text: string): boolean[][] {
     if (!isFunction[i][8]) setFunction(i, 8, false);
   }
 
+  // Reserve version information areas for versions >= 7
+  if (spec.version >= 7) {
+    for (let i = 0; i < 6; i++) {
+      for (let j = size - 11; j < size - 8; j++) {
+        setFunction(i, j, false);
+        setFunction(j, i, false);
+      }
+    }
+  }
+
   // 5. Data placement
   let bitIndex = 0;
   let upwards = true;
@@ -285,33 +295,53 @@ export function generateQrMatrix(text: string): boolean[][] {
   }
 
   // 6. Format info for Mask 0, Error Correction Level L
-  // Format bit string for L + Mask 0 is 0b111011111000100 (BCH 15,5 code)
-  const formatBits = [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0];
+  // Format bit integer for L + Mask 0 is 0x77C4 (0b111011111000100) per ISO/IEC 18004
+  const formatInfo = 0x77c4;
 
-  // Top-left
-  matrix[8][0] = Boolean(formatBits[0]);
-  matrix[8][1] = Boolean(formatBits[1]);
-  matrix[8][2] = Boolean(formatBits[2]);
-  matrix[8][3] = Boolean(formatBits[3]);
-  matrix[8][4] = Boolean(formatBits[4]);
-  matrix[8][5] = Boolean(formatBits[5]);
-  matrix[8][7] = Boolean(formatBits[6]);
-  matrix[8][8] = Boolean(formatBits[7]);
-  matrix[7][8] = Boolean(formatBits[8]);
-  matrix[5][8] = Boolean(formatBits[9]);
-  matrix[4][8] = Boolean(formatBits[10]);
-  matrix[3][8] = Boolean(formatBits[11]);
-  matrix[2][8] = Boolean(formatBits[12]);
-  matrix[1][8] = Boolean(formatBits[13]);
-  matrix[0][8] = Boolean(formatBits[14]);
+  // Vertical placement referencing modules[i][8] (canonical ISO 18004 / qrcode.js layout)
+  for (let i = 0; i < 15; i++) {
+    const mod = ((formatInfo >> i) & 1) === 1;
+    if (i < 6) {
+      matrix[i][8] = mod;
+    } else if (i < 8) {
+      matrix[i + 1][8] = mod;
+    } else {
+      matrix[size - 15 + i][8] = mod;
+    }
+  }
 
-  // Split around finders
-  for (let i = 0; i < 7; i++) {
-    matrix[size - 1 - i][8] = Boolean(formatBits[i]);
+  // Horizontal placement referencing modules[8][j]
+  for (let i = 0; i < 15; i++) {
+    const mod = ((formatInfo >> i) & 1) === 1;
+    if (i < 8) {
+      matrix[8][size - i - 1] = mod;
+    } else if (i < 9) {
+      matrix[8][15 - i - 1 + 1] = mod;
+    } else {
+      matrix[8][15 - i - 1] = mod;
+    }
   }
-  for (let i = 0; i < 8; i++) {
-    matrix[8][size - 8 + i] = Boolean(formatBits[7 + i]);
+
+  // 7. Version information for versions >= 7 (BCH 18,6 code)
+  if (spec.version >= 7) {
+    const VERSION_BCH: Record<number, number> = {
+      7: 0x07c94,
+      8: 0x085bc,
+      9: 0x09a99,
+      10: 0x0a4d3,
+    };
+    const vInfo = VERSION_BCH[spec.version] || 0x07c94;
+    for (let i = 0; i < 18; i++) {
+      const mod = ((vInfo >> i) & 1) === 1;
+      const r = Math.floor(i / 3);
+      const c = size - 11 + (i % 3);
+      matrix[r][c] = mod;
+      matrix[c][r] = mod;
+    }
   }
+
+  // Ensure dark module is dark
+  matrix[size - 8][8] = true;
 
   return matrix.map((row) => row.map((cell) => Boolean(cell)));
 }

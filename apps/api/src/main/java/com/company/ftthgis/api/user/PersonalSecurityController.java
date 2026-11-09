@@ -56,9 +56,54 @@ public class PersonalSecurityController {
 
     @GetMapping("/devices")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<UserDeviceDto>> getDevices(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<List<UserDeviceDto>> getDevices(
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
         List<UserDevice> devices = userDeviceRepository.findAllByUserId(userId);
+
+        if (devices.isEmpty()) {
+            // Auto-enroll active session device if user has none recorded
+            String userAgent = request != null ? request.getHeader("User-Agent") : null;
+            String ipAddress = request != null ? request.getHeader("X-Forwarded-For") : null;
+            if (ipAddress == null || ipAddress.isBlank()) {
+                ipAddress = request != null ? request.getRemoteAddr() : "127.0.0.1";
+            } else if (ipAddress.contains(",")) {
+                ipAddress = ipAddress.split(",")[0].trim();
+            }
+
+            String browser = "Current Web Browser";
+            String os = "Current OS";
+            if (userAgent != null) {
+                if (userAgent.contains("Edg/")) browser = "Microsoft Edge";
+                else if (userAgent.contains("Chrome/")) browser = "Google Chrome";
+                else if (userAgent.contains("Firefox/")) browser = "Mozilla Firefox";
+                else if (userAgent.contains("Safari/")) browser = "Apple Safari";
+
+                if (userAgent.contains("Windows")) os = "Windows";
+                else if (userAgent.contains("Macintosh")) os = "macOS";
+                else if (userAgent.contains("Linux")) os = "Linux";
+                else if (userAgent.contains("Android")) os = "Android";
+                else if (userAgent.contains("iPhone") || userAgent.contains("iPad")) os = "iOS";
+            }
+
+            User user = userRepository.findById(userId).orElse(null);
+            if (user != null) {
+                String fingerprint = "session-" + UUID.randomUUID().toString().substring(0, 8);
+                UserDevice activeDevice = UserDevice.builder()
+                        .user(user)
+                        .deviceFingerprint(fingerprint)
+                        .browser(browser)
+                        .os(os)
+                        .ipAddress(ipAddress != null ? ipAddress : "127.0.0.1")
+                        .verified(true)
+                        .createdAt(java.time.LocalDateTime.now())
+                        .lastUsedAt(java.time.LocalDateTime.now())
+                        .build();
+                userDeviceRepository.save(activeDevice);
+                devices = List.of(activeDevice);
+            }
+        }
 
         List<UserDeviceDto> dtos = devices.stream()
                 .map(d -> new UserDeviceDto(
@@ -74,6 +119,10 @@ public class PersonalSecurityController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
+    }
+
+    public ResponseEntity<List<UserDeviceDto>> getDevices(Jwt jwt) {
+        return getDevices(jwt, null);
     }
 
     @DeleteMapping("/devices/{deviceId}")
@@ -184,7 +233,12 @@ public class PersonalSecurityController {
             }
         } catch (Exception ignored) {}
 
+        String fullName = user != null && user.getFullName() != null && !user.getFullName().isBlank()
+                ? user.getFullName()
+                : (jwt.getClaimAsString("name") != null ? jwt.getClaimAsString("name") : "");
+
         PersonalSecuritySummaryDto summary = PersonalSecuritySummaryDto.builder()
+                .fullName(fullName)
                 .email(email != null ? email : "")
                 .username(username != null ? username : "")
                 .phone(phone != null ? phone : "")
@@ -207,17 +261,18 @@ public class PersonalSecurityController {
         String email = jwt.getClaimAsString("email");
         String username = jwt.getClaimAsString("preferred_username");
         String accountLabel = (email != null && !email.isBlank()) ? email : (username != null ? username : jwt.getSubject());
-        String issuer = "K2NET FTTH GIS";
+        String issuer = "K2NET FTTH";
 
         String base32Secret = generateRandomBase32Secret(20);
         String formattedSecret = base32Secret.replaceAll("(.{4})", "$1 ").trim();
         String encodedIssuer = java.net.URLEncoder.encode(issuer, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
-        String encodedAccount = java.net.URLEncoder.encode(accountLabel, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+        // Keep account label unencoded for '@' per RFC 6238 & Google Authenticator URI specification
+        String safeAccount = accountLabel.replace(":", "");
 
         String otpauthUri = String.format(
-                "otpauth://totp/%s:%s?secret=%s&issuer=%s&algorithm=SHA1&digits=6&period=30",
+                "otpauth://totp/%s:%s?secret=%s&issuer=%s",
                 encodedIssuer,
-                encodedAccount,
+                safeAccount,
                 base32Secret,
                 encodedIssuer
         );

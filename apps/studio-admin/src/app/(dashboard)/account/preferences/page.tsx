@@ -163,14 +163,14 @@ export default function AdminAccountPreferencesPage() {
       if (secRes.ok) {
         const secData: PersonalSecuritySummaryData = await secRes.json();
         setSecuritySummary(secData);
-        setUserProfile({
-          id: session.user.id,
-          username: secData.username || session.user.username,
-          name: session.user.name,
-          email: secData.email || session.user.email,
-          phone: secData.phone || "",
-          avatarUrl: session.user.avatar_url,
-        });
+        setUserProfile((prev) => ({
+          id: session.user.id || prev?.id,
+          username: secData.username || session.user.username || prev?.username,
+          name: secData.fullName || session.user.name || (session.user as { fullName?: string })?.fullName || prev?.name,
+          email: secData.email || session.user.email || prev?.email,
+          phone: secData.phone || prev?.phone || "",
+          avatarUrl: session.user.avatar_url || prev?.avatarUrl,
+        }));
       }
 
       if (devRes.ok) {
@@ -193,6 +193,19 @@ export default function AdminAccountPreferencesPage() {
       setIsLoading(false);
     }
   }, [session?.accessToken, session?.user]);
+
+  React.useEffect(() => {
+    if (session?.user) {
+      setUserProfile((prev) => ({
+        id: session.user.id || prev?.id,
+        username: session.user.username || prev?.username,
+        name: session.user.name || (session.user as { fullName?: string })?.fullName || prev?.name,
+        email: session.user.email || prev?.email,
+        phone: (session.user as { phone?: string })?.phone || prev?.phone || "",
+        avatarUrl: session.user.avatar_url || prev?.avatarUrl,
+      }));
+    }
+  }, [session?.user]);
 
   React.useEffect(() => {
     fetchData();

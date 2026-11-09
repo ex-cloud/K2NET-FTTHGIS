@@ -243,21 +243,21 @@ func (h *Handler) Login(c *gin.Context) {
 
 	clientIP := resolveClientIP(c)
 
-	// 1. Verify Cloudflare Turnstile token when TurnstileSecretKey or TurnstileTenantSecretKey is configured (skip on second-step TOTP retry if already verified or re-verify if provided)
+	// 1. Verify Cloudflare Turnstile token when TurnstileSecretKey or TurnstileTenantSecretKey is configured.
+	// Only verify on initial credential submission (step 1). On MFA step 2 (TOTP supplied), the Turnstile token
+	// was already consumed in step 1, so re-verifying it causes Cloudflare "timeout-or-duplicate" rejection.
 	secretToUse := h.cfg.TurnstileSecretKey
 	if plane == "TENANT" && h.cfg.TurnstileTenantSecretKey != "" {
 		secretToUse = h.cfg.TurnstileTenantSecretKey
 	}
 
-	if secretToUse != "" {
-		if req.TOTP == "" || req.TurnstileToken != "" {
-			if !h.verifyTurnstile(c.Request.Context(), secretToUse, req.TurnstileToken, clientIP) {
-				c.JSON(http.StatusForbidden, gin.H{
-					"error":   "TURNSTILE_FAILED",
-					"message": "Verifikasi keamanan anti-bot Cloudflare gagal. Silakan muat ulang dan coba lagi.",
-				})
-				return
-			}
+	if secretToUse != "" && req.TOTP == "" {
+		if !h.verifyTurnstile(c.Request.Context(), secretToUse, req.TurnstileToken, clientIP) {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "TURNSTILE_FAILED",
+				"message": "Verifikasi keamanan anti-bot Cloudflare gagal. Silakan muat ulang dan coba lagi.",
+			})
+			return
 		}
 	}
 

@@ -234,6 +234,14 @@ export function AuthMfaStepUp({
               placeholder={labels?.mfaCodePlaceholder || "000 000"}
               value={totpCode}
               onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (onVerifyTotp && totpCode.trim().length === 6 && !isLoading) {
+                    void onVerifyTotp(totpCode.trim());
+                  }
+                }
+              }}
               className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-background/80 border-border/70 rounded-md text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors"
               disabled={isLoading}
               required
@@ -241,8 +249,13 @@ export function AuthMfaStepUp({
           </div>
 
           <Button
-            type="submit"
+            type="button"
             size="sm"
+            onClick={() => {
+              if (onVerifyTotp && totpCode.trim().length === 6) {
+                void onVerifyTotp(totpCode.trim());
+              }
+            }}
             disabled={isLoading || totpCode.trim().length !== 6}
             className="w-full h-8 text-xs font-medium justify-center gap-2 cursor-pointer shadow-xs"
           >
@@ -309,6 +322,14 @@ export function AuthMfaStepUp({
                   placeholder={labels?.mfaCodePlaceholder || "000 000"}
                   value={emailOtpCode}
                   onChange={(e) => setEmailOtpCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (onVerifyEmailOtp && emailOtpCode.trim().length === 6 && !isLoading) {
+                        void onVerifyEmailOtp(emailOtpCode.trim());
+                      }
+                    }
+                  }}
                   className="h-9 text-center font-mono tracking-[0.4em] text-sm bg-background/80 border-border/70 rounded-md text-foreground focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors"
                   disabled={isLoading}
                   required

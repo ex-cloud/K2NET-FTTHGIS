@@ -29,6 +29,7 @@ export interface DeviceSessionData {
 }
 
 export interface PersonalSecuritySummaryData {
+  fullName?: string;
   username?: string;
   email?: string;
   phone?: string;
