@@ -198,4 +198,25 @@ public class PersonalSecurityControllerTest {
         assertEquals("TENANT", summary.getMfaEnforcementSource());
         assertEquals(1, summary.getTrustedDevicesCount());
     }
+
+    @Test
+    @DisplayName("P7: initiateEmailOtpSetup and verifyAndActivateEmailOtp should activate Email 2FA for verified email")
+    void testEmailOtpSetupAndVerify() {
+        testUser.setStatus("ACTIVE");
+        ResponseEntity<?> setupRes = controller.initiateEmailOtpSetup(jwt);
+        assertEquals(HttpStatus.OK, setupRes.getStatusCode());
+
+        // Disable when not enforced
+        EffectiveSecurityPolicyDto effectivePolicy = EffectiveSecurityPolicyDto.builder()
+                .organizationSlug("acme-isp")
+                .mfaRequired(false)
+                .effectiveSource("TENANT")
+                .sessionIdleMinutes(30)
+                .build();
+        when(securityPolicyService.resolveEffectivePolicy("acme-isp")).thenReturn(effectivePolicy);
+
+        ResponseEntity<?> disableRes = controller.disableEmailOtp(jwt);
+        assertEquals(HttpStatus.OK, disableRes.getStatusCode());
+        verify(keycloakAdminService, times(1)).setEmailOtpEnabled("k2net-tenants", "operator@k2net.id", false);
+    }
 }

@@ -821,6 +821,101 @@ public class KeycloakAdminService {
         }
     }
 
+    public boolean isEmailOtpEnabled(String targetRealm, String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (users.isEmpty()) {
+                users = usersResource.searchByUsername(email, true);
+            }
+            if (users.isEmpty()) {
+                try {
+                    UserRepresentation direct = usersResource.get(email).toRepresentation();
+                    if (direct != null && direct.getId() != null) {
+                        users = List.of(direct);
+                    }
+                } catch (Exception ignored) {}
+            }
+            if (!users.isEmpty()) {
+                UserRepresentation userRep = usersResource.get(users.get(0).getId()).toRepresentation();
+                if (userRep != null && userRep.getAttributes() != null) {
+                    List<String> emailOtpEnabled = userRep.getAttributes().get("k2net_email_otp_enabled");
+                    return emailOtpEnabled != null && emailOtpEnabled.contains("true");
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not check Keycloak Email OTP attribute for user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean isUserEmailVerified(String targetRealm, String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (users.isEmpty()) {
+                users = usersResource.searchByUsername(email, true);
+            }
+            if (users.isEmpty()) {
+                try {
+                    UserRepresentation direct = usersResource.get(email).toRepresentation();
+                    if (direct != null && direct.getId() != null) {
+                        users = List.of(direct);
+                    }
+                } catch (Exception ignored) {}
+            }
+            if (!users.isEmpty()) {
+                UserRepresentation userRep = usersResource.get(users.get(0).getId()).toRepresentation();
+                return userRep != null && Boolean.TRUE.equals(userRep.isEmailVerified());
+            }
+        } catch (Exception e) {
+            log.warn("Could not check Keycloak emailVerified for user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
+        }
+        return false;
+    }
+
+    public void setEmailOtpEnabled(String targetRealm, String email, boolean enabled) {
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (users.isEmpty()) {
+                users = usersResource.searchByUsername(email, true);
+            }
+            if (users.isEmpty()) {
+                try {
+                    UserRepresentation direct = usersResource.get(email).toRepresentation();
+                    if (direct != null && direct.getId() != null) {
+                        users = List.of(direct);
+                    }
+                } catch (Exception ignored) {}
+            }
+            if (!users.isEmpty()) {
+                UserRepresentation user = usersResource.get(users.get(0).getId()).toRepresentation();
+                Map<String, List<String>> attrs = user.getAttributes() != null
+                        ? new java.util.HashMap<>(user.getAttributes())
+                        : new java.util.HashMap<>();
+                attrs.put("k2net_email_otp_enabled", List.of(enabled ? "true" : "false"));
+                user.setAttributes(attrs);
+                if (enabled) {
+                    user.setEmailVerified(true);
+                }
+                usersResource.get(user.getId()).update(user);
+                log.info("Keycloak: Updated Email OTP 2FA (enabled={}) for user '{}' in realm '{}'", enabled, email, targetRealm);
+            } else {
+                throw new IllegalArgumentException("User not found in Keycloak realm: " + targetRealm);
+            }
+        } catch (Exception e) {
+            log.error("Failed to update Email OTP 2FA for user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
+            throw new RuntimeException("Failed to update Email 2FA: " + e.getMessage(), e);
+        }
+    }
+
     public void addRequiredActionToUser(String targetRealm, String email, String requiredAction) {
         try {
             UsersResource usersResource = keycloak.realm(targetRealm).users();

@@ -97,6 +97,13 @@ export interface AuthLoginFormLabels {
   mfaSendingEmail?: string;
   mfaEmailSentDesc?: string;
   mfaResendEmailIn?: string;
+  mfaTryAnotherMethod?: string;
+  mfaChooseMethodTitle?: string;
+  mfaChooseMethodDesc?: string;
+  mfaMethodWebauthnDesc?: string;
+  mfaMethodTotpDesc?: string;
+  mfaMethodEmailDesc?: string;
+  mfaBackToPrimary?: string;
   continueWithPasskey?: string;
   waitingForPasskey?: string;
 }

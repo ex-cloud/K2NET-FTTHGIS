@@ -11,11 +11,12 @@ import com.company.ftthgis.domain.user.repository.UserDeviceRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.domain.user.repository.UserWebauthnCredentialRepository;
 import com.company.ftthgis.service.DeviceVerificationService;
+import com.company.ftthgis.service.EmailService;
 import com.company.ftthgis.service.KeycloakAdminService;
 import com.company.ftthgis.service.SecurityPolicyService;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,7 +39,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v1/me")
-@RequiredArgsConstructor
 @Slf4j
 public class PersonalSecurityController {
 
@@ -49,6 +49,40 @@ public class PersonalSecurityController {
     private final KeycloakAdminService keycloakAdminService;
     private final UserWebauthnCredentialRepository userWebauthnCredentialRepository;
     private final Optional<StringRedisTemplate> redisTemplate;
+    private final EmailService emailService;
+
+    @Autowired
+    public PersonalSecurityController(
+            UserDeviceRepository userDeviceRepository,
+            DeviceVerificationService deviceVerificationService,
+            UserRepository userRepository,
+            SecurityPolicyService securityPolicyService,
+            KeycloakAdminService keycloakAdminService,
+            UserWebauthnCredentialRepository userWebauthnCredentialRepository,
+            Optional<StringRedisTemplate> redisTemplate,
+            Optional<EmailService> emailService) {
+        this.userDeviceRepository = userDeviceRepository;
+        this.deviceVerificationService = deviceVerificationService;
+        this.userRepository = userRepository;
+        this.securityPolicyService = securityPolicyService;
+        this.keycloakAdminService = keycloakAdminService;
+        this.userWebauthnCredentialRepository = userWebauthnCredentialRepository;
+        this.redisTemplate = redisTemplate;
+        this.emailService = emailService != null ? emailService.orElse(null) : null;
+    }
+
+    public PersonalSecurityController(
+            UserDeviceRepository userDeviceRepository,
+            DeviceVerificationService deviceVerificationService,
+            UserRepository userRepository,
+            SecurityPolicyService securityPolicyService,
+            KeycloakAdminService keycloakAdminService,
+            UserWebauthnCredentialRepository userWebauthnCredentialRepository,
+            Optional<StringRedisTemplate> redisTemplate) {
+        this(userDeviceRepository, deviceVerificationService, userRepository,
+                securityPolicyService, keycloakAdminService, userWebauthnCredentialRepository,
+                redisTemplate, Optional.empty());
+    }
 
     // Fallback challenge in-memory cache if Redis is not bound
     private static final Map<String, Long> challengeExpiryMap = new ConcurrentHashMap<>();
@@ -226,11 +260,22 @@ public class PersonalSecurityController {
         if (!hasKeycloakMfa && !lookupIdentifier.equals(userId.toString())) {
             hasKeycloakMfa = keycloakAdminService.hasMfaConfigured(targetRealm, userId.toString());
         }
+        boolean emailOtpActive = keycloakAdminService.isEmailOtpEnabled(targetRealm, lookupIdentifier);
+        if (!emailOtpActive && !lookupIdentifier.equals(userId.toString())) {
+            emailOtpActive = keycloakAdminService.isEmailOtpEnabled(targetRealm, userId.toString());
+        }
         boolean hasWebauthnCreds = !userWebauthnCredentialRepository.findAllByUserId(userId).isEmpty();
-        boolean totpActive = hasKeycloakMfa || (user != null && user.isMfaEnabled() && !hasWebauthnCreds);
-        boolean mfaActive = (user != null && user.isMfaEnabled()) || hasKeycloakMfa || hasWebauthnCreds;
+        boolean totpActive = hasKeycloakMfa || (user != null && user.isMfaEnabled() && !hasWebauthnCreds && !emailOtpActive);
+        boolean mfaActive = (user != null && user.isMfaEnabled()) || hasKeycloakMfa || hasWebauthnCreds || emailOtpActive;
 
-        if (user != null && (hasKeycloakMfa || hasWebauthnCreds) && !user.isMfaEnabled()) {
+        String effectiveEmail = (email != null && !email.isBlank()) ? email : (user != null && user.getEmail() != null ? user.getEmail() : "");
+        boolean emailVerified = !effectiveEmail.isBlank() && (
+                Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified"))
+                        || (user != null && !"PENDING_ACTIVATION".equalsIgnoreCase(user.getStatus()) && !"PENDING".equalsIgnoreCase(user.getStatus()))
+                        || keycloakAdminService.isUserEmailVerified(targetRealm, lookupIdentifier)
+        );
+
+        if (user != null && (hasKeycloakMfa || hasWebauthnCreds || emailOtpActive) && !user.isMfaEnabled()) {
             user.setMfaEnabled(true);
             userRepository.save(user);
         }
@@ -252,12 +297,14 @@ public class PersonalSecurityController {
 
         PersonalSecuritySummaryDto summary = PersonalSecuritySummaryDto.builder()
                 .fullName(fullName)
-                .email(email != null ? email : "")
+                .email(effectiveEmail)
                 .username(username != null ? username : "")
                 .phone(phone != null ? phone : "")
                 .mfaEnabled(mfaActive)
                 .totpEnabled(totpActive)
                 .passkeyEnabled(hasWebauthnCreds)
+                .emailOtpEnabled(emailOtpActive)
+                .emailVerified(emailVerified)
                 .mfaEnforced(effectivePolicy.isMfaRequired())
                 .mfaEnforcementSource(effectivePolicy.getEffectiveSource())
                 .trustedDevicesCount(devicesCount)
@@ -357,11 +404,148 @@ public class PersonalSecurityController {
         String orgSlug = (user != null && user.getOrganization() != null) ? user.getOrganization().getSlug() : "system";
         EffectiveSecurityPolicyDto effectivePolicy = securityPolicyService.resolveEffectivePolicy(orgSlug);
 
-        if (effectivePolicy.isMfaRequired()) {
+        String email = jwt.getClaimAsString("email");
+        String username = jwt.getClaimAsString("preferred_username");
+        String targetRealm = resolveRealmFromJwt(jwt);
+        String lookupEmail = (email != null && !email.isBlank()) ? email : (username != null && !username.isBlank() ? username : userId.toString());
+
+        boolean hasRemainingPasskeys = !userWebauthnCredentialRepository.findAllByUserId(userId).isEmpty();
+        boolean emailOtpActive = keycloakAdminService.isEmailOtpEnabled(targetRealm, lookupEmail);
+
+        if (effectivePolicy.isMfaRequired() && !hasRemainingPasskeys && !emailOtpActive) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", "Tidak dapat menonaktifkan 2FA karena organisasi atau platform mewajibkan MFA."
             ));
+        }
+
+        keycloakAdminService.disableUserTotp(targetRealm, lookupEmail);
+
+        boolean anyMfaRemaining = hasRemainingPasskeys || emailOtpActive;
+        if (user != null) {
+            user.setMfaEnabled(anyMfaRemaining);
+            userRepository.save(user);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "mfaEnabled", anyMfaRemaining,
+                "totpEnabled", false,
+                "message", "Authenticator App (2FA/TOTP) berhasil dinonaktifkan."
+        ));
+    }
+
+    // =========================================================================
+    // Email Authentication (Email OTP 2FA) Self-Service Endpoints
+    // =========================================================================
+
+    public record EmailOtpVerifyPayload(String code) {}
+
+    private static String maskEmailAddress(String email) {
+        if (email == null || !email.contains("@")) return "***";
+        String[] parts = email.split("@", 2);
+        String local = parts[0];
+        String domain = parts[1];
+        if (local.length() <= 2) {
+            return local.charAt(0) + "***@" + domain;
+        }
+        return local.substring(0, 2) + "***@" + domain;
+    }
+
+    @PostMapping("/mfa/email/setup")
+    @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ResponseEntity<?> initiateEmailOtpSetup(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        User user = userRepository.findById(userId).orElse(null);
+        String email = jwt.getClaimAsString("email");
+        if ((email == null || email.isBlank()) && user != null) {
+            email = user.getEmail();
+        }
+        String username = jwt.getClaimAsString("preferred_username");
+        String targetRealm = resolveRealmFromJwt(jwt);
+        String lookupIdentifier = (email != null && !email.isBlank()) ? email : (username != null && !username.isBlank() ? username : userId.toString());
+
+        boolean emailVerified = (email != null && !email.isBlank()) && (
+                Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified"))
+                        || (user != null && !"PENDING_ACTIVATION".equalsIgnoreCase(user.getStatus()) && !"PENDING".equalsIgnoreCase(user.getStatus()))
+                        || keycloakAdminService.isUserEmailVerified(targetRealm, lookupIdentifier)
+        );
+
+        if (!emailVerified || email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Alamat email akun Anda belum terverifikasi. Metode autentikasi email hanya dapat digunakan pada email terverifikasi."
+            ));
+        }
+
+        String otpCode = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
+        String cacheKey = "auth:me-email-otp:" + userId;
+        if (redisTemplate.isPresent()) {
+            redisTemplate.get().opsForValue().set(cacheKey, otpCode, Duration.ofMinutes(5));
+        } else {
+            challengeStore.put(cacheKey, otpCode);
+            challengeExpiryMap.put(cacheKey, System.currentTimeMillis() + 300_000L);
+        }
+
+        if (emailService != null) {
+            String subject = "K2NET FTTH — Kode Verifikasi Aktivasi Email 2FA: " + otpCode;
+            String htmlBody = "<div style=\"font-family: Inter, -apple-system, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; background: #09090b; color: #fafafa; border: 1px solid #27272a; border-radius: 12px;\">"
+                    + "<h2 style=\"margin: 0 0 12px; font-size: 18px; font-weight: 600;\">Verifikasi Autentikasi Dua Faktor Email</h2>"
+                    + "<p style=\"font-size: 13px; color: #a1a1aa; line-height: 1.6;\">Masukkan kode verifikasi 6 digit berikut untuk mengaktifkan metode <strong>Email Authentication (2FA)</strong> pada akun K2NET FTTH Anda:</p>"
+                    + "<div style=\"margin: 20px 0; padding: 16px; background: #18181b; border: 1px solid #3f3f46; border-radius: 8px; text-align: center; font-family: monospace; font-size: 28px; font-weight: 700; letter-spacing: 8px; color: #ffffff;\">"
+                    + otpCode
+                    + "</div>"
+                    + "<p style=\"font-size: 12px; color: #71717a;\">Kode ini berlaku selama 5 menit dan hanya dapat digunakan satu kali.</p>"
+                    + "</div>";
+            emailService.sendEmail(email, subject, htmlBody);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "maskedEmail", maskEmailAddress(email),
+                "message", "Kode verifikasi 6 digit telah dikirimkan ke alamat email Anda."
+        ));
+    }
+
+    @PostMapping("/mfa/email/verify")
+    @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<?> verifyAndActivateEmailOtp(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody EmailOtpVerifyPayload payload) {
+
+        if (payload == null || payload.code() == null || !payload.code().trim().matches("^[0-9]{6}$")) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Kode verifikasi 6 digit wajib diisi."
+            ));
+        }
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        String cacheKey = "auth:me-email-otp:" + userId;
+        String expectedCode = null;
+        if (redisTemplate.isPresent()) {
+            expectedCode = redisTemplate.get().opsForValue().get(cacheKey);
+        } else {
+            Long expiry = challengeExpiryMap.get(cacheKey);
+            if (expiry != null && System.currentTimeMillis() < expiry) {
+                expectedCode = challengeStore.get(cacheKey);
+            }
+        }
+
+        if (expectedCode == null || !expectedCode.equals(payload.code().trim())) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Kode verifikasi 6 digit tidak valid atau telah kedaluwarsa."
+            ));
+        }
+
+        if (redisTemplate.isPresent()) {
+            redisTemplate.get().delete(cacheKey);
+        } else {
+            challengeStore.remove(cacheKey);
+            challengeExpiryMap.remove(cacheKey);
         }
 
         String email = jwt.getClaimAsString("email");
@@ -369,19 +553,59 @@ public class PersonalSecurityController {
         String targetRealm = resolveRealmFromJwt(jwt);
         String lookupEmail = (email != null && !email.isBlank()) ? email : (username != null && !username.isBlank() ? username : userId.toString());
 
-        keycloakAdminService.disableUserTotp(targetRealm, lookupEmail);
+        keycloakAdminService.setEmailOtpEnabled(targetRealm, lookupEmail, true);
+
+        userRepository.findById(userId).ifPresent(u -> {
+            u.setMfaEnabled(true);
+            userRepository.save(u);
+        });
+
+        log.info("✉️ Caller {} activated Email OTP 2FA in realm {}", lookupEmail, targetRealm);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "mfaEnabled", true,
+                "emailOtpEnabled", true,
+                "message", "Autentikasi Dua Faktor via Email berhasil diaktifkan."
+        ));
+    }
+
+    @DeleteMapping("/mfa/email")
+    @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<?> disableEmailOtp(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        User user = userRepository.findById(userId).orElse(null);
+        String orgSlug = (user != null && user.getOrganization() != null) ? user.getOrganization().getSlug() : "system";
+        EffectiveSecurityPolicyDto effectivePolicy = securityPolicyService.resolveEffectivePolicy(orgSlug);
+
+        String email = jwt.getClaimAsString("email");
+        String username = jwt.getClaimAsString("preferred_username");
+        String targetRealm = resolveRealmFromJwt(jwt);
+        String lookupEmail = (email != null && !email.isBlank()) ? email : (username != null && !username.isBlank() ? username : userId.toString());
 
         boolean hasRemainingPasskeys = !userWebauthnCredentialRepository.findAllByUserId(userId).isEmpty();
+        boolean hasTotp = keycloakAdminService.hasMfaConfigured(targetRealm, lookupEmail);
+
+        if (effectivePolicy.isMfaRequired() && !hasRemainingPasskeys && !hasTotp) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Tidak dapat menonaktifkan Email 2FA karena organisasi atau platform mewajibkan MFA."
+            ));
+        }
+
+        keycloakAdminService.setEmailOtpEnabled(targetRealm, lookupEmail, false);
+
+        boolean anyMfaRemaining = hasRemainingPasskeys || hasTotp;
         if (user != null) {
-            user.setMfaEnabled(hasRemainingPasskeys);
+            user.setMfaEnabled(anyMfaRemaining);
             userRepository.save(user);
         }
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "mfaEnabled", hasRemainingPasskeys,
-                "totpEnabled", false,
-                "message", "Authenticator App (2FA/TOTP) berhasil dinonaktifkan."
+                "mfaEnabled", anyMfaRemaining,
+                "emailOtpEnabled", false,
+                "message", "Autentikasi Email 2FA berhasil dinonaktifkan."
         ));
     }
 
@@ -592,10 +816,12 @@ public class PersonalSecurityController {
         String targetRealm = resolveRealmFromJwt(jwt);
         String email = jwt.getClaimAsString("email");
         String username = jwt.getClaimAsString("preferred_username");
-        boolean hasKeycloakMfa = keycloakAdminService.hasMfaConfigured(targetRealm, email != null ? email : username);
+        String lookupEmail = email != null ? email : username;
+        boolean hasKeycloakMfa = keycloakAdminService.hasMfaConfigured(targetRealm, lookupEmail);
+        boolean hasEmailOtp = keycloakAdminService.isEmailOtpEnabled(targetRealm, lookupEmail);
 
         User user = userRepository.findById(userId).orElse(null);
-        if (remaining.isEmpty() && !hasKeycloakMfa && user != null) {
+        if (remaining.isEmpty() && !hasKeycloakMfa && !hasEmailOtp && user != null) {
             user.setMfaEnabled(false);
             userRepository.save(user);
         }

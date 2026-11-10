@@ -32,6 +32,8 @@ export interface AccountPreferencesShellProps {
   onDisableTotp?: () => void;
   onSetupPasskey?: () => void;
   onDeletePasskey?: (credentialId: string) => void;
+  onSetupEmailOtp?: () => void;
+  onDisableEmailOtp?: () => void;
   onRevokeDevice?: (deviceId: number) => Promise<void> | void;
   onRevokeAllSessions?: () => Promise<void> | void;
   onConnectProvider?: (provider: "google" | "github") => Promise<void> | void;
@@ -53,6 +55,8 @@ export function AccountPreferencesShell({
   onDisableTotp,
   onSetupPasskey,
   onDeletePasskey,
+  onSetupEmailOtp,
+  onDisableEmailOtp,
   onRevokeDevice,
   onRevokeAllSessions,
   onConnectProvider,
@@ -114,6 +118,8 @@ export function AccountPreferencesShell({
             onDisableTotp={onDisableTotp}
             onSetupPasskey={onSetupPasskey}
             onDeletePasskey={onDeletePasskey}
+            onSetupEmailOtp={onSetupEmailOtp}
+            onDisableEmailOtp={onDisableEmailOtp}
             isLoading={isLoading}
           />
           <PasswordSecurityCard

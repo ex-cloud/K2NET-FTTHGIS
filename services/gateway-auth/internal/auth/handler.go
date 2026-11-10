@@ -514,14 +514,14 @@ func (h *Handler) Login(c *gin.Context) {
 
 	totpEnabled := false
 	totpSecret := ""
+	emailOtpEnabled := false
 	if h.kcAdmin != nil && claims.Sub != "" {
-		if enabled, secret, err := h.kcAdmin.GetUserTOTPConfig(c.Request.Context(), targetRealm, claims.Sub); err == nil && secret != "" {
-			dbMfaEnabled, _ := h.repo.IsUserMfaEnabled(c.Request.Context(), claims.Sub)
-			if enabled || dbMfaEnabled {
+		if kcTotp, secret, kcEmailOtp, err := h.kcAdmin.GetUserMFAConfig(c.Request.Context(), targetRealm, claims.Sub); err == nil {
+			if kcTotp && secret != "" {
 				totpEnabled = true
 				totpSecret = secret
-				availableMethods = append(availableMethods, "totp")
 			}
+			emailOtpEnabled = kcEmailOtp
 		}
 	}
 
@@ -530,11 +530,21 @@ func (h *Handler) Login(c *gin.Context) {
 		availableMethods = append(availableMethods, "webauthn")
 	}
 
-	if claims.Email != "" {
+	if totpEnabled {
+		availableMethods = append(availableMethods, "totp")
+	}
+
+	if emailOtpEnabled && claims.Email != "" {
 		availableMethods = append(availableMethods, "email_otp")
 	}
 
-	if totpEnabled || len(webauthnCreds) > 0 || (tenantCtx != nil && tenantCtx.MFARequired) {
+	// Safe Fallback Anti-Lockout: if organization/platform enforces MFA but user has 0 methods configured,
+	// allow email_otp as emergency verification method so staff are never locked out.
+	if (tenantCtx != nil && tenantCtx.MFARequired) && len(availableMethods) == 0 && claims.Email != "" {
+		availableMethods = append(availableMethods, "email_otp")
+	}
+
+	if len(availableMethods) > 0 || (tenantCtx != nil && tenantCtx.MFARequired) {
 		mfaRequired = true
 	}
 

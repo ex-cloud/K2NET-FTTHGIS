@@ -213,12 +213,18 @@ func (k *KeycloakAdminClient) LogoutUserSessions(ctx context.Context, realm, use
 
 // GetUserTOTPConfig fetches the user's k2net_totp_enabled and k2net_totp_secret attributes from Keycloak.
 func (k *KeycloakAdminClient) GetUserTOTPConfig(ctx context.Context, realm, userID string) (bool, string, error) {
+	totpEnabled, secret, _, err := k.GetUserMFAConfig(ctx, realm, userID)
+	return totpEnabled, secret, err
+}
+
+// GetUserMFAConfig fetches the user's k2net_totp_enabled, k2net_totp_secret, and k2net_email_otp_enabled attributes from Keycloak.
+func (k *KeycloakAdminClient) GetUserMFAConfig(ctx context.Context, realm, userID string) (bool, string, bool, error) {
 	if k == nil || k.baseURL == "" || userID == "" {
-		return false, "", nil
+		return false, "", false, nil
 	}
 	adminToken, err := k.getAdminToken(ctx)
 	if err != nil {
-		return false, "", err
+		return false, "", false, err
 	}
 
 	userURL := fmt.Sprintf("%s/admin/realms/%s/users/%s",
@@ -226,32 +232,33 @@ func (k *KeycloakAdminClient) GetUserTOTPConfig(ctx context.Context, realm, user
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, userURL, nil)
 	if err != nil {
-		return false, "", err
+		return false, "", false, err
 	}
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 
 	resp, err := k.httpClient.Do(req)
 	if err != nil {
-		return false, "", err
+		return false, "", false, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return false, "", fmt.Errorf("keycloak get user returned HTTP %d", resp.StatusCode)
+		return false, "", false, fmt.Errorf("keycloak get user returned HTTP %d", resp.StatusCode)
 	}
 
 	var parsed struct {
 		Attributes map[string][]string `json:"attributes"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
-		return false, "", err
+		return false, "", false, err
 	}
 	if parsed.Attributes == nil {
-		return false, "", nil
+		return false, "", false, nil
 	}
 
 	enabledVals := parsed.Attributes["k2net_totp_enabled"]
 	secretVals := parsed.Attributes["k2net_totp_secret"]
+	emailOtpVals := parsed.Attributes["k2net_email_otp_enabled"]
 	enabled := false
 	for _, v := range enabledVals {
 		if strings.EqualFold(strings.TrimSpace(v), "true") {
@@ -263,7 +270,14 @@ func (k *KeycloakAdminClient) GetUserTOTPConfig(ctx context.Context, realm, user
 	if len(secretVals) > 0 {
 		secret = strings.TrimSpace(secretVals[0])
 	}
-	return enabled && secret != "", secret, nil
+	emailOtpEnabled := false
+	for _, v := range emailOtpVals {
+		if strings.EqualFold(strings.TrimSpace(v), "true") {
+			emailOtpEnabled = true
+			break
+		}
+	}
+	return enabled && secret != "", secret, emailOtpEnabled, nil
 }
 
 // VerifyTOTPCode validates a 6-digit RFC 6238 TOTP code against a Base32 secret (±1 time step window).

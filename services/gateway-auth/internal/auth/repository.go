@@ -777,12 +777,12 @@ func (r *PostgresRepository) GetUserWebauthnCredentials(ctx context.Context, use
 		return nil, nil
 	}
 	query := `
-		SELECT id, user_id, credential_id, COALESCE(public_key_pem, ''), algorithm, sign_counter, device_name
+		SELECT id::text, user_id::text, credential_id, COALESCE(public_key_pem, ''), algorithm, sign_counter, device_name
 		FROM user_webauthn_credentials
-		WHERE user_id = $1
+		WHERE user_id::text = $1
 		ORDER BY created_at DESC
 	`
-	rows, err := r.db.Query(ctx, query, userID)
+	rows, err := r.db.Query(ctx, query, strings.TrimSpace(userID))
 	if err != nil {
 		return nil, err
 	}

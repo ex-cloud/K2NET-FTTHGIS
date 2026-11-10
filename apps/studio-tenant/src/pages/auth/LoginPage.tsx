@@ -218,6 +218,13 @@ function buildTenantFormLabels(t: (key: string) => string): AuthLoginFormLabels 
     mfaSendingEmail: t("auth.mfa_sending_email"),
     mfaEmailSentDesc: t("auth.mfa_email_sent_desc"),
     mfaResendEmailIn: t("auth.mfa_resend_email_in"),
+    mfaTryAnotherMethod: t("auth.mfa_try_another_method"),
+    mfaChooseMethodTitle: t("auth.mfa_choose_method_title"),
+    mfaChooseMethodDesc: t("auth.mfa_choose_method_desc"),
+    mfaMethodWebauthnDesc: t("auth.mfa_method_webauthn_desc"),
+    mfaMethodTotpDesc: t("auth.mfa_method_totp_desc"),
+    mfaMethodEmailDesc: t("auth.mfa_method_email_desc"),
+    mfaBackToPrimary: t("auth.mfa_back_to_primary"),
     continueWithPasskey: t("auth.continue_with_passkey"),
     waitingForPasskey: t("auth.waiting_for_passkey"),
   };

@@ -15,6 +15,8 @@ public class PersonalSecuritySummaryDto {
     private boolean mfaEnabled;
     private boolean totpEnabled;
     private boolean passkeyEnabled;
+    private boolean emailOtpEnabled;
+    private boolean emailVerified;
     private boolean mfaEnforced;
     private String mfaEnforcementSource;
     private int trustedDevicesCount;

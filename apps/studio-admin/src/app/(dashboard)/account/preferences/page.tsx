@@ -5,6 +5,7 @@ import {
   AccountPreferencesShell,
   TotpSetupModal,
   PasskeyRegisterModal,
+  EmailOtpSetupModal,
   type AccountLabels,
   type UserProfileData,
   type PersonalSecuritySummaryData,
@@ -88,6 +89,20 @@ function useAccountLabels(): AccountLabels {
       mfaDisabledSuccess: t("settings.account.mfa_disabled_success"),
       mfaDisableConfirmTitle: t("settings.account.mfa_disable_confirm_title"),
       mfaDisableConfirmDesc: t("settings.account.mfa_disable_confirm_desc"),
+      mfaEmailCardTitle: t("settings.account.mfa_email_card_title"),
+      mfaEmailCardDesc: t("settings.account.mfa_email_card_desc"),
+      mfaSetupEmail: t("settings.account.mfa_setup_email"),
+      mfaDisableEmailBtn: t("settings.account.mfa_disable_email_btn"),
+      mfaEmailVerifiedBadge: t("settings.account.mfa_email_verified_badge"),
+      mfaEmailUnverifiedBadge: t("settings.account.mfa_email_unverified_badge"),
+      mfaEmailUnverifiedHint: t("settings.account.mfa_email_unverified_hint"),
+      mfaEmailModalTitle: t("settings.account.mfa_email_modal_title"),
+      mfaEmailModalDesc: t("settings.account.mfa_email_modal_desc"),
+      mfaEmailSendCodeBtn: t("settings.account.mfa_email_send_code_btn"),
+      mfaEmailActivatedSuccess: t("settings.account.mfa_email_activated_success"),
+      mfaEmailDisabledSuccess: t("settings.account.mfa_email_disabled_success"),
+      mfaEmailDisableConfirmTitle: t("settings.account.mfa_email_disable_confirm_title"),
+      mfaEmailDisableConfirmDesc: t("settings.account.mfa_email_disable_confirm_desc"),
       mfaPasskeyNotice: t("settings.account.mfa_passkey_notice"),
       sessionsTitle: t("settings.account.sessions_title"),
       sessionsDesc: t("settings.account.sessions_desc"),
@@ -314,6 +329,7 @@ export default function AdminAccountPreferencesPage() {
   };
 
   const [isTotpModalOpen, setIsTotpModalOpen] = React.useState(false);
+  const [isEmailOtpModalOpen, setIsEmailOtpModalOpen] = React.useState(false);
 
   const handleFetchTotpSetup = React.useCallback(async () => {
     if (!session?.accessToken) throw new Error("Unauthorized");
@@ -354,9 +370,6 @@ export default function AdminAccountPreferencesPage() {
 
   const handleDisableTotp = async () => {
     if (!session?.accessToken) return;
-    if (!window.confirm(labels.mfaDisableConfirmDesc || "Are you sure you want to disable two-factor authentication?")) {
-      return;
-    }
     const baseUrl = getBackendBaseUrl();
     const res = await httpClient(`${baseUrl}/me/mfa/totp`, {
       method: "DELETE",
@@ -367,6 +380,54 @@ export default function AdminAccountPreferencesPage() {
       fetchData();
     } else {
       toast.error("Failed to disable 2FA. Platform security policy may require 2FA.");
+    }
+  };
+
+  const handleSendEmailOtpSetup = React.useCallback(async () => {
+    if (!session?.accessToken) return { success: false, message: "Unauthorized" };
+    const baseUrl = getBackendBaseUrl();
+    const res = await httpClient(`${baseUrl}/me/mfa/email/setup`, {
+      method: "POST",
+      token: session.accessToken ?? undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    return {
+      success: res.ok,
+      maskedEmail: data.maskedEmail,
+      message: data.message,
+    };
+  }, [session?.accessToken]);
+
+  const handleVerifyEmailOtpSetup = React.useCallback(
+    async (code: string) => {
+      if (!session?.accessToken) return { success: false, message: "Unauthorized" };
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/me/mfa/email/verify`, {
+        method: "POST",
+        token: session.accessToken ?? undefined,
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      return {
+        success: res.ok,
+        message: data.message || (res.ok ? undefined : "Invalid 6-digit code"),
+      };
+    },
+    [session?.accessToken]
+  );
+
+  const handleDisableEmailOtp = async () => {
+    if (!session?.accessToken) return;
+    const baseUrl = getBackendBaseUrl();
+    const res = await httpClient(`${baseUrl}/me/mfa/email`, {
+      method: "DELETE",
+      token: session.accessToken ?? undefined,
+    });
+    if (res.ok) {
+      toast.success(labels.mfaEmailDisabledSuccess || "Email two-factor authentication disabled.");
+      fetchData();
+    } else {
+      toast.error("Failed to disable Email 2FA.");
     }
   };
 
@@ -403,9 +464,6 @@ export default function AdminAccountPreferencesPage() {
 
   const handleDeletePasskey = async (credentialId: string) => {
     if (!session?.accessToken) return;
-    if (!window.confirm(labels.passkeyDeleteConfirmDesc || "Are you sure you want to remove this passkey?")) {
-      return;
-    }
     const baseUrl = getBackendBaseUrl();
     const res = await httpClient(`${baseUrl}/me/webauthn/credentials/${encodeURIComponent(credentialId)}`, {
       method: "DELETE",
@@ -417,10 +475,6 @@ export default function AdminAccountPreferencesPage() {
     } else {
       toast.error(labels.passkeyDeleteFailed || "Failed to remove passkey.");
     }
-  };
-
-  const handleSetupPasskey = () => {
-    setIsPasskeyModalOpen(true);
   };
 
   return (
@@ -437,8 +491,10 @@ export default function AdminAccountPreferencesPage() {
         onChangePassword={handleChangePassword}
         onSetupTotp={() => setIsTotpModalOpen(true)}
         onDisableTotp={handleDisableTotp}
-        onSetupPasskey={handleSetupPasskey}
+        onSetupPasskey={() => setIsPasskeyModalOpen(true)}
         onDeletePasskey={handleDeletePasskey}
+        onSetupEmailOtp={() => setIsEmailOtpModalOpen(true)}
+        onDisableEmailOtp={handleDisableEmailOtp}
         onRevokeDevice={handleRevokeDevice}
         onRevokeAllSessions={handleRevokeAllSessions}
         onDisconnectProvider={handleDisconnectProvider}
@@ -453,15 +509,7 @@ export default function AdminAccountPreferencesPage() {
         onSuccess={() => {
           toast.success(labels.mfaActivatedSuccess || "Two-factor authentication activated!");
           setSecuritySummary((prev) =>
-            prev
-              ? { ...prev, mfaEnabled: true, totpEnabled: true }
-              : {
-                  mfaEnabled: true,
-                  totpEnabled: true,
-                  mfaEnforced: false,
-                  trustedDevicesCount: 1,
-                  activeSessionsCount: 1,
-                }
+            prev ? { ...prev, mfaEnabled: true, totpEnabled: true } : undefined
           );
           fetchData();
         }}
@@ -475,15 +523,21 @@ export default function AdminAccountPreferencesPage() {
         onSuccess={() => {
           toast.success(labels.passkeySuccessTitle || "Passkey registered successfully!");
           setSecuritySummary((prev) =>
-            prev
-              ? { ...prev, mfaEnabled: true, passkeyEnabled: true }
-              : {
-                  mfaEnabled: true,
-                  passkeyEnabled: true,
-                  mfaEnforced: false,
-                  trustedDevicesCount: 1,
-                  activeSessionsCount: 1,
-                }
+            prev ? { ...prev, mfaEnabled: true, passkeyEnabled: true } : undefined
+          );
+          fetchData();
+        }}
+      />
+      <EmailOtpSetupModal
+        open={isEmailOtpModalOpen}
+        onOpenChange={setIsEmailOtpModalOpen}
+        labels={labels}
+        onSendCode={handleSendEmailOtpSetup}
+        onVerify={handleVerifyEmailOtpSetup}
+        onSuccess={() => {
+          toast.success(labels.mfaEmailActivatedSuccess || "Email two-factor authentication enabled!");
+          setSecuritySummary((prev) =>
+            prev ? { ...prev, mfaEnabled: true, emailOtpEnabled: true } : undefined
           );
           fetchData();
         }}

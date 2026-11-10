@@ -10,3 +10,4 @@ export * from "./qr-generator";
 export * from "./qr-svg";
 export * from "./totp-setup-modal";
 export * from "./passkey-register-modal";
+export * from "./email-otp-setup-modal";
