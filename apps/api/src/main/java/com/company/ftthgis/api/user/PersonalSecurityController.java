@@ -455,7 +455,9 @@ public class PersonalSecurityController {
     @PostMapping("/mfa/email/setup")
     @PreAuthorize("isAuthenticated()")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public ResponseEntity<?> initiateEmailOtpSetup(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<?> initiateEmailOtpSetup(
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
         User user = userRepository.findById(userId).orElse(null);
         String email = jwt.getClaimAsString("email");
@@ -489,16 +491,24 @@ public class PersonalSecurityController {
         }
 
         if (emailService != null) {
-            String subject = "K2NET FTTH — Kode Verifikasi Aktivasi Email 2FA: " + otpCode;
-            String htmlBody = "<div style=\"font-family: Inter, -apple-system, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; background: #09090b; color: #fafafa; border: 1px solid #27272a; border-radius: 12px;\">"
-                    + "<h2 style=\"margin: 0 0 12px; font-size: 18px; font-weight: 600;\">Verifikasi Autentikasi Dua Faktor Email</h2>"
-                    + "<p style=\"font-size: 13px; color: #a1a1aa; line-height: 1.6;\">Masukkan kode verifikasi 6 digit berikut untuk mengaktifkan metode <strong>Email Authentication (2FA)</strong> pada akun K2NET FTTH Anda:</p>"
-                    + "<div style=\"margin: 20px 0; padding: 16px; background: #18181b; border: 1px solid #3f3f46; border-radius: 8px; text-align: center; font-family: monospace; font-size: 28px; font-weight: 700; letter-spacing: 8px; color: #ffffff;\">"
-                    + otpCode
-                    + "</div>"
-                    + "<p style=\"font-size: 12px; color: #71717a;\">Kode ini berlaku selama 5 menit dan hanya dapat digunakan satu kali.</p>"
-                    + "</div>";
-            emailService.sendEmail(email, subject, htmlBody);
+            String recipientName = jwt.getClaimAsString("name");
+            if ((recipientName == null || recipientName.isBlank()) && user != null) {
+                recipientName = (user.getFullName() != null && !user.getFullName().isBlank())
+                        ? user.getFullName()
+                        : user.getUsername();
+            }
+            if (recipientName == null || recipientName.isBlank()) {
+                recipientName = (username != null && !username.isBlank()) ? username : email;
+            }
+
+            String clientIp = request != null ? request.getHeader("X-Forwarded-For") : null;
+            if (clientIp == null || clientIp.isBlank()) {
+                clientIp = request != null ? request.getRemoteAddr() : "127.0.0.1";
+            } else if (clientIp.contains(",")) {
+                clientIp = clientIp.split(",")[0].trim();
+            }
+
+            emailService.sendMfaOtpEmail(email, recipientName, otpCode, clientIp);
         }
 
         return ResponseEntity.ok(Map.of(
@@ -506,6 +516,10 @@ public class PersonalSecurityController {
                 "maskedEmail", maskEmailAddress(email),
                 "message", "Kode verifikasi 6 digit telah dikirimkan ke alamat email Anda."
         ));
+    }
+
+    public ResponseEntity<?> initiateEmailOtpSetup(Jwt jwt) {
+        return initiateEmailOtpSetup(jwt, null);
     }
 
     @PostMapping("/mfa/email/verify")

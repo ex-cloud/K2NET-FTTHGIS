@@ -35,6 +35,7 @@ public class PersonalSecurityControllerTest {
     private SecurityPolicyService securityPolicyService;
     private KeycloakAdminService keycloakAdminService;
     private com.company.ftthgis.domain.user.repository.UserWebauthnCredentialRepository userWebauthnCredentialRepository;
+    private com.company.ftthgis.service.EmailService emailService;
 
     private PersonalSecurityController controller;
 
@@ -51,6 +52,7 @@ public class PersonalSecurityControllerTest {
         securityPolicyService = mock(SecurityPolicyService.class);
         keycloakAdminService = mock(KeycloakAdminService.class);
         userWebauthnCredentialRepository = mock(com.company.ftthgis.domain.user.repository.UserWebauthnCredentialRepository.class);
+        emailService = mock(com.company.ftthgis.service.EmailService.class);
 
         controller = new PersonalSecurityController(
                 userDeviceRepository,
@@ -59,7 +61,8 @@ public class PersonalSecurityControllerTest {
                 securityPolicyService,
                 keycloakAdminService,
                 userWebauthnCredentialRepository,
-                Optional.empty()
+                Optional.empty(),
+                Optional.of(emailService)
         );
 
         userId = UUID.randomUUID();
@@ -205,6 +208,7 @@ public class PersonalSecurityControllerTest {
         testUser.setStatus("ACTIVE");
         ResponseEntity<?> setupRes = controller.initiateEmailOtpSetup(jwt);
         assertEquals(HttpStatus.OK, setupRes.getStatusCode());
+        verify(emailService, times(1)).sendMfaOtpEmail(eq("operator@k2net.id"), anyString(), matches("^[0-9]{6}$"), anyString());
 
         // Disable when not enforced
         EffectiveSecurityPolicyDto effectivePolicy = EffectiveSecurityPolicyDto.builder()
