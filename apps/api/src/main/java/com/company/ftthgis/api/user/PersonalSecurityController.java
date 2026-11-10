@@ -56,6 +56,7 @@ public class PersonalSecurityController {
 
     @GetMapping("/devices")
     @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<List<UserDeviceDto>> getDevices(
             @AuthenticationPrincipal Jwt jwt,
             HttpServletRequest request) {
@@ -127,6 +128,7 @@ public class PersonalSecurityController {
 
     @DeleteMapping("/devices/{deviceId}")
     @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> revokeDevice(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Long deviceId) {
@@ -200,6 +202,7 @@ public class PersonalSecurityController {
 
     @GetMapping("/security")
     @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<PersonalSecuritySummaryDto> getSecuritySummary(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         User user = userRepository.findById(userId).orElse(null);
@@ -218,9 +221,19 @@ public class PersonalSecurityController {
         EffectiveSecurityPolicyDto effectivePolicy = securityPolicyService.resolveEffectivePolicy(orgSlug);
 
         // Check Keycloak credentials live and registered WebAuthn passkeys
-        boolean hasKeycloakMfa = keycloakAdminService.hasMfaConfigured(targetRealm, email != null ? email : username);
+        String lookupIdentifier = (email != null && !email.isBlank()) ? email : (username != null && !username.isBlank() ? username : userId.toString());
+        boolean hasKeycloakMfa = keycloakAdminService.hasMfaConfigured(targetRealm, lookupIdentifier);
+        if (!hasKeycloakMfa && !lookupIdentifier.equals(userId.toString())) {
+            hasKeycloakMfa = keycloakAdminService.hasMfaConfigured(targetRealm, userId.toString());
+        }
         boolean hasWebauthnCreds = !userWebauthnCredentialRepository.findAllByUserId(userId).isEmpty();
+        boolean totpActive = hasKeycloakMfa || (user != null && user.isMfaEnabled() && !hasWebauthnCreds);
         boolean mfaActive = (user != null && user.isMfaEnabled()) || hasKeycloakMfa || hasWebauthnCreds;
+
+        if (user != null && (hasKeycloakMfa || hasWebauthnCreds) && !user.isMfaEnabled()) {
+            user.setMfaEnabled(true);
+            userRepository.save(user);
+        }
 
         int devicesCount = userDeviceRepository.findAllByUserId(userId).size();
 
@@ -243,6 +256,8 @@ public class PersonalSecurityController {
                 .username(username != null ? username : "")
                 .phone(phone != null ? phone : "")
                 .mfaEnabled(mfaActive)
+                .totpEnabled(totpActive)
+                .passkeyEnabled(hasWebauthnCreds)
                 .mfaEnforced(effectivePolicy.isMfaRequired())
                 .mfaEnforcementSource(effectivePolicy.getEffectiveSource())
                 .trustedDevicesCount(devicesCount)
@@ -288,6 +303,7 @@ public class PersonalSecurityController {
 
     @PostMapping("/mfa/totp/verify")
     @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> verifyAndActivateTotp(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody TotpVerifyPayload payload) {
@@ -314,7 +330,7 @@ public class PersonalSecurityController {
         String email = jwt.getClaimAsString("email");
         String username = jwt.getClaimAsString("preferred_username");
         String targetRealm = resolveRealmFromJwt(jwt);
-        String lookupEmail = (email != null && !email.isBlank()) ? email : username;
+        String lookupEmail = (email != null && !email.isBlank()) ? email : (username != null && !username.isBlank() ? username : userId.toString());
 
         keycloakAdminService.saveUserTotpSecret(targetRealm, lookupEmail, cleanSecret);
 
@@ -327,12 +343,14 @@ public class PersonalSecurityController {
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "mfaEnabled", true,
+                "totpEnabled", true,
                 "message", "Authenticator App (2FA/TOTP) berhasil diaktifkan."
         ));
     }
 
     @DeleteMapping("/mfa/totp")
     @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> disableTotp(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         User user = userRepository.findById(userId).orElse(null);
@@ -349,18 +367,20 @@ public class PersonalSecurityController {
         String email = jwt.getClaimAsString("email");
         String username = jwt.getClaimAsString("preferred_username");
         String targetRealm = resolveRealmFromJwt(jwt);
-        String lookupEmail = (email != null && !email.isBlank()) ? email : username;
+        String lookupEmail = (email != null && !email.isBlank()) ? email : (username != null && !username.isBlank() ? username : userId.toString());
 
         keycloakAdminService.disableUserTotp(targetRealm, lookupEmail);
 
+        boolean hasRemainingPasskeys = !userWebauthnCredentialRepository.findAllByUserId(userId).isEmpty();
         if (user != null) {
-            user.setMfaEnabled(false);
+            user.setMfaEnabled(hasRemainingPasskeys);
             userRepository.save(user);
         }
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "mfaEnabled", false,
+                "mfaEnabled", hasRemainingPasskeys,
+                "totpEnabled", false,
                 "message", "Authenticator App (2FA/TOTP) berhasil dinonaktifkan."
         ));
     }
@@ -381,6 +401,7 @@ public class PersonalSecurityController {
 
     @GetMapping("/webauthn/credentials")
     @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<List<WebauthnCredentialDto>> getWebauthnCredentials(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         List<UserWebauthnCredential> creds = userWebauthnCredentialRepository.findAllByUserId(userId);
@@ -449,6 +470,7 @@ public class PersonalSecurityController {
 
     @PostMapping("/webauthn/register/verify")
     @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> verifyWebauthnRegister(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody WebauthnRegisterVerifyPayload payload) {
@@ -510,17 +532,28 @@ public class PersonalSecurityController {
                 ? payload.deviceName().trim()
                 : "Passkey Security Key";
 
-        UserWebauthnCredential credential = UserWebauthnCredential.builder()
-                .user(user)
-                .credentialId(rawCredId)
-                .publicKeyCose(payload.attestationObject() != null ? payload.attestationObject() : rawCredId)
-                .algorithm(-7)
-                .signCounter(0L)
-                .deviceName(deviceName)
-                .lastUsedAt(OffsetDateTime.now())
-                .build();
-
-        userWebauthnCredentialRepository.save(credential);
+        var existingOpt = userWebauthnCredentialRepository.findByCredentialId(rawCredId);
+        if (existingOpt.isPresent()) {
+            UserWebauthnCredential existing = existingOpt.get();
+            existing.setDeviceName(deviceName);
+            existing.setLastUsedAt(OffsetDateTime.now());
+            if (existing.getTransports() == null || existing.getTransports().isBlank()) {
+                existing.setTransports("[\"internal\",\"hybrid\"]");
+            }
+            userWebauthnCredentialRepository.save(existing);
+        } else {
+            UserWebauthnCredential credential = UserWebauthnCredential.builder()
+                    .user(user)
+                    .credentialId(rawCredId)
+                    .publicKeyCose(payload.attestationObject() != null ? payload.attestationObject() : rawCredId)
+                    .algorithm(-7)
+                    .signCounter(0L)
+                    .deviceName(deviceName)
+                    .transports("[\"internal\",\"hybrid\"]")
+                    .lastUsedAt(OffsetDateTime.now())
+                    .build();
+            userWebauthnCredentialRepository.save(credential);
+        }
 
         user.setMfaEnabled(true);
         userRepository.save(user);

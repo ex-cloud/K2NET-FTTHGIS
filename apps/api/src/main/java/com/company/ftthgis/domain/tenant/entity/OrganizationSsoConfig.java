@@ -5,7 +5,9 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.envers.Audited;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -79,10 +81,12 @@ public class OrganizationSsoConfig extends OrganizationAwareEntity {
     @Builder.Default
     private boolean allowBreakGlassBypass = true;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "domain_mappings", columnDefinition = "jsonb", nullable = false)
     @Builder.Default
     private String domainMappings = "[]";
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attribute_mapping", columnDefinition = "jsonb", nullable = false)
     @Builder.Default
     private String attributeMapping = "{}";

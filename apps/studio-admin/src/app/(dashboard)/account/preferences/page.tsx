@@ -454,9 +454,10 @@ export default function AdminAccountPreferencesPage() {
           toast.success(labels.mfaActivatedSuccess || "Two-factor authentication activated!");
           setSecuritySummary((prev) =>
             prev
-              ? { ...prev, mfaEnabled: true }
+              ? { ...prev, mfaEnabled: true, totpEnabled: true }
               : {
                   mfaEnabled: true,
+                  totpEnabled: true,
                   mfaEnforced: false,
                   trustedDevicesCount: 1,
                   activeSessionsCount: 1,
@@ -475,9 +476,10 @@ export default function AdminAccountPreferencesPage() {
           toast.success(labels.passkeySuccessTitle || "Passkey registered successfully!");
           setSecuritySummary((prev) =>
             prev
-              ? { ...prev, mfaEnabled: true }
+              ? { ...prev, mfaEnabled: true, passkeyEnabled: true }
               : {
                   mfaEnabled: true,
+                  passkeyEnabled: true,
                   mfaEnforced: false,
                   trustedDevicesCount: 1,
                   activeSessionsCount: 1,

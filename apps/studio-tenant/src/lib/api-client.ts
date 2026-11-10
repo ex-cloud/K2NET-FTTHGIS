@@ -188,7 +188,16 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
       setImpersonationSessionId(null);
     }
     const errorBody = await response.text().catch(() => "Unknown error");
-    throw new Error(errorBody || `HTTP ${response.status} ${response.statusText}`);
+    let extractedMessage = errorBody;
+    try {
+      const parsed = JSON.parse(errorBody) as { message?: string; error?: string };
+      if (parsed && typeof parsed === "object") {
+        extractedMessage = parsed.message || parsed.error || errorBody;
+      }
+    } catch {
+      // Not JSON, use raw text
+    }
+    throw new Error(extractedMessage || `HTTP ${response.status} ${response.statusText}`);
   }
 
   const contentType = response.headers.get("content-type");

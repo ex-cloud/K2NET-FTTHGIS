@@ -4,7 +4,9 @@ import com.company.ftthgis.domain.common.AuditableEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.envers.Audited;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -55,8 +57,10 @@ public class UserWebauthnCredential extends AuditableEntity {
     @Builder.Default
     private String deviceName = "Passkey";
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private String transports;
+    @Builder.Default
+    private String transports = "[\"internal\",\"hybrid\"]";
 
     @Column(name = "last_used_at")
     private OffsetDateTime lastUsedAt;

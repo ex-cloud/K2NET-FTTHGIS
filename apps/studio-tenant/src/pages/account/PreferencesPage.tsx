@@ -18,19 +18,9 @@ import {
 import { useAuth } from "@k2net/auth/client";
 import { apiClient } from "../../lib/api-client";
 
-export function PreferencesPage() {
+function useAccountLabels(): AccountLabels {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
-
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [userProfile, setUserProfile] = React.useState<UserProfileData | undefined>(undefined);
-  const [securitySummary, setSecuritySummary] = React.useState<PersonalSecuritySummaryData | undefined>(undefined);
-  const [passwordPolicy, setPasswordPolicy] = React.useState<PasswordPolicyData | undefined>(undefined);
-  const [devices, setDevices] = React.useState<DeviceSessionData[]>([]);
-  const [passkeys, setPasskeys] = React.useState<WebauthnCredentialData[]>([]);
-  const [isPasskeyModalOpen, setIsPasskeyModalOpen] = React.useState(false);
-
-  const labels: AccountLabels = React.useMemo(
+  return React.useMemo(
     () => ({
       title: t("settings.account.title"),
       subtitle: t("settings.account.subtitle"),
@@ -153,6 +143,19 @@ export function PreferencesPage() {
     }),
     [t]
   );
+}
+
+export function PreferencesPage() {
+  const labels = useAccountLabels();
+  const { user, logout } = useAuth();
+
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [userProfile, setUserProfile] = React.useState<UserProfileData | undefined>(undefined);
+  const [securitySummary, setSecuritySummary] = React.useState<PersonalSecuritySummaryData | undefined>(undefined);
+  const [passwordPolicy, setPasswordPolicy] = React.useState<PasswordPolicyData | undefined>(undefined);
+  const [devices, setDevices] = React.useState<DeviceSessionData[]>([]);
+  const [passkeys, setPasskeys] = React.useState<WebauthnCredentialData[]>([]);
+  const [isPasskeyModalOpen, setIsPasskeyModalOpen] = React.useState(false);
 
   // Client-side idle lock hook reading timeout (default 30 min)
   const { isIdle, unlock } = useIdleTimeout({
@@ -403,9 +406,10 @@ export function PreferencesPage() {
           toast.success(labels.mfaActivatedSuccess || "Two-factor authentication activated!");
           setSecuritySummary((prev) =>
             prev
-              ? { ...prev, mfaEnabled: true }
+              ? { ...prev, mfaEnabled: true, totpEnabled: true }
               : {
                   mfaEnabled: true,
+                  totpEnabled: true,
                   mfaEnforced: false,
                   trustedDevicesCount: 1,
                   activeSessionsCount: 1,
@@ -424,9 +428,10 @@ export function PreferencesPage() {
           toast.success(labels.passkeySuccessTitle || "Passkey registered successfully!");
           setSecuritySummary((prev) =>
             prev
-              ? { ...prev, mfaEnabled: true }
+              ? { ...prev, mfaEnabled: true, passkeyEnabled: true }
               : {
                   mfaEnabled: true,
+                  passkeyEnabled: true,
                   mfaEnforced: false,
                   trustedDevicesCount: 1,
                   activeSessionsCount: 1,

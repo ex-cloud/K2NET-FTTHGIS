@@ -29,8 +29,12 @@ export function MfaPasskeyCard({
   isLoading = false,
 }: MfaPasskeyCardProps) {
   const isSystemPlane = plane === "SYSTEM";
-  const isEnforced = isSystemPlane || summary?.mfaEnforced;
-  const isMfaActive = summary?.mfaEnabled;
+  const isEnforced = Boolean(isSystemPlane || summary?.mfaEnforced);
+  const hasPasskeys = Boolean((passkeys && passkeys.length > 0) || summary?.passkeyEnabled);
+  const isTotpActive = Boolean(
+    summary?.totpEnabled ?? (summary?.mfaEnabled && (!passkeys || passkeys.length === 0))
+  );
+  const isMfaActive = Boolean(summary?.mfaEnabled || isTotpActive || hasPasskeys);
 
   return (
     <Card className="border border-border/80 bg-card">
@@ -51,7 +55,7 @@ export function MfaPasskeyCard({
             {isMfaActive ? (
               <Badge
                 variant="outline"
-                className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium"
+                className="gap-1 border-primary/40 bg-primary/10 text-primary text-[11px] font-medium"
               >
                 <CheckCircle2 className="size-3" />
                 <span>{labels?.mfaStatusActive || "2FA Active"}</span>
@@ -69,7 +73,7 @@ export function MfaPasskeyCard({
             {isSystemPlane ? (
               <Badge
                 variant="outline"
-                className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-mono uppercase"
+                className="gap-1 border-primary/40 bg-primary/10 text-primary text-[10px] font-mono uppercase"
               >
                 <Lock className="size-3" />
                 <span>{labels?.mfaLockedPlatform || "Tier 0 PAM Baseline"}</span>
@@ -77,7 +81,7 @@ export function MfaPasskeyCard({
             ) : summary?.mfaEnforced ? (
               <Badge
                 variant="outline"
-                className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-mono uppercase"
+                className="gap-1 border-primary/40 bg-primary/10 text-primary text-[10px] font-mono uppercase"
               >
                 <Lock className="size-3" />
                 <span>{labels?.mfaLockedTenant || "Org Enforced"}</span>
@@ -96,8 +100,8 @@ export function MfaPasskeyCard({
 
       <CardContent className="space-y-4">
         {isEnforced && (
-          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-900 dark:text-amber-200 text-xs">
-            <Info className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-primary/30 bg-primary/5 text-foreground text-xs">
+            <Info className="size-4 shrink-0 mt-0.5 text-primary" />
             <div className="space-y-0.5">
               <p className="font-semibold">
                 {isSystemPlane
@@ -126,15 +130,26 @@ export function MfaPasskeyCard({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           <div className="p-3.5 rounded-lg border border-border/80 bg-background/50 flex flex-col justify-between space-y-3">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Smartphone className="size-4 text-muted-foreground" />
-                <h4 className="text-xs font-semibold">Authenticator App (TOTP)</h4>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="size-4 text-muted-foreground" />
+                  <h4 className="text-xs font-semibold">Authenticator App (TOTP)</h4>
+                </div>
+                {isTotpActive && (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-primary/40 bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0"
+                  >
+                    <CheckCircle2 className="size-2.5" />
+                    <span>{labels?.mfaStatusActive || "Active"}</span>
+                  </Badge>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground">
                 Google Authenticator, Microsoft Authenticator, 1Password, or Bitwarden.
               </p>
             </div>
-            {isMfaActive ? (
+            {isTotpActive ? (
               <div className="space-y-2">
                 <Button
                   type="button"
@@ -177,9 +192,20 @@ export function MfaPasskeyCard({
 
           <div className="p-3.5 rounded-lg border border-border/80 bg-background/50 flex flex-col justify-between space-y-3">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Key className="size-4 text-muted-foreground" />
-                <h4 className="text-xs font-semibold">Security Keys & Passkeys (FIDO2)</h4>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Key className="size-4 text-muted-foreground" />
+                  <h4 className="text-xs font-semibold">Security Keys & Passkeys (FIDO2)</h4>
+                </div>
+                {hasPasskeys && (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-primary/40 bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0"
+                  >
+                    <CheckCircle2 className="size-2.5" />
+                    <span>{passkeys && passkeys.length > 0 ? `${passkeys.length} Active` : "Active"}</span>
+                  </Badge>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground">
                 Hardware keys like YubiKey, Apple Touch ID, or Windows Hello.

@@ -34,6 +34,8 @@ export interface PersonalSecuritySummaryData {
   email?: string;
   phone?: string;
   mfaEnabled: boolean;
+  totpEnabled?: boolean;
+  passkeyEnabled?: boolean;
   mfaEnforced: boolean;
   mfaEnforcementSource?: string;
   trustedDevicesCount: number;

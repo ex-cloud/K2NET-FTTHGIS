@@ -13,6 +13,8 @@ public class PersonalSecuritySummaryDto {
     private String username;
     private String phone;
     private boolean mfaEnabled;
+    private boolean totpEnabled;
+    private boolean passkeyEnabled;
     private boolean mfaEnforced;
     private String mfaEnforcementSource;
     private int trustedDevicesCount;

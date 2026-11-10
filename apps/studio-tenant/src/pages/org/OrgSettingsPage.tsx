@@ -134,14 +134,19 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         const { apiClient } = await import("../../lib/api-client");
         const res = await apiClient<{
           mfaEnforced: boolean;
-          sessionIdleTimeoutMinutes: number;
-          isMfaEnforcedByPlatform: boolean;
+          sessionIdleMinutes?: number;
+          sessionIdleTimeoutMinutes?: number;
+          lockedByPlatform?: boolean;
+          isLockedByPlatform?: boolean;
+          isMfaEnforcedByPlatform?: boolean;
           ipAllowlistCidrs?: string;
         }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`);
         if (res && isMounted) {
-          setMfaEnforced(res.mfaEnforced);
-          setSessionTimeout(res.sessionIdleTimeoutMinutes || 30);
-          setIsPlatformEnforced(res.isMfaEnforcedByPlatform);
+          setMfaEnforced(Boolean(res.mfaEnforced));
+          setSessionTimeout(res.sessionIdleMinutes ?? res.sessionIdleTimeoutMinutes ?? 30);
+          setIsPlatformEnforced(
+            Boolean(res.lockedByPlatform ?? res.isLockedByPlatform ?? res.isMfaEnforcedByPlatform)
+          );
           setIpAllowlistCidrs(res.ipAllowlistCidrs || "");
         }
       } catch (e) {
@@ -160,14 +165,28 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
     try {
       setIsSaving(true);
       const { apiClient } = await import("../../lib/api-client");
-      await apiClient(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`, {
+      const updated = await apiClient<{
+        mfaEnforced: boolean;
+        sessionIdleMinutes?: number;
+        lockedByPlatform?: boolean;
+        isLockedByPlatform?: boolean;
+        ipAllowlistCidrs?: string;
+      }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`, {
         method: "PUT",
         body: JSON.stringify({
           mfaEnforced: isPlatformEnforced ? true : mfaEnforced,
-          sessionIdleTimeoutMinutes: sessionTimeout,
-          ipAllowlistCidrs: ipAllowlistCidrs.trim() || undefined,
+          sessionIdleMinutes: sessionTimeout,
+          ipAllowlistCidrs: ipAllowlistCidrs.trim(),
         }),
       });
+      if (updated) {
+        setMfaEnforced(Boolean(updated.mfaEnforced));
+        if (updated.sessionIdleMinutes) {
+          setSessionTimeout(updated.sessionIdleMinutes);
+        }
+        setIsPlatformEnforced(Boolean(updated.lockedByPlatform ?? updated.isLockedByPlatform));
+        setIpAllowlistCidrs(updated.ipAllowlistCidrs || "");
+      }
       toast.success(t("common.saved_successfully"));
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : t("settings.whitelabel.save_error"));
@@ -183,7 +202,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           <div className="flex items-center gap-2">
             <Label className="text-xs font-semibold">{t("settings.mfa_enforce_label")}</Label>
             {isPlatformEnforced && (
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-primary/40 bg-primary/10 text-primary">
                 {t("settings.account.mfa_locked_platform") || "Platform Enforced"}
               </span>
             )}
@@ -404,7 +423,7 @@ export function OrgSettingsPage() {
         icon={Building}
         subtitle={meta.subtitle}
         actions={
-          (currentSection === "general" && generalTab !== "info") ? undefined : (
+          currentSection === "general" && generalTab === "info" ? (
             <Button
               size="sm"
               disabled={isSaving}
@@ -414,7 +433,7 @@ export function OrgSettingsPage() {
               <Save className="size-3.5" />
               {isSaving ? t("settings.whitelabel.saving") : t("common.save_changes")}
             </Button>
-          )
+          ) : undefined
         }
       />
 
@@ -430,14 +449,14 @@ export function OrgSettingsPage() {
                 <Palette className="size-3.5" />
                 {t("settings.tab_branding_whitelabel")}
                 {!isWhitelabelAllowed && (
-                  <Lock className="size-3 text-amber-500 ml-0.5" />
+                  <Lock className="size-3 text-muted-foreground ml-0.5" />
                 )}
               </TabsTrigger>
               <TabsTrigger value="domains" className="gap-1.5 text-xs font-medium cursor-pointer">
                 <Globe className="size-3.5" />
                 {t("settings.tab_custom_domains")}
                 {!isWhitelabelAllowed && (
-                  <Lock className="size-3 text-amber-500 ml-0.5" />
+                  <Lock className="size-3 text-muted-foreground ml-0.5" />
                 )}
               </TabsTrigger>
             </TabsList>

@@ -37,6 +37,12 @@ public class SecurityPolicyService {
     private final KeycloakAdminService keycloakAdminService;
     private final com.company.ftthgis.domain.user.repository.UserRepository userRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.company.ftthgis.domain.user.repository.UserWebauthnCredentialRepository userWebauthnCredentialRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
     // Default constants
     private static final String DEFAULT_ALLOWED_METHODS = "totp,webauthn";
     private static final int DEFAULT_GRACE_PERIOD_DAYS = 7;
@@ -242,8 +248,20 @@ public class SecurityPolicyService {
                     && actor != null && !actor.isBlank() && !"admin".equalsIgnoreCase(actor)) {
                 boolean callerHasMfa = keycloakAdminService.hasMfaConfigured("k2net-tenants", actor);
                 if (!callerHasMfa) {
+                    var callerOpt = userRepository.findByEmail(actor);
+                    if (callerOpt.isEmpty()) {
+                        callerOpt = userRepository.findByUsername(actor);
+                    }
+                    if (callerOpt.isPresent()) {
+                        var callerUser = callerOpt.get();
+                        callerHasMfa = callerUser.isMfaEnabled()
+                                || (userWebauthnCredentialRepository != null
+                                    && !userWebauthnCredentialRepository.findAllByUserId(callerUser.getId()).isEmpty());
+                    }
+                }
+                if (!callerHasMfa) {
                     throw new IllegalArgumentException(
-                            "Anti-Lockout Protection: Anda wajib mengaktifkan Authenticator App (2FA/TOTP) pada akun Anda terlebih dahulu di menu Account Preferences → Security & 2FA sebelum mewajibkan MFA untuk seluruh anggota organisasi.");
+                            "Anti-Lockout Protection: Anda wajib mengaktifkan Authenticator App (2FA/TOTP) atau Passkey (FIDO2) pada akun Anda terlebih dahulu di menu Account Preferences → Security & 2FA sebelum mewajibkan MFA untuk seluruh anggota organisasi.");
                 }
             }
             policy.setMfaEnforced(request.mfaEnforced());
@@ -301,6 +319,12 @@ public class SecurityPolicyService {
 
         if (request.mfaEnforced() != null) {
             reconcileOrganizationMfa(org, saved.isMfaEnforced());
+        }
+
+        if (redisTemplate != null && org.getSlug() != null) {
+            try {
+                redisTemplate.delete("auth:tenant-ctx:" + org.getSlug().toLowerCase(Locale.ROOT));
+            } catch (Exception ignored) {}
         }
 
         auditLoggingService.logEvent(org.getSlug(), "TENANT_SECURITY_POLICY_UPDATE", "TENANT_POLICY",
@@ -388,8 +412,10 @@ public class SecurityPolicyService {
             log.info("🔄 Reconciling MFA enforcement ({}) for {} members of org '{}'", mfaEnforced, members.size(), org.getSlug());
             for (var member : members) {
                 if (member.getEmail() == null || member.getEmail().isBlank()) continue;
-                boolean hasMfa = keycloakAdminService.hasMfaConfigured("k2net-tenants", member.getEmail());
-                member.setMfaEnabled(hasMfa);
+                boolean hasKeycloakMfa = keycloakAdminService.hasMfaConfigured("k2net-tenants", member.getEmail());
+                boolean hasWebauthn = userWebauthnCredentialRepository != null
+                        && !userWebauthnCredentialRepository.findAllByUserId(member.getId()).isEmpty();
+                member.setMfaEnabled(hasKeycloakMfa || hasWebauthn);
                 // Ensure headless Direct Grant is never deadlocked by legacy CONFIGURE_TOTP required action
                 keycloakAdminService.removeRequiredActionFromUser("k2net-tenants", member.getEmail(), "CONFIGURE_TOTP");
                 userRepository.save(member);

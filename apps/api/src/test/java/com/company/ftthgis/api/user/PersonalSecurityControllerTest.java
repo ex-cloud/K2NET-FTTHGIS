@@ -192,6 +192,8 @@ public class PersonalSecurityControllerTest {
         assertNotNull(summary);
         assertEquals("operator@k2net.id", summary.getEmail());
         assertTrue(summary.isMfaEnabled());
+        assertTrue(summary.isTotpEnabled());
+        assertFalse(summary.isPasskeyEnabled());
         assertTrue(summary.isMfaEnforced());
         assertEquals("TENANT", summary.getMfaEnforcementSource());
         assertEquals(1, summary.getTrustedDevicesCount());

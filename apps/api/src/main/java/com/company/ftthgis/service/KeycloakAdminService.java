@@ -705,12 +705,27 @@ public class KeycloakAdminService {
     }
 
     public boolean hasMfaConfigured(String targetRealm, String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
         try {
             UsersResource usersResource = keycloak.realm(targetRealm).users();
             List<UserRepresentation> users = usersResource.searchByEmail(email, true);
+            if (users.isEmpty()) {
+                users = usersResource.searchByUsername(email, true);
+            }
+            if (users.isEmpty()) {
+                try {
+                    UserRepresentation direct = usersResource.get(email).toRepresentation();
+                    if (direct != null && direct.getId() != null) {
+                        users = List.of(direct);
+                    }
+                } catch (Exception ignored) {}
+            }
             if (!users.isEmpty()) {
-                UserRepresentation userRep = users.get(0);
-                if (userRep.getAttributes() != null) {
+                UserResource userResource = usersResource.get(users.get(0).getId());
+                UserRepresentation userRep = userResource.toRepresentation();
+                if (userRep != null && userRep.getAttributes() != null) {
                     List<String> totpEnabled = userRep.getAttributes().get("k2net_totp_enabled");
                     List<String> totpSecret = userRep.getAttributes().get("k2net_totp_secret");
                     if (totpEnabled != null && totpEnabled.contains("true")
@@ -718,7 +733,6 @@ public class KeycloakAdminService {
                         return true;
                     }
                 }
-                UserResource userResource = usersResource.get(userRep.getId());
                 List<CredentialRepresentation> credentials = userResource.credentials();
                 if (credentials != null) {
                     return credentials.stream().anyMatch(c ->
@@ -812,7 +826,7 @@ public class KeycloakAdminService {
             UsersResource usersResource = keycloak.realm(targetRealm).users();
             List<UserRepresentation> users = usersResource.searchByEmail(email, true);
             if (!users.isEmpty()) {
-                UserRepresentation user = users.get(0);
+                UserRepresentation user = usersResource.get(users.get(0).getId()).toRepresentation();
                 List<String> actions = user.getRequiredActions();
                 List<String> updatedActions = actions == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(actions);
                 if (!updatedActions.contains(requiredAction)) {
@@ -832,7 +846,7 @@ public class KeycloakAdminService {
             UsersResource usersResource = keycloak.realm(targetRealm).users();
             List<UserRepresentation> users = usersResource.searchByEmail(email, true);
             if (!users.isEmpty()) {
-                UserRepresentation user = users.get(0);
+                UserRepresentation user = usersResource.get(users.get(0).getId()).toRepresentation();
                 List<String> actions = user.getRequiredActions();
                 if (actions != null && actions.contains(requiredAction)) {
                     List<String> updatedActions = new java.util.ArrayList<>(actions);
