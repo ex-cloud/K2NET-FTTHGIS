@@ -312,10 +312,10 @@ export default function AdminAccountPreferencesPage() {
     fetchData();
   };
 
-  const handleDisconnectProvider = async (provider: "google" | "github") => {
+  const handleDisconnectProvider = async (provider: string) => {
     if (!session?.accessToken) return;
     const baseUrl = getBackendBaseUrl();
-    const res = await httpClient(`${baseUrl}/users/me/social-identities/${provider}`, {
+    const res = await httpClient(`${baseUrl}/users/me/social-identities/${encodeURIComponent(provider)}`, {
       method: "DELETE",
       token: session.accessToken ?? undefined,
     });
