@@ -32,6 +32,16 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getMessage());
     }
 
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        String msg = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getDefaultMessage() != null ? fe.getDefaultMessage() : (fe.getField() + " is invalid"))
+                .findFirst()
+                .orElse("Validation failed");
+        log.warn("Request validation failed: {}", msg);
+        return buildResponse(HttpStatus.BAD_REQUEST, msg, msg);
+    }
+
     @ExceptionHandler(ActiveSessionConflictException.class)
     public ResponseEntity<ErrorResponse> handleActiveSessionConflict(ActiveSessionConflictException ex) {
         log.warn("Active impersonation session conflict: {}", ex.getMessage());

@@ -304,16 +304,17 @@ export function PreferencesPage() {
       const ssoMethod = allowed.find((m) => m.startsWith("sso-"));
       let targetHint = provider;
       if (provider === "sso" || provider.startsWith("sso-")) {
-        targetHint = ssoMethod || `sso-${slug}`;
-      } else if (provider === "google" && ssoMethod && ctx?.ssoProviderType === "GOOGLE") {
+        if (!ssoMethod) {
+          toast.error(
+            "Provider belum dikonfigurasi pada Settings -> Single Sign-On (SSO) organisasi ini."
+          );
+          return;
+        }
         targetHint = ssoMethod;
-      } else if (provider === "github" && ssoMethod && ctx?.ssoProviderType === "GITHUB") {
-        targetHint = ssoMethod;
-      } else if (!allowed.includes(provider) && !ssoMethod) {
-        toast.error(
-          "Provider belum dikonfigurasi pada Settings -> Single Sign-On (SSO) organisasi ini."
-        );
-        return;
+      } else if (provider === "google") {
+        targetHint = ssoMethod && ctx?.ssoProviderType === "GOOGLE" ? ssoMethod : "google";
+      } else if (provider === "github") {
+        targetHint = ssoMethod && ctx?.ssoProviderType === "GITHUB" ? ssoMethod : "github";
       }
 
       await login({

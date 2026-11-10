@@ -162,6 +162,30 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
     setIsSaving(true);
     try {
       const { apiClient } = await import("../../lib/api-client");
+
+      if (enforceSso && lastTestStatus !== "SUCCESS") {
+        const probeRes = await apiClient<{ success: boolean; message: string; latencyMs?: number }>(
+          `/api/v1/organizations/${encodeURIComponent(slug)}/sso/test-probe`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              providerType,
+              issuerUrl: issuerUrl.trim() || undefined,
+              metadataUrl: metadataUrl.trim() || undefined,
+              clientId: clientId.trim(),
+              clientSecret: clientSecret.trim() || undefined,
+            }),
+          }
+        );
+        if (!probeRes.success) {
+          setLastTestStatus("FAILED");
+          toast.error(t("settings.sso_test_probe_failed", { error: probeRes.message }));
+          return;
+        }
+        setLastTestStatus("SUCCESS");
+        setLastTestAt(new Date().toISOString());
+      }
+
       const payload = {
         providerType,
         displayName: displayName || undefined,
@@ -496,10 +520,27 @@ function SsoEnforcementSwitches({
 
   return (
     <div className="space-y-3 pt-3 border-t border-border/50">
-      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
-        <div className="space-y-0.5">
-          <Label className="text-xs font-semibold flex items-center gap-1.5">
-            {t("settings.sso_enforce_label")}
+      <div
+        className="flex items-center justify-between p-3.5 rounded-lg bg-muted/20 border border-border/50 hover:border-border/80 transition-colors cursor-pointer"
+        onClick={() => {
+          if (isSsoAllowed && !isLoading) {
+            onEnforceSsoChange(!enforceSso);
+          }
+        }}
+      >
+        <div className="space-y-0.5 pr-4">
+          <Label htmlFor="sso-enforce-switch" className="text-xs font-semibold flex items-center gap-2 cursor-pointer">
+            <span>{t("settings.sso_enforce_label")}</span>
+            <Badge
+              variant="outline"
+              className={
+                enforceSso
+                  ? "border-primary/40 text-primary bg-primary/10 text-[10px]"
+                  : "border-border text-muted-foreground text-[10px]"
+              }
+            >
+              {enforceSso ? "ENFORCED (ON)" : "OPTIONAL (OFF)"}
+            </Badge>
             {lastTestStatus !== "SUCCESS" && (
               <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px]">
                 {t("settings.sso_probe_required_badge")}
@@ -507,28 +548,51 @@ function SsoEnforcementSwitches({
             )}
           </Label>
           <p className="text-[11px] text-muted-foreground">
-            {lastTestStatus !== "SUCCESS"
-              ? t("settings.sso_probe_required_notice")
-              : t("settings.sso_enforce_desc")}
+            {t("settings.sso_enforce_desc")}
           </p>
         </div>
-        <Switch
-          disabled={!isSsoAllowed || isLoading || lastTestStatus !== "SUCCESS"}
-          checked={enforceSso}
-          onCheckedChange={onEnforceSsoChange}
-        />
+        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <Switch
+            id="sso-enforce-switch"
+            disabled={!isSsoAllowed || isLoading}
+            checked={enforceSso}
+            onCheckedChange={onEnforceSsoChange}
+          />
+        </div>
       </div>
 
-      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
-        <div className="space-y-0.5">
-          <Label className="text-xs font-semibold">{t("settings.sso_break_glass_label")}</Label>
+      <div
+        className="flex items-center justify-between p-3.5 rounded-lg bg-muted/20 border border-border/50 hover:border-border/80 transition-colors cursor-pointer"
+        onClick={() => {
+          if (isSsoAllowed && !isLoading) {
+            onAllowBreakGlassBypassChange(!allowBreakGlassBypass);
+          }
+        }}
+      >
+        <div className="space-y-0.5 pr-4">
+          <Label htmlFor="sso-breakglass-switch" className="text-xs font-semibold flex items-center gap-2 cursor-pointer">
+            <span>{t("settings.sso_break_glass_label")}</span>
+            <Badge
+              variant="outline"
+              className={
+                allowBreakGlassBypass
+                  ? "border-primary/40 text-primary bg-primary/10 text-[10px]"
+                  : "border-border text-muted-foreground text-[10px]"
+              }
+            >
+              {allowBreakGlassBypass ? "ENABLED (ON)" : "DISABLED (OFF)"}
+            </Badge>
+          </Label>
           <p className="text-[11px] text-muted-foreground">{t("settings.sso_break_glass_desc")}</p>
         </div>
-        <Switch
-          disabled={!isSsoAllowed || isLoading}
-          checked={allowBreakGlassBypass}
-          onCheckedChange={onAllowBreakGlassBypassChange}
-        />
+        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <Switch
+            id="sso-breakglass-switch"
+            disabled={!isSsoAllowed || isLoading}
+            checked={allowBreakGlassBypass}
+            onCheckedChange={onAllowBreakGlassBypassChange}
+          />
+        </div>
       </div>
     </div>
   );

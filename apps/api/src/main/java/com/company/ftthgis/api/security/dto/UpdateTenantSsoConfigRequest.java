@@ -21,8 +21,8 @@ import java.util.Map;
 public class UpdateTenantSsoConfigRequest {
 
     @NotBlank(message = "Provider type must not be blank")
-    @Pattern(regexp = "^(GOOGLE|MICROSOFT_ENTRA|OKTA|OIDC_CUSTOM|SAML_CUSTOM)$",
-            message = "Provider type must be one of: GOOGLE, MICROSOFT_ENTRA, OKTA, OIDC_CUSTOM, SAML_CUSTOM")
+    @Pattern(regexp = "^(GOOGLE|GITHUB|MICROSOFT_ENTRA|OKTA|KEYCLOAK_OIDC|OIDC_CUSTOM|SAML_CUSTOM)$",
+            message = "Provider type must be one of: GOOGLE, GITHUB, MICROSOFT_ENTRA, OKTA, KEYCLOAK_OIDC, OIDC_CUSTOM, SAML_CUSTOM")
     private String providerType;
 
     @Size(max = 128, message = "Display name cannot exceed 128 characters")

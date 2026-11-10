@@ -514,7 +514,11 @@ public class KeycloakAdminService {
                 idpsResource.get(alias).update(idp);
                 log.info("Successfully updated Identity Provider: {} in realm: {}", alias, realm);
             } else {
-                idpsResource.create(idp);
+                try (jakarta.ws.rs.core.Response response = idpsResource.create(idp)) {
+                    if (response != null && response.getStatus() >= 400) {
+                        log.warn("Keycloak returned HTTP {} when creating Identity Provider {} in realm {}", response.getStatus(), alias, realm);
+                    }
+                }
                 log.info("Successfully created Identity Provider: {} in realm: {}", alias, realm);
             }
 
