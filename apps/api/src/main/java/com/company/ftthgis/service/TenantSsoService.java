@@ -44,6 +44,12 @@ public class TenantSsoService {
     @Autowired(required = false)
     private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
+    @org.springframework.beans.factory.annotation.Value("${keycloak.server-url:https://auth-gis.kdua.net}")
+    private String keycloakPublicUrl = "https://auth-gis.kdua.net";
+
+    @org.springframework.beans.factory.annotation.Value("${keycloak.internal-url:http://keycloak:8081}")
+    private String keycloakInternalUrl = "http://keycloak:8081";
+
     @Autowired
     public TenantSsoService(OrganizationRepository organizationRepository,
                             OrganizationSsoConfigRepository ssoConfigRepository,
@@ -71,6 +77,27 @@ public class TenantSsoService {
             .connectTimeout(Duration.ofSeconds(5))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
+
+    private final Map<UUID, LocalDateTime> recentSuccessfulProbes = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private String toInternalKeycloakUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return url;
+        }
+        String pub = (keycloakPublicUrl != null && !keycloakPublicUrl.isBlank())
+                ? keycloakPublicUrl.replaceAll("/+$", "")
+                : "https://auth-gis.kdua.net";
+        String internal = (keycloakInternalUrl != null && !keycloakInternalUrl.isBlank())
+                ? keycloakInternalUrl.replaceAll("/+$", "")
+                : "http://keycloak:8081";
+        if (url.startsWith(pub)) {
+            return internal + url.substring(pub.length());
+        }
+        if (url.startsWith("https://auth-gis.kdua.net")) {
+            return internal + url.substring("https://auth-gis.kdua.net".length());
+        }
+        return url;
+    }
 
     /**
      * Mendapatkan konfigurasi SSO aktif milik organisasi tenant (rahasia di-masking).
@@ -116,10 +143,15 @@ public class TenantSsoService {
 
         // 2. Anti-Lockout Protection: Jangan izinkan saklar enforceSso = true jika belum pernah tes koneksi sukses
         if (request.isEnforceSso()) {
-            boolean hasSuccessfulProbe = "SUCCESS".equalsIgnoreCase(config.getLastTestStatus());
+            boolean hasSuccessfulProbe = "SUCCESS".equalsIgnoreCase(config.getLastTestStatus())
+                    || recentSuccessfulProbes.containsKey(org.getId());
             if (!hasSuccessfulProbe) {
                 throw new IllegalStateException(
                         "Gagal menegakkan SSO wajib (Enforce SSO): Uji coba koneksi 'Test SSO Connection' wajib berhasil sebelum pembatasan SSO dapat diaktifkan untuk mencegah admin terkunci dari sistem.");
+            }
+            if (config.getLastTestStatus() == null && recentSuccessfulProbes.containsKey(org.getId())) {
+                config.setLastTestStatus("SUCCESS");
+                config.setLastTestAt(recentSuccessfulProbes.get(org.getId()));
             }
         }
 
@@ -209,9 +241,10 @@ public class TenantSsoService {
         }
 
         try {
-            log.info("🔍 Menjalankan Live Probe SSO ke: {}", probeUrl);
+            String internalProbeUrl = toInternalKeycloakUrl(probeUrl);
+            log.info("🔍 Menjalankan Live Probe SSO ke: {} (internal: {})", probeUrl, internalProbeUrl);
             HttpRequest httpRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(probeUrl))
+                    .uri(URI.create(internalProbeUrl))
                     .timeout(Duration.ofSeconds(5))
                     .header("Accept", "application/json, application/xml, text/xml")
                     .GET()
@@ -232,6 +265,8 @@ public class TenantSsoService {
                 String tokenEndpoint = json != null && json.has("token_endpoint") ? json.get("token_endpoint").asText() : null;
                 String jwksUri = json != null && json.has("jwks_uri") ? json.get("jwks_uri").asText() : null;
                 String userinfoEndpoint = json != null && json.has("userinfo_endpoint") ? json.get("userinfo_endpoint").asText() : null;
+
+                recentSuccessfulProbes.put(org.getId(), LocalDateTime.now());
 
                 // Catat hasil sukses pada entitas DB jika sudah ada
                 ssoConfigRepository.findFirstByOrganizationIdNative(org.getId()).ifPresent(c -> {
@@ -355,10 +390,50 @@ public class TenantSsoService {
             if (discoveryUrl != null) {
                 keycloakConfig.put("discoveryUrl", discoveryUrl);
                 keycloakConfig.put("useJwksUrl", "true");
+                keycloakConfig.put("validateSignature", "true");
+                keycloakConfig.put("defaultScope", "openid email profile");
+                keycloakConfig.put("trustEmail", "true");
+
+                String baseIssuer = discoveryUrl.replace("/.well-known/openid-configuration", "").replaceAll("/+$", "");
+                String issuer = baseIssuer;
+                String authUrl = baseIssuer + "/protocol/openid-connect/auth";
+                String tokenUrl = toInternalKeycloakUrl(baseIssuer + "/protocol/openid-connect/token");
+                String jwksUrl = toInternalKeycloakUrl(baseIssuer + "/protocol/openid-connect/certs");
+                String userInfoUrl = toInternalKeycloakUrl(baseIssuer + "/protocol/openid-connect/userinfo");
+                String logoutUrl = baseIssuer + "/protocol/openid-connect/logout";
+
+                try {
+                    String internalDiscoveryUrl = toInternalKeycloakUrl(discoveryUrl);
+                    HttpRequest discReq = HttpRequest.newBuilder()
+                            .uri(URI.create(internalDiscoveryUrl))
+                            .timeout(Duration.ofSeconds(3))
+                            .header("Accept", "application/json")
+                            .GET()
+                            .build();
+                    HttpResponse<String> discResp = httpClient.send(discReq, HttpResponse.BodyHandlers.ofString());
+                    if (discResp.statusCode() >= 200 && discResp.statusCode() < 300) {
+                        JsonNode json = objectMapper.readTree(discResp.body());
+                        if (json.has("issuer")) issuer = json.get("issuer").asText();
+                        if (json.has("authorization_endpoint")) authUrl = json.get("authorization_endpoint").asText();
+                        if (json.has("token_endpoint")) tokenUrl = toInternalKeycloakUrl(json.get("token_endpoint").asText());
+                        if (json.has("jwks_uri")) jwksUrl = toInternalKeycloakUrl(json.get("jwks_uri").asText());
+                        if (json.has("userinfo_endpoint")) userInfoUrl = toInternalKeycloakUrl(json.get("userinfo_endpoint").asText());
+                        if (json.has("end_session_endpoint")) logoutUrl = json.get("end_session_endpoint").asText();
+                    }
+                } catch (Exception e) {
+                    log.debug("Using fallback OIDC endpoints for {}: {}", discoveryUrl, e.getMessage());
+                }
+
+                keycloakConfig.put("issuer", issuer);
+                keycloakConfig.put("authorizationUrl", authUrl);
+                keycloakConfig.put("tokenUrl", tokenUrl);
+                keycloakConfig.put("jwksUrl", jwksUrl);
+                keycloakConfig.put("userInfoUrl", userInfoUrl);
+                keycloakConfig.put("logoutUrl", logoutUrl);
             }
         }
 
-        keycloakConfig.put("syncMode", "IMPORT");
+        keycloakConfig.put("syncMode", "FORCE");
         keycloakConfig.put("guiOrder", "1");
 
         try {

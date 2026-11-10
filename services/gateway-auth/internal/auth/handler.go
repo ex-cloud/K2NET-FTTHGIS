@@ -1204,6 +1204,154 @@ func (h *Handler) Refresh(c *gin.Context) {
 	})
 }
 
+// SsoExchangeRequest represents the payload sent after a browser OIDC redirect (?code=...&state=...)
+// to exchange/validate the Keycloak refresh token, establish the HttpOnly BFF session cookies,
+// and run JIT user synchronization.
+type SsoExchangeRequest struct {
+	RefreshToken string `json:"refreshToken"`
+	Realm        string `json:"realm,omitempty"`
+	Plane        string `json:"plane,omitempty"`
+	TenantSlug   string `json:"tenantSlug,omitempty"`
+}
+
+// SsoExchange handles POST /api/v1/auth/login/sso-exchange.
+func (h *Handler) SsoExchange(c *gin.Context) {
+	var body SsoExchangeRequest
+	if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.RefreshToken) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "MISSING_REFRESH_TOKEN",
+			"message": "Token sesi SSO wajib disertakan.",
+		})
+		return
+	}
+
+	clientIP := resolveClientIP(c)
+	targetRealm := h.resolveRealmFromCookieOrBody(c, body.Realm, body.Plane)
+	plane := strings.ToUpper(strings.TrimSpace(body.Plane))
+	if plane == "" {
+		if targetRealm == config.PlatformRealm {
+			plane = "PLATFORM"
+		} else {
+			plane = "TENANT"
+		}
+	}
+
+	var tenantCtx *TenantContextResponse
+	slug := strings.ToLower(strings.TrimSpace(body.TenantSlug))
+	if slug == "" {
+		rawHost := strings.ToLower(strings.TrimSpace(c.GetHeader("X-Forwarded-Host")))
+		if rawHost == "" {
+			rawHost = strings.ToLower(strings.TrimSpace(c.Request.Host))
+		}
+		if idx := strings.IndexByte(rawHost, ':'); idx > 0 {
+			rawHost = rawHost[:idx]
+		}
+		if parts := strings.Split(rawHost, "."); len(parts) >= 3 {
+			slug = parts[0]
+		}
+	}
+	if plane == "TENANT" && slug != "" && slug != "system" && validSlugRegex.MatchString(slug) {
+		if ctxResp, err := h.repo.ResolveTenantContext(c.Request.Context(), slug); err == nil && ctxResp != nil {
+			tenantCtx = ctxResp
+			if ctxResp.RealmKey != "" {
+				targetRealm = ctxResp.RealmKey
+			}
+		}
+	}
+
+	kcTokens, kcErr, statusCode := h.exchangeRefreshToken(c.Request.Context(), targetRealm, strings.TrimSpace(body.RefreshToken))
+	if kcErr != nil || kcTokens == nil {
+		if statusCode == http.StatusBadGateway || statusCode == http.StatusGatewayTimeout || statusCode == http.StatusServiceUnavailable {
+			c.JSON(http.StatusBadGateway, gin.H{
+				"error":   "UPSTREAM_UNAVAILABLE",
+				"message": "Layanan autentikasi SSO sedang tidak tersedia sementara.",
+			})
+			return
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "INVALID_SSO_SESSION",
+			"message": "Sesi SSO tidak valid atau telah berakhir.",
+		})
+		return
+	}
+
+	claims, parseErr := ParseJWTClaimsFromInternalToken(kcTokens.AccessToken)
+	if parseErr != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "INVALID_SESSION_TOKEN",
+			"message": "Token sesi SSO tidak dapat diverifikasi.",
+		})
+		return
+	}
+
+	roles := claims.ExtractRoles(h.cfg.KeycloakClientID)
+	resolvedOrgID := strings.TrimSpace(claims.OrganizationID)
+	if resolvedOrgID == "" {
+		resolvedOrgID = strings.TrimSpace(claims.TenantID)
+	}
+	resolvedTenantSlug := strings.ToLower(strings.TrimSpace(claims.TenantSlug))
+
+	if plane == "TENANT" && tenantCtx != nil {
+		expectedSlug := tenantCtx.Slug
+		if tenantCtx.TargetSlug != "" {
+			expectedSlug = tenantCtx.TargetSlug
+		}
+
+		matchesClaim := (resolvedOrgID != "" && strings.EqualFold(resolvedOrgID, tenantCtx.ID)) ||
+			(resolvedTenantSlug != "" && strings.EqualFold(resolvedTenantSlug, expectedSlug))
+		belongsInDB, _ := h.repo.VerifyUserBelongsToOrg(c.Request.Context(), claims.Sub, claims.Email, tenantCtx.ID)
+
+		matchesSsoDomain := false
+		if tenantCtx.HasSSO && claims.Email != "" {
+			if disc, err := h.repo.DiscoverSsoByEmail(c.Request.Context(), claims.Email); err == nil && disc != nil && disc.SSOAvailable {
+				if strings.EqualFold(disc.OrganizationSlug, expectedSlug) {
+					matchesSsoDomain = true
+				}
+			}
+		}
+
+		if !matchesClaim && !belongsInDB && !matchesSsoDomain {
+			h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "TENANT_ACCESS_DENIED",
+				"message": "Akun SSO Anda tidak terdaftar pada workspace organisasi ini.",
+			})
+			return
+		}
+
+		resolvedOrgID = tenantCtx.ID
+		resolvedTenantSlug = expectedSlug
+		if len(roles) == 0 {
+			roles = []string{"viewer"}
+		}
+	}
+
+	displayName := strings.TrimSpace(claims.Name)
+	if displayName == "" {
+		displayName = strings.TrimSpace(claims.PreferredUsername)
+	}
+
+	session := &PreAuthSession{
+		UserID:           claims.Sub,
+		Username:         claims.PreferredUsername,
+		Email:            claims.Email,
+		Name:             displayName,
+		Roles:            roles,
+		OrganizationID:   resolvedOrgID,
+		TenantSlug:       resolvedTenantSlug,
+		TargetRealm:      targetRealm,
+		Plane:            plane,
+		RememberMe:       true,
+		AccessToken:      kcTokens.AccessToken,
+		RefreshToken:     kcTokens.RefreshToken,
+		IDToken:          kcTokens.IDToken,
+		ExpiresIn:        kcTokens.ExpiresIn,
+		RefreshExpiresIn: kcTokens.RefreshExpiresIn,
+	}
+
+	h.completeLoginSession(c, session, clientIP, "sso_oidc")
+}
+
 // Logout handles POST /api/v1/auth/logout, revoking the Keycloak session and clearing HttpOnly cookies.
 func (h *Handler) Logout(c *gin.Context) {
 	var body LogoutRequest

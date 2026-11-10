@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link2, CheckCircle2, Loader2 } from "lucide-react";
+import { Link2, CheckCircle2, Loader2, KeyRound } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../card";
 import { Button } from "../button";
 import { Badge } from "../badge";
@@ -8,8 +8,8 @@ import { AccountLabels } from "./account-types";
 export interface SocialIdentitiesCardProps {
   linkedProviders?: string[];
   labels?: AccountLabels;
-  onConnectProvider?: (provider: "google" | "github") => Promise<void> | void;
-  onDisconnectProvider?: (provider: "google" | "github") => Promise<void> | void;
+  onConnectProvider?: (provider: "google" | "github" | string) => Promise<void> | void;
+  onDisconnectProvider?: (provider: "google" | "github" | string) => Promise<void> | void;
   isLoading?: boolean;
 }
 
@@ -24,8 +24,16 @@ export function SocialIdentitiesCard({
 
   const isGoogleLinked = linkedProviders.some((p) => p.toLowerCase().includes("google"));
   const isGithubLinked = linkedProviders.some((p) => p.toLowerCase().includes("github"));
+  const linkedCorporateSso = linkedProviders.find(
+    (p) =>
+      p.toLowerCase().startsWith("sso-") ||
+      p.toLowerCase().includes("keycloak") ||
+      p.toLowerCase().includes("oidc")
+  );
+  const isCorporateSsoLinked = Boolean(linkedCorporateSso);
+  const corporateProviderKey = linkedCorporateSso || "sso";
 
-  const handleAction = async (provider: "google" | "github", isLinked: boolean) => {
+  const handleAction = async (provider: string, isLinked: boolean) => {
     try {
       setProcessingProvider(provider);
       if (isLinked) {
@@ -52,6 +60,50 @@ export function SocialIdentitiesCard({
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* Enterprise / Corporate SSO Provider (Dynamic OIDC / SAML) */}
+        <div className="flex items-center justify-between p-3 rounded-lg border border-border/80 bg-background/50">
+          <div className="flex items-center gap-3">
+            <div className="flex size-8 items-center justify-center rounded-md border border-border bg-card">
+              <KeyRound className="size-4 text-foreground" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-semibold">
+                  Organization Single Sign-On {linkedCorporateSso ? `(${linkedCorporateSso})` : "(OIDC / SAML 2.0)"}
+                </h4>
+                {isCorporateSsoLinked && (
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium gap-1"
+                  >
+                    <CheckCircle2 className="size-2.5" />
+                    <span>{labels?.connectedBadge || "Connected"}</span>
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Sign in with your organization&apos;s federated Single Sign-On identity provider.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant={isCorporateSsoLinked ? "outline" : "default"}
+            size="sm"
+            onClick={() => handleAction(corporateProviderKey, isCorporateSsoLinked)}
+            disabled={isLoading || processingProvider === corporateProviderKey}
+            className="text-xs shrink-0"
+          >
+            {processingProvider === corporateProviderKey && <Loader2 className="size-3.5 animate-spin mr-1.5" />}
+            <span>
+              {isCorporateSsoLinked
+                ? labels?.disconnectBtn || "Disconnect"
+                : labels?.connectBtn || "Connect"}
+            </span>
+          </Button>
+        </div>
+
         {/* Google Provider */}
         <div className="flex items-center justify-between p-3 rounded-lg border border-border/80 bg-background/50">
           <div className="flex items-center gap-3">

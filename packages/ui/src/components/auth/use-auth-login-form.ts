@@ -67,6 +67,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     providerType?: string;
     displayName?: string;
     organizationSlug?: string;
+    idpHint?: string;
     redirectUrl?: string;
   } | null>(null);
 

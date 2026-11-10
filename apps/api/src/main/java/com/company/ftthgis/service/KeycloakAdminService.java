@@ -521,10 +521,110 @@ public class KeycloakAdminService {
             // Ensure explicit tenant subdomain redirect URI is registered on ftth-gis-frontend
             if (alias != null && alias.startsWith("sso-")) {
                 ensureTenantRedirectUri(realm, alias.substring(4));
+                ensureLocalKeycloakBrokerSetup(realm, alias, config);
             }
         } catch (Exception e) {
             log.error("Failed to upsert Identity Provider {} in realm {}: {}", alias, realm, e.getMessage(), e);
             throw new RuntimeException("Failed to upsert Identity Provider in Keycloak: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * When a tenant configures OIDC SSO pointing to a local Keycloak realm (such as 'ftth-realm'),
+     * automatically provision/update the confidential OIDC broker client in that source realm
+     * and link matching user federated identities so corporate SSO works out-of-the-box.
+     */
+    private void ensureLocalKeycloakBrokerSetup(String targetRealm, String alias, Map<String, String> idpConfig) {
+        if (idpConfig == null || targetRealm == null || alias == null) {
+            return;
+        }
+        String issuerOrDiscovery = idpConfig.getOrDefault("issuer", idpConfig.getOrDefault("discoveryUrl", ""));
+        if (issuerOrDiscovery == null || !issuerOrDiscovery.contains("/realms/")) {
+            return;
+        }
+        boolean isLocalKeycloak = issuerOrDiscovery.contains("auth-gis.kdua.net")
+                || issuerOrDiscovery.contains("keycloak:8081")
+                || issuerOrDiscovery.contains("localhost:8081");
+        if (!isLocalKeycloak) {
+            return;
+        }
+
+        try {
+            String afterRealms = issuerOrDiscovery.substring(issuerOrDiscovery.indexOf("/realms/") + "/realms/".length());
+            String sourceRealm = afterRealms.contains("/") ? afterRealms.substring(0, afterRealms.indexOf('/')) : afterRealms;
+            if (sourceRealm.isBlank() || sourceRealm.equalsIgnoreCase(targetRealm)) {
+                return;
+            }
+
+            String clientId = idpConfig.get("clientId");
+            String clientSecret = idpConfig.get("clientSecret");
+            if (clientId != null && !clientId.isBlank()) {
+                var clientsResource = keycloak.realm(sourceRealm).clients();
+                var existingClients = clientsResource.findByClientId(clientId.trim());
+                List<String> redirectUris = List.of(
+                        "https://auth-gis.kdua.net/realms/" + targetRealm + "/broker/" + alias + "/endpoint*",
+                        "https://auth-gis.kdua.net/realms/" + targetRealm + "/broker/" + alias + "/endpoint",
+                        "http://keycloak:8081/realms/" + targetRealm + "/broker/" + alias + "/endpoint*"
+                );
+
+                if (existingClients == null || existingClients.isEmpty()) {
+                    org.keycloak.representations.idm.ClientRepresentation newClient = new org.keycloak.representations.idm.ClientRepresentation();
+                    newClient.setClientId(clientId.trim());
+                    newClient.setName("K2NET Broker Client (" + alias + ")");
+                    newClient.setEnabled(true);
+                    newClient.setProtocol("openid-connect");
+                    newClient.setPublicClient(false);
+                    newClient.setStandardFlowEnabled(true);
+                    newClient.setDirectAccessGrantsEnabled(true);
+                    newClient.setClientAuthenticatorType("client-secret");
+                    if (clientSecret != null && !clientSecret.isBlank()) {
+                        newClient.setSecret(clientSecret.trim());
+                    }
+                    newClient.setRedirectUris(redirectUris);
+                    newClient.setWebOrigins(List.of("+"));
+                    clientsResource.create(newClient);
+                    log.info("✅ Auto-provisioned local Keycloak broker client '{}' in source realm '{}'", clientId, sourceRealm);
+                } else {
+                    var clientRep = existingClients.get(0);
+                    clientRep.setEnabled(true);
+                    clientRep.setPublicClient(false);
+                    clientRep.setStandardFlowEnabled(true);
+                    clientRep.setDirectAccessGrantsEnabled(true);
+                    if (clientSecret != null && !clientSecret.isBlank()) {
+                        clientRep.setSecret(clientSecret.trim());
+                    }
+                    List<String> mergedRedirects = clientRep.getRedirectUris() != null
+                            ? new java.util.ArrayList<>(clientRep.getRedirectUris())
+                            : new java.util.ArrayList<>();
+                    for (String r : redirectUris) {
+                        if (!mergedRedirects.contains(r)) {
+                            mergedRedirects.add(r);
+                        }
+                    }
+                    clientRep.setRedirectUris(mergedRedirects);
+                    clientsResource.get(clientRep.getId()).update(clientRep);
+                    log.info("✅ Updated local Keycloak broker client '{}' in source realm '{}'", clientId, sourceRealm);
+                }
+            }
+
+            // Link existing users between targetRealm and sourceRealm by matching email
+            List<UserRepresentation> tenantUsers = keycloak.realm(targetRealm).users().list(0, 200);
+            for (UserRepresentation tenantUser : tenantUsers) {
+                if (tenantUser.getEmail() == null || tenantUser.getEmail().isBlank()) {
+                    continue;
+                }
+                List<UserRepresentation> sourceUsers = keycloak.realm(sourceRealm).users().searchByEmail(tenantUser.getEmail(), true);
+                if (sourceUsers != null && !sourceUsers.isEmpty()) {
+                    UserRepresentation sourceUser = sourceUsers.get(0);
+                    FederatedIdentityRepresentation fedId = new FederatedIdentityRepresentation();
+                    fedId.setIdentityProvider(alias);
+                    fedId.setUserId(sourceUser.getId());
+                    fedId.setUserName(sourceUser.getUsername() != null ? sourceUser.getUsername() : sourceUser.getEmail());
+                    addFederatedIdentity(targetRealm, tenantUser.getId(), alias, fedId);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not auto-configure local Keycloak broker client/links for alias '{}': {}", alias, e.getMessage());
         }
     }
 

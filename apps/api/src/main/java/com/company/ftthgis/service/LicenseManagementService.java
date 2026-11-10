@@ -466,10 +466,12 @@ public class LicenseManagementService {
         int effectiveStorage = baseStorage;
         String source = "BASE_PLAN";
 
-        boolean sso = plan != null && plan.isHasSso();
-        boolean api = plan != null && plan.isHasApiAccess();
-        boolean ai = false;
-        boolean customDomain = false;
+        boolean isRootOrg = org.isPlatformRootOrg();
+        boolean isEnt = isRootOrg || "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "");
+        boolean sso = isEnt || (plan != null && plan.isHasSso());
+        boolean api = isEnt || (plan != null && plan.isHasApiAccess());
+        boolean ai = isEnt;
+        boolean customDomain = isEnt;
 
         if (activeLicenseOpt.isPresent()) {
             TenantLicense lic = activeLicenseOpt.get();
@@ -500,11 +502,12 @@ public class LicenseManagementService {
             if (lic.getOverrideMaxCustomers() != null) effectiveCustomers = lic.getOverrideMaxCustomers();
             if (lic.getOverrideMaxStorageGb() != null) effectiveStorage = lic.getOverrideMaxStorageGb();
 
-            boolean isEnt = "ENTERPRISE".equalsIgnoreCase(plan != null ? plan.getName() : "");
-            sso = lic.isFeatureSsoEnabled() || sso || isEnt;
-            api = lic.isFeatureApiEnabled() || api || isEnt;
-            ai = lic.isFeatureAiCopilotEnabled() || isEnt;
-            customDomain = lic.isFeatureCustomDomainEnabled() || isEnt;
+            boolean isLowTierOnlineLicense = !isEnt && plan != null && !plan.isHasSso()
+                    && "ONLINE".equalsIgnoreCase(lic.getActivationType());
+            sso = isEnt || (!isLowTierOnlineLicense && (lic.isFeatureSsoEnabled() || sso));
+            api = isEnt || (!isLowTierOnlineLicense && (lic.isFeatureApiEnabled() || api));
+            ai = isEnt || lic.isFeatureAiCopilotEnabled();
+            customDomain = isEnt || lic.isFeatureCustomDomainEnabled();
         } else {
             effectiveProjects = baseProjects + boosterOlts;
             effectiveOlts = baseOlts + boosterOlts;

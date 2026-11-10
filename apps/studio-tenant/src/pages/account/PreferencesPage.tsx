@@ -162,7 +162,7 @@ function useAccountLabels(): AccountLabels {
 
 export function PreferencesPage() {
   const labels = useAccountLabels();
-  const { user, logout } = useAuth();
+  const { user, login, logout } = useAuth();
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [userProfile, setUserProfile] = React.useState<UserProfileData | undefined>(undefined);
@@ -295,9 +295,39 @@ export function PreferencesPage() {
     }
   };
 
-  const handleDisconnectProvider = async (provider: "google" | "github") => {
+  const handleConnectProvider = async (provider: string) => {
     try {
-      await apiClient(`/api/v1/users/me/social-identities/${provider}`, {
+      const slug = user?.tenantSlug || window.location.hostname.split(".")[0] || "ops";
+      const res = await fetch(`/api/v1/auth/tenant-context?slug=${encodeURIComponent(slug)}&live=1`);
+      const ctx = res.ok ? await res.json() : null;
+      const allowed: string[] = Array.isArray(ctx?.allowedMethods) ? ctx.allowedMethods : [];
+      const ssoMethod = allowed.find((m) => m.startsWith("sso-"));
+      let targetHint = provider;
+      if (provider === "sso" || provider.startsWith("sso-")) {
+        targetHint = ssoMethod || `sso-${slug}`;
+      } else if (provider === "google" && ssoMethod && ctx?.ssoProviderType === "GOOGLE") {
+        targetHint = ssoMethod;
+      } else if (provider === "github" && ssoMethod && ctx?.ssoProviderType === "GITHUB") {
+        targetHint = ssoMethod;
+      } else if (!allowed.includes(provider) && !ssoMethod) {
+        toast.error(
+          "Provider belum dikonfigurasi pada Settings -> Single Sign-On (SSO) organisasi ini."
+        );
+        return;
+      }
+
+      await login({
+        idpHint: targetHint,
+        redirectUri: window.location.origin + "/account/preferences",
+      });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to initiate identity provider connection.");
+    }
+  };
+
+  const handleDisconnectProvider = async (provider: string) => {
+    try {
+      await apiClient(`/api/v1/users/me/social-identities/${encodeURIComponent(provider)}`, {
         method: "DELETE",
       });
       toast.success(labels.disconnectSuccess || "Disconnected identity provider successfully.");
@@ -427,6 +457,7 @@ export function PreferencesPage() {
         onDisableEmailOtp={handleDisableEmailOtp}
         onRevokeDevice={handleRevokeDevice}
         onRevokeAllSessions={handleRevokeAllSessions}
+        onConnectProvider={handleConnectProvider}
         onDisconnectProvider={handleDisconnectProvider}
         isLoading={isLoading}
       />

@@ -120,10 +120,16 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
 			(
 				COALESCE(o.is_platform_root, false) = true
-				OR CASE
-					WHEN lic.id IS NOT NULL THEN COALESCE(lic.feature_sso_enabled, false)
-					ELSE (COALESCE(sp.has_sso, false) OR UPPER(COALESCE(sp.name, 'FREE')) IN ('PRO', 'PROFESSIONAL', 'ENTERPRISE'))
-				END
+				OR UPPER(COALESCE(sp.name, 'FREE')) = 'ENTERPRISE'
+				OR (
+					COALESCE(sp.has_sso, false) = true
+					AND (lic.id IS NULL OR COALESCE(lic.feature_sso_enabled, true) = true)
+				)
+				OR (
+					lic.id IS NOT NULL
+					AND COALESCE(lic.feature_sso_enabled, false) = true
+					AND UPPER(COALESCE(lic.activation_type, 'ONLINE')) <> 'ONLINE'
+				)
 			) AS has_sso,
 			COALESCE(o.status, 'ACTIVE') AS org_status,
 			(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required,
@@ -135,7 +141,7 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 		FROM organizations o
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 		LEFT JOIN LATERAL (
-			SELECT tl.id, tl.feature_sso_enabled
+			SELECT tl.id, tl.feature_sso_enabled, tl.activation_type
 			FROM tenant_licenses tl
 			WHERE tl.organization_id = o.id
 			  AND tl.status IN ('ACTIVE', 'GRACE_PERIOD')
@@ -169,10 +175,16 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 				UPPER(COALESCE(sp.name, 'FREE')) AS plan_code,
 				(
 					COALESCE(o.is_platform_root, false) = true
-					OR CASE
-						WHEN lic.id IS NOT NULL THEN COALESCE(lic.feature_sso_enabled, false)
-						ELSE (COALESCE(sp.has_sso, false) OR UPPER(COALESCE(sp.name, 'FREE')) IN ('PRO', 'PROFESSIONAL', 'ENTERPRISE'))
-					END
+					OR UPPER(COALESCE(sp.name, 'FREE')) = 'ENTERPRISE'
+					OR (
+						COALESCE(sp.has_sso, false) = true
+						AND (lic.id IS NULL OR COALESCE(lic.feature_sso_enabled, true) = true)
+					)
+					OR (
+						lic.id IS NOT NULL
+						AND COALESCE(lic.feature_sso_enabled, false) = true
+						AND UPPER(COALESCE(lic.activation_type, 'ONLINE')) <> 'ONLINE'
+					)
 				) AS has_sso,
 				COALESCE(o.status, 'ACTIVE') AS org_status,
 				(COALESCE(ss.config_value, 'false') = 'true' OR COALESCE(tsp.mfa_enforced, false)) AS effective_mfa_required,
@@ -185,7 +197,7 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			JOIN organizations o ON osa.organization_id = o.id
 			LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 			LEFT JOIN LATERAL (
-				SELECT tl.id, tl.feature_sso_enabled
+				SELECT tl.id, tl.feature_sso_enabled, tl.activation_type
 				FROM tenant_licenses tl
 				WHERE tl.organization_id = o.id
 				  AND tl.status IN ('ACTIVE', 'GRACE_PERIOD')
@@ -681,16 +693,22 @@ func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email strin
 			o.name,
 			(
 				COALESCE(o.is_platform_root, false) = true
-				OR CASE
-					WHEN lic.id IS NOT NULL THEN COALESCE(lic.feature_sso_enabled, false)
-					ELSE (COALESCE(sp.has_sso, false) OR UPPER(COALESCE(sp.name, 'FREE')) IN ('PRO', 'PROFESSIONAL', 'ENTERPRISE'))
-				END
+				OR UPPER(COALESCE(sp.name, 'FREE')) = 'ENTERPRISE'
+				OR (
+					COALESCE(sp.has_sso, false) = true
+					AND (lic.id IS NULL OR COALESCE(lic.feature_sso_enabled, true) = true)
+				)
+				OR (
+					lic.id IS NOT NULL
+					AND COALESCE(lic.feature_sso_enabled, false) = true
+					AND UPPER(COALESCE(lic.activation_type, 'ONLINE')) <> 'ONLINE'
+				)
 			) AS sso_entitled
 		FROM organization_sso_configs osc
 		JOIN organizations o ON osc.organization_id = o.id
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 		LEFT JOIN LATERAL (
-			SELECT tl.id, tl.feature_sso_enabled
+			SELECT tl.id, tl.feature_sso_enabled, tl.activation_type
 			FROM tenant_licenses tl
 			WHERE tl.organization_id = o.id
 			  AND tl.status IN ('ACTIVE', 'GRACE_PERIOD')

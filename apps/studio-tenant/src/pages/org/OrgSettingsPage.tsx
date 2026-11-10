@@ -356,7 +356,7 @@ export function OrgSettingsPage() {
     },
     sso: {
       title: t("nav.org_sso"),
-      subtitle: t("security.mfa_desc"),
+      subtitle: t("settings.sso_subtitle"),
       breadcrumb: t("nav.org_sso"),
     },
     oauth: {

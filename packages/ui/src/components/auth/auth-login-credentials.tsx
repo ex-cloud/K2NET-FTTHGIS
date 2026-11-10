@@ -184,10 +184,18 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                       variant="outline"
                       className="h-6 text-[11px] px-2 font-medium gap-1"
                       onClick={() => {
-                        if (discoveredSso.redirectUrl && typeof window !== "undefined") {
+                        const isDifferentTenant =
+                          Boolean(discoveredSso.organizationSlug) &&
+                          Boolean(props.tenantSlug) &&
+                          discoveredSso.organizationSlug!.toLowerCase() !== props.tenantSlug!.toLowerCase();
+                        if (isDifferentTenant && discoveredSso.redirectUrl && typeof window !== "undefined") {
                           window.location.href = discoveredSso.redirectUrl;
                         } else if (onContinueWithProvider) {
-                          onContinueWithProvider(discoveredSso.providerType || ssoProviderType || "sso");
+                          onContinueWithProvider(
+                            discoveredSso.idpHint || discoveredSso.providerType || ssoProviderType || "sso"
+                          );
+                        } else if (discoveredSso.redirectUrl && typeof window !== "undefined") {
+                          window.location.href = discoveredSso.redirectUrl;
                         }
                       }}
                     >

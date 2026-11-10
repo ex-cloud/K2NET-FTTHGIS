@@ -706,7 +706,7 @@ export function KeycloakProvider({
     });
     setKeycloakInstance(kc);
 
-    // Case 1: Returning from Social SSO OAuth2 PKCE redirect (Google / GitHub)
+    // Case 1: Returning from Corporate / Social SSO OAuth2 PKCE redirect
     if (hasOAuthCallbackInUrl()) {
       kc.init({
         pkceMethod: "S256",
@@ -714,9 +714,65 @@ export function KeycloakProvider({
         enableLogging: false,
         ...initOptions,
       })
-        .then((auth) => {
+        .then(async (auth) => {
+          if (typeof window !== "undefined") {
+            try {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("code");
+              url.searchParams.delete("state");
+              url.searchParams.delete("session_state");
+              url.searchParams.delete("iss");
+              if (url.hash && (url.hash.includes("code=") || url.hash.includes("state="))) {
+                url.hash = "";
+              }
+              window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+            } catch {
+              // ignore URL cleanup error
+            }
+          }
+
           if (auth && kc.token) {
-            hydrateAuthenticatedSession(kc.token, kc.idToken, undefined);
+            let exchanged: BffLoginApiResponse | null = null;
+            if (kc.refreshToken) {
+              try {
+                const res = await fetch("/api/v1/auth/login/sso-exchange", {
+                  method: "POST",
+                  credentials: "include",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "K2NET-BFF",
+                  },
+                  body: JSON.stringify({
+                    refreshToken: kc.refreshToken,
+                    realm: config.realm,
+                    plane,
+                    tenantSlug:
+                      typeof window !== "undefined"
+                        ? window.location.hostname.split(".")[0]
+                        : undefined,
+                  }),
+                });
+                if (res.ok) {
+                  const data = (await res.json()) as BffLoginApiResponse;
+                  if (data.accessToken) {
+                    exchanged = data;
+                  }
+                }
+              } catch {
+                // fallback to in-memory token if BFF exchange is unreachable
+              }
+            }
+
+            if (exchanged?.accessToken) {
+              hydrateAuthenticatedSession(
+                exchanged.accessToken,
+                exchanged.idToken || kc.idToken,
+                exchanged.expiresIn,
+                exchanged.user
+              );
+            } else {
+              hydrateAuthenticatedSession(kc.token, kc.idToken, undefined);
+            }
           } else {
             clearSessionState();
           }

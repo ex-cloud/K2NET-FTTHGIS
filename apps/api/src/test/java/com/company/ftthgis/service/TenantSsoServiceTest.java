@@ -319,5 +319,42 @@ public class TenantSsoServiceTest {
         );
         assertTrue(ex.getMessage().contains("Single Sign-On"));
     }
+
+    @Test
+    @DisplayName("S12: updateSsoConfig with KEYCLOAK_OIDC populates full OIDC endpoints and rewrites backchannel URLs to internal Keycloak")
+    void testUpdateSsoConfig_KeycloakOidc_PopulatesFullEndpointsAndInternalBackchannel() {
+        when(ssoConfigRepository.findFirstByOrganizationIdNative(testOrgId)).thenReturn(Optional.empty());
+        when(licenseCryptoService.encryptSecret("k2net-ops-sso-secret-2026")).thenReturn("v1:encSecret");
+        when(ssoConfigRepository.save(any(OrganizationSsoConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateTenantSsoConfigRequest request = UpdateTenantSsoConfigRequest.builder()
+                .providerType("KEYCLOAK_OIDC")
+                .displayName("K2NET Corporate SSO")
+                .clientId("k2net-ops-sso-broker")
+                .clientSecret("k2net-ops-sso-secret-2026")
+                .issuerUrl("https://auth-gis.kdua.net/realms/ftth-realm")
+                .enforceSso(false)
+                .allowBreakGlassBypass(true)
+                .build();
+
+        ssoService.updateSsoConfig("fibernet", request, "admin@fibernet.net");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> configCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(keycloakAdminService).upsertRealmIdentityProvider(
+                eq("k2net-tenants"),
+                eq("sso-fibernet"),
+                eq("oidc"),
+                eq("K2NET Corporate SSO"),
+                configCaptor.capture()
+        );
+
+        Map<String, String> kcConfig = configCaptor.getValue();
+        assertEquals("https://auth-gis.kdua.net/realms/ftth-realm/protocol/openid-connect/auth", kcConfig.get("authorizationUrl"));
+        assertEquals("http://keycloak:8081/realms/ftth-realm/protocol/openid-connect/token", kcConfig.get("tokenUrl"));
+        assertEquals("http://keycloak:8081/realms/ftth-realm/protocol/openid-connect/certs", kcConfig.get("jwksUrl"));
+        assertEquals("http://keycloak:8081/realms/ftth-realm/protocol/openid-connect/userinfo", kcConfig.get("userInfoUrl"));
+        assertEquals("FORCE", kcConfig.get("syncMode"));
+    }
 }
 

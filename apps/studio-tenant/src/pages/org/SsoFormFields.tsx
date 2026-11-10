@@ -79,6 +79,7 @@ export function SsoFormFields({
             <SelectItem value="GITHUB">{t("settings.sso_provider_github")}</SelectItem>
             <SelectItem value="MICROSOFT_ENTRA">{t("settings.sso_provider_microsoft")}</SelectItem>
             <SelectItem value="OKTA">{t("settings.sso_provider_okta")}</SelectItem>
+            <SelectItem value="KEYCLOAK_OIDC">{t("settings.sso_provider_keycloak")}</SelectItem>
             <SelectItem value="OIDC_CUSTOM">{t("settings.sso_provider_custom_oidc")}</SelectItem>
             <SelectItem value="SAML_CUSTOM">{t("settings.sso_provider_custom_saml")}</SelectItem>
           </SelectContent>
@@ -134,7 +135,19 @@ export function SsoFormFields({
             disabled={!isSsoAllowed || isLoading}
             value={issuerUrl}
             onChange={(e) => onIssuerUrlChange(e.target.value)}
-            placeholder="https://login.microsoftonline.com/{tenant-id}/v2.0"
+            placeholder={
+              providerType === "GOOGLE"
+                ? "https://accounts.google.com"
+                : providerType === "GITHUB"
+                  ? "https://github.com/login/oauth"
+                  : providerType === "OKTA"
+                    ? "https://{your-domain}.okta.com/oauth2/default"
+                    : providerType === "KEYCLOAK_OIDC"
+                      ? "https://idp.company.com/realms/{realm}"
+                      : providerType === "OIDC_CUSTOM"
+                        ? "https://idp.company.com/.well-known/openid-configuration"
+                        : "https://login.microsoftonline.com/{tenant-id}/v2.0"
+            }
             className="h-8.5 text-xs font-mono bg-background border-border/80"
           />
         </div>

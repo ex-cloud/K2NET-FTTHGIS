@@ -103,6 +103,7 @@ func main() {
 		authAPI.GET("/tenant-context", handler.GetTenantContext)
 		authAPI.GET("/sso-discovery", handler.GetSsoDiscovery)
 		authAPI.POST("/login", mutationLimiter, handler.Login)
+		authAPI.POST("/login/sso-exchange", mutationLimiter, handler.SsoExchange)
 		authAPI.POST("/mfa/verify", mutationLimiter, handler.VerifyMFA)
 		authAPI.POST("/mfa/email/send", mutationLimiter, handler.SendMfaEmailOTP)
 		authAPI.POST("/mfa/email/verify", mutationLimiter, handler.VerifyMfaEmailOTP)

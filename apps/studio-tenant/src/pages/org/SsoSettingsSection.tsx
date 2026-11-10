@@ -17,6 +17,12 @@ import {
   Label,
   Switch,
   Badge,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
@@ -70,6 +76,11 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
   const [isSaving, setIsSaving] = React.useState<boolean>(false);
   const [isTesting, setIsTesting] = React.useState<boolean>(false);
   const [isDeleting, setIsDeleting] = React.useState<boolean>(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState<boolean>(false);
+
+  const handleProviderTypeChange = (nextType: string) => {
+    setProviderType(nextType);
+  };
 
   const loadSsoConfig = React.useCallback(async () => {
     if (!slug || !isSsoAllowed) return;
@@ -195,8 +206,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
 
   const handleDelete = async () => {
     if (!slug) return;
-    if (!window.confirm(t("settings.sso_delete_confirm"))) return;
-
+    setConfirmDeleteOpen(false);
     setIsDeleting(true);
     try {
       const { apiClient } = await import("../../lib/api-client");
@@ -233,7 +243,13 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         <SsoProbeHeader
           isSsoAllowed={isSsoAllowed}
           isTesting={isTesting}
-          canProbe={Boolean(issuerUrl || metadataUrl || singleSignOnUrl || providerType === "GOOGLE" || providerType === "GITHUB")}
+          canProbe={Boolean(
+            issuerUrl ||
+              metadataUrl ||
+              singleSignOnUrl ||
+              providerType === "GOOGLE" ||
+              providerType === "GITHUB"
+          )}
           lastTestStatus={lastTestStatus}
           lastTestAt={lastTestAt}
           onTestProbe={handleTestProbe}
@@ -252,7 +268,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           entityId={entityId}
           signingCertificate={signingCertificate}
           domainMappings={domainMappings}
-          onProviderTypeChange={setProviderType}
+          onProviderTypeChange={handleProviderTypeChange}
           onDisplayNameChange={setDisplayName}
           onClientIdChange={setClientId}
           onClientSecretChange={setClientSecret}
@@ -280,7 +296,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
                 variant="outline"
                 size="sm"
                 disabled={!isSsoAllowed || isDeleting}
-                onClick={handleDelete}
+                onClick={() => setConfirmDeleteOpen(true)}
                 className="h-7 px-2.5 text-xs font-medium gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60 hover:bg-destructive/10"
               >
                 <Trash2 className="size-3.5" />
@@ -303,6 +319,41 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           </div>
         </div>
       </Card>
+
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent className="sm:max-w-md border-border/80 bg-card">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">
+              {t("settings.sso_delete_title")}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              {t("settings.sso_delete_confirm")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmDeleteOpen(false)}
+              className="h-7 px-2.5 text-xs"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={isDeleting}
+              onClick={handleDelete}
+              className="h-7 px-2.5 text-xs gap-1.5"
+            >
+              {isDeleting && <Loader2 className="size-3.5 animate-spin" />}
+              {t("settings.sso_delete_btn")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

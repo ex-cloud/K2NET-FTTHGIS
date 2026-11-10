@@ -36,8 +36,8 @@ export interface AccountPreferencesShellProps {
   onDisableEmailOtp?: () => void;
   onRevokeDevice?: (deviceId: number) => Promise<void> | void;
   onRevokeAllSessions?: () => Promise<void> | void;
-  onConnectProvider?: (provider: "google" | "github") => Promise<void> | void;
-  onDisconnectProvider?: (provider: "google" | "github") => Promise<void> | void;
+  onConnectProvider?: (provider: "google" | "github" | string) => Promise<void> | void;
+  onDisconnectProvider?: (provider: "google" | "github" | string) => Promise<void> | void;
   isLoading?: boolean;
 }
 
