@@ -192,7 +192,7 @@ class OrganizationMemberServiceTest {
     void inviteMember_success_createsInvitedMemberAndDispatchesEmail() {
         InviteMemberRequest request = new InviteMemberRequest("newuser@gmail.com", "viewer");
         when(organizationRepository.findBySlug("nusantara")).thenReturn(Optional.of(orgA));
-        when(userRepository.findByEmail("newuser@gmail.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailGlobal("newuser@gmail.com")).thenReturn(Optional.empty());
         when(roleRepository.findByNameAndOrganizationId("viewer", orgAId)).thenReturn(Optional.empty());
         when(roleRepository.findByName("viewer")).thenReturn(Optional.of(viewerRole));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
@@ -219,7 +219,7 @@ class OrganizationMemberServiceTest {
             .build();
 
         when(organizationRepository.findBySlug("nusantara")).thenReturn(Optional.of(orgA));
-        when(userRepository.findByEmail("engineer@k2net.id")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailGlobal("engineer@k2net.id")).thenReturn(Optional.of(user));
         when(memberRepository.findByUserIdAndOrganizationId(userId, orgAId)).thenReturn(Optional.of(activeMember));
 
         assertThatThrownBy(() -> service.inviteMember("nusantara", request, "inviter-123"))
