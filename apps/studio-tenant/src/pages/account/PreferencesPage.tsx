@@ -161,6 +161,7 @@ function useAccountLabels(): AccountLabels {
 }
 
 export function PreferencesPage() {
+  const { t } = useTranslation();
   const labels = useAccountLabels();
   const { user, login, logout } = useAuth();
 
@@ -236,6 +237,30 @@ export function PreferencesPage() {
     fetchData();
   }, [fetchData]);
 
+  // Handle return callback from OAuth social identity linking
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const pending = sessionStorage.getItem("k2net_pending_social_link");
+    if (!pending) return;
+
+    const providerName = pending.charAt(0).toUpperCase() + pending.slice(1);
+    const url = new URL(window.location.href);
+    const err = url.searchParams.get("error") || url.searchParams.get("error_description");
+    if (err) {
+      toast.error(t("settings.account.social_connect_failed", { provider: providerName }));
+      sessionStorage.removeItem("k2net_pending_social_link");
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      sessionStorage.removeItem("k2net_pending_social_link");
+      toast.success(t("settings.account.social_connect_success", { provider: providerName }));
+      await fetchData();
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [fetchData, t]);
+
   const handleSaveProfile = async (data: { name: string; phone: string }) => {
     try {
       await apiClient("/api/v1/users/me/profile", {
@@ -297,6 +322,8 @@ export function PreferencesPage() {
 
   const handleConnectProvider = async (provider: string) => {
     try {
+      sessionStorage.setItem("k2net_pending_social_link", provider);
+
       const slug = user?.tenantSlug || window.location.hostname.split(".")[0] || "ops";
       const res = await fetch(`/api/v1/auth/tenant-context?slug=${encodeURIComponent(slug)}&live=1`);
       const ctx = res.ok ? await res.json() : null;
@@ -305,6 +332,7 @@ export function PreferencesPage() {
       let targetHint = provider;
       if (provider === "sso" || provider.startsWith("sso-")) {
         if (!ssoMethod) {
+          sessionStorage.removeItem("k2net_pending_social_link");
           toast.error(
             "Provider belum dikonfigurasi pada Settings -> Single Sign-On (SSO) organisasi ini."
           );
@@ -319,9 +347,11 @@ export function PreferencesPage() {
 
       await login({
         idpHint: targetHint,
+        prompt: "login",
         redirectUri: window.location.origin + "/account/preferences",
       });
     } catch (err: unknown) {
+      sessionStorage.removeItem("k2net_pending_social_link");
       toast.error(err instanceof Error ? err.message : "Failed to initiate identity provider connection.");
     }
   };

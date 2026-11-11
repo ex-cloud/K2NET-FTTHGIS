@@ -517,6 +517,8 @@
     "connected_badge": "Connected",
     "disconnect_success": "Disconnected identity provider successfully.",
     "disconnect_failed": "Failed to disconnect identity provider.",
+    "social_connect_success": "Connected {{provider}} identity provider successfully.",
+    "social_connect_failed": "Failed to connect {{provider}} identity provider.",
     "idle_lock_title": "Session Auto-Lock Active",
     "idle_lock_desc": "Your session has been automatically locked due to inactivity to protect sensitive network data.",
     "unlock_session_btn": "Unlock Session"

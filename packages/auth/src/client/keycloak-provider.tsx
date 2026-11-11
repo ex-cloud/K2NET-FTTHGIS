@@ -410,7 +410,8 @@ export function KeycloakProvider({
             // fallback to explicit OIDC authorization URL with kc_idp_hint
           }
         }
-        const authUrl = `${config.url}/realms/${encodeURIComponent(config.realm)}/protocol/openid-connect/auth?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(redirectTarget)}&response_type=code&scope=openid%20profile%20email&kc_idp_hint=${encodeURIComponent(options.idpHint)}`;
+        const promptParam = options.prompt ? `&prompt=${encodeURIComponent(options.prompt)}` : "";
+        const authUrl = `${config.url}/realms/${encodeURIComponent(config.realm)}/protocol/openid-connect/auth?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(redirectTarget)}&response_type=code&scope=openid%20profile%20email&kc_idp_hint=${encodeURIComponent(options.idpHint)}${promptParam}`;
         window.location.assign(authUrl);
         return;
       }

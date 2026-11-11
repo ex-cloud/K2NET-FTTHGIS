@@ -517,6 +517,8 @@
     "connected_badge": "Terhubung",
     "disconnect_success": "Berhasil memutuskan tautan penyedia identitas.",
     "disconnect_failed": "Gagal memutuskan tautan penyedia identitas.",
+    "social_connect_success": "Berhasil menghubungkan penyedia identitas {{provider}}.",
+    "social_connect_failed": "Gagal menghubungkan penyedia identitas {{provider}}.",
     "idle_lock_title": "Kunci Otomatis Sesi Aktif",
     "idle_lock_desc": "Sesi Anda telah terkunci secara otomatis karena tidak ada aktivitas untuk melindungi data jaringan sensitif.",
     "unlock_session_btn": "Buka Kunci Sesi"
