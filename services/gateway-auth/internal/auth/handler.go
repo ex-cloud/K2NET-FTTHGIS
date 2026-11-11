@@ -344,14 +344,6 @@ func (h *Handler) Login(c *gin.Context) {
 				})
 				return
 			}
-			// Mandatory Step-Up TOTP for Break-Glass
-			if req.TOTP == "" {
-				c.JSON(http.StatusOK, LoginResponse{
-					MFARequired: true,
-					Message:     "Akses darurat Break-Glass mewajibkan verifikasi TOTP MFA lapis kedua.",
-				})
-				return
-			}
 		}
 	}
 
@@ -538,13 +530,13 @@ func (h *Handler) Login(c *gin.Context) {
 		availableMethods = append(availableMethods, "email_otp")
 	}
 
-	// Safe Fallback Anti-Lockout: if organization/platform enforces MFA but user has 0 methods configured,
-	// allow email_otp as emergency verification method so staff are never locked out.
-	if (tenantCtx != nil && tenantCtx.MFARequired) && len(availableMethods) == 0 && claims.Email != "" {
+	// Safe Fallback Anti-Lockout: if organization/platform enforces MFA or break-glass login is active,
+	// but user has 0 methods configured, allow email_otp as emergency verification method so staff are never locked out.
+	if ((tenantCtx != nil && tenantCtx.MFARequired) || req.IsBreakGlass) && len(availableMethods) == 0 && claims.Email != "" {
 		availableMethods = append(availableMethods, "email_otp")
 	}
 
-	if len(availableMethods) > 0 || (tenantCtx != nil && tenantCtx.MFARequired) {
+	if len(availableMethods) > 0 || (tenantCtx != nil && tenantCtx.MFARequired) || req.IsBreakGlass {
 		mfaRequired = true
 	}
 
@@ -601,12 +593,17 @@ func (h *Handler) Login(c *gin.Context) {
 			}
 		}
 
+		stepUpMessage := "Silakan verifikasi faktor kedua Anda untuk melanjutkan."
+		if req.IsBreakGlass {
+			stepUpMessage = "Akses darurat Break-Glass mewajibkan verifikasi faktor kedua Anda."
+		}
+
 		c.JSON(http.StatusOK, LoginResponse{
 			MFARequired:      true,
 			AvailableMethods: availableMethods,
 			PreAuthToken:     preAuthToken,
 			MaskedEmail:      maskEmail(claims.Email),
-			Message:          "Silakan verifikasi faktor kedua Anda untuk melanjutkan.",
+			Message:          stepUpMessage,
 		})
 		return
 	}

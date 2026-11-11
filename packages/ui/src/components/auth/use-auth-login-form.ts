@@ -173,7 +173,13 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     };
 
     if (win.turnstile) {
-      mountWidget();
+      // Use requestAnimationFrame to ensure the container element is attached to DOM
+      // when transitioning from SSO-enforced view to break-glass credentials view
+      requestAnimationFrame(() => {
+        if (!cancelled) {
+          mountWidget();
+        }
+      });
     } else {
       const existingScript = document.getElementById("cf-turnstile-api-script") as HTMLScriptElement | null;
       if (existingScript) {
@@ -204,7 +210,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
       // backend would reject it (TURNSTILE_FAILED) — a UI/backend mismatch.
       setTurnstileToken(undefined);
     };
-  }, [turnstileSiteKey, authView, activeTheme]);
+  }, [turnstileSiteKey, authView, activeTheme, isBreakGlass, mfaRequired]);
 
   // Reset single-use Turnstile token when login attempts result in an error
   useEffect(() => {
@@ -402,7 +408,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
       labels?.breakGlassNotice ||
       "Emergency access for administrators only when IdP is down. Step-Up TOTP is mandatory.",
     breakGlassToggle: labels?.breakGlassToggle || "Sign in with Break-Glass Emergency Access",
-    cancelBreakGlass: labels?.cancelBreakGlass || "Cancel Break-Glass & return to SSO",
+    cancelBreakGlass: labels?.cancelBreakGlass || "Return to SSO",
     ipNotAllowedTitle: labels?.ipNotAllowedTitle || "Access Denied: IP Not Allowed",
     ipNotAllowedDesc:
       labels?.ipNotAllowedDesc ||
@@ -414,8 +420,8 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     (mfaRequired
       ? copy.mfaVerifySubmit
       : isInternal
-      ? copy.signInPlatformAdmin
-      : copy.continueIspWorkspace);
+        ? copy.signInPlatformAdmin
+        : copy.continueIspWorkspace);
 
   const socialMethods = allowedMethods.filter(
     (m) => m.enabled && (m.type === "social" || m.type === "saml" || m.type === "enterprise")
