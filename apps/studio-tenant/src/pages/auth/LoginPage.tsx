@@ -52,7 +52,7 @@ function mapAllowedMethods(
   tenantCtx: TenantAuthContextDto | null | undefined,
   defaultSsoName: string
 ): AuthMethod[] {
-  if (!tenantCtx?.hasSso || !Array.isArray(tenantCtx.allowedMethods)) {
+  if (!tenantCtx || !Array.isArray(tenantCtx.allowedMethods)) {
     return [];
   }
   const providerType = (tenantCtx.ssoProviderType || "").toUpperCase();
@@ -65,16 +65,16 @@ function mapAllowedMethods(
 
     if (id === "google" || (id.startsWith("sso-") && providerType === "GOOGLE")) {
       out.push({
-        id,
-        name: displayName || "Google",
+        id: "google",
+        name: displayName && providerType === "GOOGLE" ? displayName : "Google",
         type: "social",
         icon: "google",
         enabled: true,
       });
     } else if (id === "github" || (id.startsWith("sso-") && providerType === "GITHUB")) {
       out.push({
-        id,
-        name: displayName || "GitHub",
+        id: "github",
+        name: displayName && providerType === "GITHUB" ? displayName : "GitHub",
         type: "social",
         icon: "github",
         enabled: true,
@@ -502,27 +502,36 @@ export function LoginPage() {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
+      const isSocial = providerId === "google" || providerId === "github";
       const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
-      // Atomic live pre-flight verification against PostgreSQL to prevent race conditions
-      // if Tenant Admin disabled/modified SSO or license entitlement changed while page was open
-      const liveCtx = await fetchTenantAuthContext(effectiveSlug, true);
-      const liveMethods = mapAllowedMethods(liveCtx, t("auth.default_sso_display_name"));
-      if (!liveCtx || !liveCtx.hasSso || liveMethods.length === 0) {
-        await refetchTenantCtx();
-        setErrorMessage(
-          resolveAuthErrorMessage(
-            "SSO_NOT_AVAILABLE",
-            t("auth.sso_disabled_or_updating"),
-            t
-          )
-        );
+
+      if (!isSocial) {
+        // Atomic live pre-flight verification against PostgreSQL to prevent race conditions
+        // if Tenant Admin disabled/modified SSO or license entitlement changed while page was open
+        const liveCtx = await fetchTenantAuthContext(effectiveSlug, true);
+        const liveMethods = mapAllowedMethods(liveCtx, t("auth.default_sso_display_name"));
+        const ssoMethod = liveMethods.find((m) => m.type === "sso" || m.id === providerId);
+        if (!liveCtx || !liveCtx.hasSso || !ssoMethod) {
+          await refetchTenantCtx();
+          setErrorMessage(
+            resolveAuthErrorMessage(
+              "SSO_NOT_AVAILABLE",
+              t("auth.sso_disabled_or_updating"),
+              t
+            )
+          );
+          return;
+        }
+        await login({
+          idpHint: ssoMethod.id,
+          redirectUri: window.location.origin + callbackUrl,
+        });
         return;
       }
 
-      const matchedMethod =
-        liveMethods.find((m) => m.id === providerId) || liveMethods[0];
+      // Social Identity Login (Google / GitHub)
       await login({
-        idpHint: matchedMethod.id,
+        idpHint: providerId,
         redirectUri: window.location.origin + callbackUrl,
       });
     } finally {

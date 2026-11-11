@@ -285,11 +285,11 @@ func (r *PostgresRepository) scanTenantRow(
 	cleanProviderType := strings.TrimSpace(ssoProviderType)
 	cleanDisplayName := strings.TrimSpace(ssoDisplayName)
 	effectiveSSO := hasSSO && cleanProviderType != ""
-	allowedMethods := []string{"password"}
+	allowedMethods := []string{"password", "google", "github"}
 	authMode := "PASSWORD_ONLY"
 	if effectiveSSO {
 		idpAlias := "sso-" + strings.ToLower(strings.TrimSpace(activeSlg))
-		allowedMethods = []string{"password", idpAlias}
+		allowedMethods = []string{"password", idpAlias, "google", "github"}
 		authMode = "HYBRID_SSO"
 		if enforceSso {
 			authMode = "SSO_ENFORCED"

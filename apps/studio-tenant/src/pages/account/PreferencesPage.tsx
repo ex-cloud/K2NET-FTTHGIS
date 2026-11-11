@@ -246,17 +246,43 @@ export function PreferencesPage() {
     const providerName = pending.charAt(0).toUpperCase() + pending.slice(1);
     const url = new URL(window.location.href);
     const err = url.searchParams.get("error") || url.searchParams.get("error_description");
+    const linkedParam = url.searchParams.get("linked");
+
     if (err) {
       toast.error(t("settings.account.social_connect_failed", { provider: providerName }));
+      sessionStorage.removeItem("k2net_pending_social_link");
+      if (linkedParam || err) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      return;
+    }
+
+    // Only proceed if URL contains matching ?linked=<provider> parameter from Keycloak callback
+    if (linkedParam !== pending) {
       sessionStorage.removeItem("k2net_pending_social_link");
       return;
     }
 
     const timer = setTimeout(async () => {
       sessionStorage.removeItem("k2net_pending_social_link");
-      toast.success(t("settings.account.social_connect_success", { provider: providerName }));
-      await fetchData();
-    }, 600);
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Verify against live security API to confirm provider is actually linked in Keycloak
+      try {
+        const sec = await apiClient<PersonalSecuritySummaryData>("/api/v1/me/security");
+        if (sec) {
+          setSecuritySummary(sec);
+          const isActuallyLinked = Array.isArray(sec.linkedProviders) &&
+            sec.linkedProviders.some((p) => p.toLowerCase().includes(pending.toLowerCase()));
+          if (isActuallyLinked) {
+            toast.success(t("settings.account.social_connect_success", { provider: providerName }));
+          }
+        }
+      } catch {
+        // Fallback: refresh data silently
+        await fetchData();
+      }
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [fetchData, t]);

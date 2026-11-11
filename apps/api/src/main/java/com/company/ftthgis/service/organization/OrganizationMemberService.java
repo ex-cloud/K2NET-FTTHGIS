@@ -156,8 +156,8 @@ public class OrganizationMemberService {
             ? request.fullName().trim()
             : email.split("@")[0];
 
-        // Check if user already exists
-        User existingUser = userRepository.findByEmail(email).orElse(null);
+        // Check if user already exists globally across the platform (bypassing tenant filter)
+        User existingUser = userRepository.findByEmailGlobal(email).orElse(null);
 
         if (existingUser != null) {
             Optional<OrganizationMember> existingMember = memberRepository.findByUserIdAndOrganizationId(existingUser.getId(), org.getId());

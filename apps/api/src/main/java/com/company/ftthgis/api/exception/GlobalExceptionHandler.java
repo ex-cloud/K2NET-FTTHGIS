@@ -121,13 +121,20 @@ public class GlobalExceptionHandler {
         if (root instanceof java.sql.SQLException sqlEx && sqlEx.getSQLState() != null) {
             sqlState = sqlEx.getSQLState();
         }
+        String rootMsg = root != null ? root.getMessage() : ex.getMessage();
         log.warn("Database integrity violation [SQLState: {}]: {}", sqlState, ex.getMessage());
+
+        String userFriendlyMsg = "Database constraint violation occurred.";
+        if (rootMsg != null && rootMsg.contains("users_email_key")) {
+            userFriendlyMsg = "An account with this email address already exists in the system.";
+        }
+
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.CONFLICT.value())
                 .error("DATA_INTEGRITY_VIOLATION")
-                .message("Database constraint violation occurred.")
-                .details("SQLState: " + sqlState + " - " + (root != null ? root.getMessage() : ex.getMessage()))
+                .message(userFriendlyMsg)
+                .details("SQLState: " + sqlState + " - " + rootMsg)
                 .build();
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
