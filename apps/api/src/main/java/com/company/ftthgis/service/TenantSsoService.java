@@ -33,6 +33,13 @@ import java.util.*;
 public class TenantSsoService {
 
     public static final String TENANT_REALM = "k2net-tenants";
+    public static final Set<String> BLOCKED_CONSUMER_DOMAINS = Set.of(
+            "gmail.com", "googlemail.com", "yahoo.com", "ymail.com", "rocketmail.com",
+            "hotmail.com", "outlook.com", "live.com", "msn.com",
+            "icloud.com", "me.com", "mac.com",
+            "aol.com", "aim.com", "proton.me", "protonmail.com", "zoho.com",
+            "mail.com", "gmx.com", "yandex.com", "tutanota.com"
+    );
 
     private final OrganizationRepository organizationRepository;
     private final OrganizationSsoConfigRepository ssoConfigRepository;
@@ -177,6 +184,35 @@ public class TenantSsoService {
         config.setEnforceSso(request.isEnforceSso());
         config.setAllowBreakGlassBypass(request.isAllowBreakGlassBypass());
         config.setStatus(request.getStatus() != null ? request.getStatus() : "ACTIVE");
+
+        // Validasi domain mappings (anti domain publik & anti benturan lintas tenant)
+        if (request.getDomainMappings() != null && !request.getDomainMappings().isEmpty()) {
+            List<String> cleanedDomains = new ArrayList<>();
+            for (String raw : request.getDomainMappings()) {
+                if (raw == null || raw.isBlank()) continue;
+                String domain = raw.trim().toLowerCase(Locale.ROOT);
+                if (domain.startsWith("@")) domain = domain.substring(1);
+                
+                if (BLOCKED_CONSUMER_DOMAINS.contains(domain)) {
+                    throw new IllegalArgumentException("Domain publik '" + domain + "' tidak diizinkan untuk federasi SSO korporat. Harap gunakan domain resmi organisasi Anda (contoh: kdua.net).");
+                }
+
+                // Cek apakah domain sudah diklaim oleh tenant lain
+                Optional<OrganizationSsoConfig> existing = ssoConfigRepository.findActiveConfigByEmailDomainNative(domain);
+                if (existing.isPresent()) {
+                    UUID existingOrgId = existing.get().getOrganization() != null 
+                            ? existing.get().getOrganization().getId() 
+                            : existing.get().getOrganizationIdValue();
+                    if (existingOrgId != null && !existingOrgId.equals(org.getId())) {
+                        throw new IllegalStateException("Domain '" + domain + "' sudah diklaim oleh tenant lain. Setiap domain korporat bersifat unik.");
+                    }
+                }
+                if (!cleanedDomains.contains(domain)) {
+                    cleanedDomains.add(domain);
+                }
+            }
+            request.setDomainMappings(cleanedDomains);
+        }
 
         // Format JSON untuk domain mappings & attribute mapping
         try {
@@ -538,6 +574,15 @@ public class TenantSsoService {
      */
     @Transactional(readOnly = true)
     public SsoDiscoveryResponse discoverSsoByEmail(String email) {
+        return discoverSsoByEmail(email, null);
+    }
+
+    /**
+     * Tenant-Scoped Domain-Based Home Realm Discovery (HRD) untuk login SSO enterprise.
+     * Mencegah information disclosure dan tenant-enumeration lintas workspace.
+     */
+    @Transactional(readOnly = true)
+    public SsoDiscoveryResponse discoverSsoByEmail(String email, String tenantSlug) {
         if (email == null || email.isBlank() || !email.contains("@")) {
             return SsoDiscoveryResponse.builder()
                     .ssoAvailable(false)
@@ -573,7 +618,20 @@ public class TenantSsoService {
             org = organizationRepository.findById(config.getOrganizationIdValue()).orElse(null);
         }
 
-        if (org == null || org.getStatus() == Organization.OrganizationStatus.SUSPENDED || org.getStatus() == Organization.OrganizationStatus.DELETED) {
+        // If tenantSlug is specified, strictly verify that the discovered SSO config belongs to the requested tenant!
+        if (tenantSlug != null && !tenantSlug.isBlank() && !"system".equalsIgnoreCase(tenantSlug)) {
+            if (org == null || !org.getSlug().equalsIgnoreCase(tenantSlug.trim())) {
+                return SsoDiscoveryResponse.builder()
+                        .ssoAvailable(false)
+                        .enforceSso(false)
+                        .allowBreakGlass(false)
+                        .emailDomain(domain)
+                        .build();
+            }
+        }
+
+        if (org == null || org.getStatus() == Organization.OrganizationStatus.SUSPENDED 
+                || org.getStatus() == Organization.OrganizationStatus.DELETED) {
             return SsoDiscoveryResponse.builder()
                     .ssoAvailable(false)
                     .enforceSso(false)

@@ -31,7 +31,7 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
   const { t } = useTranslation();
   const [email, setEmail] = React.useState("");
   const [fullName, setFullName] = React.useState("");
-  const [role, setRole] = React.useState("OPERATOR");
+  const [role, setRole] = React.useState("noc");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,15 +48,19 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
     setIsSubmitting(true);
     try {
       const orgSlug = getCurrentOrgSlug() || "system";
-      await apiClient(`/api/v1/organizations/${orgSlug}/invitations`, {
+      await apiClient(`/api/v1/organizations/${orgSlug}/members/invite`, {
         method: "POST",
-        body: JSON.stringify({ email, fullName, role }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          fullName: fullName.trim(),
+          roleName: role,
+        }),
       });
 
       toast.success(t("users.invite_success", { email }));
       setEmail("");
       setFullName("");
-      setRole("OPERATOR");
+      setRole("noc");
       onOpenChange(false);
       onSuccess?.();
     } catch (err: unknown) {
@@ -115,11 +119,12 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ORG_ADMIN">{t("users.role_org_admin")}</SelectItem>
-                <SelectItem value="OPERATOR">{t("users.role_operator")}</SelectItem>
-                <SelectItem value="TECHNICIAN">{t("users.role_field_tech")}</SelectItem>
-                <SelectItem value="SURVEYOR">{t("users.role_surveyor")}</SelectItem>
-                <SelectItem value="FINANCE">{t("users.role_finance")}</SelectItem>
+                <SelectItem value="noc">{t("users.role_operator")}</SelectItem>
+                <SelectItem value="admin">{t("users.role_org_admin")}</SelectItem>
+                <SelectItem value="technician">{t("users.role_field_tech")}</SelectItem>
+                <SelectItem value="surveyor">{t("users.role_surveyor")}</SelectItem>
+                <SelectItem value="finance">{t("users.role_finance")}</SelectItem>
+                <SelectItem value="viewer">{t("users.role_viewer")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

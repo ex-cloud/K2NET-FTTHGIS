@@ -29,7 +29,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@k2net/ui";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../lib/api-client";
 import { getCurrentOrgSlug } from "../../lib/domain";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
@@ -66,6 +66,7 @@ interface UserDto {
 
 export function TeamPage() {
   const { t, formatDate } = useTranslation();
+  const queryClient = useQueryClient();
   const routerState = useRouterState();
   const navigate = useNavigate();
   const pathname = routerState.location.pathname;
@@ -404,6 +405,9 @@ export function TeamPage() {
       <TeamInviteWizard
         open={inviteModalOpen}
         onOpenChange={setInviteModalOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["tenant-team-members", orgSlug] });
+        }}
       />
 
       <TenantFeatureUpgradeModal

@@ -72,6 +72,12 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   } | null>(null);
 
   useEffect(() => {
+    // If tenant does not have SSO enabled or entitled, do not perform HRD discovery
+    if (!props.hasSso || !props.tenantSlug) {
+      setDiscoveredSso(null);
+      return;
+    }
+
     const trimmed = usernameOrEmail.trim();
     if (!trimmed.includes("@") || (trimmed.split("@")[1]?.length ?? 0) < 3) {
       setDiscoveredSso(null);
@@ -79,7 +85,11 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     }
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/v1/auth/sso-discovery?email=${encodeURIComponent(trimmed)}`);
+        const queryParams = new URLSearchParams({
+          email: trimmed,
+          tenant: props.tenantSlug || "",
+        });
+        const res = await fetch(`/api/v1/auth/sso-discovery?${queryParams.toString()}`);
         if (res.ok) {
           const data = await res.json();
           if (data?.ssoAvailable) {
@@ -94,7 +104,7 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [usernameOrEmail]);
+  }, [usernameOrEmail, props.hasSso, props.tenantSlug]);
 
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
@@ -409,6 +419,8 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
       "Emergency access for administrators only when IdP is down. Step-Up TOTP is mandatory.",
     breakGlassToggle: labels?.breakGlassToggle || "Sign in with Break-Glass Emergency Access",
     cancelBreakGlass: labels?.cancelBreakGlass || "Return to SSO",
+    orContinueWithCredentials: labels?.orContinueWithCredentials || "or continue with email & password",
+    ssoDomainRecognized: labels?.ssoDomainRecognized || "Single Sign-On is configured for this domain.",
     ipNotAllowedTitle: labels?.ipNotAllowedTitle || "Access Denied: IP Not Allowed",
     ipNotAllowedDesc:
       labels?.ipNotAllowedDesc ||

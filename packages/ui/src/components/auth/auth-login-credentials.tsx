@@ -119,6 +119,37 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
         <form onSubmit={handleSubmit} className="space-y-3.5">
           {!mfaRequired ? (
             <>
+              {/* Top SSO Button for Hybrid Mode (Kondisi C) */}
+              {props.hasSso && !enforceSso && (
+                <div className="space-y-3 pb-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/80 hover:bg-muted/60 transition-colors"
+                    onClick={() =>
+                      onContinueWithProvider &&
+                      onContinueWithProvider(ssoProviderType || "sso")
+                    }
+                    disabled={isLoading || isSuspended}
+                  >
+                    <KeyRound className="size-3.5" />
+                    <span>
+                      {copy.continueWithSso}
+                      {ssoDisplayName ? ` (${ssoDisplayName})` : ""}
+                    </span>
+                  </Button>
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border/60" />
+                    </div>
+                    <span className="relative bg-background px-2 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                      {copy.orContinueWithCredentials}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Break-Glass Emergency Warning Banner */}
               {enforceSso && isBreakGlass && (
                 <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-1 text-xs text-amber-600 dark:text-amber-400 animate-in fade-in">
@@ -158,41 +189,16 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                       />
                     </div>
 
-                    {/* Discovered SSO IdP Suggestion */}
+                    {/* Domain Recognized Hint (Strictly Scoped to Current Tenant) */}
                     {discoveredSso && !enforceSso && (
-                      <div className="rounded-md border border-border/80 bg-muted/40 p-2.5 flex items-center justify-between gap-2 animate-in fade-in mt-1.5">
-                        <div className="space-y-0.5">
-                          <span className="text-[11px] font-semibold text-foreground block">
-                            {copy.ssoDiscoveredTitle}
-                          </span>
-                          <p className="text-[10px] text-muted-foreground">
-                            {discoveredSso.displayName || discoveredSso.providerType || copy.defaultSsoDisplayName}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          size="xs"
-                          variant="outline"
-                          className="h-6 text-[11px] px-2 font-medium gap-1"
-                          onClick={() => {
-                            const isDifferentTenant =
-                              Boolean(discoveredSso.organizationSlug) &&
-                              Boolean(props.tenantSlug) &&
-                              discoveredSso.organizationSlug!.toLowerCase() !== props.tenantSlug!.toLowerCase();
-                            if (isDifferentTenant && discoveredSso.redirectUrl && typeof window !== "undefined") {
-                              window.location.href = discoveredSso.redirectUrl;
-                            } else if (onContinueWithProvider) {
-                              onContinueWithProvider(
-                                discoveredSso.idpHint || discoveredSso.providerType || ssoProviderType || "sso"
-                              );
-                            } else if (discoveredSso.redirectUrl && typeof window !== "undefined") {
-                              window.location.href = discoveredSso.redirectUrl;
-                            }
-                          }}
-                        >
-                          <KeyRound className="size-3" />
-                          <span>{copy.continueWithSso}</span>
-                        </Button>
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-1 animate-in fade-in">
+                        <KeyRound className="size-3 text-primary shrink-0" />
+                        <span>
+                          {copy.ssoDomainRecognized}
+                          {discoveredSso.displayName || ssoDisplayName
+                            ? ` (${discoveredSso.displayName || ssoDisplayName})`
+                            : ""}
+                        </span>
                       </div>
                     )}
                   </div>

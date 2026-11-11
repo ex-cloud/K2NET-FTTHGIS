@@ -112,6 +112,8 @@ export default function AdminLoginPage() {
       ssoDiscoveredDesc: t("auth.sso_discovered_desc"),
       continueWithSso: t("auth.continue_with_sso"),
       defaultSsoDisplayName: t("auth.default_sso_display_name"),
+      orContinueWithCredentials: t("auth.or_continue_with_credentials"),
+      ssoDomainRecognized: t("auth.sso_domain_recognized"),
       breakGlassModeActive: t("auth.break_glass_mode_active"),
       breakGlassNotice: t("auth.break_glass_notice"),
       breakGlassToggle: t("auth.break_glass_toggle"),

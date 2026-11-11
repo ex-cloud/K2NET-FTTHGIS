@@ -86,6 +86,8 @@ export interface AuthLoginFormLabels {
   cancelBreakGlass?: string;
   ipNotAllowedTitle?: string;
   ipNotAllowedDesc?: string;
+  orContinueWithCredentials?: string;
+  ssoDomainRecognized?: string;
   // Multi-Option Step-Up MFA & Passwordless Labels
   mfaTabTotp?: string;
   mfaTabWebauthn?: string;
@@ -118,6 +120,7 @@ export interface AuthLoginFormProps {
   authMode?: string;
   status?: string;
   tenantSlug?: string;
+  hasSso?: boolean;
   enforceSso?: boolean;
   allowBreakGlass?: boolean;
   ssoProviderType?: string;

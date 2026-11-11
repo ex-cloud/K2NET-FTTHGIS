@@ -32,6 +32,12 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(IllegalStateException ex) {
+        log.warn("Business state conflict: {}", ex.getMessage());
+        return buildResponse(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
+    }
+
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(org.springframework.web.bind.MethodArgumentNotValidException ex) {
         String msg = ex.getBindingResult().getFieldErrors().stream()

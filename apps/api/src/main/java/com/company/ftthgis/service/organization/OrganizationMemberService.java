@@ -145,11 +145,16 @@ public class OrganizationMemberService {
             .orElseThrow(() -> new NoSuchElementException("Organization not found with slug: " + orgSlug));
 
         String email = request.email().trim().toLowerCase(Locale.ROOT);
-        String roleName = request.roleName().trim().toLowerCase(Locale.ROOT);
+        String rawRole = request.getEffectiveRoleName();
+        String roleName = normalizeRoleName(rawRole);
 
         Role role = roleRepository.findByNameAndOrganizationId(roleName, org.getId())
             .or(() -> roleRepository.findByName(roleName))
-            .orElse(null);
+            .orElseGet(() -> roleRepository.findByName("viewer").orElse(null));
+
+        String displayName = (request.fullName() != null && !request.fullName().isBlank())
+            ? request.fullName().trim()
+            : email.split("@")[0];
 
         // Check if user already exists
         User existingUser = userRepository.findByEmail(email).orElse(null);
@@ -180,11 +185,15 @@ public class OrganizationMemberService {
                 .id(UUID.randomUUID())
                 .email(email)
                 .username(email)
-                .fullName(email.split("@")[0])
+                .fullName(displayName)
                 .status("INVITED")
                 .organization(org)
                 .role(role != null ? role : roleRepository.findByName("viewer").orElse(null))
                 .build();
+            targetUser = userRepository.save(targetUser);
+        } else if (request.fullName() != null && !request.fullName().isBlank()
+                && (targetUser.getFullName() == null || targetUser.getFullName().isBlank() || targetUser.getFullName().equals(email.split("@")[0]))) {
+            targetUser.setFullName(displayName);
             targetUser = userRepository.save(targetUser);
         }
 
@@ -507,6 +516,23 @@ public class OrganizationMemberService {
             .joinedAt(m.getJoinedAt())
             .createdAt(m.getCreatedAt())
             .build();
+    }
+
+    private String normalizeRoleName(String rawRole) {
+        if (rawRole == null || rawRole.isBlank()) {
+            return "viewer";
+        }
+        String clean = rawRole.trim().toLowerCase(Locale.ROOT);
+        return switch (clean) {
+            case "org_admin", "admin" -> "admin";
+            case "operator", "noc" -> "noc";
+            case "technician", "field_tech" -> "technician";
+            case "surveyor" -> "surveyor";
+            case "finance" -> "finance";
+            case "helpdesk" -> "helpdesk";
+            case "viewer" -> "viewer";
+            default -> clean;
+        };
     }
 }
 

@@ -22,6 +22,7 @@ public class OrganizationController {
     private final com.company.ftthgis.service.OrganizationSlugMigrationService organizationSlugMigrationService;
     private final com.company.ftthgis.service.organization.TenantActivationService tenantActivationService;
     private final com.company.ftthgis.service.organization.TenantPurgeService tenantPurgeService;
+    private final com.company.ftthgis.service.organization.OrganizationMemberService organizationMemberService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('orgs.view') or hasAuthority('organizations.view')")
@@ -58,6 +59,16 @@ public class OrganizationController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "error", e.getMessage()));
         }
+    }
+
+    @PostMapping("/{slug}/invitations")
+    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.hasEffectivePermission('members.invite')")
+    public ResponseEntity<com.company.ftthgis.api.tenant.dto.OrganizationMemberDto> inviteMemberAlias(
+            @PathVariable String slug,
+            @jakarta.validation.Valid @RequestBody com.company.ftthgis.api.tenant.dto.InviteMemberRequest request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.oauth2.jwt.Jwt jwt) {
+        String inviterId = jwt != null ? jwt.getSubject() : "system";
+        return ResponseEntity.ok(organizationMemberService.inviteMember(slug, request, inviterId));
     }
 
     @PostMapping("/{slug}/purge-expired")

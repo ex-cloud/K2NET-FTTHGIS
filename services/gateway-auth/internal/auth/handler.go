@@ -131,7 +131,7 @@ func (h *Handler) GetTenantContext(c *gin.Context) {
 	c.JSON(http.StatusOK, tenantCtx)
 }
 
-// GetSsoDiscovery handles GET /api/v1/auth/sso-discovery?email={email} (Domain-based HRD).
+// GetSsoDiscovery handles GET /api/v1/auth/sso-discovery?email={email}&tenant={tenant} (Domain-based HRD).
 func (h *Handler) GetSsoDiscovery(c *gin.Context) {
 	email := strings.TrimSpace(c.Query("email"))
 	if email == "" || !strings.Contains(email, "@") {
@@ -142,12 +142,44 @@ func (h *Handler) GetSsoDiscovery(c *gin.Context) {
 		return
 	}
 
+	slug := strings.ToLower(strings.TrimSpace(c.Query("tenant")))
+	if slug == "" {
+		slug = strings.ToLower(strings.TrimSpace(c.GetHeader("X-Tenant-Slug")))
+	}
+	if slug == "" {
+		rawHost := strings.ToLower(strings.TrimSpace(c.GetHeader("X-Forwarded-Host")))
+		if rawHost == "" {
+			rawHost = strings.ToLower(strings.TrimSpace(c.Request.Host))
+		}
+		if idx := strings.IndexByte(rawHost, ':'); idx > 0 {
+			rawHost = rawHost[:idx]
+		}
+		if parts := strings.Split(rawHost, "."); len(parts) >= 3 {
+			slug = parts[0]
+		}
+	}
+
+	parts := strings.Split(email, "@")
+	domain := ""
+	if len(parts) == 2 {
+		domain = strings.ToLower(strings.TrimSpace(parts[1]))
+	}
+
+	// Without tenant context, do not perform global cross-tenant discovery (anti tenant-enumeration)
+	if slug == "" || slug == "system" {
+		c.JSON(http.StatusOK, gin.H{
+			"ssoAvailable": false,
+			"emailDomain":  domain,
+		})
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Second)
 	defer cancel()
 
-	resp, err := h.repo.DiscoverSsoByEmail(ctx, email)
+	resp, err := h.repo.DiscoverSsoByEmail(ctx, email, slug)
 	if err != nil {
-		logger.Error(c.Request.Context(), "Failed discovering SSO by email", zap.String("email", email), zap.Error(err))
+		logger.Error(c.Request.Context(), "Failed discovering SSO by email", zap.String("email", email), zap.String("tenant", slug), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "INTERNAL_ERROR",
 			"message": "Gagal memeriksa ketersediaan SSO domain email.",
@@ -1298,20 +1330,12 @@ func (h *Handler) SsoExchange(c *gin.Context) {
 			(resolvedTenantSlug != "" && strings.EqualFold(resolvedTenantSlug, expectedSlug))
 		belongsInDB, _ := h.repo.VerifyUserBelongsToOrg(c.Request.Context(), claims.Sub, claims.Email, tenantCtx.ID)
 
-		matchesSsoDomain := false
-		if tenantCtx.HasSSO && claims.Email != "" {
-			if disc, err := h.repo.DiscoverSsoByEmail(c.Request.Context(), claims.Email); err == nil && disc != nil && disc.SSOAvailable {
-				if strings.EqualFold(disc.OrganizationSlug, expectedSlug) {
-					matchesSsoDomain = true
-				}
-			}
-		}
-
-		if !matchesClaim && !belongsInDB && !matchesSsoDomain {
+		// Invite-First Governance: User must carry valid organization claims or be an invited active member in DB
+		if !matchesClaim && !belongsInDB {
 			h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":   "TENANT_ACCESS_DENIED",
-				"message": "Akun SSO Anda tidak terdaftar pada workspace organisasi ini.",
+				"message": "Akun SSO Anda belum terdaftar sebagai anggota pada workspace organisasi ini. Silakan hubungi administrator organisasi untuk mendapatkan undangan.",
 			})
 			return
 		}

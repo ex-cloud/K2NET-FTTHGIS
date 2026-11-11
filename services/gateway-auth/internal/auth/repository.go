@@ -40,7 +40,7 @@ type Repository interface {
 	CompleteAccountActivation(ctx context.Context, userID, orgID string) error
 	GetUserWorkspaces(ctx context.Context, userID, email string) ([]UserWorkspace, error)
 	SwitchUserContext(ctx context.Context, userID, targetOrgID string) (*TenantContextResponse, error)
-	DiscoverSsoByEmail(ctx context.Context, email string) (*SsoDiscoveryResponse, error)
+	DiscoverSsoByEmail(ctx context.Context, email string, tenantSlug string) (*SsoDiscoveryResponse, error)
 	GetUserWebauthnCredentials(ctx context.Context, userID string) ([]WebauthnCredentialModel, error)
 	UpdateWebauthnSignCounter(ctx context.Context, credentialID string, newCounter int64) error
 	IsUserMfaEnabled(ctx context.Context, userID string) (bool, error)
@@ -660,16 +660,22 @@ func (r *PostgresRepository) SwitchUserContext(ctx context.Context, userID, targ
 	return r.ResolveTenantContext(ctx, orgSlug)
 }
 
-// DiscoverSsoByEmail inspects email domain mappings and resolves tenant SSO IdP context.
-func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email string) (*SsoDiscoveryResponse, error) {
+// DiscoverSsoByEmail inspects email domain mappings and resolves tenant SSO IdP context strictly within the specified tenant workspace.
+func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email string, tenantSlug string) (*SsoDiscoveryResponse, error) {
 	email = strings.TrimSpace(email)
 	parts := strings.Split(email, "@")
 	if len(parts) != 2 || parts[1] == "" {
 		return &SsoDiscoveryResponse{SSOAvailable: false}, nil
 	}
 	domain := strings.ToLower(strings.TrimSpace(parts[1]))
+	tenantSlug = strings.ToLower(strings.TrimSpace(tenantSlug))
 
-	cacheKey := "auth:sso-disc:" + domain
+	// Tenant-Scoped Isolation: HRD must be scoped to an active tenant to prevent cross-tenant discovery and tenant enumeration
+	if tenantSlug == "" || tenantSlug == "system" {
+		return &SsoDiscoveryResponse{SSOAvailable: false, EmailDomain: domain}, nil
+	}
+
+	cacheKey := fmt.Sprintf("auth:sso-disc:%s:%s", tenantSlug, domain)
 	if r.rdb != nil {
 		if cached, err := r.rdb.Get(ctx, cacheKey).Result(); err == nil && cached != "" {
 			var out SsoDiscoveryResponse
@@ -722,7 +728,9 @@ func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email strin
 		  AND (TRIM(COALESCE(osc.client_id, '')) <> '' OR TRIM(COALESCE(osc.single_sign_on_url, '')) <> '')
 		  AND o.deleted_at IS NULL
 		  AND o.status = 'ACTIVE'
+		  AND o.slug = $2
 		  AND osc.domain_mappings @> to_jsonb(CAST($1 AS text))
+		ORDER BY osc.updated_at DESC
 		LIMIT 1
 	`
 
@@ -736,7 +744,7 @@ func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email strin
 		ssoEntitled     bool
 	)
 
-	err := r.db.QueryRow(ctx, discoverySQL, domain).Scan(
+	err := r.db.QueryRow(ctx, discoverySQL, domain, tenantSlug).Scan(
 		&enforceSso,
 		&allowBreakGlass,
 		&providerType,

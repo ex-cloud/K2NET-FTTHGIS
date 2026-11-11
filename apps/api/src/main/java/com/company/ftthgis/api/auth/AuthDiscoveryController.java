@@ -65,16 +65,18 @@ public class AuthDiscoveryController {
      * Mengembalikan status federasi identitas dan konfigurasi SSO berdasarkan domain email.
      */
     @GetMapping({"/sso-discovery", "/discovery/sso"})
-    public ResponseEntity<SsoDiscoveryResponse> discoverSso(@RequestParam(required = false) String email) {
-        log.info("🔍 SSO discovery request for email: {}", email);
-        if (email == null || email.isBlank()) {
-            return ResponseEntity.badRequest().body(SsoDiscoveryResponse.builder()
+    public ResponseEntity<SsoDiscoveryResponse> discoverSso(
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String tenant) {
+        log.info("🔍 SSO discovery request for email: {}, tenant: {}", email, tenant);
+        if (email == null || email.isBlank() || tenant == null || tenant.isBlank()) {
+            return ResponseEntity.ok(SsoDiscoveryResponse.builder()
                     .ssoAvailable(false)
                     .enforceSso(false)
                     .allowBreakGlass(false)
                     .build());
         }
-        return ResponseEntity.ok(tenantSsoService.discoverSsoByEmail(email));
+        return ResponseEntity.ok(tenantSsoService.discoverSsoByEmail(email, tenant));
     }
 
     @Data

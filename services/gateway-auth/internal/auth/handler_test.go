@@ -87,8 +87,8 @@ func (m *mockRepo) SwitchUserContext(_ context.Context, userID, targetOrgID stri
 	}, nil
 }
 
-func (m *mockRepo) DiscoverSsoByEmail(_ context.Context, email string) (*SsoDiscoveryResponse, error) {
-	if strings.HasSuffix(email, "@fibernet.net") {
+func (m *mockRepo) DiscoverSsoByEmail(_ context.Context, email string, tenantSlug string) (*SsoDiscoveryResponse, error) {
+	if tenantSlug == "fibernet" && strings.HasSuffix(email, "@fibernet.net") {
 		return &SsoDiscoveryResponse{
 			SSOAvailable:     true,
 			EnforceSSO:       true,
@@ -102,7 +102,12 @@ func (m *mockRepo) DiscoverSsoByEmail(_ context.Context, email string) (*SsoDisc
 			EmailDomain:      "fibernet.net",
 		}, nil
 	}
-	return &SsoDiscoveryResponse{SSOAvailable: false, EmailDomain: "example.com"}, nil
+	parts := strings.Split(email, "@")
+	domain := "example.com"
+	if len(parts) == 2 {
+		domain = parts[1]
+	}
+	return &SsoDiscoveryResponse{SSOAvailable: false, EmailDomain: domain}, nil
 }
 
 func (m *mockRepo) GetUserWebauthnCredentials(_ context.Context, _ string) ([]WebauthnCredentialModel, error) {
@@ -617,9 +622,9 @@ func TestGetSsoDiscovery(t *testing.T) {
 		t.Fatalf("expected 400 for missing email, got %d", w1.Code)
 	}
 
-	// 2. Discovered email
+	// 2. Discovered email with matching tenant
 	w2 := httptest.NewRecorder()
-	req2 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/sso-discovery?email=user@fibernet.net", nil)
+	req2 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/sso-discovery?email=user@fibernet.net&tenant=fibernet", nil)
 	r.ServeHTTP(w2, req2)
 	if w2.Code != http.StatusOK {
 		t.Fatalf("expected 200 for fibernet.net, got %d", w2.Code)
@@ -630,9 +635,22 @@ func TestGetSsoDiscovery(t *testing.T) {
 		t.Fatalf("expected fibernet SSO, got %+v", res2)
 	}
 
+	// 2b. Cross-tenant leakage prevention: fibernet email queried against nusantara tenant
+	w2b := httptest.NewRecorder()
+	req2b := httptest.NewRequest(http.MethodGet, "/api/v1/auth/sso-discovery?email=user@fibernet.net&tenant=nusantara", nil)
+	r.ServeHTTP(w2b, req2b)
+	if w2b.Code != http.StatusOK {
+		t.Fatalf("expected 200 for cross-tenant query, got %d", w2b.Code)
+	}
+	var res2b SsoDiscoveryResponse
+	_ = json.Unmarshal(w2b.Body.Bytes(), &res2b)
+	if res2b.SSOAvailable {
+		t.Fatalf("expected cross-tenant SSO to be blocked (false), got %+v", res2b)
+	}
+
 	// 3. Unknown email
 	w3 := httptest.NewRecorder()
-	req3 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/sso-discovery?email=user@gmail.com", nil)
+	req3 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/sso-discovery?email=user@gmail.com&tenant=fibernet", nil)
 	r.ServeHTTP(w3, req3)
 	if w3.Code != http.StatusOK {
 		t.Fatalf("expected 200 for unknown domain, got %d", w3.Code)
