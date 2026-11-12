@@ -78,6 +78,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
                         .requestMatchers("/api/v1/auth/discovery/**", "/api/v1/auth/sso-discovery/**", "/api/v1/auth/sso-discovery").permitAll() // Discovery stays public
                         .requestMatchers("/api/v1/auth/oauth-gate/**").permitAll() // Internal OAuth gate (protected by secret header)
+                        .requestMatchers("/api/v1/internal/**").permitAll() // Internal mesh endpoints (protected by X-Gateway-Token)
                         .requestMatchers("/api/v1/system/impersonate/exchange").permitAll() // Exchange code is public (single-use 60s)
                         .requestMatchers("/api/v1/system/impersonate/refresh-token").permitAll() // Refresh token relay guarded by session ID
                         .requestMatchers("/api/v1/system/impersonate/status").permitAll() // Session countdown status check

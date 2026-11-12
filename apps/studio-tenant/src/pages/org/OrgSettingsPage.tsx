@@ -121,6 +121,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
   const [loading, setLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [mfaEnforced, setMfaEnforced] = React.useState(false);
+  const [allowSocialLogin, setAllowSocialLogin] = React.useState(false);
   const [sessionTimeout, setSessionTimeout] = React.useState(30);
   const [isPlatformEnforced, setIsPlatformEnforced] = React.useState(false);
   const [ipAllowlistCidrs, setIpAllowlistCidrs] = React.useState<string>("");
@@ -140,9 +141,11 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           isLockedByPlatform?: boolean;
           isMfaEnforcedByPlatform?: boolean;
           ipAllowlistCidrs?: string;
+          allowSocialLogin?: boolean;
         }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`);
         if (res && isMounted) {
           setMfaEnforced(Boolean(res.mfaEnforced));
+          setAllowSocialLogin(Boolean(res.allowSocialLogin));
           setSessionTimeout(res.sessionIdleMinutes ?? res.sessionIdleTimeoutMinutes ?? 30);
           setIsPlatformEnforced(
             Boolean(res.lockedByPlatform ?? res.isLockedByPlatform ?? res.isMfaEnforcedByPlatform)
@@ -171,16 +174,19 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         lockedByPlatform?: boolean;
         isLockedByPlatform?: boolean;
         ipAllowlistCidrs?: string;
+        allowSocialLogin?: boolean;
       }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`, {
         method: "PUT",
         body: JSON.stringify({
           mfaEnforced: isPlatformEnforced ? true : mfaEnforced,
           sessionIdleMinutes: sessionTimeout,
           ipAllowlistCidrs: ipAllowlistCidrs.trim(),
+          allowSocialLogin,
         }),
       });
       if (updated) {
         setMfaEnforced(Boolean(updated.mfaEnforced));
+        setAllowSocialLogin(Boolean(updated.allowSocialLogin));
         if (updated.sessionIdleMinutes) {
           setSessionTimeout(updated.sessionIdleMinutes);
         }
@@ -215,6 +221,20 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           checked={isPlatformEnforced || mfaEnforced}
           disabled={loading || isPlatformEnforced || isSaving}
           onCheckedChange={setMfaEnforced}
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
+        <div className="space-y-0.5 max-w-lg">
+          <Label className="text-xs font-semibold">{t("settings.allow_social_label")}</Label>
+          <p className="text-[11px] text-muted-foreground">
+            {t("settings.allow_social_desc")}
+          </p>
+        </div>
+        <Switch
+          checked={allowSocialLogin}
+          disabled={loading || isSaving}
+          onCheckedChange={setAllowSocialLogin}
         />
       </div>
 

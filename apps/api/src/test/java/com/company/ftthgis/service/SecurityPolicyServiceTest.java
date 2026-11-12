@@ -252,6 +252,28 @@ public class SecurityPolicyServiceTest {
     }
 
     @Test
+    @DisplayName("S8b: updateTenantPolicy updates allowSocialLogin")
+    void testUpdateTenantPolicy_UpdatesAllowSocialLogin() {
+        TenantSecurityPolicy existing = TenantSecurityPolicy.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .mfaEnforced(false)
+                .allowSocialLogin(false)
+                .build();
+        when(tenantPolicyRepository.findByOrganizationIdNative(testOrgId)).thenReturn(Optional.of(existing));
+        when(tenantPolicyRepository.save(any(TenantSecurityPolicy.class))).thenAnswer(i -> i.getArgument(0));
+
+        UpdateTenantSecurityPolicyRequest request = new UpdateTenantSecurityPolicyRequest(
+                null, true, null, null, null, null, null
+        );
+
+        TenantSecurityPolicyDto dto = securityPolicyService.updateTenantPolicy("fibernet", request, "admin@fibernet.net");
+
+        assertNotNull(dto);
+        assertTrue(dto.isAllowSocialLogin());
+    }
+
+    @Test
     @DisplayName("S9: resolveEffectivePolicy with null slug returns Platform baseline")
     void testResolveEffectivePolicy_DefaultSlug_ReturnsPlatform() {
         when(settingService.getSettingBoolean("enforce_mfa", false)).thenReturn(true);

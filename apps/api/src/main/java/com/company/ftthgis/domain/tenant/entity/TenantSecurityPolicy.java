@@ -30,6 +30,10 @@ public class TenantSecurityPolicy extends OrganizationAwareEntity {
     @Builder.Default
     private boolean mfaEnforced = false;
 
+    @Column(name = "allow_social_login", nullable = false)
+    @Builder.Default
+    private boolean allowSocialLogin = false;
+
     @Column(name = "allowed_methods", nullable = false, length = 255)
     @Builder.Default
     private String allowedMethods = "totp,webauthn";

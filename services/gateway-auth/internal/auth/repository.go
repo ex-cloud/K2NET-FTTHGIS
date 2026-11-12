@@ -35,6 +35,7 @@ type JITUserSyncInput struct {
 type Repository interface {
 	ResolveTenantContext(ctx context.Context, slug string) (*TenantContextResponse, error)
 	VerifyUserBelongsToOrg(ctx context.Context, userID, email, organizationID string) (bool, error)
+	CheckMembershipStatus(ctx context.Context, userID, email, organizationID string) (string, error)
 	SyncUserJIT(ctx context.Context, in JITUserSyncInput) error
 	FindUserForPasswordReset(ctx context.Context, identifier, tenantSlug, plane string) (*ResetTokenData, error)
 	CompleteAccountActivation(ctx context.Context, userID, orgID string) error
@@ -137,7 +138,8 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			COALESCE(osc.allow_break_glass_bypass, true) AS allow_break_glass,
 			COALESCE(osc.provider_type, '') AS sso_provider_type,
 			COALESCE(osc.display_name, '') AS sso_display_name,
-			COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs
+			COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs,
+			COALESCE(tsp.allow_social_login, false) AS allow_social_login
 		FROM organizations o
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 		LEFT JOIN LATERAL (
@@ -192,7 +194,8 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 				COALESCE(osc.allow_break_glass_bypass, true) AS allow_break_glass,
 				COALESCE(osc.provider_type, '') AS sso_provider_type,
 				COALESCE(osc.display_name, '') AS sso_display_name,
-				COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs
+				COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs,
+				COALESCE(tsp.allow_social_login, false) AS allow_social_login
 			FROM organization_slug_aliases osa
 			JOIN organizations o ON osa.organization_id = o.id
 			LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
@@ -258,6 +261,7 @@ func (r *PostgresRepository) scanTenantRow(
 		ssoProviderType      string
 		ssoDisplayName       string
 		ipAllowlistCidrs     string
+		allowSocialLogin     bool
 	)
 	err := r.db.QueryRow(ctx, query, querySlug).Scan(
 		&id,
@@ -274,6 +278,7 @@ func (r *PostgresRepository) scanTenantRow(
 		&ssoProviderType,
 		&ssoDisplayName,
 		&ipAllowlistCidrs,
+		&allowSocialLogin,
 	)
 	if err != nil {
 		return nil, err
@@ -285,11 +290,11 @@ func (r *PostgresRepository) scanTenantRow(
 	cleanProviderType := strings.TrimSpace(ssoProviderType)
 	cleanDisplayName := strings.TrimSpace(ssoDisplayName)
 	effectiveSSO := hasSSO && cleanProviderType != ""
-	allowedMethods := []string{"password", "google", "github"}
+	allowedMethods := []string{"password"}
 	authMode := "PASSWORD_ONLY"
 	if effectiveSSO {
 		idpAlias := "sso-" + strings.ToLower(strings.TrimSpace(activeSlg))
-		allowedMethods = []string{"password", idpAlias, "google", "github"}
+		allowedMethods = append(allowedMethods, idpAlias)
 		authMode = "HYBRID_SSO"
 		if enforceSso {
 			authMode = "SSO_ENFORCED"
@@ -297,6 +302,9 @@ func (r *PostgresRepository) scanTenantRow(
 	} else {
 		cleanProviderType = ""
 		cleanDisplayName = ""
+	}
+	if allowSocialLogin {
+		allowedMethods = append(allowedMethods, "google", "github")
 	}
 
 	out := &TenantContextResponse{
@@ -311,6 +319,7 @@ func (r *PostgresRepository) scanTenantRow(
 		AuthMode:         authMode,
 		Status:           status,
 		HasSSO:           effectiveSSO,
+		AllowSocialLogin: allowSocialLogin,
 		AllowedMethods:   allowedMethods,
 		MFARequired:      effectiveMfaRequired,
 		EnforceSSO:       enforceSso && effectiveSSO,
@@ -367,6 +376,39 @@ func (r *PostgresRepository) VerifyUserBelongsToOrg(ctx context.Context, userID,
 	var ok bool
 	err := r.db.QueryRow(ctx, q, organizationID, userID, email).Scan(&ok)
 	return ok, err
+}
+
+// CheckMembershipStatus returns the membership status ("ACTIVE", "INVITED", etc.) or empty string if not found.
+func (r *PostgresRepository) CheckMembershipStatus(ctx context.Context, userID, email, organizationID string) (string, error) {
+	if r.db == nil || organizationID == "" {
+		return "", nil
+	}
+	const q = `
+		SELECT om.status
+		FROM organization_members om
+		JOIN users u ON u.id = om.user_id
+		WHERE om.organization_id = $1::uuid
+		  AND (u.id::text = $2 OR LOWER(u.email) = LOWER($3))
+		  AND (om.status = 'ACTIVE' OR (om.status = 'INVITED' AND (om.invitation_expires_at IS NULL OR om.invitation_expires_at > NOW())))
+		ORDER BY CASE WHEN om.status = 'ACTIVE' THEN 1 ELSE 2 END
+		LIMIT 1
+	`
+	var status string
+	err := r.db.QueryRow(ctx, q, organizationID, userID, email).Scan(&status)
+	if errors.Is(err, pgx.ErrNoRows) {
+		const userQ = `
+			SELECT status FROM users
+			WHERE organization_id = $1::uuid
+			  AND (id::text = $2 OR LOWER(email) = LOWER($3))
+			LIMIT 1
+		`
+		var userStatus string
+		if uErr := r.db.QueryRow(ctx, userQ, organizationID, userID, email).Scan(&userStatus); uErr == nil {
+			return userStatus, nil
+		}
+		return "", nil
+	}
+	return status, err
 }
 
 // SyncUserJIT performs parameterized JIT upsert of authenticated user metadata into ftth_gis.users.

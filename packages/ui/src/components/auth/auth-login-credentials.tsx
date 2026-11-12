@@ -119,37 +119,6 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
         <form onSubmit={handleSubmit} className="space-y-3.5">
           {!mfaRequired ? (
             <>
-              {/* Top SSO Button for Hybrid Mode (Kondisi C) */}
-              {props.hasSso && !enforceSso && (
-                <div className="space-y-3 pb-1">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/80 hover:bg-muted/60 transition-colors"
-                    onClick={() =>
-                      onContinueWithProvider &&
-                      onContinueWithProvider(ssoProviderType || "sso")
-                    }
-                    disabled={isLoading || isSuspended}
-                  >
-                    <KeyRound className="size-3.5" />
-                    <span>
-                      {copy.continueWithSso}
-                      {ssoDisplayName ? ` (${ssoDisplayName})` : ""}
-                    </span>
-                  </Button>
-                  <div className="relative flex items-center justify-center">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border/60" />
-                    </div>
-                    <span className="relative bg-background px-2 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                      {copy.orContinueWithCredentials}
-                    </span>
-                  </div>
-                </div>
-              )}
-
               {/* Break-Glass Emergency Warning Banner */}
               {enforceSso && isBreakGlass && (
                 <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-1 text-xs text-amber-600 dark:text-amber-400 animate-in fade-in">
@@ -328,8 +297,8 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
         )}
 
               {/* Monochrome Social / Enterprise SSO Buttons BELOW Form (only when licensed & explicitly activated by Tenant Admin) */}
-              {!mfaRequired && socialMethods.length > 0 && (
-                <div className="space-y-3 pt-1.5">
+              {!mfaRequired && (socialMethods.length > 0 || (props.hasSso && !enforceSso)) && (
+                <div className="space-y-2.5 pt-1.5">
                   <div className="relative flex items-center justify-center py-1">
                     <div className="w-full border-t border-border/60" />
                     <span className="absolute bg-sidebar px-2.5 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider">
@@ -337,46 +306,70 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                     </span>
                   </div>
 
-                  <div className={socialMethods.length === 2 ? "grid grid-cols-2 gap-2.5" : "grid grid-cols-1 gap-2"}>
-                    {socialMethods.map((method) => {
-                      const iconKey = (method.icon || method.id || "").toLowerCase();
-                      const isGoogle = iconKey === "google";
-                      const isGithub = iconKey === "github";
-                      const isMicrosoft = iconKey === "microsoft" || iconKey === "microsoft_entra";
-                      const hasCustomName =
-                        Boolean(method.name) &&
-                        method.name.toLowerCase() !== "google" &&
-                        method.name.toLowerCase() !== "github";
-                      const methodLabel =
-                        socialMethods.length === 2 && !hasCustomName
-                          ? method.name
-                          : isGoogle && !hasCustomName
-                            ? copy.continueWithGoogle
-                            : isGithub && !hasCustomName
-                              ? copy.continueWithGithub
-                              : `${copy.continueWithProviderPrefix} ${method.name}`;
+                  {/* Corporate SSO Button (when enabled & hybrid mode) */}
+                  {props.hasSso && !enforceSso && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/70 bg-background/60 text-foreground/90 hover:bg-accent hover:text-foreground hover:border-border rounded-md transition-colors shadow-2xs cursor-pointer"
+                      onClick={() =>
+                        onContinueWithProvider &&
+                        onContinueWithProvider(ssoProviderType || "sso")
+                      }
+                      disabled={isLoading || isSuspended}
+                    >
+                      <KeyRound className="size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate">
+                        {copy.continueWithSso}
+                        {ssoDisplayName ? ` (${ssoDisplayName})` : ""}
+                      </span>
+                    </Button>
+                  )}
 
-                      return (
-                        <Button
-                          key={method.id}
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/70 bg-background/60 text-foreground/90 hover:bg-accent hover:text-foreground hover:border-border rounded-md transition-colors shadow-2xs cursor-pointer"
-                          onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
-                          disabled={isLoading || isSuspended}
-                        >
-                          {isGoogle && <GoogleIcon className="size-3.5 shrink-0" />}
-                          {isGithub && <GithubIcon className="size-3.5 shrink-0" />}
-                          {isMicrosoft && <MicrosoftIcon className="size-3.5 shrink-0" />}
-                          {!isGoogle && !isGithub && !isMicrosoft && (
-                            <KeyRound className="size-3.5 shrink-0 text-muted-foreground" />
-                          )}
-                          <span className="truncate">{methodLabel}</span>
-                        </Button>
-                      );
-                    })}
-                  </div>
+                  {/* Social Login Identity Providers Grid */}
+                  {socialMethods.length > 0 && (
+                    <div className={socialMethods.length === 2 ? "grid grid-cols-2 gap-2.5" : "grid grid-cols-1 gap-2"}>
+                      {socialMethods.map((method) => {
+                        const iconKey = (method.icon || method.id || "").toLowerCase();
+                        const isGoogle = iconKey === "google";
+                        const isGithub = iconKey === "github";
+                        const isMicrosoft = iconKey === "microsoft" || iconKey === "microsoft_entra";
+                        const hasCustomName =
+                          Boolean(method.name) &&
+                          method.name.toLowerCase() !== "google" &&
+                          method.name.toLowerCase() !== "github";
+                        const methodLabel =
+                          socialMethods.length === 2 && !hasCustomName
+                            ? method.name
+                            : isGoogle && !hasCustomName
+                              ? copy.continueWithGoogle
+                              : isGithub && !hasCustomName
+                                ? copy.continueWithGithub
+                                : `${copy.continueWithProviderPrefix} ${method.name}`;
+
+                        return (
+                          <Button
+                            key={method.id}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/70 bg-background/60 text-foreground/90 hover:bg-accent hover:text-foreground hover:border-border rounded-md transition-colors shadow-2xs cursor-pointer"
+                            onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
+                            disabled={isLoading || isSuspended}
+                          >
+                            {isGoogle && <GoogleIcon className="size-3.5 shrink-0" />}
+                            {isGithub && <GithubIcon className="size-3.5 shrink-0" />}
+                            {isMicrosoft && <MicrosoftIcon className="size-3.5 shrink-0" />}
+                            {!isGoogle && !isGithub && !isMicrosoft && (
+                              <KeyRound className="size-3.5 shrink-0 text-muted-foreground" />
+                            )}
+                            <span className="truncate">{methodLabel}</span>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -256,6 +256,63 @@ public class OrganizationMemberService {
     }
 
     /**
+     * Atomically accepts an invitation by email (used by gateway-auth for verified social login / SSO).
+     * Compare-and-set semantics: safe against concurrent acceptance.
+     */
+    @Transactional
+    public OrganizationMemberDto acceptInvitationByEmail(UUID orgId, String email) {
+        if (orgId == null || email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Organization ID and email must not be blank");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        OrganizationMember member = memberRepository.findByOrganizationIdAndUserEmail(orgId, normalizedEmail)
+                .orElseThrow(() -> new NoSuchElementException("No membership or invitation found for email in this workspace"));
+
+        if ("ACTIVE".equalsIgnoreCase(member.getStatus())) {
+            return mapToDto(member);
+        }
+
+        if (!"INVITED".equalsIgnoreCase(member.getStatus())) {
+            throw new SecurityException("Membership status is " + member.getStatus() + ", not eligible for acceptance");
+        }
+
+        if (member.getInvitationExpiresAt() != null && member.getInvitationExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Invitation has expired. Please contact an administrator.");
+        }
+
+        User user = member.getUser();
+        if (user == null) {
+            throw new IllegalStateException("Corrupted membership: user reference is null");
+        }
+
+        int updatedRows = memberRepository.acceptInvitedMemberAtomically(orgId, user.getId());
+        if (updatedRows == 0) {
+            // Re-read: did another concurrent request already activate it?
+            member = memberRepository.findByOrganizationIdAndUserEmail(orgId, normalizedEmail)
+                    .orElseThrow(() -> new NoSuchElementException("Membership not found"));
+            if (!"ACTIVE".equalsIgnoreCase(member.getStatus())) {
+                throw new IllegalStateException("Invitation could not be accepted (expired or altered concurrently)");
+            }
+        }
+
+        // Activate user if currently INVITED
+        if ("INVITED".equalsIgnoreCase(user.getStatus())) {
+            user.setStatus("ACTIVE");
+            userRepository.save(user);
+        }
+
+        // Re-read active member to return populated DTO
+        member = memberRepository.findByOrganizationIdAndUserEmail(orgId, normalizedEmail)
+                .orElse(member);
+
+        log.info("🎉 Member {} atomically accepted invitation for workspace {} via verified external identity",
+                normalizedEmail, member.getOrganization() != null ? member.getOrganization().getSlug() : orgId);
+
+        return mapToDto(member);
+    }
+
+    /**
      * Validates a workspace invitation token and returns details for the acceptance UI.
      */
     @Transactional(readOnly = true)

@@ -14,223 +14,16 @@ import {
   bufferToBase64Url,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
-  type AuthMethod,
 } from "@k2net/ui";
 import { extractTenantSlug } from "../../lib/keycloak-config";
-
-interface TenantAuthContextDto {
-  id?: string;
-  name: string;
-  slug: string;
-  targetSlug?: string;
-  isAlias?: boolean;
-  realmKey?: string;
-  logoUrl?: string;
-  plan?: string;
-  planDisplayName?: string;
-  authMode?: string;
-  status?: string;
-  hasSso?: boolean;
-  allowedMethods?: string[];
-  mfaRequired?: boolean;
-  enforceSso?: boolean;
-  allowBreakGlass?: boolean;
-  ssoProviderType?: string;
-  ssoDisplayName?: string;
-}
-
-function sanitizeCallbackPath(raw: string | null): string {
-  if (!raw) return "/";
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed === "/login") {
-    return "/";
-  }
-  return trimmed;
-}
-
-function mapAllowedMethods(
-  tenantCtx: TenantAuthContextDto | null | undefined,
-  defaultSsoName: string
-): AuthMethod[] {
-  if (!tenantCtx || !Array.isArray(tenantCtx.allowedMethods)) {
-    return [];
-  }
-  const providerType = (tenantCtx.ssoProviderType || "").toUpperCase();
-  const displayName = (tenantCtx.ssoDisplayName || "").trim();
-  const out: AuthMethod[] = [];
-
-  for (const rawId of tenantCtx.allowedMethods) {
-    const id = (rawId || "").trim();
-    if (!id || id === "password") continue;
-
-    if (id === "google" || (id.startsWith("sso-") && providerType === "GOOGLE")) {
-      out.push({
-        id: "google",
-        name: displayName && providerType === "GOOGLE" ? displayName : "Google",
-        type: "social",
-        icon: "google",
-        enabled: true,
-      });
-    } else if (id === "github" || (id.startsWith("sso-") && providerType === "GITHUB")) {
-      out.push({
-        id: "github",
-        name: displayName && providerType === "GITHUB" ? displayName : "GitHub",
-        type: "social",
-        icon: "github",
-        enabled: true,
-      });
-    } else if (id.startsWith("sso-") && providerType === "MICROSOFT_ENTRA") {
-      out.push({
-        id,
-        name: displayName || "Microsoft Entra ID",
-        type: "sso",
-        icon: "microsoft",
-        enabled: true,
-      });
-    } else if (id.startsWith("sso-")) {
-      out.push({
-        id,
-        name: displayName || defaultSsoName,
-        type: "sso",
-        icon: "sso",
-        enabled: true,
-      });
-    }
-  }
-  return out;
-}
-
-async function fetchTenantAuthContext(
-  tenantSlug: string,
-  live: boolean = false
-): Promise<TenantAuthContextDto | null> {
-  if (!tenantSlug || tenantSlug === "__invalid_reserved__") {
-    return null;
-  }
-  try {
-    const liveSuffix = live ? "&live=1" : "";
-    const res = await fetch(
-      `/api/v1/auth/tenant-context?slug=${encodeURIComponent(tenantSlug)}${liveSuffix}`
-    );
-    if (!res.ok) {
-      return null;
-    }
-    return (await res.json()) as TenantAuthContextDto;
-  } catch {
-    return null;
-  }
-}
-
-function redirectIfAliasSubdomain(
-  tenantCtx: TenantAuthContextDto | null | undefined,
-  tenantSlug: string
-): void {
-  if (
-    typeof window === "undefined" ||
-    !tenantCtx?.isAlias ||
-    !tenantCtx.targetSlug ||
-    tenantCtx.targetSlug === tenantSlug
-  ) {
-    return;
-  }
-  const port = window.location.port ? `:${window.location.port}` : "";
-  const isLocal =
-    window.location.host.endsWith(".localhost") ||
-    window.location.host.startsWith("localhost");
-  const nextHost = isLocal
-    ? `${tenantCtx.targetSlug}.localhost${port}`
-    : `${tenantCtx.targetSlug}.kdua.net${port}`;
-  window.location.replace(
-    `${window.location.protocol}//${nextHost}${window.location.pathname}${window.location.search}`
-  );
-}
-
-function buildTenantFormLabels(t: (key: string) => string): AuthLoginFormLabels {
-  return {
-    loginFailedTitle: t("auth.login_failed_title"),
-    accountEmailOrUsername: t("auth.account_email_or_username"),
-    accountPlaceholder: t("auth.account_placeholder"),
-    requiredBadge: t("auth.required_badge"),
-    passwordUpper: t("auth.password_upper"),
-    passwordPlaceholder: t("auth.password_placeholder"),
-    forgotPassword: t("auth.forgot_password"),
-    forgotPasswordNotice: t("auth.forgot_password_notice"),
-    showPassword: t("auth.show_password"),
-    hidePassword: t("auth.hide_password"),
-    rememberMeBrowser: t("auth.remember_me_browser"),
-    orContinueWith: t("auth.or_continue_with"),
-    continueWithGoogle: t("auth.continue_with_google"),
-    continueWithGithub: t("auth.continue_with_github"),
-    continueWithProviderPrefix: t("auth.continue_with_provider_prefix"),
-    signInPlatformAdmin: t("auth.sign_in_platform_admin"),
-    continueIspWorkspace: t("auth.continue_isp_workspace"),
-    mfaCodeLabel: t("auth.mfa_code_label"),
-    mfaCodePlaceholder: t("auth.mfa_code_placeholder"),
-    mfaCodeHint: t("auth.mfa_code_hint"),
-    mfaVerifySubmit: t("auth.mfa_verify_submit"),
-    mfaBackToLogin: t("auth.mfa_back_to_login"),
-    turnstileVerifying: t("auth.turnstile_verifying"),
-    suspendedTitle: t("auth.suspended_title"),
-    suspendedDesc: t("auth.suspended_desc"),
-    tierFreeLabel: t("auth.tier_free_label"),
-    tierFreeValue: t("auth.tier_free_value"),
-    tierFreeDesc: t("auth.tier_free_desc"),
-    tierProLabel: t("auth.tier_pro_label"),
-    tierProValue: t("auth.tier_pro_value"),
-    tierProDesc: t("auth.tier_pro_desc"),
-    tierEnterpriseLabel: t("auth.tier_enterprise_label"),
-    tierEnterpriseValue: t("auth.tier_enterprise_value"),
-    tierEnterpriseDesc: t("auth.tier_enterprise_desc"),
-    complianceBanner: t("auth.compliance_banner"),
-    signInWithAnotherProfile: t("auth.sign_in_with_another_profile"),
-    viewSavedProfiles: t("auth.view_saved_profiles"),
-    saveEmailOnDevice: t("auth.save_email_on_device"),
-    lastUsed: t("auth.last_used"),
-    removeSavedProfile: t("auth.remove_saved_profile"),
-    savedProfilesTitle: t("auth.saved_profiles_title"),
-    savedProfilesOr: t("auth.saved_profiles_or"),
-    forgotPasswordTitle: t("auth.forgot_password_title"),
-    forgotPasswordSubtitle: t("auth.forgot_password_subtitle"),
-    sendResetLink: t("auth.send_reset_link"),
-    sendingResetLink: t("auth.sending_reset_link"),
-    backToSignIn: t("auth.back_to_sign_in"),
-    checkInboxTitle: t("auth.check_inbox_title"),
-    checkInboxDesc: t("auth.check_inbox_desc"),
-    resendInstructions: t("auth.resend_instructions"),
-    resendCooldown: t("auth.resend_cooldown"),
-    ssoDiscoveredTitle: t("auth.sso_discovered_title"),
-    ssoDiscoveredDesc: t("auth.sso_discovered_desc"),
-    continueWithSso: t("auth.continue_with_sso"),
-    defaultSsoDisplayName: t("auth.default_sso_display_name"),
-    orContinueWithCredentials: t("auth.or_continue_with_credentials"),
-    ssoDomainRecognized: t("auth.sso_domain_recognized"),
-    breakGlassModeActive: t("auth.break_glass_mode_active"),
-    breakGlassNotice: t("auth.break_glass_notice"),
-    breakGlassToggle: t("auth.break_glass_toggle"),
-    cancelBreakGlass: t("auth.cancel_break_glass"),
-    ipNotAllowedTitle: t("auth.ip_not_allowed_title"),
-    ipNotAllowedDesc: t("auth.ip_not_allowed_desc"),
-    mfaTabTotp: t("auth.mfa_tab_totp"),
-    mfaTabWebauthn: t("auth.mfa_tab_webauthn"),
-    mfaTabEmailOtp: t("auth.mfa_tab_email_otp"),
-    mfaPasskeyPrompt: t("auth.mfa_passkey_prompt"),
-    mfaPasskeyBtn: t("auth.mfa_passkey_btn"),
-    mfaEmailPrompt: t("auth.mfa_email_prompt"),
-    mfaSendEmailBtn: t("auth.mfa_send_email_btn"),
-    mfaSendingEmail: t("auth.mfa_sending_email"),
-    mfaEmailSentDesc: t("auth.mfa_email_sent_desc"),
-    mfaResendEmailIn: t("auth.mfa_resend_email_in"),
-    mfaTryAnotherMethod: t("auth.mfa_try_another_method"),
-    mfaChooseMethodTitle: t("auth.mfa_choose_method_title"),
-    mfaChooseMethodDesc: t("auth.mfa_choose_method_desc"),
-    mfaMethodWebauthnDesc: t("auth.mfa_method_webauthn_desc"),
-    mfaMethodTotpDesc: t("auth.mfa_method_totp_desc"),
-    mfaMethodEmailDesc: t("auth.mfa_method_email_desc"),
-    mfaBackToPrimary: t("auth.mfa_back_to_primary"),
-    continueWithPasskey: t("auth.continue_with_passkey"),
-    waitingForPasskey: t("auth.waiting_for_passkey"),
-  };
-}
+import {
+  fetchTenantAuthContext,
+  mapAllowedMethods,
+  redirectIfAliasSubdomain,
+  sanitizeCallbackPath,
+  type TenantAuthContextDto,
+} from "../../lib/auth/tenant-auth-context";
+import { buildTenantFormLabels } from "../../lib/auth/login-form-labels";
 
 export function LoginPage() {
   const { t, locale, setLocale } = useTranslation();
@@ -307,14 +100,58 @@ export function LoginPage() {
     redirectIfAliasSubdomain(tenantCtx, tenantSlug);
   }, [tenantCtx, tenantSlug]);
 
+  // Check for Step-Up MFA challenge returned from SSO / Social broker exchange
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const pendingPreAuthToken = sessionStorage.getItem("k2net_pre_auth_token");
+    if (pendingPreAuthToken) {
+      sessionStorage.removeItem("k2net_pre_auth_token");
+      setPreAuthToken(pendingPreAuthToken);
+      setMfaRequired(true);
+      const methodsRaw = sessionStorage.getItem("k2net_available_mfa_methods");
+      if (methodsRaw) {
+        try {
+          const parsed = JSON.parse(methodsRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setAvailableMfaMethods(parsed);
+          }
+        } catch {
+          // ignore
+        }
+        sessionStorage.removeItem("k2net_available_mfa_methods");
+      }
+      const masked = sessionStorage.getItem("k2net_masked_email");
+      if (masked) {
+        setMaskedEmail(masked);
+        sessionStorage.removeItem("k2net_masked_email");
+      }
+    }
+  }, []);
+
   // Surface any OAuth/SSO callback error returned from the identity broker cleanly in the SPA
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     const oauthErr = url.searchParams.get("error");
     const oauthDesc = url.searchParams.get("error_description");
-    if (oauthErr) {
+    const storedErrCode = sessionStorage.getItem("k2net_auth_error_code");
+    const storedErrMsg = sessionStorage.getItem("k2net_auth_error_message");
+
+    if (storedErrCode || storedErrMsg) {
+      sessionStorage.removeItem("k2net_auth_error_code");
+      sessionStorage.removeItem("k2net_auth_error_message");
+      setErrorMessage(
+        resolveAuthErrorMessage(
+          (storedErrCode || oauthErr || "").toUpperCase(),
+          storedErrMsg || oauthDesc || undefined,
+          t
+        )
+      );
+    } else if (oauthErr) {
       setErrorMessage(resolveAuthErrorMessage(oauthErr.toUpperCase(), oauthDesc || undefined, t));
+    }
+
+    if (oauthErr || oauthDesc) {
       url.searchParams.delete("error");
       url.searchParams.delete("error_description");
       window.history.replaceState({}, document.title, url.pathname + url.search);

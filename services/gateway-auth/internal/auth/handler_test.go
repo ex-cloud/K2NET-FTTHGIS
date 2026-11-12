@@ -30,8 +30,15 @@ func (m *mockRepo) ResolveTenantContext(_ context.Context, slug string) (*Tenant
 	return nil, ErrTenantNotFound
 }
 
-func (m *mockRepo) VerifyUserBelongsToOrg(_ context.Context, userID, _, orgID string) (bool, error) {
-	return m.userOrgMatch[userID+":"+orgID], nil
+func (m *mockRepo) VerifyUserBelongsToOrg(_ context.Context, userID, email, orgID string) (bool, error) {
+	return m.userOrgMatch[userID+":"+orgID] || m.userOrgMatch[email+":"+orgID], nil
+}
+
+func (m *mockRepo) CheckMembershipStatus(_ context.Context, userID, email, orgID string) (string, error) {
+	if m.userOrgMatch[userID+":"+orgID] || m.userOrgMatch[email+":"+orgID] {
+		return "ACTIVE", nil
+	}
+	return "", nil
 }
 
 func (m *mockRepo) SyncUserJIT(_ context.Context, in JITUserSyncInput) error {
@@ -258,7 +265,10 @@ func TestTenantContextAnd2RealmLoginFlows(t *testing.T) {
 				Status: "SUSPENDED",
 			},
 		},
-		userOrgMatch: map[string]bool{},
+		userOrgMatch: map[string]bool{
+			"11111111-1111-1111-1111-111111111111:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": true,
+			"owner@kircon.id:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa":                        true,
+		},
 	}
 
 	cfg := &config.Config{
@@ -453,7 +463,10 @@ func TestForgotPasswordAntiEnumeration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	repo := &mockRepo{
 		tenants:      map[string]*TenantContextResponse{},
-		userOrgMatch: map[string]bool{},
+		userOrgMatch: map[string]bool{
+			"11111111-1111-1111-1111-111111111111:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": true,
+			"owner@kircon.id:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa":                        true,
+		},
 	}
 	cfg := &config.Config{
 		Port: "5014",
@@ -509,7 +522,10 @@ func TestMultiTenantWorkspacesAndSwitchContext(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	repo := &mockRepo{
 		tenants:      map[string]*TenantContextResponse{},
-		userOrgMatch: map[string]bool{},
+		userOrgMatch: map[string]bool{
+			"11111111-1111-1111-1111-111111111111:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": true,
+			"owner@kircon.id:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa":                        true,
+		},
 	}
 	cfg := &config.Config{
 		Port: "5014",
@@ -659,6 +675,170 @@ func TestGetSsoDiscovery(t *testing.T) {
 	_ = json.Unmarshal(w3.Body.Bytes(), &res3)
 	if res3.SSOAvailable {
 		t.Fatalf("expected SSO not available for gmail.com, got %+v", res3)
+	}
+}
+
+func TestSsoExchange_InviteFirstAndGovernanceMatrix(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockKC := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Mock token refresh endpoint
+		if strings.Contains(r.URL.Path, "/protocol/openid-connect/token") {
+			_ = r.ParseForm()
+			refreshToken := r.Form.Get("refresh_token")
+			emailVerified := true
+			idp := "google"
+
+			if refreshToken == "unverified-email-refresh" {
+				emailVerified = false
+			} else if refreshToken == "sso-ops-refresh" {
+				idp = "sso-ops"
+			}
+
+			email := "user@external.com"
+			if refreshToken == "member-refresh" {
+				email = "member@fibernet.net"
+			} else if refreshToken == "invited-refresh" {
+				email = "invited@fibernet.net"
+			}
+
+			jwt := buildTestJWT(map[string]any{
+				"sub":                "sub-" + refreshToken,
+				"email":              email,
+				"email_verified":     emailVerified,
+				"identity_provider":  idp,
+				"preferred_username": email,
+				"name":               "Test User",
+			})
+
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(KeycloakTokenResponse{
+				AccessToken:      jwt,
+				RefreshToken:     "valid-refreshed-token",
+				IDToken:          jwt,
+				ExpiresIn:        300,
+				RefreshExpiresIn: 86400,
+				TokenType:        "Bearer",
+			})
+			return
+		}
+
+		if strings.Contains(r.URL.Path, "/protocol/openid-connect/revoke") {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockKC.Close()
+
+	mockBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/api/v1/internal/organizations/") && strings.Contains(r.URL.Path, "/members/accept-by-email") {
+			if r.Header.Get("X-Gateway-Token") != "test-gw-token" {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "ACTIVE"})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mockBackend.Close()
+
+	repo := &mockRepo{
+		tenants: map[string]*TenantContextResponse{
+			"fibernet": {
+				ID:               "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				Name:             "Fibernet",
+				Slug:             "fibernet",
+				RealmKey:         config.TenantSharedRealm,
+				AllowSocialLogin: true,
+				Status:           "ACTIVE",
+			},
+			"no-social": {
+				ID:               "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+				Name:             "No Social ISP",
+				Slug:             "no-social",
+				RealmKey:         config.TenantSharedRealm,
+				AllowSocialLogin: false,
+				Status:           "ACTIVE",
+			},
+		},
+		userOrgMatch: map[string]bool{
+			"sub-member-refresh:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa":  true,
+			"member@fibernet.net:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": true,
+		},
+	}
+
+	cfg := &config.Config{
+		Port:                "5014",
+		KeycloakInternalURL: mockKC.URL,
+		KeycloakClientID:    "ftth-gis-frontend",
+		BackendInternalURL:  mockBackend.URL,
+		GatewayToken:        "test-gw-token",
+		CookieSecure:        true,
+	}
+
+	handler := NewHandler(cfg, repo, nil, nil)
+	r := gin.New()
+	r.POST("/api/v1/auth/login/sso-exchange", handler.SsoExchange)
+
+	// 1. Non-member login to fibernet -> Denied 403 TENANT_ACCESS_DENIED
+	w1 := httptest.NewRecorder()
+	b1, _ := json.Marshal(SsoExchangeRequest{
+		RefreshToken: "non-member-refresh",
+		TenantSlug:   "fibernet",
+		Plane:        "TENANT",
+	})
+	r.ServeHTTP(w1, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/sso-exchange", bytes.NewReader(b1)))
+	if w1.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for non-member, got %d: %s", w1.Code, w1.Body.String())
+	}
+	if !strings.Contains(w1.Body.String(), "TENANT_ACCESS_DENIED") {
+		t.Fatalf("expected TENANT_ACCESS_DENIED error code, got %s", w1.Body.String())
+	}
+
+	// 2. Unverified email -> Denied 403 EMAIL_NOT_VERIFIED
+	w2 := httptest.NewRecorder()
+	b2, _ := json.Marshal(SsoExchangeRequest{
+		RefreshToken: "unverified-email-refresh",
+		TenantSlug:   "fibernet",
+		Plane:        "TENANT",
+	})
+	r.ServeHTTP(w2, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/sso-exchange", bytes.NewReader(b2)))
+	if w2.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for unverified email, got %d: %s", w2.Code, w2.Body.String())
+	}
+	if !strings.Contains(w2.Body.String(), "EMAIL_NOT_VERIFIED") {
+		t.Fatalf("expected EMAIL_NOT_VERIFIED error code, got %s", w2.Body.String())
+	}
+
+	// 3. Social login when allow_social_login = false -> Denied 403 SSO_NOT_AVAILABLE
+	w3 := httptest.NewRecorder()
+	b3, _ := json.Marshal(SsoExchangeRequest{
+		RefreshToken: "member-refresh",
+		TenantSlug:   "no-social",
+		Plane:        "TENANT",
+	})
+	r.ServeHTTP(w3, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/sso-exchange", bytes.NewReader(b3)))
+	if w3.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 when social disabled, got %d: %s", w3.Code, w3.Body.String())
+	}
+	if !strings.Contains(w3.Body.String(), "SSO_NOT_AVAILABLE") {
+		t.Fatalf("expected SSO_NOT_AVAILABLE error code, got %s", w3.Body.String())
+	}
+
+	// 4. Valid active member login -> 200 OK
+	w4 := httptest.NewRecorder()
+	b4, _ := json.Marshal(SsoExchangeRequest{
+		RefreshToken: "member-refresh",
+		TenantSlug:   "fibernet",
+		Plane:        "TENANT",
+	})
+	r.ServeHTTP(w4, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/sso-exchange", bytes.NewReader(b4)))
+	if w4.Code != http.StatusOK {
+		t.Fatalf("expected 200 for valid member, got %d: %s", w4.Code, w4.Body.String())
 	}
 }
 

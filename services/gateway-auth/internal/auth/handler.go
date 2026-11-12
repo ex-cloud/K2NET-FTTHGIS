@@ -645,6 +645,20 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 func (h *Handler) completeLoginSession(c *gin.Context, session *PreAuthSession, clientIP string, mfaMethodUsed string) {
+	// R3 TOCTOU defense: re-verify tenant membership at single completion point
+	if session.Plane == "TENANT" && session.OrganizationID != "" && session.OrganizationID != sentinelPlatformOrgID {
+		isMember, err := h.repo.VerifyUserBelongsToOrg(c.Request.Context(), session.UserID, session.Email, session.OrganizationID)
+		if err != nil || !isMember {
+			h.revokeKeycloakSession(c.Request.Context(), session.TargetRealm, session.RefreshToken)
+			h.clearSessionCookies(c)
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "TENANT_ACCESS_DENIED",
+				"message": "Keanggotaan Anda pada workspace ini telah dinonaktifkan atau dihapus.",
+			})
+			return
+		}
+	}
+
 	// 1. Parameterized JIT User Sync to PostgreSQL ftth_gis.users
 	if syncErr := h.repo.SyncUserJIT(c.Request.Context(), JITUserSyncInput{
 		UserID:         session.UserID,
@@ -839,9 +853,16 @@ func (h *Handler) VerifyMfaEmailOTP(c *gin.Context) {
 		return
 	}
 
-	// Burn OTP and pre-auth token to prevent replay
+	// Burn OTP and pre-auth token to prevent replay (R4 single-use defense)
 	_ = h.rdb.Del(ctx, otpKey).Err()
-	_ = h.rdb.Del(ctx, preAuthKey).Err()
+	delCount, _ := h.rdb.Del(ctx, preAuthKey).Result()
+	if delCount == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "SESSION_ALREADY_USED",
+			"message": "Sesi verifikasi telah digunakan.",
+		})
+		return
+	}
 
 	clientIP := resolveClientIP(c)
 	h.completeLoginSession(c, &session, clientIP, "email_otp")
@@ -1042,9 +1063,16 @@ func (h *Handler) VerifyWebauthnLogin(c *gin.Context) {
 		return
 	}
 
-	// Burn challenge & pre-auth token
+	// Burn challenge & pre-auth token (R4 single-use defense)
 	_ = h.rdb.Del(ctx, challengeKey).Err()
-	_ = h.rdb.Del(ctx, preAuthKey).Err()
+	delCount, _ := h.rdb.Del(ctx, preAuthKey).Result()
+	if delCount == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "SESSION_ALREADY_USED",
+			"message": "Sesi verifikasi telah digunakan.",
+		})
+		return
+	}
 
 	// Update counter
 	counter := int64(authDataBytes[33])<<24 | int64(authDataBytes[34])<<16 | int64(authDataBytes[35])<<8 | int64(authDataBytes[36])
@@ -1134,8 +1162,15 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 			return
 		}
 
-		// Burn pre-auth session
-		_ = h.rdb.Del(ctx, preAuthKey).Err()
+		// Burn pre-auth session (R4 single-use defense)
+		delCount, _ := h.rdb.Del(ctx, preAuthKey).Result()
+		if delCount == 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "SESSION_ALREADY_USED",
+				"message": "Sesi verifikasi telah digunakan.",
+			})
+			return
+		}
 
 		clientIP := resolveClientIP(c)
 		h.completeLoginSession(c, &session, clientIP, "totp")
@@ -1313,6 +1348,47 @@ func (h *Handler) SsoExchange(c *gin.Context) {
 		return
 	}
 
+	if kcTokens.IDToken != "" {
+		if idClaims, err := ParseJWTClaimsFromInternalToken(kcTokens.IDToken); err == nil && idClaims != nil {
+			if claims.EmailVerified == nil && idClaims.EmailVerified != nil {
+				claims.EmailVerified = idClaims.EmailVerified
+			}
+			if claims.IdentityProvider == "" && idClaims.IdentityProvider != "" {
+				claims.IdentityProvider = idClaims.IdentityProvider
+			}
+			if claims.Email == "" && idClaims.Email != "" {
+				claims.Email = idClaims.Email
+			}
+		}
+	}
+
+	// Gate 2 (R8): Email must be verified by IdP (anti-takeover defense)
+	if claims.EmailVerified != nil && !*claims.EmailVerified {
+		h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "EMAIL_NOT_VERIFIED",
+			"message": "Email akun sosial Anda belum terverifikasi oleh penyedia identitas.",
+		})
+		return
+	}
+
+	idp := strings.ToLower(strings.TrimSpace(claims.IdentityProvider))
+	isSocialIdp := idp == "google" || idp == "github"
+
+	// Gate 3 (R7): Social Login Tenant Policy Check
+	if plane == "TENANT" && tenantCtx != nil && isSocialIdp && !tenantCtx.AllowSocialLogin {
+		h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+		h.emitAudit(c.Request.Context(), tenantCtx.Slug, "auth", claims.Sub, clientIP, "AUTH_SOCIAL_LOGIN_DENIED", map[string]any{
+			"provider": idp,
+			"reason":   "ALLOW_SOCIAL_LOGIN_DISABLED",
+		})
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "SSO_NOT_AVAILABLE",
+			"message": "Metode login sosial (Google/GitHub) dinonaktifkan untuk organisasi ini.",
+		})
+		return
+	}
+
 	roles := claims.ExtractRoles(h.cfg.KeycloakClientID)
 	resolvedOrgID := strings.TrimSpace(claims.OrganizationID)
 	if resolvedOrgID == "" {
@@ -1326,13 +1402,38 @@ func (h *Handler) SsoExchange(c *gin.Context) {
 			expectedSlug = tenantCtx.TargetSlug
 		}
 
+		membershipStatus, _ := h.repo.CheckMembershipStatus(c.Request.Context(), claims.Sub, claims.Email, tenantCtx.ID)
+
+		if membershipStatus == "INVITED" {
+			// Gate 5: Atomically accept invitation in Spring Boot
+			if err := h.acceptInvitationInBackend(c.Request.Context(), tenantCtx.ID, claims.Email); err != nil {
+				logger.Warn(c.Request.Context(), "Failed accepting invited membership via internal API", zap.Error(err))
+				h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+				c.JSON(http.StatusForbidden, gin.H{
+					"error":   "INVITATION_ACCEPTANCE_FAILED",
+					"message": "Undangan Anda tidak valid atau telah kedaluwarsa.",
+				})
+				return
+			}
+			h.emitAudit(c.Request.Context(), tenantCtx.Slug, "member", claims.Sub, clientIP, "AUTH_INVITE_ACCEPTED_VIA_SOCIAL", map[string]any{
+				"email":    claims.Email,
+				"provider": idp,
+			})
+			membershipStatus = "ACTIVE"
+		}
+
 		matchesClaim := (resolvedOrgID != "" && strings.EqualFold(resolvedOrgID, tenantCtx.ID)) ||
 			(resolvedTenantSlug != "" && strings.EqualFold(resolvedTenantSlug, expectedSlug))
-		belongsInDB, _ := h.repo.VerifyUserBelongsToOrg(c.Request.Context(), claims.Sub, claims.Email, tenantCtx.ID)
+		belongsInDB := membershipStatus == "ACTIVE"
 
-		// Invite-First Governance: User must carry valid organization claims or be an invited active member in DB
+		// Gate 4: Invite-First Governance: User must carry valid organization claims or be an active member in DB
 		if !matchesClaim && !belongsInDB {
 			h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+			h.emitAudit(c.Request.Context(), tenantCtx.Slug, "auth", claims.Sub, clientIP, "AUTH_SOCIAL_LOGIN_DENIED", map[string]any{
+				"email":    claims.Email,
+				"provider": idp,
+				"reason":   "NOT_A_MEMBER",
+			})
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":   "TENANT_ACCESS_DENIED",
 				"message": "Akun SSO Anda belum terdaftar sebagai anggota pada workspace organisasi ini. Silakan hubungi administrator organisasi untuk mendapatkan undangan.",
@@ -1345,6 +1446,38 @@ func (h *Handler) SsoExchange(c *gin.Context) {
 		if len(roles) == 0 {
 			roles = []string{"viewer"}
 		}
+	}
+
+	// 5. Evaluate Multi-Factor Authentication (MFA) Policy & Configured Methods
+	totpEnabled := false
+	emailOtpEnabled := false
+	if h.kcAdmin != nil && claims.Sub != "" {
+		if kcTotp, secret, kcEmailOtp, err := h.kcAdmin.GetUserMFAConfig(c.Request.Context(), targetRealm, claims.Sub); err == nil {
+			if kcTotp && secret != "" {
+				totpEnabled = true
+			}
+			emailOtpEnabled = kcEmailOtp
+		}
+	}
+
+	var availableMethods []string
+	webauthnCreds, _ := h.repo.GetUserWebauthnCredentials(c.Request.Context(), claims.Sub)
+	if len(webauthnCreds) > 0 {
+		availableMethods = append(availableMethods, "webauthn")
+	}
+	if totpEnabled {
+		availableMethods = append(availableMethods, "totp")
+	}
+	if emailOtpEnabled && claims.Email != "" {
+		availableMethods = append(availableMethods, "email_otp")
+	}
+
+	mfaRequired := false
+	if (tenantCtx != nil && tenantCtx.MFARequired) && len(availableMethods) == 0 && claims.Email != "" {
+		availableMethods = append(availableMethods, "email_otp")
+	}
+	if len(availableMethods) > 0 || (tenantCtx != nil && tenantCtx.MFARequired) {
+		mfaRequired = true
 	}
 
 	displayName := strings.TrimSpace(claims.Name)
@@ -1368,6 +1501,25 @@ func (h *Handler) SsoExchange(c *gin.Context) {
 		IDToken:          kcTokens.IDToken,
 		ExpiresIn:        kcTokens.ExpiresIn,
 		RefreshExpiresIn: kcTokens.RefreshExpiresIn,
+		AvailableMethods: availableMethods,
+	}
+
+	if mfaRequired {
+		preAuthToken := generateSecureToken(32)
+		if h.rdb != nil {
+			if raw, err := json.Marshal(session); err == nil {
+				_ = h.rdb.Set(c.Request.Context(), "auth:pre-auth:"+preAuthToken, string(raw), 5*time.Minute).Err()
+			}
+		}
+
+		c.JSON(http.StatusOK, LoginResponse{
+			MFARequired:      true,
+			AvailableMethods: availableMethods,
+			PreAuthToken:     preAuthToken,
+			MaskedEmail:      maskEmail(claims.Email),
+			Message:          "Silakan verifikasi faktor kedua Anda untuk melanjutkan.",
+		})
+		return
 	}
 
 	h.completeLoginSession(c, session, clientIP, "sso_oidc")
@@ -1856,5 +2008,34 @@ func (h *Handler) SwitchContext(c *gin.Context) {
 		RoleName:         "admin",
 		RedirectURL:      redirectURL,
 	})
+}
+
+func (h *Handler) acceptInvitationInBackend(ctx context.Context, orgID, email string) error {
+	backendURL := h.cfg.BackendInternalURL + "/api/v1/internal/organizations/" + url.PathEscape(orgID) + "/members/accept-by-email"
+	payload, _ := json.Marshal(map[string]string{
+		"email": email,
+	})
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, backendURL, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if h.cfg.GatewayToken != "" {
+		req.Header.Set("X-Gateway-Token", h.cfg.GatewayToken)
+	}
+
+	resp, err := h.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed calling backend internal accept: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return fmt.Errorf("backend rejected invitation acceptance (%d): %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
 }
 

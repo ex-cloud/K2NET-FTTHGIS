@@ -161,9 +161,8 @@ function useAccountLabels(): AccountLabels {
 }
 
 export function PreferencesPage() {
-  const { t } = useTranslation();
   const labels = useAccountLabels();
-  const { user, login, logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [userProfile, setUserProfile] = React.useState<UserProfileData | undefined>(undefined);
@@ -237,56 +236,6 @@ export function PreferencesPage() {
     fetchData();
   }, [fetchData]);
 
-  // Handle return callback from OAuth social identity linking
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const pending = sessionStorage.getItem("k2net_pending_social_link");
-    if (!pending) return;
-
-    const providerName = pending.charAt(0).toUpperCase() + pending.slice(1);
-    const url = new URL(window.location.href);
-    const err = url.searchParams.get("error") || url.searchParams.get("error_description");
-    const linkedParam = url.searchParams.get("linked");
-
-    if (err) {
-      toast.error(t("settings.account.social_connect_failed", { provider: providerName }));
-      sessionStorage.removeItem("k2net_pending_social_link");
-      if (linkedParam || err) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-      return;
-    }
-
-    // Only proceed if URL contains matching ?linked=<provider> parameter from Keycloak callback
-    if (linkedParam !== pending) {
-      sessionStorage.removeItem("k2net_pending_social_link");
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      sessionStorage.removeItem("k2net_pending_social_link");
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      // Verify against live security API to confirm provider is actually linked in Keycloak
-      try {
-        const sec = await apiClient<PersonalSecuritySummaryData>("/api/v1/me/security");
-        if (sec) {
-          setSecuritySummary(sec);
-          const isActuallyLinked = Array.isArray(sec.linkedProviders) &&
-            sec.linkedProviders.some((p) => p.toLowerCase().includes(pending.toLowerCase()));
-          if (isActuallyLinked) {
-            toast.success(t("settings.account.social_connect_success", { provider: providerName }));
-          }
-        }
-      } catch {
-        // Fallback: refresh data silently
-        await fetchData();
-      }
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [fetchData, t]);
-
   const handleSaveProfile = async (data: { name: string; phone: string }) => {
     try {
       await apiClient("/api/v1/users/me/profile", {
@@ -343,54 +292,6 @@ export function PreferencesPage() {
       fetchData();
     } catch {
       toast.error(labels.deviceRevokeFailed || "Failed to revoke sessions.");
-    }
-  };
-
-  const handleConnectProvider = async (provider: string) => {
-    try {
-      sessionStorage.setItem("k2net_pending_social_link", provider);
-
-      const slug = user?.tenantSlug || window.location.hostname.split(".")[0] || "ops";
-      const res = await fetch(`/api/v1/auth/tenant-context?slug=${encodeURIComponent(slug)}&live=1`);
-      const ctx = res.ok ? await res.json() : null;
-      const allowed: string[] = Array.isArray(ctx?.allowedMethods) ? ctx.allowedMethods : [];
-      const ssoMethod = allowed.find((m) => m.startsWith("sso-"));
-      let targetHint = provider;
-      if (provider === "sso" || provider.startsWith("sso-")) {
-        if (!ssoMethod) {
-          sessionStorage.removeItem("k2net_pending_social_link");
-          toast.error(
-            "Provider belum dikonfigurasi pada Settings -> Single Sign-On (SSO) organisasi ini."
-          );
-          return;
-        }
-        targetHint = ssoMethod;
-      } else if (provider === "google") {
-        targetHint = ssoMethod && ctx?.ssoProviderType === "GOOGLE" ? ssoMethod : "google";
-      } else if (provider === "github") {
-        targetHint = ssoMethod && ctx?.ssoProviderType === "GITHUB" ? ssoMethod : "github";
-      }
-
-      await login({
-        idpHint: targetHint,
-        prompt: "login",
-        redirectUri: window.location.origin + "/account/preferences",
-      });
-    } catch (err: unknown) {
-      sessionStorage.removeItem("k2net_pending_social_link");
-      toast.error(err instanceof Error ? err.message : "Failed to initiate identity provider connection.");
-    }
-  };
-
-  const handleDisconnectProvider = async (provider: string) => {
-    try {
-      await apiClient(`/api/v1/users/me/social-identities/${encodeURIComponent(provider)}`, {
-        method: "DELETE",
-      });
-      toast.success(labels.disconnectSuccess || "Disconnected identity provider successfully.");
-      fetchData();
-    } catch {
-      toast.error(labels.disconnectFailed || "Failed to disconnect identity provider.");
     }
   };
 
@@ -514,8 +415,6 @@ export function PreferencesPage() {
         onDisableEmailOtp={handleDisableEmailOtp}
         onRevokeDevice={handleRevokeDevice}
         onRevokeAllSessions={handleRevokeAllSessions}
-        onConnectProvider={handleConnectProvider}
-        onDisconnectProvider={handleDisconnectProvider}
         isLoading={isLoading}
       />
       <TotpSetupModal

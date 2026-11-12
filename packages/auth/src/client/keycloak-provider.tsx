@@ -734,6 +734,9 @@ export function KeycloakProvider({
 
           if (auth && kc.token) {
             let exchanged: BffLoginApiResponse | null = null;
+            let exchangeFailed = false;
+            let failureError: { error?: string; message?: string } | null = null;
+
             if (kc.refreshToken) {
               try {
                 const res = await fetch("/api/v1/auth/login/sso-exchange", {
@@ -755,15 +758,69 @@ export function KeycloakProvider({
                 });
                 if (res.ok) {
                   const data = (await res.json()) as BffLoginApiResponse;
-                  if (data.accessToken) {
-                    exchanged = data;
-                  }
+                  exchanged = data;
+                } else {
+                  exchangeFailed = true;
+                  const errData = (await res.json().catch(() => ({}))) as BffLoginApiResponse;
+                  failureError = {
+                    error: errData.error || "TENANT_ACCESS_DENIED",
+                    message: errData.message || "Access denied to this workspace.",
+                  };
                 }
               } catch {
-                // fallback to in-memory token if BFF exchange is unreachable
+                exchangeFailed = true;
+                failureError = {
+                  error: "NETWORK_ERROR",
+                  message: "Failed to connect to authentication server.",
+                };
               }
             }
 
+            // Case 1A: BFF exchange explicitly rejected access (e.g. 403 TENANT_ACCESS_DENIED)
+            if (exchangeFailed) {
+              clearSessionState();
+              try {
+                kc.clearToken();
+              } catch {
+                // ignore
+              }
+              if (typeof window !== "undefined") {
+                const errCode = failureError?.error || "TENANT_ACCESS_DENIED";
+                const errMsg = failureError?.message || "Access denied to this workspace.";
+                sessionStorage.setItem("k2net_auth_error_code", errCode);
+                sessionStorage.setItem("k2net_auth_error_message", errMsg);
+                window.location.replace(`${loginPath}?error=${encodeURIComponent(errCode)}`);
+              }
+              setInitialized(true);
+              return;
+            }
+
+            // Case 1B: Step-Up MFA required after SSO/Social Login
+            if (exchanged?.mfaRequired && exchanged.preAuthToken) {
+              clearSessionState();
+              try {
+                kc.clearToken();
+              } catch {
+                // ignore
+              }
+              if (typeof window !== "undefined") {
+                sessionStorage.setItem("k2net_pre_auth_token", exchanged.preAuthToken);
+                if (exchanged.availableMethods && exchanged.availableMethods.length > 0) {
+                  sessionStorage.setItem(
+                    "k2net_available_mfa_methods",
+                    JSON.stringify(exchanged.availableMethods)
+                  );
+                }
+                if (exchanged.maskedEmail) {
+                  sessionStorage.setItem("k2net_masked_email", exchanged.maskedEmail);
+                }
+                window.location.replace(`${loginPath}?step=mfa`);
+              }
+              setInitialized(true);
+              return;
+            }
+
+            // Case 1C: Full session authorized
             if (exchanged?.accessToken) {
               hydrateAuthenticatedSession(
                 exchanged.accessToken,
@@ -771,8 +828,21 @@ export function KeycloakProvider({
                 exchanged.expiresIn,
                 exchanged.user
               );
-            } else {
+            } else if (plane === "PLATFORM") {
               hydrateAuthenticatedSession(kc.token, kc.idToken, undefined);
+            } else {
+              // Safety defense: in tenant plane, NEVER allow unexchanged kc.token
+              clearSessionState();
+              try {
+                kc.clearToken();
+              } catch {
+                // ignore
+              }
+              if (typeof window !== "undefined") {
+                window.location.replace(`${loginPath}?error=TENANT_ACCESS_DENIED`);
+              }
+              setInitialized(true);
+              return;
             }
           } else {
             clearSessionState();

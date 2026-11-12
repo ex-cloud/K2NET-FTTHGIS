@@ -16,12 +16,7 @@ export interface SocialIdentitiesCardProps {
 export function SocialIdentitiesCard({
   linkedProviders = [],
   labels,
-  onConnectProvider,
-  onDisconnectProvider,
-  isLoading = false,
 }: SocialIdentitiesCardProps) {
-  const [processingProvider, setProcessingProvider] = React.useState<string | null>(null);
-
   const isGoogleLinked = linkedProviders.some((p) => p.toLowerCase().includes("google"));
   const isGithubLinked = linkedProviders.some((p) => p.toLowerCase().includes("github"));
   const linkedCorporateSso = linkedProviders.find(
@@ -31,31 +26,17 @@ export function SocialIdentitiesCard({
       p.toLowerCase().includes("oidc")
   );
   const isCorporateSsoLinked = Boolean(linkedCorporateSso);
-  const corporateProviderKey = linkedCorporateSso || "sso";
-
-  const handleAction = async (provider: string, isLinked: boolean) => {
-    try {
-      setProcessingProvider(provider);
-      if (isLinked) {
-        if (onDisconnectProvider) await onDisconnectProvider(provider);
-      } else {
-        if (onConnectProvider) await onConnectProvider(provider);
-      }
-    } finally {
-      setProcessingProvider(null);
-    }
-  };
 
   return (
     <Card className="border border-border/80 bg-card">
       <CardHeader className="pb-4">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Link2 className="size-4 text-muted-foreground" />
-          {labels?.socialTitle || "Connected Social Accounts"}
+          {labels?.socialTitle || "Sign-in Methods & Connected Identities"}
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground">
           {labels?.socialDesc ||
-            "Link your external identity providers for seamless single sign-on access."}
+            "External identity providers linked to your verified account email for single sign-on access."}
         </CardDescription>
       </CardHeader>
 
@@ -71,15 +52,6 @@ export function SocialIdentitiesCard({
                 <h4 className="text-xs font-semibold">
                   Organization Single Sign-On {linkedCorporateSso ? `(${linkedCorporateSso})` : "(OIDC / SAML 2.0)"}
                 </h4>
-                {isCorporateSsoLinked && (
-                  <Badge
-                    variant="outline"
-                    className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium gap-1"
-                  >
-                    <CheckCircle2 className="size-2.5" />
-                    <span>{labels?.connectedBadge || "Connected"}</span>
-                  </Badge>
-                )}
               </div>
               <p className="text-[11px] text-muted-foreground">
                 Sign in with your organization&apos;s federated Single Sign-On identity provider.
@@ -87,21 +59,24 @@ export function SocialIdentitiesCard({
             </div>
           </div>
 
-          <Button
-            type="button"
-            variant={isCorporateSsoLinked ? "outline" : "default"}
-            size="sm"
-            onClick={() => handleAction(corporateProviderKey, isCorporateSsoLinked)}
-            disabled={isLoading || processingProvider === corporateProviderKey}
-            className="text-xs shrink-0"
-          >
-            {processingProvider === corporateProviderKey && <Loader2 className="size-3.5 animate-spin mr-1.5" />}
-            <span>
-              {isCorporateSsoLinked
-                ? labels?.disconnectBtn || "Disconnect"
-                : labels?.connectBtn || "Connect"}
-            </span>
-          </Button>
+          <div>
+            {isCorporateSsoLinked ? (
+              <Badge
+                variant="outline"
+                className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium gap-1 px-2.5 py-1"
+              >
+                <CheckCircle2 className="size-3" />
+                <span>{labels?.connectedBadge || "Linked"}</span>
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="border-border text-muted-foreground text-xs font-normal px-2.5 py-1"
+              >
+                <span>Not Linked</span>
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Google Provider */}
@@ -130,35 +105,29 @@ export function SocialIdentitiesCard({
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="text-xs font-semibold">Google</h4>
-                {isGoogleLinked && (
-                  <Badge
-                    variant="outline"
-                    className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium gap-1"
-                  >
-                    <CheckCircle2 className="size-2.5" />
-                    <span>{labels?.connectedBadge || "Connected"}</span>
-                  </Badge>
-                )}
               </div>
               <p className="text-[11px] text-muted-foreground">Sign in with your Google workspace account.</p>
             </div>
           </div>
 
-          <Button
-            type="button"
-            variant={isGoogleLinked ? "outline" : "default"}
-            size="sm"
-            onClick={() => handleAction("google", isGoogleLinked)}
-            disabled={isLoading || processingProvider === "google"}
-            className="text-xs shrink-0"
-          >
-            {processingProvider === "google" && <Loader2 className="size-3.5 animate-spin mr-1.5" />}
-            <span>
-              {isGoogleLinked
-                ? labels?.disconnectBtn || "Disconnect"
-                : labels?.connectBtn || "Connect"}
-            </span>
-          </Button>
+          <div>
+            {isGoogleLinked ? (
+              <Badge
+                variant="outline"
+                className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium gap-1 px-2.5 py-1"
+              >
+                <CheckCircle2 className="size-3" />
+                <span>{labels?.connectedBadge || "Linked"}</span>
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="border-border text-muted-foreground text-xs font-normal px-2.5 py-1"
+              >
+                <span>Not Linked</span>
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* GitHub Provider */}
@@ -172,35 +141,29 @@ export function SocialIdentitiesCard({
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="text-xs font-semibold">GitHub</h4>
-                {isGithubLinked && (
-                  <Badge
-                    variant="outline"
-                    className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium gap-1"
-                  >
-                    <CheckCircle2 className="size-2.5" />
-                    <span>{labels?.connectedBadge || "Connected"}</span>
-                  </Badge>
-                )}
               </div>
               <p className="text-[11px] text-muted-foreground">Sign in with your GitHub developer identity.</p>
             </div>
           </div>
 
-          <Button
-            type="button"
-            variant={isGithubLinked ? "outline" : "default"}
-            size="sm"
-            onClick={() => handleAction("github", isGithubLinked)}
-            disabled={isLoading || processingProvider === "github"}
-            className="text-xs shrink-0"
-          >
-            {processingProvider === "github" && <Loader2 className="size-3.5 animate-spin mr-1.5" />}
-            <span>
-              {isGithubLinked
-                ? labels?.disconnectBtn || "Disconnect"
-                : labels?.connectBtn || "Connect"}
-            </span>
-          </Button>
+          <div>
+            {isGithubLinked ? (
+              <Badge
+                variant="outline"
+                className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium gap-1 px-2.5 py-1"
+              >
+                <CheckCircle2 className="size-3" />
+                <span>{labels?.connectedBadge || "Linked"}</span>
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="border-border text-muted-foreground text-xs font-normal px-2.5 py-1"
+              >
+                <span>Not Linked</span>
+              </Badge>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

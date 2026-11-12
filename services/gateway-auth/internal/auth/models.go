@@ -22,6 +22,7 @@ type TenantContextResponse struct {
 	AuthMode        string   `json:"authMode"`
 	Status          string   `json:"status"`
 	HasSSO          bool     `json:"hasSso"`
+	AllowSocialLogin bool    `json:"allowSocialLogin"`
 	AllowedMethods  []string `json:"allowedMethods"`
 	MFARequired     bool     `json:"mfaRequired"`
 	EnforceSSO      bool     `json:"enforceSso"`
@@ -176,6 +177,8 @@ type KeycloakErrorResponse struct {
 type JWTClaims struct {
 	Sub               string `json:"sub"`
 	Email             string `json:"email"`
+	EmailVerified     *bool  `json:"email_verified,omitempty"`
+	IdentityProvider  string `json:"identity_provider,omitempty"`
 	PreferredUsername string `json:"preferred_username"`
 	Name              string `json:"name"`
 	GivenName         string `json:"given_name"`

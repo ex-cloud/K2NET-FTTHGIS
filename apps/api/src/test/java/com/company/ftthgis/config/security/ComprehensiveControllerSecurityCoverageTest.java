@@ -39,6 +39,7 @@ public class ComprehensiveControllerSecurityCoverageTest {
             "AuthDiscoveryController.getRealmConfig",
             "OAuthGateController.exchangeToken",
             "OAuthGateController.getOAuthConfig",
+            "InternalTenantMembershipController.acceptMemberByEmail",
             
             // Webhook eksternal (Divalidasi via HMAC cryptographic signature di service/filter)
             "GithubWebhookController.handleWebhook",

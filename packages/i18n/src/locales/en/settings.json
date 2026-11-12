@@ -142,6 +142,8 @@
   "logo_size_hint": "Recommended size: 512x512 px, max 2 MB.",
   "mfa_enforce_label": "Enforce MFA / 2FA for All Staff",
   "mfa_enforce_desc": "All operators, surveyors, and technicians must use an authenticator app (TOTP) upon login.",
+  "allow_social_label": "Allow Social Sign-In (Google & GitHub)",
+  "allow_social_desc": "Enable direct sign-in with verified Google and GitHub accounts for invited organization members.",
   "session_timeout_label": "Inactivity Session Timeout",
   "session_timeout_default": "30 Minutes",
   "slug_not_identified": "Tenant subdomain could not be identified.",

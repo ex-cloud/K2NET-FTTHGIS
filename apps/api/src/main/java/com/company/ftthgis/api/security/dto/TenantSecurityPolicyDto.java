@@ -14,6 +14,7 @@ public class TenantSecurityPolicyDto {
     private String organizationSlug;
     private String organizationName;
     private boolean mfaEnforced;
+    private boolean allowSocialLogin;
     private List<String> allowedMethods;
     private int gracePeriodDays;
     private int sessionIdleMinutes;

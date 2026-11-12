@@ -167,6 +167,7 @@ public class SecurityPolicyService {
                     TenantSecurityPolicy newPolicy = TenantSecurityPolicy.builder()
                             .organization(org)
                             .mfaEnforced(false)
+                            .allowSocialLogin(false)
                             .allowedMethods(String.join(",", platform.getAllowedMethods()))
                             .gracePeriodDays(platform.getGracePeriodDays())
                             .sessionIdleMinutes(platform.getSessionIdleTimeout())
@@ -183,6 +184,7 @@ public class SecurityPolicyService {
                 .organizationSlug(org.getSlug())
                 .organizationName(org.getName())
                 .mfaEnforced(policy.isMfaEnforced())
+                .allowSocialLogin(policy.isAllowSocialLogin())
                 .allowedMethods(parseMethods(policy.getAllowedMethods()))
                 .gracePeriodDays(policy.getGracePeriodDays())
                 .sessionIdleMinutes(policy.getSessionIdleMinutes())
@@ -278,6 +280,9 @@ public class SecurityPolicyService {
         if (request.deviceVerificationRequired() != null) {
             policy.setDeviceVerificationRequired(request.deviceVerificationRequired());
         }
+        if (request.allowSocialLogin() != null) {
+            policy.setAllowSocialLogin(request.allowSocialLogin());
+        }
 
         // IP Allowlist & Anti-Lockout Validation
         if (request.ipAllowlistCidrs() != null) {
@@ -328,11 +333,12 @@ public class SecurityPolicyService {
         }
 
         auditLoggingService.logEvent(org.getSlug(), "TENANT_SECURITY_POLICY_UPDATE", "TENANT_POLICY",
-                saved.getId() != null ? saved.getId().toString() : "unknown", Map.of(), Map.of("mfaEnforced", saved.isMfaEnforced()),
+                saved.getId() != null ? saved.getId().toString() : "unknown", Map.of(),
+                Map.of("mfaEnforced", saved.isMfaEnforced(), "allowSocialLogin", saved.isAllowSocialLogin()),
                 Map.of("actor", actor != null ? actor : "admin"));
 
-        log.info("🛡️ Tenant security policy updated for org '{}' by {}: MFA={}, SessionIdle={}m",
-                orgSlug, actor, saved.isMfaEnforced(), saved.getSessionIdleMinutes());
+        log.info("🛡️ Tenant security policy updated for org '{}' by {}: MFA={}, Social={}, SessionIdle={}m",
+                orgSlug, actor, saved.isMfaEnforced(), saved.isAllowSocialLogin(), saved.getSessionIdleMinutes());
 
         return getTenantPolicy(orgSlug);
     }

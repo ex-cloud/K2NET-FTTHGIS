@@ -58,6 +58,23 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
            "ORDER BY om.joinedAt ASC")
     List<OrganizationMember> findAllMembersByOrganizationId(@Param("organizationId") UUID organizationId);
 
+    @Query("SELECT om FROM OrganizationMember om " +
+           "JOIN FETCH om.user u " +
+           "JOIN FETCH om.organization org " +
+           "LEFT JOIN FETCH om.role r " +
+           "WHERE om.organization.id = :organizationId AND LOWER(u.email) = LOWER(:email)")
+    Optional<OrganizationMember> findByOrganizationIdAndUserEmail(
+            @Param("organizationId") UUID organizationId,
+            @Param("email") String email
+    );
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE OrganizationMember om SET om.status = 'ACTIVE', om.joinedAt = CURRENT_TIMESTAMP, " +
+           "om.invitationToken = NULL, om.invitationExpiresAt = NULL " +
+           "WHERE om.organization.id = :orgId AND om.user.id = :userId AND om.status = 'INVITED' " +
+           "AND (om.invitationExpiresAt IS NULL OR om.invitationExpiresAt > CURRENT_TIMESTAMP)")
+    int acceptInvitedMemberAtomically(@Param("orgId") UUID orgId, @Param("userId") UUID userId);
+
     long countByRoleId(Long roleId);
 }
 
