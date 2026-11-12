@@ -81,7 +81,23 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
 
 ---
 
-## 🏛️ 5. Pemisahan Domain: `PLATFORM` Plane vs `OPERATIONS` Plane & IDOR Air-Gap
+## 🌐 5. Pemisahan Batasan Social Login (All Tiers) vs Enterprise Corporate SSO (Enterprise Plan) & Invite-First Governance
+
+1. **Social Login (Google & GitHub) Bukanlah SSO Korporat**:
+   - Google & GitHub berfungsi murni sebagai **Verified Email Authentication Bridge** (Pola Cloudflare/Supabase).
+   - Pengaturan `Allow social login` terletak di **`/settings/security`** (`tenant_security_policies.allow_social_login`) dan terbuka untuk **SEMUA PAKET / SUBSCRIPTION TIERS** (`FREE`, `STARTER`, `PRO`, `ENTERPRISE`).
+   - Tenant Admin bebas mengaktifkan/menonaktifkan login sosial tanpa memerlukan add-on marketplace berbayar.
+2. **Enterprise Corporate SSO Terikat Batasan Lisensi / Plan**:
+   - Federasi SAML 2.0, Microsoft Entra ID, Okta, Custom OIDC, Domain-Based Home Realm Discovery (HRD), dan JIT Auto-Provisioning **HANYA BERLAKU UNTUK PAKET ENTERPRISE** (atau Add-on Marketplace `enterprise_sso`).
+   - Dikonfigurasi terpisah secara eksklusif di **`/settings/sso`**, dilindungi PBAC `@tenantSecurity.hasEffectivePermission('org.sso.manage')` dan runtime license entitlement check.
+3. **Invite-First Multi-Tenant Governance Mutlak**:
+   - Login sosial (Google/GitHub) **TIDAK MENGIZINKAN** self-registration publik di portal tenant.
+   - Pintu gerbang utama `gateway-auth` (`/api/v1/auth/sso-exchange`) memvalidasi 7 gerbang sekuensial: jika email pengguna tidak terdaftar di tabel `organization_members` dengan status `ACTIVE` atau `INVITED` yang valid, sistem **WAJIB menolak dengan `403 TENANT_ACCESS_DENIED` dan mencabut sesi Keycloak**.
+   - Flow Keycloak `social-invite-first broker login` menyetel `Create User If Unique` ke `DISABLED` untuk menjamin tidak ada akun orphan Keycloak liar tanpa baris di database PostgreSQL.
+
+---
+
+## 🏛️ 6. Pemisahan Domain: `PLATFORM` Plane vs `OPERATIONS` Plane & IDOR Air-Gap
 
 1. **Pemisahan Domain Endpoint**:
    - **`PLATFORM` Plane (`/api/v1/system/workspace/**`)**: Khusus inisiatif makro, PRD/Spesifikasi TipTap internal, roadmap, dan backlog engineering issue. Seluruh data terikat ke sentinel platform `00000000-0000-0000-0000-000000000001` dengan `scope = 'PLATFORM_INTERNAL'`.
@@ -91,7 +107,7 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
 
 ---
 
-## 🤖 6. AI RAG Boundary Server-Side Enforcement (`services/gateway-ai`)
+## 🤖 7. AI RAG Boundary Server-Side Enforcement (`services/gateway-ai`)
 
 1. **Enforcement Sisi Server**:
    Penyaringan batas data RAG wajib dieksekusi di sisi server Python FastAPI (`services/gateway-ai`), bukan mengandalkan filter frontend.
@@ -100,7 +116,7 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
 
 ---
 
-## 🚫 7. Larangan Halusinasi & Kewajiban Konfirmasi Improvisasi
+## 🚫 8. Larangan Halusinasi & Kewajiban Konfirmasi Improvisasi
 
 1. **Dilarang Keras Berhalusinasi**:
    AI Agent dilarang berasumsi, mengarang nama tabel, memprediksi schema tanpa memeriksa `\d+`, atau membuat file konfigurasi fiktif. Seluruh pekerjaan harus berlandaskan file aktif di workspace dan database live `ftth_gis`.
@@ -113,7 +129,7 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
 
 ---
 
-## 🧪 8. Matriks Kepatuhan & Automated CI Testing
+## 🧪 9. Matriks Kepatuhan & Automated CI Testing
 
 Setiap perubahan pada role, permission, atau controller wajib lulus pengujian:
 1. `mvn test -Dtest=PermissionSecurityInvariantTest` (Invarian scope dan least-privilege).
