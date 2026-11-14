@@ -1,4 +1,4 @@
-import type { AuthMethod } from "@k2net/ui";
+import { base64UrlToBuffer, bufferToBase64Url, type AuthMethod } from "@k2net/ui";
 
 export interface TenantAuthContextDto {
   id?: string;
@@ -125,4 +125,97 @@ export function redirectIfAliasSubdomain(
   window.location.replace(
     `${window.location.protocol}//${nextHost}${window.location.pathname}${window.location.search}`
   );
+}
+
+export function consumeSessionMfaChallenge(): {
+  preAuthToken: string;
+  availableMethods: string[];
+  maskedEmail: string | null;
+} | null {
+  if (typeof window === "undefined") return null;
+  const pendingPreAuthToken = sessionStorage.getItem("k2net_pre_auth_token");
+  if (!pendingPreAuthToken) return null;
+  sessionStorage.removeItem("k2net_pre_auth_token");
+
+  let availableMethods = ["totp", "email_otp"];
+  const methodsRaw = sessionStorage.getItem("k2net_available_mfa_methods");
+  if (methodsRaw) {
+    try {
+      const parsed = JSON.parse(methodsRaw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        availableMethods = parsed;
+      }
+    } catch {
+      // ignore
+    }
+    sessionStorage.removeItem("k2net_available_mfa_methods");
+  }
+  const maskedEmail = sessionStorage.getItem("k2net_masked_email");
+  if (maskedEmail) {
+    sessionStorage.removeItem("k2net_masked_email");
+  }
+  return { preAuthToken: pendingPreAuthToken, availableMethods, maskedEmail };
+}
+
+export function consumeSessionOAuthError(): { code: string; description?: string } | null {
+  if (typeof window === "undefined") return null;
+  const url = new URL(window.location.href);
+  const oauthErr = url.searchParams.get("error");
+  const oauthDesc = url.searchParams.get("error_description");
+  const storedErrCode = sessionStorage.getItem("k2net_auth_error_code");
+  const storedErrMsg = sessionStorage.getItem("k2net_auth_error_message");
+
+  if (storedErrCode || storedErrMsg) {
+    sessionStorage.removeItem("k2net_auth_error_code");
+    sessionStorage.removeItem("k2net_auth_error_message");
+  }
+  if (oauthErr || oauthDesc) {
+    url.searchParams.delete("error");
+    url.searchParams.delete("error_description");
+    window.history.replaceState({}, document.title, url.pathname + url.search);
+  }
+  if (!storedErrCode && !storedErrMsg && !oauthErr) return null;
+  return {
+    code: (storedErrCode || oauthErr || "").toUpperCase(),
+    description: storedErrMsg || oauthDesc || undefined,
+  };
+}
+
+export async function requestBrowserWebauthnAssertion(challengeData: {
+  challenge: string;
+  rpId: string;
+  allowCredentials?: Array<{ type: string; id: string }>;
+}): Promise<{
+  credentialId: string;
+  clientDataJSON: string;
+  authenticatorData: string;
+  signature: string;
+}> {
+  const challengeBuffer = base64UrlToBuffer(challengeData.challenge);
+  const allowCreds = challengeData.allowCredentials?.map((c) => ({
+    type: "public-key" as const,
+    id: base64UrlToBuffer(c.id) as unknown as BufferSource,
+  }));
+
+  const assertion = (await navigator.credentials.get({
+    publicKey: {
+      challenge: challengeBuffer as unknown as BufferSource,
+      rpId: challengeData.rpId,
+      allowCredentials: allowCreds,
+      userVerification: "preferred",
+      timeout: 60000,
+    },
+  })) as PublicKeyCredential | null;
+
+  if (!assertion) {
+    throw new Error("No assertion returned");
+  }
+
+  const resp = assertion.response as AuthenticatorAssertionResponse;
+  return {
+    credentialId: bufferToBase64Url(assertion.rawId),
+    clientDataJSON: bufferToBase64Url(resp.clientDataJSON),
+    authenticatorData: bufferToBase64Url(resp.authenticatorData),
+    signature: bufferToBase64Url(resp.signature),
+  };
 }

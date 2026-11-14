@@ -102,6 +102,77 @@ function purgeLegacyStoredTokens(): void {
   }
 }
 
+function commitPendingSavedProfileInStorage(user: KeycloakUser): void {
+  if (typeof window === "undefined") return;
+  try {
+    const rawPending = window.sessionStorage.getItem("k2net_pending_save_profile");
+    if (!rawPending) return;
+    window.sessionStorage.removeItem("k2net_pending_save_profile");
+
+    const pending = JSON.parse(rawPending) as {
+      email?: string;
+      username?: string;
+      displayName?: string;
+      tenantSlug?: string;
+      authMethod?: "password" | "google" | "github" | "sso";
+      shouldSave?: boolean;
+    };
+    if (pending.shouldSave === false) return;
+
+    const cleanEmail = (user.email || pending.email || user.username || pending.username || "")
+      .trim()
+      .toLowerCase();
+    if (!cleanEmail) return;
+
+    const storageKey = "k2net_saved_profiles";
+    const rawList = window.localStorage.getItem(storageKey);
+    let list: Array<{
+      email: string;
+      username?: string;
+      displayName?: string;
+      avatarUrl?: string | null;
+      tenantSlug?: string;
+      lastUsedAt: number;
+      authMethod: "password" | "google" | "github" | "sso";
+    }> = rawList ? JSON.parse(rawList) : [];
+    if (!Array.isArray(list)) list = [];
+
+    const now = Date.now();
+    const resolvedSlug = pending.tenantSlug || user.tenantSlug || user.organizationSlug;
+    const existingIndex = list.findIndex(
+      (p) =>
+        (p.email.toLowerCase() === cleanEmail ||
+          (p.username && p.username.toLowerCase() === cleanEmail)) &&
+        (!resolvedSlug || p.tenantSlug === resolvedSlug)
+    );
+
+    const updatedProfile = {
+      email: cleanEmail,
+      username: user.username || pending.username || cleanEmail,
+      displayName: user.name || pending.displayName,
+      avatarUrl: user.avatarUrl,
+      tenantSlug: resolvedSlug,
+      lastUsedAt: now,
+      authMethod: pending.authMethod || "password",
+    };
+
+    if (existingIndex >= 0) {
+      list[existingIndex] = {
+        ...list[existingIndex],
+        ...updatedProfile,
+        lastUsedAt: now,
+      };
+    } else {
+      list.push(updatedProfile);
+    }
+
+    list.sort((a, b) => (b.lastUsedAt || 0) - (a.lastUsedAt || 0));
+    window.localStorage.setItem(storageKey, JSON.stringify(list.slice(0, 5)));
+  } catch {
+    // ignore storage errors
+  }
+}
+
 function decodeJwtClaims(jwtToken: string): KeycloakParsedClaims | null {
   try {
     const parts = jwtToken.split(".");
@@ -309,6 +380,7 @@ export function KeycloakProvider({
       setAuthenticated(true);
       setSessionTerminated(false);
       syncWindowBridge(accessToken, resolvedUser);
+      commitPendingSavedProfileInStorage(resolvedUser);
 
       config.onTokens?.({
         token: accessToken,

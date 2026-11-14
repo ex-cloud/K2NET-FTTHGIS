@@ -173,6 +173,7 @@ export default function NotificationGatewayPage() {
                 onInputChange={handleInputChange}
                 onSave={handleSave}
                 onReset={fetchConfig}
+                onEmailTestSent={fetchNotifLogs}
               />
               <div className="space-y-6">
                 <NotificationRecentLogsCard logs={notifLogs} loading={logsLoading} />

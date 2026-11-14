@@ -59,6 +59,11 @@ export function AuthLoginSavedProfiles({ form }: AuthLoginSavedProfilesProps) {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                {profile.authMethod && profile.authMethod !== "password" && (
+                  <span className="text-[10px] font-medium font-mono uppercase text-muted-foreground bg-muted/60 border border-border/70 px-1.5 py-0.5 rounded">
+                    {profile.authMethod}
+                  </span>
+                )}
                 {isLastUsed && (
                   <span className="text-[10px] font-medium font-mono text-foreground bg-muted border border-border px-1.5 py-0.5 rounded">
                     {copy.lastUsed}

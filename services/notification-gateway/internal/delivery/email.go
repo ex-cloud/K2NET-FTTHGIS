@@ -126,7 +126,64 @@ func extractEmailAddress(raw string) string {
 	return strings.TrimSpace(raw)
 }
 
-// Send dispatches an HTML email to the specified recipient
+// dialSMTPClient opens a fresh SMTP/SMTPS connection and negotiates EHLO
+func (s *SMTPEmailSender) dialSMTPClient(addr string) (*smtp.Client, error) {
+	if s.port == 465 || s.secure {
+		tlsConfig := &tls.Config{
+			ServerName: s.host,
+			MinVersion: tls.VersionTLS12,
+		}
+		dialer := &net.Dialer{Timeout: 15 * time.Second}
+		conn, err := tls.DialWithDialer(dialer, "tcp", addr, tlsConfig)
+		if err != nil {
+			return nil, fmt.Errorf("SMTP TLS dial failed: %w", err)
+		}
+		c, err := smtp.NewClient(conn, s.host)
+		if err != nil {
+			_ = conn.Close()
+			return nil, fmt.Errorf("SMTP client initialization failed: %w", err)
+		}
+		_ = c.Hello("kdua.net")
+		return c, nil
+	}
+
+	conn, err := net.DialTimeout("tcp", addr, 15*time.Second)
+	if err != nil {
+		return nil, fmt.Errorf("SMTP dial failed: %w", err)
+	}
+	c, err := smtp.NewClient(conn, s.host)
+	if err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("SMTP client initialization failed: %w", err)
+	}
+	_ = c.Hello("kdua.net")
+
+	if ok, _ := c.Extension("STARTTLS"); ok {
+		tlsConfig := &tls.Config{
+			ServerName: s.host,
+			MinVersion: tls.VersionTLS12,
+		}
+		if err := c.StartTLS(tlsConfig); err != nil {
+			_ = c.Close()
+			return nil, fmt.Errorf("STARTTLS negotiation failed: %w", err)
+		}
+	}
+	return c, nil
+}
+
+func isTransientNetworkError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "connection reset by peer") ||
+		strings.Contains(msg, "broken pipe") ||
+		strings.Contains(msg, "eof") ||
+		strings.Contains(msg, "i/o timeout") ||
+		strings.Contains(msg, "connection refused")
+}
+
+// Send dispatches an HTML email to the specified recipient with automatic retry on transient socket resets
 func (s *SMTPEmailSender) Send(ctx context.Context, to, subject, htmlBody string) error {
 	if !s.IsConfigured() {
 		return errors.New("SMTP gateway is not configured (missing SMTP_HOST, SMTP_USER, or SMTP_PASSWORD)")
@@ -145,61 +202,61 @@ func (s *SMTPEmailSender) Send(ctx context.Context, to, subject, htmlBody string
 		zap.String("to", toAddr),
 		zap.Bool("secure", s.secure))
 
-	var client *smtp.Client
-
-	if s.port == 465 || s.secure {
-		// Port 465: Direct SSL/TLS Connection
-		tlsConfig := &tls.Config{
-			ServerName: s.host,
-			MinVersion: tls.VersionTLS12,
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		if attempt > 1 {
+			time.Sleep(time.Duration(attempt*600) * time.Millisecond)
 		}
-		dialer := &net.Dialer{Timeout: 15 * time.Second}
-		conn, err := tls.DialWithDialer(dialer, "tcp", addr, tlsConfig)
-		if err != nil {
-			logger.Error(ctx, "Failed TLS connection to SMTP server", zap.Error(err))
-			return fmt.Errorf("SMTP TLS dial failed: %w", err)
+		err := s.sendOnce(ctx, addr, fromAddr, toAddr, to, subject, htmlBody)
+		if err == nil {
+			logger.Info(ctx, "Email delivered successfully via SMTP",
+				zap.String("host", s.host),
+				zap.String("to", toAddr),
+				zap.String("subject", subject),
+				zap.Int("attempt", attempt))
+			return nil
 		}
-		defer conn.Close()
-
-		c, err := smtp.NewClient(conn, s.host)
-		if err != nil {
-			return fmt.Errorf("SMTP client initialization failed: %w", err)
+		lastErr = err
+		if !isTransientNetworkError(err) {
+			break
 		}
-		client = c
-	} else {
-		// Port 587 or 25: Plain connection followed by STARTTLS
-		conn, err := net.DialTimeout("tcp", addr, 15*time.Second)
-		if err != nil {
-			return fmt.Errorf("SMTP dial failed: %w", err)
-		}
-		defer conn.Close()
-
-		c, err := smtp.NewClient(conn, s.host)
-		if err != nil {
-			return fmt.Errorf("SMTP client initialization failed: %w", err)
-		}
-		client = c
-
-		if ok, _ := client.Extension("STARTTLS"); ok {
-			tlsConfig := &tls.Config{
-				ServerName: s.host,
-				MinVersion: tls.VersionTLS12,
-			}
-			if err := client.StartTLS(tlsConfig); err != nil {
-				return fmt.Errorf("STARTTLS negotiation failed: %w", err)
-			}
-		}
+		logger.Warn(ctx, "Transient SMTP network error detected, retrying with fresh connection",
+			zap.Int("attempt", attempt),
+			zap.Error(err))
 	}
-	defer client.Quit()
+	return lastErr
+}
 
-	// Authenticate
+func (s *SMTPEmailSender) sendOnce(ctx context.Context, addr, fromAddr, toAddr, rawTo, subject, htmlBody string) error {
+	client, err := s.dialSMTPClient(addr)
+	if err != nil {
+		logger.Error(ctx, "Failed connection to SMTP server", zap.Error(err))
+		return err
+	}
+	defer func() {
+		if client != nil {
+			_ = client.Quit()
+		}
+	}()
+
+	// Authenticate (with fresh connection fallback if PlainAuth closes or resets the socket)
 	if s.user != "" && s.password != "" {
 		auth := smtp.PlainAuth("", s.user, s.password, s.host)
-		if err := client.Auth(auth); err != nil {
-			logger.Warn(ctx, "Plain auth failed, attempting LOGIN auth fallback", zap.Error(err))
+		if plainErr := client.Auth(auth); plainErr != nil {
+			logger.Warn(ctx, "Plain auth failed, dialing fresh connection for LOGIN auth fallback", zap.Error(plainErr))
+			_ = client.Close()
+			client = nil
+
+			time.Sleep(300 * time.Millisecond)
+			freshClient, dialErr := s.dialSMTPClient(addr)
+			if dialErr != nil {
+				return fmt.Errorf("SMTP authentication failed (Plain: %v, Re-dial: %w)", plainErr, dialErr)
+			}
+			client = freshClient
+
 			loginAuth := LoginAuth(s.user, s.password)
 			if loginErr := client.Auth(loginAuth); loginErr != nil {
-				return fmt.Errorf("SMTP authentication failed (Plain: %v, Login: %w)", err, loginErr)
+				return fmt.Errorf("SMTP authentication failed (Plain: %v, Login: %w)", plainErr, loginErr)
 			}
 		}
 	}
@@ -217,11 +274,10 @@ func (s *SMTPEmailSender) Send(ctx context.Context, to, subject, htmlBody string
 	if err != nil {
 		return fmt.Errorf("SMTP DATA command failed: %w", err)
 	}
-	defer w.Close()
 
 	headers := make(map[string]string)
 	headers["From"] = s.from
-	headers["To"] = to
+	headers["To"] = rawTo
 	headers["Subject"] = subject
 	headers["MIME-Version"] = "1.0"
 	headers["Content-Type"] = `text/html; charset="UTF-8"`
@@ -236,13 +292,12 @@ func (s *SMTPEmailSender) Send(ctx context.Context, to, subject, htmlBody string
 	message.WriteString(htmlBody)
 
 	if _, err := w.Write([]byte(message.String())); err != nil {
+		_ = w.Close()
 		return fmt.Errorf("failed to write email body: %w", err)
 	}
-
-	logger.Info(ctx, "Email delivered successfully via SMTP",
-		zap.String("host", s.host),
-		zap.String("to", toAddr),
-		zap.String("subject", subject))
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("failed to finalize SMTP DATA block: %w", err)
+	}
 
 	return nil
 }

@@ -10,16 +10,19 @@ import {
   FtthTopologyFlow,
   TenantDomainError,
   saveAccountProfile,
-  base64UrlToBuffer,
-  bufferToBase64Url,
+  setPendingSaveProfile,
+  commitPendingSaveProfile,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
 } from "@k2net/ui";
 import { extractTenantSlug } from "../../lib/keycloak-config";
 import {
+  consumeSessionMfaChallenge,
+  consumeSessionOAuthError,
   fetchTenantAuthContext,
   mapAllowedMethods,
   redirectIfAliasSubdomain,
+  requestBrowserWebauthnAssertion,
   sanitizeCallbackPath,
   type TenantAuthContextDto,
 } from "../../lib/auth/tenant-auth-context";
@@ -102,59 +105,20 @@ export function LoginPage() {
 
   // Check for Step-Up MFA challenge returned from SSO / Social broker exchange
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const pendingPreAuthToken = sessionStorage.getItem("k2net_pre_auth_token");
-    if (pendingPreAuthToken) {
-      sessionStorage.removeItem("k2net_pre_auth_token");
-      setPreAuthToken(pendingPreAuthToken);
+    const challenge = consumeSessionMfaChallenge();
+    if (challenge) {
+      setPreAuthToken(challenge.preAuthToken);
       setMfaRequired(true);
-      const methodsRaw = sessionStorage.getItem("k2net_available_mfa_methods");
-      if (methodsRaw) {
-        try {
-          const parsed = JSON.parse(methodsRaw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setAvailableMfaMethods(parsed);
-          }
-        } catch {
-          // ignore
-        }
-        sessionStorage.removeItem("k2net_available_mfa_methods");
-      }
-      const masked = sessionStorage.getItem("k2net_masked_email");
-      if (masked) {
-        setMaskedEmail(masked);
-        sessionStorage.removeItem("k2net_masked_email");
-      }
+      setAvailableMfaMethods(challenge.availableMethods);
+      if (challenge.maskedEmail) setMaskedEmail(challenge.maskedEmail);
     }
   }, []);
 
   // Surface any OAuth/SSO callback error returned from the identity broker cleanly in the SPA
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    const oauthErr = url.searchParams.get("error");
-    const oauthDesc = url.searchParams.get("error_description");
-    const storedErrCode = sessionStorage.getItem("k2net_auth_error_code");
-    const storedErrMsg = sessionStorage.getItem("k2net_auth_error_message");
-
-    if (storedErrCode || storedErrMsg) {
-      sessionStorage.removeItem("k2net_auth_error_code");
-      sessionStorage.removeItem("k2net_auth_error_message");
-      setErrorMessage(
-        resolveAuthErrorMessage(
-          (storedErrCode || oauthErr || "").toUpperCase(),
-          storedErrMsg || oauthDesc || undefined,
-          t
-        )
-      );
-    } else if (oauthErr) {
-      setErrorMessage(resolveAuthErrorMessage(oauthErr.toUpperCase(), oauthDesc || undefined, t));
-    }
-
-    if (oauthErr || oauthDesc) {
-      url.searchParams.delete("error");
-      url.searchParams.delete("error_description");
-      window.history.replaceState({}, document.title, url.pathname + url.search);
+    const err = consumeSessionOAuthError();
+    if (err) {
+      setErrorMessage(resolveAuthErrorMessage(err.code, err.description, t));
     }
   }, [t]);
 
@@ -173,6 +137,14 @@ export function LoginPage() {
     setErrorMessage(null);
     try {
       const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
+      setPendingSaveProfile({
+        email: payload.username,
+        username: payload.username,
+        tenantSlug: effectiveSlug,
+        authMethod: "password",
+        shouldSave: payload.saveEmailOnDevice !== false,
+      });
+
       const result = await loginWithCredentials({
         plane: "TENANT",
         tenantSlug: effectiveSlug,
@@ -206,11 +178,15 @@ export function LoginPage() {
 
       if (payload.saveEmailOnDevice !== false) {
         saveAccountProfile({
-          email: payload.username,
+          email: result.user?.email || payload.username,
+          username: result.user?.username || payload.username,
+          displayName: result.user?.name,
+          avatarUrl: result.user?.avatarUrl,
           tenantSlug: effectiveSlug,
           authMethod: "password",
         });
       }
+      setPendingSaveProfile(null);
 
       if (callbackUrl === "/") {
         navigate({ to: "/" });
@@ -227,8 +203,16 @@ export function LoginPage() {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
+      const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
       const result = await verifyMfaTotp(preAuthToken, code);
       if (result.success) {
+        commitPendingSaveProfile({
+          email: result.user?.email,
+          username: result.user?.username,
+          displayName: result.user?.name,
+          avatarUrl: result.user?.avatarUrl,
+          tenantSlug: effectiveSlug,
+        });
         if (callbackUrl === "/") {
           navigate({ to: "/" });
         } else if (typeof window !== "undefined") {
@@ -259,8 +243,16 @@ export function LoginPage() {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
+      const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
       const result = await verifyMfaEmailOtp(preAuthToken, code);
       if (result.success) {
+        commitPendingSaveProfile({
+          email: result.user?.email,
+          username: result.user?.username,
+          displayName: result.user?.name,
+          avatarUrl: result.user?.avatarUrl,
+          tenantSlug: effectiveSlug,
+        });
         if (callbackUrl === "/") {
           navigate({ to: "/" });
         } else if (typeof window !== "undefined") {
@@ -284,36 +276,19 @@ export function LoginPage() {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
+      const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
       const challengeData = await getWebauthnLoginChallenge(preAuthToken);
-      const challengeBuffer = base64UrlToBuffer(challengeData.challenge);
-      const allowCreds = challengeData.allowCredentials?.map((c) => ({
-        type: "public-key" as const,
-        id: base64UrlToBuffer(c.id) as unknown as BufferSource,
-      }));
-
-      const assertion = (await navigator.credentials.get({
-        publicKey: {
-          challenge: challengeBuffer as unknown as BufferSource,
-          rpId: challengeData.rpId,
-          allowCredentials: allowCreds,
-          userVerification: "preferred",
-          timeout: 60000,
-        },
-      })) as PublicKeyCredential | null;
-
-      if (!assertion) {
-        throw new Error("No assertion returned");
-      }
-
-      const resp = assertion.response as AuthenticatorAssertionResponse;
-      const result = await verifyWebauthnLogin(preAuthToken, {
-        credentialId: bufferToBase64Url(assertion.rawId),
-        clientDataJSON: bufferToBase64Url(resp.clientDataJSON),
-        authenticatorData: bufferToBase64Url(resp.authenticatorData),
-        signature: bufferToBase64Url(resp.signature),
-      });
+      const assertionPayload = await requestBrowserWebauthnAssertion(challengeData);
+      const result = await verifyWebauthnLogin(preAuthToken, assertionPayload);
 
       if (result.success) {
+        commitPendingSaveProfile({
+          email: result.user?.email,
+          username: result.user?.username,
+          displayName: result.user?.name,
+          avatarUrl: result.user?.avatarUrl,
+          tenantSlug: effectiveSlug,
+        });
         if (callbackUrl === "/") {
           navigate({ to: "/" });
         } else if (typeof window !== "undefined") {

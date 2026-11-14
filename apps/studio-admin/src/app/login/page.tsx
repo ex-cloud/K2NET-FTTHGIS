@@ -7,6 +7,8 @@ import {
   AuthLoginLayout,
   FtthTopologyFlow,
   saveAccountProfile,
+  setPendingSaveProfile,
+  commitPendingSaveProfile,
   base64UrlToBuffer,
   bufferToBase64Url,
   type AuthCredentialsSubmitPayload,
@@ -147,6 +149,14 @@ export default function AdminLoginPage() {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
+      setPendingSaveProfile({
+        email: payload.username,
+        username: payload.username,
+        tenantSlug: "system",
+        authMethod: "password",
+        shouldSave: payload.saveEmailOnDevice !== false,
+      });
+
       const result = await loginWithCredentials({
         plane: "PLATFORM",
         tenantSlug: "system",
@@ -177,11 +187,15 @@ export default function AdminLoginPage() {
 
       if (payload.saveEmailOnDevice !== false) {
         saveAccountProfile({
-          email: payload.username,
+          email: result.user?.email || payload.username,
+          username: result.user?.username || payload.username,
+          displayName: result.user?.name,
+          avatarUrl: result.user?.avatarUrl,
           tenantSlug: "system",
           authMethod: "password",
         });
       }
+      setPendingSaveProfile(null);
 
       router.replace(callbackUrl);
     } finally {
@@ -196,6 +210,13 @@ export default function AdminLoginPage() {
     try {
       const result = await verifyMfaTotp(preAuthToken, code);
       if (result.success) {
+        commitPendingSaveProfile({
+          email: result.user?.email,
+          username: result.user?.username,
+          displayName: result.user?.name,
+          avatarUrl: result.user?.avatarUrl,
+          tenantSlug: "system",
+        });
         router.replace(callbackUrl);
         return true;
       }
@@ -224,6 +245,13 @@ export default function AdminLoginPage() {
     try {
       const result = await verifyMfaEmailOtp(preAuthToken, code);
       if (result.success) {
+        commitPendingSaveProfile({
+          email: result.user?.email,
+          username: result.user?.username,
+          displayName: result.user?.name,
+          avatarUrl: result.user?.avatarUrl,
+          tenantSlug: "system",
+        });
         router.replace(callbackUrl);
         return true;
       }
@@ -273,6 +301,13 @@ export default function AdminLoginPage() {
       });
 
       if (result.success) {
+        commitPendingSaveProfile({
+          email: result.user?.email,
+          username: result.user?.username,
+          displayName: result.user?.name,
+          avatarUrl: result.user?.avatarUrl,
+          tenantSlug: "system",
+        });
         router.replace(callbackUrl);
         return true;
       }

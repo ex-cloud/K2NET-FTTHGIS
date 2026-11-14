@@ -459,6 +459,31 @@ export async function getNotificationLogs(): Promise<NotificationLog[]> {
   return Array.isArray(payload) ? payload : payload.data || [];
 }
 
+export async function testNotificationSmtpConnection(payload: {
+  host?: string;
+  port?: number | string;
+  username?: string;
+  password?: string;
+}): Promise<{ success: boolean; message: string }> {
+  await verifySuperAdmin();
+
+  const res = await fetch(`/api/v1/system/gateway-config/notification/test-connection`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload || {}),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.success === false) {
+    throw new Error(data.message || data.error || `Failed to verify SMTP connection: ${res.statusText}`);
+  }
+
+  return data;
+}
+
 export async function sendNotificationTestEmail(payload?: { to?: string; subject?: string }): Promise<{ success: boolean; message: string }> {
   await verifySuperAdmin();
 

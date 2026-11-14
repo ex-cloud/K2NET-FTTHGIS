@@ -42,6 +42,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
     turnstileContainerRef,
     passwordInputRef,
     handleSubmit,
+    handleContinueWithProvider,
     handleForgotClick,
     handleBackFromMfa,
     handleBackToSavedProfiles,
@@ -66,7 +67,6 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
     onPasswordlessPasskeyLogin,
     turnstileSiteKey,
     isLoading = false,
-    onContinueWithProvider,
     enforceSso = false,
     allowBreakGlass = true,
     ssoProviderType,
@@ -94,7 +94,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
               type="button"
               size="sm"
               className="w-full h-8 text-xs font-medium justify-center gap-2 mt-2"
-              onClick={() => onContinueWithProvider && onContinueWithProvider(ssoProviderType || discoveredSso?.providerType || "sso")}
+              onClick={() => handleContinueWithProvider(ssoProviderType || discoveredSso?.providerType || "sso")}
               disabled={isLoading || isSuspended}
             >
               <KeyRound className="size-3.5" />
@@ -314,8 +314,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                       variant="outline"
                       className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/70 bg-background/60 text-foreground/90 hover:bg-accent hover:text-foreground hover:border-border rounded-md transition-colors shadow-2xs cursor-pointer"
                       onClick={() =>
-                        onContinueWithProvider &&
-                        onContinueWithProvider(ssoProviderType || "sso")
+                        handleContinueWithProvider(ssoProviderType || "sso")
                       }
                       disabled={isLoading || isSuspended}
                     >
@@ -355,7 +354,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                             variant="outline"
                             size="sm"
                             className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/70 bg-background/60 text-foreground/90 hover:bg-accent hover:text-foreground hover:border-border rounded-md transition-colors shadow-2xs cursor-pointer"
-                            onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
+                            onClick={() => handleContinueWithProvider(method.id)}
                             disabled={isLoading || isSuspended}
                           >
                             {isGoogle && <GoogleIcon className="size-3.5 shrink-0" />}

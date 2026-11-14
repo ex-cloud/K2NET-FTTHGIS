@@ -171,3 +171,74 @@ export interface TurnstileWindow extends Window {
   };
 }
 
+export function buildAuthLoginCopy(labels?: AuthLoginFormLabels) {
+  return {
+    loginFailedTitle: labels?.loginFailedTitle || "Failed to sign in",
+    accountEmailOrUsername: labels?.accountEmailOrUsername || "ACCOUNT EMAIL OR USERNAME",
+    accountPlaceholder: labels?.accountPlaceholder || "e.g. admin@isp.net or admin.username",
+    requiredBadge: labels?.requiredBadge || "Required",
+    passwordUpper: labels?.passwordUpper || "PASSWORD",
+    passwordPlaceholder: labels?.passwordPlaceholder || "••••••••••••",
+    forgotPassword: labels?.forgotPassword || "Forgot password?",
+    forgotPasswordNotice:
+      labels?.forgotPasswordNotice ||
+      "Contact your Workspace Owner or K2NET Platform Support to initiate a verified password reset.",
+    showPassword: labels?.showPassword || "Show password",
+    hidePassword: labels?.hidePassword || "Hide password",
+    rememberMeBrowser: labels?.rememberMeBrowser || "Remember me on this browser",
+    orContinueWith: labels?.orContinueWith || "OR CONTINUE WITH",
+    continueWithGoogle: labels?.continueWithGoogle || "Continue with Google",
+    continueWithGithub: labels?.continueWithGithub || "Continue with GitHub",
+    continueWithProviderPrefix: labels?.continueWithProviderPrefix || "Continue with",
+    signInPlatformAdmin: labels?.signInPlatformAdmin || "Sign In to Platform Admin",
+    continueIspWorkspace: labels?.continueIspWorkspace || "Continue to ISP Workspace",
+    mfaCodeLabel: labels?.mfaCodeLabel || "6-DIGIT AUTHENTICATOR CODE",
+    mfaCodePlaceholder: labels?.mfaCodePlaceholder || "000000",
+    mfaCodeHint:
+      labels?.mfaCodeHint ||
+      "Open your Authenticator app (Google Authenticator / Authy) and enter the 6-digit verification code.",
+    mfaVerifySubmit: labels?.mfaVerifySubmit || "Verify & Sign In",
+    mfaBackToLogin: labels?.mfaBackToLogin || "Use another account",
+    suspendedTitle: labels?.suspendedTitle || "Subscription Suspended or Inactive",
+    suspendedDesc:
+      labels?.suspendedDesc ||
+      "This organization workspace is currently suspended or awaiting activation. Please contact K2NET Platform Administration.",
+    signInWithAnotherProfile: labels?.signInWithAnotherProfile || "Sign in with another profile",
+    viewSavedProfiles: labels?.viewSavedProfiles || "View saved profiles",
+    saveEmailOnDevice: labels?.saveEmailOnDevice || "Save email and login method on this device",
+    lastUsed: labels?.lastUsed || "Last used",
+    removeSavedProfile: labels?.removeSavedProfile || "Remove profile from device",
+    savedProfilesTitle: labels?.savedProfilesTitle || "Choose an account",
+    savedProfilesOr: labels?.savedProfilesOr || "or",
+    forgotPasswordTitle: labels?.forgotPasswordTitle || "Reset your password",
+    forgotPasswordSubtitle:
+      labels?.forgotPasswordSubtitle ||
+      "Enter your account email or username. We'll send instructions to reset your password.",
+    sendResetLink: labels?.sendResetLink || "Send Reset Link",
+    sendingResetLink: labels?.sendingResetLink || "Sending reset link...",
+    backToSignIn: labels?.backToSignIn || "Back to sign in",
+    checkInboxTitle: labels?.checkInboxTitle || "Check your email",
+    checkInboxDesc:
+      labels?.checkInboxDesc ||
+      "If an account matches this identity, we've sent password reset instructions to your inbox.",
+    resendInstructions: labels?.resendInstructions || "Resend instructions",
+    resendCooldown: labels?.resendCooldown || "Resend available in {seconds}s",
+    ssoDiscoveredTitle: labels?.ssoDiscoveredTitle || "Single Sign-On Available",
+    ssoDiscoveredDesc: labels?.ssoDiscoveredDesc || "Your email domain is configured with corporate SSO.",
+    continueWithSso: labels?.continueWithSso || "Continue with SSO",
+    defaultSsoDisplayName: labels?.defaultSsoDisplayName || "Enterprise Single Sign-On",
+    breakGlassModeActive: labels?.breakGlassModeActive || "Emergency Break-Glass Mode Active",
+    breakGlassNotice:
+      labels?.breakGlassNotice ||
+      "Emergency access for administrators only when IdP is down. Step-Up TOTP is mandatory.",
+    breakGlassToggle: labels?.breakGlassToggle || "Sign in with Break-Glass Emergency Access",
+    cancelBreakGlass: labels?.cancelBreakGlass || "Return to SSO",
+    orContinueWithCredentials: labels?.orContinueWithCredentials || "or continue with email & password",
+    ssoDomainRecognized: labels?.ssoDomainRecognized || "Single Sign-On is configured for this domain.",
+    ipNotAllowedTitle: labels?.ipNotAllowedTitle || "Access Denied: IP Not Allowed",
+    ipNotAllowedDesc:
+      labels?.ipNotAllowedDesc ||
+      "Your device IP address is not included in this organization's allowed CIDR list.",
+  };
+}
+

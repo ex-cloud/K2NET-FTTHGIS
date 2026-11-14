@@ -13,7 +13,86 @@ export type SavedAccountProfileInput = Omit<SavedAccountProfile, "lastUsedAt"> &
 };
 
 export const SAVED_PROFILES_STORAGE_KEY = "k2net_saved_profiles";
+export const PENDING_SAVE_PROFILE_SESSION_KEY = "k2net_pending_save_profile";
 const MAX_PROFILES = 5;
+
+export interface PendingSaveProfile {
+  email?: string;
+  username?: string;
+  displayName?: string;
+  tenantSlug?: string;
+  authMethod: "password" | "google" | "github" | "sso";
+  shouldSave: boolean;
+}
+
+/**
+ * Record a pending profile save intent before redirecting or entering Step-Up MFA.
+ */
+export function setPendingSaveProfile(pending: PendingSaveProfile | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!pending) {
+      window.sessionStorage.removeItem(PENDING_SAVE_PROFILE_SESSION_KEY);
+      return;
+    }
+    window.sessionStorage.setItem(PENDING_SAVE_PROFILE_SESSION_KEY, JSON.stringify(pending));
+  } catch {
+    // Ignore sessionStorage errors
+  }
+}
+
+/**
+ * Commit any pending profile save intent after authentication or Step-Up MFA succeeds.
+ */
+export function commitPendingSaveProfile(fallback?: {
+  email?: string;
+  username?: string;
+  displayName?: string;
+  avatarUrl?: string | null;
+  tenantSlug?: string;
+  authMethod?: "password" | "google" | "github" | "sso";
+}): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.sessionStorage.getItem(PENDING_SAVE_PROFILE_SESSION_KEY);
+    window.sessionStorage.removeItem(PENDING_SAVE_PROFILE_SESSION_KEY);
+    if (raw) {
+      const pending = JSON.parse(raw) as PendingSaveProfile;
+      if (!pending.shouldSave) return;
+      const resolvedEmail = (
+        fallback?.email ||
+        pending.email ||
+        fallback?.username ||
+        pending.username ||
+        ""
+      ).trim();
+      if (!resolvedEmail) return;
+      saveAccountProfile({
+        email: resolvedEmail,
+        username: fallback?.username || pending.username || resolvedEmail,
+        displayName: fallback?.displayName || pending.displayName,
+        avatarUrl: fallback?.avatarUrl,
+        tenantSlug: pending.tenantSlug || fallback?.tenantSlug,
+        authMethod: pending.authMethod || fallback?.authMethod || "password",
+      });
+      return;
+    }
+    if (fallback?.email || fallback?.username) {
+      const resolvedEmail = (fallback.email || fallback.username || "").trim();
+      if (!resolvedEmail) return;
+      saveAccountProfile({
+        email: resolvedEmail,
+        username: fallback.username || resolvedEmail,
+        displayName: fallback.displayName,
+        avatarUrl: fallback.avatarUrl,
+        tenantSlug: fallback.tenantSlug,
+        authMethod: fallback.authMethod || "password",
+      });
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 /**
  * Retrieve saved profiles from localStorage, ordered by lastUsedAt desc.

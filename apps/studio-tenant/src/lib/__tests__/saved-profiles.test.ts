@@ -2,9 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   SAVED_PROFILES_STORAGE_KEY,
   clearBrowserStorageForLogout,
+  commitPendingSaveProfile,
   getSavedProfiles,
   removeSavedProfile,
   saveAccountProfile,
+  setPendingSaveProfile,
 } from "../../../../../packages/ui/src/components/auth/saved-profiles";
 
 describe("Saved profiles (Account Chooser storage)", () => {
@@ -61,6 +63,42 @@ describe("Saved profiles (Account Chooser storage)", () => {
     expect(localStorage.getItem("k2net_impersonation_token")).toBeNull();
     expect(sessionStorage.getItem("k2net_impersonation_meta")).toBeNull();
     expect(getSavedProfiles("one").length).toBe(1);
+  });
+
+  it("commits pending save profile after Step-Up MFA or Social login when shouldSave is true", () => {
+    setPendingSaveProfile({
+      email: "nextfas@gmail.com",
+      tenantSlug: "ops",
+      authMethod: "password",
+      shouldSave: true,
+    });
+    commitPendingSaveProfile({
+      email: "nextfas@gmail.com",
+      displayName: "dian noc",
+      tenantSlug: "ops",
+    });
+
+    const profiles = getSavedProfiles("ops");
+    expect(profiles.length).toBe(1);
+    expect(profiles[0].email).toBe("nextfas@gmail.com");
+    expect(profiles[0].displayName).toBe("dian noc");
+    expect(profiles[0].authMethod).toBe("password");
+  });
+
+  it("does not save profile after MFA when shouldSave is false", () => {
+    setPendingSaveProfile({
+      email: "nextfas@gmail.com",
+      tenantSlug: "ops",
+      authMethod: "password",
+      shouldSave: false,
+    });
+    commitPendingSaveProfile({
+      email: "nextfas@gmail.com",
+      displayName: "dian noc",
+      tenantSlug: "ops",
+    });
+
+    expect(getSavedProfiles("ops")).toEqual([]);
   });
 });
 

@@ -100,7 +100,7 @@ export function buildActionItems(
       icon: Mail,
       badgeText: "Test",
       action: () => {
-        navigate("/settings/smtp-mail");
+        navigate("/gateways/notification");
       },
     },
     {

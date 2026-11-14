@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Lock, Server, MessageCircle, Mail, Save, Loader2, Eye, EyeOff, Send } from "lucide-react";
+import { Lock, Server, MessageCircle, Mail, Save, Loader2, Eye, EyeOff } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -15,7 +15,8 @@ import {
 import { PermissionGuard } from "@/hooks/use-permissions";
 import { useTranslation } from "@k2net/i18n";
 import { toast } from "sonner";
-import { sendNotificationTestEmail } from "@/lib/actions/gateways";
+import { sendNotificationTestEmail, testNotificationSmtpConnection } from "@/lib/actions/gateways";
+import { NotificationSmtpTestSection } from "./NotificationSmtpTestSection";
 
 interface NotificationConfigFormProps {
   config: Record<string, string>;
@@ -23,6 +24,7 @@ interface NotificationConfigFormProps {
   onInputChange: (key: string, value: string) => void;
   onSave: (e: React.FormEvent) => void;
   onReset: () => void;
+  onEmailTestSent?: () => void;
 }
 
 export function NotificationConfigForm({
@@ -31,14 +33,57 @@ export function NotificationConfigForm({
   onInputChange,
   onSave,
   onReset,
+  onEmailTestSent,
 }: NotificationConfigFormProps) {
   const { t } = useTranslation();
   const [showAuthToken, setShowAuthToken] = useState(false);
   const [showTwilioToken, setShowTwilioToken] = useState(false);
   const [showSmtpPassword, setShowSmtpPassword] = useState(false);
 
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{
+    verified: boolean;
+    message: string;
+  } | null>(null);
+
   const [testRecipient, setTestRecipient] = useState("");
   const [isSendingTest, setIsSendingTest] = useState(false);
+
+  const handleSmtpFieldChange = (key: string, value: string) => {
+    setConnectionStatus(null);
+    onInputChange(key, value);
+  };
+
+  const handleTestConnection = async () => {
+    setIsTestingConnection(true);
+    setConnectionStatus(null);
+    try {
+      const rawPassword =
+        config.SMTP_PASSWORD && !config.SMTP_PASSWORD.includes("••")
+          ? config.SMTP_PASSWORD
+          : undefined;
+      const res = await testNotificationSmtpConnection({
+        host: config.SMTP_HOST?.trim() || undefined,
+        port: config.SMTP_PORT?.trim() || 465,
+        username: config.SMTP_USER?.trim() || undefined,
+        password: rawPassword,
+      });
+      setConnectionStatus({
+        verified: true,
+        message: res.message || t("gateways.notification.smtp_connection_verified"),
+      });
+      toast.success(t("gateways.notification.smtp_connection_verified"));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setConnectionStatus({
+        verified: false,
+        message: msg,
+      });
+      toast.error(`${t("gateways.notification.smtp_connection_failed")}: ${msg}`);
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
 
   const handleSendTest = async () => {
     setIsSendingTest(true);
@@ -47,6 +92,7 @@ export function NotificationConfigForm({
         to: testRecipient.trim() || undefined,
       });
       toast.success(res.message || t("gateways.notification.test_email_success"));
+      onEmailTestSent?.();
     } catch (err) {
       console.error(err);
       toast.error(`${t("gateways.notification.test_email_failed")}: ${err instanceof Error ? err.message : String(err)}`);
@@ -152,7 +198,7 @@ export function NotificationConfigForm({
                 id="SMTP_HOST"
                 type="text"
                 value={config.SMTP_HOST || ""}
-                onChange={(e) => onInputChange("SMTP_HOST", e.target.value)}
+                onChange={(e) => handleSmtpFieldChange("SMTP_HOST", e.target.value)}
                 placeholder={t("gateways.notification.smtp_host_placeholder")}
                 className="bg-input border-border text-foreground text-xs focus:border-primary/50"
               />
@@ -165,7 +211,7 @@ export function NotificationConfigForm({
                 id="SMTP_PORT"
                 type="text"
                 value={config.SMTP_PORT || ""}
-                onChange={(e) => onInputChange("SMTP_PORT", e.target.value)}
+                onChange={(e) => handleSmtpFieldChange("SMTP_PORT", e.target.value)}
                 placeholder={t("gateways.notification.smtp_port_placeholder")}
                 className="bg-input border-border text-foreground text-xs focus:border-primary/50"
               />
@@ -183,7 +229,7 @@ export function NotificationConfigForm({
             </div>
             <Switch
               checked={isSecureActive}
-              onCheckedChange={(checked) => onInputChange("SMTP_SECURE", checked ? "true" : "false")}
+              onCheckedChange={(checked) => handleSmtpFieldChange("SMTP_SECURE", checked ? "true" : "false")}
             />
           </div>
 
@@ -196,7 +242,7 @@ export function NotificationConfigForm({
                 id="SMTP_USER"
                 type="text"
                 value={config.SMTP_USER || ""}
-                onChange={(e) => onInputChange("SMTP_USER", e.target.value)}
+                onChange={(e) => handleSmtpFieldChange("SMTP_USER", e.target.value)}
                 placeholder={t("gateways.notification.smtp_user_placeholder")}
                 className="bg-input border-border text-foreground text-xs focus:border-primary/50"
               />
@@ -219,7 +265,7 @@ export function NotificationConfigForm({
                 id="SMTP_PASSWORD"
                 type={showSmtpPassword ? "text" : "password"}
                 value={config.SMTP_PASSWORD || ""}
-                onChange={(e) => onInputChange("SMTP_PASSWORD", e.target.value)}
+                onChange={(e) => handleSmtpFieldChange("SMTP_PASSWORD", e.target.value)}
                 placeholder={t("gateways.notification.smtp_password_placeholder")}
                 className="bg-input border-border text-foreground text-xs focus:border-primary/50"
               />
@@ -240,41 +286,16 @@ export function NotificationConfigForm({
             />
           </div>
 
-          {/* Test Email Dispatcher */}
-          <div className="pt-2 border-t border-border/60">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2.5">
-              <div className="flex-1 space-y-1.5">
-                <Label htmlFor="TEST_EMAIL_RECIPIENT" className="text-[11px] text-muted-foreground font-medium">
-                  {t("gateways.notification.test_email_recipient_label")}
-                </Label>
-                <Input
-                  id="TEST_EMAIL_RECIPIENT"
-                  type="email"
-                  value={testRecipient}
-                  onChange={(e) => setTestRecipient(e.target.value)}
-                  placeholder={t("gateways.notification.test_email_recipient_placeholder")}
-                  className="bg-input border-border text-foreground text-xs h-7"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isSendingTest}
-                onClick={handleSendTest}
-                className="h-7 px-2.5 text-xs font-medium gap-1.5 shrink-0 border-border/80"
-              >
-                {isSendingTest ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Send className="size-3.5" />
-                )}
-                {isSendingTest
-                  ? t("gateways.notification.sending_test_email")
-                  : t("gateways.notification.send_test_email")}
-              </Button>
-            </div>
-          </div>
+          {/* 2-Step SMTP Connection Verification & Test Email Dispatcher */}
+          <NotificationSmtpTestSection
+            isTestingConnection={isTestingConnection}
+            connectionStatus={connectionStatus}
+            testRecipient={testRecipient}
+            isSendingTest={isSendingTest}
+            onTestConnection={handleTestConnection}
+            onRecipientChange={setTestRecipient}
+            onSendTest={handleSendTest}
+          />
         </CardContent>
       </Card>
 

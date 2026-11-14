@@ -1,137 +1,16 @@
-import { useState } from "react";
-import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
-import { Mail, Save, RefreshCw } from "lucide-react";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
-import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
-import { useTranslation } from "@k2net/i18n";
-import { toast } from "sonner";
-import { SmtpCredentialsSection, SmtpTestCard } from "@/components/settings";
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
+/**
+ * Legacy route `/settings/smtp-mail` redirects to the unified Notification Gateway
+ * configuration center (`/gateways/notification`) to eliminate duplicate SMTP UI.
+ */
 export default function SettingsSmtpMailPage() {
-  const { t } = useTranslation();
-  const { settings, loading, updateSettings, isUpdating, testEmail, isTestingEmail, refresh } = useSystemSettings();
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const navigate = useNavigate();
 
-  const getValue = (key: string, defaultValue: string = ""): string => {
-    if (formValues[key] !== undefined) return formValues[key];
-    const dbVal = settings.find((s) => s.key === key)?.value;
-    return dbVal !== undefined ? dbVal : defaultValue;
-  };
+  useEffect(() => {
+    void navigate({ to: "/gateways/notification", replace: true });
+  }, [navigate]);
 
-  const handleInputChange = (key: string, value: string) => {
-    setFormValues((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSave = async () => {
-    const keysToSave: Record<string, string> = {
-      smtp_host: getValue("smtp_host", "mail.kdua.net"),
-      smtp_port: getValue("smtp_port", "587"),
-      smtp_username: getValue("smtp_username", "notify@kdua.net"),
-      smtp_password: getValue("smtp_password", ""),
-      smtp_from: getValue("smtp_from", "notify@kdua.net"),
-    };
-
-    try {
-      await updateSettings(keysToSave);
-      toast.success(t("settings.smtp.saved_success"));
-    } catch (e: unknown) {
-      const err = e as Error;
-      toast.error(err.message || t("settings.smtp.save_failed"));
-    }
-  };
-
-  const handleTestSmtp = async () => {
-    const host = getValue("smtp_host", "mail.kdua.net");
-    const port = parseInt(getValue("smtp_port", "587"), 10);
-    const username = getValue("smtp_username");
-    const password = getValue("smtp_password");
-
-    if (!host || !port) {
-      toast.error(t("settings.smtp.host_port_required"));
-      return;
-    }
-
-    setSmtpTestResult(null);
-    try {
-      const res = await testEmail({ host, port, username, password });
-      setSmtpTestResult({ success: true, message: res.message || t("settings.smtp.connected_success") });
-      toast.success(t("settings.smtp.test_success_toast"));
-    } catch (e: unknown) {
-      const error = e as Error;
-      setSmtpTestResult({ success: false, message: error.message || t("settings.smtp.socket_error") });
-      toast.error(t("settings.smtp.test_failed_toast"));
-    }
-  };
-
-  return (
-    <SystemSettingsWrapper>
-      <PageLayout variant="workspace" spaceY="space-y-6">
-        {/* Header Section */}
-        <div className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
-                {t("settings.smtp.badge_title")}
-              </Badge>
-              <span className="text-xs text-muted-foreground">• {t("settings.smtp.badge_subtitle")}</span>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <Mail className="w-6 h-6 text-primary" /> {t("settings.smtp.title")}
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {t("settings.smtp_subtitle")}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <ActionTooltip label={t("common.reload")} shortcut="R">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refresh()}
-                disabled={loading}
-                className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> {t("common.reload")}
-              </Button>
-            </ActionTooltip>
-            <ActionTooltip label={t("settings.smtp.save_smtp_btn")} shortcut="Ctrl+S">
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={isUpdating || loading}
-                className="text-xs h-7 px-2.5 font-medium gap-1.5 shadow-xs rounded-md cursor-pointer"
-              >
-                {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                {t("settings.smtp.save_smtp_btn")}
-              </Button>
-            </ActionTooltip>
-          </div>
-        </div>
-
-        {/* Form Content */}
-        <div className="space-y-8 pb-16">
-          <SmtpCredentialsSection
-            smtpHost={getValue("smtp_host", "mail.kdua.net")}
-            onSmtpHostChange={(val) => handleInputChange("smtp_host", val)}
-            smtpPort={getValue("smtp_port", "587")}
-            onSmtpPortChange={(val) => handleInputChange("smtp_port", val)}
-            smtpUsername={getValue("smtp_username", "notify@kdua.net")}
-            onSmtpUsernameChange={(val) => handleInputChange("smtp_username", val)}
-            smtpPassword={getValue("smtp_password", "")}
-            onSmtpPasswordChange={(val) => handleInputChange("smtp_password", val)}
-            smtpFrom={getValue("smtp_from", "notify@kdua.net")}
-            onSmtpFromChange={(val) => handleInputChange("smtp_from", val)}
-          />
-
-          <SmtpTestCard
-            onTest={handleTestSmtp}
-            isTestingEmail={isTestingEmail}
-            smtpTestResult={smtpTestResult}
-          />
-        </div>
-      </PageLayout>
-    </SystemSettingsWrapper>
-  );
+  return null;
 }

@@ -67,6 +67,7 @@ public class GatewayConfigController {
     private String auditUrl;
 
     private final RestTemplate restTemplate;
+    private final com.company.ftthgis.service.SystemSettingService systemSettingService;
 
     /**
      * Maps a public-facing gateway key to its internal Docker service URL.
@@ -154,6 +155,9 @@ public class GatewayConfigController {
         try {
             ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                if ("notification".equalsIgnoreCase(gatewayKey) && body.get("updates") instanceof Map<?, ?> updatesMap) {
+                    syncNotificationSmtpToSystemSettings(updatesMap);
+                }
                 return ResponseEntity.ok(response.getBody());
             }
             log.warn("GatewayConfig POST [{}]: upstream returned {}", gatewayKey, response.getStatusCode());
@@ -167,6 +171,71 @@ public class GatewayConfigController {
             log.error("GatewayConfig POST [{}]: unexpected error — {}", gatewayKey, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal error updating gateway config"));
+        }
+    }
+
+    /**
+     * POST /api/v1/system/gateway-config/notification/test-connection
+     * Verifies live SMTP/SMTPS socket handshake before dispatching a test email.
+     */
+    @PostMapping("/notification/test-connection")
+    @PreAuthorize("hasAuthority('system.gateway.manage')")
+    public ResponseEntity<Map<String, Object>> testNotificationSmtpConnection(@RequestBody Map<String, Object> payload) {
+        try {
+            String host = payload.get("host") != null && !String.valueOf(payload.get("host")).isBlank()
+                    ? String.valueOf(payload.get("host")).trim()
+                    : systemSettingService.getSettingValue("smtp_host", "warners.hostns.io");
+            int port = 465;
+            if (payload.get("port") != null) {
+                try {
+                    port = Integer.parseInt(String.valueOf(payload.get("port")).trim());
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            String username = payload.get("username") != null
+                    ? String.valueOf(payload.get("username")).trim()
+                    : systemSettingService.getSettingValue("smtp_username", "notify@kdua.net");
+            String password = payload.get("password") != null
+                    ? String.valueOf(payload.get("password"))
+                    : "";
+
+            systemSettingService.testSmtpConnection(host, port, username, password);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "SMTP connection verified (" + host + ":" + port + ")"
+            ));
+        } catch (Exception e) {
+            log.warn("Notification Gateway SMTP connection test failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage() != null ? e.getMessage() : "SMTP connection test failed"
+            ));
+        }
+    }
+
+    private void syncNotificationSmtpToSystemSettings(Map<?, ?> updatesMap) {
+        try {
+            Map<String, String> smtpSettings = new java.util.HashMap<>();
+            if (updatesMap.get("SMTP_HOST") instanceof String v && !v.isBlank()) {
+                smtpSettings.put("smtp_host", v.trim());
+            }
+            if (updatesMap.get("SMTP_PORT") instanceof String v && !v.isBlank()) {
+                smtpSettings.put("smtp_port", v.trim());
+            }
+            if (updatesMap.get("SMTP_USER") instanceof String v && !v.isBlank()) {
+                smtpSettings.put("smtp_username", v.trim());
+            }
+            if (updatesMap.get("SMTP_PASSWORD") instanceof String v && !v.isBlank() && !v.contains("••")) {
+                smtpSettings.put("smtp_password", v);
+            }
+            if (updatesMap.get("SMTP_FROM") instanceof String v && !v.isBlank()) {
+                smtpSettings.put("smtp_from", v.trim());
+            }
+            if (!smtpSettings.isEmpty()) {
+                systemSettingService.updateSettings(smtpSettings);
+            }
+        } catch (Exception e) {
+            log.warn("Non-fatal: Failed to mirror Notification Gateway SMTP updates to system_settings: {}", e.getMessage());
         }
     }
 }
