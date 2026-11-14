@@ -15,6 +15,7 @@ import {
   type DeviceSessionData,
   type WebauthnCredentialData,
   type WebauthnRegisterChallengeData,
+  type SocialIdentityData,
 } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 import { apiClient } from "../../lib/api-client";
@@ -170,6 +171,7 @@ export function PreferencesPage() {
   const [passwordPolicy, setPasswordPolicy] = React.useState<PasswordPolicyData | undefined>(undefined);
   const [devices, setDevices] = React.useState<DeviceSessionData[]>([]);
   const [passkeys, setPasskeys] = React.useState<WebauthnCredentialData[]>([]);
+  const [socialIdentities, setSocialIdentities] = React.useState<SocialIdentityData[]>([]);
   const [isPasskeyModalOpen, setIsPasskeyModalOpen] = React.useState(false);
 
   // Client-side idle lock hook reading timeout (default 30 min)
@@ -182,11 +184,12 @@ export function PreferencesPage() {
     try {
       setIsLoading(true);
 
-      const [secData, devData, polData, passkeysData] = await Promise.all([
+      const [secData, devData, polData, passkeysData, socialData] = await Promise.all([
         apiClient<PersonalSecuritySummaryData>("/api/v1/me/security").catch(() => null),
         apiClient<DeviceSessionData[]>("/api/v1/me/devices").catch(() => []),
         apiClient<PasswordPolicyData>("/api/v1/users/password-policy").catch(() => null),
         apiClient<WebauthnCredentialData[]>("/api/v1/me/webauthn/credentials").catch(() => []),
+        apiClient<SocialIdentityData[]>("/api/v1/users/me/social-identities").catch(() => []),
       ]);
 
       if (secData) {
@@ -211,6 +214,10 @@ export function PreferencesPage() {
 
       if (passkeysData) {
         setPasskeys(passkeysData);
+      }
+
+      if (socialData) {
+        setSocialIdentities(socialData);
       }
     } catch (e) {
       console.warn("Failed to fetch tenant account security data:", e);
@@ -395,12 +402,27 @@ export function PreferencesPage() {
     }
   };
 
+  const handleDisconnectProvider = async (provider: string) => {
+    try {
+      await apiClient(`/api/v1/users/me/social-identities/${encodeURIComponent(provider)}`, {
+        method: "DELETE",
+      });
+      toast.success(labels.disconnectSuccess || "Disconnected identity provider successfully.");
+      fetchData();
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : labels.disconnectFailed || "Failed to disconnect identity provider."
+      );
+    }
+  };
+
   return (
     <>
       <AccountPreferencesShell
         plane="TENANT"
         user={userProfile}
         summary={securitySummary}
+        socialIdentities={socialIdentities}
         passkeys={passkeys}
         policy={passwordPolicy}
         devices={devices}
@@ -415,6 +437,7 @@ export function PreferencesPage() {
         onDisableEmailOtp={handleDisableEmailOtp}
         onRevokeDevice={handleRevokeDevice}
         onRevokeAllSessions={handleRevokeAllSessions}
+        onDisconnectProvider={handleDisconnectProvider}
         isLoading={isLoading}
       />
       <TotpSetupModal

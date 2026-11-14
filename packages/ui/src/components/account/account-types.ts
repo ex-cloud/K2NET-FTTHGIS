@@ -28,6 +28,12 @@ export interface DeviceSessionData {
   isCurrent?: boolean;
 }
 
+export interface SocialIdentityData {
+  provider: string;
+  userId?: string;
+  userName?: string;
+}
+
 export interface PersonalSecuritySummaryData {
   fullName?: string;
   username?: string;
@@ -43,6 +49,7 @@ export interface PersonalSecuritySummaryData {
   trustedDevicesCount: number;
   activeSessionsCount: number;
   linkedProviders?: string[];
+  linkedIdentities?: SocialIdentityData[];
 }
 
 export interface WebauthnCredentialData {

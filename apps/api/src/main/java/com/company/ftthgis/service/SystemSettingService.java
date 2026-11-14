@@ -381,28 +381,51 @@ public class SystemSettingService {
 
     public void testSmtpConnection(String host, int port, String username, String password) throws Exception {
         log.info("📧 Testing SMTP Connection to {}:{}...", host, port);
-        try (Socket socket = new Socket(host, port);
+        Socket rawSocket = new Socket();
+        rawSocket.connect(new java.net.InetSocketAddress(host, port), 5000);
+        rawSocket.setSoTimeout(5000);
+
+        try (Socket socket = (port == 465)
+                ? ((javax.net.ssl.SSLSocketFactory) javax.net.ssl.SSLSocketFactory.getDefault())
+                        .createSocket(rawSocket, host, port, true)
+                : rawSocket;
              BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true)) {
-            
-            socket.setSoTimeout(5000); // 5 seconds timeout
-            
-            // 1. Read Greeting
-            String line = reader.readLine();
-            if (line == null || !line.startsWith("220")) {
-                throw new Exception("Invalid greeting from SMTP server: " + (line != null ? line : "No response"));
-            }
-            
-            // 2. Send HELO
-            writer.println("HELO localhost");
-            line = reader.readLine();
-            if (line == null || !line.startsWith("250")) {
-                throw new Exception("HELO failed: " + (line != null ? line : "No response"));
-            }
 
-            // 3. Connection is reachable and responded to HELO
-            log.info("✅ SMTP Connection test to {}:{} succeeded!", host, port);
+            socket.setSoTimeout(5000); // 5 seconds timeout
+
+            // 1. Read Greeting (support RFC 5321 multi-line 220-... banners)
+            String line = readSmtpResponse(reader, "220", "Invalid greeting from SMTP server: ");
+
+            // 2. Send EHLO / HELO
+            writer.print("EHLO localhost\r\n");
+            writer.flush();
+            readSmtpResponse(reader, "250", "HELO/EHLO failed: ");
+
+            // 3. Gracefully close SMTP session
+            writer.print("QUIT\r\n");
+            writer.flush();
+
+            log.info("✅ SMTP Connection test to {}:{} succeeded! ({})", host, port, line);
         }
+    }
+
+    private String readSmtpResponse(BufferedReader reader, String expectedCode, String errorPrefix) throws Exception {
+        String firstLine = null;
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (firstLine == null) {
+                firstLine = line;
+            }
+            if (!line.startsWith(expectedCode)) {
+                throw new Exception(errorPrefix + line);
+            }
+            // RFC 5321: '220-' indicates continuation; '220 ' or '220' is the final line
+            if (line.length() < 4 || line.charAt(3) != '-') {
+                return firstLine;
+            }
+        }
+        throw new Exception(errorPrefix + "No response");
     }
 
     public String getSettingValue(String key) {

@@ -108,7 +108,7 @@
     "smtp_title": "Transactional Email & SMTP Gateway",
     "smtp_desc": "Configure transactional email relay for tenant magic activation links, verification codes, and password reset.",
     "smtp_host_label": "SMTP Host",
-    "smtp_host_placeholder": "s11740.sgp1.stableserver.net",
+    "smtp_host_placeholder": "warners.hostns.io",
     "smtp_port_label": "SMTP Port",
     "smtp_port_placeholder": "465",
     "smtp_user_label": "SMTP Username",

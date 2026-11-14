@@ -1,31 +1,81 @@
 import * as React from "react";
-import { Link2, CheckCircle2, Loader2, KeyRound } from "lucide-react";
+import { Link2, CheckCircle2, Loader2, KeyRound, Unlink } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../card";
 import { Button } from "../button";
 import { Badge } from "../badge";
-import { AccountLabels } from "./account-types";
+import { AccountLabels, SocialIdentityData } from "./account-types";
 
 export interface SocialIdentitiesCardProps {
   linkedProviders?: string[];
+  socialIdentities?: SocialIdentityData[];
   labels?: AccountLabels;
   onConnectProvider?: (provider: "google" | "github" | string) => Promise<void> | void;
   onDisconnectProvider?: (provider: "google" | "github" | string) => Promise<void> | void;
   isLoading?: boolean;
 }
 
+function formatIdentityDetail(identity?: SocialIdentityData): string | null {
+  if (!identity) return null;
+  const userName = identity.userName?.trim();
+  const userId = identity.userId?.trim();
+  if (userName && userId && userName !== userId) {
+    const formattedName = userName.includes("@") ? userName : `@${userName}`;
+    return `${formattedName} (ID: ${userId})`;
+  }
+  if (userName) {
+    return userName.includes("@") ? userName : `@${userName}`;
+  }
+  if (userId) {
+    return `ID: ${userId}`;
+  }
+  return null;
+}
+
 export function SocialIdentitiesCard({
   linkedProviders = [],
+  socialIdentities = [],
   labels,
+  onDisconnectProvider,
+  isLoading = false,
 }: SocialIdentitiesCardProps) {
-  const isGoogleLinked = linkedProviders.some((p) => p.toLowerCase().includes("google"));
-  const isGithubLinked = linkedProviders.some((p) => p.toLowerCase().includes("github"));
-  const linkedCorporateSso = linkedProviders.find(
-    (p) =>
-      p.toLowerCase().startsWith("sso-") ||
-      p.toLowerCase().includes("keycloak") ||
-      p.toLowerCase().includes("oidc")
+  const [disconnectingProvider, setDisconnectingProvider] = React.useState<string | null>(null);
+
+  const googleIdentity = socialIdentities.find((id) => id.provider.toLowerCase().includes("google"));
+  const githubIdentity = socialIdentities.find((id) => id.provider.toLowerCase().includes("github"));
+  const corporateSsoIdentity = socialIdentities.find(
+    (id) =>
+      id.provider.toLowerCase().startsWith("sso-") ||
+      id.provider.toLowerCase().includes("keycloak") ||
+      id.provider.toLowerCase().includes("oidc")
   );
+
+  const isGoogleLinked =
+    Boolean(googleIdentity) || linkedProviders.some((p) => p.toLowerCase().includes("google"));
+  const isGithubLinked =
+    Boolean(githubIdentity) || linkedProviders.some((p) => p.toLowerCase().includes("github"));
+  const linkedCorporateSso =
+    corporateSsoIdentity?.provider ||
+    linkedProviders.find(
+      (p) =>
+        p.toLowerCase().startsWith("sso-") ||
+        p.toLowerCase().includes("keycloak") ||
+        p.toLowerCase().includes("oidc")
+    );
   const isCorporateSsoLinked = Boolean(linkedCorporateSso);
+
+  const googleDetail = formatIdentityDetail(googleIdentity);
+  const githubDetail = formatIdentityDetail(githubIdentity);
+  const corporateSsoDetail = formatIdentityDetail(corporateSsoIdentity);
+
+  const handleDisconnect = async (providerKey: string) => {
+    if (!onDisconnectProvider) return;
+    try {
+      setDisconnectingProvider(providerKey);
+      await onDisconnectProvider(providerKey);
+    } finally {
+      setDisconnectingProvider(null);
+    }
+  };
 
   return (
     <Card className="border border-border/80 bg-card">
@@ -48,10 +98,15 @@ export function SocialIdentitiesCard({
               <KeyRound className="size-4 text-foreground" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h4 className="text-xs font-semibold">
                   Organization Single Sign-On {linkedCorporateSso ? `(${linkedCorporateSso})` : "(OIDC / SAML 2.0)"}
                 </h4>
+                {isCorporateSsoLinked && corporateSsoDetail && (
+                  <span className="inline-flex items-center rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+                    {corporateSsoDetail}
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground">
                 Sign in with your organization&apos;s federated Single Sign-On identity provider.
@@ -59,15 +114,34 @@ export function SocialIdentitiesCard({
             </div>
           </div>
 
-          <div>
+          <div className="flex items-center gap-2">
             {isCorporateSsoLinked ? (
-              <Badge
-                variant="outline"
-                className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium gap-1 px-2.5 py-1"
-              >
-                <CheckCircle2 className="size-3" />
-                <span>{labels?.connectedBadge || "Linked"}</span>
-              </Badge>
+              <>
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium gap-1 px-2.5 py-1"
+                >
+                  <CheckCircle2 className="size-3" />
+                  <span>{labels?.connectedBadge || "Linked"}</span>
+                </Badge>
+                {onDisconnectProvider && linkedCorporateSso && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoading || disconnectingProvider === linkedCorporateSso}
+                    onClick={() => handleDisconnect(linkedCorporateSso)}
+                    className="h-7 px-2.5 text-xs font-medium gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                  >
+                    {disconnectingProvider === linkedCorporateSso ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Unlink className="size-3.5" />
+                    )}
+                    <span>{labels?.disconnectBtn || "Disconnect"}</span>
+                  </Button>
+                )}
+              </>
             ) : (
               <Badge
                 variant="outline"
@@ -103,22 +177,46 @@ export function SocialIdentitiesCard({
               </svg>
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h4 className="text-xs font-semibold">Google</h4>
+                {isGoogleLinked && googleDetail && (
+                  <span className="inline-flex items-center rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+                    {googleDetail}
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground">Sign in with your Google workspace account.</p>
             </div>
           </div>
 
-          <div>
+          <div className="flex items-center gap-2">
             {isGoogleLinked ? (
-              <Badge
-                variant="outline"
-                className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium gap-1 px-2.5 py-1"
-              >
-                <CheckCircle2 className="size-3" />
-                <span>{labels?.connectedBadge || "Linked"}</span>
-              </Badge>
+              <>
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium gap-1 px-2.5 py-1"
+                >
+                  <CheckCircle2 className="size-3" />
+                  <span>{labels?.connectedBadge || "Linked"}</span>
+                </Badge>
+                {onDisconnectProvider && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoading || disconnectingProvider === (googleIdentity?.provider || "google")}
+                    onClick={() => handleDisconnect(googleIdentity?.provider || "google")}
+                    className="h-7 px-2.5 text-xs font-medium gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                  >
+                    {disconnectingProvider === (googleIdentity?.provider || "google") ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Unlink className="size-3.5" />
+                    )}
+                    <span>{labels?.disconnectBtn || "Disconnect"}</span>
+                  </Button>
+                )}
+              </>
             ) : (
               <Badge
                 variant="outline"
@@ -139,22 +237,46 @@ export function SocialIdentitiesCard({
               </svg>
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h4 className="text-xs font-semibold">GitHub</h4>
+                {isGithubLinked && githubDetail && (
+                  <span className="inline-flex items-center rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+                    {githubDetail}
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground">Sign in with your GitHub developer identity.</p>
             </div>
           </div>
 
-          <div>
+          <div className="flex items-center gap-2">
             {isGithubLinked ? (
-              <Badge
-                variant="outline"
-                className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium gap-1 px-2.5 py-1"
-              >
-                <CheckCircle2 className="size-3" />
-                <span>{labels?.connectedBadge || "Linked"}</span>
-              </Badge>
+              <>
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium gap-1 px-2.5 py-1"
+                >
+                  <CheckCircle2 className="size-3" />
+                  <span>{labels?.connectedBadge || "Linked"}</span>
+                </Badge>
+                {onDisconnectProvider && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoading || disconnectingProvider === (githubIdentity?.provider || "github")}
+                    onClick={() => handleDisconnect(githubIdentity?.provider || "github")}
+                    className="h-7 px-2.5 text-xs font-medium gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                  >
+                    {disconnectingProvider === (githubIdentity?.provider || "github") ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Unlink className="size-3.5" />
+                    )}
+                    <span>{labels?.disconnectBtn || "Disconnect"}</span>
+                  </Button>
+                )}
+              </>
             ) : (
               <Badge
                 variant="outline"

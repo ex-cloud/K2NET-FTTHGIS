@@ -13,6 +13,7 @@ import {
   type DeviceSessionData,
   type WebauthnCredentialData,
   type WebauthnRegisterChallengeData,
+  type SocialIdentityData,
 } from "@k2net/ui";
 import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
@@ -169,6 +170,7 @@ export default function AdminAccountPreferencesPage() {
   const [passwordPolicy, setPasswordPolicy] = React.useState<PasswordPolicyData | undefined>(undefined);
   const [devices, setDevices] = React.useState<DeviceSessionData[]>([]);
   const [passkeys, setPasskeys] = React.useState<WebauthnCredentialData[]>([]);
+  const [socialIdentities, setSocialIdentities] = React.useState<SocialIdentityData[]>([]);
   const [isPasskeyModalOpen, setIsPasskeyModalOpen] = React.useState(false);
 
   const fetchData = React.useCallback(async () => {
@@ -178,12 +180,13 @@ export default function AdminAccountPreferencesPage() {
       const baseUrl = getBackendBaseUrl();
       const authToken = session.accessToken ?? undefined;
 
-      // Parallel fetching of personal security summary, devices, password policy, and passkeys
-      const [secRes, devRes, polRes, passkeyRes] = await Promise.all([
+      // Parallel fetching of personal security summary, devices, password policy, passkeys, and social identities
+      const [secRes, devRes, polRes, passkeyRes, socialRes] = await Promise.all([
         httpClient(`${baseUrl}/me/security`, { token: authToken }),
         httpClient(`${baseUrl}/me/devices`, { token: authToken }),
         httpClient(`${baseUrl}/users/password-policy`, { token: authToken }),
         httpClient(`${baseUrl}/me/webauthn/credentials`, { token: authToken }),
+        httpClient(`${baseUrl}/users/me/social-identities`, { token: authToken }),
       ]);
 
       if (secRes.ok) {
@@ -212,6 +215,11 @@ export default function AdminAccountPreferencesPage() {
       if (passkeyRes.ok) {
         const passkeyData: WebauthnCredentialData[] = await passkeyRes.json();
         setPasskeys(passkeyData);
+      }
+
+      if (socialRes.ok) {
+        const socialData: SocialIdentityData[] = await socialRes.json();
+        setSocialIdentities(socialData);
       }
     } catch (e) {
       console.warn("Failed to fetch account security data:", e);
@@ -483,6 +491,7 @@ export default function AdminAccountPreferencesPage() {
         plane="SYSTEM"
         user={userProfile}
         summary={securitySummary}
+        socialIdentities={socialIdentities}
         passkeys={passkeys}
         policy={passwordPolicy}
         devices={devices}

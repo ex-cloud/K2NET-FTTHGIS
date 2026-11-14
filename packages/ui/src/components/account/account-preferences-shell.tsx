@@ -16,12 +16,14 @@ import {
   DeviceSessionData,
   AccountLabels,
   WebauthnCredentialData,
+  SocialIdentityData,
 } from "./account-types";
 
 export interface AccountPreferencesShellProps {
   plane?: PlaneType;
   user?: UserProfileData;
   summary?: PersonalSecuritySummaryData;
+  socialIdentities?: SocialIdentityData[];
   passkeys?: WebauthnCredentialData[];
   policy?: PasswordPolicyData;
   devices?: DeviceSessionData[];
@@ -45,6 +47,7 @@ export function AccountPreferencesShell({
   plane = "TENANT",
   user,
   summary,
+  socialIdentities,
   passkeys,
   policy,
   devices = [],
@@ -143,6 +146,7 @@ export function AccountPreferencesShell({
         <TabsContent value="identities" className="space-y-4">
           <SocialIdentitiesCard
             linkedProviders={summary?.linkedProviders}
+            socialIdentities={socialIdentities || summary?.linkedIdentities}
             labels={labels}
             onConnectProvider={onConnectProvider}
             onDisconnectProvider={onDisconnectProvider}

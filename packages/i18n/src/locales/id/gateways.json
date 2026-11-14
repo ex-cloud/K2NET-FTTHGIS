@@ -108,7 +108,7 @@
     "smtp_title": "Email Transaksional & Gateway SMTP",
     "smtp_desc": "Konfigurasi relay email transaksional untuk tautan aktivasi tenant, kode verifikasi, dan reset kata sandi.",
     "smtp_host_label": "Host SMTP",
-    "smtp_host_placeholder": "s11740.sgp1.stableserver.net",
+    "smtp_host_placeholder": "warners.hostns.io",
     "smtp_port_label": "Port SMTP",
     "smtp_port_placeholder": "465",
     "smtp_user_label": "Nama Pengguna SMTP",
