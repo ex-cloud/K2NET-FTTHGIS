@@ -5,7 +5,12 @@ import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.repository.RoleRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.entity.OrganizationMember;
+import com.company.ftthgis.domain.tenant.entity.Project;
+import com.company.ftthgis.domain.tenant.entity.ProjectMember;
+import com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.company.ftthgis.domain.tenant.repository.ProjectMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -13,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.keycloak.representations.idm.UserRepresentation;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +34,12 @@ public class UserSyncService {
     private final OrganizationRepository organizationRepository;
     private final KeycloakAdminService keycloakAdminService;
     private final SystemSettingService settingsService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private OrganizationMemberRepository organizationMemberRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ProjectMemberRepository projectMemberRepository;
 
     private static final List<String> SYSTEM_ROLE_PRIORITY = List.of(
             "super_admin", "system_support", "account_manager", "system_auditor"
@@ -100,12 +113,7 @@ public class UserSyncService {
                 updateExistingUser(existingUser.get(), email, name, username, resolvedOrg);
             } else {
                 userRepository.findByEmail(email)
-                        .map(user -> {
-                            log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
-                            userRepository.delete(user);
-                            userRepository.flush();
-                            return createNewUser(keycloakId, email, name, username, resolvedOrg);
-                        })
+                        .map(user -> relinkExistingUserToKeycloakId(user, keycloakId, email, name, username, resolvedOrg, null))
                         .orElseGet(() -> createNewUser(keycloakId, email, name, username, resolvedOrg));
             }
         }
@@ -185,11 +193,11 @@ public class UserSyncService {
         }
 
         // Resolve the highest-priority canonical role strictly within the realm's scope (Scope Air-Gap, V78):
-        //   - Platform realm ('ftth-realm') → SYSTEM templates only (never falls back to a TENANT role)
-        //   - Tenant realm ('k2net-tenants') → TENANT templates only (falls back to 'viewer')
+        //   - Do NOT default resolvedRole to 'viewer' when JWT has no canonical role claim, otherwise
+        //     existing database roles (or custom roles) would be overwritten on login!
         String roleScope = isSystemRealm ? "SYSTEM" : "TENANT";
         List<String> priorityRoles = isSystemRealm ? SYSTEM_ROLE_PRIORITY : TENANT_ROLE_PRIORITY;
-        String resolvedRole = isSystemRealm ? null : "viewer";
+        String resolvedRole = null;
         for (String r : priorityRoles) {
             if (roleNames.contains(r)) {
                 resolvedRole = r;
@@ -252,7 +260,8 @@ public class UserSyncService {
                         "Anda tidak memiliki hak akses untuk masuk ke domain/tenant ini."
                     );
                 }
-                if (org != null && userOrg != null && !userOrg.getId().equals(org.getId())) {
+                if (org != null && userOrg != null && !userOrg.getId().equals(org.getId())
+                        && !hasActiveMembershipInOrg(targetUser.getId(), org.getId())) {
                     log.warn("❌ Cross-tenant mismatch block for user {}: Registered org '{}', JWT claim org '{}'",
                             email, userOrgSlug, org.getSlug());
                     throw new org.springframework.security.authentication.BadCredentialsException(
@@ -284,13 +293,158 @@ public class UserSyncService {
             return updateExistingUser(user, email, name, username, resolvedOrg, isJwtStale, resolvedJwtRole);
         } else {
             return userRepository.findByEmail(email)
-                    .map(user -> {
-                        log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
-                        userRepository.delete(user);
-                        userRepository.flush();
-                        return createNewUser(keycloakId, email, name, username, resolvedOrg, resolvedJwtRole);
-                    })
+                    .map(user -> relinkExistingUserToKeycloakId(user, keycloakId, email, name, username, resolvedOrg, resolvedJwtRole))
                     .orElseGet(() -> createNewUser(keycloakId, email, name, username, resolvedOrg, resolvedJwtRole));
+        }
+    }
+
+    private boolean hasActiveMembershipInOrg(UUID userId, UUID orgId) {
+        if (organizationMemberRepository == null || userId == null || orgId == null) {
+            return false;
+        }
+        return organizationMemberRepository.existsByUserIdAndOrganizationIdAndStatus(userId, orgId, "ACTIVE");
+    }
+
+    private User relinkExistingUserToKeycloakId(
+            User oldUser,
+            String keycloakId,
+            String email,
+            String name,
+            String username,
+            Organization resolvedOrg,
+            Role resolvedJwtRole
+    ) {
+        log.info("🔗 Safely relinking existing local user {} (old ID: {}) to Keycloak ID {} without cascade data loss",
+                email, oldUser.getId(), keycloakId);
+
+        Organization effectiveOrg = resolvedOrg != null ? resolvedOrg : oldUser.getOrganization();
+        Role effectiveRole = oldUser.getRole() != null ? oldUser.getRole() : resolvedJwtRole;
+        String effectiveName = (oldUser.getFullName() != null && !oldUser.getFullName().isBlank())
+                ? oldUser.getFullName()
+                : name;
+        String oldPhone = oldUser.getPhone();
+        String oldJobTitle = oldUser.getJobTitle();
+        String oldSecondaryEmail = oldUser.getSecondaryEmail();
+        String oldAvatarUrl = oldUser.getAvatarUrl();
+
+        record MemberSnapshot(Organization org, Role role, String roleName, String status, boolean isDefault, LocalDateTime joinedAt) {}
+        record ProjectMemberSnapshot(Project project, Role role, Organization org) {}
+
+        List<MemberSnapshot> memberSnapshots = new ArrayList<>();
+        if (organizationMemberRepository != null && oldUser.getId() != null) {
+            for (OrganizationMember om : organizationMemberRepository.findByUserId(oldUser.getId())) {
+                memberSnapshots.add(new MemberSnapshot(
+                        om.getOrganization(),
+                        om.getRole() != null ? om.getRole() : effectiveRole,
+                        om.getRoleName() != null ? om.getRoleName() : (effectiveRole != null ? effectiveRole.getName() : "viewer"),
+                        "INVITED".equalsIgnoreCase(om.getStatus()) ? "ACTIVE" : om.getStatus(),
+                        om.isDefault(),
+                        om.getJoinedAt() != null ? om.getJoinedAt() : LocalDateTime.now()
+                ));
+            }
+        }
+
+        List<ProjectMemberSnapshot> projectSnapshots = new ArrayList<>();
+        if (projectMemberRepository != null && oldUser.getId() != null) {
+            for (ProjectMember pm : projectMemberRepository.findByUserId(oldUser.getId())) {
+                projectSnapshots.add(new ProjectMemberSnapshot(pm.getProject(), pm.getRole(), pm.getOrganization()));
+            }
+        }
+
+        userRepository.delete(oldUser);
+        userRepository.flush();
+
+        User newUser = createNewUser(keycloakId, email, effectiveName, username, effectiveOrg, effectiveRole);
+        boolean profileUpdated = false;
+        if (oldPhone != null && !oldPhone.isBlank()) {
+            newUser.setPhone(oldPhone);
+            profileUpdated = true;
+        }
+        if (oldJobTitle != null && !oldJobTitle.isBlank()) {
+            newUser.setJobTitle(oldJobTitle);
+            profileUpdated = true;
+        }
+        if (oldSecondaryEmail != null && !oldSecondaryEmail.isBlank()) {
+            newUser.setSecondaryEmail(oldSecondaryEmail);
+            profileUpdated = true;
+        }
+        if (oldAvatarUrl != null && !oldAvatarUrl.isBlank()) {
+            newUser.setAvatarUrl(oldAvatarUrl);
+            profileUpdated = true;
+        }
+        if (profileUpdated) {
+            newUser = userRepository.save(newUser);
+        }
+
+        if (organizationMemberRepository != null) {
+            for (MemberSnapshot snap : memberSnapshots) {
+                if (snap.org() != null && !organizationMemberRepository.existsByUserIdAndOrganizationId(newUser.getId(), snap.org().getId())) {
+                    OrganizationMember restored = OrganizationMember.builder()
+                            .user(newUser)
+                            .organization(snap.org())
+                            .role(snap.role())
+                            .roleName(snap.roleName())
+                            .status(snap.status() != null ? snap.status() : "ACTIVE")
+                            .isDefault(snap.isDefault())
+                            .joinedAt(snap.joinedAt())
+                            .build();
+                    organizationMemberRepository.save(restored);
+                }
+            }
+        }
+
+        if (projectMemberRepository != null) {
+            for (ProjectMemberSnapshot pSnap : projectSnapshots) {
+                if (pSnap.project() != null && !projectMemberRepository.existsByUserIdAndProjectId(newUser.getId(), pSnap.project().getId())) {
+                    ProjectMember restoredPm = new ProjectMember();
+                    restoredPm.setUser(newUser);
+                    restoredPm.setProject(pSnap.project());
+                    restoredPm.setRole(pSnap.role());
+                    restoredPm.setOrganization(pSnap.org() != null ? pSnap.org() : effectiveOrg);
+                    projectMemberRepository.save(restoredPm);
+                }
+            }
+        }
+
+        ensureActiveOrganizationMembership(newUser);
+        return newUser;
+    }
+
+    private void ensureActiveOrganizationMembership(User user) {
+        if (organizationMemberRepository == null || user == null || user.getId() == null || user.getOrganization() == null) {
+            return;
+        }
+        Organization org = user.getOrganization();
+        if ("system".equalsIgnoreCase(org.getSlug()) || "ex-cloud-org".equalsIgnoreCase(org.getSlug())) {
+            return;
+        }
+        Optional<OrganizationMember> existingOpt = organizationMemberRepository.findByUserIdAndOrganizationId(user.getId(), org.getId());
+        if (existingOpt.isEmpty()) {
+            Role role = user.getRole();
+            String roleName = role != null && role.getName() != null ? role.getName() : "viewer";
+            OrganizationMember selfHealed = OrganizationMember.builder()
+                    .user(user)
+                    .organization(org)
+                    .role(role)
+                    .roleName(roleName)
+                    .status("ACTIVE")
+                    .isDefault(true)
+                    .joinedAt(user.getCreatedAt() != null ? user.getCreatedAt() : LocalDateTime.now())
+                    .build();
+            organizationMemberRepository.save(selfHealed);
+            log.info("🛡️ Self-healed missing organization_members record for user {} in workspace {} with role '{}'",
+                    user.getEmail(), org.getSlug(), roleName);
+        } else {
+            OrganizationMember existing = existingOpt.get();
+            if ("INVITED".equalsIgnoreCase(existing.getStatus()) && "ACTIVE".equalsIgnoreCase(user.getStatus())) {
+                existing.setStatus("ACTIVE");
+                if (existing.getJoinedAt() == null) {
+                    existing.setJoinedAt(LocalDateTime.now());
+                }
+                existing.setInvitationToken(null);
+                existing.setInvitationExpiresAt(null);
+                organizationMemberRepository.save(existing);
+            }
         }
     }
 
@@ -305,14 +459,16 @@ public class UserSyncService {
     private User updateExistingUser(User user, String email, String name, String username, Organization org, boolean isJwtStale, Role jwtRole) {
         boolean changed = false;
         
-        // Update organization if changed (though it rarely should)
-        if (org != null && (user.getOrganization() == null || !user.getOrganization().getId().equals(org.getId()))) {
+        // Update organization if user does not have a primary organization yet
+        if (org != null && user.getOrganization() == null) {
             user.setOrganization(org);
             changed = true;
         }
 
-        // Update role if changed
-        if (jwtRole != null && (user.getRole() == null || !user.getRole().getId().equals(jwtRole.getId()))) {
+        // For Tenant Plane users, PostgreSQL (organization_members & users.role) is the authoritative source of truth.
+        // Only set user.role from jwtRole if user.role is currently null, OR if this is a Platform SYSTEM role sync.
+        boolean isSystemUser = user.getOrganization() == null && org == null;
+        if (jwtRole != null && (user.getRole() == null || (isSystemUser && !user.getRole().getId().equals(jwtRole.getId())))) {
             user.setRole(jwtRole);
             changed = true;
         }
@@ -334,7 +490,7 @@ public class UserSyncService {
         }
 
         if (!isJwtStale) {
-            if (name != null && !name.isEmpty() && (user.getFullName() == null || !user.getFullName().equals(name))) {
+            if (name != null && !name.isEmpty() && (user.getFullName() == null || user.getFullName().isBlank())) {
                 user.setFullName(name);
                 changed = true;
             }
@@ -356,10 +512,11 @@ public class UserSyncService {
         }
 
         if (changed) {
-            userRepository.save(user);
+            user = userRepository.save(user);
             log.debug("Updated local user profile for {}", user.getEmail());
         }
 
+        ensureActiveOrganizationMembership(user);
         return user;
     }
 
@@ -398,6 +555,7 @@ public class UserSyncService {
         user.setAvatarUrl("https://api.dicebear.com/9.x/avataaars/svg?seed=" + seed);
 
         User savedUser = userRepository.save(user);
+        ensureActiveOrganizationMembership(savedUser);
 
         return savedUser;
     }

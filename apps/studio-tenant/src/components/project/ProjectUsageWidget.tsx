@@ -4,6 +4,7 @@ import { Button, Card, cn } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { type Project } from "../../hooks/useProjects";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
+import { usePermissions } from "../../hooks/use-permissions";
 
 interface ProjectUsageWidgetProps {
   projects: Project[];
@@ -56,6 +57,8 @@ function CircularMeter({ percent }: { percent: number }) {
 
 export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
   const { t } = useTranslation();
+  const { canAccess } = usePermissions();
+  const canViewBilling = canAccess(["billing.view", "billing.manage", "billing.packages.subscribe"]);
   const {
     tier,
     planName,
@@ -190,14 +193,16 @@ export function ProjectUsageWidget({ projects }: ProjectUsageWidgetProps) {
               {t("billing.cycle_quota_usage", { plan: planName })}
             </p>
           </div>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="h-7 px-3 text-xs font-medium rounded-lg border-border/80 hover:bg-muted/50"
-          >
-            <Link to="/billing">{upgradeCtaText}</Link>
-          </Button>
+          {canViewBilling && (
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-7 px-3 text-xs font-medium rounded-lg border-border/80 hover:bg-muted/50"
+            >
+              <Link to="/billing">{upgradeCtaText}</Link>
+            </Button>
+          )}
         </div>
 
         {/* Usage list with border-groove-t dividers */}

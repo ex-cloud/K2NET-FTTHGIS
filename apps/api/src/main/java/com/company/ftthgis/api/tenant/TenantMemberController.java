@@ -25,13 +25,13 @@ public class TenantMemberController {
     private final OrganizationMemberService memberService;
 
     @GetMapping
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.hasEffectivePermission('members.view')")
+    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and (@tenantSecurity.hasEffectivePermission('members.view') or @tenantSecurity.hasEffectivePermission('team.view') or @tenantSecurity.hasEffectivePermission('users.view')))")
     public ResponseEntity<List<OrganizationMemberDto>> listMembers(@PathVariable String slug) {
         return ResponseEntity.ok(memberService.getOrganizationMembers(slug));
     }
 
     @PostMapping("/invite")
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.hasEffectivePermission('members.invite')")
+    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and (@tenantSecurity.hasEffectivePermission('members.invite') or @tenantSecurity.hasEffectivePermission('team.invite') or @tenantSecurity.hasEffectivePermission('users.invite')))")
     public ResponseEntity<OrganizationMemberDto> inviteMember(
             @PathVariable String slug,
             @Valid @RequestBody InviteMemberRequest request,
@@ -41,7 +41,7 @@ public class TenantMemberController {
     }
 
     @PutMapping("/{memberId}/role")
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.hasEffectivePermission('members.manage')")
+    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and (@tenantSecurity.hasEffectivePermission('members.manage') or @tenantSecurity.hasEffectivePermission('team.manage') or @tenantSecurity.hasEffectivePermission('users.manage')))")
     public ResponseEntity<OrganizationMemberDto> updateRole(
             @PathVariable String slug,
             @PathVariable UUID memberId,
@@ -52,7 +52,7 @@ public class TenantMemberController {
     }
 
     @DeleteMapping("/{memberId}")
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.hasEffectivePermission('members.manage')")
+    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and (@tenantSecurity.hasEffectivePermission('members.manage') or @tenantSecurity.hasEffectivePermission('team.manage') or @tenantSecurity.hasEffectivePermission('users.manage')))")
     public ResponseEntity<Map<String, Object>> removeMember(
             @PathVariable String slug,
             @PathVariable UUID memberId,

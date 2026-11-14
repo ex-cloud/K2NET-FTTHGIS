@@ -7,7 +7,7 @@ export function ProjectSettingsPageWrapper({ children }: { children: ReactNode }
   const { t } = useTranslation();
   return (
     <PermissionGuard
-      permission={["projects.edit", "projects.create", "projects.view"]}
+      permission={["projects.edit", "projects.create", "projects.delete", "members.manage", "team.manage"]}
       fallback={
         <TenantAccessDenied
           title={t("security.access_denied")}

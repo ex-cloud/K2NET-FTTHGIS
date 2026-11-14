@@ -23,7 +23,7 @@ func TestIsTrustedOrigin(t *testing.T) {
 		{"https://kircon-bandung-gis.kdua.net", "kdua.net", nil, true},
 		{"https://kircon-bandung-gis.kdua.net", "ftth-auth-gateway", nil, true},
 		{"https://custom-isp.com", "ftth-auth-gateway", []string{"custom-isp.com"}, true},
-		{"http://localhost:3000", "localhost:8000", nil, true},
+		{"http://localhost:3002", "localhost:8000", nil, true},
 		{"http://127.0.0.1:3001", "127.0.0.1:8000", nil, true},
 		{"https://malicious.com", "system-gis.kdua.net", nil, false},
 		{"https://kdua.net.attacker.com", "system-gis.kdua.net", nil, false},

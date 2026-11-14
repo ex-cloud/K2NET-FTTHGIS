@@ -61,19 +61,55 @@ public class PermissionSeeder implements CommandLineRunner {
         // 1. Define canonical application permissions (Fail-Close: scope is mandatory)
         List<PermissionData> permissionsToSeed = List.of(
             // ================= TENANT SCOPE PERMISSIONS =================
+            // dashboard — workspace operational overview
+            new PermissionData("dashboard.view", "View Dashboard", "dashboard", SCOPE_TENANT),
+
             // projects — FTTH infrastructure project management
-            new PermissionData("projects.view",   "View Projects",    "projects", SCOPE_TENANT),
-            new PermissionData("projects.create", "Create Projects",  "projects", SCOPE_TENANT),
-            new PermissionData("projects.edit",   "Edit Projects",    "projects", SCOPE_TENANT),
-            new PermissionData("projects.delete", "Delete Projects",  "projects", SCOPE_TENANT),
-            new PermissionData("projects.export", "Export Projects",  "projects", SCOPE_TENANT),
+            new PermissionData("projects.view",    "View Projects",                "projects", SCOPE_TENANT),
+            new PermissionData("projects.create",  "Create Projects",              "projects", SCOPE_TENANT),
+            new PermissionData("projects.edit",    "Edit Projects",                "projects", SCOPE_TENANT),
+            new PermissionData("projects.archive", "Archive / Unarchive Projects", "projects", SCOPE_TENANT),
+            new PermissionData("projects.delete",  "Delete Projects",              "projects", SCOPE_TENANT),
+            new PermissionData("projects.export",  "Export Projects",              "projects", SCOPE_TENANT),
+
+            // map, coverage & survey — spatial GIS canvas & zones
+            new PermissionData("map.view",      "View Network Map",                   "map",      SCOPE_TENANT),
+            new PermissionData("map.edit",      "Edit Map Layers",                    "map",      SCOPE_TENANT),
+            new PermissionData("coverage.view", "View Coverage Map",                  "coverage", SCOPE_TENANT),
+            new PermissionData("zones.view",    "View Project Coverage Zones",        "coverage", SCOPE_TENANT),
+            new PermissionData("zones.create",  "Create Project Zone",                "coverage", SCOPE_TENANT),
+            new PermissionData("zones.edit",    "Edit Project Zone",                  "coverage", SCOPE_TENANT),
+            new PermissionData("zones.delete",  "Delete Project Zone",                "coverage", SCOPE_TENANT),
+            new PermissionData("zones.promote", "Promote / Demote Zone Lifecycle Stage", "coverage", SCOPE_TENANT),
+            new PermissionData("survey.create", "Create Survey",                      "survey",   SCOPE_TENANT),
 
             // network — GIS network asset management
             new PermissionData("network.view",                "View Network Topology",               "network", SCOPE_TENANT),
+            new PermissionData("network.monitor",             "Monitor Network Status",              "network", SCOPE_TENANT),
             new PermissionData("network.manage",              "Manage Network Assets",               "network", SCOPE_TENANT),
             new PermissionData("network.manage.all-projects", "Manage Cross-Project Network Assets", "network", SCOPE_TENANT),
             new PermissionData("network.nodes",               "Manage Network Nodes (ODC/ODP)",      "network", SCOPE_TENANT),
             new PermissionData("network.audit",               "Audit Network Changes",               "network", SCOPE_TENANT),
+
+            // inventory — stock & asset tracking
+            new PermissionData("inventory.view",   "View Inventory",          "inventory", SCOPE_TENANT),
+            new PermissionData("inventory.edit",   "Edit Inventory Items",    "inventory", SCOPE_TENANT),
+            new PermissionData("inventory.manage", "Manage Inventory Stocks", "inventory", SCOPE_TENANT),
+            new PermissionData("inventory.report", "View Inventory Reports",  "inventory", SCOPE_TENANT),
+
+            // ticket, task, customer & approval — field operations & helpdesk
+            new PermissionData("ticket.view",     "View Ticket",              "ticket",   SCOPE_TENANT),
+            new PermissionData("ticket.create",   "Create Ticket",            "ticket",   SCOPE_TENANT),
+            new PermissionData("ticket.update",   "Update Ticket",            "ticket",   SCOPE_TENANT),
+            new PermissionData("ticket.assign",   "Assign Ticket",            "ticket",   SCOPE_TENANT),
+            new PermissionData("task.update",     "Update Task Status",       "task",     SCOPE_TENANT),
+            new PermissionData("customer.view",   "View Customer Data",       "customer", SCOPE_TENANT),
+            new PermissionData("approval.manage", "View Approval Requests",   "approval", SCOPE_TENANT),
+
+            // report & audit — operational reporting & tenant audit trail
+            new PermissionData("report.view",   "View Reports",    "report", SCOPE_TENANT),
+            new PermissionData("report.export", "Export Reports",  "report", SCOPE_TENANT),
+            new PermissionData("audit.view",    "View Audit Logs", "audit",  SCOPE_TENANT),
 
             // team — member management
             new PermissionData("team.view",   "View Team Members",   "team", SCOPE_TENANT),
@@ -83,14 +119,11 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("members.manage", "Manage Workspace Members", "organization", SCOPE_TENANT),
             new PermissionData("members.invite", "Invite Workspace Members", "organization", SCOPE_TENANT),
 
-            // inventory — stock & asset tracking
-            new PermissionData("inventory.view",   "View Inventory",          "inventory", SCOPE_TENANT),
-            new PermissionData("inventory.manage", "Manage Inventory Stocks", "inventory", SCOPE_TENANT),
-            new PermissionData("inventory.report", "View Inventory Reports",  "inventory", SCOPE_TENANT),
-
             // billing (tenant) — tenant self-service subscription management
-            new PermissionData("billing.view",   "View Billing Info",              "billing", SCOPE_TENANT),
-            new PermissionData("billing.manage", "Manage Billing & Subscriptions", "billing", SCOPE_TENANT),
+            new PermissionData("billing.view",               "View Billing Info",                   "billing", SCOPE_TENANT),
+            new PermissionData("billing.manage",             "Manage Billing & Subscriptions",      "billing", SCOPE_TENANT),
+            new PermissionData("billing.packages.view",      "View Tenant Subscribed Packages",     "billing", SCOPE_TENANT),
+            new PermissionData("billing.packages.subscribe", "Subscribe Tenant Marketplace Packages","billing", SCOPE_TENANT),
 
             // security (tenant) — roles & user account management
             new PermissionData("roles.view",   "View Roles & Permissions", "security", SCOPE_TENANT),
@@ -103,12 +136,13 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("security.sso.view",      "View Tenant SSO Configuration",   "security", SCOPE_TENANT),
             new PermissionData("security.sso.manage",    "Manage Tenant SSO Configuration", "security", SCOPE_TENANT),
 
-            // organizations (tenant) — tenant-scoped organization settings
-            new PermissionData("organizations.view",            "View Organization Details",    "organizations", SCOPE_TENANT),
-            new PermissionData("organizations.update",          "Update Organization Settings", "organizations", SCOPE_TENANT),
-            new PermissionData("organizations.create",          "Create Organizations",         "organizations", SCOPE_TENANT),
-            new PermissionData("organizations.delete",          "Delete Organizations",         "organizations", SCOPE_TENANT),
-            new PermissionData("organizations.webhooks.manage", "Manage Tenant Webhooks & Keys","organizations", SCOPE_TENANT),
+            // organizations & branding (tenant) — tenant-scoped organization settings
+            new PermissionData("organizations.view",            "View Organization Details",               "organizations", SCOPE_TENANT),
+            new PermissionData("organizations.update",          "Update Organization Settings",            "organizations", SCOPE_TENANT),
+            new PermissionData("organizations.create",          "Create Organizations",                    "organizations", SCOPE_TENANT),
+            new PermissionData("organizations.delete",          "Delete Organizations",                    "organizations", SCOPE_TENANT),
+            new PermissionData("organizations.webhooks.manage", "Manage Tenant Webhooks & Keys",           "organizations", SCOPE_TENANT),
+            new PermissionData("feature.branding.whitelabel",   "Custom Domain & Whitelabel Branding Access", "branding",   SCOPE_TENANT),
 
             // integration (tenant) — developer open API and webhooks
             new PermissionData("feature.integration.open_api", "Developer REST API & Webhooks Access", "integration", SCOPE_TENANT),
@@ -256,9 +290,31 @@ public class PermissionSeeder implements CommandLineRunner {
 
         // 4. Sync Tenant Template Roles (Strictly locked to TENANT scope!)
         syncSystemRole("admin", allPermissionsInDb, "TENANT_ALL");
+        syncSystemRole("noc", allPermissionsInDb,
+            "dashboard.view", "projects.view", "map.view", "map.edit", "zones.view", "coverage.view",
+            "network.view", "network.monitor", "network.manage", "network.nodes", "network.audit",
+            "inventory.view", "inventory.edit",
+            "ticket.view", "ticket.create", "ticket.update", "ticket.assign", "task.update",
+            "customer.view", "report.view");
         syncSystemRole("technician", allPermissionsInDb,
-            "projects.view", "network.view", "inventory.view", "ticket.", "task.", "map.");
-        syncSystemRole("viewer", allPermissionsInDb, ".view");
+            "dashboard.view", "projects.view", "map.view", "zones.view", "coverage.view",
+            "network.view", "inventory.view",
+            "ticket.view", "ticket.update", "task.update");
+        syncSystemRole("surveyor", allPermissionsInDb,
+            "dashboard.view", "projects.view", "map.view", "map.edit",
+            "coverage.view", "zones.view", "zones.create", "zones.edit",
+            "survey.create", "inventory.view");
+        syncSystemRole("finance", allPermissionsInDb,
+            "dashboard.view", "billing.view", "billing.manage",
+            "billing.packages.view", "billing.packages.subscribe",
+            "report.view", "report.export");
+        syncSystemRole("helpdesk", allPermissionsInDb,
+            "dashboard.view", "projects.view", "map.view", "coverage.view", "network.view",
+            "customer.view", "ticket.view", "ticket.create", "ticket.update", "ticket.assign");
+        // Viewer is strictly a read-only operational GIS & project observer — NEVER granted org/billing/security/team/audit permissions
+        syncSystemRole("viewer", allPermissionsInDb,
+            "dashboard.view", "projects.view", "map.view", "zones.view", "coverage.view",
+            "network.view", "inventory.view");
 
         // 5. Evict Hibernate L2 Cache AFTER mutations so fresh role mappings are immediately visible
         evictSecondLevelCache();

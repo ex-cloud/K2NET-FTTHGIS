@@ -27,6 +27,8 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "@k2net/i18n";
 import { useTenantLicense } from "../../hooks/useTenantLicense";
+import { useTenantSubscription } from "../../hooks/useTenantSubscription";
+import { usePermissions } from "../../hooks/use-permissions";
 import { SsoFormFields } from "./SsoFormFields";
 
 export interface SsoConfigResponse {
@@ -52,8 +54,14 @@ export interface SsoConfigResponse {
 export function SsoSettingsSection({ slug }: { slug?: string }) {
   const { t } = useTranslation();
   const { license, isLoading: isLicenseLoading } = useTenantLicense();
+  const { tier, canAccessSso, isLoading: isSubLoading } = useTenantSubscription();
+  const { canAccess } = usePermissions();
+  const canManageSso = canAccess(["security.sso.manage", "organizations.update"]);
 
-  const isSsoAllowed = Boolean(license?.entitlements?.ssoEnabled);
+  const isSsoAllowed = Boolean(
+    license?.entitlements?.ssoEnabled || tier === "enterprise" || canAccessSso
+  );
+  const isSsoInteractive = isSsoAllowed && canManageSso;
 
   const [providerType, setProviderType] = React.useState<string>("GOOGLE");
   const [displayName, setDisplayName] = React.useState<string>("");
@@ -261,11 +269,11 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
 
   return (
     <div className="space-y-4">
-      {!isSsoAllowed && !isLicenseLoading && <SsoLockedNoticeCard />}
+      {!isSsoAllowed && !isLicenseLoading && !isSubLoading && <SsoLockedNoticeCard />}
 
       <Card className="p-5 border-border/60 bg-card space-y-5 shadow-xs">
         <SsoProbeHeader
-          isSsoAllowed={isSsoAllowed}
+          isSsoAllowed={isSsoInteractive}
           isTesting={isTesting}
           canProbe={Boolean(
             issuerUrl ||
@@ -280,7 +288,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         />
 
         <SsoFormFields
-          isSsoAllowed={isSsoAllowed}
+          isSsoAllowed={isSsoInteractive}
           isLoading={isLoading}
           providerType={providerType}
           displayName={displayName}
@@ -304,7 +312,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         />
 
         <SsoEnforcementSwitches
-          isSsoAllowed={isSsoAllowed}
+          isSsoAllowed={isSsoInteractive}
           isLoading={isLoading}
           lastTestStatus={lastTestStatus}
           enforceSso={enforceSso}
@@ -313,35 +321,37 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           onAllowBreakGlassBypassChange={setAllowBreakGlassBypass}
         />
 
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-          <div>
-            {clientId && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!isSsoAllowed || isDeleting}
-                onClick={() => setConfirmDeleteOpen(true)}
-                className="h-7 px-2.5 text-xs font-medium gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60 hover:bg-destructive/10"
-              >
-                <Trash2 className="size-3.5" />
-                {t("settings.sso_delete_btn")}
-              </Button>
-            )}
-          </div>
+        {canManageSso && (
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+            <div>
+              {clientId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!isSsoInteractive || isDeleting}
+                  onClick={() => setConfirmDeleteOpen(true)}
+                  className="h-7 px-2.5 text-xs font-medium gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60 hover:bg-destructive/10"
+                >
+                  <Trash2 className="size-3.5" />
+                  {t("settings.sso_delete_btn")}
+                </Button>
+              )}
+            </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              disabled={!isSsoAllowed || isSaving || !clientId.trim()}
-              onClick={handleSave}
-              className="h-7 px-2.5 text-xs font-medium gap-1.5"
-            >
-              {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-              {t("settings.sso_save_btn")}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                disabled={!isSsoInteractive || isSaving || !clientId.trim()}
+                onClick={handleSave}
+                className="h-7 px-2.5 text-xs font-medium gap-1.5"
+              >
+                {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+                {t("settings.sso_save_btn")}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </Card>
 
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>

@@ -1,15 +1,17 @@
 import { type ReactNode } from "react";
+import { useTranslation } from "@k2net/i18n";
 import { PermissionGuard } from "../../hooks/use-permissions";
 import { TenantAccessDenied } from "./TenantAccessDenied";
 
 export function CorePageWrapper({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <PermissionGuard
-      permission={["network.view", "network.manage"]}
+      permission={["network.view", "network.manage", "network.monitor", "network.nodes"]}
       fallback={
         <TenantAccessDenied
-          title="Akses Infrastruktur Core Dibatasi"
-          description="Hanya teknisi senior atau network engineer yang memiliki akses ke telemetri OLT, router core, dan server poller."
+          title={t("security.access_denied")}
+          description={t("security.access_denied_core")}
           requiredPermission="network.view"
         />
       }

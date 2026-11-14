@@ -22,6 +22,7 @@
     "audit:security": "bash scripts/audit-security-matrix.sh",
     "audit:rbac": "bash scripts/audit-security-matrix.sh",
     "audit:adr": "bash scripts/audit-adr.sh",
+    "audit:sdlc": "bash scripts/audit-sdlc-docs.sh",
     "audit:versioning": "bash scripts/audit-api-versioning.sh",
     "audit:colors": "bash packages/ui/scripts/audit-colors.sh",
     "audit:design-system": "bash scripts/audit-design-system.sh all",

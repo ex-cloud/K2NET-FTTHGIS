@@ -18,6 +18,7 @@ import {
   type SecondarySidebarConfig,
 } from "../../../config/tenant-sidebar-navigation";
 import { useTenantInfo } from "../../../hooks/useTenantInfo";
+import { usePermissions } from "../../../hooks/use-permissions";
 
 interface TenantMobileMenuTabProps {
   pathname: string;
@@ -33,6 +34,7 @@ export function TenantMobileMenuTab({
   onClose,
 }: TenantMobileMenuTabProps) {
   const { t } = useTranslation();
+  const { canAccess } = usePermissions();
   const { organizationName } = useTenantInfo();
   const resolvedProjectId = projectId || "";
   const isProjectScope = Boolean(pathname.startsWith(`/project/`) && resolvedProjectId);
@@ -47,13 +49,30 @@ export function TenantMobileMenuTab({
     return pathname === href || pathname.startsWith(href);
   };
 
-  const navItems: NavItem[] = isProjectScope
+  const navItems: NavItem[] = (isProjectScope
     ? getProjectNavItems(resolvedProjectId)
-    : ORG_NAV_ITEMS;
+    : ORG_NAV_ITEMS
+  ).filter((item) => canAccess(item.requiredPermission));
 
-  const secondaryConfigs: Record<string, SecondarySidebarConfig> = isProjectScope
+  const rawSecondaryConfigs: Record<string, SecondarySidebarConfig> = isProjectScope
     ? getProjectSecondaryConfigs(resolvedProjectId)
     : ORG_SECONDARY_CONFIGS;
+
+  const secondaryConfigs: Record<string, SecondarySidebarConfig> = React.useMemo(() => {
+    const out: Record<string, SecondarySidebarConfig> = {};
+    for (const [k, cfg] of Object.entries(rawSecondaryConfigs)) {
+      const filteredSections = cfg.sections
+        .map((s) => ({
+          ...s,
+          items: s.items.filter((sub) => canAccess(sub.requiredPermission)),
+        }))
+        .filter((s) => s.items.length > 0);
+      if (filteredSections.length > 0) {
+        out[k] = { ...cfg, sections: filteredSections };
+      }
+    }
+    return out;
+  }, [rawSecondaryConfigs, canAccess]);
 
   const currentSecondaryConfig: SecondarySidebarConfig | undefined = activeSecondaryKey
     ? secondaryConfigs[activeSecondaryKey]

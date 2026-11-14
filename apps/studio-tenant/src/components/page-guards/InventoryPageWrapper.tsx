@@ -1,15 +1,17 @@
 import { type ReactNode } from "react";
+import { useTranslation } from "@k2net/i18n";
 import { PermissionGuard } from "../../hooks/use-permissions";
 import { TenantAccessDenied } from "./TenantAccessDenied";
 
 export function InventoryPageWrapper({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <PermissionGuard
-      permission={["inventory.view", "network.view"]}
+      permission={["inventory.view", "inventory.edit", "inventory.manage", "network.view"]}
       fallback={
         <TenantAccessDenied
-          title="Akses Inventaris FTTH Dibatasi"
-          description="Anda memerlukan hak akses inventaris untuk melihat aset ODC, ODP, kabel bentang, dan generator BoQ."
+          title={t("security.access_denied")}
+          description={t("security.access_denied_inventory")}
           requiredPermission="inventory.view"
         />
       }

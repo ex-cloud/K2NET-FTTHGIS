@@ -18,6 +18,7 @@ import { useAuth } from "@k2net/auth/client";
 import { useTranslation, type SupportedLocale } from "@k2net/i18n";
 import { useTenantInfo } from "../hooks/useTenantInfo";
 import { useImpersonationSession } from "../lib/useImpersonationSession";
+import { usePermissions } from "../hooks/use-permissions";
 
 function useMonoMode(mounted: boolean) {
   const [isMono, setIsMono] = React.useState(false);
@@ -74,13 +75,138 @@ function useTimezonePreference(mounted: boolean) {
   return { selectedTimezone, setTimezone };
 }
 
+function computeNextPlanInfo(
+  planTier: string | undefined,
+  t: (key: string, params?: Record<string, string | number>) => string
+) {
+  const rawTier = (planTier || "pro").toLowerCase();
+  if (rawTier.includes("enterprise") || rawTier.includes("sla")) {
+    return {
+      isTopTier: true,
+      targetPlan: "Enterprise",
+      label: `${t("billing.current_plan")}: Enterprise`,
+    };
+  }
+  if (rawTier.includes("pro") || rawTier.includes("business")) {
+    return {
+      isTopTier: false,
+      targetPlan: "Enterprise",
+      label: t("billing.upgrade_to", { planName: "Enterprise" }) || "Upgrade to Enterprise",
+    };
+  }
+  if (rawTier.includes("starter")) {
+    return {
+      isTopTier: false,
+      targetPlan: "Pro",
+      label: t("billing.upgrade_to", { planName: "Pro" }) || "Upgrade to Pro",
+    };
+  }
+  return {
+    isTopTier: false,
+    targetPlan: "Starter",
+    label: t("billing.upgrade_to", { planName: "Starter" }) || "Upgrade to Starter",
+  };
+}
+
+function TenantNavDropdownItems({
+  canAccessSettings,
+  canAccessTeam,
+  canAccessBilling,
+  hasMultipleWorkspaces,
+  onNavigate,
+  onOpenSwitcher,
+}: {
+  canAccessSettings: boolean;
+  canAccessTeam: boolean;
+  canAccessBilling: boolean;
+  hasMultipleWorkspaces: boolean;
+  onNavigate: (to: string) => void;
+  onOpenSwitcher: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuItem
+        className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
+        onClick={() => onNavigate("/account/preferences")}
+      >
+        <User className="size-3.5 text-muted-foreground" />
+        <span>{t("nav.account_preferences")}</span>
+      </DropdownMenuItem>
+      {canAccessSettings && (
+        <DropdownMenuItem
+          className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
+          onClick={() => onNavigate("/settings")}
+        >
+          <Building className="size-3.5 text-muted-foreground" />
+          <span>{t("nav.tenant_settings")}</span>
+        </DropdownMenuItem>
+      )}
+      {canAccessTeam && (
+        <DropdownMenuItem
+          className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
+          onClick={() => onNavigate("/team")}
+        >
+          <Users className="size-3.5 text-muted-foreground" />
+          <span>{t("nav.tenant_team")}</span>
+        </DropdownMenuItem>
+      )}
+      {canAccessBilling && (
+        <DropdownMenuItem
+          className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
+          onClick={() => onNavigate("/billing")}
+        >
+          <CreditCard className="size-3.5 text-muted-foreground" />
+          <span>{t("nav.tenant_billing")}</span>
+        </DropdownMenuItem>
+      )}
+      {hasMultipleWorkspaces && (
+        <DropdownMenuItem
+          className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2 text-primary"
+          onClick={onOpenSwitcher}
+        >
+          <Building2 className="size-3.5 text-primary" />
+          <span>{t("nav.switch_workspace")}</span>
+        </DropdownMenuItem>
+      )}
+    </DropdownMenuGroup>
+  );
+}
+
 export function TenantUserNav() {
   const { t, locale, setLocale } = useTranslation();
   const { user, logout, initialized } = useAuth();
   const { setTheme, resolvedTheme } = useTheme();
   const { organizationName, planTier } = useTenantInfo();
   const { isImpersonating, exitSession, isExiting } = useImpersonationSession();
+  const { canAccess } = usePermissions();
   const navigate = useNavigate();
+
+  const canAccessSettings = canAccess([
+    "organizations.view",
+    "organizations.update",
+    "security.policy.view",
+    "security.policy.manage",
+    "security.sso.view",
+    "security.sso.manage",
+    "organizations.webhooks.manage",
+  ]);
+  const canAccessTeam = canAccess([
+    "team.view",
+    "team.manage",
+    "members.view",
+    "members.manage",
+    "users.view",
+    "roles.view",
+    "roles.update",
+    "roles.manage",
+  ]);
+  const canAccessBilling = canAccess([
+    "billing.view",
+    "billing.manage",
+    "billing.packages.view",
+    "billing.packages.subscribe",
+  ]);
 
   const mounted = React.useSyncExternalStore(
     () => () => {},
@@ -145,43 +271,16 @@ export function TenantUserNav() {
     });
   };
 
-  const nextPlanInfo = React.useMemo(() => {
-    const rawTier = (planTier || "pro").toLowerCase();
-    if (rawTier.includes("enterprise") || rawTier.includes("sla")) {
-      return {
-        isTopTier: true,
-        targetPlan: "Enterprise",
-        label: `${t("billing.current_plan")}: Enterprise`,
-      };
-    }
-    if (rawTier.includes("pro") || rawTier.includes("business")) {
-      return {
-        isTopTier: false,
-        targetPlan: "Enterprise",
-        label: t("billing.upgrade_to", { planName: "Enterprise" }) || "Upgrade to Enterprise",
-      };
-    }
-    if (rawTier.includes("starter")) {
-      return {
-        isTopTier: false,
-        targetPlan: "Pro",
-        label: t("billing.upgrade_to", { planName: "Pro" }) || "Upgrade to Pro",
-      };
-    }
-    // Free / Trial / Basic
-    return {
-      isTopTier: false,
-      targetPlan: "Starter",
-      label: t("billing.upgrade_to", { planName: "Starter" }) || "Upgrade to Starter",
-    };
-  }, [planTier, t]);
+  const nextPlanInfo = React.useMemo(
+    () => computeNextPlanInfo(planTier, t),
+    [planTier, t]
+  );
 
   const displayName = isImpersonating
     ? `Super Admin (${t("security.impersonation_active_title")})`
     : (user?.name || user?.username || "Tenant Admin");
-  const subText = isImpersonating
-    ? `${organizationName || "Tenant"} Workspace`
-    : (user?.email || (organizationName ? `${organizationName} Workspace` : "Organization Workspace"));
+  const defaultWorkspaceLabel = organizationName ? `${organizationName} Workspace` : "Organization Workspace";
+  const subText = isImpersonating ? defaultWorkspaceLabel : (user?.email || defaultWorkspaceLabel);
 
   return (
     <>
@@ -219,45 +318,14 @@ export function TenantUserNav() {
         signOut: t("nav.sign_out"),
       }}
       navigationSlot={
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
-            onClick={() => navigate({ to: "/account/preferences" })}
-          >
-            <User className="size-3.5 text-muted-foreground" />
-            <span>{t("nav.account_preferences")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
-            onClick={() => navigate({ to: "/settings" })}
-          >
-            <Building className="size-3.5 text-muted-foreground" />
-            <span>{t("nav.tenant_settings")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
-            onClick={() => navigate({ to: "/team" })}
-          >
-            <Users className="size-3.5 text-muted-foreground" />
-            <span>{t("nav.tenant_team")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2"
-            onClick={() => navigate({ to: "/billing" })}
-          >
-            <CreditCard className="size-3.5 text-muted-foreground" />
-            <span>{t("nav.tenant_billing")}</span>
-          </DropdownMenuItem>
-          {workspaces.length > 1 && (
-            <DropdownMenuItem
-              className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer gap-2 text-primary"
-              onClick={() => setIsSwitcherOpen(true)}
-            >
-              <Building2 className="size-3.5 text-primary" />
-              <span>{t("nav.switch_workspace")}</span>
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuGroup>
+        <TenantNavDropdownItems
+          canAccessSettings={canAccessSettings}
+          canAccessTeam={canAccessTeam}
+          canAccessBilling={canAccessBilling}
+          hasMultipleWorkspaces={workspaces.length > 1}
+          onNavigate={(to) => navigate({ to })}
+          onOpenSwitcher={() => setIsSwitcherOpen(true)}
+        />
       }
       impersonationSlot={
         isImpersonating ? (
@@ -274,7 +342,7 @@ export function TenantUserNav() {
         ) : undefined
       }
       actionSlot={
-        !isImpersonating ? (
+        !isImpersonating && canAccessBilling ? (
           <div className="p-0.5">
             <button
               type="button"

@@ -7,12 +7,20 @@ export function OrgSettingsPageWrapper({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   return (
     <PermissionGuard
-      permission={["organizations.view", "organizations.update"]}
+      permission={[
+        "organizations.view",
+        "organizations.update",
+        "security.policy.view",
+        "security.policy.manage",
+        "security.sso.view",
+        "security.sso.manage",
+        "organizations.webhooks.manage",
+      ]}
       fallback={
         <TenantAccessDenied
           title={t("security.access_denied")}
           description={t("security.access_denied_settings")}
-          requiredPermission="organizations.update"
+          requiredPermission="organizations.view"
         />
       }
     >

@@ -223,6 +223,23 @@ public class TenantSecurity {
                         return true;
                     }
                 }
+
+                // Allow organization-wide access if user has 0 restricted project_members rows ("All Projects" scope)
+                // and holds projects.view within the same organization
+                List<?> restrictedMemberships = projectMemberRepository.findByUserId(user.getId());
+                if ((restrictedMemberships == null || restrictedMemberships.isEmpty()) && hasEffectivePermission("projects.view")) {
+                    var projOpt = projectRepository.findById(projectId);
+                    if (projOpt.isPresent() && projOpt.get().getOrganization() != null) {
+                        UUID projOrgId = projOpt.get().getOrganization().getId();
+                        boolean sameOrg = (user.getOrganization() != null && projOrgId.equals(user.getOrganization().getId()))
+                                || (organizationMemberRepository != null
+                                    && organizationMemberRepository.existsByUserIdAndOrganizationIdAndStatus(user.getId(), projOrgId, "ACTIVE"));
+                        if (sameOrg) {
+                            log.debug("🛡️ TenantSecurity: Access granted via org-wide 'All Projects' scope for project: {}", projectId);
+                            return true;
+                        }
+                    }
+                }
                 log.warn("🛡️ TenantSecurity: Access DENIED. User {} is not an authorized member of project: {}", subject, projectId);
             }
         } catch (Exception e) {

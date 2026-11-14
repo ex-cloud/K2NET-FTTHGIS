@@ -194,6 +194,8 @@ public class SecurityConfig {
             @Lazy com.company.ftthgis.service.UserSyncService userSyncService,
             com.company.ftthgis.domain.user.repository.RoleRepository roleRepository,
             com.company.ftthgis.domain.user.repository.UserRepository userRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false)
+            com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository organizationMemberRepository,
             PlatformRealmValidator platformRealmValidator) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
 
@@ -209,14 +211,14 @@ public class SecurityConfig {
                 System.err.println("Generic error syncing user from JWT: " + e.getMessage());
             }
 
-            // 2. Extract Roles and dynamic Permissions via strict Allowlist
-            return new KeycloakRoleConverter(roleRepository, userRepository, platformRealmValidator).convert(jwt);
+            // 2. Extract Roles and dynamic Permissions via strict Allowlist + DB Authoritative Resolution
+            return new KeycloakRoleConverter(roleRepository, userRepository, organizationMemberRepository, platformRealmValidator).convert(jwt);
         });
 
         return converter;
     }
 
-    @org.springframework.beans.factory.annotation.Value("${app.security.cors.allowed-origins:http://localhost:3000}")
+    @org.springframework.beans.factory.annotation.Value("${app.security.cors.allowed-origins:http://localhost:3001,http://localhost:3002}")
     private String allowedOrigins;
 
     @Bean
@@ -236,23 +238,39 @@ public class SecurityConfig {
     }
 
     /**
-     * Converter untuk mengambil Role dari 'realm_access' di token JWT Keycloak,
-     * lalu memetakan ke tabel permissions di local Database berdasarkan organisasi.
-     * Menggunakan Strict Allowlist: Role dari tenant realm HANYA diakui jika terdaftar di database organisasi.
+     * Converter untuk mengambil Role dari local Database ('organization_members' / 'users.role')
+     * serta 'realm_access' di token JWT Keycloak, lalu memetakan ke tabel permissions berdasarkan organisasi.
+     * Menggunakan Strict Allowlist & Scope Air-Gap: Role dari tenant realm HANYA diakui jika berscope TENANT.
      */
     static class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KeycloakRoleConverter.class);
         private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
         private final com.company.ftthgis.domain.user.repository.UserRepository userRepository;
+        private final com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository organizationMemberRepository;
         private final PlatformRealmValidator platformRealmValidator;
 
         public KeycloakRoleConverter(
                 com.company.ftthgis.domain.user.repository.RoleRepository roleRepository,
                 com.company.ftthgis.domain.user.repository.UserRepository userRepository,
                 PlatformRealmValidator platformRealmValidator) {
+            this(roleRepository, userRepository, null, platformRealmValidator);
+        }
+
+        public KeycloakRoleConverter(
+                com.company.ftthgis.domain.user.repository.RoleRepository roleRepository,
+                com.company.ftthgis.domain.user.repository.UserRepository userRepository,
+                com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository organizationMemberRepository,
+                PlatformRealmValidator platformRealmValidator) {
             this.roleRepository = roleRepository;
             this.userRepository = userRepository;
+            this.organizationMemberRepository = organizationMemberRepository;
             this.platformRealmValidator = platformRealmValidator;
+        }
+
+        private static boolean isKeycloakDefaultIgnoredRole(String cleanRole) {
+            return "offline_access".equals(cleanRole)
+                    || "uma_authorization".equals(cleanRole)
+                    || cleanRole.startsWith("default-roles-");
         }
 
         @Override
@@ -284,26 +302,64 @@ public class SecurityConfig {
 
             Collection<GrantedAuthority> authorities = new java.util.HashSet<>();
 
-            // Extract User Organization ID for Tenant-Isolated Roles
-            java.util.UUID orgId = null;
-            try {
-                java.util.UUID userId = java.util.UUID.fromString(jwt.getSubject());
-                var userOpt = userRepository.findById(userId);
-                if (userOpt.isPresent() && userOpt.get().getOrganization() != null) {
-                    orgId = userOpt.get().getOrganization().getId();
-                }
-            } catch (Exception e) {
-                log.warn("Could not extract organization for user {}: {}", jwt.getSubject(), e.getMessage());
-            }
-
             // Check if JWT originates from the dedicated platform realm (ftth-realm) via Exact Match
             String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
             boolean isPlatformRealm = platformRealmValidator.isPlatformRealm(issuer);
+
+            // Extract User Organization ID and Authoritative DB Role for Tenant-Isolated Roles
+            java.util.UUID orgId = com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId();
+            com.company.ftthgis.domain.user.entity.Role authoritativeDbTenantRole = null;
+            String authoritativeDbTenantRoleName = null;
+
+            try {
+                java.util.UUID userId = java.util.UUID.fromString(jwt.getSubject());
+                var userOpt = userRepository.findById(userId);
+                if (userOpt.isPresent()) {
+                    var user = userOpt.get();
+                    if (orgId == null) {
+                        if (user.getLastActiveOrganization() != null) {
+                            orgId = user.getLastActiveOrganization().getId();
+                        } else if (user.getOrganization() != null) {
+                            orgId = user.getOrganization().getId();
+                        }
+                    }
+                    if (!isPlatformRealm) {
+                        if (organizationMemberRepository != null && orgId != null) {
+                            var memberOpt = organizationMemberRepository.findByUserIdAndOrganizationId(userId, orgId);
+                            if (memberOpt.isPresent() && "ACTIVE".equalsIgnoreCase(memberOpt.get().getStatus())) {
+                                authoritativeDbTenantRole = memberOpt.get().getRole();
+                                authoritativeDbTenantRoleName = memberOpt.get().getRoleName();
+                            }
+                        }
+                        if (authoritativeDbTenantRole == null && user.getRole() != null
+                                && "TENANT".equalsIgnoreCase(user.getRole().getScope())) {
+                            authoritativeDbTenantRole = user.getRole();
+                            authoritativeDbTenantRoleName = user.getRole().getName();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not extract organization/role for user {}: {}", jwt.getSubject(), e.getMessage());
+            }
+
+            // If we have an authoritative DB role for a Tenant Plane user, use it as the Single Source of Truth
+            // so role updates, custom roles, and invited members work immediately without JWT staleness race conditions.
+            if (!isPlatformRealm && (authoritativeDbTenantRole != null || authoritativeDbTenantRoleName != null)) {
+                roleNames.clear();
+                if (authoritativeDbTenantRole != null && authoritativeDbTenantRole.getName() != null) {
+                    roleNames.add(authoritativeDbTenantRole.getName());
+                } else if (authoritativeDbTenantRoleName != null) {
+                    roleNames.add(authoritativeDbTenantRoleName);
+                }
+            }
 
             // 3. Map to GrantedAuthorities via Strict Allowlist (Roles + Fine-Grained Permissions)
             for (String roleName : roleNames) {
                 if (roleName == null || roleName.isBlank()) continue;
                 String cleanRole = roleName.toLowerCase().replaceFirst("^role_", "");
+                if (isKeycloakDefaultIgnoredRole(cleanRole)) {
+                    continue;
+                }
 
                 java.util.Optional<com.company.ftthgis.domain.user.entity.Role> roleOpt = java.util.Optional.empty();
 
@@ -344,7 +400,14 @@ public class SecurityConfig {
                     }
 
                     if (orgId != null) {
-                        roleOpt = roleRepository.findByNameAndOrganizationId(cleanRole, orgId);
+                        roleOpt = roleRepository.findByNameAndOrganizationId(cleanRole, orgId)
+                                .filter(r -> "TENANT".equalsIgnoreCase(r.getScope()));
+                    }
+
+                    if (roleOpt.isEmpty() && authoritativeDbTenantRole != null
+                            && cleanRole.equalsIgnoreCase(authoritativeDbTenantRole.getName())
+                            && "TENANT".equalsIgnoreCase(authoritativeDbTenantRole.getScope())) {
+                        roleOpt = java.util.Optional.of(authoritativeDbTenantRole);
                     }
 
                     if (roleOpt.isEmpty()) {

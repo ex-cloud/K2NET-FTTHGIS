@@ -17,9 +17,16 @@ import {
 } from "@k2net/ui";
 import { UserPlus, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../lib/api-client";
 import { getCurrentOrgSlug } from "../../lib/domain";
 import { useTranslation } from "@k2net/i18n";
+
+interface RoleOptionDto {
+  id: number;
+  name: string;
+  displayName?: string;
+}
 
 interface TeamInviteWizardProps {
   open: boolean;
@@ -29,10 +36,42 @@ interface TeamInviteWizardProps {
 
 export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWizardProps) {
   const { t } = useTranslation();
+  const orgSlug = getCurrentOrgSlug() || "system";
   const [email, setEmail] = React.useState("");
   const [fullName, setFullName] = React.useState("");
   const [role, setRole] = React.useState("noc");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const { data: availableRoles } = useQuery<RoleOptionDto[]>({
+    queryKey: ["tenant-roles-catalog", orgSlug],
+    queryFn: async () => {
+      try {
+        return await apiClient<RoleOptionDto[]>("/api/v1/roles?scope=TENANT");
+      } catch {
+        return [];
+      }
+    },
+    enabled: open,
+    staleTime: 60 * 1000,
+  });
+
+  const roleOptions = React.useMemo(() => {
+    if (Array.isArray(availableRoles) && availableRoles.length > 0) {
+      return availableRoles.map((r) => ({
+        value: r.name.toLowerCase(),
+        label: r.displayName || r.name.toUpperCase(),
+      }));
+    }
+    return [
+      { value: "noc", label: t("users.role_operator") },
+      { value: "admin", label: t("users.role_org_admin") },
+      { value: "technician", label: t("users.role_field_tech") },
+      { value: "surveyor", label: t("users.role_surveyor") },
+      { value: "finance", label: t("users.role_finance") },
+      { value: "helpdesk", label: t("users.role_helpdesk") },
+      { value: "viewer", label: t("users.role_viewer") },
+    ];
+  }, [availableRoles, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,12 +158,11 @@ export function TeamInviteWizard({ open, onOpenChange, onSuccess }: TeamInviteWi
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="noc">{t("users.role_operator")}</SelectItem>
-                <SelectItem value="admin">{t("users.role_org_admin")}</SelectItem>
-                <SelectItem value="technician">{t("users.role_field_tech")}</SelectItem>
-                <SelectItem value="surveyor">{t("users.role_surveyor")}</SelectItem>
-                <SelectItem value="finance">{t("users.role_finance")}</SelectItem>
-                <SelectItem value="viewer">{t("users.role_viewer")}</SelectItem>
+                {roleOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

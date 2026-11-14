@@ -28,6 +28,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "@k2net/i18n";
 import { useProjects, type Project } from "../../hooks/useProjects";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
+import { usePermissions } from "../../hooks/use-permissions";
 import { ProjectUsageWidget } from "../../components/project/ProjectUsageWidget";
 import { ProjectCardGrid } from "../../components/project/ProjectCardGrid";
 import { ProjectCreateWizard } from "../../components/project/ProjectCreateWizard";
@@ -39,6 +40,10 @@ type SortOption = "updatedAt" | "subscribers" | "cableLength" | "name";
 export function ProjectsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { canAccess } = usePermissions();
+  const hasCreatePermission = canAccess("projects.create");
+  const hasArchivePermission = canAccess("projects.archive");
+  const hasDeletePermission = canAccess("projects.delete");
   const {
     projects,
     isLoading,
@@ -325,17 +330,19 @@ export function ProjectsPage() {
                   </ActionTooltip>
                 </div>
 
-                <ActionTooltip label={t("gis.create_project")} shortcut="N" side="bottom">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleOpenCreateProject}
-                    className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer"
-                  >
-                    <Plus className="size-3.5" />
-                    <span className="hidden sm:inline">{t("gis.create_project")}</span>
-                  </Button>
-                </ActionTooltip>
+                {hasCreatePermission && (
+                  <ActionTooltip label={t("gis.create_project")} shortcut="N" side="bottom">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleOpenCreateProject}
+                      className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <Plus className="size-3.5" />
+                      <span className="hidden sm:inline">{t("gis.create_project")}</span>
+                    </Button>
+                  </ActionTooltip>
+                )}
               </div>
             </div>
 
@@ -353,9 +360,9 @@ export function ProjectsPage() {
               <ProjectCardGrid
                 projects={filteredAndSortedProjects}
                 viewMode={viewMode}
-                onDeleteProject={handleRequestDelete}
-                onArchiveProject={handleRequestArchive}
-                onUnarchiveProject={handleRequestRestore}
+                onDeleteProject={hasDeletePermission ? handleRequestDelete : undefined}
+                onArchiveProject={hasArchivePermission ? handleRequestArchive : undefined}
+                onUnarchiveProject={hasArchivePermission ? handleRequestRestore : undefined}
               />
             ) : (
               <EmptyState
@@ -367,14 +374,16 @@ export function ProjectsPage() {
                     : t("gis.no_projects_empty_desc")
                 }
                 action={
-                  <Button
-                    size="sm"
-                    onClick={handleOpenCreateProject}
-                    className="h-7 px-2.5 text-xs font-medium gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <Plus className="size-3.5" />
-                    {t("gis.create_new_project")}
-                  </Button>
+                  hasCreatePermission ? (
+                    <Button
+                      size="sm"
+                      onClick={handleOpenCreateProject}
+                      className="h-7 px-2.5 text-xs font-medium gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <Plus className="size-3.5" />
+                      {t("gis.create_new_project")}
+                    </Button>
+                  ) : undefined
                 }
               />
             )}

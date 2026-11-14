@@ -1,23 +1,39 @@
 ---
 name: bug-triage-and-plan
 description: >-
-  Prosedur terautomasi standar enterprise saat AI agent menemukan bug, celah keamanan,
-  atau kegagalan audit/CI: membuat tiket bug terstruktur di docs/bug/YYYY-MM-DD-nama.md,
-  merumuskan action plan di docs/plans/active/YYYY-MM-DD-nama.md, menyusun checklist tugas,
-  menjalankan perbaikan & Quality Gate, memindahkan plan ke docs/plans/completed/,
-  serta menyusun laporan akhir dan rekomendasi.
+  Prosedur terautomasi standar enterprise (6-Tahap SDLC) saat AI agent menemukan bug, celah keamanan,
+  perubahan kebijakan, atau kegagalan audit/CI: (1) membuat tiket bug di docs/bug/active/,
+  (2) menyusun dokumen diskusi & RCA di docs/discussions/active/, (3) mencatat keputusan arsitektur
+  di docs/adr/NNNN-*.md (jika menyentuh arsitektur/keamanan/PBAC), (4) merumuskan action plan di
+  docs/plans/active/, (5) menjalankan perbaikan & Quality Gate 0-warning/0-error, serta (6) menerbitkan
+  laporan akhir di docs/reports/ dan mengarsipkan dokumen ke completed/ & resolved/.
 ---
 
-# 🛠️ Standard Operating Procedure: Bug Triage, Implementation Planning & Lifecycle Archival
+# 🛠️ Standard Operating Procedure: 6-Stage SDLC Bug Triage, Discussion, ADR, Planning & Lifecycle Archival
 
-Skill ini diaktifkan saat AI Agent menemukan bug, menerima laporan kegagalan audit, kegagalan CI/CD runner, atau saat merencanakan perbaikan/fitur terstruktur pada platform K2NET FTTH GIS.
+Skill ini diaktifkan saat AI Agent menemukan bug, menerima laporan kegagalan audit, merancang perubahan kebijakan/arsitektur, atau merencanakan perbaikan/fitur terstruktur pada platform K2NET FTTH GIS.
 
 ---
 
-## 🎯 Tujuan Prosedur
-Memastikan setiap temuan memiliki tiket terdokumentasi rapi, tidak ada berkas acak yang mengotori repositori, rencana kerja tereksekusi dengan kendali checklist ketat, dan seluruh pekerjaan yang selesai diarsipkan secara otomatis.
+## 🎯 Urutan Baku 6-Dokumen SDLC (Wajib Dipatuhi Tanpa Terlewat)
 
-- **Referensi Lengkap**: [Standar Siklus Hidup Dokumen, Tiket Bug & Implementation Plan](./references/lifecycle-and-documentation.md)
+Setiap temuan bug, diskusi perubahan kebijakan, atau fitur baru **WAJIB** mengikuti urutan berjenjang berikut:
+
+```text
+[1. Bug Ticket]      docs/bug/active/YYYY-MM-DD-<slug>.md
+       ↓
+[2. Discussion]      docs/discussions/active/YYYY-MM-DD-<slug>.md  ──(Disepakati)──► docs/discussions/resolved/
+       ↓
+[3. ADR & Rules]     docs/adr/NNNN-<slug>.md + docs/adr/README.md + .agents/rules/*.md (jika menyentuh arsitektur/keamanan/PBAC)
+       ↓
+[4. Action Plan]     docs/plans/active/YYYY-MM-DD-<slug>.md
+       ↓
+[5. Code & QG 100%]  Eksekusi Kode + Lint (--max-warnings 0) + Typecheck + i18n + Colors + Design System + ADR + Security + Tests
+       ↓
+[6. Report & Close]  docs/reports/YYYY-MM-DD-<slug>.md + Pindahkan Plan ke completed/ & Bug ke resolved/
+```
+
+- **Referensi Lengkap**: [Standar Siklus Hidup Dokumen, Tiket Bug & Implementation Plan](./references/lifecycle-and-documentation.md) & [SOP Kolaborasi Multi-Agent](../../../docs/plans/SOP-KOLABORASI-MULTI-AGENT.md)
 
 ---
 
@@ -29,6 +45,9 @@ Pastikan seluruh direktori lifecycle telah siap di host server:
 mkdir -p /opt/project5/docs/bug/pending \
          /opt/project5/docs/bug/active \
          /opt/project5/docs/bug/resolved \
+         /opt/project5/docs/discussions/active \
+         /opt/project5/docs/discussions/resolved \
+         /opt/project5/docs/adr \
          /opt/project5/docs/plans/active \
          /opt/project5/docs/plans/completed \
          /opt/project5/docs/reports
@@ -36,9 +55,10 @@ mkdir -p /opt/project5/docs/bug/pending \
 
 ---
 
-### Langkah 2: Pembuatan Tiket Temuan Bug (`docs/bug/`)
-Buat berkas markdown dengan konvensi nama:
-`/opt/project5/docs/bug/YYYY-MM-DD-<slug-deskriptif>.md`
+### Langkah 2: Pembuatan Tiket Temuan Bug (`docs/bug/active/`) & Dokumen Diskusi (`docs/discussions/active/`)
+1. **Tiket Bug (`docs/bug/active/YYYY-MM-DD-<slug-deskriptif>.md`)**: Catat gejala, bukti/log replikasi, dan Root Cause Analysis (RCA).
+2. **Dokumen Diskusi (`docs/discussions/active/YYYY-MM-DD-<slug-deskriptif>.md`)**: Jika bug memerlukan perubahan arsitektur, kebijakan PBAC/RBAC, atau keputusan desain dengan pengguna/agent lain, buat dokumen diskusi terlebih dahulu sebelum mengeksekusi kode. Setelah disepakati pengguna, pindahkan diskusi ke `docs/discussions/resolved/`.
+3. **Architecture Decision Record (`docs/adr/NNNN-<slug>.md`)**: Jika keputusan menyentuh arsitektur, keamanan, isolasi multi-tenant, PBAC/RBAC, atau batas domain, buat ADR baru berurutan, daftarkan di `docs/adr/README.md`, perbarui `.agents/rules/` terkait, dan jalankan `bash scripts/audit-adr.sh`.
 
 Gunakan struktur template berikut:
 ```markdown

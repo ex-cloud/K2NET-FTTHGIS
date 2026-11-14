@@ -79,9 +79,11 @@ public class TenantLicenseController {
 
     /**
      * Mengambil detail lisensi aktif organisasi pemanggil untuk dasbor portal tenant.
+     * Terbuka bagi seluruh anggota workspace terotentikasi (dashboard/projects/billing/organizations)
+     * agar badge tier dan entitlement workspace terdeteksi akurat tanpa false-downgrade ke FREE.
      */
     @GetMapping("/current")
-    @PreAuthorize("@tenantSecurity.hasEffectivePermission('billing.view') or hasAuthority('billing.view')")
+    @PreAuthorize("@tenantSecurity.hasEffectivePermission('billing.view') or @tenantSecurity.hasEffectivePermission('dashboard.view') or @tenantSecurity.hasEffectivePermission('projects.view') or @tenantSecurity.hasEffectivePermission('organizations.view') or hasAuthority('billing.view')")
     public ResponseEntity<LicenseResponseDto> getCurrentLicense() {
         UUID orgId = resolveCurrentOrganizationId();
         if (orgId == null) {

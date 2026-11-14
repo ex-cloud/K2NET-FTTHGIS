@@ -6,12 +6,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 @Repository
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UUID> {
+    List<ProjectMember> findByUserId(UUID userId);
+
     boolean existsByUserIdAndProjectId(UUID userId, UUID projectId);
 
     Optional<ProjectMember> findByUserIdAndProjectId(UUID userId, UUID projectId);

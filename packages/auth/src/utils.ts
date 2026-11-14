@@ -201,7 +201,7 @@ export function generateGravatar(email: string | null | undefined): string | nul
  * Examples:
  * - `system-gis.kdua.net` → `ftth-realm` (system admin = default realm)
  * - `kircon-gis.kdua.net` → `kircon`
- * - `localhost:3000`       → `ftth-realm`
+ * - `localhost:3001`       → `ftth-realm`
  */
 export function getRealmFromHost(host: string): string {
   if (!host) return "ftth-realm";

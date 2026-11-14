@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@k2net/auth/client";
 import { useTranslation } from "@k2net/i18n";
 import { useMapStore } from "../store/map-store";
+import { usePermissions } from "../hooks/use-permissions";
 
 export interface TenantCommandPaletteContentProps {
   query: string;
@@ -51,19 +52,21 @@ export function TenantCommandPaletteContent({
   const { setTheme, resolvedTheme } = useTheme();
   const { logout } = useAuth();
   const { t } = useTranslation();
+  const { canAccess } = usePermissions();
   const isDark = resolvedTheme === "dark";
 
   const activeProjectId = useMapStore((s) => s.activeProjectId);
   const resolvedProjectId = projectId || activeProjectId;
 
   const pages = React.useMemo(() => {
-    return [
+    const rawPages = [
       {
         id: "nav-dash",
         label: t("nav.operational_dashboard"),
-        path: resolvedProjectId ? `/project/${resolvedProjectId}/dashboard` : "/projects",
+        path: resolvedProjectId ? `/project/${resolvedProjectId}/overview` : "/projects",
         icon: LayoutDashboard,
         badge: "Home",
+        requiredPermission: ["projects.view", "dashboard.view"],
       },
       {
         id: "nav-gis",
@@ -71,6 +74,7 @@ export function TenantCommandPaletteContent({
         path: resolvedProjectId ? `/project/${resolvedProjectId}/infrastructure/topology` : "/projects",
         icon: MapIcon,
         badge: "GIS",
+        requiredPermission: ["map.view", "map.edit", "network.view"],
       },
       {
         id: "nav-inv",
@@ -78,13 +82,15 @@ export function TenantCommandPaletteContent({
         path: resolvedProjectId ? `/project/${resolvedProjectId}/core/olt` : "/projects",
         icon: Server,
         badge: "Inventory",
+        requiredPermission: ["inventory.view", "network.view", "network.manage"],
       },
       {
         id: "nav-cust",
         label: t("nav.subscribers_pppoe"),
-        path: resolvedProjectId ? `/project/${resolvedProjectId}/subscribers/list` : "/projects",
+        path: resolvedProjectId ? `/project/${resolvedProjectId}/users/subscribers` : "/projects",
         icon: Users,
         badge: "ONU/PPPoE",
+        requiredPermission: ["customer.view", "network.view"],
       },
       {
         id: "nav-issues",
@@ -92,6 +98,7 @@ export function TenantCommandPaletteContent({
         path: resolvedProjectId ? `/project/${resolvedProjectId}/issues/tickets` : "/projects",
         icon: AlertCircle,
         badge: "Alerts",
+        requiredPermission: ["ticket.view", "ticket.create", "ticket.update"],
       },
       {
         id: "nav-org-projects",
@@ -99,6 +106,7 @@ export function TenantCommandPaletteContent({
         path: "/projects",
         icon: Boxes,
         badge: "Projects",
+        requiredPermission: ["projects.view", "projects.create", "projects.edit"],
       },
       {
         id: "nav-org-billing",
@@ -106,13 +114,15 @@ export function TenantCommandPaletteContent({
         path: "/billing",
         icon: CreditCard,
         badge: "Billing",
+        requiredPermission: ["billing.view", "billing.manage", "billing.packages.view"],
       },
       {
         id: "nav-org-members",
         label: t("nav.members_access"),
-        path: "/members",
+        path: "/team/members",
         icon: UserCheck,
         badge: "IAM",
+        requiredPermission: ["team.view", "team.manage", "members.view", "members.manage", "roles.view"],
       },
       {
         id: "nav-settings",
@@ -120,9 +130,11 @@ export function TenantCommandPaletteContent({
         path: "/settings",
         icon: Settings,
         badge: "Config",
+        requiredPermission: ["organizations.view", "organizations.update", "security.policy.view", "security.sso.view"],
       },
     ];
-  }, [resolvedProjectId, t]);
+    return rawPages.filter((p) => canAccess(p.requiredPermission));
+  }, [resolvedProjectId, t, canAccess]);
 
   const filteredPages = React.useMemo(() => {
     if (!query.trim()) return pages.slice(0, 6);

@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@k2net/auth/client";
+import { useTranslation } from "@k2net/i18n";
 import { useImpersonationSession } from "../lib/useImpersonationSession";
 import { getApiAuthToken, refreshImpersonationToken } from "../lib/api-client";
 
@@ -124,8 +125,6 @@ export function usePermissions() {
     r.toLowerCase().replace(/^role_/, "")
   );
 
-  const isOwner = roles.includes("owner") || roles.includes("admin");
-
   const isEnabled = Boolean(authenticated || (isImpersonating && sessionId));
 
   const {
@@ -152,6 +151,11 @@ export function usePermissions() {
     ? userProfile.permissions
     : [];
 
+  const effectiveRoles: string[] = userProfile?.roleName
+    ? Array.from(new Set([userProfile.roleName.toLowerCase().replace(/^role_/, ""), ...roles]))
+    : roles;
+  const effectiveIsOwner = effectiveRoles.includes("owner") || effectiveRoles.includes("admin");
+
   function canAccess(permissionCode?: string | string[]): boolean {
     return checkPermissionAccess(
       permissionCode,
@@ -162,7 +166,7 @@ export function usePermissions() {
   }
 
   function hasRole(...roleNames: string[]): boolean {
-    return roleNames.some((r) => roles.includes(r.toLowerCase().replace(/^role_/, "")));
+    return roleNames.some((r) => effectiveRoles.includes(r.toLowerCase().replace(/^role_/, "")));
   }
 
   const isLoading = checkIsLoading({
@@ -177,9 +181,9 @@ export function usePermissions() {
   return {
     canAccess,
     hasRole,
-    isOwner,
+    isOwner: effectiveIsOwner,
     permissions: activePermissions,
-    roles,
+    roles: effectiveRoles,
     isLoading,
     user: userProfile || user,
     authenticated: authenticated || isImpersonating,
@@ -203,6 +207,7 @@ export function PermissionGuard({
   children: ReactNode;
   fallback?: ReactNode;
 }) {
+  const { t } = useTranslation();
   const { canAccess, isLoading } = usePermissions();
 
   if (isLoading) {
@@ -210,7 +215,7 @@ export function PermissionGuard({
       <div className="flex h-48 w-full items-center justify-center">
         <div className="flex flex-col items-center gap-2">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <span className="text-xs font-mono text-muted-foreground">Memvalidasi izin...</span>
+          <span className="text-xs font-mono text-muted-foreground">{t("security.validating_permissions")}</span>
         </div>
       </div>
     );

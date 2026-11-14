@@ -68,7 +68,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('users.view')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('users.view') or hasAuthority('members.view') or hasAuthority('team.view')")
     public Page<UserDto> index(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
             @RequestParam(required = false) String search,
@@ -86,12 +86,12 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('users.manage') or hasAuthority('system.users.manage')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('users.manage') or hasAuthority('members.manage') or hasAuthority('team.manage') or hasAuthority('system.users.manage')")
     public UserDto update(
             @PathVariable UUID id,
             @RequestBody UpdateUserRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        return userService.updateUser(id, request.role(), request.status(), request.reason(), request.jobTitle(), request.phone(), jwt.getSubject());
+        return userService.updateUser(id, request.role(), request.status(), request.reason(), request.jobTitle(), request.phone(), request.fullName(), jwt.getSubject());
     }
 
     @PostMapping("/{id}/reset-password")
@@ -166,7 +166,7 @@ public class UserController {
     public record UpdateProfileRequest(String fullName, String email, String avatarUrl, String phone) {
     }
 
-    public record UpdateUserRequest(String role, String status, String reason, String jobTitle, String phone) {
+    public record UpdateUserRequest(String role, String status, String reason, String jobTitle, String phone, String fullName) {
     }
 
     public record ResetPasswordRequest(String newPassword, boolean temporary) {

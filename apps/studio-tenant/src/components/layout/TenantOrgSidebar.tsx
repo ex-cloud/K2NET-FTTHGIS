@@ -8,10 +8,12 @@ import {
   cn,
 } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
-import { ORG_NAV_ITEMS, type NavItem } from "../../config/tenant-sidebar-navigation";
+import { ORG_NAV_ITEMS, ORG_SECONDARY_CONFIGS, type NavItem } from "../../config/tenant-sidebar-navigation";
+import { usePermissions } from "../../hooks/use-permissions";
 
 export function TenantOrgSidebar() {
   const { t } = useTranslation();
+  const { canAccess } = usePermissions();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const { sidebarMode } = useSidebarMode();
@@ -21,13 +23,30 @@ export function TenantOrgSidebar() {
     sidebarMode === "expanded" || (sidebarMode === "hover" && isHovering);
   const isFloating = sidebarMode === "hover";
 
+  const visibleNavItems = React.useMemo(
+    () =>
+      ORG_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)).map((item) => {
+        if (item.hasSecondarySidebar && ORG_SECONDARY_CONFIGS[item.id]) {
+          for (const section of ORG_SECONDARY_CONFIGS[item.id].sections) {
+            for (const sub of section.items) {
+              if (canAccess(sub.requiredPermission)) {
+                return { ...item, href: sub.href };
+              }
+            }
+          }
+        }
+        return item;
+      }),
+    [canAccess]
+  );
+
   const mainNavItems = React.useMemo(
-    () => ORG_NAV_ITEMS.filter((item) => item.id !== "settings"),
-    []
+    () => visibleNavItems.filter((item) => item.id !== "settings"),
+    [visibleNavItems]
   );
   const bottomNavItems = React.useMemo(
-    () => ORG_NAV_ITEMS.filter((item) => item.id === "settings"),
-    []
+    () => visibleNavItems.filter((item) => item.id === "settings"),
+    [visibleNavItems]
   );
 
   const checkIsActive = (href: string) => {

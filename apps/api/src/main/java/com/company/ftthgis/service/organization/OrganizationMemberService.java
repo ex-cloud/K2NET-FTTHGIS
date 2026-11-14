@@ -125,11 +125,32 @@ public class OrganizationMemberService {
 
     /**
      * Lists all team members within a specific tenant organization.
+     * Self-heals any organization users that are not yet recorded in organization_members.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<OrganizationMemberDto> getOrganizationMembers(String orgSlug) {
         Organization org = organizationRepository.findBySlug(orgSlug)
             .orElseThrow(() -> new NoSuchElementException("Organization not found with slug: " + orgSlug));
+
+        List<User> orgUsers = userRepository.findByOrganizationId(org.getId());
+        if (orgUsers != null) {
+            for (User u : orgUsers) {
+                if (u.getId() != null && !memberRepository.existsByUserIdAndOrganizationId(u.getId(), org.getId())) {
+                    Role r = u.getRole();
+                    String rName = r != null && r.getName() != null ? r.getName() : "viewer";
+                    OrganizationMember healed = OrganizationMember.builder()
+                        .user(u)
+                        .organization(org)
+                        .role(r)
+                        .roleName(rName)
+                        .status(u.getStatus() != null ? u.getStatus() : "ACTIVE")
+                        .isDefault(true)
+                        .joinedAt(u.getCreatedAt() != null ? u.getCreatedAt() : LocalDateTime.now())
+                        .build();
+                    memberRepository.save(healed);
+                }
+            }
+        }
 
         List<OrganizationMember> members = memberRepository.findAllMembersByOrganizationId(org.getId());
 
@@ -426,7 +447,7 @@ public class OrganizationMemberService {
                 targetUser.setFullName(request.getFullName().trim());
             }
 
-            // Sync credentials to Keycloak
+            // Sync credentials and invited role to Keycloak
             if (targetUser != null && keycloakAdminService != null) {
                 String realm = "k2net-tenants";
                 try {
@@ -434,7 +455,10 @@ public class OrganizationMemberService {
                     String[] parts = name.split(" ", 2);
                     String first = parts[0];
                     String last = parts.length > 1 ? parts[1] : "";
-                    keycloakAdminService.createUserInRealm(realm, targetUser.getEmail(), targetUser.getEmail(), request.getPassword(), first, last, "ROLE_TENANT");
+                    String assignedRole = member.getRoleName() != null && !member.getRoleName().isBlank()
+                            ? member.getRoleName()
+                            : (member.getRole() != null ? member.getRole().getName() : "viewer");
+                    keycloakAdminService.createUserInRealm(realm, targetUser.getEmail(), targetUser.getEmail(), request.getPassword(), first, last, assignedRole);
                 } catch (Exception e) {
                     log.warn("Keycloak sync during invitation acceptance: {}", e.getMessage());
                 }
@@ -442,6 +466,9 @@ public class OrganizationMemberService {
 
             if (targetUser != null) {
                 targetUser.setStatus("ACTIVE");
+                if (member.getRole() != null) {
+                    targetUser.setRole(member.getRole());
+                }
                 userRepository.save(targetUser);
             }
         }
@@ -468,6 +495,7 @@ public class OrganizationMemberService {
 
     /**
      * Updates an existing member's role within an organization.
+     * Supports lookup by OrganizationMember ID or User ID for seamless API interoperability.
      */
     @Transactional
     public OrganizationMemberDto updateMemberRole(String orgSlug, UUID memberId, UpdateMemberRoleRequest request, String actorId) {
@@ -475,27 +503,45 @@ public class OrganizationMemberService {
             .orElseThrow(() -> new NoSuchElementException("Organization not found with slug: " + orgSlug));
 
         OrganizationMember member = memberRepository.findById(memberId)
+            .or(() -> memberRepository.findByUserIdAndOrganizationId(memberId, org.getId()))
             .orElseThrow(() -> new NoSuchElementException("Organization member not found: " + memberId));
 
         if (!member.getOrganization().getId().equals(org.getId())) {
             throw new SecurityException("Member does not belong to organization " + orgSlug);
         }
 
-        String roleName = request.roleName().trim().toLowerCase(Locale.ROOT);
+        String roleName = normalizeRoleName(request.roleName());
         Role role = roleRepository.findByNameAndOrganizationId(roleName, org.getId())
-            .or(() -> roleRepository.findByName(roleName))
-            .orElse(null);
+            .or(() -> roleRepository.findByName(roleName).filter(r -> "TENANT".equalsIgnoreCase(r.getScope())))
+            .orElseThrow(() -> new IllegalArgumentException("Role not found in tenant scope: " + roleName));
 
         member.setRole(role);
-        member.setRoleName(roleName);
+        member.setRoleName(role.getName());
         OrganizationMember saved = memberRepository.save(member);
 
-        log.info("🛡️ Role of member {} updated to '{}' in workspace {} by actor {}", member.getUser().getEmail(), roleName, orgSlug, actorId);
+        User targetUser = member.getUser();
+        if (targetUser != null) {
+            if (targetUser.getOrganization() == null || targetUser.getOrganization().getId().equals(org.getId())) {
+                targetUser.setRole(role);
+                userRepository.save(targetUser);
+            }
+            if (keycloakAdminService != null && targetUser.getEmail() != null) {
+                try {
+                    keycloakAdminService.updateUserRoleInRealm("k2net-tenants", targetUser.getEmail(), role.getName());
+                } catch (Exception e) {
+                    log.debug("Keycloak role sync skipped/non-fatal for {}: {}", targetUser.getEmail(), e.getMessage());
+                }
+            }
+        }
+
+        log.info("🛡️ Role of member {} updated to '{}' in workspace {} by actor {}",
+                targetUser != null ? targetUser.getEmail() : memberId, role.getName(), orgSlug, actorId);
         return mapToDto(saved);
     }
 
     /**
      * Removes or revokes a member from an organization workspace.
+     * Supports lookup by OrganizationMember ID or User ID.
      */
     @Transactional
     public void removeMember(String orgSlug, UUID memberId, String actorId) {
@@ -503,6 +549,7 @@ public class OrganizationMemberService {
             .orElseThrow(() -> new NoSuchElementException("Organization not found with slug: " + orgSlug));
 
         OrganizationMember member = memberRepository.findById(memberId)
+            .or(() -> memberRepository.findByUserIdAndOrganizationId(memberId, org.getId()))
             .orElseThrow(() -> new NoSuchElementException("Organization member not found: " + memberId));
 
         if (!member.getOrganization().getId().equals(org.getId())) {
@@ -520,8 +567,28 @@ public class OrganizationMemberService {
             }
         }
 
+        User targetUser = member.getUser();
         memberRepository.delete(member);
-        log.info("🗑️ Member {} removed from workspace {} by actor {}", member.getUser().getEmail(), orgSlug, actorId);
+        memberRepository.flush();
+
+        if (targetUser != null && targetUser.getOrganization() != null && targetUser.getOrganization().getId().equals(org.getId())) {
+            List<OrganizationMember> remaining = memberRepository.findActiveWorkspacesByUserId(targetUser.getId());
+            if (!remaining.isEmpty()) {
+                OrganizationMember nextWorkspace = remaining.get(0);
+                targetUser.setOrganization(nextWorkspace.getOrganization());
+                if (nextWorkspace.getRole() != null) {
+                    targetUser.setRole(nextWorkspace.getRole());
+                }
+                userRepository.save(targetUser);
+            } else {
+                targetUser.setStatus("SUSPENDED");
+                targetUser.setOrganization(null);
+                userRepository.save(targetUser);
+            }
+        }
+
+        log.info("🗑️ Member {} removed from workspace {} by actor {}",
+                targetUser != null ? targetUser.getEmail() : memberId, orgSlug, actorId);
     }
 
     private void dispatchInvitationEmail(Organization org, String email, String token) {

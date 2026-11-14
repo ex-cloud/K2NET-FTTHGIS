@@ -15,6 +15,7 @@ import {
   type SecondarySidebarConfig,
   type SubMenuItem,
 } from "../../config/tenant-sidebar-navigation";
+import { usePermissions } from "../../hooks/use-permissions";
 
 interface TenantSecondarySidebarProps {
   projectId?: string | null;
@@ -22,31 +23,47 @@ interface TenantSecondarySidebarProps {
 
 export function TenantSecondarySidebar({ projectId }: TenantSecondarySidebarProps) {
   const { t } = useTranslation();
+  const { canAccess } = usePermissions();
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   // Determine active config
   const activeConfig = React.useMemo<SecondarySidebarConfig | null>(() => {
+    let rawConfig: SecondarySidebarConfig | null = null;
     if (projectId) {
       // Layer 2: Project Scope
       const configs = getProjectSecondaryConfigs(projectId);
-      if (pathname.includes(`/project/${projectId}/infrastructure`)) return configs.infrastructure;
-      if (pathname.includes(`/project/${projectId}/inventory`)) return configs.inventory;
-      if (pathname.includes(`/project/${projectId}/core`)) return configs.core;
-      if (pathname.includes(`/project/${projectId}/users`)) return configs.users;
-      if (pathname.includes(`/project/${projectId}/issues`)) return configs.issues;
-      if (pathname.includes(`/project/${projectId}/settings`)) return configs.settings;
-      return null;
+      if (pathname.includes(`/project/${projectId}/infrastructure`)) rawConfig = configs.infrastructure;
+      else if (pathname.includes(`/project/${projectId}/inventory`)) rawConfig = configs.inventory;
+      else if (pathname.includes(`/project/${projectId}/core`)) rawConfig = configs.core;
+      else if (pathname.includes(`/project/${projectId}/users`)) rawConfig = configs.users;
+      else if (pathname.includes(`/project/${projectId}/issues`)) rawConfig = configs.issues;
+      else if (pathname.includes(`/project/${projectId}/settings`)) rawConfig = configs.settings;
     } else {
       // Layer 1: Org Scope
-      if (pathname.startsWith("/team")) return ORG_SECONDARY_CONFIGS.team;
-      if (pathname.startsWith("/settings")) return ORG_SECONDARY_CONFIGS.settings;
-      if (pathname.startsWith("/billing")) return ORG_SECONDARY_CONFIGS.billing;
-      if (pathname.startsWith("/developer") || pathname.startsWith("/integrations")) return ORG_SECONDARY_CONFIGS.integrations;
-      return null;
+      if (pathname.startsWith("/team")) rawConfig = ORG_SECONDARY_CONFIGS.team;
+      else if (pathname.startsWith("/settings")) rawConfig = ORG_SECONDARY_CONFIGS.settings;
+      else if (pathname.startsWith("/billing")) rawConfig = ORG_SECONDARY_CONFIGS.billing;
+      else if (pathname.startsWith("/developer") || pathname.startsWith("/integrations")) rawConfig = ORG_SECONDARY_CONFIGS.integrations;
     }
-  }, [pathname, projectId]);
+
+    if (!rawConfig) return null;
+
+    const filteredSections = rawConfig.sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => canAccess(item.requiredPermission)),
+      }))
+      .filter((section) => section.items.length > 0);
+
+    if (filteredSections.length === 0) return null;
+
+    return {
+      ...rawConfig,
+      sections: filteredSections,
+    };
+  }, [pathname, projectId, canAccess]);
 
   if (!activeConfig) return null;
 

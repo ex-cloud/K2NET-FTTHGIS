@@ -9,7 +9,7 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 > ⚠️ **MIGRASI VITE (Sept 2026)**: `studio-admin` & `studio-tenant` adalah **React 19 + Vite 6 + TanStack Router (CSR SPA)**. Dilarang pola Next.js (SSR, API routes, `loading.tsx`). Satu-satunya Next.js adalah `apps/www` (SSG).
 
 - **Frontend Admin**: Vite 6 CSR SPA — [apps/studio-admin](file:///opt/project5/apps/studio-admin) (port 3001)
-- **Frontend Tenant**: Vite 6 CSR SPA — [apps/studio-tenant](file:///opt/project5/apps/studio-tenant) (port 3002 di Docker / 3000 di lokal dev)
+- **Frontend Tenant**: Vite 6 CSR SPA — [apps/studio-tenant](file:///opt/project5/apps/studio-tenant) (port 3002)
 - **Backend Core**: Spring Boot 3.x — [apps/api](file:///opt/project5/apps/api) (port 9090)
 - **14 Go/Python Gateways**: [services/](file:///opt/project5/services/) (ports: 5001–5014)
 - **Gateway & Proxy**: Kong (port 8000), Traefik (port 80/443)
@@ -47,7 +47,7 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 
 ---
 
-## 📋 7 Aturan Inti (Core Always-On Rules — `.agents/rules/`)
+## 📋 8 Aturan Inti (Core Always-On Rules — `.agents/rules/`)
 
 Aturan deklaratif inti (*guardrails*) yang selalu dimuat otomatis:
 1. [rules/frontend.md](file:///opt/project5/.agents/rules/frontend.md): Vite 6 CSR SPA, Page Guards PBAC, Form Zod, paritas `@k2net/i18n`, ukuran kontrol `size="sm"`/`size="xs"`.
@@ -57,6 +57,7 @@ Aturan deklaratif inti (*guardrails*) yang selalu dimuat otomatis:
 5. [rules/microservices.md](file:///opt/project5/.agents/rules/microservices.md): Port map internal, header `X-Tenant-ID` & `X-Gateway-Token`, kompilasi `services/go.work`, non-blocking `auditclient`.
 6. [rules/infrastructure.md](file:///opt/project5/.agents/rules/infrastructure.md): Routing Kong/Traefik, SSL termination, larangan hardcode IP `172.18.0.x`, MinIO Tailscale.
 7. [rules/versioning-and-patching-standard.md](file:///opt/project5/.agents/rules/versioning-and-patching-standard.md): Rute `/api/v[0-9]+/`, Flyway sekuensial anti-downtime (`V1..VN`), SemVer.
+8. [rules/sdlc-documentation-standard.md](file:///opt/project5/.agents/rules/sdlc-documentation-standard.md): Standar hukum urutan dokumentasi 13-Folder SDLC (Hulu -> Tengah -> Hilir), Matriks 4-Skenario Kerja, Cross-Linking Traceability, dan audit otomatis via `pnpm audit:sdlc`.
 
 ---
 
@@ -81,6 +82,13 @@ Prosedur langkah-demi-langkah (*Progressive Disclosure*) beserta dokumentasi ref
 - **Social Login vs Enterprise SSO & Invite-First Standard (November 2026 / ADR-0015)**: Social login (Google & GitHub) murni berfungsi sebagai *Verified Email Authentication Bridge* (Pola Cloudflare/Supabase) dan terbuka untuk **SELURUH PAKET** (`FREE`/`STARTER`/`PRO`/`ENTERPRISE`) via switch `allow_social_login` di `/settings/security` (`tenant_security_policies`). Sebaliknya, Enterprise Corporate SSO (SAML 2.0, Okta, Microsoft Entra ID, Domain-Based HRD, Enforce SSO, JIT Auto-Provisioning) **HANYA TERSEDIA UNTUK PAKET ENTERPRISE** di `/settings/sso` (`org.sso.manage`). Di pintu gerbang utama (`sso-exchange`), berlaku **Invite-First Multi-Tenant Governance mutlak**: pengguna Google/GitHub yang bukan anggota `organization_members` langsung ditolak `403 TENANT_ACCESS_DENIED` dan Keycloak flow `social-invite-first broker login` (`Create User = DISABLED`) mencegah lahirnya akun orphan.
 - **Multi-Plane Domain & Shared Error Pages Standard**: Control Plane (`https://system-gis.kdua.net`) menggunakan rute login `/auth/console/login` (rute `/login` merender 404 `<NotFoundError />`). Workspace operasional internal K2NET berjalan di `https://ops.kdua.net` (`is_platform_root = true`, `k2net-tenants` realm; dilarang hardcode slug `"default"`). Subdomain tenant liar merender 404 `<TenantDomainError />`. Seluruh layar error (`403`, `404`, `419`, `500/502`, `503`) terpusat di `@k2net/ui`.
 - **Larangan Halusinasi & Konfirmasi Improvisasi**: AI Agent DILARANG KERAS berhalusinasi atau keluar dari konteks monorepo K2NET. Segala bentuk ide perbaikan di luar tugas aktif atau improvisasi arsitektural WAJIB dikonfirmasikan terlebih dahulu ke pengguna sebelum dieksekusi.
+- **Urutan Baku 13-Folder SDLC & Issue Lifecycle Standard ([`.agents/rules/sdlc-documentation-standard.md`](file:///opt/project5/.agents/rules/sdlc-documentation-standard.md), `.agents/skills/bug-triage-and-plan` & `docs/plans/SOP-KOLABORASI-MULTI-AGENT.md`)**: Setiap kali ditemukan bug baru, perubahan kebijakan, atau fitur baru, AI Agent **WAJIB mengikuti urutan pembuatan dokumen berikut secara otomatis tanpa perlu diingatkan** (diverifikasi via `pnpm audit:sdlc`):
+  1. **Tiket Temuan Bug (`docs/bug/active/YYYY-MM-DD-<slug>.md`)**: Catat gejala, bukti/log replikasi, dan Root Cause Analysis (RCA).
+  2. **Dokumen Diskusi (`docs/discussions/active/YYYY-MM-DD-<slug>.md`)**: Tuliskan analisis audit, opsi solusi, trade-off, dan rekomendasi untuk dimusyawarahkan dengan pengguna & agent lain sebelum menulis kode.
+  3. **Keputusan Arsitektur / ADR (`docs/adr/NNNN-<slug>.md` + `docs/adr/README.md`)**: Wajib dibuat (dan diverifikasi via `pnpm audit:adr`) apabila keputusan menyentuh arsitektur, keamanan, PBAC/RBAC, multi-tenant, skema data, atau batas domain; pindahkan diskusi ke `docs/discussions/resolved/` setelah disepakati.
+  4. **Rencana Aksi Aktif (`docs/plans/active/YYYY-MM-DD-<slug>.md`)**: Susun checklist bertahap dan perbarui aturan turunan di `.agents/rules/` bila relevan.
+  5. **Eksekusi Kode & Quality Gate Lokal 100% (`0 Error, 0 Warning`)**: Jalankan `pnpm lint` (`--max-warnings 0`), `typecheck`, `pnpm audit:i18n`, `pnpm audit:colors`, `pnpm audit:design-system`, `pnpm audit:versioning`, `pnpm audit:adr`, `pnpm audit:security`, dan `mvn test` sebelum commit.
+  6. **Laporan Akhir & Pengarsipan (`docs/reports/YYYY-MM-DD-<slug>.md`)**: Setelah lulus verifikasi live/QG 100%, terbitkan laporan akhir di `docs/reports/`, pindahkan plan ke `docs/plans/completed/`, dan pindahkan bug ke `docs/bug/resolved/`.
 - **Domain-Aware Quality Gate Standard**: AI Agent WAJIB menjalankan perintah QG sesuai domain yang dikerjakan SEBELUM menutup plan aktif. Peta lengkap domain → perintah wajib ada di [`docs/qa/quality-gate-checklist.md`](file:///opt/project5/docs/qa/quality-gate-checklist.md). `JAVA_HOME` wajib `/usr/lib/jvm/java-21-openjdk` untuk seluruh perintah `mvn`. Go binary wajib `export PATH=$PATH:/usr/local/go/bin`. Dilarang mengumumkan selesai tanpa bukti QG ✅ PASS tercatat di plan.
 - **Ukuran Kontrol Baku**: Toolbar & card footer wajib `size="sm"` (`h-7 px-2.5`, icon `size-3.5`). Tabel data padat wajib `size="xs"` (`h-6 px-2`, icon `size-3`).
 - **Shared Layout Shell**: Sub-sidebar wajib `<SecondarySidebarHeader />` (`h-12 py-2 px-4`). Kanvas wajib `<PageLayout>` + `<PageHero>`.

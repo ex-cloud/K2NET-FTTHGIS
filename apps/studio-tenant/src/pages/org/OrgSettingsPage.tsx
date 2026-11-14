@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { useAuth } from "@k2net/auth/client";
 import { useTenantInfo } from "../../hooks/useTenantInfo";
 import { useTenantBranding } from "../../hooks/useTenantBranding";
+import { usePermissions } from "../../hooks/use-permissions";
 import { parseDomain } from "../../lib/domain";
 import { useTranslation } from "@k2net/i18n";
 import { BrandingSettingsSection } from "../../components/settings/BrandingSettingsSection";
@@ -118,6 +119,8 @@ function GeneralSettingsSection({
 
 function SecuritySettingsSection({ slug }: { slug?: string }) {
   const { t } = useTranslation();
+  const { canAccess } = usePermissions();
+  const canManageSecurity = canAccess(["security.policy.manage", "organizations.update"]);
   const [loading, setLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [mfaEnforced, setMfaEnforced] = React.useState(false);
@@ -219,7 +222,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         </div>
         <Switch
           checked={isPlatformEnforced || mfaEnforced}
-          disabled={loading || isPlatformEnforced || isSaving}
+          disabled={loading || isPlatformEnforced || isSaving || !canManageSecurity}
           onCheckedChange={setMfaEnforced}
         />
       </div>
@@ -233,7 +236,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         </div>
         <Switch
           checked={allowSocialLogin}
-          disabled={loading || isSaving}
+          disabled={loading || isSaving || !canManageSecurity}
           onCheckedChange={setAllowSocialLogin}
         />
       </div>
@@ -246,7 +249,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           max={1440}
           value={sessionTimeout}
           onChange={(e) => setSessionTimeout(parseInt(e.target.value, 10) || 30)}
-          disabled={loading || isSaving}
+          disabled={loading || isSaving || !canManageSecurity}
           className="h-8.5 text-xs font-mono"
         />
         <p className="text-[10px] text-muted-foreground">{t("settings.session_timeout_desc")}</p>
@@ -261,7 +264,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           rows={3}
           value={ipAllowlistCidrs}
           onChange={(e) => setIpAllowlistCidrs(e.target.value)}
-          disabled={loading || isSaving}
+          disabled={loading || isSaving || !canManageSecurity}
           placeholder={t("settings.ip_allowlist_placeholder")}
           className="w-full rounded-md border border-border/60 bg-background/50 px-3 py-2 text-xs font-mono placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
         />
@@ -270,17 +273,19 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         </p>
       </div>
 
-      <div className="flex justify-end pt-2 border-t border-border/40">
-        <Button
-          size="sm"
-          disabled={loading || isSaving}
-          onClick={handleSaveSecurity}
-          className="h-7 px-3 text-xs font-medium gap-1.5"
-        >
-          <Save className="size-3.5" />
-          {isSaving ? t("settings.whitelabel.saving") : t("common.save_changes")}
-        </Button>
-      </div>
+      {canManageSecurity && (
+        <div className="flex justify-end pt-2 border-t border-border/40">
+          <Button
+            size="sm"
+            disabled={loading || isSaving}
+            onClick={handleSaveSecurity}
+            className="h-7 px-3 text-xs font-medium gap-1.5"
+          >
+            <Save className="size-3.5" />
+            {isSaving ? t("settings.whitelabel.saving") : t("common.save_changes")}
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }
@@ -332,6 +337,8 @@ function OAuthSettingsSection({ slug }: { slug: string }) {
 export function OrgSettingsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { canAccess } = usePermissions();
+  const canUpdateOrg = canAccess("organizations.update");
   const { organizationName, slug, refetch: refetchTenantInfo } = useTenantInfo();
   const { branding } = useTenantBranding();
   const isWhitelabelAllowed = Boolean(branding?.isWhitelabelAllowed ?? branding?.whitelabelAllowed);
@@ -443,7 +450,7 @@ export function OrgSettingsPage() {
         icon={Building}
         subtitle={meta.subtitle}
         actions={
-          currentSection === "general" && generalTab === "info" ? (
+          currentSection === "general" && generalTab === "info" && canUpdateOrg ? (
             <Button
               size="sm"
               disabled={isSaving}
@@ -491,17 +498,19 @@ export function OrgSettingsPage() {
                 addressValue={addressValue}
                 setAddressValue={setAddressValue}
               />
-              <div className="flex justify-end pt-2">
-                <Button
-                  size="sm"
-                  disabled={isSaving}
-                  onClick={handleSave}
-                  className="h-7 px-3 text-xs font-medium gap-1.5"
-                >
-                  <Save className="size-3.5" />
-                  {isSaving ? t("settings.whitelabel.saving") : t("common.save_changes")}
-                </Button>
-              </div>
+              {canUpdateOrg && (
+                <div className="flex justify-end pt-2">
+                  <Button
+                    size="sm"
+                    disabled={isSaving}
+                    onClick={handleSave}
+                    className="h-7 px-3 text-xs font-medium gap-1.5"
+                  >
+                    <Save className="size-3.5" />
+                    {isSaving ? t("settings.whitelabel.saving") : t("common.save_changes")}
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="branding" className="space-y-4 mt-0">

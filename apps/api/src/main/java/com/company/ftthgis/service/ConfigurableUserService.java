@@ -271,34 +271,60 @@ public class ConfigurableUserService {
     @Transactional
     @AuditRequired(action = "USER_UPDATED", resourceType = "USER", resourceIdExpression = "#id.toString()", scope = "ORGANIZATION", category = "IAM")
     public UserDto updateUser(UUID id, String roleName, String status, String reason, String modifiedBySubject) {
-        return updateUser(id, roleName, status, reason, null, null, modifiedBySubject);
+        return updateUser(id, null, roleName, status, reason, null, null, modifiedBySubject);
     }
 
     @Transactional
     @AuditRequired(action = "USER_UPDATED", resourceType = "USER", resourceIdExpression = "#id.toString()", scope = "ORGANIZATION", category = "IAM")
     public UserDto updateUser(UUID id, String roleName, String status, String reason, String jobTitle, String phone, String modifiedBySubject) {
+        return updateUser(id, null, roleName, status, reason, jobTitle, phone, modifiedBySubject);
+    }
+
+    @Transactional
+    @AuditRequired(action = "USER_UPDATED", resourceType = "USER", resourceIdExpression = "#id.toString()", scope = "ORGANIZATION", category = "IAM")
+    public UserDto updateUser(UUID id, String fullName, String roleName, String status, String reason, String jobTitle, String phone, String modifiedBySubject) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String oldRole = user.getRole() != null ? user.getRole().getName() : null;
         String oldStatus = user.getStatus();
 
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            user.setFullName(fullName.trim());
+        }
+
         if (roleName != null && !roleName.isEmpty() && !roleName.equals(oldRole)) {
-            Role role = roleRepository.findByNameAndOrganizationId(roleName, user.getOrganization() != null ? user.getOrganization().getId() : null)
+            UUID orgId = user.getOrganization() != null ? user.getOrganization().getId() : null;
+            Role role = roleRepository.findByNameAndOrganizationId(roleName, orgId)
+                    .or(() -> roleRepository.findByName(roleName))
                     .orElseGet(() -> roleRepository.findByNameAndIsSystemRoleTrue(roleName)
                             .orElseThrow(() -> new RuntimeException("Role not found: " + roleName)));
             user.setRole(role);
-            // Sync to Keycloak
+
+            if (organizationMemberRepository != null && orgId != null) {
+                organizationMemberRepository.findByUserIdAndOrganizationId(user.getId(), orgId)
+                        .ifPresent(om -> {
+                            om.setRole(role);
+                            om.setRoleName(role.getName());
+                            organizationMemberRepository.save(om);
+                        });
+            }
+
+            // Sync to Keycloak (non-fatal if custom role or user not yet in realm)
             String targetRealm = resolveKeycloakRealm(user.getOrganization());
             try {
-                keycloakAdminService.updateUserRoleInRealm(targetRealm, user.getEmail(), roleName);
+                keycloakAdminService.updateUserRoleInRealm(targetRealm, user.getEmail(), role.getName());
             } catch (Exception e) {
                 if (e.getMessage() != null && e.getMessage().contains("404")) {
                     String fallbackRealm = "ftth-realm".equals(targetRealm) ? "k2net-tenants" : "ftth-realm";
                     log.warn("User {} not found in realm {}, falling back to {}", user.getEmail(), targetRealm, fallbackRealm);
-                    keycloakAdminService.updateUserRoleInRealm(fallbackRealm, user.getEmail(), roleName);
+                    try {
+                        keycloakAdminService.updateUserRoleInRealm(fallbackRealm, user.getEmail(), role.getName());
+                    } catch (Exception ex) {
+                        log.warn("Keycloak role sync skipped for {}: {}", user.getEmail(), ex.getMessage());
+                    }
                 } else {
-                    throw e;
+                    log.warn("Keycloak role sync non-fatal warning for {}: {}", user.getEmail(), e.getMessage());
                 }
             }
 
@@ -307,7 +333,7 @@ public class ConfigurableUserService {
                     .targetUserEmail(user.getEmail())
                     .action("UPDATE_ROLE")
                     .previousValue(oldRole)
-                    .newValue(roleName)
+                    .newValue(role.getName())
                     .reason(reason != null && !reason.isEmpty() ? reason : "No reason provided")
                     .organization(user.getOrganization())
                     .build();
@@ -317,6 +343,14 @@ public class ConfigurableUserService {
 
         if (status != null && !status.isEmpty() && !status.equals(oldStatus)) {
             user.setStatus(status);
+
+            if (organizationMemberRepository != null && user.getOrganization() != null) {
+                organizationMemberRepository.findByUserIdAndOrganizationId(user.getId(), user.getOrganization().getId())
+                        .ifPresent(om -> {
+                            om.setStatus(status);
+                            organizationMemberRepository.save(om);
+                        });
+            }
 
             UserAuditLog auditLog = UserAuditLog.builder()
                     .targetUserId(user.getId())
@@ -590,11 +624,44 @@ public class ConfigurableUserService {
                 .collect(Collectors.toList());
         }
 
-        // Collect permission codes from the user's base role + all project-specific roles (Union Set)
+        // Resolve authoritative role for the active organization (supporting organization_members & Copy-on-Write custom roles)
+        UUID activeOrgId = com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId();
+        if (activeOrgId == null && user.getOrganization() != null) {
+            activeOrgId = user.getOrganization().getId();
+        }
+
+        Role effectiveRole = user.getRole();
+        if (organizationMemberRepository != null && user.getId() != null && activeOrgId != null) {
+            try {
+                var memberOpt = organizationMemberRepository.findByUserIdAndOrganizationId(user.getId(), activeOrgId);
+                if (memberOpt.isPresent() && "ACTIVE".equalsIgnoreCase(memberOpt.get().getStatus())) {
+                    if (memberOpt.get().getRole() != null) {
+                        effectiveRole = memberOpt.get().getRole();
+                    } else if (memberOpt.get().getRoleName() != null && !memberOpt.get().getRoleName().isBlank()) {
+                        String mRoleName = memberOpt.get().getRoleName();
+                        final UUID lookupOrgId = activeOrgId;
+                        effectiveRole = roleRepository.findByNameAndOrganizationId(mRoleName, lookupOrgId)
+                                .or(() -> roleRepository.findByName(mRoleName))
+                                .orElse(effectiveRole);
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Could not resolve effective role from organization_members for user {}: {}", user.getId(), e.getMessage());
+            }
+        }
+
+        if (effectiveRole != null && effectiveRole.isSystemRole() && activeOrgId != null && roleRepository != null) {
+            Role customClone = roleRepository.findByNameAndOrganizationId(effectiveRole.getName(), activeOrgId).orElse(null);
+            if (customClone != null) {
+                effectiveRole = customClone;
+            }
+        }
+
+        // Collect permission codes from the user's effective role + all project-specific roles (Union Set)
         Set<String> permissionsSet = new LinkedHashSet<>();
 
-        if (user.getRole() != null && user.getRole().getPermissions() != null) {
-            user.getRole().getPermissions().forEach(p -> permissionsSet.add(p.getCode()));
+        if (effectiveRole != null && effectiveRole.getPermissions() != null) {
+            effectiveRole.getPermissions().forEach(p -> permissionsSet.add(p.getCode()));
         }
 
         if (user.getProjectMembers() != null) {
@@ -667,8 +734,8 @@ public class ConfigurableUserService {
                 .locale(user.getLocale())
                 .avatarUrl(user.getAvatarUrl())
                 .status(user.getStatus())
-                .roleName(user.getRole() != null ? user.getRole().getName() : "USER")
-                .roleDisplayName(user.getRole() != null ? user.getRole().getDisplayName() : "User")
+                .roleName(effectiveRole != null ? effectiveRole.getName() : "USER")
+                .roleDisplayName(effectiveRole != null ? effectiveRole.getDisplayName() : "User")
                 .organizationName(user.getOrganization() != null ? user.getOrganization().getName() : null)
                 .organizationId(user.getOrganization() != null ? user.getOrganization().getId() : null)
                 .organizationSlug(user.getOrganization() != null ? user.getOrganization().getSlug() : null)

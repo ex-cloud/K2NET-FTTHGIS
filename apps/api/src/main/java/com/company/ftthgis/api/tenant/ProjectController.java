@@ -64,8 +64,13 @@ public class ProjectController {
                     return ResponseEntity.ok(projectRepository.findByOrganizationSlug(orgSlug));
                 }
                 
-                // 3. Regular user - return only joined projects
-                return ResponseEntity.ok(projectRepository.findByOrganizationSlugAndUserId(orgSlug, userId));
+                // 3. Regular user - return joined projects if restricted to specific projects,
+                // or all organization projects if user has org-wide access ("All Projects" scope)
+                List<Project> specificProjects = projectRepository.findByOrganizationSlugAndUserId(orgSlug, userId);
+                if (specificProjects != null && !specificProjects.isEmpty()) {
+                    return ResponseEntity.ok(specificProjects);
+                }
+                return ResponseEntity.ok(projectRepository.findByOrganizationSlug(orgSlug));
             }
         } catch (Exception e) {
             return ResponseEntity.status(500).build();

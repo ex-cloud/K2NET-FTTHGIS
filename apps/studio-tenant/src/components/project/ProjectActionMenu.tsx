@@ -21,6 +21,7 @@ import {
 } from "@k2net/ui";
 import { type Project } from "../../hooks/useProjects";
 import { useTranslation } from "@k2net/i18n";
+import { usePermissions } from "../../hooks/use-permissions";
 import { handleExportSpatial, handleDuplicateStructure } from "./project-utils";
 
 export interface ProjectActionMenuProps {
@@ -39,7 +40,14 @@ export function ProjectActionMenu({
   compact = false,
 }: ProjectActionMenuProps) {
   const { t } = useTranslation();
+  const { canAccess } = usePermissions();
   const isArchived = project.status === "ARCHIVED";
+  const canExport = canAccess("projects.export");
+  const canCreate = canAccess("projects.create");
+  const canEdit = canAccess("projects.edit");
+  const canArchive = canAccess("projects.archive");
+  const canDelete = canAccess("projects.delete");
+  const hasSecondaryActions = canArchive || canEdit || canDelete;
 
   return (
     <DropdownMenu>
@@ -71,49 +79,56 @@ export function ProjectActionMenu({
             {t("projects.open_gis_map")}
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleExportSpatial(project, t("projects.import_success"))}>
-          <Download className="size-3.5 mr-2" />
-          {t("projects.export_spatial_data")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleDuplicateStructure(project, t("common.copied_to_clipboard"))}>
-          <Copy className="size-3.5 mr-2" />
-          {t("projects.duplicate_project")}
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        {isArchived ? (
-          onUnarchiveProject && (
-            <DropdownMenuItem
-              onClick={() => onUnarchiveProject(project.id)}
-              className="cursor-pointer text-primary focus:bg-primary/10"
-            >
-              <RotateCcw className="size-3.5 mr-2" />
-              {t("projects.restore_project")}
-            </DropdownMenuItem>
-          )
-        ) : (
-          onArchiveProject && (
-            <DropdownMenuItem
-              onClick={() => onArchiveProject(project.id)}
-              className="cursor-pointer text-amber-600 dark:text-amber-400 focus:bg-amber-500/10"
-            >
-              <Archive className="size-3.5 mr-2" />
-              {t("projects.archive_project")}
-            </DropdownMenuItem>
-          )
+        {canExport && (
+          <DropdownMenuItem onClick={() => handleExportSpatial(project, t("projects.import_success"))}>
+            <Download className="size-3.5 mr-2" />
+            {t("projects.export_spatial_data")}
+          </DropdownMenuItem>
+        )}
+        {canCreate && (
+          <DropdownMenuItem onClick={() => handleDuplicateStructure(project, t("common.copied_to_clipboard"))}>
+            <Copy className="size-3.5 mr-2" />
+            {t("projects.duplicate_project")}
+          </DropdownMenuItem>
         )}
 
-        <DropdownMenuItem asChild>
-          <Link
-            to="/project/$projectId/settings/general"
-            params={{ projectId: project.id }}
-          >
-            <Settings className="size-3.5 mr-2" />
-            {t("projects.project_settings")}
-          </Link>
-        </DropdownMenuItem>
-        {onDeleteProject && (
+        {hasSecondaryActions && <DropdownMenuSeparator />}
+
+        {canArchive &&
+          (isArchived ? (
+            onUnarchiveProject && (
+              <DropdownMenuItem
+                onClick={() => onUnarchiveProject(project.id)}
+                className="cursor-pointer text-primary focus:bg-primary/10"
+              >
+                <RotateCcw className="size-3.5 mr-2" />
+                {t("projects.restore_project")}
+              </DropdownMenuItem>
+            )
+          ) : (
+            onArchiveProject && (
+              <DropdownMenuItem
+                onClick={() => onArchiveProject(project.id)}
+                className="cursor-pointer text-amber-600 dark:text-amber-400 focus:bg-amber-500/10"
+              >
+                <Archive className="size-3.5 mr-2" />
+                {t("projects.archive_project")}
+              </DropdownMenuItem>
+            )
+          ))}
+
+        {canEdit && (
+          <DropdownMenuItem asChild>
+            <Link
+              to="/project/$projectId/settings/general"
+              params={{ projectId: project.id }}
+            >
+              <Settings className="size-3.5 mr-2" />
+              {t("projects.project_settings")}
+            </Link>
+          </DropdownMenuItem>
+        )}
+        {canDelete && onDeleteProject && (
           <DropdownMenuItem
             onClick={() => onDeleteProject(project.id)}
             className="text-destructive focus:bg-destructive/10 cursor-pointer"

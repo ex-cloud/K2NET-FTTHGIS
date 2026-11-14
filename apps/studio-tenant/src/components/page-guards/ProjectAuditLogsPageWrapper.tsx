@@ -7,12 +7,12 @@ export function ProjectAuditLogsPageWrapper({ children }: { children: ReactNode 
   const { t } = useTranslation();
   return (
     <PermissionGuard
-      permission={["project.audit.view", "network.view", "projects.view"]}
+      permission={["audit.view", "project.audit.view", "network.audit"]}
       fallback={
         <TenantAccessDenied
           title={t("security.access_denied")}
           description={t("security.access_denied_audit")}
-          requiredPermission="project.audit.view"
+          requiredPermission="audit.view"
         />
       }
     >

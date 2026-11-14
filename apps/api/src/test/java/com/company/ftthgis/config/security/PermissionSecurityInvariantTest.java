@@ -182,4 +182,60 @@ class PermissionSecurityInvariantTest {
         assertFalse(SecurityConfig.KeycloakRoleConverter.isSystemScopedPermission(tenantBillingManage),
                 "Tenant billing.manage must NOT be classified as system scoped");
     }
+
+    @Test
+    @DisplayName("🛡️ Invariant 5: Viewer role must only receive explicit operational read-only GIS permissions and never receive governance/admin permissions")
+    void testViewerRoleStrictLeastPrivilege() throws Exception {
+        Role viewerRole = new Role();
+        viewerRole.setName("viewer");
+        viewerRole.setScope("TENANT");
+
+        com.company.ftthgis.domain.user.repository.RoleRepository mockRoleRepo = org.mockito.Mockito.mock(com.company.ftthgis.domain.user.repository.RoleRepository.class);
+        PermissionSeeder seeder = new PermissionSeeder(null, mockRoleRepo, null);
+        Method syncMethod = PermissionSeeder.class.getDeclaredMethod(
+                "syncRolePermissions", Role.class, Set.class, String.class, boolean.class, String[].class);
+        syncMethod.setAccessible(true);
+
+        Set<Permission> allTenantPerms = Set.of(
+                Permission.builder().code("dashboard.view").scope("TENANT").build(),
+                Permission.builder().code("projects.view").scope("TENANT").build(),
+                Permission.builder().code("map.view").scope("TENANT").build(),
+                Permission.builder().code("zones.view").scope("TENANT").build(),
+                Permission.builder().code("coverage.view").scope("TENANT").build(),
+                Permission.builder().code("network.view").scope("TENANT").build(),
+                Permission.builder().code("inventory.view").scope("TENANT").build(),
+                // Sensitive governance permissions that viewer MUST NOT hold:
+                Permission.builder().code("organizations.view").scope("TENANT").build(),
+                Permission.builder().code("billing.view").scope("TENANT").build(),
+                Permission.builder().code("security.policy.view").scope("TENANT").build(),
+                Permission.builder().code("security.sso.view").scope("TENANT").build(),
+                Permission.builder().code("team.view").scope("TENANT").build(),
+                Permission.builder().code("members.view").scope("TENANT").build(),
+                Permission.builder().code("users.view").scope("TENANT").build(),
+                Permission.builder().code("roles.view").scope("TENANT").build(),
+                Permission.builder().code("audit.view").scope("TENANT").build()
+        );
+
+        String[] viewerExplicitAllowed = new String[]{
+                "dashboard.view",
+                "projects.view",
+                "map.view",
+                "zones.view",
+                "coverage.view",
+                "network.view",
+                "inventory.view"
+        };
+
+        syncMethod.invoke(seeder, viewerRole, allTenantPerms, "TENANT", false, viewerExplicitAllowed);
+        assertEquals(7, viewerRole.getPermissions().size());
+        assertFalse(viewerRole.getPermissions().stream().anyMatch(p -> "organizations.view".equals(p.getCode())));
+        assertFalse(viewerRole.getPermissions().stream().anyMatch(p -> "billing.view".equals(p.getCode())));
+        assertFalse(viewerRole.getPermissions().stream().anyMatch(p -> "security.policy.view".equals(p.getCode())));
+        assertFalse(viewerRole.getPermissions().stream().anyMatch(p -> "security.sso.view".equals(p.getCode())));
+        assertFalse(viewerRole.getPermissions().stream().anyMatch(p -> "team.view".equals(p.getCode())));
+        assertFalse(viewerRole.getPermissions().stream().anyMatch(p -> "members.view".equals(p.getCode())));
+        assertFalse(viewerRole.getPermissions().stream().anyMatch(p -> "users.view".equals(p.getCode())));
+        assertFalse(viewerRole.getPermissions().stream().anyMatch(p -> "roles.view".equals(p.getCode())));
+        assertFalse(viewerRole.getPermissions().stream().anyMatch(p -> "audit.view".equals(p.getCode())));
+    }
 }

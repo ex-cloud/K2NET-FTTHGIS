@@ -1,15 +1,17 @@
 import { type ReactNode } from "react";
+import { useTranslation } from "@k2net/i18n";
 import { PermissionGuard } from "../../hooks/use-permissions";
 import { TenantAccessDenied } from "./TenantAccessDenied";
 
 export function UsagePageWrapper({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <PermissionGuard
-      permission={["billing.view", "billing.manage", "organizations.view", "dashboard.view"]}
+      permission={["billing.view", "billing.manage", "organizations.view"]}
       fallback={
         <TenantAccessDenied
-          title="Akses Metrik Pemakaian Dibatasi"
-          description="Anda tidak memiliki izin untuk melihat rincian konsumsi sumber daya dan kuota organisasi."
+          title={t("security.access_denied")}
+          description={t("security.access_denied_usage")}
           requiredPermission="billing.view"
         />
       }

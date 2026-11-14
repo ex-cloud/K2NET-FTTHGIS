@@ -9,7 +9,8 @@ import {
 } from "@k2net/ui";
 import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
-import { getProjectNavItems, type NavItem } from "../../config/tenant-sidebar-navigation";
+import { getProjectNavItems, getProjectSecondaryConfigs, type NavItem } from "../../config/tenant-sidebar-navigation";
+import { usePermissions } from "../../hooks/use-permissions";
 
 interface TenantProjectSidebarProps {
   projectId: string;
@@ -19,6 +20,7 @@ export function TenantProjectSidebar({
   projectId,
 }: TenantProjectSidebarProps) {
   const { t } = useTranslation();
+  const { canAccess } = usePermissions();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const { sidebarMode } = useSidebarMode();
@@ -28,7 +30,24 @@ export function TenantProjectSidebar({
     sidebarMode === "expanded" || (sidebarMode === "hover" && isHovering);
   const isFloating = sidebarMode === "hover";
 
-  const navItems = React.useMemo(() => getProjectNavItems(projectId), [projectId]);
+  const navItems = React.useMemo(() => {
+    const rawItems = getProjectNavItems(projectId);
+    const secondaryConfigs = getProjectSecondaryConfigs(projectId);
+    return rawItems
+      .filter((item) => canAccess(item.requiredPermission))
+      .map((item) => {
+        if (item.hasSecondarySidebar && secondaryConfigs[item.id]) {
+          for (const section of secondaryConfigs[item.id].sections) {
+            for (const sub of section.items) {
+              if (canAccess(sub.requiredPermission)) {
+                return { ...item, href: sub.href };
+              }
+            }
+          }
+        }
+        return item;
+      });
+  }, [projectId, canAccess]);
 
   const mainNavItems = React.useMemo(
     () => navItems.filter((item) => item.id !== "settings"),

@@ -20,38 +20,38 @@ public class RolePermissionController {
     // Both Super Admin / System Security Manager and Tenant Admin can access this
     // It returns isolated roles based on the JWT context
     @GetMapping
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.view')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.view') or hasAuthority('roles.update') or hasAuthority('roles.manage') or hasAuthority('members.view') or hasAuthority('members.invite') or hasAuthority('team.view') or hasAuthority('team.manage')")
     public ResponseEntity<List<Role>> getRoles(@RequestParam(required = false) String scope) {
         return ResponseEntity.ok(rolePermissionService.getRoles(scope));
     }
 
     @GetMapping("/permissions")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.view')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.view') or hasAuthority('roles.update') or hasAuthority('roles.manage') or hasAuthority('team.view') or hasAuthority('team.manage')")
     public ResponseEntity<List<Permission>> getPermissions(@RequestParam(required = false) String scope) {
         return ResponseEntity.ok(rolePermissionService.getAllPermissions(scope));
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.manage') or hasAuthority('roles.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.manage') or hasAuthority('roles.update') or hasAuthority('team.manage')")
     public ResponseEntity<Role> createRole(@jakarta.validation.Valid @RequestBody com.company.ftthgis.api.user.dto.CreateRoleRequest request) {
         return ResponseEntity.ok(rolePermissionService.createRole(request));
     }
 
     @PutMapping("/{roleId}")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.manage') or hasAuthority('roles.update') or hasAuthority('team.manage')")
     public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @RequestBody com.company.ftthgis.api.user.dto.UpdateRoleRequest request) {
         return ResponseEntity.ok(rolePermissionService.updateRole(roleId, request));
     }
 
     @DeleteMapping("/{roleId}")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.manage') or hasAuthority('roles.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.manage') or hasAuthority('roles.update') or hasAuthority('team.manage')")
     public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {
         rolePermissionService.deleteRole(roleId);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{roleId}/permissions")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.manage') or hasAuthority('roles.update') or hasAuthority('team.manage')")
     public ResponseEntity<Role> updateRolePermissions(
             @PathVariable Long roleId,
             @RequestBody List<Long> permissionIds) {
@@ -72,13 +72,13 @@ public class RolePermissionController {
     }
 
     @GetMapping("/check-name-similarity")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.manage') or hasAuthority('roles.update') or hasAuthority('team.manage')")
     public ResponseEntity<List<RolePermissionService.RoleSimilarityDto>> checkNameSimilarity(@RequestParam(required = false, defaultValue = "") String name) {
         return ResponseEntity.ok(rolePermissionService.checkNameSimilarity(name));
     }
 
     @GetMapping("/{roleId}/user-count")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.view')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or hasAuthority('roles.view') or hasAuthority('roles.update') or hasAuthority('roles.manage') or hasAuthority('team.view') or hasAuthority('team.manage')")
     public ResponseEntity<RolePermissionService.RoleUserCountDto> getRoleUserCount(@PathVariable Long roleId) {
         return ResponseEntity.ok(rolePermissionService.getRoleUserCount(roleId));
     }

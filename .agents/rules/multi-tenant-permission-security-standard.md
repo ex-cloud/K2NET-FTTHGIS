@@ -78,6 +78,12 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
    - Memeriksa fallback prefix menyeluruh: `system.*`, `platform.*`, `support.*`, `catalog.*`, `licensing.*`, `billing.subscriptions.*`, `billing.invoices.*`, `billing.read`, `orgs.*`.
 3. **Drop Otomatis**:
    Setiap permission berscope `SYSTEM` yang terdeteksi pada token non-platform wajib di-drop sebelum `SimpleGrantedAuthority` dimasukkan ke dalam `SecurityContextHolder`.
+4. **PostgreSQL `organization_members` sebagai Single Source of Truth (Anti-Race Condition)**:
+   - Untuk token non-platform (`k2net-tenants`), `KeycloakRoleConverter` wajib membaca role otoritatif dari tabel `organization_members` (untuk organisasi aktif) dan fallback ke `users.role` sebagai **Single Source of Truth**. Hal ini mencegah `Final Mapped Authorities: []` dan kondisi balapan (*race condition*) ketika Admin Tenant mengubah role atau permission anggota secara real-time sebelum JWT Keycloak kedaluwarsa.
+   - `UserSyncService.relinkExistingUserToKeycloakId` **DILARANG KERAS** memanggil `userRepository.delete(user)` secara mentah tanpa memulihkan relasi `organization_members` dan `project_members`.
+5. **Prinsip Strict Least-Privilege untuk Role `viewer` & Custom Roles Tenant**:
+   - Role `viewer` **DILARANG KERAS** di-seed menggunakan wildcard `.view`. Role `viewer` hanya boleh memiliki tepat 7 permission operasional baca-saja (`dashboard.view`, `projects.view`, `map.view`, `zones.view`, `coverage.view`, `network.view`, `inventory.view`) dan haram memiliki `billing.view`, `audit.view`, `team.view`, `members.view`, `users.view`, `roles.view`, `security.policy.view`, `security.sso.view`, atau `organizations.view`.
+   - Admin Tenant (`roles.manage` / `roles.update`) diizinkan membuat **Custom Role Tenant** (`is_system_role = false`, `scope = 'TENANT'`, `organization_id = <tenant_uuid>`) atau menyesuaikan permission role di organisasi mereka melalui endpoint `/api/v1/roles`, dan seluruh komponen navigasi (`TenantOrgSidebar`, `TenantProjectSidebar`, `TenantSecondarySidebar`, `TenantCommandPalette`, `TenantUserNav`, `PageGuard`) wajib tersinkronisasi dinamis dengan `usePermissions().canAccess(...)`.
 
 ---
 

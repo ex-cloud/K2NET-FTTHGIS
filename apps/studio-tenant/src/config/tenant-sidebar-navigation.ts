@@ -27,7 +27,7 @@ export interface SubMenuItem {
   description?: string;
   badge?: string;
   shortcut?: string;
-  requiredPermission?: string;
+  requiredPermission?: string | string[];
 }
 
 export interface SecondarySidebarSection {
@@ -52,7 +52,7 @@ export interface NavItem {
   icon: LucideIcon;
   shortcut?: string;
   hasSecondarySidebar?: boolean;
-  requiredPermission?: string;
+  requiredPermission?: string | string[];
 }
 
 // ============================================================================
@@ -67,6 +67,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     href: "/projects",
     icon: Boxes,
     shortcut: "G then P",
+    requiredPermission: ["projects.view", "projects.create", "projects.edit"],
   },
   {
     id: "team",
@@ -76,6 +77,16 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     icon: Users,
     shortcut: "G then M",
     hasSecondarySidebar: true,
+    requiredPermission: [
+      "team.view",
+      "team.manage",
+      "members.view",
+      "members.manage",
+      "users.view",
+      "roles.view",
+      "roles.update",
+      "roles.manage",
+    ],
   },
   {
     id: "integrations",
@@ -85,6 +96,11 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     icon: Webhook,
     shortcut: "G then I",
     hasSecondarySidebar: true,
+    requiredPermission: [
+      "organizations.webhooks.manage",
+      "feature.integration.open_api",
+      "organizations.update",
+    ],
   },
   {
     id: "usage",
@@ -93,6 +109,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     href: "/usage",
     icon: Activity,
     shortcut: "G then U",
+    requiredPermission: ["billing.view", "billing.manage", "organizations.view"],
   },
   {
     id: "billing",
@@ -102,6 +119,12 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     icon: CreditCard,
     shortcut: "G then B",
     hasSecondarySidebar: true,
+    requiredPermission: [
+      "billing.view",
+      "billing.manage",
+      "billing.packages.view",
+      "billing.packages.subscribe",
+    ],
   },
   {
     id: "audit-logs",
@@ -110,7 +133,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     href: "/audit-logs",
     icon: History,
     shortcut: "G then A",
-    requiredPermission: "organization.audit.view",
+    requiredPermission: ["audit.view", "organization.audit.view"],
   },
   {
     id: "settings",
@@ -120,6 +143,15 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     icon: Settings,
     shortcut: "G then ,",
     hasSecondarySidebar: true,
+    requiredPermission: [
+      "organizations.view",
+      "organizations.update",
+      "security.policy.view",
+      "security.policy.manage",
+      "security.sso.view",
+      "security.sso.manage",
+      "organizations.webhooks.manage",
+    ],
   },
 ];
 
@@ -142,6 +174,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Key,
             description: "Cryptographic token & validity",
             shortcut: "S then L",
+            requiredPermission: ["billing.view", "billing.manage"],
           },
           {
             id: "quotas",
@@ -151,6 +184,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Activity,
             description: "OLT, ODP, Storage & API limits",
             shortcut: "S then Q",
+            requiredPermission: ["billing.view", "billing.manage"],
           },
         ],
       },
@@ -166,6 +200,12 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: CreditCard,
             description: "Tier catalog & capacity upgrades",
             shortcut: "S then P",
+            requiredPermission: [
+              "billing.view",
+              "billing.manage",
+              "billing.packages.view",
+              "billing.packages.subscribe",
+            ],
           },
           {
             id: "invoices",
@@ -175,6 +215,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Receipt,
             description: "Official invoices & payment receipts",
             shortcut: "S then I",
+            requiredPermission: ["billing.view", "billing.manage"],
           },
           {
             id: "marketplace",
@@ -185,6 +226,12 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             description: "Modular boosters & platform features",
             shortcut: "S then M",
             badge: "NEW",
+            requiredPermission: [
+              "billing.view",
+              "billing.manage",
+              "billing.packages.view",
+              "billing.packages.subscribe",
+            ],
           },
         ],
       },
@@ -206,6 +253,13 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Users,
             description: "User list & active invitations",
             shortcut: "S then M",
+            requiredPermission: [
+              "team.view",
+              "team.manage",
+              "members.view",
+              "members.manage",
+              "users.view",
+            ],
           },
           {
             id: "roles",
@@ -215,6 +269,13 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: ShieldCheck,
             description: "Organization PBAC access rights",
             shortcut: "S then R",
+            requiredPermission: [
+              "roles.view",
+              "roles.update",
+              "roles.manage",
+              "team.view",
+              "team.manage",
+            ],
           },
           {
             id: "activity",
@@ -224,6 +285,12 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: History,
             description: "Member action audit logs",
             shortcut: "S then A",
+            requiredPermission: [
+              "audit.view",
+              "organization.audit.view",
+              "team.view",
+              "team.manage",
+            ],
           },
         ],
       },
@@ -247,6 +314,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Building,
             description: "Identity, whitelabel branding & custom domains",
             shortcut: "S then G",
+            requiredPermission: ["organizations.view", "organizations.update"],
           },
         ],
       },
@@ -262,6 +330,11 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Shield,
             description: "Multi-factor auth & sessions",
             shortcut: "S then S",
+            requiredPermission: [
+              "security.policy.view",
+              "security.policy.manage",
+              "organizations.update",
+            ],
           },
           {
             id: "sso",
@@ -271,6 +344,11 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Key,
             description: "Keycloak SAML / OIDC integration",
             shortcut: "S then K",
+            requiredPermission: [
+              "security.sso.view",
+              "security.sso.manage",
+              "organizations.update",
+            ],
           },
           {
             id: "oauth",
@@ -280,6 +358,11 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Webhook,
             description: "Gateway integration credentials",
             shortcut: "S then O",
+            requiredPermission: [
+              "organizations.webhooks.manage",
+              "feature.integration.open_api",
+              "organizations.update",
+            ],
           },
         ],
       },
@@ -301,6 +384,11 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Key,
             description: "Programmatic REST API keys",
             shortcut: "D then K",
+            requiredPermission: [
+              "organizations.webhooks.manage",
+              "feature.integration.open_api",
+              "organizations.update",
+            ],
           },
           {
             id: "webhooks",
@@ -310,6 +398,7 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Webhook,
             description: "Outbound event notifications",
             shortcut: "D then W",
+            requiredPermission: ["organizations.webhooks.manage", "organizations.update"],
           },
           {
             id: "gateways",
@@ -319,6 +408,11 @@ export const ORG_SECONDARY_CONFIGS: Record<string, SecondarySidebarConfig> = {
             icon: Plug,
             description: "Connected services & SMS/S3",
             shortcut: "D then G",
+            requiredPermission: [
+              "organizations.webhooks.manage",
+              "feature.integration.open_api",
+              "organizations.update",
+            ],
           },
         ],
       },

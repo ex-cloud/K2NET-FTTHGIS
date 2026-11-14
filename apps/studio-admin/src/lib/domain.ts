@@ -7,7 +7,7 @@ export function parseDomain(hostname: string) {
   let baseDomain = "";
   let isHyphen = false;
 
-  // Strip port if present (e.g., system.lvh.me:3000 -> system.lvh.me)
+  // Strip port if present (e.g., system.lvh.me:3001 -> system.lvh.me)
   const hostOnly = hostname.split(":")[0];
 
   if (hostOnly.endsWith("gis-staging.kdua.net")) {
