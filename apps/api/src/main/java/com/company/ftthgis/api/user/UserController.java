@@ -91,7 +91,7 @@ public class UserController {
             @PathVariable UUID id,
             @RequestBody UpdateUserRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        return userService.updateUser(id, request.role(), request.status(), request.reason(), request.jobTitle(), request.phone(), request.fullName(), jwt.getSubject());
+        return userService.updateUser(id, request.fullName(), request.role(), request.status(), request.reason(), request.jobTitle(), request.phone(), jwt.getSubject());
     }
 
     @PostMapping("/{id}/reset-password")

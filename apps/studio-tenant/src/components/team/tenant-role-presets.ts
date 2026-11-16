@@ -13,6 +13,7 @@ export interface EditableTenantRole {
   code?: string;
   description?: string;
   isSystemRole?: boolean;
+  isTemplate?: boolean;
   permissions?: Array<{ id: number; code: string; name?: string; module?: string }>;
 }
 

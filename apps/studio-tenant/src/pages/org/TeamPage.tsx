@@ -114,7 +114,7 @@ export function TeamPage() {
       raw: r,
       id: r.id,
       name: r.name,
-      isSystemRole: r.isSystemRole ?? true,
+      isSystemRole: Boolean(r.isSystemRole || r.isTemplate),
       code: r.code || `TENT-${r.id}`,
       title: r.displayName || r.name.toUpperCase(),
       description: r.description || r.name,

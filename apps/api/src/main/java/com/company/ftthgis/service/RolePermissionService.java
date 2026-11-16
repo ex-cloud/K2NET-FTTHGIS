@@ -93,15 +93,15 @@ public class RolePermissionService {
                         // only keep the custom one (Lazy Cloning / Copy-on-Write).
                         java.util.Map<String, Role> effectiveRoles = new java.util.HashMap<>();
                         
-                        // Process System Roles first
+                        // Process System & Template Roles first (platform-wide templates: organization IS NULL)
                         allAvailable.stream()
-                            .filter(Role::isSystemRole)
+                            .filter(r -> r.getOrganization() == null)
                             .forEach(r -> effectiveRoles.put(r.getName(), r));
                             
-                        // Override with Custom Roles (same name)
+                        // Override with Tenant Custom Roles (tenant-specific: organization IS NOT NULL)
                         // EXTRA SAFETY: Ensure no custom role named 'super_admin' is ever shown to tenants
                         allAvailable.stream()
-                            .filter(r -> !r.isSystemRole())
+                            .filter(r -> r.getOrganization() != null)
                             .filter(r -> !r.getName().equalsIgnoreCase("super_admin"))
                             .forEach(r -> effectiveRoles.put(r.getName(), r));
                             

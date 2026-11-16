@@ -54,6 +54,11 @@ public class Role extends AuditableEntity {
     @JsonIgnore
     private Organization organization;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("isTemplate")
+    public boolean isTemplate() {
+        return this.organization == null;
+    }
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
     @Builder.Default

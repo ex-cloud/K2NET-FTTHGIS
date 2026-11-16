@@ -33,9 +33,9 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
 
     List<Role> findByOrganizationIsNull();
 
-    // For Tenants: (Tenant-scoped Templates) + (Own Custom Roles)
+    // For Tenants: (Tenant-scoped Templates: organization IS NULL) + (Own Custom Roles: organization.id = :organizationId)
     @Query("SELECT r FROM Role r WHERE " +
-           "(r.isSystemRole = true AND r.scope = 'TENANT') OR " +
+           "(r.organization IS NULL AND r.scope = 'TENANT') OR " +
            "(r.organization.id = :organizationId)")
     List<Role> findAvailableRolesForTenant(@Param("organizationId") UUID organizationId);
 

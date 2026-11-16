@@ -21,6 +21,7 @@ export interface LiveRoleDto {
   code?: string;
   description?: string;
   isSystemRole?: boolean;
+  isTemplate?: boolean;
   permissions?: Array<{ id: number; code: string }>;
 }
 

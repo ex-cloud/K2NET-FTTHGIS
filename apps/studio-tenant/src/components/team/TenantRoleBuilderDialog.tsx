@@ -143,7 +143,8 @@ export function TenantRoleBuilderDialog({
         .map((p) => p.id);
 
       if (editingRole) {
-        if (!editingRole.isSystemRole) {
+        const isTemplateRole = Boolean(editingRole.isSystemRole || editingRole.isTemplate);
+        if (!isTemplateRole) {
           await apiClient(`/api/v1/roles/${editingRole.id}`, {
             method: "PUT",
             body: JSON.stringify({
