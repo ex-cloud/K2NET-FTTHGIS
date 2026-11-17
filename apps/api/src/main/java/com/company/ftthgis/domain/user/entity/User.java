@@ -25,6 +25,7 @@ public class User extends AuditableEntity {
     private UUID id;
 
     @JsonIgnore
+    @org.hibernate.envers.NotAudited
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id")
     private Organization organization;
