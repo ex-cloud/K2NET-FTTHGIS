@@ -1,0 +1,19 @@
+# Apex gis.kdua.net is RESERVED (not a tenant slug) — send users to System Admin.
+http:
+  middlewares:
+    redirect-gis-apex:
+      redirectRegex:
+        regex: "^https?://gis\\.kdua\\.net/(.*)"
+        replacement: "https://system-gis.kdua.net/${1}"
+        permanent: false
+
+  routers:
+    gis-apex-redirect:
+      rule: "Host(`gis.kdua.net`)"
+      entrypoints:
+        - websecure
+      middlewares:
+        - redirect-gis-apex
+      service: noop@internal
+      priority: 200
+      tls: {}
