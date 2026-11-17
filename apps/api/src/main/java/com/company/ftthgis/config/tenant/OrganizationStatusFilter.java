@@ -48,7 +48,8 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
                 if ("ftth-realm".equals(slug) || "master".equals(slug)) {
                     String tenantHeader = request.getHeader("X-Tenant-ID");
                     UUID tenantUuid = null;
-                    if (tenantHeader != null && !tenantHeader.isBlank()) {
+                    if (tenantHeader != null && !tenantHeader.isBlank()
+                            && !"00000000-0000-0000-0000-000000000000".equals(tenantHeader.trim())) {
                         try {
                             tenantUuid = UUID.fromString(tenantHeader.trim());
                         } catch (IllegalArgumentException ignored) {}
@@ -56,13 +57,6 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
 
                     if (tenantUuid != null) {
                         organizationRepository.findById(tenantUuid)
-                                .ifPresent(org -> OrganizationContext.setOrganizationId(org.getId()));
-                    }
-
-                    if (OrganizationContext.getOrganizationId() == null) {
-                        organizationRepository.findFirstByIsPlatformRootTrue()
-                                .or(() -> organizationRepository.findBySlug("ops"))
-                                .or(() -> organizationRepository.findBySlug("system"))
                                 .ifPresent(org -> OrganizationContext.setOrganizationId(org.getId()));
                     }
                 } else {

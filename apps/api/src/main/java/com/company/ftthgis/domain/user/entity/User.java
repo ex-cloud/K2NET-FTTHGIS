@@ -1,6 +1,9 @@
 package com.company.ftthgis.domain.user.entity;
 
-import com.company.ftthgis.domain.tenant.entity.OrganizationAwareEntity;
+import com.company.ftthgis.domain.common.AuditableEntity;
+import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -16,10 +19,20 @@ import java.util.UUID;
 @SuperBuilder
 @Audited
 @EqualsAndHashCode(callSuper = true)
-public class User extends OrganizationAwareEntity {
+public class User extends AuditableEntity {
 
     @Id
     private UUID id;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    private Organization organization;
+
+    @JsonProperty("organization_id")
+    public UUID getOrganizationIdValue() {
+        return organization != null ? organization.getId() : null;
+    }
 
     @Column(nullable = false, unique = true)
     private String email;

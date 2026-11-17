@@ -231,7 +231,7 @@ export function TenantRoleBuilderDialog({
                     );
                   }
                 }}
-                disabled={Boolean(editingRole?.isSystemRole)}
+                disabled={Boolean(editingRole?.isSystemRole || editingRole?.isTemplate)}
                 placeholder={t("security.role_display_name_placeholder")}
                 className="h-8 text-xs"
                 required
@@ -256,7 +256,7 @@ export function TenantRoleBuilderDialog({
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              disabled={Boolean(editingRole?.isSystemRole)}
+              disabled={Boolean(editingRole?.isSystemRole || editingRole?.isTemplate)}
               placeholder={t("security.role_description_placeholder")}
               className="h-8 text-xs"
             />

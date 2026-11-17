@@ -261,11 +261,41 @@ public class ConfigurableUserService {
     }
 
     public UserStatsDto getUserStats() {
+        UUID activeOrgId = com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId();
+        if (activeOrgId != null && !isPlatformControlPlaneCaller()) {
+            return UserStatsDto.builder()
+                    .totalUsers(userRepository.countByOrganizationId(activeOrgId))
+                    .activeUsers(userRepository.findByOrganizationId(activeOrgId).stream()
+                            .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
+                            .count())
+                    .pendingRequests(0)
+                    .build();
+        }
         return UserStatsDto.builder()
-                .totalUsers(userRepository.count())
-                .activeUsers(userRepository.countByStatus("ACTIVE"))
-                .pendingRequests(0)
+                .totalUsers(userRepository.countByOrganizationIsNull())
+                .activeUsers(userRepository.countByOrganizationIsNullAndStatus("ACTIVE"))
+                .pendingRequests(userRepository.countByOrganizationIsNullAndStatus("PENDING_ACTIVATION"))
                 .build();
+    }
+
+    private boolean isPlatformControlPlaneCaller() {
+        if (AuditContext.isImpersonating()) {
+            return false;
+        }
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return true;
+        }
+        if (auth.getPrincipal() instanceof org.springframework.security.oauth2.jwt.Jwt jwt) {
+            String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
+            if (issuer.endsWith("/realms/ftth-realm") || issuer.endsWith("/realms/master")) {
+                return true;
+            }
+        }
+        return auth.getAuthorities() != null && auth.getAuthorities().stream()
+                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                .anyMatch(a -> "ROLE_super_admin".equalsIgnoreCase(a) || "system.security.manage".equalsIgnoreCase(a));
     }
 
     @Transactional
@@ -470,11 +500,52 @@ public class ConfigurableUserService {
     }
 
     public Page<UserDto> findAll(String search, String role, String status, String org, String scope, Pageable pageable) {
+        final boolean platformCaller = isPlatformControlPlaneCaller();
+        final UUID contextOrgId = com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId();
+
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (scope != null && !scope.isEmpty()) {
-                if ("system".equalsIgnoreCase(scope) || "platform".equalsIgnoreCase(scope)) {
+            if (!platformCaller && contextOrgId != null) {
+                // Strict Tenant Boundary: lock query to the caller's active organization (primary org or organization_members)
+                var subquery = query.subquery(UUID.class);
+                var omRoot = subquery.from(OrganizationMember.class);
+                subquery.select(omRoot.get("user").get("id"))
+                        .where(
+                                cb.equal(omRoot.get("user"), root),
+                                cb.equal(omRoot.get("organization").get("id"), contextOrgId)
+                        );
+                predicates.add(cb.or(
+                        cb.equal(root.get("organization").get("id"), contextOrgId),
+                        cb.exists(subquery)
+                ));
+            } else {
+                boolean hasExplicitTenantOrgFilter = org != null && !org.isEmpty()
+                        && !"all".equalsIgnoreCase(org)
+                        && !"system".equalsIgnoreCase(org)
+                        && !"platform".equalsIgnoreCase(org);
+
+                if (hasExplicitTenantOrgFilter) {
+                    String likeOrg = "%" + org.toLowerCase() + "%";
+                    var orgJoin = root.join("organization", jakarta.persistence.criteria.JoinType.LEFT);
+                    var subquery = query.subquery(UUID.class);
+                    var omRoot = subquery.from(OrganizationMember.class);
+                    var omOrgJoin = omRoot.join("organization", jakarta.persistence.criteria.JoinType.INNER);
+                    subquery.select(omRoot.get("user").get("id"))
+                            .where(
+                                    cb.equal(omRoot.get("user"), root),
+                                    cb.or(
+                                            cb.like(cb.lower(omOrgJoin.get("name")), likeOrg),
+                                            cb.like(cb.lower(omOrgJoin.get("slug")), likeOrg)
+                                    )
+                            );
+                    predicates.add(cb.or(
+                            cb.like(cb.lower(orgJoin.get("name")), likeOrg),
+                            cb.like(cb.lower(orgJoin.get("slug")), likeOrg),
+                            cb.exists(subquery)
+                    ));
+                } else if ("system".equalsIgnoreCase(scope) || "platform".equalsIgnoreCase(scope)
+                        || "system".equalsIgnoreCase(org) || "platform".equalsIgnoreCase(org)) {
                     predicates.add(cb.isNull(root.get("organization")));
                 } else if ("tenant".equalsIgnoreCase(scope)) {
                     predicates.add(cb.isNotNull(root.get("organization")));
@@ -495,18 +566,6 @@ public class ConfigurableUserService {
 
             if (status != null && !status.isEmpty() && !status.equals("all")) {
                 predicates.add(cb.equal(root.get("status"), status));
-            }
-
-            if (org != null && !org.isEmpty() && !org.equals("all")) {
-                if ("system".equalsIgnoreCase(org) || "platform".equalsIgnoreCase(org)) {
-                    predicates.add(cb.isNull(root.get("organization")));
-                } else {
-                    String likeOrg = "%" + org.toLowerCase() + "%";
-                    predicates.add(cb.or(
-                            cb.like(cb.lower(root.get("organization").get("name")), likeOrg),
-                            cb.like(cb.lower(root.get("organization").get("slug")), likeOrg)
-                    ));
-                }
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -530,8 +589,17 @@ public class ConfigurableUserService {
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             
-            // Filter by organization
-            predicates.add(cb.equal(root.get("organization").get("id"), finalOrgId));
+            var subquery = query.subquery(UUID.class);
+            var omRoot = subquery.from(OrganizationMember.class);
+            subquery.select(omRoot.get("user").get("id"))
+                    .where(
+                            cb.equal(omRoot.get("user"), root),
+                            cb.equal(omRoot.get("organization").get("id"), finalOrgId)
+                    );
+            predicates.add(cb.or(
+                    cb.equal(root.get("organization").get("id"), finalOrgId),
+                    cb.exists(subquery)
+            ));
 
             if (search != null && !search.isEmpty()) {
                 String likePattern = "%" + search.toLowerCase() + "%";
@@ -650,7 +718,7 @@ public class ConfigurableUserService {
             }
         }
 
-        if (effectiveRole != null && effectiveRole.isSystemRole() && activeOrgId != null && roleRepository != null) {
+        if (effectiveRole != null && (effectiveRole.isSystemRole() || effectiveRole.getOrganization() == null) && activeOrgId != null && roleRepository != null) {
             Role customClone = roleRepository.findByNameAndOrganizationId(effectiveRole.getName(), activeOrgId).orElse(null);
             if (customClone != null) {
                 effectiveRole = customClone;

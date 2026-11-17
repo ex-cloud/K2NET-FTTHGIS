@@ -175,9 +175,9 @@ public class RolePermissionService {
             
             UUID userOrgId = user.getOrganization().getId();
 
-            // Check if it's a System Role. If so, CLONE it instead of editing it.
-            if (role.isSystemRole()) {
-                log.info("🛡️ Lazy Cloning system role '{}' for organization {}", role.getName(), user.getOrganization().getSlug());
+            // Check if it's a System/Global Template Role. If so, CLONE it instead of editing it.
+            if (role.isSystemRole() || role.getOrganization() == null) {
+                log.info("🛡️ Lazy Cloning template role '{}' for organization {}", role.getName(), user.getOrganization().getSlug());
                 
                 // Check if a custom role with same name already exists for this org (to avoid duplicates)
                 var existingCustom = roleRepository.findByNameAndOrganizationId(role.getName(), userOrgId);

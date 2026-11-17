@@ -56,8 +56,8 @@ public class OrganizationAspect {
 
     @Before("allRepositories()")
     public void enableOrganizationFilter() {
+        Session session = entityManager.unwrap(Session.class);
         if (OrganizationContext.isFilterBypassed()) {
-            Session session = entityManager.unwrap(Session.class);
             if (session.getEnabledFilter("organizationFilter") != null) {
                 session.disableFilter("organizationFilter");
             }
@@ -66,8 +66,9 @@ public class OrganizationAspect {
 
         UUID orgId = OrganizationContext.getOrganizationId();
         if (orgId != null) {
-            Session session = entityManager.unwrap(Session.class);
             session.enableFilter("organizationFilter").setParameter("organizationId", orgId.toString());
+        } else if (session.getEnabledFilter("organizationFilter") != null) {
+            session.disableFilter("organizationFilter");
         }
     }
 

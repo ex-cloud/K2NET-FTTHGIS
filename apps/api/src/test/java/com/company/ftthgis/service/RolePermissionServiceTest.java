@@ -304,4 +304,45 @@ class RolePermissionServiceTest {
         verify(roleRepository).delete(customRole);
         verify(keycloakService).deleteRoleFromRealmIfUnassigned("k2net-tenants", "field_contractor");
     }
+
+    @Test
+    void updateRolePermissions_TenantAdminCustomizingGlobalTemplate_LazyClonesInsteadOfThrowing() {
+        UUID tenantUserId = mockTenantAdminContext();
+        UUID orgId = UUID.randomUUID();
+        Organization tenantOrg = Organization.builder().id(orgId).name("K2NET Ops").slug("ops").build();
+        User tenantAdmin = User.builder().id(tenantUserId).organization(tenantOrg).build();
+
+        // Global template created by Super Admin via UI (organization == null, isSystemRole == false)
+        Role globalTemplate = Role.builder()
+                .id(18L)
+                .name("nc")
+                .displayName("NC")
+                .code("CUST-12")
+                .scope("TENANT")
+                .isSystemRole(false)
+                .organization(null)
+                .permissions(new HashSet<>())
+                .build();
+
+        Permission tenantPerm = Permission.builder().id(20L).code("network.view").scope("TENANT").build();
+
+        when(roleRepository.findById(18L)).thenReturn(Optional.of(globalTemplate));
+        when(userRepository.findById(tenantUserId)).thenReturn(Optional.of(tenantAdmin));
+        when(roleRepository.findByNameAndOrganizationId("nc", orgId)).thenReturn(Optional.empty());
+        when(permissionRepository.findAllById(List.of(20L))).thenReturn(List.of(tenantPerm));
+        when(roleRepository.save(any(Role.class))).thenAnswer(inv -> {
+            Role r = inv.getArgument(0);
+            if (r.getId() == null) r.setId(99L);
+            return r;
+        });
+
+        Role cloned = rolePermissionService.updateRolePermissions(18L, List.of(20L));
+
+        assertEquals(99L, cloned.getId());
+        assertEquals("nc", cloned.getName());
+        assertEquals(tenantOrg, cloned.getOrganization());
+        assertFalse(cloned.isSystemRole());
+        assertEquals(1, cloned.getPermissions().size());
+        assertTrue(cloned.getPermissions().contains(tenantPerm));
+    }
 }

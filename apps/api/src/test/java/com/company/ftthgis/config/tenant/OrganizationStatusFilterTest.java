@@ -206,4 +206,24 @@ class OrganizationStatusFilterTest {
         assertEquals(403, resp.getStatus());
         assertTrue(resp.getContentAsString().contains("ORGANIZATION_SUSPENDED"));
     }
+
+    @Test
+    @DisplayName("Platform realm ftth-realm with sentinel X-Tenant-ID does not leak tenant OrganizationContext")
+    void testPlatformRealmWithSentinelTenantId_LeavesOrganizationContextNull() throws ServletException, IOException {
+        mockJwtAuthentication("https://auth-gis.kdua.net/realms/ftth-realm");
+
+        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/v1/users");
+        req.addHeader("X-Tenant-ID", "00000000-0000-0000-0000-000000000000");
+        MockHttpServletResponse resp = new MockHttpServletResponse();
+
+        doAnswer(inv -> {
+            assertNull(OrganizationContext.getOrganizationId(), "Control Plane request without tenant target must keep OrganizationContext null");
+            return null;
+        }).when(filterChain).doFilter(req, resp);
+
+        filter.doFilterInternal(req, resp, filterChain);
+
+        verify(filterChain).doFilter(req, resp);
+        verifyNoInteractions(organizationRepository);
+    }
 }

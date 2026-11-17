@@ -13,7 +13,11 @@ import {
 } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 import { useSearchParams, usePathname, useRouter } from "@/lib/navigation-compat";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@k2net/auth/client";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { httpClient } from "@/lib/httpClient";
 import { cn } from "@/lib/utils";
 
 export function UserFilters() {
@@ -51,15 +55,37 @@ export function UserFilters() {
     replace(pathname);
   };
 
-  const roles = [
-    { id: "all", label: t("users.all_roles") },
-    { id: "super_admin", label: t("users.role_super_admin") },
-    { id: "platform_engineer", label: t("users.role_platform_engineer") },
-    { id: "system_support", label: t("users.role_system_support") },
-    { id: "system_billing", label: t("users.role_system_billing") },
-    { id: "system_auditor", label: t("users.role_system_auditor") },
-    { id: "account_manager", label: t("users.role_account_manager") },
-  ];
+  const { token } = useAuth();
+
+  const { data: liveSystemRoles = [] } = useQuery<Array<{ id: number; name: string; displayName?: string }>>({
+    queryKey: ["system-roles-filter", token],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await httpClient(`${getBackendBaseUrl()}/roles?scope=SYSTEM`, { token });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: Boolean(token),
+    staleTime: 60 * 1000,
+  });
+
+  const roles = useMemo(() => {
+    const baseRoles = [
+      { id: "all", label: t("users.all_roles") },
+      { id: "super_admin", label: t("users.role_super_admin") },
+      { id: "system_support", label: t("users.role_system_support") },
+      { id: "system_auditor", label: t("users.role_system_auditor") },
+      { id: "account_manager", label: t("users.role_account_manager") },
+    ];
+    const seen = new Set(baseRoles.map((r) => r.id));
+    for (const r of liveSystemRoles) {
+      if (r.name && !seen.has(r.name)) {
+        seen.add(r.name);
+        baseRoles.push({ id: r.name, label: r.displayName || r.name.toUpperCase() });
+      }
+    }
+    return baseRoles;
+  }, [liveSystemRoles, t]);
 
   const statuses = [
     { id: "all", label: t("users.all_statuses") },
