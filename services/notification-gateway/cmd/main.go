@@ -81,6 +81,7 @@ func main() {
 	notifyGroup.Use(handler.RateLimiter())
 	{
 		notifyGroup.POST("/notify", handler.SendNotification)
+		notifyGroup.POST("/notification/send", handler.SendNotificationCompat)
 		notifyGroup.GET("/notification/logs", handler.GetNotificationLogs)
 		notifyGroup.POST("/notification/email/test", handler.SendTestEmail)
 		notifyGroup.POST("/notifications/email/test", handler.SendTestEmail)
@@ -90,6 +91,8 @@ func main() {
 		notifyGroup.POST("/notifications/email/reset-password", handler.SendPasswordResetEmail)
 		notifyGroup.POST("/notification/email/mfa-otp", handler.SendMfaOtpEmail)
 		notifyGroup.POST("/notifications/email/mfa-otp", handler.SendMfaOtpEmail)
+		notifyGroup.POST("/notification/email/security-alert", handler.SendSecurityBreakGlassEmail)
+		notifyGroup.POST("/notifications/email/security-alert", handler.SendSecurityBreakGlassEmail)
 	}
 
 	srv := &http.Server{

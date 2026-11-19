@@ -121,6 +121,7 @@ type PreAuthSession struct {
 	ExpiresIn        int      `json:"expiresIn"`
 	RefreshExpiresIn int      `json:"refreshExpiresIn"`
 	AvailableMethods []string `json:"availableMethods"`
+	IsBreakGlass     bool     `json:"isBreakGlass,omitempty"`
 }
 
 // MfaEmailSendRequest triggers sending a 6-digit verification code to the pre-auth user's email

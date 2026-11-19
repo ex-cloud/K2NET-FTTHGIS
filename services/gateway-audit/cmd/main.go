@@ -90,6 +90,7 @@ func main() {
 
 	// Init incident alert dispatcher (P.11)
 	alertDispatcher := audit.NewAlertDispatcher("/opt/project5/backups/config")
+	alertDispatcher.SetDBPool(dbPool)
 	defer alertDispatcher.Close()
 
 	// Init batch ingestion engine

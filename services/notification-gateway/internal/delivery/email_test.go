@@ -66,7 +66,7 @@ func TestSMTPEmailSender_IsConfigured(t *testing.T) {
 	}
 
 	senderComplete := &SMTPEmailSender{
-		host:     "warners.hostns.io",
+		host:     "s11740.sgp1.stableserver.net",
 		port:     465,
 		user:     "notify@kdua.net",
 		password: "secretpassword",

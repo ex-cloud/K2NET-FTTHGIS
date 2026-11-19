@@ -133,7 +133,7 @@ export default function NotificationGatewayPage() {
     try {
       const res = await updateGatewayConfigByKey("notification", updates);
       toast.success(res.message || t("gateways.notification.save_success"));
-      setTimeout(fetchConfig, 3000);
+      await fetchConfig();
     } catch (err) {
       console.error(err);
       toast.error(`${t("gateways.config_save_failed")}: ${err instanceof Error ? err.message : String(err)}`);

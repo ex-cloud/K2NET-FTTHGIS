@@ -14,6 +14,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"gateways/shared/logger"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 )
 
 type AlertConfig struct {
@@ -22,6 +26,7 @@ type AlertConfig struct {
 	WebhookType            string   `json:"webhookType"` // "generic", "slack", "discord", "telegram"
 	SecretKey              string   `json:"secretKey"`
 	NotificationGatewayURL string   `json:"notificationGatewayUrl"`
+	WhatsAppGatewayURL     string   `json:"whatsAppGatewayUrl"`
 	EnableEmail            bool     `json:"enableEmail"`
 	AlertEmail             string   `json:"alertEmail"`
 	EnableWhatsApp         bool     `json:"enableWhatsApp"`
@@ -30,6 +35,18 @@ type AlertConfig struct {
 	MinSeverity            string   `json:"minSeverity"` // "CRITICAL", "ERROR"
 	HighRiskActions        []string `json:"highRiskActions"`
 }
+
+// SecurityRecipient represents a resolved Security Officer or Organization Owner/Admin contact.
+type SecurityRecipient struct {
+	Email    string
+	FullName string
+	Phone    string
+	Locale   string
+	OrgName  string
+}
+
+// RecipientResolverFunc resolves security alert recipients for a given tenant slug.
+type RecipientResolverFunc func(ctx context.Context, tenantSlug string) ([]SecurityRecipient, error)
 
 type IncidentAlertPayload struct {
 	EventID        string         `json:"eventId"`
@@ -65,15 +82,31 @@ type cooldownEntry struct {
 }
 
 type AlertDispatcher struct {
-	mu          sync.RWMutex
-	cfg         AlertConfig
-	configPath  string
-	cooldownMu  sync.Mutex
-	cooldownMap map[string]*cooldownEntry
-	httpClient  *http.Client
-	eventQueue  chan *IncidentAlertPayload
-	stopChan    chan struct{}
-	wg          sync.WaitGroup
+	mu                sync.RWMutex
+	cfg               AlertConfig
+	configPath        string
+	db                *pgxpool.Pool
+	recipientResolver RecipientResolverFunc
+	cooldownMu        sync.Mutex
+	cooldownMap       map[string]*cooldownEntry
+	httpClient        *http.Client
+	eventQueue        chan *IncidentAlertPayload
+	stopChan          chan struct{}
+	wg                sync.WaitGroup
+}
+
+func defaultNotificationGatewayURL() string {
+	if envURL := strings.TrimSpace(os.Getenv("NOTIFICATION_GATEWAY_URL")); envURL != "" {
+		return envURL
+	}
+	return "http://ftth-notification-gateway:5001"
+}
+
+func defaultWhatsAppGatewayURL() string {
+	if envURL := strings.TrimSpace(os.Getenv("WHATSAPP_GATEWAY_URL")); envURL != "" {
+		return envURL
+	}
+	return "http://ftth-whatsapp-gateway:5005"
 }
 
 func DefaultAlertConfig() AlertConfig {
@@ -82,7 +115,8 @@ func DefaultAlertConfig() AlertConfig {
 		WebhookURL:             "",
 		WebhookType:            "generic",
 		SecretKey:              "",
-		NotificationGatewayURL: "http://notification-gateway:5001",
+		NotificationGatewayURL: defaultNotificationGatewayURL(),
+		WhatsAppGatewayURL:     defaultWhatsAppGatewayURL(),
 		EnableEmail:            false,
 		AlertEmail:             "soc-admin@k2net.id",
 		EnableWhatsApp:         false,
@@ -90,6 +124,9 @@ func DefaultAlertConfig() AlertConfig {
 		CooldownSeconds:        30,
 		MinSeverity:            "CRITICAL",
 		HighRiskActions: []string{
+			"SECURITY_BREAK_GLASS_LOGIN",
+			"SECURITY_BREAK_GLASS_UNAUTHORIZED",
+			"AUTH_BREAK_GLASS_LOGIN_SUCCESS",
 			"impersonation.stepup_failed",
 			"impersonation.unauthorized_attempt",
 			"impersonation.force_revoked",
@@ -102,6 +139,25 @@ func DefaultAlertConfig() AlertConfig {
 			"backup.destructive_purge",
 		},
 	}
+}
+
+func ensureMandatoryHighRiskActions(actions []string) []string {
+	mandatory := []string{
+		"SECURITY_BREAK_GLASS_LOGIN",
+		"SECURITY_BREAK_GLASS_UNAUTHORIZED",
+		"AUTH_BREAK_GLASS_LOGIN_SUCCESS",
+	}
+	existing := make(map[string]bool, len(actions))
+	for _, a := range actions {
+		existing[strings.ToUpper(strings.TrimSpace(a))] = true
+	}
+	result := append([]string{}, actions...)
+	for _, m := range mandatory {
+		if !existing[m] {
+			result = append(result, m)
+		}
+	}
+	return result
 }
 
 func NewAlertDispatcher(configDir string) *AlertDispatcher {
@@ -128,6 +184,20 @@ func NewAlertDispatcher(configDir string) *AlertDispatcher {
 	return dispatcher
 }
 
+// SetDBPool wires the live PostgreSQL connection pool for dynamic tenant Security Officer / Owner lookup.
+func (d *AlertDispatcher) SetDBPool(db *pgxpool.Pool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.db = db
+}
+
+// SetRecipientResolver allows injecting a custom recipient lookup function (useful for unit testing).
+func (d *AlertDispatcher) SetRecipientResolver(fn RecipientResolverFunc) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.recipientResolver = fn
+}
+
 func (d *AlertDispatcher) loadConfig() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -146,8 +216,12 @@ func (d *AlertDispatcher) loadConfig() {
 			loaded.MinSeverity = "CRITICAL"
 		}
 		if loaded.NotificationGatewayURL == "" {
-			loaded.NotificationGatewayURL = "http://notification-gateway:5001"
+			loaded.NotificationGatewayURL = defaultNotificationGatewayURL()
 		}
+		if loaded.WhatsAppGatewayURL == "" {
+			loaded.WhatsAppGatewayURL = defaultWhatsAppGatewayURL()
+		}
+		loaded.HighRiskActions = ensureMandatoryHighRiskActions(loaded.HighRiskActions)
 		d.cfg = loaded
 	}
 }
@@ -163,8 +237,12 @@ func (d *AlertDispatcher) SaveConfig(newCfg AlertConfig) error {
 		newCfg.MinSeverity = "CRITICAL"
 	}
 	if newCfg.NotificationGatewayURL == "" {
-		newCfg.NotificationGatewayURL = "http://notification-gateway:5001"
+		newCfg.NotificationGatewayURL = defaultNotificationGatewayURL()
 	}
+	if newCfg.WhatsAppGatewayURL == "" {
+		newCfg.WhatsAppGatewayURL = defaultWhatsAppGatewayURL()
+	}
+	newCfg.HighRiskActions = ensureMandatoryHighRiskActions(newCfg.HighRiskActions)
 
 	data, err := json.MarshalIndent(newCfg, "", "  ")
 	if err != nil {
@@ -311,6 +389,11 @@ func (d *AlertDispatcher) startWorker() {
 	}()
 }
 
+func isBreakGlassAction(action string) bool {
+	upper := strings.ToUpper(strings.TrimSpace(action))
+	return strings.Contains(upper, "BREAK_GLASS")
+}
+
 func (d *AlertDispatcher) processIncident(payload *IncidentAlertPayload) {
 	d.mu.RLock()
 	cfg := d.cfg
@@ -321,15 +404,337 @@ func (d *AlertDispatcher) processIncident(payload *IncidentAlertPayload) {
 		_ = d.sendWebhook(cfg, payload)
 	}
 
-	// 2. Dispatch Email via Notification Gateway
+	// 2. Real-Time SecOps Break-Glass Dual-Channel Alerting (Email + WhatsApp to Tenant Owners / Security Officers)
+	if isBreakGlassAction(payload.Action) {
+		d.dispatchBreakGlassAlerts(cfg, payload)
+		return
+	}
+
+	// 3. Generic Incident Dispatch Email via Notification Gateway
 	if cfg.EnableEmail && cfg.AlertEmail != "" {
 		_ = d.sendNotificationGateway(cfg, "email", cfg.AlertEmail, payload)
 	}
 
-	// 3. Dispatch WhatsApp via Notification Gateway
+	// 4. Generic Incident Dispatch WhatsApp via Notification Gateway
 	if cfg.EnableWhatsApp && cfg.AlertPhone != "" {
 		_ = d.sendNotificationGateway(cfg, "whatsapp", cfg.AlertPhone, payload)
 	}
+}
+
+func normalizeWhatsAppPhone(raw string) string {
+	var b strings.Builder
+	for _, r := range strings.TrimSpace(raw) {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	digits := b.String()
+	if strings.HasPrefix(digits, "08") {
+		digits = "62" + digits[1:]
+	}
+	if len(digits) < 9 || len(digits) > 16 {
+		return ""
+	}
+	return digits
+}
+
+func (d *AlertDispatcher) resolveSecurityRecipients(ctx context.Context, tenantSlug string) ([]SecurityRecipient, error) {
+	d.mu.RLock()
+	resolver := d.recipientResolver
+	db := d.db
+	d.mu.RUnlock()
+
+	if resolver != nil {
+		return resolver(ctx, tenantSlug)
+	}
+	if db == nil {
+		return nil, nil
+	}
+
+	slug := strings.TrimSpace(tenantSlug)
+	if slug == "" {
+		slug = "ops"
+	}
+
+	query := `
+		SELECT
+			COALESCE(u.email, ''),
+			COALESCE(u.full_name, u.username, ''),
+			COALESCE(u.phone, ''),
+			COALESCE(u.locale, 'id'),
+			COALESCE(o.name, $1)
+		FROM organization_members om
+		JOIN organizations o ON o.id = om.organization_id
+		JOIN users u ON u.id = om.user_id
+		WHERE LOWER(o.slug) = LOWER($1)
+		  AND UPPER(om.status) = 'ACTIVE'
+		  AND UPPER(u.status) = 'ACTIVE'
+		  AND LOWER(om.role_name) IN ('admin', 'owner', 'super_admin', 'security_officer')
+		ORDER BY om.joined_at ASC
+	`
+
+	var recipients []SecurityRecipient
+	rows, err := db.Query(ctx, query, slug)
+	if err == nil {
+		for rows.Next() {
+			var r SecurityRecipient
+			if scanErr := rows.Scan(&r.Email, &r.FullName, &r.Phone, &r.Locale, &r.OrgName); scanErr == nil {
+				recipients = append(recipients, r)
+			}
+		}
+		rows.Close()
+	}
+
+	if len(recipients) == 0 {
+		fallbackQuery := `
+			SELECT
+				COALESCE(u.email, ''),
+				COALESCE(u.full_name, u.username, ''),
+				COALESCE(u.phone, ''),
+				COALESCE(u.locale, 'id'),
+				COALESCE(o.name, $1)
+			FROM users u
+			LEFT JOIN organizations o ON o.id = u.organization_id
+			JOIN roles r ON r.id = u.role_id
+			WHERE UPPER(u.status) = 'ACTIVE'
+			  AND (
+				(LOWER(o.slug) = LOWER($1) AND LOWER(r.name) IN ('admin', 'owner', 'super_admin'))
+				OR ($1 = 'system' AND LOWER(r.name) = 'super_admin')
+			  )
+		`
+		fRows, fErr := db.Query(ctx, fallbackQuery, slug)
+		if fErr == nil {
+			for fRows.Next() {
+				var r SecurityRecipient
+				if scanErr := fRows.Scan(&r.Email, &r.FullName, &r.Phone, &r.Locale, &r.OrgName); scanErr == nil {
+					recipients = append(recipients, r)
+				}
+			}
+			fRows.Close()
+		}
+	}
+
+	return recipients, nil
+}
+
+func extractMetadataString(meta map[string]any, key string) string {
+	if meta == nil {
+		return ""
+	}
+	if v, ok := meta[key].(string); ok {
+		return strings.TrimSpace(v)
+	}
+	return ""
+}
+
+func (d *AlertDispatcher) dispatchBreakGlassAlerts(cfg AlertConfig, payload *IncidentAlertPayload) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	recipients, err := d.resolveSecurityRecipients(ctx, payload.TenantSlug)
+	if err != nil {
+		logger.Warn(ctx, "Failed resolving tenant security recipients for Break-Glass alert",
+			zap.String("tenant", payload.TenantSlug),
+			zap.Error(err))
+	}
+
+	// Merge global configured AlertEmail / AlertPhone if explicitly configured
+	if cfg.EnableEmail && strings.TrimSpace(cfg.AlertEmail) != "" && !strings.EqualFold(cfg.AlertEmail, "soc-admin@k2net.id") {
+		recipients = append(recipients, SecurityRecipient{
+			Email:    strings.TrimSpace(cfg.AlertEmail),
+			FullName: "SecOps Administrator",
+			Locale:   "id",
+			OrgName:  strings.ToUpper(payload.TenantSlug),
+		})
+	}
+	if cfg.EnableWhatsApp && strings.TrimSpace(cfg.AlertPhone) != "" {
+		recipients = append(recipients, SecurityRecipient{
+			Phone:    strings.TrimSpace(cfg.AlertPhone),
+			FullName: "SecOps Administrator",
+			Locale:   "id",
+			OrgName:  strings.ToUpper(payload.TenantSlug),
+		})
+	}
+
+	seenEmails := make(map[string]bool)
+	seenPhones := make(map[string]bool)
+
+	for _, rec := range recipients {
+		emailLower := strings.ToLower(strings.TrimSpace(rec.Email))
+		if emailLower != "" && !strings.HasSuffix(emailLower, "@example.com") && !seenEmails[emailLower] {
+			seenEmails[emailLower] = true
+			if sendErr := d.sendBreakGlassEmailAlert(ctx, cfg, rec, payload); sendErr != nil {
+				logger.Warn(ctx, "Failed sending Break-Glass email alert",
+					zap.String("to", rec.Email),
+					zap.String("tenant", payload.TenantSlug),
+					zap.Error(sendErr))
+			} else {
+				logger.Info(ctx, "Dispatched real-time Break-Glass email alert",
+					zap.String("to", rec.Email),
+					zap.String("tenant", payload.TenantSlug),
+					zap.String("action", payload.Action))
+			}
+		}
+
+		normPhone := normalizeWhatsAppPhone(rec.Phone)
+		if normPhone != "" && !seenPhones[normPhone] {
+			seenPhones[normPhone] = true
+			if waErr := d.sendBreakGlassWhatsAppAlert(ctx, cfg, normPhone, rec, payload); waErr != nil {
+				logger.Warn(ctx, "Failed sending Break-Glass WhatsApp alert",
+					zap.String("phone", normPhone),
+					zap.String("tenant", payload.TenantSlug),
+					zap.Error(waErr))
+			} else {
+				logger.Info(ctx, "Dispatched real-time Break-Glass WhatsApp alert",
+					zap.String("phone", normPhone),
+					zap.String("tenant", payload.TenantSlug),
+					zap.String("action", payload.Action))
+			}
+		}
+	}
+}
+
+func (d *AlertDispatcher) sendBreakGlassEmailAlert(ctx context.Context, cfg AlertConfig, rec SecurityRecipient, payload *IncidentAlertPayload) error {
+	gatewayURL := strings.TrimSpace(cfg.NotificationGatewayURL)
+	if gatewayURL == "" {
+		gatewayURL = defaultNotificationGatewayURL()
+	}
+	targetURL := strings.TrimRight(gatewayURL, "/") + "/api/v1/notification/email/security-alert"
+
+	actorEmail := extractMetadataString(payload.Metadata, "actorEmail")
+	actorName := extractMetadataString(payload.Metadata, "actorName")
+	if actorName == "" && actorEmail == "" {
+		actorName = payload.ActorID
+	}
+	mfaMethod := extractMetadataString(payload.Metadata, "mfaMethod")
+	if mfaMethod == "" {
+		mfaMethod = "Multi-Factor Verified"
+	}
+
+	orgName := strings.TrimSpace(rec.OrgName)
+	if orgName == "" {
+		orgName = strings.ToUpper(payload.TenantSlug)
+	}
+	lang := strings.ToLower(strings.TrimSpace(rec.Locale))
+	if lang != "en" {
+		lang = "id"
+	}
+
+	wibZone := time.FixedZone("WIB", 7*3600)
+	occurredStr := payload.OccurredAt.In(wibZone).Format("02 Jan 2006 15:04:05 WIB")
+
+	reqBody, _ := json.Marshal(map[string]any{
+		"to":             rec.Email,
+		"recipient_name": rec.FullName,
+		"org_name":       orgName,
+		"tenant_slug":    payload.TenantSlug,
+		"actor_name":     actorName,
+		"actor_email":    actorEmail,
+		"actor_role":     payload.ActorRole,
+		"actor_ip":       payload.ActorIP,
+		"mfa_method":     mfaMethod,
+		"action":         payload.Action,
+		"occurred_at":    occurredStr,
+		"lang":           lang,
+	})
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Gateway-Token", os.Getenv("GATEWAY_TOKEN"))
+	req.Header.Set("X-Tenant-ID", payload.TenantSlug)
+
+	resp, err := d.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("notification-gateway returned HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func (d *AlertDispatcher) sendBreakGlassWhatsAppAlert(ctx context.Context, cfg AlertConfig, phone string, rec SecurityRecipient, payload *IncidentAlertPayload) error {
+	waGatewayURL := strings.TrimSpace(cfg.WhatsAppGatewayURL)
+	if waGatewayURL == "" {
+		waGatewayURL = defaultWhatsAppGatewayURL()
+	}
+	targetURL := strings.TrimRight(waGatewayURL, "/") + "/api/v1/wa/send/single"
+
+	actorEmail := extractMetadataString(payload.Metadata, "actorEmail")
+	actorName := extractMetadataString(payload.Metadata, "actorName")
+	actorDisplay := actorName
+	if actorDisplay != "" && actorEmail != "" && !strings.EqualFold(actorDisplay, actorEmail) {
+		actorDisplay = fmt.Sprintf("%s (%s)", actorDisplay, actorEmail)
+	} else if actorEmail != "" {
+		actorDisplay = actorEmail
+	} else if actorDisplay == "" {
+		actorDisplay = payload.ActorID
+	}
+
+	mfaMethod := extractMetadataString(payload.Metadata, "mfaMethod")
+	if mfaMethod == "" {
+		mfaMethod = "Multi-Factor Verified"
+	}
+
+	orgName := strings.TrimSpace(rec.OrgName)
+	if orgName == "" {
+		orgName = strings.ToUpper(payload.TenantSlug)
+	}
+
+	wibZone := time.FixedZone("WIB", 7*3600)
+	occurredStr := payload.OccurredAt.In(wibZone).Format("02 Jan 2006 15:04:05 WIB")
+
+	isUnauthorized := strings.Contains(strings.ToUpper(payload.Action), "UNAUTHORIZED")
+	var msg string
+	if strings.EqualFold(rec.Locale, "en") {
+		title := "🚨 *[K2NET SECOPS ALERT — BREAK-GLASS ACCESS]*"
+		desc := fmt.Sprintf("An administrator signed in via Emergency Break-Glass (Corporate SSO Bypass) on workspace *%s* (`%s.kdua.net`).", orgName, payload.TenantSlug)
+		if isUnauthorized {
+			title = "🚨 *[K2NET SECOPS ALERT — UNAUTHORIZED BREAK-GLASS BLOCKED]*"
+			desc = fmt.Sprintf("An unauthorized Break-Glass attempt was blocked on workspace *%s* (`%s.kdua.net`).", orgName, payload.TenantSlug)
+		}
+		msg = fmt.Sprintf("%s\n%s\n\n• *Actor:* %s\n• *Role:* `%s`\n• *2FA Factor:* `%s`\n• *Source IP:* `%s`\n• *Time:* %s\n\nIf this activity was not authorized, immediately revoke active sessions in the Security & Audit Console.",
+			title, desc, actorDisplay, payload.ActorRole, mfaMethod, payload.ActorIP, occurredStr)
+	} else {
+		title := "🚨 *[PERINGATAN SECOPS K2NET — AKSES DARURAT BREAK-GLASS]*"
+		desc := fmt.Sprintf("Telah terjadi login darurat (Bypass Corporate SSO) pada workspace *%s* (`%s.kdua.net`).", orgName, payload.TenantSlug)
+		if isUnauthorized {
+			title = "🚨 *[PERINGATAN SECOPS K2NET — PERCOBAAN BREAK-GLASS TIDAK SAH DIBLOKIR]*"
+			desc = fmt.Sprintf("Percobaan akses darurat Break-Glass oleh akun non-admin telah diblokir pada workspace *%s* (`%s.kdua.net`).", orgName, payload.TenantSlug)
+		}
+		msg = fmt.Sprintf("%s\n%s\n\n• *Aktor:* %s\n• *Peran:* `%s`\n• *Metode 2FA:* `%s`\n• *Alamat IP:* `%s`\n• *Waktu:* %s\n\nJika aktivitas ini tidak diotorisasi oleh tim Anda, segera cabut sesi aktif di menu Audit Trail & Security.",
+			title, desc, actorDisplay, payload.ActorRole, mfaMethod, payload.ActorIP, occurredStr)
+	}
+
+	reqBody, _ := json.Marshal(map[string]any{
+		"tenantSlug": payload.TenantSlug,
+		"phone":      phone,
+		"message":    msg,
+	})
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Gateway-Token", os.Getenv("GATEWAY_TOKEN"))
+	req.Header.Set("X-Tenant-ID", payload.TenantSlug)
+
+	resp, err := d.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("gateway-whatsapp returned HTTP %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func (d *AlertDispatcher) sendWebhook(cfg AlertConfig, payload *IncidentAlertPayload) error {

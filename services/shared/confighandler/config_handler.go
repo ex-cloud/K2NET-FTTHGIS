@@ -156,7 +156,7 @@ func (h *ConfigHandler) parseEnvFile() ([]configEntry, error) {
 	return entries, scanner.Err()
 }
 
-// writeEnvFile writes the updated config entries back to the .env file
+// writeEnvFile writes the updated config entries back to the .env file without mutating the caller map
 func (h *ConfigHandler) writeEnvFile(updates map[string]string) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -169,6 +169,11 @@ func (h *ConfigHandler) writeEnvFile(updates map[string]string) error {
 	input, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return err
+	}
+
+	remaining := make(map[string]string, len(updates))
+	for k, v := range updates {
+		remaining[k] = v
 	}
 
 	lines := strings.Split(string(input), "\n")
@@ -188,29 +193,33 @@ func (h *ConfigHandler) writeEnvFile(updates map[string]string) error {
 		}
 
 		key := strings.TrimSpace(parts[0])
-		if newVal, ok := updates[key]; ok {
+		if newVal, ok := remaining[key]; ok {
 			updatedLines = append(updatedLines, key+"="+newVal)
-			delete(updates, key)
+			delete(remaining, key)
 		} else {
 			updatedLines = append(updatedLines, line)
 		}
 	}
 
-	for key, val := range updates {
+	for key, val := range remaining {
 		updatedLines = append(updatedLines, key+"="+val)
 	}
 
 	return os.WriteFile(cleanPath, []byte(strings.Join(updatedLines, "\n")), 0600)
 }
 
-// restartGateway triggers a self-restart by exiting (Docker restart policy picks it up)
-func (h *ConfigHandler) restartGateway(ctx context.Context) {
-	go func() {
-		time.Sleep(500 * time.Millisecond)
-		logger.Warn(ctx, "Exiting process to trigger Docker container restart...",
-			zap.String("service", h.serviceName))
-		os.Exit(0)
-	}()
+// hotReloadEnv applies updated configuration keys directly to the running process environment.
+// Calling os.Exit(0) is strictly avoided because containers use restart: no under Staged Booting.
+func (h *ConfigHandler) hotReloadEnv(ctx context.Context, updates map[string]string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for k, v := range updates {
+		_ = os.Setenv(k, v)
+	}
+	logger.Info(ctx, "Hot-reloaded configuration into live process memory",
+		zap.Int("keys_updated", len(updates)),
+		zap.String("service", h.serviceName))
 }
 
 // GetConfig returns the current .env configuration with censored secrets
@@ -324,11 +333,11 @@ func (h *ConfigHandler) UpdateConfig(c *gin.Context) {
 		zap.Int("keys_updated", len(sanitized)),
 		zap.String("service", h.serviceName))
 
-	h.restartGateway(ctx)
+	h.hotReloadEnv(ctx, sanitized)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":       "ok",
-		"message":      fmt.Sprintf("Configuration updated. %s is restarting to apply changes.", h.serviceName),
+		"message":      fmt.Sprintf("Configuration updated and applied live on %s (%d keys).", h.serviceName, len(sanitized)),
 		"keys_updated": len(sanitized),
 	})
 }

@@ -224,6 +224,9 @@ services:
     environment:
       - PORT=5009
       - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@ftth-postgres:5432/${DB_NAME}
+      - NOTIFICATION_GATEWAY_URL=http://ftth-notification-gateway:5001
+      - WHATSAPP_GATEWAY_URL=http://ftth-whatsapp-gateway:5005
+      - GATEWAY_TOKEN=${GATEWAY_TOKEN}
       - ENV_FILE_PATH=/opt/project5/services/.env
     volumes:
       - /etc/ftth/gateways.env:/opt/project5/services/.env

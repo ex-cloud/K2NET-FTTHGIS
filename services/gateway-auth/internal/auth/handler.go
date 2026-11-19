@@ -511,8 +511,13 @@ func (h *Handler) Login(c *gin.Context) {
 			}
 			if !hasAdminRole {
 				h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
-				h.emitAudit(c.Request.Context(), auditSlug, claims.Sub, joinRoles(roles), clientIP, "AUTH_BREAK_GLASS_UNAUTHORIZED", map[string]any{
-					"roles": roles,
+				h.emitAudit(c.Request.Context(), auditSlug, claims.Sub, joinRoles(roles), clientIP, "SECURITY_BREAK_GLASS_UNAUTHORIZED", map[string]any{
+					"severity":       "CRITICAL",
+					"actorEmail":     claims.Email,
+					"actorName":      claims.Name,
+					"organizationId": resolvedOrgID,
+					"roles":          roles,
+					"userAgent":      c.Request.UserAgent(),
 				})
 				c.JSON(http.StatusForbidden, gin.H{
 					"error":   "BREAK_GLASS_UNAUTHORIZED",
@@ -520,8 +525,11 @@ func (h *Handler) Login(c *gin.Context) {
 				})
 				return
 			}
-			h.emitAudit(c.Request.Context(), auditSlug, claims.Sub, joinRoles(roles), clientIP, "AUTH_BREAK_GLASS_LOGIN_SUCCESS", map[string]any{
-				"roles": roles,
+			h.emitAudit(c.Request.Context(), auditSlug, claims.Sub, joinRoles(roles), clientIP, "AUTH_BREAK_GLASS_CHALLENGE_ISSUED", map[string]any{
+				"severity":   "WARNING",
+				"actorEmail": claims.Email,
+				"actorName":  claims.Name,
+				"roles":      roles,
 			})
 		}
 	} else {
@@ -594,6 +602,7 @@ func (h *Handler) Login(c *gin.Context) {
 		ExpiresIn:        kcTokens.ExpiresIn,
 		RefreshExpiresIn: kcTokens.RefreshExpiresIn,
 		AvailableMethods: availableMethods,
+		IsBreakGlass:     req.IsBreakGlass,
 	}
 
 	if mfaRequired {
@@ -691,17 +700,34 @@ func (h *Handler) completeLoginSession(c *gin.Context, session *PreAuthSession, 
 			auditSlug = "tenant"
 		}
 	}
-	h.emitAudit(c.Request.Context(), auditSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_LOGIN_SUCCESS", map[string]any{
-		"plane":      session.Plane,
-		"realm":      session.TargetRealm,
-		"mfaUsed":    mfaMethodUsed != "",
-		"mfaMethod":  mfaMethodUsed,
-		"rememberMe": session.RememberMe,
-	})
-
 	displayName := session.Name
 	if displayName == "" {
 		displayName = session.Username
+	}
+
+	h.emitAudit(c.Request.Context(), auditSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_LOGIN_SUCCESS", map[string]any{
+		"plane":        session.Plane,
+		"realm":        session.TargetRealm,
+		"mfaUsed":      mfaMethodUsed != "",
+		"mfaMethod":    mfaMethodUsed,
+		"rememberMe":   session.RememberMe,
+		"isBreakGlass": session.IsBreakGlass,
+	})
+
+	if session.IsBreakGlass {
+		h.emitAudit(c.Request.Context(), auditSlug, session.UserID, joinRoles(session.Roles), clientIP, "SECURITY_BREAK_GLASS_LOGIN", map[string]any{
+			"severity":       "CRITICAL",
+			"plane":          session.Plane,
+			"realm":          session.TargetRealm,
+			"actorEmail":     session.Email,
+			"actorName":      displayName,
+			"organizationId": session.OrganizationID,
+			"mfaUsed":        mfaMethodUsed != "",
+			"mfaMethod":      mfaMethodUsed,
+			"rememberMe":     session.RememberMe,
+			"isBreakGlass":   true,
+			"userAgent":      c.Request.UserAgent(),
+		})
 	}
 
 	c.JSON(http.StatusOK, LoginResponse{

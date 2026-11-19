@@ -1,6 +1,11 @@
 package audit
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -327,3 +332,110 @@ func TestAlertDispatcherEvaluationAndCooldown(t *testing.T) {
 }
 
 
+
+func TestAlertDispatcher_BreakGlassDualChannelDispatch(t *testing.T) {
+	var emailHitCount atomic.Int32
+	var waHitCount atomic.Int32
+	var receivedEmailTo string
+	var receivedWaPhone string
+
+	mockNotifSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/notification/email/security-alert" {
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if to, ok := body["to"].(string); ok {
+				receivedEmailTo = to
+			}
+			emailHitCount.Add(1)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"success":true}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mockNotifSrv.Close()
+
+	mockWaSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/wa/send/single" {
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if ph, ok := body["phone"].(string); ok {
+				receivedWaPhone = ph
+			}
+			waHitCount.Add(1)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"success":true}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mockWaSrv.Close()
+
+	dispatcher := NewAlertDispatcher(t.TempDir())
+	defer dispatcher.Close()
+
+	_ = dispatcher.SaveConfig(AlertConfig{
+		Enabled:                true,
+		NotificationGatewayURL: mockNotifSrv.URL,
+		WhatsAppGatewayURL:     mockWaSrv.URL,
+		CooldownSeconds:        30,
+		MinSeverity:            "CRITICAL",
+	})
+
+	dispatcher.SetRecipientResolver(func(ctx context.Context, tenantSlug string) ([]SecurityRecipient, error) {
+		return []SecurityRecipient{
+			{
+				Email:    "andiansyah0425@gmail.com",
+				FullName: "Andiansyah Admin",
+				Phone:    "081946702356",
+				Locale:   "id",
+				OrgName:  "K2NET FTTH",
+			},
+		}, nil
+	})
+
+	bgEvent := &CreateAuditEventRequest{
+		TenantSlug:   "ops",
+		ActorID:      "user-uuid-123",
+		ActorRole:    "admin",
+		ActorIP:      "103.111.20.5",
+		Action:       "SECURITY_BREAK_GLASS_LOGIN",
+		ResourceType: "AUTH_SESSION",
+		ResourceID:   "user-uuid-123",
+		Metadata: map[string]any{
+			"severity":   "CRITICAL",
+			"actorEmail": "andiansyah0425@gmail.com",
+			"actorName":  "Andiansyah Admin",
+			"mfaMethod":  "webauthn",
+		},
+	}
+
+	shouldAlert, _ := dispatcher.ShouldAlert(bgEvent)
+	if !shouldAlert {
+		t.Fatalf("expected SECURITY_BREAK_GLASS_LOGIN to qualify for alerting")
+	}
+
+	dispatcher.Dispatch(bgEvent, time.Now())
+
+	// Wait briefly for async worker queue
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if emailHitCount.Load() >= 1 && waHitCount.Load() >= 1 {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	if emailHitCount.Load() != 1 {
+		t.Errorf("expected 1 Break-Glass email alert dispatched, got %d", emailHitCount.Load())
+	}
+	if receivedEmailTo != "andiansyah0425@gmail.com" {
+		t.Errorf("expected email recipient andiansyah0425@gmail.com, got %q", receivedEmailTo)
+	}
+	if waHitCount.Load() != 1 {
+		t.Errorf("expected 1 Break-Glass WhatsApp alert dispatched, got %d", waHitCount.Load())
+	}
+	if receivedWaPhone != "6281946702356" {
+		t.Errorf("expected normalized WhatsApp phone 6281946702356, got %q", receivedWaPhone)
+	}
+}

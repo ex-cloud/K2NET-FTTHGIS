@@ -57,14 +57,12 @@ type SMTPEmailSender struct {
 	password string
 	from     string
 	secure   bool
+	dynamic  bool
 }
 
-// getEnvWithFallback retrieves an environment setting from process env, falling back to the .env file
+// getEnvWithFallback retrieves an environment setting from the live .env file first (for instant hot-reload),
+// falling back to process os.Getenv(key).
 func getEnvWithFallback(key string) string {
-	val := os.Getenv(key)
-	if val != "" {
-		return val
-	}
 	envPath := os.Getenv("ENV_FILE_PATH")
 	if envPath == "" {
 		envPath = "/opt/project5/services/.env"
@@ -72,48 +70,53 @@ func getEnvWithFallback(key string) string {
 	content, err := os.ReadFile(envPath)
 	if err != nil {
 		content, err = os.ReadFile("/etc/ftth/gateways.env")
-		if err != nil {
-			return ""
+	}
+	if err == nil {
+		lines := strings.Split(string(content), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, key+"=") {
+				val := strings.TrimSpace(strings.TrimPrefix(line, key+"="))
+				if val != "" {
+					return val
+				}
+			}
 		}
 	}
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, key+"=") {
-			return strings.TrimSpace(strings.TrimPrefix(line, key+"="))
-		}
-	}
-	return ""
+	return os.Getenv(key)
 }
 
-// NewSMTPEmailSender creates a new SMTPEmailSender reading configuration from environment
-func NewSMTPEmailSender() *SMTPEmailSender {
-	host := getEnvWithFallback("SMTP_HOST")
+func (s *SMTPEmailSender) refreshFromEnv() {
+	if !s.dynamic {
+		return
+	}
+	s.host = getEnvWithFallback("SMTP_HOST")
 	portStr := getEnvWithFallback("SMTP_PORT")
 	port := 465
 	if p, err := strconv.Atoi(portStr); err == nil && p > 0 {
 		port = p
 	}
-	user := getEnvWithFallback("SMTP_USER")
-	password := getEnvWithFallback("SMTP_PASSWORD")
+	s.port = port
+	s.user = getEnvWithFallback("SMTP_USER")
+	s.password = getEnvWithFallback("SMTP_PASSWORD")
 	from := getEnvWithFallback("SMTP_FROM")
 	if from == "" {
 		from = "K2NET Cloud Security <notify@kdua.net>"
 	}
-	secure := getEnvWithFallback("SMTP_SECURE") == "true" || port == 465
+	s.from = from
+	s.secure = getEnvWithFallback("SMTP_SECURE") == "true" || port == 465
+}
 
-	return &SMTPEmailSender{
-		host:     host,
-		port:     port,
-		user:     user,
-		password: password,
-		from:     from,
-		secure:   secure,
-	}
+// NewSMTPEmailSender creates a new SMTPEmailSender reading configuration dynamically from environment/.env
+func NewSMTPEmailSender() *SMTPEmailSender {
+	s := &SMTPEmailSender{dynamic: true}
+	s.refreshFromEnv()
+	return s
 }
 
 // IsConfigured returns true if minimum SMTP credentials are present
 func (s *SMTPEmailSender) IsConfigured() bool {
+	s.refreshFromEnv()
 	return s.host != "" && s.user != "" && s.password != ""
 }
 

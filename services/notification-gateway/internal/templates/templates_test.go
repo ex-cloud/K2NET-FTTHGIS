@@ -171,3 +171,59 @@ func TestRenderMfaOtpEmail_ID(t *testing.T) {
 		t.Errorf("expected ID client IP in detail table")
 	}
 }
+
+
+func TestRenderSecurityBreakGlassEmail_ID_And_EN(t *testing.T) {
+	dataID := SecurityBreakGlassEmailData{
+		RecipientName: "Andiansyah Admin",
+		OrgName:       "K2NET FTTH",
+		TenantSlug:    "ops",
+		ActorName:     "Andiansyah <script>alert(1)</script>",
+		ActorEmail:    "andiansyah0425@gmail.com",
+		ActorRole:     "admin",
+		ActorIP:       "103.111.20.5",
+		MfaMethod:     "webauthn",
+		Action:        "SECURITY_BREAK_GLASS_LOGIN",
+		OccurredAt:    "19 Nov 2026 15:00:00 WIB",
+		Lang:          "id",
+	}
+
+	subjectID, htmlID, err := RenderSecurityBreakGlassEmail(dataID)
+	if err != nil {
+		t.Fatalf("unexpected error rendering Break-Glass email ID: %v", err)
+	}
+	if !strings.Contains(subjectID, "Break-Glass") || !strings.Contains(subjectID, "K2NET FTTH") {
+		t.Errorf("unexpected ID subject: %s", subjectID)
+	}
+	if strings.Contains(htmlID, "<script>") {
+		t.Errorf("expected XSS payload in ActorName to be HTML-escaped")
+	}
+	if !strings.Contains(htmlID, "andiansyah0425@gmail.com") || !strings.Contains(htmlID, "webauthn") {
+		t.Errorf("expected actor email and MFA method in HTML body")
+	}
+
+	dataEN := SecurityBreakGlassEmailData{
+		RecipientName: "Security Officer",
+		OrgName:       "PT NUSANTARA",
+		TenantSlug:    "nusantara",
+		ActorName:     "Intruder User",
+		ActorEmail:    "user@nusantara.net",
+		ActorRole:     "viewer",
+		ActorIP:       "198.51.100.7",
+		MfaMethod:     "none",
+		Action:        "SECURITY_BREAK_GLASS_UNAUTHORIZED",
+		OccurredAt:    "19 Nov 2026 15:05:00 WIB",
+		Lang:          "en",
+	}
+
+	subjectEN, htmlEN, err := RenderSecurityBreakGlassEmail(dataEN)
+	if err != nil {
+		t.Fatalf("unexpected error rendering Break-Glass email EN: %v", err)
+	}
+	if !strings.Contains(subjectEN, "Unauthorized Break-Glass Attempt Blocked") {
+		t.Errorf("unexpected EN unauthorized subject: %s", subjectEN)
+	}
+	if !strings.Contains(htmlEN, "https://nusantara.kdua.net/audit") {
+		t.Errorf("expected audit URL in EN HTML body")
+	}
+}

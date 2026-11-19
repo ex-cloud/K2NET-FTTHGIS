@@ -562,3 +562,261 @@ func RenderMfaOtpEmail(data MfaOtpEmailData) (string, string, error) {
 
 	return subject, buf.String(), nil
 }
+
+
+// SecurityBreakGlassEmailData holds parameters for rendering a critical Break-Glass emergency access alert email.
+type SecurityBreakGlassEmailData struct {
+	RecipientName string
+	OrgName       string
+	TenantSlug    string
+	ActorName     string
+	ActorEmail    string
+	ActorRole     string
+	ActorIP       string
+	MfaMethod     string
+	Action        string
+	OccurredAt    string
+	AuditURL      string
+	Lang          string
+}
+
+// RenderSecurityBreakGlassEmail generates a localized subject and monochrome enterprise HTML email for Break-Glass SecOps alerts.
+func RenderSecurityBreakGlassEmail(data SecurityBreakGlassEmailData) (string, string, error) {
+	lang := strings.ToLower(strings.TrimSpace(data.Lang))
+	if lang != "id" {
+		lang = "en"
+	}
+
+	recipientName := strings.TrimSpace(data.RecipientName)
+	if recipientName == "" {
+		if lang == "id" {
+			recipientName = "Pejabat Keamanan / Administrator"
+		} else {
+			recipientName = "Security Officer / Administrator"
+		}
+	}
+
+	tenantSlug := strings.TrimSpace(data.TenantSlug)
+	if tenantSlug == "" {
+		tenantSlug = "ops"
+	}
+
+	orgName := strings.TrimSpace(data.OrgName)
+	if orgName == "" {
+		orgName = strings.ToUpper(tenantSlug)
+	}
+
+	actorDisplay := strings.TrimSpace(data.ActorName)
+	actorEmail := strings.TrimSpace(data.ActorEmail)
+	if actorDisplay != "" && actorEmail != "" && !strings.EqualFold(actorDisplay, actorEmail) {
+		actorDisplay = fmt.Sprintf("%s (%s)", actorDisplay, actorEmail)
+	} else if actorEmail != "" {
+		actorDisplay = actorEmail
+	} else if actorDisplay == "" {
+		actorDisplay = "Unknown Actor"
+	}
+
+	actorRole := strings.TrimSpace(data.ActorRole)
+	if actorRole == "" {
+		actorRole = "admin"
+	}
+
+	actorIP := strings.TrimSpace(data.ActorIP)
+	if actorIP == "" {
+		actorIP = "N/A"
+	}
+
+	mfaMethod := strings.TrimSpace(data.MfaMethod)
+	if mfaMethod == "" {
+		mfaMethod = "Multi-Factor Verified"
+	}
+
+	actionCode := strings.TrimSpace(data.Action)
+	if actionCode == "" {
+		actionCode = "SECURITY_BREAK_GLASS_LOGIN"
+	}
+
+	occurredAt := strings.TrimSpace(data.OccurredAt)
+	if occurredAt == "" {
+		occurredAt = "Just now"
+	}
+
+	auditURL := strings.TrimSpace(data.AuditURL)
+	if auditURL == "" {
+		if tenantSlug == "system" {
+			auditURL = "https://system-gis.kdua.net/security/audit"
+		} else {
+			auditURL = fmt.Sprintf("https://%s.kdua.net/audit", tenantSlug)
+		}
+	}
+
+	isUnauthorized := strings.Contains(strings.ToUpper(actionCode), "UNAUTHORIZED")
+
+	var subject string
+	var bodyHTML string
+	var footerHTML string
+
+	if lang == "id" {
+		if isUnauthorized {
+			subject = fmt.Sprintf("[PERINGATAN KRITIS K2NET] Percobaan Break-Glass Tidak Sah Ditolak — %s", orgName)
+		} else {
+			subject = fmt.Sprintf("[PERINGATAN KRITIS K2NET] Akses Darurat Break-Glass (Bypass SSO) Digunakan — %s", orgName)
+		}
+
+		headline := "Akses Darurat Break-Glass Terdeteksi"
+		introText := fmt.Sprintf("Sistem keamanan K2NET SecOps mendeteksi bahwa seorang administrator baru saja masuk ke workspace <strong>%s</strong> menggunakan jalur darurat <strong>Break-Glass (Bypass Corporate SSO)</strong>.", template.HTMLEscapeString(orgName))
+		if isUnauthorized {
+			headline = "Percobaan Break-Glass Tidak Sah Diblokir"
+			introText = fmt.Sprintf("Sistem keamanan K2NET SecOps memblokir percobaan penggunaan jalur darurat <strong>Break-Glass</strong> oleh akun tanpa hak administrator pada workspace <strong>%s</strong>.", template.HTMLEscapeString(orgName))
+		}
+
+		bodyHTML = fmt.Sprintf(`
+      <div style="background-color: #2a1215; border: 1px solid #dc2626; color: #fecaca; padding: 12px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 20px;">
+        PERINGATAN KEAMANAN PRIORITAS TINGGI (SECOPS P0) &bull; %s
+      </div>
+      <h1>%s</h1>
+      <p>Halo <strong>%s</strong>,</p>
+      <p>%s</p>
+
+      <table class="detail-table">
+        <tr>
+          <td class="detail-label">Organisasi / Tenant</td>
+          <td class="detail-value">%s (<span class="mono">%s.kdua.net</span>)</td>
+        </tr>
+        <tr>
+          <td class="detail-label">Aktor Pelaku</td>
+          <td class="detail-value">%s</td>
+        </tr>
+        <tr>
+          <td class="detail-label">Peran (Role)</td>
+          <td class="detail-value mono">%s</td>
+        </tr>
+        <tr>
+          <td class="detail-label">Verifikasi 2FA (MFA)</td>
+          <td class="detail-value mono">%s</td>
+        </tr>
+        <tr>
+          <td class="detail-label">Alamat IP Sumber</td>
+          <td class="detail-value mono">%s</td>
+        </tr>
+        <tr>
+          <td class="detail-label">Waktu Kejadian</td>
+          <td class="detail-value mono">%s</td>
+        </tr>
+      </table>
+
+      <div class="cta-container">
+        <a href="%s" target="_blank" class="btn">Periksa Log Audit &amp; Sesi Aktif</a>
+      </div>
+
+      <div class="security-notice">
+        <strong>Tindakan yang Disarankan:</strong> Jalur Break-Glass dirancang khusus untuk keadaan darurat saat Identity Provider (IdP) SSO korporat mengalami gangguan. Jika aktivitas ini tidak diotorisasi oleh tim Anda, segera buka portal administrasi, cabut sesi pengguna terkait, dan putar ulang kredensial keamanan.
+      </div>
+    `,
+			template.HTMLEscapeString(actionCode),
+			headline,
+			template.HTMLEscapeString(recipientName),
+			introText,
+			template.HTMLEscapeString(orgName),
+			template.HTMLEscapeString(tenantSlug),
+			template.HTMLEscapeString(actorDisplay),
+			template.HTMLEscapeString(actorRole),
+			template.HTMLEscapeString(mfaMethod),
+			template.HTMLEscapeString(actorIP),
+			template.HTMLEscapeString(occurredAt),
+			template.HTMLEscapeString(auditURL),
+		)
+
+		footerHTML = `&copy; 2026 K2NET Enterprise SaaS Platform. Hak cipta dilindungi undang-undang.<br>Peringatan keamanan otomatis real-time dari K2NET SecOps Engine (notify@kdua.net).`
+	} else {
+		if isUnauthorized {
+			subject = fmt.Sprintf("[K2NET CRITICAL ALERT] Unauthorized Break-Glass Attempt Blocked — %s", orgName)
+		} else {
+			subject = fmt.Sprintf("[K2NET CRITICAL ALERT] Break-Glass Emergency SSO Bypass Used — %s", orgName)
+		}
+
+		headline := "Break-Glass Emergency Access Detected"
+		introText := fmt.Sprintf("K2NET SecOps detected that an administrator signed in to the <strong>%s</strong> workspace using the <strong>Break-Glass Emergency Access (Corporate SSO Bypass)</strong> pathway.", template.HTMLEscapeString(orgName))
+		if isUnauthorized {
+			headline = "Unauthorized Break-Glass Attempt Blocked"
+			introText = fmt.Sprintf("K2NET SecOps blocked an unauthorized attempt to use the <strong>Break-Glass Emergency Access</strong> pathway by a non-administrator account on the <strong>%s</strong> workspace.", template.HTMLEscapeString(orgName))
+		}
+
+		bodyHTML = fmt.Sprintf(`
+      <div style="background-color: #2a1215; border: 1px solid #dc2626; color: #fecaca; padding: 12px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 20px;">
+        HIGH-PRIORITY SECURITY ALERT (SECOPS P0) &bull; %s
+      </div>
+      <h1>%s</h1>
+      <p>Hello <strong>%s</strong>,</p>
+      <p>%s</p>
+
+      <table class="detail-table">
+        <tr>
+          <td class="detail-label">Workspace / Tenant</td>
+          <td class="detail-value">%s (<span class="mono">%s.kdua.net</span>)</td>
+        </tr>
+        <tr>
+          <td class="detail-label">Actor</td>
+          <td class="detail-value">%s</td>
+        </tr>
+        <tr>
+          <td class="detail-label">Role</td>
+          <td class="detail-value mono">%s</td>
+        </tr>
+        <tr>
+          <td class="detail-label">2FA Verification (MFA)</td>
+          <td class="detail-value mono">%s</td>
+        </tr>
+        <tr>
+          <td class="detail-label">Source IP Address</td>
+          <td class="detail-value mono">%s</td>
+        </tr>
+        <tr>
+          <td class="detail-label">Timestamp</td>
+          <td class="detail-value mono">%s</td>
+        </tr>
+      </table>
+
+      <div class="cta-container">
+        <a href="%s" target="_blank" class="btn">Inspect Audit Trail &amp; Active Sessions</a>
+      </div>
+
+      <div class="security-notice">
+        <strong>Recommended Action:</strong> Break-Glass access is strictly reserved for emergencies when your external Corporate SSO Identity Provider (IdP) is unreachable. If this activity was not authorized, immediately revoke the active session and rotate credentials.
+      </div>
+    `,
+			template.HTMLEscapeString(actionCode),
+			headline,
+			template.HTMLEscapeString(recipientName),
+			introText,
+			template.HTMLEscapeString(orgName),
+			template.HTMLEscapeString(tenantSlug),
+			template.HTMLEscapeString(actorDisplay),
+			template.HTMLEscapeString(actorRole),
+			template.HTMLEscapeString(mfaMethod),
+			template.HTMLEscapeString(actorIP),
+			template.HTMLEscapeString(occurredAt),
+			template.HTMLEscapeString(auditURL),
+		)
+
+		footerHTML = `&copy; 2026 K2NET Enterprise SaaS Platform. All rights reserved.<br>Real-time automated security alert dispatched from K2NET SecOps Engine (notify@kdua.net).`
+	}
+
+	tmpl, err := template.New("base").Parse(baseLayoutHTML)
+	if err != nil {
+		return "", "", err
+	}
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, map[string]any{
+		"Lang":    lang,
+		"Subject": subject,
+		"Body":    template.HTML(bodyHTML),
+		"Footer":  template.HTML(footerHTML),
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	return subject, buf.String(), nil
+}

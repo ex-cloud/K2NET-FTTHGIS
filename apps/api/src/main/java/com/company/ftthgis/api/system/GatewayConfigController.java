@@ -184,7 +184,7 @@ public class GatewayConfigController {
         try {
             String host = payload.get("host") != null && !String.valueOf(payload.get("host")).isBlank()
                     ? String.valueOf(payload.get("host")).trim()
-                    : systemSettingService.getSettingValue("smtp_host", "warners.hostns.io");
+                    : systemSettingService.getSettingValue("smtp_host", "s11740.sgp1.stableserver.net");
             int port = 465;
             if (payload.get("port") != null) {
                 try {

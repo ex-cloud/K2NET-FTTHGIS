@@ -3,6 +3,7 @@ package delivery
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
 	"os"
 	"strconv"
@@ -409,7 +410,10 @@ func (h *HTTPHandler) SendActivationEmail(c *gin.Context) {
 		return
 	}
 
-	sender := NewSMTPEmailSender()
+	sender := h.emailSender
+	if sender == nil {
+		sender = NewSMTPEmailSender()
+	}
 	if !sender.IsConfigured() {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"success": false,
@@ -500,7 +504,10 @@ func (h *HTTPHandler) SendPasswordResetEmail(c *gin.Context) {
 		return
 	}
 
-	sender := NewSMTPEmailSender()
+	sender := h.emailSender
+	if sender == nil {
+		sender = NewSMTPEmailSender()
+	}
 	if !sender.IsConfigured() {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"success": false,
@@ -591,7 +598,10 @@ func (h *HTTPHandler) SendMfaOtpEmail(c *gin.Context) {
 		return
 	}
 
-	sender := NewSMTPEmailSender()
+	sender := h.emailSender
+	if sender == nil {
+		sender = NewSMTPEmailSender()
+	}
 	if !sender.IsConfigured() {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"success": false,
@@ -641,3 +651,177 @@ func (h *HTTPHandler) SendMfaOtpEmail(c *gin.Context) {
 
 
 
+
+// SecurityBreakGlassAlertRequest holds parameters for sending a Break-Glass emergency access security alert email.
+type SecurityBreakGlassAlertRequest struct {
+	To            string `json:"to" binding:"required"`
+	RecipientName string `json:"recipient_name"`
+	OrgName       string `json:"org_name"`
+	TenantSlug    string `json:"tenant_slug"`
+	ActorName     string `json:"actor_name"`
+	ActorEmail    string `json:"actor_email"`
+	ActorRole     string `json:"actor_role"`
+	ActorIP       string `json:"actor_ip"`
+	MfaMethod     string `json:"mfa_method"`
+	Action        string `json:"action"`
+	OccurredAt    string `json:"occurred_at"`
+	AuditURL      string `json:"audit_url"`
+	Lang          string `json:"lang"`
+}
+
+// SendSecurityBreakGlassEmail renders and dispatches a critical Break-Glass emergency access alert email.
+func (h *HTTPHandler) SendSecurityBreakGlassEmail(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var req SecurityBreakGlassAlertRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid security alert request payload: " + err.Error(),
+		})
+		return
+	}
+
+	subject, htmlBody, err := templates.RenderSecurityBreakGlassEmail(templates.SecurityBreakGlassEmailData{
+		RecipientName: req.RecipientName,
+		OrgName:       req.OrgName,
+		TenantSlug:    req.TenantSlug,
+		ActorName:     req.ActorName,
+		ActorEmail:    req.ActorEmail,
+		ActorRole:     req.ActorRole,
+		ActorIP:       req.ActorIP,
+		MfaMethod:     req.MfaMethod,
+		Action:        req.Action,
+		OccurredAt:    req.OccurredAt,
+		AuditURL:      req.AuditURL,
+		Lang:          req.Lang,
+	})
+	if err != nil {
+		logger.Error(ctx, "Failed rendering Break-Glass security alert email template", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Template rendering failed: " + err.Error(),
+		})
+		return
+	}
+
+	sender := h.emailSender
+	if sender == nil {
+		sender = NewSMTPEmailSender()
+	}
+	if !sender.IsConfigured() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"success": false,
+			"error":   "SMTP Gateway is not configured",
+		})
+		return
+	}
+
+	sendErr := sender.Send(ctx, req.To, subject, htmlBody)
+	payload := provider.NotificationPayload{
+		Type:    provider.TypeEmail,
+		To:      req.To,
+		Subject: subject,
+		Body:    subject,
+	}
+
+	if sendErr != nil {
+		h.appendNotificationLog(c, payload, "failed", sendErr.Error())
+		h.audit.LogError(ctx,
+			req.TenantSlug, "notification-gateway",
+			"EMAIL_SECURITY_ALERT_FAILED", "NOTIFICATION", req.To,
+			auditclient.GroupOperations, "notification-gateway",
+			sendErr.Error(), map[string]any{"to": req.To, "action": req.Action},
+		)
+		logger.Error(ctx, "Failed to send Break-Glass security alert email", zap.Error(sendErr), zap.String("to", req.To))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   sendErr.Error(),
+		})
+		return
+	}
+
+	h.appendNotificationLog(c, payload, "sent", "")
+	h.audit.LogSuccess(ctx,
+		req.TenantSlug, "notification-gateway",
+		"EMAIL_SECURITY_ALERT_SENT", "NOTIFICATION", req.To,
+		auditclient.GroupOperations, "notification-gateway",
+		map[string]any{"to": req.To, "action": req.Action},
+	)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("Break-Glass security alert email dispatched to %s", req.To),
+	})
+}
+
+// SendNotificationCompat supports both NotificationPayload ({type, to, subject, body})
+// and legacy AlertDispatcher payload ({channel, recipient, subject, content}) on /api/v1/notification/send.
+func (h *HTTPHandler) SendNotificationCompat(c *gin.Context) {
+	ctx := c.Request.Context()
+	var raw map[string]any
+	if err := c.ShouldBindJSON(&raw); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	strVal := func(keys ...string) string {
+		for _, k := range keys {
+			if v, ok := raw[k].(string); ok && strings.TrimSpace(v) != "" {
+				return strings.TrimSpace(v)
+			}
+		}
+		return ""
+	}
+
+	channel := strings.ToLower(strVal("type", "channel"))
+	recipient := strVal("to", "recipient")
+	subject := strVal("subject")
+	body := strVal("body", "content")
+
+	if channel == "" || recipient == "" || body == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "channel/type, recipient/to, and content/body are required"})
+		return
+	}
+
+	if channel == "email" {
+		sender := h.emailSender
+		if sender == nil {
+			sender = NewSMTPEmailSender()
+		}
+		if sender.IsConfigured() {
+			if subject == "" {
+				subject = "[K2NET Security Alert] Incident Notification"
+			}
+			err := sender.Send(ctx, recipient, subject, "<pre style=\"font-family:monospace;white-space:pre-wrap;\">"+html.EscapeString(body)+"</pre>")
+			payload := provider.NotificationPayload{
+				Type:    provider.TypeEmail,
+				To:      recipient,
+				Subject: subject,
+				Body:    body,
+			}
+			if err != nil {
+				h.appendNotificationLog(c, payload, "failed", err.Error())
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			h.appendNotificationLog(c, payload, "sent", "")
+			c.JSON(http.StatusOK, gin.H{"status": "Delivered", "channel": "email"})
+			return
+		}
+	}
+
+	payload := provider.NotificationPayload{
+		Type:    provider.MessageType(channel),
+		To:      recipient,
+		Subject: subject,
+		Body:    body,
+	}
+	if err := h.worker.Enqueue(ctx, payload); err != nil {
+		h.appendNotificationLog(c, payload, "failed", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	h.appendNotificationLog(c, payload, "sent", "")
+	c.JSON(http.StatusAccepted, gin.H{"status": "Accepted"})
+}
