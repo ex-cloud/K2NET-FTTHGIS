@@ -1,220 +1,121 @@
 ---
 name: bug-triage-and-plan
 description: >-
-  Prosedur terautomasi standar enterprise (6-Tahap SDLC) saat AI agent menemukan bug, celah keamanan,
-  perubahan kebijakan, atau kegagalan audit/CI: (1) membuat tiket bug di docs/bug/active/,
-  (2) menyusun dokumen diskusi & RCA di docs/discussions/active/, (3) mencatat keputusan arsitektur
-  di docs/adr/NNNN-*.md (jika menyentuh arsitektur/keamanan/PBAC), (4) merumuskan action plan di
-  docs/plans/active/, (5) menjalankan perbaikan & Quality Gate 0-warning/0-error, serta (6) menerbitkan
-  laporan akhir di docs/reports/ dan mengarsipkan dokumen ke completed/ & resolved/.
+  Prosedur terautomasi standar enterprise (7-Tahap SDLC di docs/sop_sdlc/) saat AI agent menemukan bug, celah keamanan,
+  perubahan kebijakan, atau kegagalan audit/CI: (1) membuat tiket bug di docs/sop_sdlc/bug/active/,
+  (2) menyusun dokumen diskusi & RCA di docs/sop_sdlc/discussions/active/, (3) mencatat keputusan arsitektur
+  di docs/sop_sdlc/adr/NNNN-*.md (jika menyentuh arsitektur/keamanan/PBAC), (4) merumuskan action plan di
+  docs/sop_sdlc/plans/active/, (5) menjalankan kode, Quality Gate 0-warning/0-error, commit/push & CI/CD deploy,
+  (6) BERHENTI di Gerbang Wajib QA & User UAT (docs/sop_sdlc/qa/active/) untuk verifikasi kode & UI/UX bersama pengguna,
+  serta (7) setelah lulus UAT pengguna, memindahkan QA ke qa/completed/, menerbitkan laporan akhir di
+  docs/sop_sdlc/reports/, dan mengarsipkan dokumen ke completed/ & resolved/.
 ---
 
-# 🛠️ Standard Operating Procedure: 6-Stage SDLC Bug Triage, Discussion, ADR, Planning & Lifecycle Archival
+# 🛠️ Standard Operating Procedure: 7-Stage SDLC Bug Triage, Discussion, ADR, Planning, Mandatory QA/UAT Gate & Lifecycle Archival (`docs/sop_sdlc/`)
 
 Skill ini diaktifkan saat AI Agent menemukan bug, menerima laporan kegagalan audit, merancang perubahan kebijakan/arsitektur, atau merencanakan perbaikan/fitur terstruktur pada platform K2NET FTTH GIS.
 
+> 📂 **LOKASI RUANG KERJA SDLC MURNI**: Seluruh 12 folder dokumen SDLC berada di dalam **`/opt/project5/docs/sop_sdlc/`** agar tidak bercampur dengan dokumen arsip lama di `/opt/project5/docs/`.
+
 ---
 
-## 🎯 Urutan Baku 6-Dokumen SDLC (Wajib Dipatuhi Tanpa Terlewat)
+## 🎯 Urutan Baku 7-Tahap SDLC & Gerbang Wajib QA/UAT (Wajib Dipatuhi Tanpa Terlewat)
 
-Setiap temuan bug, diskusi perubahan kebijakan, atau fitur baru **WAJIB** mengikuti urutan berjenjang berikut:
+Setiap temuan bug, diskusi perubahan kebijakan, atau fitur baru **WAJIB** mengikuti urutan berjenjang 7 tahap berikut:
 
 ```text
-[1. Bug Ticket]      docs/bug/active/YYYY-MM-DD-<slug>.md
-       ↓
-[2. Discussion]      docs/discussions/active/YYYY-MM-DD-<slug>.md  ──(Disepakati)──► docs/discussions/resolved/
-       ↓
-[3. ADR & Rules]     docs/adr/NNNN-<slug>.md + docs/adr/README.md + .agents/rules/*.md (jika menyentuh arsitektur/keamanan/PBAC)
-       ↓
-[4. Action Plan]     docs/plans/active/YYYY-MM-DD-<slug>.md
-       ↓
-[5. Code & QG 100%]  Eksekusi Kode + Lint (--max-warnings 0) + Typecheck + i18n + Colors + Design System + ADR + Security + Tests
-       ↓
-[6. Report & Close]  docs/reports/YYYY-MM-DD-<slug>.md + Pindahkan Plan ke completed/ & Bug ke resolved/
+[1. Bug Ticket / RFC]  docs/sop_sdlc/bug/active/YYYY-MM-DD-<slug>.md (atau docs/sop_sdlc/rfc/)
+        ↓
+[2. Discussion]        docs/sop_sdlc/discussions/active/YYYY-MM-DD-<slug>.md ──(Disepakati)──► discussions/resolved/
+        ↓
+[3. ADR & Rules]       docs/sop_sdlc/adr/NNNN-<slug>.md + adr/README.md + .agents/rules/*.md (jika arsitektur/keamanan/PBAC)
+        ↓
+[4. Action Plan]       docs/sop_sdlc/plans/active/YYYY-MM-DD-<slug>.md [Status: LOCKED - IN PROGRESS]
+        ↓
+[5. Code, QG & Deploy] Eksekusi Kode + Unit Test + Lint/Typecheck/i18n/Colors/Security + Commit & Push + CI/CD Deploy Live
+        ↓
+[6. 🛑 QA & UAT GATE]  docs/sop_sdlc/qa/active/YYYY-MM-DD-<slug>.md [Status Plan: IN QA & USER UAT VERIFICATION]
+                       ⚠️ WAJIB BERHENTI DI SINI! Uji kode, DB live & skenario UI/UX bersama Pengguna hingga 100% PASSED!
+                       (DILARANG membuat reports/ atau memindahkan plan ke completed/ sebelum lulus UAT pengguna!)
+        ↓
+[7. Report & Close]    1. Pindahkan QA ke docs/sop_sdlc/qa/completed/YYYY-MM-DD-<slug>.md
+                       2. Buat Laporan Akhir di docs/sop_sdlc/reports/YYYY-MM-DD-<slug>.md
+                       3. Pindahkan Plan ke docs/sop_sdlc/plans/completed/ & Bug ke docs/sop_sdlc/bug/resolved/
 ```
 
-- **Referensi Lengkap**: [Standar Siklus Hidup Dokumen, Tiket Bug & Implementation Plan](./references/lifecycle-and-documentation.md) & [SOP Kolaborasi Multi-Agent](../../../docs/plans/SOP-KOLABORASI-MULTI-AGENT.md)
+- **Referensi Lengkap**: [Standar Siklus Hidup Dokumen, Tiket Bug, QA Gate & Implementation Plan](./references/lifecycle-and-documentation.md) & [SOP Kolaborasi Multi-Agent](../../../docs/sop_sdlc/plans/SOP-KOLABORASI-MULTI-AGENT.md)
 
 ---
 
 ## 📋 Alur Eksekusi Langkah-demi-Langkah
 
-### Langkah 1: Inisialisasi Direktori Lifecycle
+### Langkah 1: Inisialisasi Direktori Lifecycle di `/opt/project5/docs/sop_sdlc/`
 Pastikan seluruh direktori lifecycle telah siap di host server:
 ```bash
-mkdir -p /opt/project5/docs/bug/pending \
-         /opt/project5/docs/bug/active \
-         /opt/project5/docs/bug/resolved \
-         /opt/project5/docs/discussions/active \
-         /opt/project5/docs/discussions/resolved \
-         /opt/project5/docs/adr \
-         /opt/project5/docs/plans/active \
-         /opt/project5/docs/plans/completed \
-         /opt/project5/docs/reports
+mkdir -p /opt/project5/docs/sop_sdlc/bug/pending \
+         /opt/project5/docs/sop_sdlc/bug/active \
+         /opt/project5/docs/sop_sdlc/bug/resolved \
+         /opt/project5/docs/sop_sdlc/discussions/active \
+         /opt/project5/docs/sop_sdlc/discussions/resolved \
+         /opt/project5/docs/sop_sdlc/adr \
+         /opt/project5/docs/sop_sdlc/plans/active \
+         /opt/project5/docs/sop_sdlc/plans/completed \
+         /opt/project5/docs/sop_sdlc/qa/active \
+         /opt/project5/docs/sop_sdlc/qa/completed \
+         /opt/project5/docs/sop_sdlc/reports
 ```
 
 ---
 
-### Langkah 2: Pembuatan Tiket Temuan Bug (`docs/bug/active/`) & Dokumen Diskusi (`docs/discussions/active/`)
-1. **Tiket Bug (`docs/bug/active/YYYY-MM-DD-<slug-deskriptif>.md`)**: Catat gejala, bukti/log replikasi, dan Root Cause Analysis (RCA).
-2. **Dokumen Diskusi (`docs/discussions/active/YYYY-MM-DD-<slug-deskriptif>.md`)**: Jika bug memerlukan perubahan arsitektur, kebijakan PBAC/RBAC, atau keputusan desain dengan pengguna/agent lain, buat dokumen diskusi terlebih dahulu sebelum mengeksekusi kode. Setelah disepakati pengguna, pindahkan diskusi ke `docs/discussions/resolved/`.
-3. **Architecture Decision Record (`docs/adr/NNNN-<slug>.md`)**: Jika keputusan menyentuh arsitektur, keamanan, isolasi multi-tenant, PBAC/RBAC, atau batas domain, buat ADR baru berurutan, daftarkan di `docs/adr/README.md`, perbarui `.agents/rules/` terkait, dan jalankan `bash scripts/audit-adr.sh`.
-
-Gunakan struktur template berikut:
-```markdown
-# 🐛 [BUG / VULNERABILITY]: <Judul Singkat Masalah>
-- **Tanggal Ditemukan**: YYYY-MM-DD
-- **Severity**: P0 (Urgent/Blocker) | P1 (High) | P2 (Medium) | P3 (Low)
-- **Komponen Terdampak**: (Contoh: `services/payment-gateway`, `apps/api`)
-- **Status**: [OPEN]
+### Langkah 2: Pembuatan Tiket Temuan Bug (`docs/sop_sdlc/bug/active/`) & Dokumen Diskusi (`docs/sop_sdlc/discussions/active/`)
+1. **Tiket Bug (`docs/sop_sdlc/bug/active/YYYY-MM-DD-<slug-deskriptif>.md`)**: Catat gejala, bukti/log replikasi, dan Root Cause Analysis (RCA).
+2. **Dokumen Diskusi (`docs/sop_sdlc/discussions/active/YYYY-MM-DD-<slug-deskriptif>.md`)**: Buat dokumen diskusi terlebih dahulu sebelum mengeksekusi kode. Setelah disepakati pengguna, pindahkan diskusi ke `docs/sop_sdlc/discussions/resolved/`.
+3. **Architecture Decision Record (`docs/sop_sdlc/adr/NNNN-<slug>.md`)**: Jika keputusan menyentuh arsitektur, keamanan, isolasi multi-tenant, PBAC/RBAC, atau batas domain, buat ADR baru berurutan, daftarkan di `docs/sop_sdlc/adr/README.md`, perbarui `.agents/rules/` terkait, dan jalankan `bash scripts/audit-adr.sh`.
 
 ---
 
-## 1. Gejala & Ringkasan Masalah
-<Jelaskan error, log kegagalan, atau indikasi kegagalan sistem>
-
-## 2. Bukti & Log Replikasi
-\`\`\`text
-<Tempelkan potongan error log / stack trace di sini>
-\`\`\`
-
-## 3. Analisis Akar Masalah (Root Cause Analysis - RCA)
-<Uraikan secara teknis mengapa masalah ini terjadi>
-
-## 4. Tautan Rencana Aksi (Action Plan)
-- Rencana Implementasi: [docs/plans/active/YYYY-MM-DD-<slug>.md](file:///opt/project5/docs/plans/active/YYYY-MM-DD-<slug>.md)
-```
-
----
-
-### Langkah 3: Formulasi Implementation Plan Baru (`docs/plans/active/`)
+### Langkah 3: Formulasi Implementation Plan Baru (`docs/sop_sdlc/plans/active/`)
 Buat berkas rencana kerja aktif di folder:
-`/opt/project5/docs/plans/active/YYYY-MM-DD-<slug-deskriptif>.md`
-
-Gunakan struktur template berikut:
-```markdown
-# 📋 Implementation Plan: <Nama Perbaikan / Fitur>
-- **Tanggal Dibuat**: YYYY-MM-DD
-- **Status**: [IN PROGRESS]
-- **Tiket Terkait**: [docs/bug/YYYY-MM-DD-<slug>.md](file:///opt/project5/docs/bug/YYYY-MM-DD-<slug>.md)
+`/opt/project5/docs/sop_sdlc/plans/active/YYYY-MM-DD-<slug-deskriptif>.md`
 
 ---
 
-## 🎯 Target & Batasan
-- **Sasaran Utama**: <Apa yang ingin dicapai>
-- **Batasan**: Dilarang breaking change, pertahankan PBAC, isolasi multi-tenant.
+### Langkah 4: Eksekusi Kode, Verifikasi Quality Gate Domain-Aware, Commit, Push & Deploy CI/CD
+1. Kerjakan perubahan kode sumber secara bertahap dan centang `- [x]` pada Implementation Plan.
+2. Jalankan perintah Quality Gate sesuai domain di [`docs/sop_sdlc/qa/quality-gate-checklist.md`](file:///opt/project5/docs/sop_sdlc/qa/quality-gate-checklist.md) hingga `0 Error, 0 Warning`.
+3. Lakukan `git commit` dan `git push origin main`, pantau GitHub Actions (`bash scripts/check-cicd-status.sh --watch`), dan pastikan container ter-update serta `healthy`.
 
 ---
 
-## 📝 Granular Task Todo List
-### Fase 1: Persiapan & Analisis Kode
-- [ ] 1.1. <Tugas 1>
-- [ ] 1.2. <Tugas 2>
+### 🛑 Langkah 5: GERBANG WAJIB QA & USER ACCEPTANCE TEST (`docs/sop_sdlc/qa/active/`)
 
-### Fase 2: Eksekusi Kode & Remediasi
-- [ ] 2.1. <Tugas 3>
-- [ ] 2.2. <Tugas 4>
+> 🛑 **ATURAN MUTLAK (HARD HOLD GATE)**: AI Agent **DILARANG KERAS** langsung membuat dokumen `reports/` atau memindahkan plan ke `completed/` sesaat setelah CI/CD sukses!
 
-### Fase 3: Pengujian & Quality Gate
-- [ ] 3.1. Validasi unit test & static analysis
-- [ ] 3.2. Pemeriksaan kompilasi container / monorepo
-```
-
----
-
-### Langkah 4: Eksekusi Terkendali & Centang Checklist
-1. Kerjakan perubahan kode sumber secara bertahap sesuai butir tugas pada Implementation Plan.
-2. Setiap kali butir tugas selesai dan terverifikasi secara lokal, ubah status checkbox menjadi `- [x]`.
+1. Buat dokumen lembar pengujian di **`/opt/project5/docs/sop_sdlc/qa/active/YYYY-MM-DD-<slug>.md`** mengacu pada [`docs/sop_sdlc/qa/TEMPLATE.md`](file:///opt/project5/docs/sop_sdlc/qa/TEMPLATE.md) yang berisi:
+   - **Bagian 1**: Bukti hasil Automated Quality Gate & Unit Test (`mvn test`, `go test`, `verify-all.sh frontend`, `audit:security`, `audit:sdlc`).
+   - **Bagian 2**: Bukti verifikasi teknis lingkungan live oleh Agent (status container, query DB PostgreSQL live, probe endpoint).
+   - **Bagian 3**: Matriks Skenario Uji Fungsional & UI/UX (`TC-01`, `TC-02`, dst.) berstatus `⏳ WAITING_UAT` untuk diuji oleh Pengguna.
+2. Ubah header status pada berkas plan di `docs/sop_sdlc/plans/active/YYYY-MM-DD-<slug>.md` menjadi:
+   `- **Status**: [IN QA & USER UAT VERIFICATION]`
+3. Sajikan panduan skenario uji `TC-01..TC-N` kepada pengguna dan **tunggu hasil pengujian langsung oleh pengguna**:
+   - **Jika ditemukan kegagalan / koreksi saat uji QA/UAT**: Catat kegagalan di Bagian 4 pada berkas `docs/sop_sdlc/qa/active/YYYY-MM-DD-<slug>.md`, lakukan remediasi kode, deploy ulang, dan uji kembali hingga seluruh `TC` berstatus `✅ PASSED`.
 
 ---
 
-### Langkah 5: Verifikasi Quality Gate Domain-Aware (WAJIB)
-
-> 🛑 **ATURAN MUTLAK**: AI Agent **DILARANG** memindahkan plan ke `completed/` atau mengumumkan "selesai" sebelum menjalankan seluruh perintah QG yang relevan dan mencatat hasilnya.
-
-**Langkah 5.1** — Identifikasi domain yang disentuh selama sesi kerja (file/folder apa yang berubah?):
-
-| Domain | Trigger File/Folder | Gunakan QG Set |
-|---|---|---|
-| Frontend | `apps/studio-*/`, `packages/` | QG Set 1 |
-| Backend Spring Boot | `apps/api/src/`, `*.java`, Flyway SQL | QG Set 2 |
-| Go Microservices | `services/gateway-*/`, `*.go` | QG Set 3 |
-| Infrastruktur | `docker-compose*.yml`, `docker/kong/` | QG Set 4 |
-| PBAC / Security | `PermissionSeeder.java`, `SecurityConfig.java` | QG Set 5 |
-| ADR / Docs | `docs/adr/`, `docs/rfc/` | QG Set 6 |
-
-**Langkah 5.2** — Jalankan perintah QG sesuai domain yang teridentifikasi:
-
-> 📋 **Referensi lengkap perintah per domain**: [`docs/qa/quality-gate-checklist.md`](file:///opt/project5/docs/qa/quality-gate-checklist.md)
-
-```bash
-# ⚠️ WAJIB: Set environment variable sebelum perintah Java/Go
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-export PATH=$PATH:/usr/local/go/bin
-
-# Frontend (jalankan jika domain Frontend tersentuh)
-pnpm --filter @k2net/studio-admin typecheck
-pnpm --filter @k2net/studio-tenant typecheck
-pnpm audit:i18n && pnpm audit:colors && pnpm audit:design-system
-
-# Backend Spring Boot (jalankan jika domain Backend tersentuh)
-JAVA_HOME=/usr/lib/jvm/java-21-openjdk mvn -f apps/api/pom.xml test-compile -q
-JAVA_HOME=/usr/lib/jvm/java-21-openjdk mvn -f apps/api/pom.xml test
-pnpm audit:versioning
-
-# Go Microservices (jalankan jika domain Go tersentuh)
-bash scripts/verify-all.sh gateways
-
-# Infrastruktur (jalankan jika docker/kong config berubah)
-docker compose config -q
-docker exec kong kong config parse /usr/local/kong/declarative/kong.yml
-
-# PBAC/Security (jalankan jika Permission atau SecurityConfig berubah)
-JAVA_HOME=/usr/lib/jvm/java-21-openjdk bash scripts/audit-security-matrix.sh
-
-# ADR/Docs (jalankan jika docs/adr berubah)
-pnpm audit:adr
-```
-
-**Langkah 5.3** — Catat hasil eksekusi di tabel `## ✅ Verifikasi Quality Gate` pada berkas plan aktif:
-- Ganti `🔲 PENDING` → `✅ PASS` atau `❌ FAIL`
-- Jika ada `❌ FAIL`, **perbaiki masalahnya terlebih dahulu** sebelum melanjutkan ke Langkah 6.
-
----
-
-### Langkah 6: Pemindahan Plan & Bug ke Status Selesai
-Setelah seluruh Quality Gate lulus 100%:
-1. Pindahkan berkas rencana kerja secara otomatis menggunakan shell command:
+### Langkah 6: Penutupan QA, Penyusunan Laporan Akhir (`docs/sop_sdlc/reports/`) & Pengarsipan
+**HANYA SETELAH** pengguna mengonfirmasi bahwa pengujian QA / UAT telah lulus (`100% PASSED`):
+1. Perbarui status dokumen QA menjadi `[PASSED ✅]` dan pindahkan ke folder `completed`:
    ```bash
-   mv /opt/project5/docs/plans/active/YYYY-MM-DD-<slug>.md /opt/project5/docs/plans/completed/
+   mv /opt/project5/docs/sop_sdlc/qa/active/YYYY-MM-DD-<slug>.md /opt/project5/docs/sop_sdlc/qa/completed/
    ```
-2. Perbarui header pada berkas plan yang telah dipindahkan:
-   - Ubah `- **Status**: [IN PROGRESS]` menjadi `- **Status**: [COMPLETED ✅]`
-3. Pindahkan berkas tiket bug ke folder resolved:
+2. Buat laporan akhir resmi komprehensif di:
+   `/opt/project5/docs/sop_sdlc/reports/YYYY-MM-DD-<slug>.md` (lengkap dengan tautan ke `docs/sop_sdlc/qa/completed/YYYY-MM-DD-<slug>.md`).
+3. Pindahkan berkas rencana kerja ke folder `completed`:
    ```bash
-   mv /opt/project5/docs/bug/active/YYYY-MM-DD-<slug>.md /opt/project5/docs/bug/resolved/
+   mv /opt/project5/docs/sop_sdlc/plans/active/YYYY-MM-DD-<slug>.md /opt/project5/docs/sop_sdlc/plans/completed/
    ```
-4. Perbarui tiket bug di `/opt/project5/docs/bug/resolved/YYYY-MM-DD-<slug>.md`:
-   - Ubah `- **Status**: [OPEN]` menjadi `- **Status**: [RESOLVED ✅]`
-   - Tambahkan bagian **Resolusi & Commit Hash**:
-     ```markdown
-     ## 5. Resolusi & Commit
-     - **Status Akhir**: RESOLVED
-     - **Tanggal Selesai**: YYYY-MM-DD
-     - **Commit Hash**: `<git_commit_hash>`
-     - **Dokumen Penyelesaian**: [docs/plans/completed/YYYY-MM-DD-<slug>.md](file:///opt/project5/docs/plans/completed/YYYY-MM-DD-<slug>.md)
-     ```
-
----
-
-### Langkah 7: Penyusunan Laporan Akhir Resmi (`docs/reports/`)
-Setelah bug dan plan diarsipkan, Agent WAJIB membuat laporan resmi komprehensif di:
-`/opt/project5/docs/reports/YYYY-MM-DD-<slug-laporan>.md`
-
-Laporan memuat:
-1. **Ringkasan Eksekutif & Sasaran**
-2. **Matriks Bug, Gejala & Root Cause Analysis (RCA)**
-3. **Solusi Rekayasa & Rincian Perubahan Kode Sumber**
-4. **Tabel Verifikasi Quality Gate Monorepo (100% Pass)**
-5. **Bukti Pengujian Penerimaan Pengguna (Acceptance Test)**
-6. **Hash Commit Git, Status Pipeline CI/CD & Rekomendasi Selanjutnya**
+4. Pindahkan berkas tiket bug ke folder `resolved`:
+   ```bash
+   mv /opt/project5/docs/sop_sdlc/bug/active/YYYY-MM-DD-<slug>.md /opt/project5/docs/sop_sdlc/bug/resolved/
+   ```
+5. Jalankan `bash scripts/audit-sdlc-docs.sh` (`pnpm audit:sdlc`) untuk memastikan `0 Error, 0 Warning`.

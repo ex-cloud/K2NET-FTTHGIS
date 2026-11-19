@@ -61,7 +61,7 @@ Setelah menyelesaikan tugas dan menjalankan Quality Gate:
 
 ## 🤝 4. Protokol Koordinasi Multi-Agent Otomatis (Wajib)
 
-Berlaku untuk semua agent (Antigravity, Cursor, Claude Code, Copilot, CLI) di semua perangkat. Rujukan: `docs/plans/SOP-KOLABORASI-MULTI-AGENT.md`.
+Berlaku untuk semua agent (Antigravity, Cursor, Claude Code, Copilot, CLI) di semua perangkat. Rujukan: `docs/sop_sdlc/plans/SOP-KOLABORASI-MULTI-AGENT.md`.
 
 ### 4.1. Awal Sesi / Awal Perintah Kerja (sebelum menyentuh berkas apa pun)
 ```bash
@@ -78,9 +78,9 @@ bash scripts/check-cicd-status.sh                # status GitHub Actions live
 python3 scripts/agent-collab.py lock <plan> --agent "<Agent>" --device "<Device>"
 python3 scripts/agent-collab.py reserve-flyway --name "<nama>" --agent "<Agent>"   # jika butuh migrasi baru
 ```
-`lock`, `unlock`, `claim`, `handoff`, dan `log` otomatis menulis jejak ke `docs/plans/ACTIVITY-LOG.md` (append-only; dilarang mengedit baris lama).
+`lock`, `unlock`, `claim`, `handoff`, dan `log` otomatis menulis jejak ke `docs/sop_sdlc/plans/ACTIVITY-LOG.md` (append-only; dilarang mengedit baris lama).
 
-### 4.3. Saat Plan Selesai (setelah Quality Gate PASS)
+### 4.3. Saat Kode & Deploy Selesai — 🛑 Gerbang Wajib QA & User UAT (`docs/sop_sdlc/qa/active/`)
 ```bash
 python3 scripts/agent-collab.py doc-eval [--base <git-ref>]
 ```
@@ -92,17 +92,18 @@ Output `doc-eval` bersifat menentukan — ikuti levelnya:
 | `CEK` | Perlu penilaian agent | Putuskan dan catat alasan di laporan akhir |
 | `LEWATI` | Tidak relevan | Tidak ada aksi |
 
-Matriks pemicu: migrasi Flyway/domain/layanan baru → ADR + registri sumber daya; event/pubsub → `specs/events`; alert rule → `runbooks`; berkas keamanan inti → `security`; RFC belum final → ubah ke `Implemented`; versi `pom.xml` berubah → `releases`; setiap plan → `reports`. `docs/qa` hanya berubah jika jenis pengujian baru disepakati.
+> 🛑 **ATURAN MUTLAK GERBANG QA**: Setelah CI/CD & deploy selesai, AI Agent **WAJIB membuat lembar pengujian di `docs/sop_sdlc/qa/active/YYYY-MM-DD-<slug>.md`**, mengubah status plan menjadi `[IN QA & USER UAT VERIFICATION]`, dan menunggu verifikasi pengujian fungsional & UI/UX oleh pengguna. **DILARANG KERAS** langsung membuat `docs/sop_sdlc/reports/` atau memindahkan plan ke `completed/` sebelum `qa/active/` lulus UAT pengguna!
 
-### 4.4. Penutupan & Serah Terima
-1. Pindahkan plan ke `docs/plans/completed/`, terbitkan `docs/reports/YYYY-MM-DD-<slug>.md`, jalankan `pnpm audit:adr`.
-2. Perbarui `docs/specs/registry-alokasi-sumber-daya.md` (Flyway → `Terpakai di DB`, lock → `COMPLETED & ARCHIVED`).
-3. Catat: `python3 scripts/agent-collab.py log --action done --agent "<Agent>" --target "<plan>" --note "<commit sha>"`.
-4. Belum tuntas → `python3 scripts/agent-collab.py handoff <plan> --to "<Agent>" --task "<tugas>"`; agent penerima menjalankan `claim`.
+### 4.4. Penutupan & Serah Terima (HANYA SETELAH LULUS UAT PENGGUNA)
+1. Pindahkan lembar QA dari `docs/sop_sdlc/qa/active/` ke `docs/sop_sdlc/qa/completed/`.
+2. Terbitkan `docs/sop_sdlc/reports/YYYY-MM-DD-<slug>.md` (tertaut ke `qa/completed/`), pindahkan plan ke `docs/sop_sdlc/plans/completed/`, pindahkan bug ke `docs/sop_sdlc/bug/resolved/`, dan jalankan `pnpm audit:adr` & `pnpm audit:sdlc`.
+3. Perbarui `docs/sop_sdlc/specs/registry-alokasi-sumber-daya.md` (Flyway → `Terpakai di DB`, lock → `COMPLETED & ARCHIVED`).
+4. Catat: `python3 scripts/agent-collab.py log --action done --agent "<Agent>" --target "<plan>" --note "<commit sha>"`.
+5. Belum tuntas → `python3 scripts/agent-collab.py handoff <plan> --to "<Agent>" --task "<tugas>"`; agent penerima menjalankan `claim`.
 
 > `docs/` tidak ter-track git publik (anti-leakage), sehingga sinkronisasi dokumen antar-perangkat dilakukan lewat salinan server/backup, bukan `git pull`. Karena itu `ACTIVITY-LOG.md` dan papan registri adalah sumber kebenaran tunggal status kerja.
 
-### 4.5. Aturan Diskusi (Pencatatan di `docs/discussions/`)
+### 4.5. Aturan Diskusi (Pencatatan di `docs/sop_sdlc/discussions/`)
 
 Riwayat chat tidak terbaca agent lain atau perangkat lain. Kesimpulan diskusi penting wajib dituliskan ke berkas.
 
@@ -110,7 +111,7 @@ Riwayat chat tidak terbaca agent lain atau perangkat lain. Kesimpulan diskusi pe
 ```bash
 python3 scripts/agent-collab.py new-discussion --title "<judul>" --agent "<Agent>"
 ```
-lalu mengisi opsi, tradeoff, dan rekomendasi sesuai `docs/discussions/TEMPLATE.md`.
+lalu mengisi opsi, tradeoff, dan rekomendasi sesuai `docs/sop_sdlc/discussions/TEMPLATE.md`.
 
 **Pemicu otomatis (B)** — tanpa diminta, agent WAJIB membuat berkas diskusi jika percakapan memenuhi KEDUANYA:
 1. Menyangkut salah satu: arsitektur, skema DB/Flyway, keamanan/PBAC, kontrak API/event, atau pilihan teknologi; dan
@@ -118,10 +119,10 @@ lalu mengisi opsi, tradeoff, dan rekomendasi sesuai `docs/discussions/TEMPLATE.m
 
 **Tidak perlu dicatat:** tanya jawab ringan, penjelasan kode, debugging rutin, dan pertanyaan operasional sekali pakai.
 
-Jika ragu apakah suatu percakapan memenuhi ambang, agent bertanya singkat: *"Catat sebagai diskusi di docs/discussions/?"* — bukan menebak.
+Jika ragu apakah suatu percakapan memenuhi ambang, agent bertanya singkat: *"Catat sebagai diskusi di docs/sop_sdlc/discussions/?"* — bukan menebak.
 
 **Siklus:**
-1. Berkas diskusi dibuat di `docs/discussions/active/`; keputusan akhir tetap di tangan pengguna (Human Architect).
+1. Berkas diskusi dibuat di `docs/sop_sdlc/discussions/active/`; keputusan akhir tetap di tangan pengguna (Human Architect).
 2. Setelah konsensus: `python3 scripts/agent-collab.py resolve-discussion <nama> --link "<plan atau ADR hasilnya>" --agent "<Agent>"`.
-3. Hasil diturunkan ke `docs/rfc/` (proposal), `docs/adr/` (keputusan mengikat), atau `docs/plans/active/` (eksekusi). Dilarang memodifikasi kode produksi sebelum konsensus tercatat.
+3. Hasil diturunkan ke `docs/sop_sdlc/rfc/` (proposal), `docs/sop_sdlc/adr/` (keputusan mengikat), atau `docs/sop_sdlc/plans/active/` (eksekusi). Dilarang memodifikasi kode produksi sebelum konsensus tercatat.
 4. Awal sesi: `who-is-working` / `status` menampilkan diskusi aktif; agent wajib membacanya sebelum mengusulkan arah baru pada topik yang sama.
