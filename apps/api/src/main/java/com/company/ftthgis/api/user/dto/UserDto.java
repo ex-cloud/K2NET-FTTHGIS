@@ -28,8 +28,10 @@ public class UserDto {
     private String avatarUrl;
     private String status;
     private Boolean emailVerified;
+    private Long roleId;
     private String roleName;
     private String roleDisplayName;
+    private String roleCode;
     private String organizationName;
     private UUID organizationId;
     private String organizationSlug;

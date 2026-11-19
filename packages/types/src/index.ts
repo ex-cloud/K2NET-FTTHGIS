@@ -15,19 +15,39 @@ export interface UserMembership {
   joinedAt?: string;
 }
 
+export interface UserProjectRole {
+  projectId: string;
+  projectName: string;
+  roleName: string;
+  roleDisplayName: string;
+}
+
 export interface User {
   id: string;
   email: string;
+  secondaryEmail?: string;
   fullName: string;
   username?: string;
+  phone?: string;
+  jobTitle?: string;
   avatarUrl?: string;
   status: string;
+  emailVerified?: boolean;
+  mfaEnabled?: boolean;
+  lastLoginAt?: string | null;
+  lastLoginIp?: string | null;
+  timezone?: string;
+  locale?: string;
+  roleId?: number | null;
   roleName: string;
   roleDisplayName: string;
+  roleCode?: string | null;
   organizationName?: string;
   organizationId?: string;
   organizationSlug?: string;
   memberships?: UserMembership[];
+  projectRoles?: UserProjectRole[];
+  permissions?: string[];
   createdAt: string;
   updatedAt: string;
 }

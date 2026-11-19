@@ -312,26 +312,49 @@ public class OrganizationDirectoryService {
 
         List<Map<String, Object>> userList = new ArrayList<>();
 
-        // 1. Fetch from local database
-        String sql = "SELECT u.id, u.full_name as name, u.username, u.email, u.phone, u.job_title, " +
-                     "u.last_login_at, u.last_login_ip, u.mfa_enabled, u.timezone, u.locale, " +
-                     "r.name as role_name, u.status, u.created_at " +
+        // 1. Fetch from local database (joining organization_members for multi-workspace SSOT)
+        String sql = "SELECT DISTINCT ON (u.id) u.id, u.full_name as name, u.username, u.email, u.phone, u.job_title, " +
+                     "u.last_login_at, u.last_login_ip, u.mfa_enabled, u.timezone, u.locale, u.avatar_url, " +
+                     "COALESCE(om_r.id, r.id) as role_id, " +
+                     "COALESCE(om.role_name, om_r.name, r.name) as role_name, " +
+                     "COALESCE(om_r.display_name, r.display_name) as role_display_name, " +
+                     "COALESCE(om_r.code, r.code) as role_code, " +
+                     "COALESCE(om.status, u.status) as effective_status, " +
+                     "u.status as user_status, u.created_at " +
                      "FROM users u " +
+                     "LEFT JOIN organization_members om ON om.user_id = u.id AND om.organization_id = ? " +
+                     "LEFT JOIN roles om_r ON om.role_id = om_r.id " +
                      "LEFT JOIN roles r ON u.role_id = r.id " +
-                     "WHERE u.organization_id = ? " +
-                     "ORDER BY u.created_at DESC";
+                     "WHERE u.organization_id = ? OR om.organization_id = ? " +
+                     "ORDER BY u.id, u.created_at DESC";
 
         try {
             List<Map<String, Object>> dbUsers = jdbcTemplate.query(sql, (rs, rowNum) -> {
                 Map<String, Object> map = new java.util.HashMap<>();
+                String fullName = rs.getString("name") != null ? rs.getString("name") : rs.getString("username");
+                String effectiveStatus = rs.getString("effective_status") != null ? rs.getString("effective_status") : "ACTIVE";
+                String userStatus = rs.getString("user_status") != null ? rs.getString("user_status") : "ACTIVE";
+                boolean emailVerified = "ACTIVE".equalsIgnoreCase(effectiveStatus)
+                        && !"INVITED".equalsIgnoreCase(userStatus)
+                        && !"PENDING".equalsIgnoreCase(userStatus);
+                String roleName = rs.getString("role_name") != null ? rs.getString("role_name") : "viewer";
+                Object roleIdObj = rs.getObject("role_id");
+
                 map.put("id", rs.getString("id"));
-                map.put("name", rs.getString("name") != null ? rs.getString("name") : rs.getString("username"));
+                map.put("name", fullName);
+                map.put("fullName", fullName);
                 map.put("username", rs.getString("username"));
                 map.put("email", rs.getString("email"));
+                map.put("avatarUrl", rs.getString("avatar_url"));
                 map.put("phone", rs.getString("phone") != null && !rs.getString("phone").isBlank() ? rs.getString("phone") : "—");
                 map.put("jobTitle", rs.getString("job_title") != null ? rs.getString("job_title") : "");
-                map.put("role", rs.getString("role_name") != null ? rs.getString("role_name") : "TENANT_ADMIN");
-                map.put("status", rs.getString("status") != null ? rs.getString("status") : "ACTIVE");
+                map.put("role", roleName);
+                map.put("roleName", roleName);
+                map.put("roleId", roleIdObj != null ? ((Number) roleIdObj).longValue() : null);
+                map.put("roleDisplayName", rs.getString("role_display_name") != null ? rs.getString("role_display_name") : roleName.toUpperCase());
+                map.put("roleCode", rs.getString("role_code"));
+                map.put("status", effectiveStatus);
+                map.put("emailVerified", emailVerified);
                 map.put("createdAt", rs.getString("created_at"));
                 java.sql.Timestamp lastLoginTs = rs.getTimestamp("last_login_at");
                 map.put("lastLoginAt", lastLoginTs != null ? lastLoginTs.toInstant().toString() : null);
@@ -339,10 +362,10 @@ public class OrganizationDirectoryService {
                 map.put("mfaEnabled", rs.getBoolean("mfa_enabled"));
                 map.put("timezone", rs.getString("timezone"));
                 map.put("locale", rs.getString("locale"));
-                map.put("lastLogin", lastLoginTs != null ? lastLoginTs.toInstant().toString() : "Active recently");
+                map.put("lastLogin", lastLoginTs != null ? lastLoginTs.toInstant().toString() : "Never");
                 map.put("source", "DATABASE");
                 return map;
-            }, orgId);
+            }, orgId, orgId, orgId);
             userList.addAll(dbUsers);
         } catch (Exception e) {
             log.warn("Could not query DB users for org {}: {}", slug, e.getMessage());

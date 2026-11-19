@@ -1,252 +1,36 @@
-import { useState } from "react";
-import {
-  Edit,
-  Key,
-  ChevronLeft,
-  ChevronRight,
-  UserPlus,
-  ShieldAlert,
-  History,
-  Copy,
-  Sparkles,
-  FileCode,
-} from "lucide-react";
+import * as React from "react";
+import { ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Button,
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Badge,
   ActionTooltip,
-  UniversalContextMenu,
-  type ContextMenuGroupConfig,
+  UnifiedUserManagementTable,
+  UnifiedUserInvitePanel,
+  UnifiedUserEditPolicyPanel,
+  type UnifiedUserRecord,
+  type UnifiedRoleOption,
+  type UnifiedInviteSubmitPayload,
+  type UnifiedEditSubmitPayload,
+  type UnifiedResetPasswordPayload,
+  type UnifiedTranslateFn,
 } from "@k2net/ui";
 import type { PaginatedResponse, User } from "@/types/user";
 import { Link } from "@/lib/navigation-compat";
-import { cn } from "@/lib/utils";
 import { useTranslation, type TranslationKey } from "@k2net/i18n";
-import { UpdateUserDialog } from "./update-user-dialog";
 import { UserSearch } from "./user-search";
-import { ResetPasswordDialog } from "./reset-password-dialog";
 import { UserWorkspaceBadges } from "./user-workspace-badges";
-import { TeamInviteWizard } from "@/components/system/team/team-invite-wizard";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useSession } from "@/lib/auth-compat";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { httpClient } from "@/lib/httpClient";
+import { updateUser, resendUserVerification } from "@/lib/api/users";
 
 interface UserTableProps {
   data: PaginatedResponse<User> | null;
   currentPage: number;
   isGlobalView?: boolean;
   token?: string;
-}
-
-function getUserContextMenuGroups(
-  user: User,
-  canManageUsers: boolean,
-  onEdit: (user: User) => void,
-  onResetPassword: (user: User) => void,
-  t: (key: TranslationKey) => string
-): ContextMenuGroupConfig[] {
-  return [
-    {
-      items: [
-        {
-          label: t("users.ctx_ask_ai"),
-          icon: Sparkles,
-          shortcut: "Ctrl+J",
-          onClick: () => {
-            window.dispatchEvent(
-              new CustomEvent("k2net-ai-prompt-input", {
-                detail: {
-                  prompt: `Tampilkan ringkasan akses, role, dan organisasi pengguna: "${user.fullName || user.username}" (${user.email}) - Role: ${user.roleDisplayName}.`,
-                },
-              })
-            );
-            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
-          },
-        },
-        {
-          label: t("users.ctx_edit_profile"),
-          icon: Edit,
-          shortcut: "Alt+E",
-          onClick: () => onEdit(user),
-          disabled: !canManageUsers,
-        },
-        {
-          label: t("users.ctx_reset_password"),
-          icon: Key,
-          shortcut: "Alt+R",
-          onClick: () => onResetPassword(user),
-          disabled: !canManageUsers,
-        },
-      ],
-    },
-    {
-      items: [
-        {
-          label: t("users.ctx_copy_email"),
-          icon: Copy,
-          shortcut: "Ctrl+C",
-          onClick: () => {
-            navigator.clipboard.writeText(user.email || "");
-            toast.success(`Email ${user.email} copied to clipboard!`);
-          },
-        },
-        {
-          label: t("users.ctx_copy_user_id"),
-          icon: FileCode,
-          shortcut: "Alt+C",
-          onClick: () => {
-            navigator.clipboard.writeText(user.id || "");
-            toast.success("User ID copied to clipboard!");
-          },
-        },
-        {
-          label: t("users.ctx_view_audit"),
-          icon: History,
-          shortcut: "Alt+L",
-          onClick: () => {
-            const userTarget = user.email || user.username || "";
-            window.location.assign(`/security/audit?user=${encodeURIComponent(userTarget)}`);
-          },
-        },
-      ],
-    },
-    {
-      items: [
-        {
-          label: t("users.ctx_revoke_session"),
-          icon: ShieldAlert,
-          variant: "destructive",
-          shortcut: "Alt+X",
-          disabled: !canManageUsers,
-          onClick: () => {
-            toast.success(`Keycloak active session revoked for ${user.email}`);
-          },
-        },
-      ],
-    },
-  ];
-}
-
-function UserTableRowItem({
-  user,
-  isGlobalView,
-  canManageUsers,
-  onEdit,
-  onResetPassword,
-}: {
-  user: User;
-  isGlobalView: boolean;
-  canManageUsers: boolean;
-  onEdit: (user: User) => void;
-  onResetPassword: (user: User) => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <UniversalContextMenu groups={getUserContextMenuGroups(user, canManageUsers, onEdit, onResetPassword, t)}>
-      <TableRow className="border-border hover:bg-accent/40 transition-colors group h-12 cursor-pointer">
-        <TableCell className="px-4 py-2">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-7 w-7 rounded-full border border-border">
-              <AvatarImage src={user.avatarUrl} alt={user.fullName || "User"} />
-              <AvatarFallback className="rounded-full text-[10px]">
-                {(user.fullName || user.username || user.email || "U").substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-[13px] font-medium text-foreground leading-tight">
-                {user.fullName || user.username || user.email || "Unknown User"}
-              </span>
-              <span className="text-[11px] text-muted-foreground leading-tight">{user.email}</span>
-            </div>
-          </div>
-        </TableCell>
-        <TableCell className="px-4 py-2">
-          <Badge
-            variant="outline"
-            className={cn(
-              "rounded-md font-medium text-[10px]",
-              user.roleName === "super_admin" && "bg-primary/10 text-primary border-primary/20",
-              user.roleName === "admin" && "bg-sky-500/10 text-sky-500 border-sky-500/20",
-              user.roleName === "technician" && "bg-purple-500/10 text-purple-400 border-purple-500/20",
-              user.roleName === "viewer" && "bg-muted/50 text-muted-foreground border-border/50"
-            )}
-          >
-            {user.roleDisplayName}
-          </Badge>
-        </TableCell>
-        {isGlobalView && (
-          <TableCell className="px-4 py-2">
-            <UserWorkspaceBadges user={user} />
-          </TableCell>
-        )}
-        <TableCell className="px-4 py-2">
-          <div className="flex items-center gap-2">
-            <span className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-primary" : "bg-destructive"}`} />
-            <span className="text-[12px] text-muted-foreground capitalize">
-              {user.status === "ACTIVE" ? t("users.status_active") : t("users.status_suspended")}
-            </span>
-          </div>
-        </TableCell>
-        <TableCell className="px-4 py-2">
-          <div className="text-[12px] font-mono text-muted-foreground">
-            {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-          </div>
-        </TableCell>
-        <TableCell className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
-          <div className="flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {canManageUsers && (
-              <ActionTooltip label={t("users.ctx_edit_profile")} shortcut="Alt+E">
-                <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" onClick={() => onEdit(user)}>
-                  <Edit className="size-3.5" />
-                </Button>
-              </ActionTooltip>
-            )}
-            {canManageUsers && (
-              <ActionTooltip label={t("users.ctx_reset_password")} shortcut="Alt+R">
-                <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" onClick={() => onResetPassword(user)}>
-                  <Key className="size-3.5" />
-                </Button>
-              </ActionTooltip>
-            )}
-            {canManageUsers && (
-              <ActionTooltip label={t("users.ctx_revoke_session")}>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => toast.success(`Keycloak active session revoked for ${user.email}`)}
-                >
-                  <ShieldAlert className="size-3.5" />
-                </Button>
-              </ActionTooltip>
-            )}
-            <ActionTooltip label={t("users.ctx_view_audit")} shortcut="Alt+L">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary"
-                onClick={() => {
-                  const userTarget = user.email || user.username || "";
-                  window.location.assign(`/security/audit?user=${encodeURIComponent(userTarget)}`);
-                }}
-              >
-                <History className="size-3.5" />
-              </Button>
-            </ActionTooltip>
-          </div>
-        </TableCell>
-      </TableRow>
-    </UniversalContextMenu>
-  );
 }
 
 function UserTablePagination({
@@ -273,15 +57,30 @@ function UserTablePagination({
           .replace("{{total}}", totalElements.toString())}
       </span>
       <div className="flex items-center gap-1.5">
-        <Button variant="outline" size="icon-sm" className="border-border/60 bg-transparent" disabled={currentPage === 0} asChild>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className="border-border/60 bg-transparent"
+          disabled={currentPage === 0}
+          asChild
+        >
           <Link href={`?page=${Math.max(0, currentPage - 1)}`}>
             <ChevronLeft className="size-3.5" />
           </Link>
         </Button>
-        <Button size="sm" className="bg-primary/20 text-primary border border-primary hover:bg-primary/30 font-medium text-xs">
+        <Button
+          size="sm"
+          className="bg-primary/20 text-primary border border-primary hover:bg-primary/30 font-medium text-xs"
+        >
           {currentPage + 1}
         </Button>
-        <Button variant="outline" size="icon-sm" className="border-border/60 bg-transparent" disabled={currentPage >= totalPages - 1} asChild>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className="border-border/60 bg-transparent"
+          disabled={currentPage >= totalPages - 1}
+          asChild
+        >
           <Link href={`?page=${currentPage + 1}`}>
             <ChevronRight className="size-3.5" />
           </Link>
@@ -291,112 +90,333 @@ function UserTablePagination({
   );
 }
 
-export function UserTable({ data, currentPage, isGlobalView = false, token }: UserTableProps) {
-  const { t } = useTranslation();
+export function UserTable({
+  data,
+  currentPage,
+  token,
+}: UserTableProps) {
+  const { t, formatDate } = useTranslation();
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const activeToken = token || session?.accessToken || "";
+
+  const translate: UnifiedTranslateFn = React.useCallback(
+    (key, params) => t(key as TranslationKey, params as Record<string, string>),
+    [t]
+  );
+
   const users = data?.content || [];
   const totalPages = data?.totalPages || 0;
   const totalElements = data?.totalElements || 0;
 
   const { canAccess, isSuperAdmin } = usePermissions();
-  const canManageUsers = canAccess("users.manage") || canAccess("system.security.manage") || isSuperAdmin;
-  const canInviteUsers = canAccess("users.invite") || canManageUsers;
+  const canManageUsers =
+    canAccess("users.manage") ||
+    canAccess("system.users.manage") ||
+    canAccess("system.security.manage") ||
+    isSuperAdmin;
+  const canInviteUsers =
+    canAccess("users.invite") || canAccess("system.users.create") || canManageUsers;
 
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [selectedUserForReset, setSelectedUserForReset] = useState<User | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
-  const [isInviteWizardOpen, setIsInviteWizardOpen] = useState(false);
+  const [viewMode, setViewMode] = React.useState<"list" | "invite" | "edit">("list");
+  const [selectedUser, setSelectedUser] = React.useState<UnifiedUserRecord | null>(null);
+  const [focusPasswordReset, setFocusPasswordReset] = React.useState(false);
+  const [resendingUserId, setResendingUserId] = React.useState<string | null>(null);
+  const [isSubmittingInvite, setIsSubmittingInvite] = React.useState(false);
+  const [isSavingEdit, setIsSavingEdit] = React.useState(false);
+  const [isResettingPassword, setIsResettingPassword] = React.useState(false);
 
-  const handleEdit = (user: User) => {
-    setSelectedUser(user);
-    setIsEditDialogOpen(true);
+  const { data: systemRoles = [] } = useQuery<UnifiedRoleOption[]>({
+    queryKey: ["system-roles-catalog", activeToken],
+    queryFn: async () => {
+      if (!activeToken) return [];
+      const baseUrl = getBackendBaseUrl();
+      try {
+        const res = await httpClient(`${baseUrl}/roles?scope=SYSTEM`, {
+          token: activeToken,
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch {
+        // Fallback if roles endpoint fails
+      }
+      return [
+        { id: 1, name: "super_admin", displayName: "Super Admin", code: "SYS-01" },
+        { id: 2, name: "system_support", displayName: "System Support", code: "SYS-02" },
+        { id: 3, name: "account_manager", displayName: "Account Manager", code: "SYS-03" },
+        { id: 4, name: "system_auditor", displayName: "System Auditor", code: "SYS-04" },
+      ];
+    },
+    enabled: Boolean(activeToken),
+    staleTime: 60 * 1000,
+  });
+
+  const handleResendVerification = async (user: UnifiedUserRecord) => {
+    if (!activeToken || !user.id) return;
+    setResendingUserId(user.id);
+    try {
+      await resendUserVerification(user.id, activeToken);
+      toast.success(
+        t("users.resend_verification_success", { email: user.email })
+      );
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    } finally {
+      setResendingUserId(null);
+    }
   };
 
-  const handleResetPassword = (user: User) => {
-    setSelectedUserForReset(user);
-    setIsResetPasswordDialogOpen(true);
+  const handleToggleStatus = async (user: UnifiedUserRecord) => {
+    if (!activeToken) return;
+    const nextStatus =
+      (user.status || "").toUpperCase() === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
+    try {
+      await updateUser(
+        user.id,
+        { status: nextStatus, reason: "Status toggled from Global Users table" },
+        activeToken
+      );
+      toast.success(t("users.member_updated_success"));
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
+      await queryClient.invalidateQueries({ queryKey: ["userStats"] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    }
   };
+
+  const handleInviteSubmit = async (payload: UnifiedInviteSubmitPayload) => {
+    if (!activeToken) return;
+    setIsSubmittingInvite(true);
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const targetRole =
+        systemRoles.find((r) => r.id === payload.roleId) ||
+        systemRoles.find(
+          (r) => r.name.toLowerCase() === payload.roleName.toLowerCase()
+        ) ||
+        systemRoles[0];
+
+      const res = await httpClient(`${baseUrl}/users/invite`, {
+        method: "POST",
+        token: activeToken,
+        body: JSON.stringify({
+          fullName: payload.fullName,
+          email: payload.email,
+          phone: payload.phone,
+          jobTitle: payload.jobTitle,
+          globalRoleId: targetRole ? targetRole.id : payload.roleId || 1,
+          creationMode: payload.creationMode,
+          customPassword:
+            payload.creationMode === "DIRECT" ? payload.customPassword : "",
+          projectRoles: [],
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || t("common.error"));
+      }
+
+      toast.success(
+        payload.creationMode === "DIRECT"
+          ? t("users.invite_direct_success", { name: payload.fullName })
+          : t("users.invite_success", { email: payload.email })
+      );
+      setViewMode("list");
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
+      await queryClient.invalidateQueries({ queryKey: ["userStats"] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    } finally {
+      setIsSubmittingInvite(false);
+    }
+  };
+
+  const handleSaveEdit = async (payload: UnifiedEditSubmitPayload) => {
+    if (!activeToken) return;
+    setIsSavingEdit(true);
+    try {
+      await updateUser(
+        payload.id,
+        {
+          fullName: payload.fullName,
+          role: payload.roleName,
+          status: payload.status,
+          jobTitle: payload.jobTitle,
+          phone: payload.phone,
+          reason: payload.reason,
+        },
+        activeToken
+      );
+      toast.success(t("users.member_updated_success"));
+      setViewMode("list");
+      setSelectedUser(null);
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
+      await queryClient.invalidateQueries({ queryKey: ["userStats"] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleResetPassword = async (payload: UnifiedResetPasswordPayload) => {
+    if (!activeToken) return;
+    setIsResettingPassword(true);
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(
+        `${baseUrl}/users/${payload.userId}/reset-password`,
+        {
+          method: "POST",
+          token: activeToken,
+          body: JSON.stringify({
+            newPassword: payload.newPassword,
+            temporary: payload.temporary,
+          }),
+        }
+      );
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || t("common.error"));
+      }
+      toast.success(
+        t("users.cf_reset_password_success", { email: payload.email })
+      );
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  if (viewMode === "invite") {
+    return (
+      <UnifiedUserInvitePanel
+        scope="platform"
+        scopeAccountName="K2NET Platform Control Plane (ftth-realm)"
+        roles={systemRoles}
+        isSubmitting={isSubmittingInvite}
+        t={translate}
+        onCancel={() => setViewMode("list")}
+        onSubmit={handleInviteSubmit}
+      />
+    );
+  }
+
+  if (viewMode === "edit" && selectedUser) {
+    return (
+      <UnifiedUserEditPolicyPanel
+        scope="platform"
+        scopeAccountName="K2NET Platform Control Plane (ftth-realm)"
+        user={selectedUser}
+        roles={systemRoles}
+        isSaving={isSavingEdit}
+        isResendingVerification={resendingUserId === selectedUser.id}
+        isResettingPassword={isResettingPassword}
+        initialShowPasswordReset={focusPasswordReset}
+        t={translate}
+        onCancel={() => {
+          setViewMode("list");
+          setSelectedUser(null);
+          setFocusPasswordReset(false);
+        }}
+        onSave={handleSaveEdit}
+        onResendVerification={handleResendVerification}
+        onResetPassword={handleResetPassword}
+      />
+    );
+  }
 
   return (
-    <>
-      <div className="flex flex-col h-full space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="w-full max-w-xs">
-            <UserSearch placeholder={t("users.filter_placeholder")} />
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" size="sm" className="hidden sm:flex border-border/80">
-              {t("users.docs_button")}
-            </Button>
-            {canInviteUsers && (
-              <ActionTooltip label={t("users.invite_tooltip")} shortcut="C">
-                <Button onClick={() => setIsInviteWizardOpen(true)} variant="default" size="sm" className="w-full sm:w-auto gap-1.5">
-                  <UserPlus className="size-3.5" />
-                  {t("users.add_user_button")}
-                </Button>
-              </ActionTooltip>
-            )}
-          </div>
+    <div className="flex flex-col h-full space-y-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="w-full max-w-xs">
+          <UserSearch placeholder={t("users.filter_placeholder")} />
         </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            className="hidden sm:flex h-7 px-2.5 text-xs font-medium border-border/80"
+          >
+            {t("users.docs_button")}
+          </Button>
+          {canInviteUsers && (
+            <ActionTooltip label={t("users.invite_tooltip")} shortcut="C">
+              <Button
+                onClick={() => setViewMode("invite")}
+                variant="default"
+                size="sm"
+                className="w-full sm:w-auto h-7 px-2.5 text-xs font-medium gap-1.5"
+              >
+                <UserPlus className="size-3.5" />
+                {t("users.add_user_button")}
+              </Button>
+            </ActionTooltip>
+          )}
+        </div>
+      </div>
 
-        <div className="flex-1 flex flex-col bg-card/60 backdrop-blur-xl rounded-xl border border-border/80 overflow-hidden shadow-sm">
-          <div className="flex-1 overflow-auto">
-            <Table>
-              <TableHeader className="bg-muted/60 backdrop-blur-md sticky top-0 border-b border-border z-10">
-                <TableRow className="hover:bg-transparent border-border">
-                  <TableHead className="w-[300px] h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_user")}</TableHead>
-                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_role")}</TableHead>
-                  {isGlobalView && (
-                    <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_workspaces")}</TableHead>
-                  )}
-                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_status")}</TableHead>
-                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_created_at")}</TableHead>
-                  <TableHead className="h-9 px-4 text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("users.col_actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={isGlobalView ? 6 : 5} className="h-24 text-center text-muted-foreground">
-                      {t("users.no_users_found")}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((user) => (
-                    <UserTableRowItem
-                      key={user.id}
-                      user={user}
-                      isGlobalView={isGlobalView}
-                      canManageUsers={canManageUsers}
-                      onEdit={handleEdit}
-                      onResetPassword={handleResetPassword}
-                    />
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
+      <UnifiedUserManagementTable
+        scope="platform"
+        users={users}
+        canManageUsers={canManageUsers}
+        canInviteUsers={canInviteUsers}
+        resendingUserId={resendingUserId}
+        t={translate}
+        formatDate={formatDate}
+        renderWorkspaceCell={(u) => <UserWorkspaceBadges user={u as User} />}
+        onEditUser={(u) => {
+          setSelectedUser(u);
+          setFocusPasswordReset(false);
+          setViewMode("edit");
+        }}
+        onResetPassword={(u) => {
+          setSelectedUser(u);
+          setFocusPasswordReset(true);
+          setViewMode("edit");
+        }}
+        onResendVerification={handleResendVerification}
+        onToggleStatus={handleToggleStatus}
+        onRevokeSession={(u) => {
+          toast.success(`Keycloak active session revoked for ${u.email}`);
+        }}
+        onViewAudit={(u) => {
+          const userTarget = u.email || u.username || "";
+          window.location.assign(
+            `/security/audit?user=${encodeURIComponent(userTarget)}`
+          );
+        }}
+        onCopyEmail={(email) => {
+          navigator.clipboard.writeText(email);
+          toast.success(t("common.copied"));
+        }}
+        onCopyUserId={(id) => {
+          navigator.clipboard.writeText(id);
+          toast.success(t("common.copied"));
+        }}
+        onAskAi={(u) => {
+          window.dispatchEvent(
+            new CustomEvent("k2net-ai-prompt-input", {
+              detail: {
+                prompt: `Tampilkan ringkasan akses, role, dan organisasi pengguna: "${u.fullName || u.username}" (${u.email}) - Role: ${u.roleDisplayName}.`,
+              },
+            })
+          );
+          window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+        }}
+        footerPagination={
           <UserTablePagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalElements={totalElements}
             pageSize={data?.size || 10}
           />
-        </div>
-      </div>
-
-      <UpdateUserDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} user={selectedUser} />
-      {selectedUserForReset && (
-        <ResetPasswordDialog
-          open={isResetPasswordDialogOpen}
-          onOpenChange={setIsResetPasswordDialogOpen}
-          user={selectedUserForReset}
-          token={token}
-        />
-      )}
-      <TeamInviteWizard open={isInviteWizardOpen} onOpenChange={setIsInviteWizardOpen} />
-    </>
+        }
+      />
+    </div>
   );
 }
-

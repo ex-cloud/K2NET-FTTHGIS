@@ -24,10 +24,12 @@ export interface TenantUser {
   roleId?: number;
   roleCode?: string;
   mfaEnabled: boolean;
+  emailVerified?: boolean;
   status: TenantUserStatus;
   lastLogin: string;
   lastLoginAt?: string | null;
   lastLoginIp?: string | null;
+  createdAt?: string;
   timezone?: string;
   source?: string;
 }
@@ -35,6 +37,7 @@ export interface TenantUser {
 export interface RawServerTenantUser {
   id?: string;
   name?: string;
+  fullName?: string;
   username?: string;
   email?: string;
   phone?: string;
@@ -45,9 +48,11 @@ export interface RawServerTenantUser {
   roleDisplayName?: string;
   roleCode?: string;
   status?: string;
+  emailVerified?: boolean;
   lastLogin?: string;
   lastLoginAt?: string | null;
   lastLoginIp?: string | null;
+  createdAt?: string;
   mfaEnabled?: boolean;
   timezone?: string;
   source?: string;

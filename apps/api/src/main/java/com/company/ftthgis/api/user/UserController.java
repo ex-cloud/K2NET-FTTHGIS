@@ -85,6 +85,15 @@ public class UserController {
         return org.springframework.http.ResponseEntity.ok(userService.inviteUser("system", request));
     }
 
+    @PostMapping("/{id}/resend-verification")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.users.manage') or hasAuthority('system.users.create') or hasAuthority('users.manage') or hasAuthority('users.invite') or hasAuthority('members.invite') or hasAuthority('team.invite')")
+    public org.springframework.http.ResponseEntity<UserDto> resendVerification(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String actorId = jwt != null ? jwt.getSubject() : "system";
+        return org.springframework.http.ResponseEntity.ok(userService.resendVerification(id, actorId));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('super_admin') or hasAuthority('users.manage') or hasAuthority('members.manage') or hasAuthority('team.manage') or hasAuthority('system.users.manage')")
     public UserDto update(

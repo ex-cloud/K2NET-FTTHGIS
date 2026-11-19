@@ -40,6 +40,12 @@ public class OrganizationMemberService {
     private final PasswordValidationService passwordValidationService;
     private final KeycloakAdminService keycloakAdminService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.company.ftthgis.domain.tenant.repository.ProjectMemberRepository projectMemberRepository;
+
     /**
      * Lists all active workspaces/tenants a user is a member of.
      */
@@ -166,16 +172,34 @@ public class OrganizationMemberService {
             .orElseThrow(() -> new NoSuchElementException("Organization not found with slug: " + orgSlug));
 
         String email = request.email().trim().toLowerCase(Locale.ROOT);
-        String rawRole = request.getEffectiveRoleName();
-        String roleName = normalizeRoleName(rawRole);
+        Role role = null;
+        String roleName;
+        if (request.globalRoleId() != null) {
+            role = roleRepository.findById(request.globalRoleId()).orElse(null);
+        }
+        if (role != null) {
+            roleName = role.getName();
+        } else {
+            String rawRole = request.getEffectiveRoleName();
+            roleName = normalizeRoleName(rawRole);
+            role = roleRepository.findByNameAndOrganizationId(roleName, org.getId())
+                .or(() -> roleRepository.findByName(roleName))
+                .orElseGet(() -> roleRepository.findByName("viewer").orElse(null));
+        }
 
-        Role role = roleRepository.findByNameAndOrganizationId(roleName, org.getId())
-            .or(() -> roleRepository.findByName(roleName))
-            .orElseGet(() -> roleRepository.findByName("viewer").orElse(null));
+        boolean isDirectCreation = "DIRECT".equalsIgnoreCase(request.creationMode())
+                && request.customPassword() != null
+                && !request.customPassword().isBlank();
+        if (isDirectCreation && passwordValidationService != null) {
+            passwordValidationService.validatePassword(request.customPassword());
+        }
+        String targetStatus = isDirectCreation ? "ACTIVE" : "INVITED";
 
         String displayName = (request.fullName() != null && !request.fullName().isBlank())
             ? request.fullName().trim()
             : email.split("@")[0];
+        String cleanPhone = (request.phone() != null && !request.phone().isBlank()) ? request.phone().trim() : null;
+        String cleanJobTitle = (request.jobTitle() != null && !request.jobTitle().isBlank()) ? request.jobTitle().trim() : null;
 
         // Check if user already exists globally across the platform (bypassing tenant filter)
         User existingUser = userRepository.findByEmailGlobal(email).orElse(null);
@@ -188,7 +212,7 @@ public class OrganizationMemberService {
                     throw new IllegalArgumentException("User with email " + email + " is already an active member of this workspace");
                 }
                 if ("SUSPENDED".equalsIgnoreCase(existingUser.getStatus()) || "INVITED".equalsIgnoreCase(existingUser.getStatus())) {
-                    existingUser.setStatus("INVITED");
+                    existingUser.setStatus(targetStatus);
                 }
                 if (existingUser.getOrganization() == null) {
                     existingUser.setOrganization(org);
@@ -199,16 +223,32 @@ public class OrganizationMemberService {
                 if (request.fullName() != null && !request.fullName().isBlank()) {
                     existingUser.setFullName(displayName);
                 }
+                if (cleanPhone != null) {
+                    existingUser.setPhone(cleanPhone);
+                }
+                if (cleanJobTitle != null) {
+                    existingUser.setJobTitle(cleanJobTitle);
+                }
                 userRepository.save(existingUser);
 
-                // Refresh invitation token if previously invited or suspended
-                m.setStatus("INVITED");
-                m.setInvitationToken(UUID.randomUUID().toString().replace("-", ""));
-                m.setInvitationExpiresAt(LocalDateTime.now().plusHours(48));
+                if (isDirectCreation) {
+                    syncDirectUserToKeycloak(email, displayName, request.customPassword(), roleName);
+                    m.setStatus("ACTIVE");
+                    m.setJoinedAt(LocalDateTime.now());
+                    m.setInvitationToken(null);
+                    m.setInvitationExpiresAt(null);
+                } else {
+                    m.setStatus("INVITED");
+                    m.setInvitationToken(UUID.randomUUID().toString().replace("-", ""));
+                    m.setInvitationExpiresAt(LocalDateTime.now().plusHours(48));
+                }
                 m.setRole(role);
                 m.setRoleName(roleName);
                 OrganizationMember saved = memberRepository.save(m);
-                dispatchInvitationEmail(org, email, saved.getInvitationToken());
+                assignOptionalProjects(org, existingUser, role, request);
+                if (!isDirectCreation) {
+                    dispatchInvitationEmail(org, email, saved.getInvitationToken());
+                }
                 return mapToDto(saved);
             }
         }
@@ -216,12 +256,26 @@ public class OrganizationMemberService {
         // Create new user if non-existent, or associate with existing user
         User targetUser = existingUser;
         if (targetUser == null) {
+            UUID newUserId = UUID.randomUUID();
+            if (isDirectCreation && keycloakAdminService != null) {
+                try {
+                    String kcId = keycloakAdminService.inviteUserInRealm("k2net-tenants", email, email, displayName, "", request.customPassword());
+                    if (kcId != null && !kcId.isBlank()) {
+                        newUserId = UUID.fromString(kcId);
+                    }
+                    keycloakAdminService.updateUserRoleInRealm("k2net-tenants", email, roleName);
+                } catch (Exception e) {
+                    log.warn("Keycloak direct user creation warning for {}: {}", email, e.getMessage());
+                }
+            }
             targetUser = User.builder()
-                .id(UUID.randomUUID())
+                .id(newUserId)
                 .email(email)
                 .username(email)
                 .fullName(displayName)
-                .status("INVITED")
+                .phone(cleanPhone)
+                .jobTitle(cleanJobTitle)
+                .status(targetStatus)
                 .organization(org)
                 .role(role != null ? role : roleRepository.findByName("viewer").orElse(null))
                 .build();
@@ -229,7 +283,7 @@ public class OrganizationMemberService {
         } else {
             boolean userUpdated = false;
             if ("SUSPENDED".equalsIgnoreCase(targetUser.getStatus()) || "INVITED".equalsIgnoreCase(targetUser.getStatus())) {
-                targetUser.setStatus("INVITED");
+                targetUser.setStatus(targetStatus);
                 userUpdated = true;
             }
             if (targetUser.getOrganization() == null) {
@@ -247,29 +301,96 @@ public class OrganizationMemberService {
                 targetUser.setFullName(displayName);
                 userUpdated = true;
             }
+            if (cleanPhone != null) {
+                targetUser.setPhone(cleanPhone);
+                userUpdated = true;
+            }
+            if (cleanJobTitle != null) {
+                targetUser.setJobTitle(cleanJobTitle);
+                userUpdated = true;
+            }
             if (userUpdated) {
                 targetUser = userRepository.save(targetUser);
             }
+            if (isDirectCreation) {
+                syncDirectUserToKeycloak(email, displayName, request.customPassword(), roleName);
+            }
         }
 
-        String invitationToken = UUID.randomUUID().toString().replace("-", "");
+        String invitationToken = isDirectCreation ? null : UUID.randomUUID().toString().replace("-", "");
         OrganizationMember newMember = OrganizationMember.builder()
             .user(targetUser)
             .organization(org)
             .role(role)
             .roleName(roleName)
-            .status("INVITED")
+            .status(targetStatus)
             .isDefault(false)
+            .joinedAt(isDirectCreation ? LocalDateTime.now() : null)
             .invitationToken(invitationToken)
-            .invitationExpiresAt(LocalDateTime.now().plusHours(48))
+            .invitationExpiresAt(isDirectCreation ? null : LocalDateTime.now().plusHours(48))
             .build();
 
         OrganizationMember saved = memberRepository.save(newMember);
-        log.info("✉️ Member invitation created for {} in organization {} by actor {}", email, org.getSlug(), inviterId);
+        assignOptionalProjects(org, targetUser, role, request);
+        log.info("✉️ Member invitation/creation ({}) completed for {} in organization {} by actor {}", targetStatus, email, org.getSlug(), inviterId);
 
-        dispatchInvitationEmail(org, email, invitationToken);
+        if (!isDirectCreation && invitationToken != null) {
+            dispatchInvitationEmail(org, email, invitationToken);
+        }
 
         return mapToDto(saved);
+    }
+
+    private void syncDirectUserToKeycloak(String email, String fullName, String password, String roleName) {
+        if (keycloakAdminService == null || password == null || password.isBlank()) {
+            return;
+        }
+        try {
+            String[] parts = (fullName != null ? fullName : email).split(" ", 2);
+            String first = parts[0];
+            String last = parts.length > 1 ? parts[1] : "";
+            keycloakAdminService.createUserInRealm("k2net-tenants", email, email, password, first, last, roleName);
+        } catch (Exception e) {
+            log.warn("Keycloak direct user sync warning for {}: {}", email, e.getMessage());
+        }
+    }
+
+    private void assignOptionalProjects(Organization org, User user, Role defaultRole, InviteMemberRequest request) {
+        if (projectRepository == null || projectMemberRepository == null || org == null || user == null) {
+            return;
+        }
+        try {
+            List<InviteMemberRequest.ProjectRoleAssignment> assignments = new ArrayList<>();
+            if (request.projectRoles() != null && !request.projectRoles().isEmpty()) {
+                assignments.addAll(request.projectRoles());
+            } else if (request.projectId() != null) {
+                assignments.add(new InviteMemberRequest.ProjectRoleAssignment(
+                        request.projectId(),
+                        defaultRole != null ? defaultRole.getId() : null
+                ));
+            }
+            for (InviteMemberRequest.ProjectRoleAssignment a : assignments) {
+                if (a.projectId() == null) continue;
+                var projOpt = projectRepository.findById(a.projectId());
+                if (projOpt.isEmpty()) continue;
+                var project = projOpt.get();
+                if (project.getOrganization() == null || !project.getOrganization().getId().equals(org.getId())) {
+                    continue;
+                }
+                Role projRole = a.roleId() != null
+                        ? roleRepository.findById(a.roleId()).orElse(defaultRole)
+                        : defaultRole;
+                if (projRole == null) continue;
+                com.company.ftthgis.domain.tenant.entity.ProjectMember pm = new com.company.ftthgis.domain.tenant.entity.ProjectMember();
+                pm.setUser(user);
+                pm.setProject(project);
+                pm.setRole(projRole);
+                pm.setOrganization(org);
+                projectMemberRepository.save(pm);
+            }
+        } catch (Exception e) {
+            log.warn("Non-fatal project assignment warning for {}: {}", user.getEmail(), e.getMessage());
+        }
     }
 
     /**
@@ -730,6 +851,12 @@ public class OrganizationMemberService {
     private OrganizationMemberDto mapToDto(OrganizationMember m) {
         User u = m.getUser();
         Organization o = m.getOrganization();
+        Role r = m.getRole() != null ? m.getRole() : (u != null ? u.getRole() : null);
+        String effectiveStatus = m.getStatus() != null ? m.getStatus() : (u != null ? u.getStatus() : "ACTIVE");
+        String userStatus = u != null && u.getStatus() != null ? u.getStatus() : effectiveStatus;
+        boolean emailVerified = "ACTIVE".equalsIgnoreCase(effectiveStatus)
+                && !"INVITED".equalsIgnoreCase(userStatus)
+                && !"PENDING".equalsIgnoreCase(userStatus);
 
         return OrganizationMemberDto.builder()
             .id(m.getId())
@@ -737,12 +864,21 @@ public class OrganizationMemberService {
             .email(u != null ? u.getEmail() : null)
             .username(u != null ? u.getUsername() : null)
             .fullName(u != null ? u.getFullName() : null)
+            .phone(u != null ? u.getPhone() : null)
+            .jobTitle(u != null ? u.getJobTitle() : null)
             .avatarUrl(u != null ? u.getAvatarUrl() : null)
             .organizationId(o != null ? o.getId() : null)
             .organizationName(o != null ? o.getName() : null)
             .organizationSlug(o != null ? o.getSlug() : null)
-            .roleName(m.getRoleName() != null ? m.getRoleName() : (m.getRole() != null ? m.getRole().getName() : "viewer"))
-            .status(m.getStatus())
+            .roleId(r != null ? r.getId() : null)
+            .roleName(m.getRoleName() != null ? m.getRoleName() : (r != null ? r.getName() : "viewer"))
+            .roleDisplayName(r != null ? r.getDisplayName() : null)
+            .roleCode(r != null ? r.getCode() : null)
+            .status(effectiveStatus)
+            .emailVerified(emailVerified)
+            .mfaEnabled(u != null && u.isMfaEnabled())
+            .lastLoginAt(u != null ? u.getLastLoginAt() : null)
+            .lastLoginIp(u != null ? u.getLastLoginIp() : null)
             .isDefault(m.isDefault())
             .joinedAt(m.getJoinedAt())
             .createdAt(m.getCreatedAt())
@@ -758,9 +894,6 @@ public class OrganizationMemberService {
             case "org_admin", "admin" -> "admin";
             case "operator", "noc" -> "noc";
             case "technician", "field_tech" -> "technician";
-            case "surveyor" -> "surveyor";
-            case "finance" -> "finance";
-            case "helpdesk" -> "helpdesk";
             case "viewer" -> "viewer";
             default -> clean;
         };

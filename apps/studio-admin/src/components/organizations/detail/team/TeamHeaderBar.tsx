@@ -3,11 +3,11 @@ import { Users, UserPlus } from "lucide-react";
 import { useTranslation } from "@k2net/i18n";
 
 interface TeamHeaderBarProps {
-  slug: string;
+  slug?: string;
   onOpenInvite: () => void;
 }
 
-export function TeamHeaderBar({ slug, onOpenInvite }: TeamHeaderBarProps) {
+export function TeamHeaderBar({ onOpenInvite }: TeamHeaderBarProps) {
   const { t } = useTranslation();
 
   return (
@@ -15,9 +15,11 @@ export function TeamHeaderBar({ slug, onOpenInvite }: TeamHeaderBarProps) {
       <div className="space-y-0.5">
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-primary" />
-          <h3 className="text-xs font-bold text-foreground">Tenant Team &amp; Access Control</h3>
+          <h3 className="text-xs font-bold text-foreground">
+            {t("organizations.tab_team")}
+          </h3>
           <Badge variant="outline" className="border-border text-[9px] font-mono px-1.5 py-0">
-            Realm: {slug}-realm
+            {t("users.realm_badge_tenants")}
           </Badge>
         </div>
         <p className="text-[11px] text-muted-foreground">
@@ -25,14 +27,14 @@ export function TeamHeaderBar({ slug, onOpenInvite }: TeamHeaderBarProps) {
         </p>
       </div>
 
-      <ActionTooltip label="Invite Staff Member to Keycloak Realm" shortcut="I">
+      <ActionTooltip label={t("users.invite_tooltip")} shortcut="I">
         <Button
           size="sm"
           onClick={onOpenInvite}
           className="h-7 px-2.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs cursor-pointer"
         >
-          <UserPlus className="h-3.5 w-3.5" />
-          <span>Invite Team Member</span>
+          <UserPlus className="size-3.5" />
+          <span>{t("users.add_user_button")}</span>
         </Button>
       </ActionTooltip>
     </div>

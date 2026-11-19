@@ -38,9 +38,9 @@ export interface RoleCardItem {
 
 export interface RemovableMemberInfo {
   id: string;
-  email: string;
-  username: string;
-  fullName: string;
+  email?: string;
+  username?: string;
+  fullName?: string;
 }
 
 export function TeamRolesGrid({

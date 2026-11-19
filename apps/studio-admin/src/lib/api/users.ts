@@ -54,7 +54,14 @@ export async function getUsers(params?: GetUsersParams): Promise<PaginatedRespon
 
 export async function updateUser(
   id: string,
-  data: { role?: string; status?: string; reason?: string },
+  data: {
+    fullName?: string;
+    role?: string;
+    status?: string;
+    reason?: string;
+    jobTitle?: string;
+    phone?: string;
+  },
   token: string,
 ): Promise<User> {
   const res = await httpClient(`${BACKEND_URL}/users/${id}`, {
@@ -66,6 +73,23 @@ export async function updateUser(
   if (!res.ok) {
     const error = await res.text();
     throw new Error(error || "Failed to update user");
+  }
+
+  return res.json();
+}
+
+export async function resendUserVerification(
+  id: string,
+  token: string,
+): Promise<User> {
+  const res = await httpClient(`${BACKEND_URL}/users/${id}/resend-verification`, {
+    method: "POST",
+    token,
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error || "Failed to resend verification email");
   }
 
   return res.json();

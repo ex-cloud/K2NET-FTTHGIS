@@ -67,6 +67,9 @@ export * from "./components/topology-flow";
 // Shared Account Preferences Suite (Profile, Password, 2FA/Passkeys, Sessions, IDPs)
 export * from "./components/account";
 
+// Shared User & Member Management Suite (Cloudflare In-Canvas CRUD Pattern)
+export * from "./components/users";
+
 // Shared Mobile Floating Command Dock & Navigation Sheet Suite
 export * from "./components/mobile-dock";
 

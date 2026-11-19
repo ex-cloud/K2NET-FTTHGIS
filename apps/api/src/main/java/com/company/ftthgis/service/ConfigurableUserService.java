@@ -83,6 +83,9 @@ public class ConfigurableUserService {
 
     private final jakarta.persistence.EntityManager entityManager;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private EmailService emailService;
+
     public ConfigurableUserService(
             RoleRepository roleRepository,
             KeycloakAdminService keycloakAdminService,
@@ -198,11 +201,17 @@ public class ConfigurableUserService {
         
         UUID keycloakId = UUID.fromString(keycloakIdStr);
 
+        boolean isDirectCreation = "DIRECT".equalsIgnoreCase(request.getCreationMode());
+        String initialStatus = isDirectCreation ? "ACTIVE" : "INVITED";
+
         // 4. Create Local User Record
-        User user = new User();
-        user.setId(keycloakId);
-        user.setEmail(request.getEmail());
-        user.setUsername(request.getEmail());
+        User user = userRepository.findByEmailGlobal(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT)).orElse(null);
+        if (user == null) {
+            user = new User();
+            user.setId(keycloakId);
+        }
+        user.setEmail(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT));
+        user.setUsername(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT));
         user.setFullName(request.getFullName());
         if (request.getPhone() != null && !request.getPhone().isBlank()) {
             user.setPhone(request.getPhone().trim());
@@ -212,21 +221,34 @@ public class ConfigurableUserService {
         }
         user.setRole(globalRole);
         user.setOrganization(organization);
-        user.setStatus("ACTIVE"); 
+        user.setStatus(initialStatus);
         
         user = userRepository.save(user);
-        log.info("✅ Successfully invited and saved local user record for: {}", request.getEmail());
+        log.info("✅ Successfully invited and saved local user record for: {} (status={})", request.getEmail(), initialStatus);
 
         if (organization != null) {
-            OrganizationMember orgMember = new OrganizationMember();
+            OrganizationMember orgMember = organizationMemberRepository
+                    .findByUserIdAndOrganizationId(user.getId(), organization.getId())
+                    .orElseGet(OrganizationMember::new);
             orgMember.setUser(user);
             orgMember.setOrganization(organization);
             orgMember.setRole(globalRole);
             orgMember.setRoleName(globalRole.getName());
-            orgMember.setStatus("ACTIVE");
+            orgMember.setStatus(initialStatus);
             orgMember.setDefault(true);
-            orgMember.setJoinedAt(java.time.LocalDateTime.now());
+            if (isDirectCreation) {
+                orgMember.setJoinedAt(java.time.LocalDateTime.now());
+                orgMember.setInvitationToken(null);
+                orgMember.setInvitationExpiresAt(null);
+            } else {
+                String inviteToken = UUID.randomUUID().toString().replace("-", "");
+                orgMember.setInvitationToken(inviteToken);
+                orgMember.setInvitationExpiresAt(java.time.LocalDateTime.now().plusHours(48));
+                dispatchWorkspaceVerificationEmail(organization, user.getEmail(), inviteToken);
+            }
             organizationMemberRepository.save(orgMember);
+        } else if (!isDirectCreation) {
+            dispatchPlatformVerificationEmail(user.getEmail(), user.getFullName(), globalRole.getDisplayName());
         }
 
         // Sync role to Keycloak specifically in the user's organization realm
@@ -816,8 +838,10 @@ public class ConfigurableUserService {
                 .avatarUrl(user.getAvatarUrl())
                 .status(effectiveStatus)
                 .emailVerified(isEmailVerified)
+                .roleId(effectiveRole != null ? effectiveRole.getId() : null)
                 .roleName(effectiveRole != null ? effectiveRole.getName() : "USER")
                 .roleDisplayName(effectiveRole != null ? effectiveRole.getDisplayName() : "User")
+                .roleCode(effectiveRole != null ? effectiveRole.getCode() : null)
                 .organizationName(user.getOrganization() != null ? user.getOrganization().getName() : null)
                 .organizationId(user.getOrganization() != null ? user.getOrganization().getId() : null)
                 .organizationSlug(user.getOrganization() != null ? user.getOrganization().getSlug() : null)
@@ -827,6 +851,120 @@ public class ConfigurableUserService {
                 .permissions(new ArrayList<>(permissionsSet))
                 .memberships(memberships)
                 .build();
+    }
+
+    @Transactional
+    @AuditRequired(action = "USER_VERIFICATION_RESENT", resourceType = "USER", resourceIdExpression = "#userId.toString()", scope = "ORGANIZATION", category = "IAM")
+    public UserDto resendVerification(UUID userId, String actorId) {
+        final User user = userRepository.findById(userId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("User not found: " + userId));
+
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new IllegalStateException("User does not have a valid email address");
+        }
+
+        final Organization org = user.getOrganization();
+        User updatedUser = user;
+        if (org != null && organizationMemberRepository != null) {
+            OrganizationMember member = organizationMemberRepository
+                    .findByUserIdAndOrganizationId(user.getId(), org.getId())
+                    .orElseGet(() -> {
+                        Role r = user.getRole();
+                        return OrganizationMember.builder()
+                                .user(user)
+                                .organization(org)
+                                .role(r)
+                                .roleName(r != null ? r.getName() : "viewer")
+                                .status("INVITED")
+                                .isDefault(true)
+                                .build();
+                    });
+            String newToken = UUID.randomUUID().toString().replace("-", "");
+            if (!"ACTIVE".equalsIgnoreCase(member.getStatus())) {
+                member.setStatus("INVITED");
+            }
+            member.setInvitationToken(newToken);
+            member.setInvitationExpiresAt(java.time.LocalDateTime.now().plusHours(48));
+            organizationMemberRepository.save(member);
+
+            if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+                user.setStatus("INVITED");
+                updatedUser = userRepository.save(user);
+            }
+
+            dispatchWorkspaceVerificationEmail(org, user.getEmail(), newToken);
+            log.info("✉️ Resent workspace verification email to {} in org {} by {}", user.getEmail(), org.getSlug(), actorId);
+        } else {
+            if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+                user.setStatus("INVITED");
+                updatedUser = userRepository.save(user);
+            }
+            String roleDisplay = user.getRole() != null ? user.getRole().getDisplayName() : "Platform Staff";
+            dispatchPlatformVerificationEmail(user.getEmail(), user.getFullName(), roleDisplay);
+            log.info("✉️ Resent platform verification email to {} by {}", user.getEmail(), actorId);
+        }
+
+        return mapToDto(updatedUser);
+    }
+
+    private void dispatchWorkspaceVerificationEmail(Organization org, String email, String token) {
+        if (emailService == null || org == null || email == null) {
+            return;
+        }
+        try {
+            String domain = org.getSlug() + ".kdua.net";
+            String inviteUrl = "https://" + domain + "/invite/accept?token=" + token;
+            String subject = "[K2NET] Undangan Bergabung ke Workspace ISP: " + org.getName();
+            String html = String.format("""
+                <div style="font-family: sans-serif; background: #09090b; color: #fafafa; padding: 32px; border-radius: 12px; max-width: 540px; margin: 0 auto;">
+                    <div style="font-size: 13px; color: #10b981; font-weight: 700; letter-spacing: 1px; margin-bottom: 16px;">K2NET • FTTH GIS ENTERPRISE</div>
+                    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 12px;">Undangan Kolaborasi Workspace</h2>
+                    <p style="font-size: 14px; color: #a1a1aa; line-height: 1.6; margin-bottom: 24px;">
+                        Anda telah diundang untuk bergabung mengelola infrastruktur jaringan fiber optik pada workspace <strong>%s</strong> (<code>%s</code>).
+                    </p>
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="%s" style="background: #10b981; color: #000000; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block;">
+                            Terima Undangan &amp; Verifikasi Email
+                        </a>
+                    </div>
+                    <p style="font-size: 12px; color: #71717a; line-height: 1.5;">
+                        Tautan ini bersifat rahasia dan berlaku selama 48 jam.
+                    </p>
+                </div>
+                """, org.getName(), domain, inviteUrl);
+            emailService.sendEmail(email, subject, html);
+        } catch (Exception e) {
+            log.warn("Failed to dispatch workspace verification email to {}: {}", email, e.getMessage());
+        }
+    }
+
+    private void dispatchPlatformVerificationEmail(String email, String fullName, String roleDisplay) {
+        if (emailService == null || email == null) {
+            return;
+        }
+        try {
+            String consoleUrl = "https://system-gis.kdua.net/auth/console/login";
+            String subject = "[K2NET Control Plane] Undangan & Verifikasi Akses Staf Platform";
+            String name = (fullName != null && !fullName.isBlank()) ? fullName : email;
+            String role = (roleDisplay != null && !roleDisplay.isBlank()) ? roleDisplay : "Platform Staff";
+            String html = String.format("""
+                <div style="font-family: sans-serif; background: #09090b; color: #fafafa; padding: 32px; border-radius: 12px; max-width: 540px; margin: 0 auto;">
+                    <div style="font-size: 13px; color: #fafafa; font-weight: 700; letter-spacing: 1px; margin-bottom: 16px;">K2NET • PLATFORM CONTROL PLANE</div>
+                    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 12px;">Verifikasi Akun Staf Platform</h2>
+                    <p style="font-size: 14px; color: #a1a1aa; line-height: 1.6; margin-bottom: 24px;">
+                        Halo <strong>%s</strong>, akun staf Control Plane Anda telah didaftarkan dengan peran <strong>%s</strong>. Silakan masuk melalui konsol administrasi resmi K2NET untuk mengaktifkan sesi dan MFA Anda.
+                    </p>
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="%s" style="background: #fafafa; color: #09090b; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block;">
+                            Buka Control Plane Console
+                        </a>
+                    </div>
+                </div>
+                """, name, role, consoleUrl);
+            emailService.sendEmail(email, subject, html);
+        } catch (Exception e) {
+            log.warn("Failed to dispatch platform verification email to {}: {}", email, e.getMessage());
+        }
     }
 
     public List<String> getUserSocialIdentities(UUID userId) {

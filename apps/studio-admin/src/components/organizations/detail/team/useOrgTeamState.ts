@@ -7,6 +7,53 @@ import type { EnrichedOrganization } from "../../types";
 import type { TenantUser, DynamicRole, RawServerTenantUser } from "./types";
 import { useOrgTeamMutations } from "./useOrgTeamMutations";
 
+function resolveStatus(status?: string): TenantUser["status"] {
+  if (status === "ACTIVE") return "ACTIVE";
+  if (status === "SUSPENDED") return "SUSPENDED";
+  return "INVITED";
+}
+
+function resolvePhone(phone: string | undefined, idx: number, orgPhone?: string): string | undefined {
+  if (phone && phone !== "—") return phone;
+  if (idx === 0 && orgPhone && orgPhone !== "—") return orgPhone;
+  return undefined;
+}
+
+function mapRawServerTenantUser(
+  u: RawServerTenantUser,
+  idx: number,
+  orgSlug: string,
+  orgPicName?: string,
+  orgPicPhone?: string
+): TenantUser {
+  const name = u.name || u.fullName || u.username || orgPicName || "Tenant Staff";
+  const username = u.username || `user_${idx}`;
+  const email = u.email || `${username}@${orgSlug}.kdua.net`;
+  const isFirstMember = idx === 0;
+
+  return {
+    id: u.id || `u-${idx}`,
+    name,
+    username,
+    email,
+    phone: resolvePhone(u.phone, idx, orgPicPhone),
+    jobTitle: u.jobTitle || (isFirstMember ? "Technical PIC / Owner" : undefined),
+    role: u.role || u.roleName || "admin",
+    roleDisplayName: u.roleDisplayName,
+    roleId: u.roleId,
+    roleCode: u.roleCode,
+    mfaEnabled: typeof u.mfaEnabled === "boolean" ? u.mfaEnabled : false,
+    emailVerified: typeof u.emailVerified === "boolean" ? u.emailVerified : u.status === "ACTIVE",
+    status: resolveStatus(u.status),
+    lastLogin: u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : (u.lastLogin || ""),
+    lastLoginAt: u.lastLoginAt,
+    lastLoginIp: u.lastLoginIp,
+    createdAt: u.createdAt,
+    timezone: u.timezone || "Asia/Jakarta",
+    source: u.source || "DATABASE",
+  };
+}
+
 export function useOrgTeamState(org: EnrichedOrganization) {
   const { data: session } = useSession();
 
@@ -43,37 +90,25 @@ export function useOrgTeamState(org: EnrichedOrganization) {
     enabled: !!session?.accessToken,
   });
 
+  const orgSlug = org.slug;
+  const orgPicName = org.picName;
+  const orgPicPhone = org.picPhone;
+
   // 2. Fetch real tenant users from backend
   const { data: serverUsers = [], isLoading } = useQuery<TenantUser[]>({
-    queryKey: ["tenant-team-users", org.slug, org.picName, org.picPhone, session?.accessToken],
+    queryKey: ["tenant-team-users", orgSlug, orgPicName, orgPicPhone, session?.accessToken],
     queryFn: async () => {
       if (!session?.accessToken) return [];
       const baseUrl = getBackendBaseUrl();
       try {
-        const res = await httpClient(`${baseUrl}/organizations/${org.slug}/team-users`, {
+        const res = await httpClient(`${baseUrl}/organizations/${orgSlug}/team-users`, {
           token: session.accessToken,
         });
         if (res.ok) {
           const raw: RawServerTenantUser[] = await res.json();
-          return raw.map((u, idx: number) => ({
-            id: u.id || `u-${idx}`,
-            name: u.name || u.username || org.picName || "Tenant Staff",
-            username: u.username || `user_${idx}`,
-            email: u.email || `${u.username || "user"}@${org.slug}.kdua.net`,
-            phone: u.phone && u.phone !== "—" ? u.phone : (idx === 0 && org.picPhone && org.picPhone !== "—" ? org.picPhone : undefined),
-            jobTitle: u.jobTitle || (idx === 0 ? "Technical PIC / Owner" : undefined),
-            role: u.role || u.roleName || "admin",
-            roleDisplayName: u.roleDisplayName,
-            roleId: u.roleId,
-            roleCode: u.roleCode,
-            mfaEnabled: typeof u.mfaEnabled === "boolean" ? u.mfaEnabled : false,
-            status: (u.status === "ACTIVE" ? "ACTIVE" : u.status === "SUSPENDED" ? "SUSPENDED" : "PENDING") as TenantUser["status"],
-            lastLogin: u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : (u.lastLogin || "Active recently"),
-            lastLoginAt: u.lastLoginAt,
-            lastLoginIp: u.lastLoginIp,
-            timezone: u.timezone || "Asia/Jakarta",
-            source: u.source || "DATABASE",
-          }));
+          return raw.map((u, idx: number) =>
+            mapRawServerTenantUser(u, idx, orgSlug, orgPicName, orgPicPhone)
+          );
         }
       } catch (e) {
         console.warn("Could not fetch tenant users:", e);
