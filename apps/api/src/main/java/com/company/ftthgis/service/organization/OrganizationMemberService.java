@@ -187,6 +187,20 @@ public class OrganizationMemberService {
                 if ("ACTIVE".equalsIgnoreCase(m.getStatus())) {
                     throw new IllegalArgumentException("User with email " + email + " is already an active member of this workspace");
                 }
+                if ("SUSPENDED".equalsIgnoreCase(existingUser.getStatus()) || "INVITED".equalsIgnoreCase(existingUser.getStatus())) {
+                    existingUser.setStatus("INVITED");
+                }
+                if (existingUser.getOrganization() == null) {
+                    existingUser.setOrganization(org);
+                }
+                if (role != null) {
+                    existingUser.setRole(role);
+                }
+                if (request.fullName() != null && !request.fullName().isBlank()) {
+                    existingUser.setFullName(displayName);
+                }
+                userRepository.save(existingUser);
+
                 // Refresh invitation token if previously invited or suspended
                 m.setStatus("INVITED");
                 m.setInvitationToken(UUID.randomUUID().toString().replace("-", ""));
@@ -212,10 +226,30 @@ public class OrganizationMemberService {
                 .role(role != null ? role : roleRepository.findByName("viewer").orElse(null))
                 .build();
             targetUser = userRepository.save(targetUser);
-        } else if (request.fullName() != null && !request.fullName().isBlank()
-                && (targetUser.getFullName() == null || targetUser.getFullName().isBlank() || targetUser.getFullName().equals(email.split("@")[0]))) {
-            targetUser.setFullName(displayName);
-            targetUser = userRepository.save(targetUser);
+        } else {
+            boolean userUpdated = false;
+            if ("SUSPENDED".equalsIgnoreCase(targetUser.getStatus()) || "INVITED".equalsIgnoreCase(targetUser.getStatus())) {
+                targetUser.setStatus("INVITED");
+                userUpdated = true;
+            }
+            if (targetUser.getOrganization() == null) {
+                targetUser.setOrganization(org);
+                userUpdated = true;
+            }
+            if (role != null && targetUser.getOrganization() != null && org.getId().equals(targetUser.getOrganization().getId())) {
+                targetUser.setRole(role);
+                userUpdated = true;
+            }
+            if (request.fullName() != null && !request.fullName().isBlank()
+                    && (targetUser.getFullName() == null || targetUser.getFullName().isBlank()
+                        || targetUser.getFullName().equals(email.split("@")[0])
+                        || "INVITED".equalsIgnoreCase(targetUser.getStatus()))) {
+                targetUser.setFullName(displayName);
+                userUpdated = true;
+            }
+            if (userUpdated) {
+                targetUser = userRepository.save(targetUser);
+            }
         }
 
         String invitationToken = UUID.randomUUID().toString().replace("-", "");
@@ -568,10 +602,11 @@ public class OrganizationMemberService {
         }
 
         User targetUser = member.getUser();
+        boolean wasUnverifiedInvite = "INVITED".equalsIgnoreCase(member.getStatus()) || "PENDING".equalsIgnoreCase(member.getStatus());
         memberRepository.delete(member);
         memberRepository.flush();
 
-        if (targetUser != null && targetUser.getOrganization() != null && targetUser.getOrganization().getId().equals(org.getId())) {
+        if (targetUser != null && (targetUser.getOrganization() == null || targetUser.getOrganization().getId().equals(org.getId()))) {
             List<OrganizationMember> remaining = memberRepository.findActiveWorkspacesByUserId(targetUser.getId());
             if (!remaining.isEmpty()) {
                 OrganizationMember nextWorkspace = remaining.get(0);
@@ -581,14 +616,86 @@ public class OrganizationMemberService {
                 }
                 userRepository.save(targetUser);
             } else {
-                targetUser.setStatus("SUSPENDED");
-                targetUser.setOrganization(null);
-                userRepository.save(targetUser);
+                List<OrganizationMember> allRemaining = memberRepository.findAllWorkspacesByUserId(targetUser.getId());
+                if (allRemaining.isEmpty() && wasUnverifiedInvite && targetUser.getLastLoginAt() == null
+                        && ("INVITED".equalsIgnoreCase(targetUser.getStatus()) || "SUSPENDED".equalsIgnoreCase(targetUser.getStatus()))) {
+                    userRepository.delete(targetUser);
+                } else {
+                    targetUser.setStatus("SUSPENDED");
+                    targetUser.setOrganization(null);
+                    userRepository.save(targetUser);
+                }
             }
         }
 
         log.info("🗑️ Member {} removed from workspace {} by actor {}",
                 targetUser != null ? targetUser.getEmail() : memberId, orgSlug, actorId);
+    }
+
+    /**
+     * Resends the workspace invitation / email verification link to an invited or unverified member.
+     * Supports lookup by OrganizationMember ID or User ID.
+     */
+    @Transactional
+    public OrganizationMemberDto resendInvitation(String orgSlug, UUID memberId, String actorId) {
+        Organization org = organizationRepository.findBySlug(orgSlug)
+            .orElseThrow(() -> new NoSuchElementException("Organization not found with slug: " + orgSlug));
+
+        OrganizationMember member = memberRepository.findById(memberId)
+            .or(() -> memberRepository.findByUserIdAndOrganizationId(memberId, org.getId()))
+            .orElseGet(() -> {
+                User fallbackUser = userRepository.findById(memberId).orElse(null);
+                if (fallbackUser != null && fallbackUser.getOrganization() != null
+                        && org.getId().equals(fallbackUser.getOrganization().getId())) {
+                    Role r = fallbackUser.getRole() != null ? fallbackUser.getRole() : roleRepository.findByName("viewer").orElse(null);
+                    return OrganizationMember.builder()
+                        .user(fallbackUser)
+                        .organization(org)
+                        .role(r)
+                        .roleName(r != null ? r.getName() : "viewer")
+                        .status("INVITED")
+                        .isDefault(false)
+                        .build();
+                }
+                return null;
+            });
+
+        if (member == null) {
+            throw new NoSuchElementException("Organization member not found: " + memberId);
+        }
+
+        if (!member.getOrganization().getId().equals(org.getId())) {
+            throw new SecurityException("Member does not belong to organization " + orgSlug);
+        }
+
+        User targetUser = member.getUser();
+        if (targetUser == null || targetUser.getEmail() == null || targetUser.getEmail().isBlank()) {
+            throw new IllegalStateException("Member does not have a valid email address");
+        }
+
+        if ("ACTIVE".equalsIgnoreCase(member.getStatus()) && "ACTIVE".equalsIgnoreCase(targetUser.getStatus())) {
+            throw new IllegalStateException("Member email is already verified and active in this workspace");
+        }
+
+        String newToken = UUID.randomUUID().toString().replace("-", "");
+        member.setStatus("INVITED");
+        member.setInvitationToken(newToken);
+        member.setInvitationExpiresAt(LocalDateTime.now().plusHours(48));
+        OrganizationMember saved = memberRepository.save(member);
+
+        if (!"ACTIVE".equalsIgnoreCase(targetUser.getStatus())) {
+            targetUser.setStatus("INVITED");
+            if (targetUser.getOrganization() == null) {
+                targetUser.setOrganization(org);
+            }
+            userRepository.save(targetUser);
+        }
+
+        dispatchInvitationEmail(org, targetUser.getEmail(), newToken);
+        log.info("✉️ Resent workspace invitation / verification email to {} in workspace {} by actor {}",
+                targetUser.getEmail(), orgSlug, actorId);
+
+        return mapToDto(saved);
     }
 
     private void dispatchInvitationEmail(Organization org, String email, String token) {

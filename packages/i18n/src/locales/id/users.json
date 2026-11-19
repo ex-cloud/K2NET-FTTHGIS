@@ -97,5 +97,11 @@
   "member_remove_confirm_desc": "Apakah Anda yakin ingin mengeluarkan {{name}} ({{email}}) dari workspace organisasi ini? Sesi aktif dan hak akses anggota pada tenant ini akan langsung dicabut.",
   "member_remove_btn": "Keluarkan dari Workspace",
   "member_removed_success": "Anggota berhasil dikeluarkan dari workspace",
-  "ctx_remove_member": "Keluarkan dari Workspace"
+  "ctx_remove_member": "Keluarkan dari Workspace",
+  "col_email": "Email",
+  "email_verified": "Terverifikasi",
+  "email_unverified": "Belum Terverifikasi",
+  "status_invited": "Menunggu",
+  "ctx_resend_verification": "Kirim Ulang Verifikasi",
+  "resend_verification_success": "Email verifikasi berhasil dikirim ulang ke {{email}}"
 }

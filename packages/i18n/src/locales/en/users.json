@@ -97,5 +97,11 @@
   "member_remove_confirm_desc": "Are you sure you want to remove {{name}} ({{email}}) from this organization workspace? Their active sessions and access to this tenant will be revoked immediately.",
   "member_remove_btn": "Remove from Workspace",
   "member_removed_success": "Member removed from workspace",
-  "ctx_remove_member": "Remove from Workspace"
+  "ctx_remove_member": "Remove from Workspace",
+  "col_email": "Email",
+  "email_verified": "Verified",
+  "email_unverified": "Unverified",
+  "status_invited": "Pending",
+  "ctx_resend_verification": "Resend Verification",
+  "resend_verification_success": "Verification email resent to {{email}}"
 }

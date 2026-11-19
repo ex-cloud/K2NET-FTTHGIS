@@ -620,7 +620,7 @@ public class ConfigurableUserService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        return userRepository.findAll(spec, pageable).map(this::mapToDto);
+        return userRepository.findAll(spec, pageable).map(u -> mapToDto(u, finalOrgId));
     }
 
     @Transactional
@@ -678,6 +678,10 @@ public class ConfigurableUserService {
     }
 
     private UserDto mapToDto(User user) {
+        return mapToDto(user, null);
+    }
+
+    private UserDto mapToDto(User user, UUID contextOrgId) {
         List<UserDto.ProjectRoleDto> projectRoles = new ArrayList<>();
         
         if (user.getProjectMembers() != null) {
@@ -692,21 +696,26 @@ public class ConfigurableUserService {
                 .collect(Collectors.toList());
         }
 
-        // Resolve authoritative role for the active organization (supporting organization_members & Copy-on-Write custom roles)
-        UUID activeOrgId = com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId();
+        // Resolve authoritative role & membership status for the active organization
+        UUID activeOrgId = contextOrgId != null ? contextOrgId : com.company.ftthgis.config.tenant.OrganizationContext.getOrganizationId();
         if (activeOrgId == null && user.getOrganization() != null) {
             activeOrgId = user.getOrganization().getId();
         }
 
         Role effectiveRole = user.getRole();
+        String effectiveStatus = user.getStatus() != null ? user.getStatus() : "ACTIVE";
         if (organizationMemberRepository != null && user.getId() != null && activeOrgId != null) {
             try {
                 var memberOpt = organizationMemberRepository.findByUserIdAndOrganizationId(user.getId(), activeOrgId);
-                if (memberOpt.isPresent() && "ACTIVE".equalsIgnoreCase(memberOpt.get().getStatus())) {
-                    if (memberOpt.get().getRole() != null) {
-                        effectiveRole = memberOpt.get().getRole();
-                    } else if (memberOpt.get().getRoleName() != null && !memberOpt.get().getRoleName().isBlank()) {
-                        String mRoleName = memberOpt.get().getRoleName();
+                if (memberOpt.isPresent()) {
+                    var member = memberOpt.get();
+                    if (member.getStatus() != null && !member.getStatus().isBlank()) {
+                        effectiveStatus = member.getStatus().toUpperCase(java.util.Locale.ROOT);
+                    }
+                    if (member.getRole() != null) {
+                        effectiveRole = member.getRole();
+                    } else if (member.getRoleName() != null && !member.getRoleName().isBlank()) {
+                        String mRoleName = member.getRoleName();
                         final UUID lookupOrgId = activeOrgId;
                         effectiveRole = roleRepository.findByNameAndOrganizationId(mRoleName, lookupOrgId)
                                 .or(() -> roleRepository.findByName(mRoleName))
@@ -787,6 +796,10 @@ public class ConfigurableUserService {
                 .build());
         }
 
+        boolean isEmailVerified = "ACTIVE".equalsIgnoreCase(effectiveStatus)
+                && !"INVITED".equalsIgnoreCase(user.getStatus())
+                && !"PENDING".equalsIgnoreCase(user.getStatus());
+
         return UserDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -801,7 +814,8 @@ public class ConfigurableUserService {
                 .timezone(user.getTimezone())
                 .locale(user.getLocale())
                 .avatarUrl(user.getAvatarUrl())
-                .status(user.getStatus())
+                .status(effectiveStatus)
+                .emailVerified(isEmailVerified)
                 .roleName(effectiveRole != null ? effectiveRole.getName() : "USER")
                 .roleDisplayName(effectiveRole != null ? effectiveRole.getDisplayName() : "User")
                 .organizationName(user.getOrganization() != null ? user.getOrganization().getName() : null)

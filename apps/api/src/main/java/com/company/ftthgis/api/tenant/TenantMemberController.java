@@ -40,6 +40,16 @@ public class TenantMemberController {
         return ResponseEntity.ok(memberService.inviteMember(slug, request, inviterId));
     }
 
+    @PostMapping("/{memberId}/resend-invitation")
+    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and (@tenantSecurity.hasEffectivePermission('members.invite') or @tenantSecurity.hasEffectivePermission('team.invite') or @tenantSecurity.hasEffectivePermission('users.invite') or @tenantSecurity.hasEffectivePermission('members.manage') or @tenantSecurity.hasEffectivePermission('team.manage') or @tenantSecurity.hasEffectivePermission('users.manage')))")
+    public ResponseEntity<OrganizationMemberDto> resendInvitation(
+            @PathVariable String slug,
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String actorId = jwt != null ? jwt.getSubject() : "system";
+        return ResponseEntity.ok(memberService.resendInvitation(slug, memberId, actorId));
+    }
+
     @PutMapping("/{memberId}/role")
     @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and (@tenantSecurity.hasEffectivePermission('members.manage') or @tenantSecurity.hasEffectivePermission('team.manage') or @tenantSecurity.hasEffectivePermission('users.manage')))")
     public ResponseEntity<OrganizationMemberDto> updateRole(

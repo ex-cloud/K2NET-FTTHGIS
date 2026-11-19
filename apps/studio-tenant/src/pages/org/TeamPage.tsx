@@ -48,6 +48,7 @@ export function TeamPage() {
   const [editingRole, setEditingRole] = React.useState<EditableTenantRole | null>(null);
   const [deletingRole, setDeletingRole] = React.useState<EditableTenantRole | null>(null);
   const [isDeletingRole, setIsDeletingRole] = React.useState(false);
+  const [resendingMemberId, setResendingMemberId] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const subView = React.useMemo(() => {
@@ -128,6 +129,23 @@ export function TeamPage() {
       toast.success(t("common.copied"));
     } catch {
       toast.info(email);
+    }
+  };
+
+  const handleResendVerification = async (member: UserDto) => {
+    if (!member?.id) return;
+    setResendingMemberId(member.id);
+    try {
+      await apiClient(
+        `/api/v1/organizations/${encodeURIComponent(orgSlug)}/members/${encodeURIComponent(member.id)}/resend-invitation`,
+        { method: "POST" }
+      );
+      toast.success(t("users.resend_verification_success", { email: member.email }));
+      await queryClient.invalidateQueries({ queryKey: ["tenant-team-members"] });
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || t("common.error"));
+    } finally {
+      setResendingMemberId(null);
     }
   };
 
@@ -224,8 +242,11 @@ export function TeamPage() {
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             canManageMembers={canManageMembers}
+            canInviteUsers={canInviteUsers}
+            resendingMemberId={resendingMemberId}
             onEditMember={(member) => setEditingMember(member)}
             onCopyEmail={handleCopyEmail}
+            onResendVerification={handleResendVerification}
             onRemoveMember={(member) => setRemovingMember(member)}
           />
         )}

@@ -27,6 +27,7 @@ public class UserDto {
     private String locale;
     private String avatarUrl;
     private String status;
+    private Boolean emailVerified;
     private String roleName;
     private String roleDisplayName;
     private String organizationName;

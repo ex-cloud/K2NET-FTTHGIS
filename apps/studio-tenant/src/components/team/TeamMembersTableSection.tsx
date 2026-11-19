@@ -9,6 +9,9 @@ import {
   Pencil,
   Copy,
   Trash2,
+  CheckCircle2,
+  Clock,
+  Send,
 } from "lucide-react";
 import {
   Button,
@@ -44,6 +47,7 @@ export interface UserDto {
   jobTitle?: string;
   avatarUrl?: string;
   status: "ACTIVE" | "INVITED" | "SUSPENDED" | string;
+  emailVerified?: boolean;
   roleName?: string;
   roleDisplayName?: string;
   organizationName?: string;
@@ -60,9 +64,37 @@ interface TeamMembersTableSectionProps {
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   canManageMembers: boolean;
+  canInviteUsers?: boolean;
+  resendingMemberId?: string | null;
   onEditMember: (member: UserDto) => void;
   onCopyEmail: (email: string) => void;
+  onResendVerification?: (member: UserDto) => void;
   onRemoveMember: (member: UserDto) => void;
+}
+
+function resolveStatusBadgeConfig(statusUpper: string, rawStatus: string, t: (key: string) => string) {
+  if (statusUpper === "ACTIVE") {
+    return {
+      className: "bg-primary/10 text-primary border-primary/20",
+      label: t("users.status_active"),
+    };
+  }
+  if (statusUpper === "SUSPENDED") {
+    return {
+      className: "bg-destructive/10 text-destructive border-destructive/20",
+      label: t("users.status_suspended"),
+    };
+  }
+  if (statusUpper === "INVITED" || statusUpper === "PENDING") {
+    return {
+      className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+      label: t("users.status_invited"),
+    };
+  }
+  return {
+    className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    label: rawStatus,
+  };
 }
 
 export function TeamMembersTableSection({
@@ -71,8 +103,11 @@ export function TeamMembersTableSection({
   searchQuery,
   onSearchQueryChange,
   canManageMembers,
+  canInviteUsers = false,
+  resendingMemberId,
   onEditMember,
   onCopyEmail,
+  onResendVerification,
   onRemoveMember,
 }: TeamMembersTableSectionProps) {
   const { t, formatDate } = useTranslation();
@@ -103,13 +138,24 @@ export function TeamMembersTableSection({
                 <TableHead className="font-bold">{t("users.col_user").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("users.col_role").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("users.col_status").toUpperCase()}</TableHead>
+                <TableHead className="font-bold">{t("users.col_email").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("projects.overview_title").toUpperCase()}</TableHead>
                 <TableHead className="font-bold">{t("users.col_created_at").toUpperCase()}</TableHead>
                 <TableHead className="w-12 text-right" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredMembers.map((member) => (
+              {filteredMembers.map((member) => {
+                const statusUpper = (member.status || "ACTIVE").toUpperCase();
+                const isEmailVerified =
+                  typeof member.emailVerified === "boolean"
+                    ? member.emailVerified
+                    : statusUpper === "ACTIVE";
+                const isResending = resendingMemberId === member.id;
+                const canResend = !isEmailVerified && (canManageMembers || canInviteUsers) && Boolean(onResendVerification);
+                const statusBadge = resolveStatusBadgeConfig(statusUpper, member.status, t);
+
+                return (
                 <TableRow key={member.id} className="text-xs">
                   <TableCell>
                     <div className="space-y-1">
@@ -150,15 +196,41 @@ export function TeamMembersTableSection({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                        member.status === "ACTIVE"
-                          ? "bg-primary/10 text-primary border-primary/20"
-                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                      }`}
-                    >
-                      {member.status === "ACTIVE" ? t("users.status_active") : member.status}
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${statusBadge.className}`}>
+                      {statusBadge.label}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {isEmailVerified ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full border bg-primary/10 text-primary border-primary/20">
+                        <CheckCircle2 className="size-3" />
+                        {t("users.email_verified")}
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                          <Clock className="size-3" />
+                          {t("users.email_unverified")}
+                        </span>
+                        {canResend && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="xs"
+                            disabled={isResending}
+                            onClick={() => onResendVerification?.(member)}
+                            className="h-6 px-2 text-[11px] font-medium gap-1"
+                          >
+                            {isResending ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <Send className="size-3" />
+                            )}
+                            {t("users.ctx_resend_verification")}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="font-mono font-semibold">
                     {member.projectRoles && member.projectRoles.length > 0
@@ -176,6 +248,20 @@ export function TeamMembersTableSection({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="text-xs">
+                        {canResend && (
+                          <DropdownMenuItem
+                            onClick={() => onResendVerification?.(member)}
+                            disabled={isResending}
+                            className="gap-2 cursor-pointer text-primary"
+                          >
+                            {isResending ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <Send className="size-3" />
+                            )}
+                            {t("users.ctx_resend_verification")}
+                          </DropdownMenuItem>
+                        )}
                         {canManageMembers && (
                           <DropdownMenuItem onClick={() => onEditMember(member)} className="gap-2 cursor-pointer">
                             <Pencil className="size-3" />
@@ -199,7 +285,8 @@ export function TeamMembersTableSection({
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              );
+              })}
             </TableBody>
           </Table>
         ) : (
