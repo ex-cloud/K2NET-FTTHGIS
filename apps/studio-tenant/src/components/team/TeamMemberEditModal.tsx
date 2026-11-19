@@ -99,9 +99,6 @@ export function TeamMemberEditModal({
       { value: "admin", label: t("users.role_org_admin") },
       { value: "noc", label: t("users.role_operator") },
       { value: "technician", label: t("users.role_field_tech") },
-      { value: "surveyor", label: t("users.role_surveyor") },
-      { value: "finance", label: t("users.role_finance") },
-      { value: "helpdesk", label: t("users.role_helpdesk") },
       { value: "viewer", label: t("users.role_viewer") },
     ];
   }, [availableRoles, t]);

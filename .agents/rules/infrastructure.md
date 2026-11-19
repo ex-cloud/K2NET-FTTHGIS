@@ -26,7 +26,7 @@ Kong mengelola CORS, rate-limiting global, dan validasi token JWT.
 
 Keycloak mengelola otentikasi pengguna melalui **2-Realm Architecture** yang terisolasi ketat:
 * **`ftth-realm` (Platform Control Plane)**: Khusus untuk staf internal K2NET di `https://system-gis.kdua.net/auth/console/login`. Hanya memiliki 4 role kanonikal berscope `SYSTEM`: `super_admin`, `account_manager`, `system_auditor`, `system_support`.
-* **`k2net-tenants` (Consolidated Shared Tenant Plane)**: Untuk seluruh workspace operasional tenant di `https://<slug>.kdua.net/login` (termasuk workspace operasional K2NET `https://ops.kdua.net` yang ditandai `is_platform_root = true`). Hanya memiliki 7 role kanonikal berscope `TENANT`: `admin`, `viewer`, `technician`, `finance`, `helpdesk`, `noc`, `surveyor`.
+* **`k2net-tenants` (Consolidated Shared Tenant Plane)**: Untuk seluruh workspace operasional tenant di `https://<slug>.kdua.net/login` (termasuk workspace operasional K2NET `https://ops.kdua.net` yang ditandai `is_platform_root = true`). Memiliki 4 core locked role kanonikal berscope `TENANT` (`admin`, `noc`, `technician`, `viewer`) serta menyinkronkan otomatis global templates (`CUST-*`) dan custom role aktif dari `ftth_gis.roles`.
 * **Bypass Cloudflare**: Komunikasi server-to-server (antara `gateway-auth`, `ftth-backend`, dan Keycloak) wajib menggunakan URL internal Docker (`http://keycloak:8080`) untuk memotong proteksi Cloudflare WAF/403.
 
 ---

@@ -2,7 +2,7 @@
 
 Halaman ini mendefinisikan aturan dan pola wajib untuk pengembangan frontend React 19 + Vite 6 + TanStack Router (CSR SPA) pada kedua portal yang telah dipisah:
 1. **System Admin Portal (`apps/studio-admin`, `https://system-gis.kdua.net`)** — Portal Control Plane pengelola sistem utama (`SYSTEM` scope roles: `super_admin`, `account_manager`, `system_auditor`, `system_support`). Rute login khusus: `/auth/console/login` (akses langsung ke `/login` merender `<NotFoundError />` 404 anti-enumeration).
-2. **Tenant Portal (`apps/studio-tenant`, `https://<slug>.kdua.net`, termasuk `https://ops.kdua.net`)** — Portal operasional FTTH untuk tenant/organisasi (`TENANT` scope roles: `admin`, `viewer`, `technician`, `finance`, `helpdesk`, `noc`, `surveyor`). Subdomain yang tidak terdaftar di database merender `<TenantDomainError />` 404 (form login dikunci penuh).
+2. **Tenant Portal (`apps/studio-tenant`, `https://<slug>.kdua.net`, termasuk `https://ops.kdua.net`)** — Portal operasional FTTH untuk tenant/organisasi (`TENANT` scope core locked roles: `admin`, `noc`, `technician`, `viewer`, ditambah dynamic global templates `CUST-*` dan custom role lokal tenant). Subdomain yang tidak terdaftar di database merender `<TenantDomainError />` 404 (form login dikunci penuh).
 
 ---
 

@@ -61,11 +61,11 @@ public class KeycloakService {
     public static final String TENANT_SHARED_REALM = KongConfigSyncService.TENANT_SHARED_REALM;
 
     /**
-     * Canonical TENANT role templates (7) — must mirror ftth_gis.roles WHERE scope = 'TENANT' (V78).
+     * Canonical Core Locked TENANT role templates (4 — ADR-0017).
      * Provisioned exclusively in the shared tenant realm ('k2net-tenants').
      */
     static final List<String> STANDARD_TENANT_ROLES = List.of(
-            "admin", "viewer", "technician", "finance", "helpdesk", "noc", "surveyor"
+            "admin", "noc", "technician", "viewer"
     );
 
     /**
@@ -134,6 +134,11 @@ public class KeycloakService {
         if (roleRepository != null) {
             try {
                 roleRepository.findByScopeAndOrganizationIsNull(scopeLabel).stream()
+                        .map(com.company.ftthgis.domain.user.entity.Role::getName)
+                        .filter(name -> name != null && !name.isBlank())
+                        .forEach(allowedRoles::add);
+                roleRepository.findAll().stream()
+                        .filter(r -> scopeLabel.equalsIgnoreCase(r.getScope()))
                         .map(com.company.ftthgis.domain.user.entity.Role::getName)
                         .filter(name -> name != null && !name.isBlank())
                         .forEach(allowedRoles::add);

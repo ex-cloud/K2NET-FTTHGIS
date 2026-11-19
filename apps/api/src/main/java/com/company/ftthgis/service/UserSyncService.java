@@ -46,7 +46,7 @@ public class UserSyncService {
     );
 
     private static final List<String> TENANT_ROLE_PRIORITY = List.of(
-            "admin", "noc", "finance", "surveyor", "technician", "helpdesk", "viewer"
+            "admin", "noc", "technician", "viewer"
     );
 
     /**

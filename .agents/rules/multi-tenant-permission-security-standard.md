@@ -4,7 +4,7 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
 
 ---
 
-## 🛡️ 1. Hukum Scope Air-Gap Mutlak & 11 Role Template Kanonikal (Absolute Invariants)
+## 🛡️ 1. Hukum Scope Air-Gap Mutlak & 8 Core Locked Baseline Roles (Absolute Invariants)
 
 1. **Dua Alam Otorisasi Terpisah**:
    - **`SCOPE_SYSTEM`**: Hak akses platform internal K2NET (Manajemen tenant, arsitektur workspace, billing global, lisensi Ed25519, audit sistem, AI internal, observabilitas).
@@ -13,9 +13,10 @@ Dokumen ini mendefinisikan aturan hukum arsitektural mutlak untuk mencegah eskal
    - Role dengan `scope = 'TENANT'` atau yang memiliki `organization_id IS NOT NULL` **DILARANG KERAS** memiliki permission berscope `SYSTEM`.
    - Role dengan `scope = 'SYSTEM'` (selain `super_admin`) **DILARANG KERAS** memiliki permission berscope `TENANT`.
    - Satu-satunya entitas yang memiliki hak lintas-alam secara legal adalah `super_admin` (God-Mode) dan sesi aktif **Impersonation Engine** via header bertandatangan ganda (`X-Impersonating-User` + token scoped).
-3. **11 Role Template Kanonikal (`ftth_gis.roles` & `keycloak_db.keycloak_role` — V78)**:
-   - **4 Role `SYSTEM` (`ftth-realm`)**: `super_admin`, `account_manager`, `system_auditor`, `system_support`.
-   - **7 Role `TENANT` (`k2net-tenants`)**: `admin`, `viewer`, `technician`, `finance`, `helpdesk`, `noc`, `surveyor`.
+3. **8 Core Locked Baseline Role Templates (`ftth_gis.roles` & `keycloak_db.keycloak_role` — ADR-0017)**:
+   - **4 Role `SYSTEM` (`ftth-realm`)**: `super_admin` (`SYS-01`), `system_support` (`SYS-02`), `account_manager` (`SYS-03`), `system_auditor` (`SYS-04`).
+   - **4 Core Locked Role `TENANT` (`k2net-tenants`, `is_system_role = true`, `organization_id IS NULL`)**: `admin` (`TENT-01`), `noc` (`TENT-02`), `technician` (`TENT-03`), `viewer` (`TENT-04`).
+   - **Fleksibilitas Dinamis Super Admin & Quick Presets Tenant (`ADR-0017`)**: Super Admin memiliki fleksibilitas penuh di Control Plane (`/security/roles`) untuk membuat, mengedit, dan menghapus Global Role Templates tambahan (`CUST-*`, `is_system_role = false`, `organization_id IS NULL`) kapan saja. Di Tenant Plane (`/team/roles`), template global dari Control Plane bertanda `TEMPLATE` (`isTemplate = true`, di-lazy-clone saat disesuaikan oleh tenant), sedangkan role lokal tenant bertanda `CUSTOM` (`isTemplate = false`) dan disertai **6 Quick Role Presets** (*NOC, Viewer, Technician, Spatial Surveyor, Finance & Billing, Helpdesk & CS*) yang memetakan 128 permission kanonikal (`61 SYSTEM` + `67 TENANT`).
    - Dilarang keras menambahkan kembali role pra-V78 (`tenant_owner`, `tenant_admin`, `network_engineer`, `noc_operator`, `field_technician`, `billing_staff`, `warehouse`) ke dalam `keycloak_db` maupun kode sumber.
 4. **Arsitektur 3-Plane Domain & 6 Komponen Shared Error (`@k2net/ui`)**:
    - **Control Plane (`https://system-gis.kdua.net`)**: Rute login khusus `/auth/console/login` (rute `/login` merender 404 `<NotFoundError />`).

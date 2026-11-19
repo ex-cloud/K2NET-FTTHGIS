@@ -288,7 +288,7 @@ public class PermissionSeeder implements CommandLineRunner {
             "system.audit.view", "system.observability.view", "system.organizations.view", "orgs.view",
             "billing.read", "licensing.read", "catalog.plans.read", "catalog.policies.read");
 
-        // 4. Sync Tenant Template Roles (Strictly locked to TENANT scope!)
+        // 4. Sync 4 Core Locked Tenant Template Roles (Strictly locked to TENANT scope! — ADR-0017)
         syncSystemRole("admin", allPermissionsInDb, "TENANT_ALL");
         syncSystemRole("noc", allPermissionsInDb,
             "dashboard.view", "projects.view", "map.view", "map.edit", "zones.view", "coverage.view",
@@ -300,17 +300,6 @@ public class PermissionSeeder implements CommandLineRunner {
             "dashboard.view", "projects.view", "map.view", "zones.view", "coverage.view",
             "network.view", "inventory.view",
             "ticket.view", "ticket.update", "task.update");
-        syncSystemRole("surveyor", allPermissionsInDb,
-            "dashboard.view", "projects.view", "map.view", "map.edit",
-            "coverage.view", "zones.view", "zones.create", "zones.edit",
-            "survey.create", "inventory.view");
-        syncSystemRole("finance", allPermissionsInDb,
-            "dashboard.view", "billing.view", "billing.manage",
-            "billing.packages.view", "billing.packages.subscribe",
-            "report.view", "report.export");
-        syncSystemRole("helpdesk", allPermissionsInDb,
-            "dashboard.view", "projects.view", "map.view", "coverage.view", "network.view",
-            "customer.view", "ticket.view", "ticket.create", "ticket.update", "ticket.assign");
         // Viewer is strictly a read-only operational GIS & project observer — NEVER granted org/billing/security/team/audit permissions
         syncSystemRole("viewer", allPermissionsInDb,
             "dashboard.view", "projects.view", "map.view", "zones.view", "coverage.view",

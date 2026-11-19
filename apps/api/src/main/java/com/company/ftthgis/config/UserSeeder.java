@@ -45,10 +45,7 @@ public class UserSeeder implements CommandLineRunner {
         put("admin", "TENT-01");
         put("noc", "TENT-02");
         put("technician", "TENT-03");
-        put("surveyor", "TENT-04");
-        put("finance", "TENT-05");
-        put("helpdesk", "TENT-06");
-        put("viewer", "TENT-07");
+        put("viewer", "TENT-04");
     }};
 
     // Permission mappings for clean baseline templates
@@ -69,7 +66,7 @@ public class UserSeeder implements CommandLineRunner {
             "system.audit.view", "system.observability.view", "system.organizations.view", "orgs.view"
         ));
 
-        // TENANT Roles
+        // TENANT Roles (4 Core Locked Baseline Roles — ADR-0017)
         put("admin", List.of(
             "inventory.view", "inventory.edit", "inventory.manage", "inventory.report",
             "billing.view", "billing.manage", "team.view", "team.invite", "team.manage",
@@ -79,11 +76,8 @@ public class UserSeeder implements CommandLineRunner {
             "organizations.view", "organizations.update", "organizations.webhooks.manage", "feature.integration.open_api",
             "projects.view", "projects.create", "projects.edit", "projects.delete"
         ));
-        put("finance", List.of("billing.view", "billing.manage", "report.view", "report.export"));
         put("noc", List.of("network.view", "network.monitor", "inventory.view", "dashboard.view"));
         put("technician", List.of("inventory.view", "inventory.edit", "map.view", "map.edit", "task.update", "ticket.update"));
-        put("helpdesk", List.of("customer.view", "ticket.create", "ticket.view", "dashboard.view"));
-        put("surveyor", List.of("survey.create", "coverage.view", "map.view"));
         put("viewer", List.of("dashboard.view", "map.view", "report.view"));
     }};
 
