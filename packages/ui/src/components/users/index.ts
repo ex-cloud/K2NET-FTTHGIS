@@ -1,4 +1,6 @@
 export * from "./user-management-types";
+export * from "./user-management-platform-permissions";
+export * from "./user-management-tenant-permissions";
 export * from "./user-table-helpers";
 export * from "./user-table-row-actions";
 export * from "./user-table-row";

@@ -176,5 +176,14 @@
   "cf_reset_password_new": "New Password",
   "cf_reset_password_temp": "Force password change on next login",
   "cf_reset_password_btn": "Apply Password Reset",
-  "cf_reset_password_success": "Password reset successfully for {{email}}"
+  "cf_reset_password_success": "Password reset successfully for {{email}}",
+  "cf_perm_granted": "Granted",
+  "cf_perm_not_granted": "Not Granted",
+  "cf_inspector_title": "Role Permission Breakdown",
+  "cf_inspector_desc": "Permissions below are strictly governed by the selected role. To configure a custom permission combination, use Roles & Permissions (/team/roles).",
+  "cf_active_policy_summary": "Active Policy: {{role}} [{{code}}] — {{granted}}/{{total}} Permissions Granted",
+  "cf_no_role_selected": "No Role Selected",
+  "cf_rbac_mode": "Role-based Access Control (RBAC)",
+  "cf_cat_projects": "Projects & Coverage Zones",
+  "cf_cat_reports_audit": "Reports & Audit Trail"
 }

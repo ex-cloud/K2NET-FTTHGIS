@@ -8,10 +8,12 @@ import {
   Phone,
   Briefcase,
   User,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
+import { Badge } from "../badge";
 import { cn } from "../../utils";
 import { PermissionPoliciesAccordion } from "./permission-policies-accordion";
 import { UserDiscardConfirmDialog } from "./user-policy-confirm-dialogs";
@@ -23,6 +25,8 @@ import {
   type UnifiedInviteSubmitPayload,
   trKey,
   generateStrongCryptoPassword,
+  resolveCanonicalRoleCode,
+  buildPermissionCategoriesForRole,
 } from "./user-management-types";
 
 export interface UnifiedUserInvitePanelProps {
@@ -65,6 +69,30 @@ export function UnifiedUserInvitePanel({
       setSelectedRoleName(roles[0].name);
     }
   }, [roles, selectedRoleId, selectedRoleName]);
+
+  const activeRole = React.useMemo(() => {
+    if (roles.length === 0) return null;
+    return (
+      roles.find(
+        (r) =>
+          (selectedRoleId !== null && r.id === selectedRoleId) ||
+          (selectedRoleName && r.name.toLowerCase() === selectedRoleName.toLowerCase())
+      ) || null
+    );
+  }, [roles, selectedRoleId, selectedRoleName]);
+
+  const permissionStats = React.useMemo(() => {
+    const cats = buildPermissionCategoriesForRole(scope, activeRole);
+    let granted = 0;
+    let total = 0;
+    for (const cat of cats) {
+      for (const item of cat.items) {
+        total++;
+        if (item.enabled) granted++;
+      }
+    }
+    return { granted, total };
+  }, [scope, activeRole]);
 
   const isDirty = Boolean(
     email.trim() ||
@@ -320,16 +348,32 @@ export function UnifiedUserInvitePanel({
           />
         </div>
 
-        <div className="px-4 py-2.5 border-t border-border bg-muted/20 flex justify-end">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={!selectedRoleId && !selectedRoleName}
-            className="h-7 px-2.5 text-xs font-medium"
+        <div className="px-4 py-2.5 border-t border-border bg-muted/20 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-primary shrink-0" />
+            <span className="text-xs font-semibold text-foreground">
+              {activeRole
+                ? trKey(
+                    t,
+                    "users.cf_active_policy_summary",
+                    "Active Policy: {{role}} [{{code}}] — {{granted}}/{{total}} Permissions Granted",
+                    {
+                      role: activeRole.displayName || activeRole.name,
+                      code: resolveCanonicalRoleCode(activeRole.name, activeRole.code, scope),
+                      granted: permissionStats.granted,
+                      total: permissionStats.total,
+                    }
+                  )
+                : trKey(t, "users.cf_no_role_selected", "No Role Selected")}
+            </span>
+          </div>
+
+          <Badge
+            variant="outline"
+            className="text-[10px] font-mono px-2 py-0.5 bg-muted/40 text-muted-foreground border-border"
           >
-            {trKey(t, "users.cf_create_policy_btn", "Create policy")}
-          </Button>
+            {trKey(t, "users.cf_rbac_mode", "Role-based Access Control (RBAC)")}
+          </Badge>
         </div>
       </div>
 

@@ -1,8 +1,9 @@
 import * as React from "react";
-import { ChevronDown, ChevronRight, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, Check, Info } from "lucide-react";
 import { Input } from "../input";
 import { Badge } from "../badge";
 import { Switch } from "../switch";
+import { cn } from "../../utils";
 import {
   Select,
   SelectContent,
@@ -165,6 +166,23 @@ export function PermissionPoliciesAccordion({
         />
       </div>
 
+      {/* 3b. Role Permission Breakdown Callout Box */}
+      <div className="flex items-start gap-2.5 p-3 rounded-lg border border-border bg-muted/20 text-xs">
+        <Info className="size-4 text-primary shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <span className="font-semibold text-foreground">
+            {trKey(t, "users.cf_inspector_title", "Role Permission Breakdown")}
+          </span>
+          <p className="text-muted-foreground leading-relaxed">
+            {trKey(
+              t,
+              "users.cf_inspector_desc",
+              "Permissions below are strictly governed by the selected role. To configure a custom permission combination, use Roles & Permissions (/team/roles)."
+            )}
+          </p>
+        </div>
+      </div>
+
       {/* 4. Collapsible Accordion List (Cloudflare Pattern) */}
       <div className="rounded-lg border border-border bg-card overflow-hidden divide-y divide-border/70">
         {/* Accordion 1: Overall roles */}
@@ -292,10 +310,17 @@ export function PermissionPoliciesAccordion({
                 </div>
 
                 <div className="flex items-center gap-2.5" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-[11px] font-mono text-muted-foreground">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[10px] font-mono px-2 py-0.5 border-border",
+                      activeItemsCount > 0
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : "bg-muted/40 text-muted-foreground"
+                    )}
+                  >
                     {activeItemsCount}/{totalItemsCount}
-                  </span>
-                  <Switch checked={activeItemsCount > 0} disabled />
+                  </Badge>
                 </div>
               </div>
 
@@ -318,7 +343,16 @@ export function PermissionPoliciesAccordion({
                       </div>
 
                       <div className="md:col-span-1 flex md:justify-end">
-                        <Switch checked={perm.enabled} disabled />
+                        {perm.enabled ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border bg-primary/10 text-primary border-primary/20 font-mono">
+                            <Check className="size-3" />
+                            {trKey(t, "users.cf_perm_granted", "Granted")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border bg-muted/40 text-muted-foreground border-border font-mono">
+                            {trKey(t, "users.cf_perm_not_granted", "Not Granted")}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}

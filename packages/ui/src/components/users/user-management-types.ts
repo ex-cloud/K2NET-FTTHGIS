@@ -1,3 +1,9 @@
+import { buildPlatformPermissionCategories } from "./user-management-platform-permissions";
+import { buildTenantPermissionCategories } from "./user-management-tenant-permissions";
+
+export { buildPlatformPermissionCategories } from "./user-management-platform-permissions";
+export { buildTenantPermissionCategories } from "./user-management-tenant-permissions";
+
 export interface UnifiedUserMembership {
   organizationId: string;
   organizationName: string;
@@ -205,196 +211,17 @@ export function resolveCanonicalRoleCode(
   return scope === "platform" ? "SYS-ROLE" : "CUST-ROLE";
 }
 
+/**
+ * Builds permission categories and authority states isolated by scope:
+ * - 'platform' delegates strictly to user-management-platform-permissions.ts
+ * - 'tenant' delegates strictly to user-management-tenant-permissions.ts
+ */
 export function buildPermissionCategoriesForRole(
   scope: UnifiedUserScope,
   selectedRole: UnifiedRoleOption | null
 ): PermissionCategoryGroup[] {
-  const roleName = (selectedRole?.name || "").toLowerCase();
-  const explicitCodes = new Set<string>();
-  if (selectedRole?.permissions) {
-    for (const p of selectedRole.permissions) {
-      if (typeof p === "string") explicitCodes.add(p);
-      else if (p?.code) explicitCodes.add(p.code);
-    }
-  }
-
-  const isSuper = roleName === "super_admin";
-  const isTenantAdmin = roleName === "admin" || roleName === "tenant_admin";
-  const isNoc = roleName === "noc" || roleName.includes("noc");
-  const isTech = roleName === "technician" || roleName.includes("tech");
-  const isSupport = roleName === "system_support";
-  const isAcctMgr = roleName === "account_manager";
-  const isAuditor = roleName === "system_auditor";
-
-  const hasPerm = (code: string, defaultActive: boolean): boolean => {
-    if (explicitCodes.size > 0) {
-      return explicitCodes.has(code) || isSuper || isTenantAdmin;
-    }
-    return defaultActive;
-  };
-
   if (scope === "platform") {
-    return [
-      {
-        id: "org_team",
-        titleKey: "users.cf_cat_org_team",
-        fallbackTitle: "Organization, Team & IAM",
-        items: [
-          {
-            code: "system.organizations.manage",
-            label: "Tenant Organizations Administration",
-            description: "Provision, suspend, approve, and configure multi-tenant ISP workspaces.",
-            enabled: hasPerm("system.organizations.manage", isSuper || isAcctMgr),
-          },
-          {
-            code: "system.users.manage",
-            label: "Global Users & Platform Staff Management",
-            description: "Invite platform staff, assign SYSTEM roles, and manage global identities.",
-            enabled: hasPerm("system.users.manage", isSuper),
-          },
-          {
-            code: "system.support.impersonate",
-            label: "Step-Up Tenant Impersonation Engine",
-            description: "Execute time-boxed 30m dual-identity support impersonation with MFA.",
-            enabled: hasPerm("system.support.impersonate", isSuper || isSupport),
-          },
-        ],
-      },
-      {
-        id: "billing_licensing",
-        titleKey: "users.cf_cat_billing_licensing",
-        fallbackTitle: "Billing, Catalog & Licensing",
-        items: [
-          {
-            code: "catalog.packages.manage",
-            label: "Marketplace Catalog & Plan Policies",
-            description: "Configure subscription tiers, add-on packages, and quota policies.",
-            enabled: hasPerm("catalog.packages.manage", isSuper || isAcctMgr),
-          },
-          {
-            code: "billing.subscriptions.manage",
-            label: "Subscriptions, Invoices & Renewals",
-            description: "Manage tenant billing lifecycles, payment webhooks, and invoice issuance.",
-            enabled: hasPerm("billing.subscriptions.manage", isSuper || isAcctMgr),
-          },
-          {
-            code: "licensing.manage",
-            label: "Cryptographic License & Entitlement Control",
-            description: "Issue, renew, and revoke online/offline tenant license tokens.",
-            enabled: hasPerm("licensing.manage", isSuper || isAcctMgr),
-          },
-        ],
-      },
-      {
-        id: "security_audit",
-        titleKey: "users.cf_cat_security_audit",
-        fallbackTitle: "Security, Observability & Audit",
-        items: [
-          {
-            code: "system.security.manage",
-            label: "PBAC Roles, Permissions & Password Policy",
-            description: "Manage 2-Realm Keycloak security templates and global authentication policies.",
-            enabled: hasPerm("system.security.manage", isSuper),
-          },
-          {
-            code: "system.gateway.manage",
-            label: "Polyglot Microservices & Kong Gateway Control",
-            description: "Configure SMTP, WhatsApp, Payment, OLT, and AI gateway services.",
-            enabled: hasPerm("system.gateway.manage", isSuper || isSupport),
-          },
-          {
-            code: "system.audit.view",
-            label: "Immutable Audit Trail & Observability Telemetry",
-            description: "Inspect platform-wide security events, Prometheus metrics, and logs.",
-            enabled: hasPerm("system.audit.view", isSuper || isAuditor || isSupport),
-          },
-        ],
-      },
-    ];
+    return buildPlatformPermissionCategories(selectedRole);
   }
-
-  return [
-    {
-      id: "network_gis",
-      titleKey: "users.cf_cat_network_gis",
-      fallbackTitle: "Network & GIS Topology",
-      items: [
-        {
-          code: "map.view",
-          label: "Spatial GIS Map & Coverage Read",
-          description: "View FTTH fiber routes, OLT/ODC/ODP nodes, and service coverage polygons.",
-          enabled: hasPerm("map.view", true),
-        },
-        {
-          code: "network.manage",
-          label: "Network Topology & Fiber Core Design",
-          description: "Create, edit, and splice OLT, ODC, ODP, and distribution fiber cables.",
-          enabled: hasPerm("network.manage", isTenantAdmin || isNoc),
-        },
-        {
-          code: "inventory.manage",
-          label: "Optical Inventory & Asset Management",
-          description: "Manage physical hardware stock, splitters, and warehouse materials.",
-          enabled: hasPerm("inventory.manage", isTenantAdmin || isNoc || isTech),
-        },
-      ],
-    },
-    {
-      id: "operations_olt",
-      titleKey: "users.cf_cat_operations_olt",
-      fallbackTitle: "Operations, OLT & Field",
-      items: [
-        {
-          code: "olt.manage",
-          label: "SNMP OLT Hardware & PON Terminal Control",
-          description: "Provision ONTs, monitor optical Rx/Tx power, and run OLT CLI diagnostics.",
-          enabled: hasPerm("olt.manage", isTenantAdmin || isNoc),
-        },
-        {
-          code: "workorders.manage",
-          label: "Field Work Orders & Installation Dispatch",
-          description: "Assign, update, and verify field technician installation & repair tasks.",
-          enabled: hasPerm("workorders.manage", isTenantAdmin || isNoc || isTech),
-        },
-        {
-          code: "tickets.manage",
-          label: "Customer Outage & Trouble Tickets",
-          description: "Handle subscriber incident reports and automated outage broadcasts.",
-          enabled: hasPerm("tickets.manage", isTenantAdmin || isNoc || isTech),
-        },
-      ],
-    },
-    {
-      id: "org_team",
-      titleKey: "users.cf_cat_org_team",
-      fallbackTitle: "Organization, Team & IAM",
-      items: [
-        {
-          code: "team.manage",
-          label: "Team Members & Custom Role Builder",
-          description: "Invite organization staff, assign workspace roles, and manage project access.",
-          enabled: hasPerm("team.manage", isTenantAdmin),
-        },
-        {
-          code: "org.sso.manage",
-          label: "Enterprise Corporate SSO & Security Policy",
-          description: "Configure OIDC/SAML Identity Providers, Enforce MFA, and Social Login policy.",
-          enabled: hasPerm("org.sso.manage", isTenantAdmin),
-        },
-      ],
-    },
-    {
-      id: "billing_licensing",
-      titleKey: "users.cf_cat_billing_licensing",
-      fallbackTitle: "Billing, Catalog & Licensing",
-      items: [
-        {
-          code: "billing.manage",
-          label: "Workspace Subscription & Marketplace Add-ons",
-          description: "Manage organization plan upgrades, capacity boosters, and billing invoices.",
-          enabled: hasPerm("billing.manage", isTenantAdmin),
-        },
-      ],
-    },
-  ];
+  return buildTenantPermissionCategories(selectedRole);
 }

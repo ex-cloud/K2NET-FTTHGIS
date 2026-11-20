@@ -176,5 +176,14 @@
   "cf_reset_password_new": "Kata Sandi Baru",
   "cf_reset_password_temp": "Wajibkan ganti kata sandi saat login berikutnya",
   "cf_reset_password_btn": "Terapkan Reset Kata Sandi",
-  "cf_reset_password_success": "Kata sandi berhasil direset untuk {{email}}"
+  "cf_reset_password_success": "Kata sandi berhasil direset untuk {{email}}",
+  "cf_perm_granted": "Diberikan",
+  "cf_perm_not_granted": "Tidak Diberikan",
+  "cf_inspector_title": "Rincian Hak Akses Peran",
+  "cf_inspector_desc": "Hak akses di bawah ini otomatis terikat pada Peran yang dipilih di Overall Roles. Untuk membuat peran dengan kombinasi hak akses kustom, buka menu Roles & Permissions (/team/roles).",
+  "cf_active_policy_summary": "Kebijakan Aktif: {{role}} [{{code}}] — {{granted}}/{{total}} Hak Akses Aktif",
+  "cf_no_role_selected": "Belum Ada Peran Dipilih",
+  "cf_rbac_mode": "Kontrol Akses Berbasis Peran (RBAC)",
+  "cf_cat_projects": "Proyek & Zona Cakupan",
+  "cf_cat_reports_audit": "Laporan & Jejak Audit"
 }
