@@ -16,6 +16,7 @@ import {
   Settings,
   Headset,
   Briefcase,
+  Blocks,
 } from "lucide-react";
 
 export type NavigationPlane =
@@ -183,6 +184,17 @@ export const NAVIGATION_MANIFEST: ManifestNavItem[] = [
     shortcut: "G then D",
     requiredPermission: ["system.trash.manage", "system.backup.manage"],
     activePrefixes: ["/system/trash"],
+  },
+  {
+    id: "modules",
+    plane: "PLATFORM",
+    title: "Module Registry",
+    translationKey: "nav.module_registry",
+    icon: Blocks,
+    href: "/platform/modules",
+    shortcut: "G then M",
+    requiredPermission: ["system.modules.read", "system.modules.manage"],
+    activePrefixes: ["/platform/modules"],
   },
 
   // ── 5. GOVERNANCE PLANE (Protect the business) ────────────────────────────

@@ -268,5 +268,12 @@
   "inbox_group_archive": "Archive",
   "inbox_filter_resolved": "Resolved & History",
   "switch_workspace": "Switch Workspace",
-  "workspaces_title": "My Workspaces"
+  "workspaces_title": "My Workspaces",
+  "module_registry": "Module Registry",
+  "modules_catalog_governance": "Catalog & Governance",
+  "all_modules": "All Modules",
+  "modules_system_scope": "Platform Scope",
+  "modules_tenant_scope": "Tenant Scope",
+  "modules_integrity_audit": "Integrity & Audit",
+  "modules_orphan_detector": "Orphan Detector"
 }

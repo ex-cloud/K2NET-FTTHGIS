@@ -114,12 +114,26 @@ export interface PermissionCategoryGroup {
   id: string;
   titleKey: string;
   fallbackTitle: string;
+  minPlanTier?: string;
+  status?: string;
   items: Array<{
     code: string;
     label: string;
     description: string;
     enabled: boolean;
+    minPlanTier?: string;
+    status?: string;
   }>;
+}
+
+export interface DynamicModuleMeta {
+  code: string;
+  name: string;
+  scope: string;
+  category?: string;
+  minPlanTier?: string;
+  status?: string;
+  permissions?: Array<{ code: string; name: string; description?: string }>;
 }
 
 export function trKey(
@@ -215,13 +229,47 @@ export function resolveCanonicalRoleCode(
  * Builds permission categories and authority states isolated by scope:
  * - 'platform' delegates strictly to user-management-platform-permissions.ts
  * - 'tenant' delegates strictly to user-management-tenant-permissions.ts
+ * Supports Hybrid Dynamic Auto-Discovery when modules metadata is supplied.
  */
 export function buildPermissionCategoriesForRole(
   scope: UnifiedUserScope,
-  selectedRole: UnifiedRoleOption | null
+  selectedRole: UnifiedRoleOption | null,
+  modules?: DynamicModuleMeta[]
 ): PermissionCategoryGroup[] {
-  if (scope === "platform") {
-    return buildPlatformPermissionCategories(selectedRole);
+  const baseCategories =
+    scope === "platform"
+      ? buildPlatformPermissionCategories(selectedRole)
+      : buildTenantPermissionCategories(selectedRole);
+
+  if (!modules || modules.length === 0) {
+    return baseCategories;
   }
-  return buildTenantPermissionCategories(selectedRole);
+
+  const moduleMap = new Map<string, DynamicModuleMeta>();
+  for (const m of modules) {
+    moduleMap.set(m.code.toLowerCase(), m);
+  }
+
+  return baseCategories.map((cat) => {
+    const matchingModule =
+      moduleMap.get(cat.id.toLowerCase()) ||
+      moduleMap.get(cat.id.split("_")[0]?.toLowerCase());
+
+    const enrichedItems = cat.items.map((item) => {
+      const prefix = item.code.split(".")[0]?.toLowerCase();
+      const itemMod = moduleMap.get(prefix) || matchingModule;
+      return {
+        ...item,
+        minPlanTier: itemMod?.minPlanTier || item.minPlanTier,
+        status: itemMod?.status || item.status,
+      };
+    });
+
+    return {
+      ...cat,
+      minPlanTier: matchingModule?.minPlanTier || cat.minPlanTier,
+      status: matchingModule?.status || cat.status,
+      items: enrichedItems,
+    };
+  });
 }

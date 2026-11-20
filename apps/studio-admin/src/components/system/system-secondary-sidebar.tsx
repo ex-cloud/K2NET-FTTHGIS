@@ -171,6 +171,7 @@ const SIDEBAR_ROUTE_MAP: { prefixes: string[]; key: string | null }[] = [
   { prefixes: ["/observability"], key: "observability" },
   { prefixes: ["/logs"], key: "logs" },
   { prefixes: ["/settings"], key: "settings" },
+  { prefixes: ["/platform/modules"], key: "modules" },
   { prefixes: ["/system/trash", "/trash"], key: "system" },
 ];
 

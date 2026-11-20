@@ -357,6 +357,32 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
     ],
   },
 
+  // ── Platform: Module Registry & Governance ────────────────────────────────
+  modules: {
+    title: "Module Registry",
+    translationKey: "nav.module_registry",
+    sections: [
+      {
+        title: "Catalog & Governance",
+        translationKey: "nav.modules_catalog_governance",
+        requiredPermission: ["system.modules.read", "system.modules.manage"],
+        items: [
+          { title: "All Modules", translationKey: "nav.all_modules", url: "/platform/modules", icon: "Boxes", shortcut: "S then M", requiredPermission: ["system.modules.read", "system.modules.manage"] },
+          { title: "Platform Scope", translationKey: "nav.modules_system_scope", url: "/platform/modules?scope=SYSTEM", icon: "Server", shortcut: "S then P", requiredPermission: ["system.modules.read", "system.modules.manage"] },
+          { title: "Tenant Scope", translationKey: "nav.modules_tenant_scope", url: "/platform/modules?scope=TENANT", icon: "Building2", shortcut: "S then T", requiredPermission: ["system.modules.read", "system.modules.manage"] },
+        ],
+      },
+      {
+        title: "Integrity & Audit",
+        translationKey: "nav.modules_integrity_audit",
+        requiredPermission: ["system.modules.read", "system.modules.manage"],
+        items: [
+          { title: "Orphan Detector", translationKey: "nav.modules_orphan_detector", url: "/platform/modules?tab=audit", icon: "ShieldAlert", shortcut: "S then O", requiredPermission: ["system.modules.read", "system.modules.manage"] },
+        ],
+      },
+    ],
+  },
+
   // ── Governance: Identity & Access ─────────────────────────────────────────
   identity: {
     title: "Identity & Access",
@@ -468,3 +494,4 @@ SYSTEM_SIDEBAR_NAVIGATION.packages = SYSTEM_SIDEBAR_NAVIGATION.catalog;
 SYSTEM_SIDEBAR_NAVIGATION.users = SYSTEM_SIDEBAR_NAVIGATION.identity;
 SYSTEM_SIDEBAR_NAVIGATION.data_protection = SYSTEM_SIDEBAR_NAVIGATION.system;
 SYSTEM_SIDEBAR_NAVIGATION.tasks = SYSTEM_SIDEBAR_NAVIGATION.workspace;
+SYSTEM_SIDEBAR_NAVIGATION.platform_modules = SYSTEM_SIDEBAR_NAVIGATION.modules;

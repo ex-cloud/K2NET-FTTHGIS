@@ -16,6 +16,7 @@ import {
   type UnifiedProjectOption,
   type UnifiedUserScope,
   type UnifiedTranslateFn,
+  type DynamicModuleMeta,
   trKey,
   resolveRoleDescription,
   resolveCanonicalRoleCode,
@@ -34,6 +35,7 @@ export interface PermissionPoliciesAccordionProps {
   selectedProjectId?: string;
   onSelectProjectId?: (projectId: string) => void;
   t?: UnifiedTranslateFn;
+  modules?: DynamicModuleMeta[];
 }
 
 export function PermissionPoliciesAccordion({
@@ -48,11 +50,34 @@ export function PermissionPoliciesAccordion({
   selectedProjectId = "ALL",
   onSelectProjectId,
   t,
+  modules: propModules,
 }: PermissionPoliciesAccordionProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [dynamicModules, setDynamicModules] = React.useState<DynamicModuleMeta[]>(propModules || []);
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({
     overall_roles: true,
   });
+
+  // Hybrid Dynamic Auto-Discovery (Opsi 2): Auto-fetch live modules registry
+  React.useEffect(() => {
+    if (propModules && propModules.length > 0) {
+      setDynamicModules(propModules);
+      return;
+    }
+    if (typeof window !== "undefined") {
+      const qScope = scope === "platform" ? "system" : "tenant";
+      fetch(`/api/v1/modules?scope=${qScope}`)
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data: DynamicModuleMeta[]) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setDynamicModules(data);
+          }
+        })
+        .catch(() => {
+          // Graceful fallback to static categories
+        });
+    }
+  }, [propModules, scope]);
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups((prev) => ({
@@ -84,8 +109,8 @@ export function PermissionPoliciesAccordion({
   }, [roles, searchQuery]);
 
   const moduleCategories = React.useMemo(
-    () => buildPermissionCategoriesForRole(scope, activeRole),
-    [scope, activeRole]
+    () => buildPermissionCategoriesForRole(scope, activeRole, dynamicModules),
+    [scope, activeRole, dynamicModules]
   );
 
   const selectedCount = activeRole ? 1 : 0;
@@ -298,7 +323,7 @@ export function PermissionPoliciesAccordion({
                 }}
                 className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors cursor-pointer select-none"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {isExpanded ? (
                     <ChevronDown className="size-3.5 text-muted-foreground" />
                   ) : (
@@ -307,6 +332,16 @@ export function PermissionPoliciesAccordion({
                   <span className="text-xs font-semibold text-foreground">
                     {trKey(t, cat.titleKey, cat.fallbackTitle)}
                   </span>
+                  {cat.minPlanTier && cat.minPlanTier !== "FREE" && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-mono">
+                      {trKey(t, "modules.badge_requires_tier", `Requires ${cat.minPlanTier} Plan`, { tier: cat.minPlanTier })}
+                    </span>
+                  )}
+                  {cat.status === "MAINTENANCE" && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                      {trKey(t, "modules.badge_maintenance", "Maintenance")}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2.5" onClick={(e) => e.stopPropagation()}>

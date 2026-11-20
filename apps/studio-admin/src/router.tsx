@@ -204,6 +204,9 @@ const SecurityPermissionsPage = lazyWithRetry(() =>
 const SecurityPasswordPolicyPage = lazyWithRetry(() =>
   import("./app/(dashboard)/security/password-policy/page").then((m) => ({ default: m.default }))
 );
+const PlatformModulesPage = lazyWithRetry(() =>
+  import("./app/(dashboard)/platform/modules/page").then((m) => ({ default: m.default }))
+);
 const LogsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/logs/page").then((m) => ({ default: m.default }))
 );
@@ -510,6 +513,10 @@ const securityRolesRoute = createRoute({ getParentRoute: () => authenticatedLayo
 const securityPermissionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/permissions", component: () => <Lazy><SecurityPermissionsPage /></Lazy> });
 const securityPasswordRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/password-policy", component: () => <Lazy><SecurityPasswordPolicyPage /></Lazy> });
 
+// Platform Modules (Enterprise Module Registry)
+const platformModulesRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/platform", component: () => <Navigate to="/platform/modules" /> });
+const platformModulesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/platform/modules", component: () => <Lazy><PlatformModulesPage /></Lazy> });
+
 // Logs
 const logsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/logs", component: () => <Lazy><LogsPage /></Lazy> });
 
@@ -632,6 +639,8 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   licenseRevocationsLegacyRedirectRoute,
   // Packages & Add-ons
   packagesRoute, packagesSubscriptionsRoute,
+  // Platform Modules (Enterprise Module Registry)
+  platformModulesRedirectRoute, platformModulesRoute,
   // Users
   usersRoute, usersRolesRoute, usersSessionsRoute,
   // Account

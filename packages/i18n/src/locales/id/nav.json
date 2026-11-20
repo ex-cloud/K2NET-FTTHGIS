@@ -268,5 +268,12 @@
   "inbox_group_archive": "Arsip",
   "inbox_filter_resolved": "Selesai & Riwayat",
   "switch_workspace": "Ganti Workspace",
-  "workspaces_title": "Workspace Saya"
+  "workspaces_title": "Workspace Saya",
+  "module_registry": "Registri Modul & Fitur",
+  "modules_catalog_governance": "Katalog & Tata Kelola",
+  "all_modules": "Semua Modul",
+  "modules_system_scope": "Scope Platform",
+  "modules_tenant_scope": "Scope Tenant",
+  "modules_integrity_audit": "Integritas & Audit",
+  "modules_orphan_detector": "Detektor Modul Yatim"
 }

@@ -215,6 +215,8 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("platform.workspace.manage", "Manage Platform Workspace (Plans & Specs)", "platform", SCOPE_SYSTEM),
             new PermissionData("platform.issues.view",     "View Engineering Issues Backlog",   "platform", SCOPE_SYSTEM),
             new PermissionData("platform.issues.manage",   "Manage Engineering Issues Backlog", "platform", SCOPE_SYSTEM),
+            new PermissionData("system.modules.read",      "View Enterprise Module Registry",   "platform", SCOPE_SYSTEM),
+            new PermissionData("system.modules.manage",    "Manage Enterprise Module Registry & Kill-Switch", "platform", SCOPE_SYSTEM),
 
             // support — B2B tenant escalations & customer support (SYSTEM scope)
             new PermissionData("support.tickets.view",   "View B2B Tenant Support Tickets",   "support", SCOPE_SYSTEM),

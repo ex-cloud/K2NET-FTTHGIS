@@ -18,6 +18,7 @@ import licenseId from './locales/id/license.json';
 import packagesId from './locales/id/packages.json';
 import workspaceId from './locales/id/workspace.json';
 import supportId from './locales/id/support.json';
+import modulesId from './locales/id/modules.json';
 
 export type SupportedLocale = 'id' | 'en';
 
@@ -42,6 +43,7 @@ export interface TranslationsSchema {
   packages: typeof packagesId;
   workspace: typeof workspaceId;
   support: typeof supportId;
+  modules: typeof modulesId;
 }
 
 export type TranslationNamespace = keyof TranslationsSchema;
