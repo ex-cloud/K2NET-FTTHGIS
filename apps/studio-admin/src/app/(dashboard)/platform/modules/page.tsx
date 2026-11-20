@@ -67,7 +67,7 @@ export default function PlatformModulesPage() {
 
   // Fetch modules with active filters
   const {
-    data: modules = [],
+    data: rawModules = [],
     isLoading,
     isFetching,
     refetch,
@@ -80,11 +80,20 @@ export default function PlatformModulesPage() {
   // Fetch orphan audit KPI
   const { data: audit } = useOrphanAudit(true);
 
+  // Safe guarded arrays
+  const modules = React.useMemo(
+    () => (Array.isArray(rawModules) ? rawModules : []),
+    [rawModules]
+  );
+
   // Computed metrics
   const totalCount = modules.length;
   const activeCount = modules.filter((m) => m.status === "ACTIVE").length;
   const maintenanceCount = modules.filter((m) => m.status === "MAINTENANCE").length;
   const disabledCount = modules.filter((m) => m.status === "DISABLED").length;
+
+  const orphanAlertCount =
+    (audit?.orphanPermissions?.length || 0) + (audit?.unmappedModules?.length || 0);
 
   const handleInspect = (mod: PlatformModuleItem) => {
     setSelectedModule(mod);
@@ -212,7 +221,7 @@ export default function PlatformModulesPage() {
               ) : (
                 <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
                   <AlertTriangle className="size-4" />
-                  {audit.orphanPermissions.length + audit.unmappedModules.length} Alerts
+                  {orphanAlertCount} Alerts
                 </span>
               )
             ) : (
@@ -317,68 +326,71 @@ export default function PlatformModulesPage() {
                   </td>
                 </tr>
               ) : (
-                modules.map((mod) => (
-                  <tr
-                    key={mod.code}
-                    className="hover:bg-muted/30 transition-colors group"
-                  >
-                    <td className="py-2.5 px-4 font-mono font-semibold text-foreground">
-                      <span className="px-1.5 py-0.5 rounded bg-muted border border-border text-[11px]">
-                        {mod.code}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <div className="font-semibold text-foreground">{mod.name}</div>
-                      {mod.description && (
-                        <div className="text-[11px] text-muted-foreground line-clamp-1">
-                          {mod.description}
+                modules.map((mod) => {
+                  const permCount = mod.permissions?.length ?? mod.permissionsCount ?? 0;
+                  return (
+                    <tr
+                      key={mod.code || mod.id}
+                      className="hover:bg-muted/30 transition-colors group"
+                    >
+                      <td className="py-2.5 px-4 font-mono font-semibold text-foreground">
+                        <span className="px-1.5 py-0.5 rounded bg-muted border border-border text-[11px]">
+                          {mod.code}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <div className="font-semibold text-foreground">{mod.name}</div>
+                        {mod.description && (
+                          <div className="text-[11px] text-muted-foreground line-clamp-1">
+                            {mod.description}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <Badge
+                          variant={mod.scope === "SYSTEM" ? "secondary" : "outline"}
+                          className="text-[10px] tracking-wide uppercase font-semibold"
+                        >
+                          {mod.scope}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        {mod.scope === "TENANT" ? getTierBadge(mod.minPlanTier) : (
+                          <span className="text-[11px] text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-4 font-mono text-[11px] text-muted-foreground">
+                        <div className="flex items-center gap-1.5 truncate max-w-[180px]">
+                          <Server className="size-3 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{mod.serviceTarget}</span>
                         </div>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <Badge
-                        variant={mod.scope === "SYSTEM" ? "secondary" : "outline"}
-                        className="text-[10px] tracking-wide uppercase font-semibold"
-                      >
-                        {mod.scope}
-                      </Badge>
-                    </td>
-                    <td className="py-2.5 px-4">
-                      {mod.scope === "TENANT" ? getTierBadge(mod.minPlanTier) : (
-                        <span className="text-[11px] text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-4 font-mono text-[11px] text-muted-foreground">
-                      <div className="flex items-center gap-1.5 truncate max-w-[180px]">
-                        <Server className="size-3 shrink-0 text-muted-foreground" />
-                        <span className="truncate">{mod.serviceTarget}</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <button
-                        type="button"
-                        onClick={() => handleInspect(mod)}
-                        className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted hover:bg-muted/80 border border-border text-foreground transition-colors"
-                      >
-                        {mod.permissions.length}
-                      </button>
-                    </td>
-                    <td className="py-2.5 px-4">
-                      {getStatusBadge(mod.status)}
-                    </td>
-                    <td className="py-2.5 px-4 text-right">
-                      <Button
-                        variant="outline"
-                        size="xs"
-                        onClick={() => handleInspect(mod)}
-                        className="gap-1 text-[11px] h-6 px-2 font-medium"
-                      >
-                        <ExternalLink className="size-3 text-muted-foreground" />
-                        {t("modules.action_inspect")}
-                      </Button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <button
+                          type="button"
+                          onClick={() => handleInspect(mod)}
+                          className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted hover:bg-muted/80 border border-border text-foreground transition-colors"
+                        >
+                          {permCount}
+                        </button>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        {getStatusBadge(mod.status)}
+                      </td>
+                      <td className="py-2.5 px-4 text-right">
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => handleInspect(mod)}
+                          className="gap-1 text-[11px] h-6 px-2 font-medium"
+                        >
+                          <ExternalLink className="size-3 text-muted-foreground" />
+                          {t("modules.action_inspect")}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

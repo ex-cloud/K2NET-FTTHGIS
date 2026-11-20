@@ -13,10 +13,15 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrphanAuditResultDto {
+    private boolean healthy;
     private int totalRegisteredModules;
+    private int registeredModuleCount;
     private int totalDistinctPermissionModules;
+    private int livePermissionCount;
     private List<String> orphanModulesWithoutPermissions;
+    private List<String> unmappedModules; // Alias for orphanModulesWithoutPermissions
     private List<String> orphanPermissionModulesWithoutRegistry;
+    private List<OrphanPermissionDetailDto> orphanPermissions; // Detailed orphan permissions list
     private String status; // HEALTHY, WARNING
     private LocalDateTime timestamp;
 }

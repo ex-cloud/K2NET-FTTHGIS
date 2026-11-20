@@ -1,6 +1,8 @@
 package com.company.ftthgis.service;
 
+import com.company.ftthgis.api.system.dto.MappedPermissionDto;
 import com.company.ftthgis.api.system.dto.OrphanAuditResultDto;
+import com.company.ftthgis.api.system.dto.OrphanPermissionDetailDto;
 import com.company.ftthgis.api.system.dto.PlatformModuleResponseDto;
 import com.company.ftthgis.api.system.dto.UpdateModuleStatusRequest;
 import com.company.ftthgis.domain.tenant.entity.PlatformModule;
@@ -9,8 +11,6 @@ import com.company.ftthgis.domain.user.entity.Permission;
 import com.company.ftthgis.domain.user.repository.PermissionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,17 +37,17 @@ public class PlatformModuleService {
 
     @Transactional(readOnly = true)
     public List<PlatformModuleResponseDto> getAllModules() {
-        Map<String, Long> permCountByModule = getPermissionCountsByModule();
+        Map<String, List<Permission>> permsByModule = getPermissionsByModule();
         return moduleRepository.findAllByOrderByScopeAscCategoryAscNameAsc().stream()
-                .map(m -> mapToDto(m, permCountByModule.getOrDefault(m.getModuleKey().toLowerCase(), 0L).intValue()))
+                .map(m -> mapToDto(m, permsByModule.getOrDefault(m.getModuleKey().toLowerCase(), Collections.emptyList())))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<PlatformModuleResponseDto> getModulesByScope(String scope) {
-        Map<String, Long> permCountByModule = getPermissionCountsByModule();
+        Map<String, List<Permission>> permsByModule = getPermissionsByModule();
         return moduleRepository.findByScopeOrderByCategoryAscNameAsc(scope.toUpperCase()).stream()
-                .map(m -> mapToDto(m, permCountByModule.getOrDefault(m.getModuleKey().toLowerCase(), 0L).intValue()))
+                .map(m -> mapToDto(m, permsByModule.getOrDefault(m.getModuleKey().toLowerCase(), Collections.emptyList())))
                 .collect(Collectors.toList());
     }
 
@@ -59,9 +59,9 @@ public class PlatformModuleService {
         } else {
             modules = moduleRepository.findByIsEnabledTrue();
         }
-        Map<String, Long> permCountByModule = getPermissionCountsByModule();
+        Map<String, List<Permission>> permsByModule = getPermissionsByModule();
         return modules.stream()
-                .map(m -> mapToDto(m, permCountByModule.getOrDefault(m.getModuleKey().toLowerCase(), 0L).intValue()))
+                .map(m -> mapToDto(m, permsByModule.getOrDefault(m.getModuleKey().toLowerCase(), Collections.emptyList())))
                 .collect(Collectors.toList());
     }
 
@@ -69,8 +69,8 @@ public class PlatformModuleService {
     public PlatformModuleResponseDto getModuleByKey(String moduleKey) {
         PlatformModule module = moduleRepository.findByModuleKey(moduleKey.toLowerCase())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found: " + moduleKey));
-        Map<String, Long> permCountByModule = getPermissionCountsByModule();
-        return mapToDto(module, permCountByModule.getOrDefault(module.getModuleKey().toLowerCase(), 0L).intValue());
+        Map<String, List<Permission>> permsByModule = getPermissionsByModule();
+        return mapToDto(module, permsByModule.getOrDefault(module.getModuleKey().toLowerCase(), Collections.emptyList()));
     }
 
     @Transactional
@@ -95,8 +95,8 @@ public class PlatformModuleService {
         }
 
         PlatformModule saved = moduleRepository.save(module);
-        Map<String, Long> permCountByModule = getPermissionCountsByModule();
-        return mapToDto(saved, permCountByModule.getOrDefault(saved.getModuleKey().toLowerCase(), 0L).intValue());
+        Map<String, List<Permission>> permsByModule = getPermissionsByModule();
+        return mapToDto(saved, permsByModule.getOrDefault(saved.getModuleKey().toLowerCase(), Collections.emptyList()));
     }
 
     @Transactional(readOnly = true)
@@ -107,45 +107,73 @@ public class PlatformModuleService {
                 .collect(Collectors.toSet());
 
         List<Permission> allPermissions = permissionRepository.findAll();
-        Map<String, Long> permCountByModule = allPermissions.stream()
-                .collect(Collectors.groupingBy(p -> p.getModule().toLowerCase(), Collectors.counting()));
+        Map<String, List<Permission>> permsByModule = allPermissions.stream()
+                .collect(Collectors.groupingBy(p -> p.getModule().toLowerCase()));
 
-        Set<String> permissionModules = permCountByModule.keySet();
+        Set<String> permissionModules = permsByModule.keySet();
 
         // 1. Registered modules with 0 permissions
         List<String> modulesWithoutPermissions = allRegistered.stream()
-                .filter(m -> permCountByModule.getOrDefault(m.getModuleKey().toLowerCase(), 0L) == 0L)
+                .filter(m -> !permsByModule.containsKey(m.getModuleKey().toLowerCase())
+                        || permsByModule.get(m.getModuleKey().toLowerCase()).isEmpty())
                 .map(PlatformModule::getModuleKey)
                 .sorted()
                 .collect(Collectors.toList());
 
         // 2. Permission modules not in registry (Orphan Permission Modules)
-        List<String> orphanPermissions = permissionModules.stream()
+        List<String> orphanModulesWithoutRegistry = permissionModules.stream()
                 .filter(mod -> !registeredKeys.contains(mod))
                 .sorted()
                 .collect(Collectors.toList());
 
-        String auditStatus = orphanPermissions.isEmpty() ? "HEALTHY" : "WARNING";
+        // 3. Detailed list of orphan permissions
+        List<OrphanPermissionDetailDto> orphanPermissions = allPermissions.stream()
+                .filter(p -> !registeredKeys.contains(p.getModule().toLowerCase()))
+                .map(p -> OrphanPermissionDetailDto.builder()
+                        .code(p.getCode())
+                        .name(p.getName())
+                        .module(p.getModule())
+                        .scope(p.getScope())
+                        .build())
+                .collect(Collectors.toList());
+
+        boolean isHealthy = orphanModulesWithoutRegistry.isEmpty();
+        String auditStatus = isHealthy ? "HEALTHY" : "WARNING";
 
         return OrphanAuditResultDto.builder()
+                .healthy(isHealthy)
                 .totalRegisteredModules(allRegistered.size())
+                .registeredModuleCount(allRegistered.size())
                 .totalDistinctPermissionModules(permissionModules.size())
+                .livePermissionCount(allPermissions.size())
                 .orphanModulesWithoutPermissions(modulesWithoutPermissions)
-                .orphanPermissionModulesWithoutRegistry(orphanPermissions)
+                .unmappedModules(modulesWithoutPermissions)
+                .orphanPermissionModulesWithoutRegistry(orphanModulesWithoutRegistry)
+                .orphanPermissions(orphanPermissions)
                 .status(auditStatus)
                 .timestamp(LocalDateTime.now())
                 .build();
     }
 
-    private Map<String, Long> getPermissionCountsByModule() {
+    private Map<String, List<Permission>> getPermissionsByModule() {
         return permissionRepository.findAll().stream()
-                .collect(Collectors.groupingBy(p -> p.getModule().toLowerCase(), Collectors.counting()));
+                .collect(Collectors.groupingBy(p -> p.getModule().toLowerCase()));
     }
 
-    private PlatformModuleResponseDto mapToDto(PlatformModule m, int permissionsCount) {
+    private PlatformModuleResponseDto mapToDto(PlatformModule m, List<Permission> perms) {
+        List<MappedPermissionDto> permDtos = perms.stream()
+                .map(p -> MappedPermissionDto.builder()
+                        .code(p.getCode())
+                        .name(p.getName())
+                        .description(p.getDescription())
+                        .scope(p.getScope())
+                        .build())
+                .collect(Collectors.toList());
+
         return PlatformModuleResponseDto.builder()
                 .id(m.getId())
                 .moduleKey(m.getModuleKey())
+                .code(m.getModuleKey()) // Parity alias for frontend & @k2net/ui
                 .name(m.getName())
                 .description(m.getDescription())
                 .scope(m.getScope())
@@ -156,7 +184,8 @@ public class PlatformModuleService {
                 .licenseFlag(m.getLicenseFlag())
                 .serviceTarget(m.getServiceTarget())
                 .metadataJson(m.getMetadataJson())
-                .permissionsCount(permissionsCount)
+                .permissionsCount(permDtos.size())
+                .permissions(permDtos)
                 .createdAt(m.getCreatedAt())
                 .updatedAt(m.getUpdatedAt())
                 .build();

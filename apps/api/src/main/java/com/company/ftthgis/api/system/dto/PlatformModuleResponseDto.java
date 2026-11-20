@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -15,6 +16,7 @@ import java.util.UUID;
 public class PlatformModuleResponseDto {
     private UUID id;
     private String moduleKey;
+    private String code; // Alias for moduleKey (frontend & @k2net/ui parity)
     private String name;
     private String description;
     private String scope;
@@ -26,6 +28,7 @@ public class PlatformModuleResponseDto {
     private String serviceTarget;
     private String metadataJson;
     private int permissionsCount;
+    private List<MappedPermissionDto> permissions; // Detailed mapped permissions
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

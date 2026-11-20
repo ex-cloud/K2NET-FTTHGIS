@@ -15,6 +15,7 @@ export interface MappedPermissionItem {
 export interface PlatformModuleItem {
   id: string;
   code: string;
+  moduleKey?: string;
   name: string;
   description?: string;
   scope: ModuleScope;
@@ -22,8 +23,10 @@ export interface PlatformModuleItem {
   minPlanTier: ModulePlanTier;
   serviceTarget: string;
   status: ModuleStatus;
+  isEnabled?: boolean;
   icon?: string;
-  sortOrder: number;
+  sortOrder?: number;
+  permissionsCount?: number;
   permissions: MappedPermissionItem[];
   createdAt?: string;
   updatedAt?: string;
@@ -77,7 +80,39 @@ export function usePlatformModules(filters?: {
         throw new Error(`Failed to load modules: HTTP ${res.status}`);
       }
 
-      return res.json();
+      const raw = await res.json();
+      if (!Array.isArray(raw)) return [];
+
+      return raw.map((item: Record<string, unknown>) => {
+        const itemCode = (item.code as string) || (item.moduleKey as string) || "";
+        const rawPerms = Array.isArray(item.permissions) ? item.permissions : [];
+        const perms: MappedPermissionItem[] = rawPerms.map((p: Record<string, unknown>) => ({
+          code: (p.code as string) || "",
+          name: (p.name as string) || "",
+          description: (p.description as string) || "",
+          scope: (p.scope as string) || "",
+        }));
+
+        return {
+          id: (item.id as string) || itemCode,
+          code: itemCode,
+          moduleKey: (item.moduleKey as string) || itemCode,
+          name: (item.name as string) || itemCode,
+          description: (item.description as string) || "",
+          scope: ((item.scope as string) || "TENANT").toUpperCase() as ModuleScope,
+          category: (item.category as string) || "GENERAL",
+          minPlanTier: ((item.minPlanTier as string) || "FREE").toUpperCase() as ModulePlanTier,
+          serviceTarget: (item.serviceTarget as string) || "apps/api",
+          status: ((item.status as string) || "ACTIVE").toUpperCase() as ModuleStatus,
+          isEnabled: item.isEnabled !== false,
+          icon: (item.icon as string) || undefined,
+          sortOrder: typeof item.sortOrder === "number" ? item.sortOrder : 0,
+          permissionsCount: typeof item.permissionsCount === "number" ? item.permissionsCount : perms.length,
+          permissions: perms,
+          createdAt: (item.createdAt as string) || undefined,
+          updatedAt: (item.updatedAt as string) || undefined,
+        } as PlatformModuleItem;
+      });
     },
     enabled: Boolean(token),
   });
@@ -134,7 +169,36 @@ export function useOrphanAudit(enabled = false) {
         throw new Error(`Failed to audit module orphans: HTTP ${res.status}`);
       }
 
-      return res.json();
+      const raw = await res.json();
+      const rawOrphans = Array.isArray(raw.orphanPermissions) ? raw.orphanPermissions : [];
+      const orphanPermissions = rawOrphans.map((p: unknown) => {
+        if (typeof p === "string") {
+          return { code: p, name: p, module: p, scope: "UNKNOWN" };
+        }
+        const obj = p as Record<string, unknown>;
+        return {
+          code: (obj.code as string) || "",
+          name: (obj.name as string) || "",
+          module: (obj.module as string) || "",
+          scope: (obj.scope as string) || "",
+        };
+      });
+
+      const unmapped = Array.isArray(raw.unmappedModules)
+        ? raw.unmappedModules
+        : Array.isArray(raw.orphanModulesWithoutPermissions)
+        ? raw.orphanModulesWithoutPermissions
+        : [];
+
+      const healthy = raw.healthy === true || raw.status === "HEALTHY";
+
+      return {
+        healthy,
+        orphanPermissions,
+        unmappedModules: unmapped,
+        registeredModuleCount: raw.registeredModuleCount ?? raw.totalRegisteredModules ?? 0,
+        livePermissionCount: raw.livePermissionCount ?? raw.totalDistinctPermissionModules ?? 0,
+      };
     },
     enabled: enabled && Boolean(token),
   });

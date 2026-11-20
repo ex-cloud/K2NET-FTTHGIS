@@ -5,7 +5,6 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetFooter,
   Button,
   Badge,
   Input,
@@ -54,13 +53,15 @@ export function ModuleDetailDrawer({
 
   React.useEffect(() => {
     if (module) {
-      setSelectedStatus(module.status);
-      setSelectedTier(module.minPlanTier);
+      setSelectedStatus(module.status || "ACTIVE");
+      setSelectedTier(module.minPlanTier || "FREE");
       setReason("");
     }
   }, [module]);
 
   if (!module) return null;
+
+  const permissions = Array.isArray(module.permissions) ? module.permissions : [];
 
   const handleSave = async () => {
     try {
@@ -229,17 +230,17 @@ export function ModuleDetailDrawer({
                 {t("modules.field_mapped_permissions")}
               </h4>
               <Badge variant="outline" className="text-[10px] font-mono">
-                {module.permissions.length}
+                {permissions.length}
               </Badge>
             </div>
 
-            {module.permissions.length === 0 ? (
+            {permissions.length === 0 ? (
               <p className="text-xs text-muted-foreground italic p-3 border border-dashed border-border rounded-lg text-center">
                 {t("modules.no_permissions_mapped")}
               </p>
             ) : (
               <div className="divide-y divide-border/60 rounded-lg border border-border bg-card/50 overflow-hidden">
-                {module.permissions.map((perm) => (
+                {permissions.map((perm) => (
                   <div key={perm.code} className="p-3 space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono text-xs font-semibold text-foreground">
@@ -251,13 +252,11 @@ export function ModuleDetailDrawer({
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-foreground/90 font-medium">
-                      {perm.name}
-                    </p>
+                    <div className="text-xs font-medium text-foreground">{perm.name}</div>
                     {perm.description && (
-                      <p className="text-[11px] text-muted-foreground leading-normal">
+                      <div className="text-[11px] text-muted-foreground leading-normal">
                         {perm.description}
-                      </p>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -266,22 +265,24 @@ export function ModuleDetailDrawer({
           </div>
         </div>
 
-        <SheetFooter className="p-4 border-t border-border bg-card/40 flex items-center justify-end gap-2">
+        <div className="p-4 border-t border-border bg-card/60 flex items-center justify-end gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => onOpenChange(false)}
+            className="text-xs h-7 px-3 font-medium"
           >
-            {t("modules.action_cancel")}
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
             onClick={handleSave}
             disabled={updateStatusMutation.isPending}
+            className="text-xs h-7 px-3 font-medium"
           >
-            {updateStatusMutation.isPending ? t("common.saving") : t("modules.action_save")}
+            {updateStatusMutation.isPending ? t("common.saving") : t("common.save_changes")}
           </Button>
-        </SheetFooter>
+        </div>
       </SheetContent>
     </Sheet>
   );

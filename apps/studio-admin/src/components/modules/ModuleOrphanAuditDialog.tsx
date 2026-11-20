@@ -25,6 +25,9 @@ export function ModuleOrphanAuditDialog({
   const { t } = useTranslation();
   const { data: audit, isLoading, refetch, isFetching } = useOrphanAudit(open);
 
+  const orphanPermissions = Array.isArray(audit?.orphanPermissions) ? audit.orphanPermissions : [];
+  const unmappedModules = Array.isArray(audit?.unmappedModules) ? audit.unmappedModules : [];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl bg-background border-border">
@@ -77,18 +80,18 @@ export function ModuleOrphanAuditDialog({
               </div>
 
               {/* Orphan Permissions */}
-              {audit && audit.orphanPermissions.length > 0 && (
+              {orphanPermissions.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-foreground uppercase tracking-wide">
                       {t("modules.orphan_permissions_found")}
                     </span>
                     <Badge variant="destructive" className="text-[10px]">
-                      {audit.orphanPermissions.length}
+                      {orphanPermissions.length}
                     </Badge>
                   </div>
                   <div className="max-h-40 overflow-y-auto divide-y divide-border/60 rounded-md border border-border bg-card/60">
-                    {audit.orphanPermissions.map((item) => (
+                    {orphanPermissions.map((item) => (
                       <div key={item.code} className="p-2.5 text-xs flex items-center justify-between">
                         <div>
                           <span className="font-mono font-semibold text-foreground block">
@@ -108,18 +111,18 @@ export function ModuleOrphanAuditDialog({
               )}
 
               {/* Unmapped Modules */}
-              {audit && audit.unmappedModules.length > 0 && (
+              {unmappedModules.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-foreground uppercase tracking-wide">
                       {t("modules.unmapped_modules_found")}
                     </span>
                     <Badge variant="secondary" className="text-[10px]">
-                      {audit.unmappedModules.length}
+                      {unmappedModules.length}
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-1.5 p-2 rounded-md border border-border bg-card/60">
-                    {audit.unmappedModules.map((modCode) => (
+                    {unmappedModules.map((modCode) => (
                       <span
                         key={modCode}
                         className="px-2 py-0.5 rounded text-xs font-mono bg-muted text-muted-foreground border border-border"
