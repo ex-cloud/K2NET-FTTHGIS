@@ -32,16 +32,29 @@ export interface PermissionUsageResponse {
 export const SCOPE_OPTIONS = ["SYSTEM", "TENANT"] as const;
 
 export const MODULE_SUGGESTIONS = [
-  "nodes",
   "network",
-  "customers",
+  "map",
+  "coverage",
   "projects",
-  "roles",
-  "users",
-  "reports",
+  "inventory",
+  "customer",
+  "ticket",
+  "task",
+  "team",
+  "organization",
+  "security",
   "billing",
-  "settings",
+  "catalog",
+  "licensing",
+  "platform",
+  "support",
+  "system",
+  "report",
   "audit",
+  "integration",
+  "branding",
+  "approval",
+  "dashboard",
 ];
 
 export function scopeBadge(scope: string) {

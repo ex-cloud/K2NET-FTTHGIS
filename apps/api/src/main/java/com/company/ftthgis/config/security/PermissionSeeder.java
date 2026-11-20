@@ -136,12 +136,12 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("security.sso.view",      "View Tenant SSO Configuration",   "security", SCOPE_TENANT),
             new PermissionData("security.sso.manage",    "Manage Tenant SSO Configuration", "security", SCOPE_TENANT),
 
-            // organizations & branding (tenant) — tenant-scoped organization settings
-            new PermissionData("organizations.view",            "View Organization Details",               "organizations", SCOPE_TENANT),
-            new PermissionData("organizations.update",          "Update Organization Settings",            "organizations", SCOPE_TENANT),
-            new PermissionData("organizations.create",          "Create Organizations",                    "organizations", SCOPE_TENANT),
-            new PermissionData("organizations.delete",          "Delete Organizations",                    "organizations", SCOPE_TENANT),
-            new PermissionData("organizations.webhooks.manage", "Manage Tenant Webhooks & Keys",           "organizations", SCOPE_TENANT),
+            // organization & branding (tenant) — tenant-scoped organization settings
+            new PermissionData("organizations.view",            "View Organization Details",               "organization", SCOPE_TENANT),
+            new PermissionData("organizations.update",          "Update Organization Settings",            "organization", SCOPE_TENANT),
+            new PermissionData("organizations.create",          "Create Organizations",                    "organization", SCOPE_TENANT),
+            new PermissionData("organizations.delete",          "Delete Organizations",                    "organization", SCOPE_TENANT),
+            new PermissionData("organizations.webhooks.manage", "Manage Tenant Webhooks & Keys",           "organization", SCOPE_TENANT),
             new PermissionData("feature.branding.whitelabel",   "Custom Domain & Whitelabel Branding Access", "branding",   SCOPE_TENANT),
 
             // integration (tenant) — developer open API and webhooks

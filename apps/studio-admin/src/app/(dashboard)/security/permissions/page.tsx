@@ -14,9 +14,19 @@ import { CreatePermissionDialog } from "@/components/security/permissions-create
 import { DeleteConfirmDialog } from "@/components/security/permissions-delete-dialog";
 import { useTranslation } from "@k2net/i18n";
 
+export function normalizeModuleName(moduleName?: string): string {
+  const clean = (moduleName || "other").trim().toLowerCase();
+  if (clean === "customers") return "customer";
+  if (clean === "integrations") return "integration";
+  if (clean === "organizations") return "organization";
+  if (clean === "roles") return "security";
+  if (clean === "tenants") return "system";
+  return clean;
+}
+
 function groupByModule(permissions: Permission[]) {
   return permissions.reduce<Record<string, Permission[]>>((acc, p) => {
-    const key = (p.module || "other").toLowerCase();
+    const key = normalizeModuleName(p.module);
     (acc[key] = acc[key] || []).push(p);
     return acc;
   }, {});
@@ -160,10 +170,27 @@ export default function PermissionsPage() {
   const grouped = useMemo(() => groupByModule(filtered), [filtered]);
   const moduleKeys = useMemo(() => Object.keys(grouped).sort(), [grouped]);
 
+  const scopePermissions = useMemo(() => {
+    if (scopeFilter === "ALL") return permissions;
+    return permissions.filter((p) => p.scope === scopeFilter);
+  }, [permissions, scopeFilter]);
+
+  const activeModulesCount = useMemo(() => {
+    return Object.keys(groupByModule(scopePermissions)).length;
+  }, [scopePermissions]);
+
   const stats = useMemo(
     () => [
-      { label: "Total Permission", value: permissions.length, color: "text-foreground" },
-      { label: "Module Aktif", value: Object.keys(groupByModule(permissions)).length, color: "text-sky-400" },
+      {
+        label: "Total Permission",
+        value: scopeFilter === "ALL" ? permissions.length : scopePermissions.length,
+        color: "text-foreground",
+      },
+      {
+        label: "Module Aktif",
+        value: activeModulesCount,
+        color: "text-primary",
+      },
       {
         label: "Scope SYSTEM",
         value: permissions.filter((p) => p.scope === "SYSTEM").length,
@@ -175,7 +202,7 @@ export default function PermissionsPage() {
         color: "text-primary",
       },
     ],
-    [permissions]
+    [permissions, scopeFilter, scopePermissions.length, activeModulesCount]
   );
 
   return (
