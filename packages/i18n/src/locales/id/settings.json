@@ -523,7 +523,28 @@
     "social_connect_failed": "Gagal menghubungkan penyedia identitas {{provider}}.",
     "idle_lock_title": "Kunci Otomatis Sesi Aktif",
     "idle_lock_desc": "Sesi Anda telah terkunci secara otomatis karena tidak ada aktivitas untuk melindungi data jaringan sensitif.",
-    "unlock_session_btn": "Buka Kunci Sesi"
+    "unlock_session_btn": "Buka Kunci Sesi",
+    "passkey_single_device_warning_title": "Hanya 1 Passkey Terdaftar — Risiko Terkunci dari Akun",
+    "passkey_single_device_warning_desc": "Anda hanya memiliki 1 passkey terdaftar pada perangkat ini. Jika perangkat keras ini hilang, rusak, atau di-reset, Anda berisiko kehilangan akses ke akun Anda. Kami sangat menyarankan untuk mendaftarkan kunci keamanan cadangan (seperti ponsel HP atau YubiKey USB) atau menyimpan kode pemulihan darurat.",
+    "passkey_add_secondary_btn": "Tambah Passkey Cadangan",
+    "passkey_multi_device_active_badge": "Redundansi Multi-Perangkat (Aktif)",
+    "backup_codes_title": "Kode Pemulihan Darurat Offline",
+    "backup_codes_desc": "Kode pemulihan sekali pakai yang dapat dicetak untuk akses darurat offline ketika aplikasi autentikator atau passkey Anda tidak dapat diakses.",
+    "backup_codes_active": "Aktif",
+    "backup_codes_inactive": "Belum Dibuat",
+    "backup_codes_remaining_badge": "{{remaining}} dari {{total}} tersisa",
+    "backup_codes_generate_btn": "Buat Kode Pemulihan",
+    "backup_codes_regenerate_btn": "Buat Ulang Kode",
+    "backup_codes_view_btn": "Lihat Kode Pemulihan",
+    "backup_codes_modal_title": "Kode Pemulihan Darurat Offline",
+    "backup_codes_modal_desc": "Simpan kode pemulihan sekali pakai ini di brankas kata sandi atau tempat offline yang aman. Setiap kode hanya dapat digunakan 1 kali untuk login Step-Up saat metode 2FA lain tidak tersedia.",
+    "backup_codes_warning": "Teks asli kode ini HANYA DITAMPILKAN SATU KALI saat pembuatan. FTTH GIS hanya menyimpan hash kriptografis. Jaga kerahasiaan kode ini secara ketat.",
+    "backup_codes_copy_btn": "Salin Semua Kode",
+    "backup_codes_copied": "Semua 10 kode berhasil disalin ke papan klip!",
+    "backup_codes_download_btn": "Unduh .txt",
+    "backup_codes_print_btn": "Cetak",
+    "backup_codes_regenerate_confirm_title": "Buat Ulang Seluruh Kode Pemulihan?",
+    "backup_codes_regenerate_confirm_desc": "Membuat rangkaian kode pemulihan baru akan langsung membatalkan seluruh 10 kode sebelumnya. Kode lama yang belum terpakai tidak akan dapat digunakan lagi."
   }
 }
 

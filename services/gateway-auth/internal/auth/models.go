@@ -135,8 +135,15 @@ type MfaEmailVerifyRequest struct {
 	Code         string `json:"code" binding:"required"`
 }
 
-// MfaTotpVerifyRequest verifies the 6-digit RFC 6238 TOTP code using the pre-auth session
+// MfaTotpVerifyRequest verifies the 6-digit RFC 6238 TOTP code or emergency backup code using the pre-auth session
 type MfaTotpVerifyRequest struct {
+	PreAuthToken string `json:"preAuthToken" binding:"required"`
+	Code         string `json:"code" binding:"required"`
+	Method       string `json:"method"` // "totp" (default) or "backup_code"
+}
+
+// MfaBackupCodeVerifyRequest verifies a single-use offline recovery code
+type MfaBackupCodeVerifyRequest struct {
 	PreAuthToken string `json:"preAuthToken" binding:"required"`
 	Code         string `json:"code" binding:"required"`
 }

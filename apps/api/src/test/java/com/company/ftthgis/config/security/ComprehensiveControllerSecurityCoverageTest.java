@@ -103,6 +103,8 @@ public class ComprehensiveControllerSecurityCoverageTest {
             "PersonalSecurityController.getWebauthnRegisterChallenge",
             "PersonalSecurityController.verifyWebauthnRegister",
             "PersonalSecurityController.deleteWebauthnCredential",
+            "PersonalSecurityController.getBackupCodesStatus",
+            "PersonalSecurityController.generateBackupCodes",
             "EffectiveSecurityPolicyController.getEffectivePolicy",
             "UserWorkspaceController.listMyWorkspaces",
             "UserWorkspaceController.switchContext",

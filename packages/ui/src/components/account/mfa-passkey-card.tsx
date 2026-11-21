@@ -5,10 +5,12 @@ import {
   Lock,
   Smartphone,
   Key,
+  KeyRound,
   Mail,
   Info,
   CheckCircle2,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../card";
 import {
@@ -26,7 +28,9 @@ import {
   PersonalSecuritySummaryData,
   AccountLabels,
   WebauthnCredentialData,
+  BackupCodesStatusData,
 } from "./account-types";
+import { BackupCodesModal } from "./backup-codes-modal";
 
 export interface MfaPasskeyCardProps {
   plane?: PlaneType;
@@ -39,6 +43,16 @@ export interface MfaPasskeyCardProps {
   onDeletePasskey?: (credentialId: string) => void;
   onSetupEmailOtp?: () => void;
   onDisableEmailOtp?: () => void;
+  onFetchBackupCodesStatus?: () => Promise<BackupCodesStatusData>;
+  onGenerateBackupCodes?: () => Promise<{
+    success: boolean;
+    codes: string[];
+    remainingCount?: number;
+    totalCount?: number;
+    generatedAt?: string;
+    message?: string;
+  }>;
+  onBackupCodesSuccess?: () => void;
   isLoading?: boolean;
 }
 
@@ -136,9 +150,13 @@ export function MfaPasskeyCard({
   onDeletePasskey,
   onSetupEmailOtp,
   onDisableEmailOtp,
+  onFetchBackupCodesStatus,
+  onGenerateBackupCodes,
+  onBackupCodesSuccess,
   isLoading = false,
 }: MfaPasskeyCardProps) {
   const [confirmAction, setConfirmAction] = React.useState<ConfirmActionState>(null);
+  const [isBackupCodesModalOpen, setIsBackupCodesModalOpen] = React.useState(false);
 
   const isSystemPlane = plane === "SYSTEM";
   const isEnforced = Boolean(isSystemPlane || summary?.mfaEnforced);
@@ -446,15 +464,111 @@ export function MfaPasskeyCard({
             </div>
           </div>
 
-          {/* Registered Passkeys List */}
+          {/* Method 4: Emergency Offline Recovery Codes (Fase 7.10 / ADR-0022) */}
+          <div className="p-3.5 rounded-lg border border-border/80 bg-background/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <KeyRound className="size-4 text-muted-foreground shrink-0" />
+                <h4 className="text-xs font-semibold">
+                  {labels?.backupCodesTitle || "Emergency Recovery Codes (Offline 2FA)"}
+                </h4>
+                {summary?.backupCodesConfigured && summary?.backupCodesRemaining !== undefined ? (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-primary/40 bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0"
+                  >
+                    <CheckCircle2 className="size-2.5" />
+                    <span>
+                      {summary.backupCodesRemaining} of {summary.backupCodesTotal || 10} Codes Available
+                    </span>
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-border/80 bg-muted/40 text-muted-foreground text-[10px] font-medium px-1.5 py-0"
+                  >
+                    <ShieldAlert className="size-2.5" />
+                    <span>Not Configured</span>
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                {labels?.backupCodesDesc ||
+                  "Generate 10 single-use 8-character codes you can print or store in a password manager to sign in during emergency hardware lockout or disaster recovery."}
+              </p>
+            </div>
+
+            {(onFetchBackupCodesStatus || onGenerateBackupCodes) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsBackupCodesModalOpen(true)}
+                disabled={isLoading}
+                className="shrink-0 gap-1.5 text-xs h-7 cursor-pointer"
+              >
+                <KeyRound className="size-3.5" />
+                <span>
+                  {summary?.backupCodesConfigured
+                    ? labels?.backupCodesViewBtn || "View / Regenerate Codes"
+                    : labels?.backupCodesGenerateBtn || "Generate Backup Codes"}
+                </span>
+              </Button>
+            )}
+          </div>
+
+          {/* Registered Passkeys List & Multi-Device Advisory (Fase 7.2 / ADR-0022) */}
           {passkeys && passkeys.length > 0 && (
             <div className="pt-3 space-y-2 border-t border-border/60">
-              <h4 className="text-xs font-semibold text-foreground flex items-center gap-2">
-                <Key className="size-3.5 text-muted-foreground" />
-                <span>
-                  {labels?.registeredPasskeysTitle || "Registered Passkeys & Security Keys"}
-                </span>
-              </h4>
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-xs font-semibold text-foreground flex items-center gap-2">
+                  <Key className="size-3.5 text-muted-foreground" />
+                  <span>
+                    {labels?.registeredPasskeysTitle || "Registered Passkeys & Security Keys"}
+                  </span>
+                </h4>
+                {passkeys.length >= 2 && (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-primary/40 bg-primary/10 text-primary text-[10px] font-medium px-2 py-0.5"
+                  >
+                    <ShieldCheck className="size-3" />
+                    <span>{labels?.passkeyMultiDeviceActiveBadge || "Multi-Device Redundancy (Active)"}</span>
+                  </Badge>
+                )}
+              </div>
+
+              {/* Single Passkey Educational Warning (Anti-Lockout Advisory) */}
+              {passkeys.length === 1 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="size-4 shrink-0 text-amber-500 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-foreground">
+                        {labels?.passkeySingleDeviceWarningTitle || "Single Passkey Advisory (Anti-Lockout)"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {labels?.passkeySingleDeviceWarningDesc ||
+                          "You only have 1 security key registered. If this device is lost, formatted, or broken, you may risk being locked out. We strongly recommend registering a secondary key (smartphone or YubiKey)."}
+                      </p>
+                    </div>
+                  </div>
+                  {onSetupPasskey && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={onSetupPasskey}
+                      disabled={isLoading}
+                      className="shrink-0 text-xs gap-1.5 h-7 cursor-pointer"
+                    >
+                      <Key className="size-3" />
+                      <span>{labels?.passkeyAddSecondaryBtn || "+ Add Secondary Passkey"}</span>
+                    </Button>
+                  )}
+                </div>
+              )}
+
               <div className="divide-y divide-border/60 rounded-lg border border-border/80 bg-background/50">
                 {passkeys.map((p) => (
                   <div key={p.credentialId} className="flex items-center justify-between p-3 gap-2">
@@ -499,6 +613,17 @@ export function MfaPasskeyCard({
         onClose={() => setConfirmAction(null)}
         onConfirm={handleConfirmAction}
       />
+
+      {onFetchBackupCodesStatus && onGenerateBackupCodes && (
+        <BackupCodesModal
+          open={isBackupCodesModalOpen}
+          onOpenChange={setIsBackupCodesModalOpen}
+          labels={labels}
+          onFetchStatus={onFetchBackupCodesStatus}
+          onGenerateCodes={onGenerateBackupCodes}
+          onSuccess={onBackupCodesSuccess}
+        />
+      )}
     </>
   );
 }

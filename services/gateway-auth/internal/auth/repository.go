@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const sentinelPlatformOrgID = "00000000-0000-0000-0000-000000000001"
@@ -45,6 +46,8 @@ type Repository interface {
 	GetUserWebauthnCredentials(ctx context.Context, userID string) ([]WebauthnCredentialModel, error)
 	UpdateWebauthnSignCounter(ctx context.Context, credentialID string, newCounter int64) error
 	IsUserMfaEnabled(ctx context.Context, userID string) (bool, error)
+	HasActiveBackupCodes(ctx context.Context, userID string) (bool, error)
+	VerifyAndBurnBackupCode(ctx context.Context, userID string, rawCode string, clientIP string) (bool, error)
 }
 
 // WebauthnCredentialModel encapsulates a stored FIDO2 public key credential.
@@ -892,6 +895,63 @@ func (r *PostgresRepository) IsUserMfaEnabled(ctx context.Context, userID string
 		return false, nil
 	}
 	return enabled, nil
+}
+
+// HasActiveBackupCodes returns true if the user has at least 1 unused offline backup code.
+func (r *PostgresRepository) HasActiveBackupCodes(ctx context.Context, userID string) (bool, error) {
+	if r.db == nil || strings.TrimSpace(userID) == "" {
+		return false, nil
+	}
+	var count int64
+	query := `SELECT COUNT(*) FROM user_mfa_backup_codes WHERE user_id::text = $1 AND is_used = false`
+	err := r.db.QueryRow(ctx, query, strings.TrimSpace(userID)).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// VerifyAndBurnBackupCode matches the candidate code against user's unused backup codes.
+// Upon match, it atomically marks the code as used and returns true.
+func (r *PostgresRepository) VerifyAndBurnBackupCode(ctx context.Context, userID string, rawCode string, clientIP string) (bool, error) {
+	if r.db == nil || strings.TrimSpace(userID) == "" || strings.TrimSpace(rawCode) == "" {
+		return false, nil
+	}
+	cleanCode := strings.ToUpper(strings.TrimSpace(rawCode))
+	cleanCode = strings.ReplaceAll(cleanCode, " ", "")
+	// If submitted without dash (e.g. XXXXXXXX), format as XXXX-XXXX
+	if len(cleanCode) == 8 && !strings.Contains(cleanCode, "-") {
+		cleanCode = cleanCode[:4] + "-" + cleanCode[4:]
+	}
+
+	query := `SELECT id::text, code_hash FROM user_mfa_backup_codes WHERE user_id::text = $1 AND is_used = false`
+	rows, err := r.db.Query(ctx, query, strings.TrimSpace(userID))
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	var matchedID string
+	for rows.Next() {
+		var id, codeHash string
+		if err := rows.Scan(&id, &codeHash); err == nil {
+			if err := bcrypt.CompareHashAndPassword([]byte(codeHash), []byte(cleanCode)); err == nil {
+				matchedID = id
+				break
+			}
+		}
+	}
+
+	if matchedID == "" {
+		return false, nil
+	}
+
+	burnQuery := `UPDATE user_mfa_backup_codes SET is_used = true, used_at = CURRENT_TIMESTAMP, used_ip = $1, updated_at = CURRENT_TIMESTAMP WHERE id::text = $2 AND is_used = false`
+	tag, err := r.db.Exec(ctx, burnQuery, clientIP, matchedID)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
 }
 
 

@@ -570,6 +570,11 @@ func (h *Handler) Login(c *gin.Context) {
 		availableMethods = append(availableMethods, "email_otp")
 	}
 
+	hasBackupCodes, _ := h.repo.HasActiveBackupCodes(c.Request.Context(), claims.Sub)
+	if hasBackupCodes {
+		availableMethods = append(availableMethods, "backup_code")
+	}
+
 	// Safe Fallback Anti-Lockout: if organization/platform enforces MFA or break-glass login is active,
 	// but user has 0 methods configured, allow email_otp as emergency verification method so staff are never locked out.
 	if ((tenantCtx != nil && tenantCtx.MFARequired) || req.IsBreakGlass) && len(availableMethods) == 0 && claims.Email != "" {
@@ -1124,18 +1129,31 @@ func generateSecureToken(byteLen int) string {
 }
 
 // VerifyMFA handles POST /api/v1/auth/mfa/verify.
-// If preAuthToken is provided, it validates the TOTP against the pre-authenticated user session.
+// If preAuthToken is provided, it validates the TOTP or emergency backup code against the pre-authenticated user session.
 // Otherwise, it falls back to credentials Login for backwards compatibility.
 func (h *Handler) VerifyMFA(c *gin.Context) {
 	var req MfaTotpVerifyRequest
 	if err := c.ShouldBindBodyWithJSON(&req); err == nil && strings.TrimSpace(req.PreAuthToken) != "" {
 		code := strings.TrimSpace(req.Code)
-		if code == "" || len(code) != 6 {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "INVALID_CODE",
-				"message": "Kode autentikator 6 digit wajib diisi.",
-			})
-			return
+		isBackupCode := strings.EqualFold(strings.TrimSpace(req.Method), "backup_code")
+
+		if isBackupCode {
+			cleanCode := strings.ReplaceAll(code, " ", "")
+			if cleanCode == "" || len(cleanCode) < 8 {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "INVALID_CODE",
+					"message": "Kode pemulihan darurat minimal 8 karakter alfanumerik.",
+				})
+				return
+			}
+		} else {
+			if code == "" || len(code) != 6 {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "INVALID_CODE",
+					"message": "Kode autentikator 6 digit wajib diisi.",
+				})
+				return
+			}
 		}
 
 		if h.rdb == nil {
@@ -1166,6 +1184,43 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 			return
 		}
 
+		clientIP := resolveClientIP(c)
+
+		if isBackupCode {
+			valid, err := h.repo.VerifyAndBurnBackupCode(ctx, session.UserID, code, clientIP)
+			if err != nil || !valid {
+				h.emitAudit(ctx, session.TenantSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_MFA_FAILED", map[string]any{
+					"plane":  session.Plane,
+					"realm":  session.TargetRealm,
+					"method": "backup_code",
+				})
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error":       "INVALID_BACKUP_CODE",
+					"mfaRequired": true,
+					"message":     "Kode pemulihan darurat tidak valid atau sudah pernah digunakan.",
+				})
+				return
+			}
+
+			// Burn pre-auth session (R4 single-use defense)
+			delCount, _ := h.rdb.Del(ctx, preAuthKey).Result()
+			if delCount == 0 {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error":   "SESSION_ALREADY_USED",
+					"message": "Sesi verifikasi telah digunakan.",
+				})
+				return
+			}
+
+			h.emitAudit(ctx, session.TenantSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_MFA_SUCCESS", map[string]any{
+				"plane":  session.Plane,
+				"realm":  session.TargetRealm,
+				"method": "backup_code",
+			})
+			h.completeLoginSession(c, &session, clientIP, "backup_code")
+			return
+		}
+
 		totpSecret := ""
 		if h.kcAdmin != nil && session.UserID != "" {
 			if _, secret, err := h.kcAdmin.GetUserTOTPConfig(ctx, session.TargetRealm, session.UserID); err == nil && secret != "" {
@@ -1174,7 +1229,6 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 		}
 
 		if totpSecret == "" || !VerifyTOTPCode(totpSecret, code, time.Now()) {
-			clientIP := resolveClientIP(c)
 			h.emitAudit(ctx, session.TenantSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_MFA_FAILED", map[string]any{
 				"plane":  session.Plane,
 				"realm":  session.TargetRealm,
@@ -1198,12 +1252,93 @@ func (h *Handler) VerifyMFA(c *gin.Context) {
 			return
 		}
 
-		clientIP := resolveClientIP(c)
 		h.completeLoginSession(c, &session, clientIP, "totp")
 		return
 	}
 
 	h.Login(c)
+}
+
+// VerifyMfaBackupCode handles POST /api/v1/auth/mfa/backup-code/verify.
+func (h *Handler) VerifyMfaBackupCode(c *gin.Context) {
+	var req MfaBackupCodeVerifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "INVALID_PAYLOAD",
+			"message": "Payload verifikasi kode cadangan tidak valid.",
+		})
+		return
+	}
+
+	code := strings.TrimSpace(req.Code)
+	cleanCode := strings.ReplaceAll(code, " ", "")
+	if cleanCode == "" || len(cleanCode) < 8 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "INVALID_CODE",
+			"message": "Kode pemulihan darurat minimal 8 karakter alfanumerik.",
+		})
+		return
+	}
+
+	if h.rdb == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "CACHE_UNAVAILABLE",
+			"message": "Layanan verifikasi sedang tidak tersedia sementara.",
+		})
+		return
+	}
+
+	ctx := c.Request.Context()
+	preAuthKey := "auth:pre-auth:" + req.PreAuthToken
+	rawSession, err := h.rdb.Get(ctx, preAuthKey).Result()
+	if err != nil || rawSession == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "SESSION_EXPIRED",
+			"message": "Sesi verifikasi Anda telah kedaluwarsa. Silakan login kembali.",
+		})
+		return
+	}
+
+	var session PreAuthSession
+	if err := json.Unmarshal([]byte(rawSession), &session); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "SESSION_INVALID",
+			"message": "Data sesi pra-autentikasi tidak valid.",
+		})
+		return
+	}
+
+	clientIP := resolveClientIP(c)
+	valid, err := h.repo.VerifyAndBurnBackupCode(ctx, session.UserID, code, clientIP)
+	if err != nil || !valid {
+		h.emitAudit(ctx, session.TenantSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_MFA_FAILED", map[string]any{
+			"plane":  session.Plane,
+			"realm":  session.TargetRealm,
+			"method": "backup_code",
+		})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":       "INVALID_BACKUP_CODE",
+			"mfaRequired": true,
+			"message":     "Kode pemulihan darurat tidak valid atau sudah pernah digunakan.",
+		})
+		return
+	}
+
+	delCount, _ := h.rdb.Del(ctx, preAuthKey).Result()
+	if delCount == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "SESSION_ALREADY_USED",
+			"message": "Sesi verifikasi telah digunakan.",
+		})
+		return
+	}
+
+	h.emitAudit(ctx, session.TenantSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_MFA_SUCCESS", map[string]any{
+		"plane":  session.Plane,
+		"realm":  session.TargetRealm,
+		"method": "backup_code",
+	})
+	h.completeLoginSession(c, &session, clientIP, "backup_code")
 }
 
 // Refresh handles POST /api/v1/auth/refresh using HttpOnly cookie (or JSON fallback).
@@ -1496,6 +1631,11 @@ func (h *Handler) SsoExchange(c *gin.Context) {
 	}
 	if emailOtpEnabled && claims.Email != "" {
 		availableMethods = append(availableMethods, "email_otp")
+	}
+
+	hasBackupCodes, _ := h.repo.HasActiveBackupCodes(c.Request.Context(), claims.Sub)
+	if hasBackupCodes {
+		availableMethods = append(availableMethods, "backup_code")
 	}
 
 	mfaRequired := false

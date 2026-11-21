@@ -14,6 +14,7 @@ import {
   type WebauthnCredentialData,
   type WebauthnRegisterChallengeData,
   type SocialIdentityData,
+  type BackupCodesStatusData,
 } from "@k2net/ui";
 import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
@@ -153,6 +154,27 @@ function useAccountLabels(): AccountLabels {
       passkeyHowItWorksPlatformDesc: t("settings.account.passkey_how_it_works_platform_desc"),
       passkeyHowItWorksCrossPlatformDesc: t("settings.account.passkey_how_it_works_cross_platform_desc"),
       passkeyPlatformNotSupported: t("settings.account.passkey_platform_not_supported"),
+      passkeySingleDeviceWarningTitle: t("settings.account.passkey_single_device_warning_title"),
+      passkeySingleDeviceWarningDesc: t("settings.account.passkey_single_device_warning_desc"),
+      passkeyAddSecondaryBtn: t("settings.account.passkey_add_secondary_btn"),
+      passkeyMultiDeviceActiveBadge: t("settings.account.passkey_multi_device_active_badge"),
+      backupCodesTitle: t("settings.account.backup_codes_title"),
+      backupCodesDesc: t("settings.account.backup_codes_desc"),
+      backupCodesActive: t("settings.account.backup_codes_active"),
+      backupCodesInactive: t("settings.account.backup_codes_inactive"),
+      backupCodesRemainingBadge: t("settings.account.backup_codes_remaining_badge"),
+      backupCodesGenerateBtn: t("settings.account.backup_codes_generate_btn"),
+      backupCodesRegenerateBtn: t("settings.account.backup_codes_regenerate_btn"),
+      backupCodesViewBtn: t("settings.account.backup_codes_view_btn"),
+      backupCodesModalTitle: t("settings.account.backup_codes_modal_title"),
+      backupCodesModalDesc: t("settings.account.backup_codes_modal_desc"),
+      backupCodesWarning: t("settings.account.backup_codes_warning"),
+      backupCodesCopyBtn: t("settings.account.backup_codes_copy_btn"),
+      backupCodesCopied: t("settings.account.backup_codes_copied"),
+      backupCodesDownloadBtn: t("settings.account.backup_codes_download_btn"),
+      backupCodesPrintBtn: t("settings.account.backup_codes_print_btn"),
+      backupCodesRegenerateConfirmTitle: t("settings.account.backup_codes_regenerate_confirm_title"),
+      backupCodesRegenerateConfirmDesc: t("settings.account.backup_codes_regenerate_confirm_desc"),
       doneBtn: t("settings.account.done_btn"),
       cancelBtn: t("settings.account.cancel_btn"),
     }),
@@ -485,6 +507,39 @@ export default function AdminAccountPreferencesPage() {
     }
   };
 
+  const handleFetchBackupCodesStatus = React.useCallback(async () => {
+    if (!session?.accessToken) throw new Error("Unauthorized");
+    const baseUrl = getBackendBaseUrl();
+    const res = await httpClient(`${baseUrl}/me/mfa/backup-codes`, {
+      token: session.accessToken ?? undefined,
+    });
+    if (!res.ok) {
+      throw new Error("Failed to fetch backup codes status");
+    }
+    return (await res.json()) as BackupCodesStatusData;
+  }, [session?.accessToken]);
+
+  const handleGenerateBackupCodes = React.useCallback(async () => {
+    if (!session?.accessToken) throw new Error("Unauthorized");
+    const baseUrl = getBackendBaseUrl();
+    const res = await httpClient(`${baseUrl}/me/mfa/backup-codes/generate`, {
+      method: "POST",
+      token: session.accessToken ?? undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { success: false, codes: [], message: data.message || "Failed to generate backup codes" };
+    }
+    return {
+      success: true,
+      codes: data.codes || [],
+      remainingCount: data.remainingCount,
+      totalCount: data.totalCount,
+      generatedAt: data.generatedAt,
+      message: data.message,
+    };
+  }, [session?.accessToken]);
+
   return (
     <>
       <AccountPreferencesShell
@@ -502,6 +557,11 @@ export default function AdminAccountPreferencesPage() {
         onDisableTotp={handleDisableTotp}
         onSetupPasskey={() => setIsPasskeyModalOpen(true)}
         onDeletePasskey={handleDeletePasskey}
+        onFetchBackupCodesStatus={handleFetchBackupCodesStatus}
+        onGenerateBackupCodes={handleGenerateBackupCodes}
+        onBackupCodesSuccess={() => {
+          fetchData();
+        }}
         onSetupEmailOtp={() => setIsEmailOtpModalOpen(true)}
         onDisableEmailOtp={handleDisableEmailOtp}
         onRevokeDevice={handleRevokeDevice}

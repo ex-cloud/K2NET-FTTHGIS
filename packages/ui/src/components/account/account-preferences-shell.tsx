@@ -17,6 +17,7 @@ import {
   AccountLabels,
   WebauthnCredentialData,
   SocialIdentityData,
+  BackupCodesStatusData,
 } from "./account-types";
 
 export interface AccountPreferencesShellProps {
@@ -36,6 +37,16 @@ export interface AccountPreferencesShellProps {
   onDeletePasskey?: (credentialId: string) => void;
   onSetupEmailOtp?: () => void;
   onDisableEmailOtp?: () => void;
+  onFetchBackupCodesStatus?: () => Promise<BackupCodesStatusData>;
+  onGenerateBackupCodes?: () => Promise<{
+    success: boolean;
+    codes: string[];
+    remainingCount?: number;
+    totalCount?: number;
+    generatedAt?: string;
+    message?: string;
+  }>;
+  onBackupCodesSuccess?: () => void;
   onRevokeDevice?: (deviceId: number) => Promise<void> | void;
   onRevokeAllSessions?: () => Promise<void> | void;
   onConnectProvider?: (provider: "google" | "github" | string) => Promise<void> | void;
@@ -60,6 +71,9 @@ export function AccountPreferencesShell({
   onDeletePasskey,
   onSetupEmailOtp,
   onDisableEmailOtp,
+  onFetchBackupCodesStatus,
+  onGenerateBackupCodes,
+  onBackupCodesSuccess,
   onRevokeDevice,
   onRevokeAllSessions,
   onConnectProvider,
@@ -123,6 +137,9 @@ export function AccountPreferencesShell({
             onDeletePasskey={onDeletePasskey}
             onSetupEmailOtp={onSetupEmailOtp}
             onDisableEmailOtp={onDisableEmailOtp}
+            onFetchBackupCodesStatus={onFetchBackupCodesStatus}
+            onGenerateBackupCodes={onGenerateBackupCodes}
+            onBackupCodesSuccess={onBackupCodesSuccess}
             isLoading={isLoading}
           />
           <PasswordSecurityCard

@@ -50,6 +50,24 @@ export interface PersonalSecuritySummaryData {
   activeSessionsCount: number;
   linkedProviders?: string[];
   linkedIdentities?: SocialIdentityData[];
+  backupCodesConfigured?: boolean;
+  backupCodesRemaining?: number;
+  backupCodesTotal?: number;
+}
+
+export interface BackupCodeItem {
+  id: string;
+  codeHint: string;
+  isUsed: boolean;
+  usedAt?: string | null;
+}
+
+export interface BackupCodesStatusData {
+  hasBackupCodes: boolean;
+  remainingCount: number;
+  totalCount: number;
+  generatedAt?: string | null;
+  codes: BackupCodeItem[];
 }
 
 export interface WebauthnCredentialData {
@@ -194,6 +212,29 @@ export interface AccountLabels {
   passkeyHowItWorksPlatformDesc?: string;
   passkeyHowItWorksCrossPlatformDesc?: string;
   passkeyPlatformNotSupported?: string;
+  // Multi-Device Passkey Advisory (ADR-0022)
+  passkeySingleDeviceWarningTitle?: string;
+  passkeySingleDeviceWarningDesc?: string;
+  passkeyAddSecondaryBtn?: string;
+  passkeyMultiDeviceActiveBadge?: string;
+  // Emergency Offline Backup Codes (ADR-0022)
+  backupCodesTitle?: string;
+  backupCodesDesc?: string;
+  backupCodesActive?: string;
+  backupCodesInactive?: string;
+  backupCodesRemainingBadge?: string;
+  backupCodesGenerateBtn?: string;
+  backupCodesRegenerateBtn?: string;
+  backupCodesViewBtn?: string;
+  backupCodesModalTitle?: string;
+  backupCodesModalDesc?: string;
+  backupCodesWarning?: string;
+  backupCodesCopyBtn?: string;
+  backupCodesCopied?: string;
+  backupCodesDownloadBtn?: string;
+  backupCodesPrintBtn?: string;
+  backupCodesRegenerateConfirmTitle?: string;
+  backupCodesRegenerateConfirmDesc?: string;
   doneBtn?: string;
   cancelBtn?: string;
 }

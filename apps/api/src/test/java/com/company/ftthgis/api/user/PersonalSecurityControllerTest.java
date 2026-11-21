@@ -35,6 +35,7 @@ public class PersonalSecurityControllerTest {
     private SecurityPolicyService securityPolicyService;
     private KeycloakAdminService keycloakAdminService;
     private com.company.ftthgis.domain.user.repository.UserWebauthnCredentialRepository userWebauthnCredentialRepository;
+    private com.company.ftthgis.domain.user.repository.UserBackupCodeRepository userBackupCodeRepository;
     private com.company.ftthgis.service.EmailService emailService;
 
     private PersonalSecurityController controller;
@@ -52,6 +53,7 @@ public class PersonalSecurityControllerTest {
         securityPolicyService = mock(SecurityPolicyService.class);
         keycloakAdminService = mock(KeycloakAdminService.class);
         userWebauthnCredentialRepository = mock(com.company.ftthgis.domain.user.repository.UserWebauthnCredentialRepository.class);
+        userBackupCodeRepository = mock(com.company.ftthgis.domain.user.repository.UserBackupCodeRepository.class);
         emailService = mock(com.company.ftthgis.service.EmailService.class);
 
         controller = new PersonalSecurityController(
@@ -62,7 +64,9 @@ public class PersonalSecurityControllerTest {
                 keycloakAdminService,
                 userWebauthnCredentialRepository,
                 Optional.empty(),
-                Optional.of(emailService)
+                Optional.of(emailService),
+                Optional.of(userBackupCodeRepository),
+                Optional.empty()
         );
 
         userId = UUID.randomUUID();
@@ -222,5 +226,61 @@ public class PersonalSecurityControllerTest {
         ResponseEntity<?> disableRes = controller.disableEmailOtp(jwt);
         assertEquals(HttpStatus.OK, disableRes.getStatusCode());
         verify(keycloakAdminService, times(1)).setEmailOtpEnabled("k2net-tenants", "operator@k2net.id", false);
+    }
+
+    @Test
+    @DisplayName("P8: generateBackupCodes should generate 10 hashed backup codes and return plaintext")
+    void testGenerateBackupCodes() {
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        ResponseEntity<Map<String, Object>> response = controller.generateBackupCodes(jwt);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        Map<String, Object> body = response.getBody();
+        assertNotNull(body);
+        assertTrue((Boolean) body.get("success"));
+        assertEquals(10, body.get("remainingCount"));
+        assertEquals(10, body.get("totalCount"));
+
+        @SuppressWarnings("unchecked")
+        List<String> codes = (List<String>) body.get("codes");
+        assertNotNull(codes);
+        assertEquals(10, codes.size());
+        for (String code : codes) {
+            assertTrue(code.matches("^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$"),
+                    "Code should match 4-4 alphanumeric pattern: " + code);
+        }
+
+        verify(userBackupCodeRepository, times(1)).deleteAllByUserId(userId);
+        verify(userBackupCodeRepository, times(1)).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("P9: getBackupCodesStatus should return remaining count and hints")
+    void testGetBackupCodesStatus() {
+        com.company.ftthgis.domain.user.entity.UserBackupCode mockCode = com.company.ftthgis.domain.user.entity.UserBackupCode.builder()
+                .id(UUID.randomUUID())
+                .user(testUser)
+                .codeHash("$2a$10$hashedcode")
+                .codeHint("****-A1B2")
+                .isUsed(false)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+
+        when(userBackupCodeRepository.findAllByUserIdOrderByCreatedAtDesc(userId))
+                .thenReturn(List.of(mockCode));
+
+        ResponseEntity<Map<String, Object>> response = controller.getBackupCodesStatus(jwt);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        Map<String, Object> body = response.getBody();
+        assertNotNull(body);
+        assertTrue((Boolean) body.get("hasBackupCodes"));
+        assertEquals(1L, body.get("remainingCount"));
+        assertEquals(1, body.get("totalCount"));
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> codesList = (List<Map<String, Object>>) body.get("codes");
+        assertEquals(1, codesList.size());
+        assertEquals("****-A1B2", codesList.get(0).get("codeHint"));
+        assertFalse((Boolean) codesList.get(0).get("isUsed"));
     }
 }

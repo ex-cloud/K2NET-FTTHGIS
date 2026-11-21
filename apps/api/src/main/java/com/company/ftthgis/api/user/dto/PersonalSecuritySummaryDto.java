@@ -22,5 +22,8 @@ public class PersonalSecuritySummaryDto {
     private int trustedDevicesCount;
     private int activeSessionsCount;
     private List<String> linkedProviders;
+    private boolean backupCodesConfigured;
+    private int backupCodesRemaining;
+    private int backupCodesTotal;
 }
 

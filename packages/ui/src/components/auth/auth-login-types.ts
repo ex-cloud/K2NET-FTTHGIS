@@ -92,6 +92,7 @@ export interface AuthLoginFormLabels {
   mfaTabTotp?: string;
   mfaTabWebauthn?: string;
   mfaTabEmailOtp?: string;
+  mfaTabBackupCode?: string;
   mfaPasskeyPrompt?: string;
   mfaPasskeyBtn?: string;
   mfaEmailPrompt?: string;
@@ -105,6 +106,11 @@ export interface AuthLoginFormLabels {
   mfaMethodWebauthnDesc?: string;
   mfaMethodTotpDesc?: string;
   mfaMethodEmailDesc?: string;
+  mfaMethodBackupCodeDesc?: string;
+  mfaBackupCodePrompt?: string;
+  mfaBackupCodePlaceholder?: string;
+  mfaBackupCodeSingleUseWarning?: string;
+  mfaBackupCodeVerifySubmit?: string;
   mfaBackToPrimary?: string;
   continueWithPasskey?: string;
   waitingForPasskey?: string;

@@ -5,8 +5,10 @@ import com.company.ftthgis.api.system.DeviceVerificationController.TrustDevicePa
 import com.company.ftthgis.api.system.DeviceVerificationController.UserDeviceDto;
 import com.company.ftthgis.api.user.dto.PersonalSecuritySummaryDto;
 import com.company.ftthgis.domain.user.entity.User;
+import com.company.ftthgis.domain.user.entity.UserBackupCode;
 import com.company.ftthgis.domain.user.entity.UserDevice;
 import com.company.ftthgis.domain.user.entity.UserWebauthnCredential;
+import com.company.ftthgis.domain.user.repository.UserBackupCodeRepository;
 import com.company.ftthgis.domain.user.repository.UserDeviceRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.domain.user.repository.UserWebauthnCredentialRepository;
@@ -21,6 +23,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,6 +54,8 @@ public class PersonalSecurityController {
     private final UserWebauthnCredentialRepository userWebauthnCredentialRepository;
     private final Optional<StringRedisTemplate> redisTemplate;
     private final EmailService emailService;
+    private final UserBackupCodeRepository userBackupCodeRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public PersonalSecurityController(
@@ -60,7 +66,9 @@ public class PersonalSecurityController {
             KeycloakAdminService keycloakAdminService,
             UserWebauthnCredentialRepository userWebauthnCredentialRepository,
             Optional<StringRedisTemplate> redisTemplate,
-            Optional<EmailService> emailService) {
+            Optional<EmailService> emailService,
+            Optional<UserBackupCodeRepository> userBackupCodeRepository,
+            Optional<PasswordEncoder> passwordEncoder) {
         this.userDeviceRepository = userDeviceRepository;
         this.deviceVerificationService = deviceVerificationService;
         this.userRepository = userRepository;
@@ -69,6 +77,24 @@ public class PersonalSecurityController {
         this.userWebauthnCredentialRepository = userWebauthnCredentialRepository;
         this.redisTemplate = redisTemplate;
         this.emailService = emailService != null ? emailService.orElse(null) : null;
+        this.userBackupCodeRepository = userBackupCodeRepository != null ? userBackupCodeRepository.orElse(null) : null;
+        this.passwordEncoder = passwordEncoder != null && passwordEncoder.isPresent()
+                ? passwordEncoder.get()
+                : new BCryptPasswordEncoder();
+    }
+
+    public PersonalSecurityController(
+            UserDeviceRepository userDeviceRepository,
+            DeviceVerificationService deviceVerificationService,
+            UserRepository userRepository,
+            SecurityPolicyService securityPolicyService,
+            KeycloakAdminService keycloakAdminService,
+            UserWebauthnCredentialRepository userWebauthnCredentialRepository,
+            Optional<StringRedisTemplate> redisTemplate,
+            Optional<EmailService> emailService) {
+        this(userDeviceRepository, deviceVerificationService, userRepository,
+                securityPolicyService, keycloakAdminService, userWebauthnCredentialRepository,
+                redisTemplate, emailService, Optional.empty(), Optional.empty());
     }
 
     public PersonalSecurityController(
@@ -81,7 +107,7 @@ public class PersonalSecurityController {
             Optional<StringRedisTemplate> redisTemplate) {
         this(userDeviceRepository, deviceVerificationService, userRepository,
                 securityPolicyService, keycloakAdminService, userWebauthnCredentialRepository,
-                redisTemplate, Optional.empty());
+                redisTemplate, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     // Fallback challenge in-memory cache if Redis is not bound
@@ -295,6 +321,9 @@ public class PersonalSecurityController {
                 ? user.getFullName()
                 : (jwt.getClaimAsString("name") != null ? jwt.getClaimAsString("name") : "");
 
+        long backupCodesRemaining = userBackupCodeRepository != null ? userBackupCodeRepository.countByUserIdAndIsUsedFalse(userId) : 0;
+        long backupCodesTotal = userBackupCodeRepository != null ? userBackupCodeRepository.countByUserId(userId) : 0;
+
         PersonalSecuritySummaryDto summary = PersonalSecuritySummaryDto.builder()
                 .fullName(fullName)
                 .email(effectiveEmail)
@@ -310,9 +339,117 @@ public class PersonalSecurityController {
                 .trustedDevicesCount(devicesCount)
                 .activeSessionsCount(1) // current session minimum
                 .linkedProviders(linkedProviders)
+                .backupCodesConfigured(backupCodesTotal > 0)
+                .backupCodesRemaining((int) backupCodesRemaining)
+                .backupCodesTotal((int) backupCodesTotal)
                 .build();
 
         return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/mfa/backup-codes")
+    @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> getBackupCodesStatus(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        if (userBackupCodeRepository == null) {
+            return ResponseEntity.ok(Map.of(
+                    "hasBackupCodes", false,
+                    "remainingCount", 0,
+                    "totalCount", 0,
+                    "codes", List.of()
+            ));
+        }
+
+        List<UserBackupCode> codes = userBackupCodeRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        long remaining = codes.stream().filter(c -> !c.isUsed()).count();
+        List<Map<String, Object>> hints = codes.stream().map(c -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", c.getId().toString());
+            item.put("codeHint", c.getCodeHint());
+            item.put("isUsed", c.isUsed());
+            item.put("usedAt", c.getUsedAt() != null ? c.getUsedAt().toString() : null);
+            return item;
+        }).collect(Collectors.toList());
+
+        java.time.LocalDateTime generatedAt = codes.isEmpty() ? null : codes.get(0).getCreatedAt();
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("hasBackupCodes", !codes.isEmpty());
+        resp.put("remainingCount", remaining);
+        resp.put("totalCount", codes.size());
+        resp.put("generatedAt", generatedAt != null ? generatedAt.toString() : null);
+        resp.put("codes", hints);
+
+        return ResponseEntity.ok(resp);
+    }
+
+    @PostMapping("/mfa/backup-codes/generate")
+    @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Map<String, Object>> generateBackupCodes(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "success", false,
+                    "message", "Pengguna tidak ditemukan."
+            ));
+        }
+
+        if (userBackupCodeRepository == null) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "Repositori kode cadangan tidak tersedia."
+            ));
+        }
+
+        // Invalidate / remove previous backup codes for this user to prevent stale code accumulation
+        userBackupCodeRepository.deleteAllByUserId(userId);
+
+        // Standard Crockford-compatible alphanumeric alphabet (anti-ambiguous characters: no 0/O, no 1/I/L)
+        final String ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        List<String> plainCodes = new ArrayList<>(10);
+        List<UserBackupCode> entities = new ArrayList<>(10);
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        for (int i = 0; i < 10; i++) {
+            StringBuilder sb = new StringBuilder(9);
+            for (int j = 0; j < 4; j++) {
+                sb.append(ALPHABET.charAt(random.nextInt(ALPHABET.length())));
+            }
+            sb.append("-");
+            for (int j = 0; j < 4; j++) {
+                sb.append(ALPHABET.charAt(random.nextInt(ALPHABET.length())));
+            }
+            String plain = sb.toString();
+            plainCodes.add(plain);
+
+            String hash = passwordEncoder.encode(plain);
+            String hint = "****-" + plain.substring(5);
+
+            entities.add(UserBackupCode.builder()
+                    .user(user)
+                    .codeHash(hash)
+                    .codeHint(hint)
+                    .isUsed(false)
+                    .build());
+        }
+
+        userBackupCodeRepository.saveAll(entities);
+
+        log.info("Generated 10 new emergency backup codes for user {} ({})", user.getEmail(), user.getId());
+
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("success", true);
+        resp.put("message", "10 Kode pemulihan darurat offline berhasil dibuat.");
+        resp.put("codes", plainCodes);
+        resp.put("generatedAt", now.toString());
+        resp.put("remainingCount", 10);
+        resp.put("totalCount", 10);
+
+        return ResponseEntity.ok(resp);
     }
 
     public record TotpVerifyPayload(String secret, String code) {}

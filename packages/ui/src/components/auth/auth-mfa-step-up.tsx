@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Smartphone,
   Key,
+  KeyRound,
   Mail,
   ArrowLeft,
   ArrowRight,
@@ -9,10 +10,13 @@ import {
   Loader2,
   RefreshCw,
   AlertCircle,
+  Info,
 } from "lucide-react";
 import { Button } from "../button";
 import { Input } from "../input";
 import type { AuthLoginFormLabels } from "./auth-login-types";
+
+export type MfaStepUpMethod = "totp" | "webauthn" | "email_otp" | "backup_code";
 
 export interface AuthMfaStepUpProps {
   availableMethods?: string[];
@@ -23,6 +27,7 @@ export interface AuthMfaStepUpProps {
   onSendEmailOtp?: () => Promise<boolean>;
   onVerifyEmailOtp?: (code: string) => Promise<boolean>;
   onVerifyWebauthn?: () => Promise<boolean>;
+  onVerifyBackupCode?: (code: string) => Promise<boolean> | void;
   onBackToLogin: () => void;
   labels?: AuthLoginFormLabels;
   isLoading?: boolean;
@@ -32,10 +37,11 @@ interface MfaMethodChooserListProps {
   hasWebauthn: boolean;
   hasTotp: boolean;
   hasEmailOtp: boolean;
-  activeMethod: "totp" | "webauthn" | "email_otp";
+  hasBackupCode: boolean;
+  activeMethod: MfaStepUpMethod;
   maskedEmail?: string;
   labels?: AuthLoginFormLabels;
-  onSelectMethod: (method: "totp" | "webauthn" | "email_otp") => void;
+  onSelectMethod: (method: MfaStepUpMethod) => void;
   onCancelChooser: () => void;
 }
 
@@ -43,6 +49,7 @@ function MfaMethodChooserList({
   hasWebauthn,
   hasTotp,
   hasEmailOtp,
+  hasBackupCode,
   activeMethod,
   maskedEmail,
   labels,
@@ -146,6 +153,34 @@ function MfaMethodChooserList({
             <ChevronRight className="size-4 text-muted-foreground shrink-0" />
           </button>
         )}
+
+        {hasBackupCode && (
+          <button
+            type="button"
+            onClick={() => onSelectMethod("backup_code")}
+            className={`w-full text-left p-3 rounded-lg border transition-colors flex items-center justify-between gap-3 cursor-pointer ${
+              activeMethod === "backup_code"
+                ? "border-primary/50 bg-primary/5"
+                : "border-border/80 bg-muted/20 hover:bg-muted/40 hover:border-foreground/30"
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              <div className="mt-0.5 p-1.5 rounded-md bg-background border border-border/70 text-foreground shrink-0">
+                <KeyRound className="size-3.5" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-xs font-semibold text-foreground">
+                  {labels?.mfaTabBackupCode || "Emergency Recovery Code"}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  {labels?.mfaMethodBackupCodeDesc ||
+                    "Use an 8-character single-use emergency backup recovery code"}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+          </button>
+        )}
       </div>
 
       <Button
@@ -171,6 +206,7 @@ export function AuthMfaStepUp({
   onSendEmailOtp,
   onVerifyEmailOtp,
   onVerifyWebauthn,
+  onVerifyBackupCode,
   onBackToLogin,
   labels,
   isLoading = false,
@@ -178,18 +214,27 @@ export function AuthMfaStepUp({
   const hasTotp = availableMethods.includes("totp");
   const hasWebauthn = availableMethods.includes("webauthn");
   const hasEmailOtp = availableMethods.includes("email_otp");
+  const hasBackupCode = availableMethods.includes("backup_code");
 
-  const defaultMethod = hasWebauthn ? "webauthn" : hasTotp ? "totp" : "email_otp";
-  const [activeMethod, setActiveMethod] = useState<"totp" | "webauthn" | "email_otp">(defaultMethod);
+  const defaultMethod: MfaStepUpMethod = hasWebauthn
+    ? "webauthn"
+    : hasTotp
+      ? "totp"
+      : hasEmailOtp
+        ? "email_otp"
+        : "backup_code";
+  const [activeMethod, setActiveMethod] = useState<MfaStepUpMethod>(defaultMethod);
   const [isChoosingMethod, setIsChoosingMethod] = useState(false);
 
   // Sync activeMethod if availableMethods changes dynamically from server
   useEffect(() => {
-    const nextDefault = availableMethods.includes("webauthn")
+    const nextDefault: MfaStepUpMethod = availableMethods.includes("webauthn")
       ? "webauthn"
       : availableMethods.includes("totp")
         ? "totp"
-        : "email_otp";
+        : availableMethods.includes("email_otp")
+          ? "email_otp"
+          : "backup_code";
     if (!availableMethods.includes(activeMethod)) {
       setActiveMethod(nextDefault);
     }
@@ -200,6 +245,7 @@ export function AuthMfaStepUp({
   const [emailSent, setEmailSent] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
+  const [backupCodeInput, setBackupCodeInput] = useState("");
   const [isPromptingWebauthn, setIsPromptingWebauthn] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -241,7 +287,22 @@ export function AuthMfaStepUp({
     }
   };
 
-  const methodsCount = (hasTotp ? 1 : 0) + (hasWebauthn ? 1 : 0) + (hasEmailOtp ? 1 : 0);
+  const handleVerifyBackupCode = async () => {
+    const clean = backupCodeInput.trim().toUpperCase();
+    if (!onVerifyBackupCode || clean.length < 8) return;
+    try {
+      setLocalError(null);
+      await onVerifyBackupCode(clean);
+    } catch (err: unknown) {
+      setLocalError(err instanceof Error ? err.message : "Backup recovery code verification failed");
+    }
+  };
+
+  const methodsCount =
+    (hasTotp ? 1 : 0) +
+    (hasWebauthn ? 1 : 0) +
+    (hasEmailOtp ? 1 : 0) +
+    (hasBackupCode ? 1 : 0);
 
   return (
     <div className="space-y-3.5 animate-in fade-in duration-150">
@@ -258,6 +319,7 @@ export function AuthMfaStepUp({
           hasWebauthn={hasWebauthn}
           hasTotp={hasTotp}
           hasEmailOtp={hasEmailOtp}
+          hasBackupCode={hasBackupCode}
           activeMethod={activeMethod}
           maskedEmail={maskedEmail}
           labels={labels}
@@ -476,6 +538,79 @@ export function AuthMfaStepUp({
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Method 4: Emergency Offline Recovery Code */}
+          {activeMethod === "backup_code" && (
+            <div className="space-y-3">
+              <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <KeyRound className="size-3.5 text-muted-foreground" />
+                  <span>{labels?.mfaTabBackupCode || "Emergency Recovery Code"}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {labels?.mfaBackupCodePrompt ||
+                    "Enter one of your 8-character single-use emergency backup recovery codes."}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Input
+                    id="backupCodeInput"
+                    name="backupCode"
+                    type="text"
+                    autoComplete="off"
+                    autoFocus
+                    maxLength={9}
+                    placeholder={labels?.mfaBackupCodePlaceholder || "XXXX-XXXX"}
+                    value={backupCodeInput}
+                    onChange={(e) => {
+                      let val = e.target.value.toUpperCase().replace(/[^23456789ABCDEFGHJKLMNPQRSTUVWXYZ-]/g, "");
+                      if (val.length === 4 && !val.includes("-") && e.target.value.length > backupCodeInput.length) {
+                        val = val + "-";
+                      }
+                      setBackupCodeInput(val.slice(0, 9));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (backupCodeInput.trim().length >= 8 && !isLoading) {
+                          void handleVerifyBackupCode();
+                        }
+                      }
+                    }}
+                    className="h-9 text-center font-mono tracking-widest text-sm bg-background/80 border-border/70 rounded-md text-foreground uppercase focus:bg-background focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/50 transition-colors"
+                    disabled={isLoading}
+                    required
+                  />
+                  <div className="flex items-center gap-1 px-0.5 text-[10px] text-muted-foreground">
+                    <Info className="size-3 shrink-0" />
+                    <span>
+                      {labels?.mfaBackupCodeSingleUseWarning ||
+                        "Single-use only. Each recovery code becomes invalid once consumed."}
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleVerifyBackupCode}
+                  disabled={isLoading || backupCodeInput.trim().length < 8}
+                  className="w-full h-8 text-xs font-medium justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  {isLoading ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <>
+                      <span>{labels?.mfaBackupCodeVerifySubmit || "Verify & Sign In"}</span>
+                      <ArrowRight className="size-3.5" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
 

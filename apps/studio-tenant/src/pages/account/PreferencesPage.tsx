@@ -16,6 +16,7 @@ import {
   type WebauthnCredentialData,
   type WebauthnRegisterChallengeData,
   type SocialIdentityData,
+  type BackupCodesStatusData,
 } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 import { apiClient } from "../../lib/api-client";
@@ -154,6 +155,27 @@ function useAccountLabels(): AccountLabels {
       passkeyHowItWorksPlatformDesc: t("settings.account.passkey_how_it_works_platform_desc"),
       passkeyHowItWorksCrossPlatformDesc: t("settings.account.passkey_how_it_works_cross_platform_desc"),
       passkeyPlatformNotSupported: t("settings.account.passkey_platform_not_supported"),
+      passkeySingleDeviceWarningTitle: t("settings.account.passkey_single_device_warning_title"),
+      passkeySingleDeviceWarningDesc: t("settings.account.passkey_single_device_warning_desc"),
+      passkeyAddSecondaryBtn: t("settings.account.passkey_add_secondary_btn"),
+      passkeyMultiDeviceActiveBadge: t("settings.account.passkey_multi_device_active_badge"),
+      backupCodesTitle: t("settings.account.backup_codes_title"),
+      backupCodesDesc: t("settings.account.backup_codes_desc"),
+      backupCodesActive: t("settings.account.backup_codes_active"),
+      backupCodesInactive: t("settings.account.backup_codes_inactive"),
+      backupCodesRemainingBadge: t("settings.account.backup_codes_remaining_badge"),
+      backupCodesGenerateBtn: t("settings.account.backup_codes_generate_btn"),
+      backupCodesRegenerateBtn: t("settings.account.backup_codes_regenerate_btn"),
+      backupCodesViewBtn: t("settings.account.backup_codes_view_btn"),
+      backupCodesModalTitle: t("settings.account.backup_codes_modal_title"),
+      backupCodesModalDesc: t("settings.account.backup_codes_modal_desc"),
+      backupCodesWarning: t("settings.account.backup_codes_warning"),
+      backupCodesCopyBtn: t("settings.account.backup_codes_copy_btn"),
+      backupCodesCopied: t("settings.account.backup_codes_copied"),
+      backupCodesDownloadBtn: t("settings.account.backup_codes_download_btn"),
+      backupCodesPrintBtn: t("settings.account.backup_codes_print_btn"),
+      backupCodesRegenerateConfirmTitle: t("settings.account.backup_codes_regenerate_confirm_title"),
+      backupCodesRegenerateConfirmDesc: t("settings.account.backup_codes_regenerate_confirm_desc"),
       doneBtn: t("settings.account.done_btn"),
       cancelBtn: t("settings.account.cancel_btn"),
     }),
@@ -416,6 +438,23 @@ export function PreferencesPage() {
     }
   };
 
+  const handleFetchBackupCodesStatus = React.useCallback(async () => {
+    return apiClient<BackupCodesStatusData>("/api/v1/me/mfa/backup-codes");
+  }, []);
+
+  const handleGenerateBackupCodes = React.useCallback(async () => {
+    return apiClient<{
+      success: boolean;
+      codes: string[];
+      remainingCount?: number;
+      totalCount?: number;
+      generatedAt?: string;
+      message?: string;
+    }>("/api/v1/me/mfa/backup-codes/generate", {
+      method: "POST",
+    });
+  }, []);
+
   return (
     <>
       <AccountPreferencesShell
@@ -433,6 +472,11 @@ export function PreferencesPage() {
         onDisableTotp={handleDisableTotp}
         onSetupPasskey={() => setIsPasskeyModalOpen(true)}
         onDeletePasskey={handleDeletePasskey}
+        onFetchBackupCodesStatus={handleFetchBackupCodesStatus}
+        onGenerateBackupCodes={handleGenerateBackupCodes}
+        onBackupCodesSuccess={() => {
+          fetchData();
+        }}
         onSetupEmailOtp={() => setIsEmailOtpModalOpen(true)}
         onDisableEmailOtp={handleDisableEmailOtp}
         onRevokeDevice={handleRevokeDevice}

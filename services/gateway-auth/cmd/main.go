@@ -105,6 +105,7 @@ func main() {
 		authAPI.POST("/login", mutationLimiter, handler.Login)
 		authAPI.POST("/login/sso-exchange", mutationLimiter, handler.SsoExchange)
 		authAPI.POST("/mfa/verify", mutationLimiter, handler.VerifyMFA)
+		authAPI.POST("/mfa/backup-code/verify", mutationLimiter, handler.VerifyMfaBackupCode)
 		authAPI.POST("/mfa/email/send", mutationLimiter, handler.SendMfaEmailOTP)
 		authAPI.POST("/mfa/email/verify", mutationLimiter, handler.VerifyMfaEmailOTP)
 		authAPI.POST("/webauthn/login/challenge", mutationLimiter, handler.GetWebauthnLoginChallenge)

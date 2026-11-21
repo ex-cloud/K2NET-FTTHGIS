@@ -523,7 +523,28 @@
     "social_connect_failed": "Failed to connect {{provider}} identity provider.",
     "idle_lock_title": "Session Auto-Lock Active",
     "idle_lock_desc": "Your session has been automatically locked due to inactivity to protect sensitive network data.",
-    "unlock_session_btn": "Unlock Session"
+    "unlock_session_btn": "Unlock Session",
+    "passkey_single_device_warning_title": "Single Passkey Configured — Hardware Lockout Risk",
+    "passkey_single_device_warning_desc": "You only have 1 passkey registered on this device. If this hardware device is lost, damaged, or reset, you may lose access to your account. We strongly recommend enrolling a secondary security key (such as your smartphone or a USB YubiKey) or saving emergency recovery codes.",
+    "passkey_add_secondary_btn": "Add Secondary Passkey",
+    "passkey_multi_device_active_badge": "Multi-Device Redundancy (Active)",
+    "backup_codes_title": "Emergency Offline Recovery Codes",
+    "backup_codes_desc": "One-time printable recovery codes for offline emergency access when your authenticator app or hardware passkey is unavailable.",
+    "backup_codes_active": "Active",
+    "backup_codes_inactive": "Not Generated",
+    "backup_codes_remaining_badge": "{{remaining}} of {{total}} remaining",
+    "backup_codes_generate_btn": "Generate Recovery Codes",
+    "backup_codes_regenerate_btn": "Regenerate Codes",
+    "backup_codes_view_btn": "View Recovery Codes",
+    "backup_codes_modal_title": "Emergency Offline Recovery Codes",
+    "backup_codes_modal_desc": "Save these single-use recovery codes in a secure password manager or offline vault. Each code can only be used once for Step-Up login when other 2FA methods are unreachable.",
+    "backup_codes_warning": "These plaintext codes are shown ONCE only upon generation. FTTH GIS stores only cryptographic hashes. Keep them strictly confidential.",
+    "backup_codes_copy_btn": "Copy All Codes",
+    "backup_codes_copied": "All 10 codes copied to clipboard!",
+    "backup_codes_download_btn": "Download .txt",
+    "backup_codes_print_btn": "Print",
+    "backup_codes_regenerate_confirm_title": "Regenerate All Recovery Codes?",
+    "backup_codes_regenerate_confirm_desc": "Generating a new set of recovery codes will immediately invalidate all 10 previous codes. Any unused previous codes will no longer work."
   }
 }
 
