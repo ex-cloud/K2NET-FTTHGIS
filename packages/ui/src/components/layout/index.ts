@@ -12,3 +12,5 @@ export * from "./sidebar-mode-context";
 export * from "./app-version-badge";
 export * from "./user-nav-shell";
 export * from "./page-hero";
+export * from "./command-center-shell";
+export * from "./rich-kpi-card";

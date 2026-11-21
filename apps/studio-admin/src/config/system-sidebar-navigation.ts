@@ -368,8 +368,8 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         requiredPermission: ["system.modules.read", "system.modules.manage"],
         items: [
           { title: "All Modules", translationKey: "nav.all_modules", url: "/platform/modules", icon: "Boxes", shortcut: "S then M", requiredPermission: ["system.modules.read", "system.modules.manage"] },
-          { title: "Platform Scope", translationKey: "nav.modules_system_scope", url: "/platform/modules?scope=SYSTEM", icon: "Server", shortcut: "S then P", requiredPermission: ["system.modules.read", "system.modules.manage"] },
-          { title: "Tenant Scope", translationKey: "nav.modules_tenant_scope", url: "/platform/modules?scope=TENANT", icon: "Building2", shortcut: "S then T", requiredPermission: ["system.modules.read", "system.modules.manage"] },
+          { title: "Feature Toggles", translationKey: "nav.modules_feature_toggles", url: "/platform/modules?tab=toggles", icon: "Sliders", shortcut: "S then T", requiredPermission: ["system.modules.read", "system.modules.manage"] },
+          { title: "Plan Entitlements", translationKey: "nav.modules_plan_entitlements", url: "/platform/modules?tab=entitlements", icon: "Layers", shortcut: "S then E", requiredPermission: ["system.modules.read", "system.modules.manage"] },
         ],
       },
       {

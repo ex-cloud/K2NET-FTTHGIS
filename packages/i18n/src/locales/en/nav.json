@@ -272,6 +272,8 @@
   "module_registry": "Module Registry",
   "modules_catalog_governance": "Catalog & Governance",
   "all_modules": "All Modules",
+  "modules_feature_toggles": "Feature Toggles & Kill-Switch",
+  "modules_plan_entitlements": "Plan & Entitlements Matrix",
   "modules_system_scope": "Platform Scope",
   "modules_tenant_scope": "Tenant Scope",
   "modules_integrity_audit": "Integrity & Audit",
