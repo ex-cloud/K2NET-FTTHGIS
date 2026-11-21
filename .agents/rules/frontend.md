@@ -156,9 +156,9 @@ Setiap kali melakukan pembaruan atau penambahan visualisasi pada Global Log Expl
 
 ---
 
-## 📚 Aturan Lanjutan Frontend (Seksi 9–16)
+## 📚 Aturan Lanjutan Frontend (Seksi 9–17)
 
-Untuk standar lanjutan pengembangan frontend, silakan merujuk ke dokumentasi terpisah di **[rules/frontend-advanced.md](file:///opt/project5/.agents/rules/frontend-advanced.md)** yang mencakup:
+Untuk standar lanjutan pengembangan frontend, silakan merujuk ke dokumentasi terpisah di **[.agents/skills/ui-component-and-i18n/references/frontend-advanced.md](file:///opt/project5/.agents/skills/ui-component-and-i18n/references/frontend-advanced.md)** dan panduan tabel di **[.agents/skills/ui-component-and-i18n/references/datatable-standard.md](file:///opt/project5/.agents/skills/ui-component-and-i18n/references/datatable-standard.md)**:
 - **Seksi 9**: Standardisasi Modul Task Management & Linear App Mental Model
 - **Seksi 10**: Standar Desain Responsif Multi-Perangkat (Mobile, Tablet, Desktop, Ultra-Wide)
 - **Seksi 11**: Standar Wajib Tooltip Global (`<ActionTooltip />` Linear-Style Pattern)
@@ -167,3 +167,102 @@ Untuk standar lanjutan pengembangan frontend, silakan merujuk ke dokumentasi ter
 - **Seksi 14**: Arsitektur Visualisasi 3D (`Three.js`) & Pemisahan Animasi DOM (`Framer Motion`)
 - **Seksi 15**: Standar Baku Internasionalisasi & Anti-Hardcoded Strings (`@k2net/i18n`)
 - **Seksi 16**: Standar Anatomi Ukuran Kontrol UI & Skala Densitas Baku (`size="sm"`, `size="xs"`, dsb.)
+- **Seksi 17**: Standar Wajib Universal Enterprise DataTable Berbasis TanStack Table v8 (`@k2net/ui` / ADR-0020)
+
+---
+
+## 📊 17. Standar Wajib Universal Enterprise DataTable Berbasis TanStack Table v8 (`@k2net/ui` / ADR-0020)
+
+Seluruh pembuatan dan pembaruan tabel data di `apps/studio-admin`, `apps/studio-tenant`, dan paket komponen `@k2net/ui` **WAJIB** menggunakan komponen headless terpusat `<DataTable<T>>` dari `@k2net/ui`.
+
+### A. Larangan Keras (Non-Negotiables P0)
+1. **Dilarang Menulis Tag `<table>` Native**: Dilarang keras menuliskan tag `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` manual dengan looping `.map()` langsung di level halaman/view.
+2. **Dilarang Duplikasi Logika Headless**: Seluruh kemampuan sorting, paginasi, filter visibilitas kolom, selection baris, dan penanganan status kosong (empty state) wajib didelegasikan ke `<DataTable<T>>`.
+3. **Standar Ukuran Tombol Baris**: Seluruh tombol aksi dalam baris tabel data padat (*Data Table Row Actions*) WAJIB menggunakan `size="xs"` (`h-6 px-2 text-[11px]`, ikon `size-3`) atau `size="icon-xs"` (`h-6 w-6`). Dilarang menggunakan tombol bulky `size="sm"` atau `size="default"` di dalam baris tabel.
+
+### B. Pola Pemanggilan Baku (Copy-Pasteable Boilerplate)
+```typescript
+import {
+  DataTable,
+  DataTableColumnHeader,
+  type ColumnDef,
+} from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
+
+export interface ItemData {
+  id: string;
+  name: string;
+  status: "ACTIVE" | "MAINTENANCE" | "DISABLED";
+  updatedAt: string;
+}
+
+export function ItemDirectoryTable({
+  items,
+  isLoading,
+  onInspect,
+}: {
+  items: ItemData[];
+  isLoading?: boolean;
+  onInspect: (item: ItemData) => void;
+}) {
+  const { t } = useTranslation();
+
+  const columns: ColumnDef<ItemData>[] = [
+    {
+      accessorKey: "name",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={t("common.name")} />
+      ),
+      cell: ({ row }) => (
+        <span className="font-medium text-foreground">{row.original.name}</span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={t("common.status")} />
+      ),
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">{t("common.actions")}</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-1">
+          <Button
+            size="xs"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInspect(row.original);
+            }}
+          >
+            {t("common.inspect")}
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <DataTable
+      columns={columns}
+      data={items}
+      isLoading={isLoading}
+      density="compact"
+      onRowClick={(item) => onInspect(item)}
+      emptyState={{
+        title: t("items.emptyTitle"),
+        description: t("items.emptyDesc"),
+      }}
+    />
+  );
+}
+```
+
+### C. Fitur Headless Bawaan `<DataTable<T>>`
+* **Density Mode**: Mendukung prop `density="compact"` (tabel padat enterprise, padding `py-2 px-3`) dan `density="comfortable"` (padding `py-3.5 px-4`).
+* **Automated Shimmer Skeleton**: Saat `isLoading={true}`, otomatis merender skeleton baris shimmer sesuai jumlah kolom dan density tanpa perlu menulis boilerplate manual.
+* **Declarative Empty State**: Menerima objek `emptyState={{ title, description, action }}` terpusat.
+* **Zero Hardcoded Colors**: Menggunakan token semantik monokrom (`bg-card`, `border-border/80`, `text-foreground`, `text-muted-foreground`).
+* **Audit Otomatis**: Kepatuhan diverifikasi melalui `pnpm audit:tables` (`scripts/audit-tables.sh`).

@@ -30,6 +30,7 @@
     "audit:design-system:tenant": "bash scripts/audit-design-system.sh tenant",
     "audit:i18n": "bash scripts/audit-i18n.sh",
     "audit:design-system:ui": "bash scripts/audit-design-system.sh ui",
+    "audit:tables": "bash scripts/audit-tables.sh",
     "audit:slop": "knip --files --no-exit-code",
     "audit:deadcode": "knip --no-exit-code",
     "services:status": "bash scripts/staged-startup.sh status",

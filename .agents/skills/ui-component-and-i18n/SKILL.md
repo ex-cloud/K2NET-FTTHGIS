@@ -13,6 +13,7 @@ Gunakan skill ini setiap kali membuat atau mengubah tampilan frontend di `packag
 
 ## Referensi Lengkap
 - [Arsitektur Tata Letak 2-Lapisan (`PageLayout` & `PageHero`)](./references/ui-layout-architecture.md)
+- [Standar Universal Enterprise DataTable (TanStack Table v8)](./references/datatable-standard.md)
 - [Spesifikasi Komponen Form, Badge, Tabel, & Skeleton CSR](./references/styles-components.md)
 - [Standar Fitur Lanjutan: Linear Tasks, Responsive, Tooltip, & Anatomi Kontrol](./references/frontend-advanced.md)
 - [Manajemen Knowledge Base AI & TipTap Editor](./references/ai-knowledge.md)
@@ -39,10 +40,17 @@ Gunakan skill ini setiap kali membuat atau mengubah tampilan frontend di `packag
 - Seluruh teks UI, label, placeholder, toast, empty state, dan dialog konfirmasi wajib menggunakan `useTranslation()` dari `@k2net/i18n`.
 - Setiap key baru wajib ditambahkan secara simultan di `packages/i18n/src/locales/en/*.json` dan `packages/i18n/src/locales/id/*.json`.
 
-### 4. Perintah Verifikasi Wajib Sebelum Selesai
+### 4. Standar Universal DataTable & Anti-Native Table Loop (`@k2net/ui` / ADR-0020)
+- **Wajib `<DataTable<T>>`**: Seluruh pembuatan tabel data baru WAJIB menggunakan `import { DataTable, DataTableColumnHeader, type ColumnDef } from "@k2net/ui"` (ditenagai TanStack Table v8).
+- **Dilarang keras tag `<table>` native**: Dilarang menuliskan elemen HTML `<table>` manual atau looping baris `.map()` di view.
+- **Dukungan Built-in**: Paginasi otomatis, multi-sort, auto-shimmer skeleton saat `isLoading={true}`, deklaratif `emptyState`, density control (`compact` vs `comfortable`), dan clickable rows (`onRowClick`).
+- **Tombol Aksi Baris**: Wajib `size="xs"` (`h-6 px-2 text-[11px]`).
+
+### 5. Perintah Verifikasi Wajib Sebelum Selesai
 ```bash
 pnpm audit:colors
 pnpm audit:design-system
+pnpm audit:tables
 pnpm audit:i18n
 pnpm typecheck
 pnpm lint:strict
