@@ -10,7 +10,8 @@ export interface PublicModuleItem {
   category: string;
   minPlanTier: string;
   status: "ACTIVE" | "MAINTENANCE" | "DISABLED" | "IN_DEVELOPMENT" | "DEPRECATED";
-  isEnabled: boolean;
+  isEnabled?: boolean;
+  enabled?: boolean;
 }
 
 export function usePublicModules() {

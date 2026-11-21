@@ -55,7 +55,7 @@ export function ModuleToolbar({
       </div>
 
       <div className="flex items-center gap-2">
-        {urlTab === "directory" && (
+        {(urlTab === "directory" || urlTab === "toggles") && (
           <Select value={statusFilter} onValueChange={onStatusChange}>
             <SelectTrigger className="h-7 text-xs w-[140px] bg-background border-border">
               <SelectValue placeholder={t("modules.status_all")} />

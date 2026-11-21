@@ -24,6 +24,7 @@ export interface PlatformModuleItem {
   serviceTarget: string;
   status: ModuleStatus;
   isEnabled?: boolean;
+  licenseFlag?: string;
   icon?: string;
   sortOrder?: number;
   permissionsCount?: number;
@@ -105,6 +106,7 @@ export function usePlatformModules(filters?: {
           serviceTarget: (item.serviceTarget as string) || "apps/api",
           status: ((item.status as string) || "ACTIVE").toUpperCase() as ModuleStatus,
           isEnabled: item.isEnabled !== false,
+          licenseFlag: (item.licenseFlag as string) || undefined,
           icon: (item.icon as string) || undefined,
           sortOrder: typeof item.sortOrder === "number" ? item.sortOrder : 0,
           permissionsCount: typeof item.permissionsCount === "number" ? item.permissionsCount : perms.length,

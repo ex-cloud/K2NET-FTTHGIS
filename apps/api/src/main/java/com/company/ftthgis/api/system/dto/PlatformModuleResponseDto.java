@@ -1,5 +1,6 @@
 package com.company.ftthgis.api.system.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +23,20 @@ public class PlatformModuleResponseDto {
     private String scope;
     private String category;
     private String status;
+
+    @JsonProperty("isEnabled")
     private boolean isEnabled;
+
+    @JsonProperty("isEnabled")
+    public boolean isEnabled() {
+        return isEnabled;
+    }
+
+    @JsonProperty("enabled")
+    public boolean getEnabled() {
+        return isEnabled;
+    }
+
     private String minPlanTier;
     private String licenseFlag;
     private String serviceTarget;

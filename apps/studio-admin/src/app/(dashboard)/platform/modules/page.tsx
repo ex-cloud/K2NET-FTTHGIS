@@ -39,11 +39,22 @@ function filterModuleItem(
   if (!query) return true;
 
   const q = query.toLowerCase();
+  const permissionsText = (mod.permissions || [])
+    .map((p) => `${p.code} ${p.name || ""} ${p.description || ""}`)
+    .join(" ")
+    .toLowerCase();
+
   return Boolean(
     mod.code?.toLowerCase().includes(q) ||
     mod.name?.toLowerCase().includes(q) ||
     mod.description?.toLowerCase().includes(q) ||
-    mod.serviceTarget?.toLowerCase().includes(q)
+    mod.serviceTarget?.toLowerCase().includes(q) ||
+    mod.scope?.toLowerCase().includes(q) ||
+    mod.status?.toLowerCase().includes(q) ||
+    mod.category?.toLowerCase().includes(q) ||
+    mod.minPlanTier?.toLowerCase().includes(q) ||
+    mod.licenseFlag?.toLowerCase().includes(q) ||
+    permissionsText.includes(q)
   );
 }
 
@@ -98,6 +109,11 @@ export default function PlatformModulesPage() {
     }
   }, [urlScope]);
 
+  // Reset status filter to ALL on tab change to prevent getting trapped in other views
+  React.useEffect(() => {
+    setStatusFilter("ALL");
+  }, [urlTab]);
+
   const {
     data: rawModules = [],
     isLoading,
@@ -121,6 +137,11 @@ export default function PlatformModulesPage() {
   const filteredModules = React.useMemo(
     () => modules.filter((m) => filterModuleItem(m, scopeFilter, statusFilter, cleanQuery)),
     [modules, scopeFilter, statusFilter, cleanQuery]
+  );
+
+  const matrixModules = React.useMemo(
+    () => modules.filter((m) => filterModuleItem(m, scopeFilter, "ALL", cleanQuery)),
+    [modules, scopeFilter, cleanQuery]
   );
 
   const totalCount = modules.length;
@@ -226,7 +247,7 @@ export default function PlatformModulesPage() {
       )}
 
       {urlTab === "entitlements" && (
-        <ModuleEntitlementsMatrixView modules={filteredModules} />
+        <ModuleEntitlementsMatrixView modules={matrixModules} />
       )}
 
       {urlTab === "audit" && (

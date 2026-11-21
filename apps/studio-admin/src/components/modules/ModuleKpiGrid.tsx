@@ -36,10 +36,6 @@ export function ModuleKpiGrid({
         subValue={t("modules.kpi_active_ratio", { pct: activePct })}
         description={t("modules.kpi_active_desc")}
         icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-        sparklineCount={activeCount}
-        sparklineLabel={t("modules.kpi_active_modules")}
-        sparklineMeta={`${activeCount} / ${totalCount}`}
-        sparklineVariant="active"
       />
 
       <RichKpiCard
@@ -48,10 +44,6 @@ export function ModuleKpiGrid({
         subValue={t("modules.kpi_platform_ratio", { count: systemModulesCount, total: totalCount })}
         description={t("modules.kpi_platform_desc")}
         icon={<Server className="h-3.5 w-3.5" />}
-        sparklineCount={systemModulesCount}
-        sparklineLabel={t("modules.scope_system")}
-        sparklineMeta={`${systemModulesCount} Engines`}
-        sparklineVariant="resolved"
       />
 
       <RichKpiCard
@@ -60,10 +52,6 @@ export function ModuleKpiGrid({
         subValue={t("modules.kpi_tenant_ratio", { count: tenantModulesCount, total: totalCount })}
         description={t("modules.kpi_tenant_desc")}
         icon={<Building2 className="h-3.5 w-3.5" />}
-        sparklineCount={tenantModulesCount}
-        sparklineLabel={t("modules.scope_tenant")}
-        sparklineMeta={`${tenantModulesCount} Modules`}
-        sparklineVariant="active"
       />
 
       <RichKpiCard
@@ -88,11 +76,6 @@ export function ModuleKpiGrid({
             <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
           )
         }
-        sparklineCount={isHealthy ? 7 : orphanAlertCount}
-        sparklineLabel={t("modules.meta_healthy")}
-        sparklineMeta={isHealthy ? "0 Orphans" : `${orphanAlertCount} Alerts`}
-        sparklineVariant={isHealthy ? "resolved" : "urgent"}
-        sparklineColor={isHealthy ? "primary" : "destructive"}
       />
     </EnterpriseKpiGrid>
   );

@@ -28,6 +28,12 @@ export function ModuleStatusGuard({
     return <>{children}</>;
   }
 
+  // Defensively resolve enabled state (prevent undefined treating as disabled)
+  const isExplicitlyDisabled =
+    currentModule.status === "DISABLED" ||
+    currentModule.isEnabled === false ||
+    (currentModule as unknown as { enabled?: boolean }).enabled === false;
+
   // 1. Maintenance Mode
   if (currentModule.status === "MAINTENANCE") {
     const title = moduleName || currentModule.name || moduleKey;
@@ -68,7 +74,7 @@ export function ModuleStatusGuard({
   }
 
   // 2. Disabled Mode
-  if (currentModule.status === "DISABLED" || !currentModule.isEnabled) {
+  if (isExplicitlyDisabled) {
     const title = moduleName || currentModule.name || moduleKey;
     return (
       <div className="flex-1 w-full h-full min-h-[400px] flex items-center justify-center p-6">
