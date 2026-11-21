@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "@/lib/navigation-compat";
 import { useAuth, resolveAuthErrorMessage } from "@k2net/auth/client";
 import { useTranslation } from "@k2net/i18n";
+import { toast } from "sonner";
 import {
   AuthLoginForm,
   AuthLoginLayout,
@@ -62,6 +63,15 @@ export default function AdminLoginPage() {
       router.replace(callbackUrl);
     }
   }, [authenticated, callbackUrl, initialized, router]);
+
+  useEffect(() => {
+    const errorParam = searchParams?.get("error");
+    if (errorParam) {
+      const msg = resolveAuthErrorMessage(errorParam, undefined, t);
+      setErrorMessage(msg);
+      toast.error(msg, { id: "login-error-param" });
+    }
+  }, [searchParams, t]);
 
   const formLabels = useMemo<AuthLoginFormLabels>(
     () => ({

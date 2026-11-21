@@ -1376,7 +1376,8 @@ func (h *Handler) Refresh(c *gin.Context) {
 		c.JSON(419, gin.H{
 			"status":  419,
 			"error":   "SESSION_TERMINATED",
-			"message": "Akun Anda telah terdeteksi melakukan login di perangkat atau browser lain. Sesi di perangkat ini demi keamanan otomatis dihentikan.",
+			"code":    "SESSION_EXPIRED",
+			"message": "Sesi login Anda telah berakhir demi keamanan. Silakan masuk kembali.",
 		})
 		return
 	}

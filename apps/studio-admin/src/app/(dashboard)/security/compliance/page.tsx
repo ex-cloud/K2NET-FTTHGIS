@@ -18,7 +18,7 @@ export default function SecurityCompliancePage() {
   const { settings, loading, updateSettings, isUpdating } = useSystemSettings();
 
   // Compliance Settings States
-  const [sessionTimeout, setSessionTimeout] = useState<number>(30);
+  const [sessionTimeout, setSessionTimeout] = useState<number>(1440);
   const [mapLockDuration, setMapLockDuration] = useState<number>(10);
   const [mfaEnforced, setMfaEnforced] = useState<boolean>(false);
   const [waOtpEnabled, setWaOtpEnabled] = useState<boolean>(false);
@@ -56,7 +56,7 @@ export default function SecurityCompliancePage() {
     if (settings && settings.length > 0) {
       const getVal = (key: string) => settings.find((s) => s.key === key)?.value;
 
-      setSessionTimeout(parseInt(getVal("session_idle_timeout") || "30") || 30);
+      setSessionTimeout(parseInt(getVal("session_idle_timeout") || "1440") || 1440);
       setMapLockDuration(parseInt(getVal("map_auto_lock_duration") || "10") || 10);
       setMfaEnforced(getVal("enforce_mfa") === "true");
       setWaOtpEnabled(getVal("wa_otp_enabled") === "true");
@@ -87,7 +87,7 @@ export default function SecurityCompliancePage() {
     if (!settings || settings.length === 0) return false;
     const getVal = (key: string) => settings.find((s) => s.key === key)?.value;
 
-    const origTimeout = parseInt(getVal("session_idle_timeout") || "30") || 30;
+    const origTimeout = parseInt(getVal("session_idle_timeout") || "1440") || 1440;
     const origLock = parseInt(getVal("map_auto_lock_duration") || "10") || 10;
     const origMfa = getVal("enforce_mfa") === "true";
     const origOtp = getVal("wa_otp_enabled") === "true";

@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth, resolveAuthErrorMessage } from "@k2net/auth/client";
 import { useTranslation } from "@k2net/i18n";
+import { toast } from "sonner";
 import {
   AuthLoginForm,
   AuthLoginLayout,
@@ -114,11 +115,27 @@ export function LoginPage() {
     }
   }, []);
 
-  // Surface any OAuth/SSO callback error returned from the identity broker cleanly in the SPA
+  // Surface any OAuth/SSO callback error or redirected session expiry error cleanly in the SPA
   useEffect(() => {
     const err = consumeSessionOAuthError();
     if (err) {
-      setErrorMessage(resolveAuthErrorMessage(err.code, err.description, t));
+      const msg = resolveAuthErrorMessage(err.code, err.description, t);
+      setErrorMessage(msg);
+      toast.error(msg, { id: "login-oauth-error" });
+      return;
+    }
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const errorParam = urlParams.get("error");
+      if (errorParam) {
+        const msg = resolveAuthErrorMessage(errorParam, undefined, t);
+        setErrorMessage(msg);
+        toast.error(msg, { id: "login-error-param" });
+        urlParams.delete("error");
+        const newSearch = urlParams.toString();
+        const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "");
+        window.history.replaceState({}, "", newUrl);
+      }
     }
   }, [t]);
 

@@ -1,5 +1,5 @@
 import { Clock } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Separator, Switch } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Separator, Switch, Button } from "@k2net/ui";
 import { useTranslation } from "@k2net/i18n";
 
 interface ComplianceSessionPoliciesCardProps {
@@ -13,6 +13,15 @@ interface ComplianceSessionPoliciesCardProps {
   setWaOtpEnabled: (val: boolean) => void;
 }
 
+const SESSION_PRESETS = [
+  { label: "30m", minutes: 30 },
+  { label: "1h", minutes: 60 },
+  { label: "4h", minutes: 240 },
+  { label: "8h", minutes: 480 },
+  { label: "12h", minutes: 720 },
+  { label: "24h", minutes: 1440, recommended: true },
+];
+
 export function ComplianceSessionPoliciesCard({
   sessionTimeout,
   setSessionTimeout,
@@ -24,6 +33,20 @@ export function ComplianceSessionPoliciesCard({
   setWaOtpEnabled,
 }: ComplianceSessionPoliciesCardProps) {
   const { t } = useTranslation();
+
+  const formatSessionDuration = (min: number) => {
+    if (min >= 1440) {
+      const days = Math.floor(min / 1440);
+      const remHours = Math.floor((min % 1440) / 60);
+      return `${days}d ${remHours > 0 ? `${remHours}h` : ""} (${min} ${t("security.minutes_unit")})`;
+    }
+    if (min >= 60) {
+      const hours = Math.floor(min / 60);
+      const rem = min % 60;
+      return `${hours}h ${rem > 0 ? `${rem}m` : ""} (${min} ${t("security.minutes_unit")})`;
+    }
+    return `${min} ${t("security.minutes_unit")}`;
+  };
 
   return (
     <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
@@ -46,17 +69,38 @@ export function ComplianceSessionPoliciesCard({
               </p>
             </div>
             <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-              {sessionTimeout} {t("security.minutes_unit")}
+              {formatSessionDuration(sessionTimeout)}
             </span>
           </div>
+
+          {/* Quick Presets */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[11px] text-muted-foreground mr-1">Presets:</span>
+            {SESSION_PRESETS.map((preset) => (
+              <Button
+                key={preset.minutes}
+                type="button"
+                variant={sessionTimeout === preset.minutes ? "default" : "outline"}
+                size="xs"
+                onClick={() => setSessionTimeout(preset.minutes)}
+                className="h-6 px-2 text-[11px]"
+              >
+                {preset.label}
+                {preset.recommended && (
+                  <span className="ml-1 text-[9px] opacity-80">(Recommended)</span>
+                )}
+              </Button>
+            ))}
+          </div>
+
           <input
             type="range"
-            min="5"
-            max="120"
-            step="5"
+            min="15"
+            max="1440"
+            step="15"
             value={sessionTimeout}
-            onChange={(e) => setSessionTimeout(parseInt(e.target.value))}
-            className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+            onChange={(e) => setSessionTimeout(parseInt(e.target.value) || 15)}
+            className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary mt-2"
           />
         </div>
 

@@ -799,6 +799,9 @@ public class KeycloakAdminService {
             log.info("⚙️ Syncing SSO Session Idle Timeout to Keycloak realm {}: {} seconds", realmName, idleTimeoutSeconds);
             RealmRepresentation realm = keycloak.realm(realmName).toRepresentation();
             realm.setSsoSessionIdleTimeout(idleTimeoutSeconds);
+            if (realm.getSsoSessionMaxLifespan() == null || realm.getSsoSessionMaxLifespan() < idleTimeoutSeconds) {
+                realm.setSsoSessionMaxLifespan(Math.max(idleTimeoutSeconds * 2, 86400 * 3));
+            }
             // Remember-Me idle lifespan is intentionally NOT overridden here: it is governed by
             // KeycloakService.applySecurityAndTierPolicies (30 days) so both sync paths stay consistent.
             keycloak.realm(realmName).update(realm);

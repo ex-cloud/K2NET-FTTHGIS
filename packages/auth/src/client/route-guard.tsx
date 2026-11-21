@@ -27,6 +27,34 @@ export function ProtectedRoute({
     hasAnyRole,
   } = useAuth();
 
+  const isEnglish = React.useMemo(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const stored = window.localStorage.getItem("k2net_locale");
+      if (stored) return stored.startsWith("en");
+    } catch {
+      // ignore storage access issues
+    }
+    return Boolean(document.documentElement?.lang?.toLowerCase()?.startsWith("en"));
+  }, []);
+
+  const textRedirecting = isEnglish
+    ? "Session expired. Redirecting to login page..."
+    : "Sesi telah berakhir. Mengalihkan ke halaman login...";
+  const text419Code = isEnglish ? "Status Code: 419" : "Kode Status: 419";
+  const text419Title = isEnglish ? "Page Expired" : "Halaman Kedaluwarsa";
+  const text419Desc = isEnglish
+    ? "Your session has expired for security reasons. Please sign in again."
+    : "Sesi login Anda telah berakhir demi keamanan. Silakan masuk kembali.";
+  const text419Relogin = isEnglish ? "Sign In Again" : "Masuk Kembali";
+  const text401Desc = isEnglish
+    ? "Your session is inactive or has expired. Please sign in to continue."
+    : "Sesi Anda tidak aktif atau telah berakhir. Silakan masuk untuk melanjutkan.";
+  const text401SignIn = isEnglish ? "Sign In" : "Masuk";
+  const text403Desc = isEnglish
+    ? "Your account does not have the required permissions to open this workspace."
+    : "Akun Anda tidak memiliki hak akses yang diperlukan untuk membuka ruang kerja ini.";
+
   // Allow bypass during active Super Admin impersonation exchange or session-ended modal
   const isImpersonating =
     typeof window !== "undefined" &&
@@ -50,15 +78,22 @@ export function ProtectedRoute({
     if (
       initialized &&
       !authenticated &&
-      !sessionTerminated &&
       autoRedirect &&
       typeof window !== "undefined"
     ) {
       if (window.location.pathname !== loginPath) {
-        window.location.replace(targetLoginUrl);
+        const redirectUrl = sessionTerminated
+          ? `${targetLoginUrl}${targetLoginUrl.includes("?") ? "&" : "?"}error=SESSION_EXPIRED`
+          : targetLoginUrl;
+
+        if (sessionTerminated) {
+          clearSessionTerminated();
+        }
+
+        window.location.replace(redirectUrl);
       }
     }
-  }, [initialized, authenticated, sessionTerminated, autoRedirect, isImpersonating, loginPath, targetLoginUrl]);
+  }, [initialized, authenticated, sessionTerminated, autoRedirect, isImpersonating, loginPath, targetLoginUrl, clearSessionTerminated]);
 
   if (isImpersonating) {
     return <>{children}</>;
@@ -75,6 +110,21 @@ export function ProtectedRoute({
   }
 
   if (!authenticated) {
+    if (autoRedirect) {
+      return (
+        fallback || (
+          <div className="flex h-screen w-screen items-center justify-center bg-background text-muted-foreground">
+            <div className="flex flex-col items-center gap-2.5">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="text-xs text-muted-foreground font-medium animate-pulse">
+                {textRedirecting}
+              </p>
+            </div>
+          </div>
+        )
+      );
+    }
+
     if (sessionTerminated) {
       if (sessionExpiredFallback) {
         return <>{sessionExpiredFallback}</>;
@@ -84,14 +134,14 @@ export function ProtectedRoute({
           <div className="relative z-10 max-w-md w-full text-center space-y-6 backdrop-blur-md bg-card/40 border border-border/80 p-8 rounded-2xl shadow-xl">
             <div className="space-y-2">
               <div className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-muted border border-border text-[11px] font-mono text-muted-foreground">
-                Kode Status: 419
+                {text419Code}
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight text-destructive">419</h1>
               <h2 className="text-xl font-bold tracking-tight text-foreground/90">
-                Halaman Kedaluwarsa
+                {text419Title}
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Akun Anda telah terdeteksi melakukan login di perangkat atau browser lain. Sesi di perangkat ini demi keamanan otomatis dihentikan.
+                {text419Desc}
               </p>
             </div>
             <div className="pt-4">
@@ -105,7 +155,7 @@ export function ProtectedRoute({
                 }}
                 className="inline-flex h-7 w-full items-center justify-center rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 cursor-pointer"
               >
-                Masuk Kembali
+                {text419Relogin}
               </button>
             </div>
           </div>
@@ -122,13 +172,13 @@ export function ProtectedRoute({
         <div className="max-w-md space-y-4 text-center">
           <h2 className="text-xl font-bold text-foreground">401</h2>
           <p className="text-sm text-muted-foreground">
-            Your session is inactive or has expired. Please sign in to continue.
+            {text401Desc}
           </p>
           <a
             href={targetLoginUrl}
             className="inline-flex h-7 items-center justify-center rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 cursor-pointer"
           >
-            Sign In
+            {text401SignIn}
           </a>
         </div>
       </div>
@@ -142,7 +192,7 @@ export function ProtectedRoute({
           <div className="max-w-md space-y-4 text-center">
             <h2 className="text-xl font-bold text-destructive">403</h2>
             <p className="text-sm text-muted-foreground">
-              Your account does not have the required permissions to open this workspace.
+              {text403Desc}
             </p>
           </div>
         </div>

@@ -36,6 +36,7 @@ export function resolveAuthErrorMessage(
     case "TENANT_ACCESS_DENIED":
       return t("auth.login_error_tenant_access_denied");
     case "SESSION_EXPIRED":
+    case "SESSION_TERMINATED":
       return t("auth.login_error_session_expired");
     case "SSO_NOT_AVAILABLE":
     case "SSO_BROKER_ERROR":

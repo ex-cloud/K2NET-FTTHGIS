@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { ShieldAlert, LogIn } from "lucide-react";
+import { ShieldAlert, LogIn, Loader2 } from "lucide-react";
 import { Button } from "../button";
+import { toast } from "sonner";
 import { resolveErrorCopy, type ErrorLocale } from "./error-i18n";
 
 export interface SessionExpiredErrorProps {
@@ -27,15 +28,25 @@ export function SessionExpiredError({
   const resolvedTitle = title || copy.error419Title;
   const resolvedDesc = description || copy.error419Desc;
 
-  const handleRelogin = () => {
+  const handleRelogin = React.useCallback(() => {
     if (onRelogin) {
       onRelogin();
       return;
     }
     if (typeof window !== "undefined") {
-      window.location.href = loginUrl;
+      const redirectUrl = `${loginUrl}${loginUrl.includes("?") ? "&" : "?"}error=SESSION_EXPIRED`;
+      window.location.replace(redirectUrl);
     }
-  };
+  }, [loginUrl, onRelogin]);
+
+  // Auto-redirect once session expiration is detected: notify once and smoothly route to login
+  React.useEffect(() => {
+    toast.error(resolvedDesc, { id: "session-expired-toast", duration: 3500 });
+    const timer = setTimeout(() => {
+      handleRelogin();
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [handleRelogin, resolvedDesc]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-6 relative overflow-hidden">
@@ -56,8 +67,13 @@ export function SessionExpiredError({
           <p className="text-sm text-muted-foreground leading-relaxed">{resolvedDesc}</p>
         </div>
 
-        <div className="pt-4">
-          <Button variant="default" size="sm" className="w-full gap-2" onClick={handleRelogin}>
+        <div className="pt-2 flex flex-col items-center gap-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="size-3.5 animate-spin text-primary" />
+            <span>{copy.error419Redirecting}</span>
+          </div>
+
+          <Button variant="default" size="sm" className="w-full gap-2 mt-2" onClick={handleRelogin}>
             <LogIn className="size-3.5" />
             {copy.error419ReloginButton}
           </Button>

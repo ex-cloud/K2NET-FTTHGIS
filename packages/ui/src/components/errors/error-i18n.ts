@@ -16,6 +16,7 @@ export interface ErrorCopyDictionary {
   error403AuditNotice: string;
   error419Title: string;
   error419Desc: string;
+  error419Redirecting: string;
   error419ReloginButton: string;
   error500Title: string;
   error500Desc: string;
@@ -51,7 +52,8 @@ const COPY: Record<ErrorLocale, ErrorCopyDictionary> = {
       "Insiden akses tidak sah ini dicatat otomatis di sistem audit trail pusat.",
     error419Title: "Halaman Kedaluwarsa",
     error419Desc:
-      "Akun Anda telah terdeteksi melakukan login di perangkat atau browser lain. Sesi di perangkat ini demi keamanan otomatis dihentikan.",
+      "Sesi login Anda telah berakhir demi keamanan. Silakan masuk kembali.",
+    error419Redirecting: "Mengalihkan otomatis ke halaman login...",
     error419ReloginButton: "Masuk Kembali",
     error500Title: "Koneksi Server Terputus",
     error500Desc:
@@ -87,7 +89,8 @@ const COPY: Record<ErrorLocale, ErrorCopyDictionary> = {
       "Unauthorized access attempts are automatically recorded in the central immutable audit trail.",
     error419Title: "Page Expired",
     error419Desc:
-      "Your account has been detected signing in on another device or browser. For your security, the session on this device has been automatically terminated.",
+      "Your session has expired for security reasons. Please sign in again.",
+    error419Redirecting: "Redirecting automatically to login page...",
     error419ReloginButton: "Sign In Again",
     error500Title: "Server Error",
     error500Desc:
