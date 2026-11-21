@@ -2,7 +2,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth-compat";
 
 export type ModuleScope = "SYSTEM" | "TENANT";
-export type ModuleStatus = "ACTIVE" | "MAINTENANCE" | "DISABLED";
+export type ModuleStatus =
+  | "ACTIVE"
+  | "IN_DEVELOPMENT"
+  | "MAINTENANCE"
+  | "DEPRECATED"
+  | "DISABLED";
 export type ModulePlanTier = "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
 
 export interface MappedPermissionItem {
@@ -42,6 +47,7 @@ export interface OrphanAuditResult {
     scope: string;
   }>;
   unmappedModules: string[];
+  orphanPermissionModulesWithoutRegistry?: string[];
   registeredModuleCount: number;
   livePermissionCount: number;
 }

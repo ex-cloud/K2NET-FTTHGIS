@@ -216,7 +216,14 @@ export default function PlatformModulesPage() {
       icon={shellHeader.icon}
       metaChips={metaChips}
       actions={headerActions}
-      kpiGrid={<ModuleKpiGrid modules={modules} audit={audit} isLoading={isLoading} />}
+      kpiGrid={
+        <ModuleKpiGrid
+          modules={modules}
+          audit={audit}
+          isLoading={isLoading}
+          isAuditLoading={isAuditLoading}
+        />
+      }
       toolbar={
         <ModuleToolbar
           urlTab={urlTab}

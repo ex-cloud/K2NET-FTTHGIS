@@ -24,6 +24,16 @@ export function ModuleStatusBadge({ status }: { status: ModuleStatus }) {
           {t("modules.status_active")}
         </Badge>
       );
+    case "IN_DEVELOPMENT":
+      return (
+        <Badge
+          variant="outline"
+          className="text-[10px] gap-1 font-medium bg-muted text-muted-foreground border-border"
+        >
+          <Boxes className="size-3 text-muted-foreground" />
+          {t("modules.status_in_development")}
+        </Badge>
+      );
     case "MAINTENANCE":
       return (
         <Badge
@@ -32,6 +42,16 @@ export function ModuleStatusBadge({ status }: { status: ModuleStatus }) {
         >
           <AlertTriangle className="size-3 text-foreground" />
           {t("modules.status_maintenance")}
+        </Badge>
+      );
+    case "DEPRECATED":
+      return (
+        <Badge
+          variant="outline"
+          className="text-[10px] gap-1 font-medium bg-destructive/5 text-muted-foreground border-border"
+        >
+          <XCircle className="size-3 text-muted-foreground" />
+          {t("modules.status_deprecated")}
         </Badge>
       );
     case "DISABLED":

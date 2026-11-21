@@ -31,6 +31,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Boxes,
 } from "lucide-react";
 
 interface ModuleDetailDrawerProps {
@@ -84,8 +85,12 @@ export function ModuleDetailDrawer({
     switch (status) {
       case "ACTIVE":
         return <CheckCircle2 className="size-3.5 text-primary" />;
+      case "IN_DEVELOPMENT":
+        return <Boxes className="size-3.5 text-muted-foreground" />;
       case "MAINTENANCE":
         return <AlertTriangle className="size-3.5 text-foreground" />;
+      case "DEPRECATED":
+        return <XCircle className="size-3.5 text-muted-foreground" />;
       case "DISABLED":
         return <XCircle className="size-3.5 text-destructive" />;
     }
@@ -166,10 +171,22 @@ export function ModuleDetailDrawer({
                         <span>{t("modules.status_active")}</span>
                       </div>
                     </SelectItem>
+                    <SelectItem value="IN_DEVELOPMENT">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon("IN_DEVELOPMENT")}
+                        <span>{t("modules.status_in_development")}</span>
+                      </div>
+                    </SelectItem>
                     <SelectItem value="MAINTENANCE">
                       <div className="flex items-center gap-2">
                         {getStatusIcon("MAINTENANCE")}
                         <span>{t("modules.status_maintenance")}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="DEPRECATED">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon("DEPRECATED")}
+                        <span>{t("modules.status_deprecated")}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="DISABLED">

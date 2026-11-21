@@ -63,7 +63,9 @@ export function ModuleToolbar({
             <SelectContent className="bg-popover border-border text-foreground text-xs">
               <SelectItem value="ALL">{t("modules.status_all")}</SelectItem>
               <SelectItem value="ACTIVE">{t("modules.status_active")}</SelectItem>
+              <SelectItem value="IN_DEVELOPMENT">{t("modules.status_in_development")}</SelectItem>
               <SelectItem value="MAINTENANCE">{t("modules.status_maintenance")}</SelectItem>
+              <SelectItem value="DEPRECATED">{t("modules.status_deprecated")}</SelectItem>
               <SelectItem value="DISABLED">{t("modules.status_disabled")}</SelectItem>
             </SelectContent>
           </Select>

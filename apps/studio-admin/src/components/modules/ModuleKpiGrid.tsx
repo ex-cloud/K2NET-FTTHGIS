@@ -8,12 +8,14 @@ interface ModuleKpiGridProps {
   modules: PlatformModuleItem[];
   audit?: OrphanAuditResult;
   isLoading: boolean;
+  isAuditLoading?: boolean;
 }
 
 export function ModuleKpiGrid({
   modules,
   audit,
   isLoading,
+  isAuditLoading,
 }: ModuleKpiGridProps) {
   const { t } = useTranslation();
 
@@ -22,11 +24,13 @@ export function ModuleKpiGrid({
   const systemModulesCount = modules.filter((m) => m.scope === "SYSTEM").length;
   const tenantModulesCount = modules.filter((m) => m.scope === "TENANT").length;
 
-  const orphanAlertCount =
-    (audit?.orphanPermissions?.length || 0) + (audit?.unmappedModules?.length || 0);
+  const isAuditPending = isAuditLoading || !audit;
+  const orphanAlertCount = audit
+    ? (audit.orphanPermissions?.length || 0) + (audit.unmappedModules?.length || 0)
+    : 0;
 
   const activePct = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
-  const isHealthy = orphanAlertCount === 0;
+  const isHealthy = Boolean(audit?.healthy) && orphanAlertCount === 0;
 
   return (
     <EnterpriseKpiGrid columns={4}>
@@ -57,18 +61,28 @@ export function ModuleKpiGrid({
       <RichKpiCard
         title={t("modules.kpi_orphan_status")}
         value={
-          isHealthy ? (
+          isAuditPending ? (
+            <Skeleton className="h-7 w-20" />
+          ) : isHealthy ? (
             <span className="text-primary font-bold">HEALTHY</span>
           ) : (
             <span className="text-destructive font-bold">{orphanAlertCount} ALERTS</span>
           )
         }
         subValue={
-          isHealthy
-            ? t("modules.kpi_integrity_ratio")
+          isAuditPending
+            ? undefined
+            : isHealthy
+            ? `${audit.livePermissionCount} Perms / ${audit.registeredModuleCount} Modules`
             : t("modules.kpi_discrepancy")
         }
-        description={t("modules.kpi_integrity_desc")}
+        description={
+          isAuditPending
+            ? t("modules.kpi_integrity_desc")
+            : isHealthy
+            ? t("modules.kpi_integrity_desc")
+            : `${audit.orphanPermissions?.length || 0} orphan permissions, ${audit.unmappedModules?.length || 0} unmapped modules.`
+        }
         icon={
           isHealthy ? (
             <ShieldCheck className="h-3.5 w-3.5 text-primary" />
