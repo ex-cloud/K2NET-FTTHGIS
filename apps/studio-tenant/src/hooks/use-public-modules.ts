@@ -27,7 +27,7 @@ export function usePublicModules() {
         headers["Authorization"] = `Bearer ${token}`;
       }
       try {
-        const res = await fetch("/api/v1/modules?scope=TENANT", { headers });
+        const res = await fetch("/api/v1/modules?scope=ALL", { headers });
         if (!res.ok) {
           return [];
         }

@@ -88,6 +88,37 @@ class PlatformModuleServiceTest {
     }
 
     @Test
+    @DisplayName("🧪 Should return public modules including disabled modules for client-side enforcement")
+    void testGetPublicModules() {
+        PlatformModule disabledModule = PlatformModule.builder()
+                .id(UUID.randomUUID())
+                .moduleKey("audit")
+                .name("Immutable Audit Trail")
+                .scope("TENANT")
+                .category("SECURITY_GOV")
+                .status("DISABLED")
+                .isEnabled(false)
+                .minPlanTier("STARTER")
+                .serviceTarget("gateway-audit:5009")
+                .build();
+
+        when(moduleRepository.findByScopeOrderByCategoryAscNameAsc("TENANT"))
+                .thenReturn(List.of(networkModule, disabledModule));
+        when(permissionRepository.findAll()).thenReturn(List.of(networkViewPerm));
+
+        List<PlatformModuleResponseDto> tenantModules = moduleService.getPublicModules("TENANT");
+
+        assertEquals(2, tenantModules.size());
+        assertEquals("network", tenantModules.get(0).getModuleKey());
+        assertTrue(tenantModules.get(0).isEnabled());
+        assertEquals("ACTIVE", tenantModules.get(0).getStatus());
+
+        assertEquals("audit", tenantModules.get(1).getModuleKey());
+        assertFalse(tenantModules.get(1).isEnabled());
+        assertEquals("DISABLED", tenantModules.get(1).getStatus());
+    }
+
+    @Test
     @DisplayName("🧪 Should return module by key or throw 404")
     void testGetModuleByKey() {
         when(moduleRepository.findByModuleKey("network")).thenReturn(Optional.of(networkModule));

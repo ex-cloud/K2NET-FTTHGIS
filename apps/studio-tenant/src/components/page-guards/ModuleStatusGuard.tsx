@@ -23,8 +23,22 @@ export function ModuleStatusGuard({
     (m) => (m.code || m.id)?.toLowerCase() === moduleKey.toLowerCase()
   );
 
-  // If still loading or module not found in public list, proceed normally
-  if (isLoading || !currentModule) {
+  // While modules are loading, show neutral loading state to prevent screen flash
+  if (isLoading) {
+    return (
+      <div className="flex h-48 w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-xs font-mono text-muted-foreground">
+            {t("common.loading")}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // If module not found in public list, proceed normally
+  if (!currentModule) {
     return <>{children}</>;
   }
 

@@ -74,9 +74,9 @@ public class PlatformModuleService {
     public List<PlatformModuleResponseDto> getPublicModules(String scope) {
         List<PlatformModule> modules;
         if (scope != null && !scope.isBlank() && !"ALL".equalsIgnoreCase(scope)) {
-            modules = moduleRepository.findByScopeAndIsEnabledTrue(scope.toUpperCase());
+            modules = moduleRepository.findByScopeOrderByCategoryAscNameAsc(scope.toUpperCase());
         } else {
-            modules = moduleRepository.findByIsEnabledTrue();
+            modules = moduleRepository.findAllByOrderByScopeAscCategoryAscNameAsc();
         }
         Map<String, List<Permission>> permsByModule = getPermissionsByModule();
         return modules.stream()

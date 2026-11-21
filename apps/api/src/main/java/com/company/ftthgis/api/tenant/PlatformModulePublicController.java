@@ -32,7 +32,7 @@ public class PlatformModulePublicController {
     @GetMapping
     @PreAuthorize("@tenantSecurity.hasEffectivePermission('dashboard.view') or hasAuthority('system.modules.read')")
     public ResponseEntity<List<PlatformModuleResponseDto>> getPublicModules(
-            @RequestParam(name = "scope", required = false, defaultValue = "TENANT") String scope) {
+            @RequestParam(name = "scope", required = false, defaultValue = "ALL") String scope) {
         return ResponseEntity.ok(moduleService.getPublicModules(scope));
     }
 
