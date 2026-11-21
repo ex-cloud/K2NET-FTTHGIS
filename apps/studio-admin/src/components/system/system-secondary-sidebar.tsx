@@ -203,7 +203,7 @@ const SPECIAL_ROUTE_PREFIXES: Record<string, string[]> = {
   "/support/sla": ["/support/sla", "/system/support/sla"],
 };
 
-const FILTER_PARAMS = ["status", "view", "type", "quick", "scope", "project", "filter"];
+const FILTER_PARAMS = ["status", "view", "type", "quick", "scope", "project", "filter", "tab"];
 const FILTERABLE_ROOTS = new Set([
   "/organizations",
   "/licensing/licenses",
@@ -213,6 +213,7 @@ const FILTERABLE_ROOTS = new Set([
   "/workspace/issues",
   "/support/tickets",
   "/inbox",
+  "/platform/modules",
 ]);
 
 function checkPathMatch(itemUrl: string, pathname: string): boolean {

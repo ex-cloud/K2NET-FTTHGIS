@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateModuleStatusRequest {
 
-    @Pattern(regexp = "ACTIVE|IN_DEVELOPMENT|MAINTENANCE|DEPRECATED", message = "Status must be ACTIVE, IN_DEVELOPMENT, MAINTENANCE, or DEPRECATED")
+    @Pattern(regexp = "ACTIVE|IN_DEVELOPMENT|MAINTENANCE|DEPRECATED|DISABLED", message = "Status must be ACTIVE, IN_DEVELOPMENT, MAINTENANCE, DEPRECATED, or DISABLED")
     private String status;
 
     private Boolean isEnabled;

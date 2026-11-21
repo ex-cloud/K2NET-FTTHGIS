@@ -1,22 +1,25 @@
 import { type ReactNode } from "react";
 import { PermissionGuard } from "../../hooks/use-permissions";
 import { TenantAccessDenied } from "./TenantAccessDenied";
+import { ModuleStatusGuard } from "./ModuleStatusGuard";
 import { useTranslation } from "@k2net/i18n";
 
 export function GisPageWrapper({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   return (
-    <PermissionGuard
-      permission={["network.view", "map.view", "projects.view"]}
-      fallback={
-        <TenantAccessDenied
-          title={t("security.access_denied")}
-          description={t("security.access_denied_gateway")}
-          requiredPermission="network.view"
-        />
-      }
-    >
-      {children}
-    </PermissionGuard>
+    <ModuleStatusGuard moduleKey="map">
+      <PermissionGuard
+        permission={["network.view", "map.view", "projects.view"]}
+        fallback={
+          <TenantAccessDenied
+            title={t("security.access_denied")}
+            description={t("security.access_denied_gateway")}
+            requiredPermission="network.view"
+          />
+        }
+      >
+        {children}
+      </PermissionGuard>
+    </ModuleStatusGuard>
   );
 }

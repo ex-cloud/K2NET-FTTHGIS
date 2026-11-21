@@ -2,21 +2,24 @@ import { type ReactNode } from "react";
 import { useTranslation } from "@k2net/i18n";
 import { PermissionGuard } from "../../hooks/use-permissions";
 import { TenantAccessDenied } from "./TenantAccessDenied";
+import { ModuleStatusGuard } from "./ModuleStatusGuard";
 
 export function CorePageWrapper({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   return (
-    <PermissionGuard
-      permission={["network.view", "network.manage", "network.monitor", "network.nodes"]}
-      fallback={
-        <TenantAccessDenied
-          title={t("security.access_denied")}
-          description={t("security.access_denied_core")}
-          requiredPermission="network.view"
-        />
-      }
-    >
-      {children}
-    </PermissionGuard>
+    <ModuleStatusGuard moduleKey="network">
+      <PermissionGuard
+        permission={["network.view", "network.manage", "network.monitor", "network.nodes"]}
+        fallback={
+          <TenantAccessDenied
+            title={t("security.access_denied")}
+            description={t("security.access_denied_core")}
+            requiredPermission="network.view"
+          />
+        }
+      >
+        {children}
+      </PermissionGuard>
+    </ModuleStatusGuard>
   );
 }

@@ -1,4 +1,5 @@
 export * from "./TenantAccessDenied";
+export * from "./ModuleStatusGuard";
 export * from "./ProjectsPageWrapper";
 export * from "./TeamPageWrapper";
 export * from "./IntegrationsPageWrapper";

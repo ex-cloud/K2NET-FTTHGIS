@@ -1,4 +1,3 @@
-"use client"
 
 // Table density modes: add data-density="compact" to TableWrapper
 // to tighten row padding for data-dense views (RBAC matrix, audit logs, OLT telemetry).

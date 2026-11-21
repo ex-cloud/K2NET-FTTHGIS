@@ -35,11 +35,10 @@ public class PlatformModuleAdminController {
     @GetMapping
     @PreAuthorize("hasAuthority('system.modules.read') or hasAuthority('system.modules.manage') or hasRole('super_admin')")
     public ResponseEntity<List<PlatformModuleResponseDto>> getAllModules(
-            @RequestParam(name = "scope", required = false) String scope) {
-        if (scope != null && !scope.isBlank() && !"ALL".equalsIgnoreCase(scope)) {
-            return ResponseEntity.ok(moduleService.getModulesByScope(scope));
-        }
-        return ResponseEntity.ok(moduleService.getAllModules());
+            @RequestParam(name = "scope", required = false) String scope,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "search", required = false) String search) {
+        return ResponseEntity.ok(moduleService.getModulesWithFilters(scope, status, search));
     }
 
     /**

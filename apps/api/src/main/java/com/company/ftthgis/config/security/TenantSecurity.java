@@ -29,6 +29,10 @@ public class TenantSecurity {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.company.ftthgis.domain.tenant.repository.OrganizationMemberRepository organizationMemberRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private com.company.ftthgis.domain.tenant.repository.PlatformModuleRepository platformModuleRepository;
+
     /**
      * Checks if the currently authenticated user belongs to the specified organization slug,
      * or if the user is a super_admin from the global system realm.
@@ -271,6 +275,7 @@ public class TenantSecurity {
         boolean hasDirect = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equalsIgnoreCase(permission));
         if (hasDirect) {
+            checkModuleAvailability(permission, auth);
             return true;
         }
 
@@ -366,6 +371,52 @@ public class TenantSecurity {
         }
 
         return packageSubscriptionService.hasActiveFeature(orgId, featureKey);
+    }
+
+    private void checkModuleAvailability(String permission, Authentication auth) {
+        if (platformModuleRepository == null) {
+            return;
+        }
+        // VIP / Impersonation bypass: super_admin or support can always operate
+        boolean isSuperAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().toLowerCase().replaceFirst("^role_", "").equals("super_admin")
+                        || a.getAuthority().equalsIgnoreCase("system.support.impersonate"));
+        if (isSuperAdmin) {
+            return;
+        }
+
+        try {
+            String moduleKey = permission.contains(".")
+                    ? permission.substring(0, permission.indexOf('.')).toLowerCase()
+                    : permission.toLowerCase();
+
+            // Core safety bypass for authentication, security settings, profile, and dashboard
+            if ("security".equals(moduleKey) || "system".equals(moduleKey)
+                    || "organization".equals(moduleKey) || "dashboard".equals(moduleKey)) {
+                return;
+            }
+
+            var modOpt = platformModuleRepository.findByModuleKey(moduleKey);
+            if (modOpt.isPresent()) {
+                var mod = modOpt.get();
+                if ("MAINTENANCE".equalsIgnoreCase(mod.getStatus())) {
+                    log.warn("🛡️ TenantSecurity: Module '{}' is under MAINTENANCE. Blocking tenant access.", moduleKey);
+                    throw new org.springframework.web.server.ResponseStatusException(
+                            org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                            "Module '" + mod.getName() + "' is currently undergoing scheduled maintenance.");
+                }
+                if ("DISABLED".equalsIgnoreCase(mod.getStatus()) || !mod.isEnabled()) {
+                    log.warn("🛡️ TenantSecurity: Module '{}' is DISABLED. Blocking tenant access.", moduleKey);
+                    throw new org.springframework.web.server.ResponseStatusException(
+                            org.springframework.http.HttpStatus.FORBIDDEN,
+                            "Module '" + mod.getName() + "' is disabled.");
+                }
+            }
+        } catch (org.springframework.web.server.ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception e) {
+            log.debug("🛡️ TenantSecurity: Could not verify module status: {}", e.getMessage());
+        }
     }
 }
 

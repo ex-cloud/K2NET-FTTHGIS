@@ -37,16 +37,35 @@ public class PlatformModuleService {
 
     @Transactional(readOnly = true)
     public List<PlatformModuleResponseDto> getAllModules() {
-        Map<String, List<Permission>> permsByModule = getPermissionsByModule();
-        return moduleRepository.findAllByOrderByScopeAscCategoryAscNameAsc().stream()
-                .map(m -> mapToDto(m, permsByModule.getOrDefault(m.getModuleKey().toLowerCase(), Collections.emptyList())))
-                .collect(Collectors.toList());
+        return getModulesWithFilters(null, null, null);
     }
 
     @Transactional(readOnly = true)
     public List<PlatformModuleResponseDto> getModulesByScope(String scope) {
+        return getModulesWithFilters(scope, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PlatformModuleResponseDto> getModulesWithFilters(String scope, String status, String search) {
         Map<String, List<Permission>> permsByModule = getPermissionsByModule();
-        return moduleRepository.findByScopeOrderByCategoryAscNameAsc(scope.toUpperCase()).stream()
+        return moduleRepository.findAllByOrderByScopeAscCategoryAscNameAsc().stream()
+                .filter(m -> {
+                    if (scope != null && !scope.isBlank() && !"ALL".equalsIgnoreCase(scope)) {
+                        if (!m.getScope().equalsIgnoreCase(scope)) return false;
+                    }
+                    if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
+                        if (!m.getStatus().equalsIgnoreCase(status)) return false;
+                    }
+                    if (search != null && !search.isBlank()) {
+                        String s = search.trim().toLowerCase();
+                        boolean matchKey = m.getModuleKey() != null && m.getModuleKey().toLowerCase().contains(s);
+                        boolean matchName = m.getName() != null && m.getName().toLowerCase().contains(s);
+                        boolean matchTarget = m.getServiceTarget() != null && m.getServiceTarget().toLowerCase().contains(s);
+                        boolean matchDesc = m.getDescription() != null && m.getDescription().toLowerCase().contains(s);
+                        if (!matchKey && !matchName && !matchTarget && !matchDesc) return false;
+                    }
+                    return true;
+                })
                 .map(m -> mapToDto(m, permsByModule.getOrDefault(m.getModuleKey().toLowerCase(), Collections.emptyList())))
                 .collect(Collectors.toList());
     }
@@ -82,7 +101,13 @@ public class PlatformModuleService {
                 moduleKey, req.getStatus(), req.getIsEnabled(), req.getMinPlanTier());
 
         if (req.getStatus() != null && !req.getStatus().isBlank()) {
-            module.setStatus(req.getStatus().toUpperCase());
+            String newStatus = req.getStatus().toUpperCase();
+            module.setStatus(newStatus);
+            if ("DISABLED".equals(newStatus)) {
+                module.setEnabled(false);
+            } else if ("ACTIVE".equals(newStatus)) {
+                module.setEnabled(true);
+            }
         }
         if (req.getIsEnabled() != null) {
             module.setEnabled(req.getIsEnabled());

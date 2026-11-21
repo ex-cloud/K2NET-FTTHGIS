@@ -85,9 +85,9 @@ export function ModuleDetailDrawer({
       case "ACTIVE":
         return <CheckCircle2 className="size-3.5 text-primary" />;
       case "MAINTENANCE":
-        return <AlertTriangle className="size-3.5 text-amber-500" />;
+        return <AlertTriangle className="size-3.5 text-foreground" />;
       case "DISABLED":
-        return <XCircle className="size-3.5 text-rose-500" />;
+        return <XCircle className="size-3.5 text-destructive" />;
     }
   };
 
