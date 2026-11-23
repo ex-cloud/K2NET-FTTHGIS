@@ -149,6 +149,7 @@ export interface AuthLoginFormProps {
   onSendEmailOtp?: () => Promise<boolean>;
   onVerifyEmailOtp?: (code: string) => Promise<boolean>;
   onVerifyWebauthn?: () => Promise<boolean>;
+  onVerifyBackupCode?: (code: string) => Promise<boolean>;
   onPasswordlessPasskeyLogin?: () => Promise<boolean>;
   turnstileSiteKey?: string;
   isLoading?: boolean;

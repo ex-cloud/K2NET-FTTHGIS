@@ -64,6 +64,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
     onSendEmailOtp,
     onVerifyEmailOtp,
     onVerifyWebauthn,
+    onVerifyBackupCode,
     onPasswordlessPasskeyLogin,
     turnstileSiteKey,
     isLoading = false,
@@ -290,6 +291,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                 onSendEmailOtp={onSendEmailOtp}
                 onVerifyEmailOtp={onVerifyEmailOtp}
                 onVerifyWebauthn={onVerifyWebauthn}
+                onVerifyBackupCode={onVerifyBackupCode}
                 onBackToLogin={handleBackFromMfa}
                 labels={props.labels}
                 isLoading={isLoading}

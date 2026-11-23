@@ -77,4 +77,5 @@ export interface KeycloakAuthContextValue {
   verifyMfaEmailOtp?: (preAuthToken: string, code: string) => Promise<CredentialLoginResult>;
   getWebauthnLoginChallenge?: (preAuthToken: string) => Promise<{ challenge: string; rpId: string; allowCredentials?: Array<{ type: string; id: string }> }>;
   verifyWebauthnLogin?: (preAuthToken: string, payload: { credentialId: string; clientDataJSON: string; authenticatorData: string; signature: string }) => Promise<CredentialLoginResult>;
+  verifyMfaBackupCode?: (preAuthToken: string, code: string) => Promise<CredentialLoginResult>;
 }

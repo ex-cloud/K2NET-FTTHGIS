@@ -41,6 +41,7 @@ export default function AdminLoginPage() {
     verifyMfaEmailOtp,
     getWebauthnLoginChallenge,
     verifyWebauthnLogin,
+    verifyMfaBackupCode,
   } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -339,6 +340,30 @@ export default function AdminLoginPage() {
     }
   };
 
+  const handleVerifyBackupCode = async (code: string): Promise<boolean> => {
+    if (!preAuthToken || !verifyMfaBackupCode) return false;
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await verifyMfaBackupCode(preAuthToken, code);
+      if (result.success) {
+        commitPendingSaveProfile({
+          email: result.user?.email,
+          username: result.user?.username,
+          displayName: result.user?.name,
+          avatarUrl: result.user?.avatarUrl,
+          tenantSlug: "system",
+        });
+        router.replace(callbackUrl);
+        return true;
+      }
+      setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_BACKUP_CODE", result.message, t));
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <AuthLoginLayout
       portalName={t("auth.admin_portal_name")}
@@ -381,6 +406,7 @@ export default function AdminLoginPage() {
         onSendEmailOtp={handleSendEmailOtp}
         onVerifyEmailOtp={handleVerifyEmailOtp}
         onVerifyWebauthn={handleVerifyWebauthn}
+        onVerifyBackupCode={handleVerifyBackupCode}
         turnstileSiteKey={turnstileSiteKey}
         errorMessage={errorMessage}
         onSubmitCredentials={handleSubmitCredentials}

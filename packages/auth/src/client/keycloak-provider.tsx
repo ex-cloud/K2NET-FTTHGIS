@@ -722,6 +722,40 @@ export function KeycloakProvider({
     [hydrateAuthenticatedSession]
   );
 
+  const verifyMfaBackupCode = useCallback(
+    async (preAuthToken: string, code: string): Promise<CredentialLoginResult> => {
+      try {
+        const res = await fetch("/api/v1/auth/mfa/backup-code/verify", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "K2NET-BFF",
+          },
+          body: JSON.stringify({ preAuthToken, code }),
+        });
+        const data = (await res.json().catch(() => ({}))) as BffLoginApiResponse;
+        if (!res.ok || !data.accessToken) {
+          return {
+            success: false,
+            error: data.error || "INVALID_BACKUP_CODE",
+            message: data.message,
+          };
+        }
+        const hydratedUser = hydrateAuthenticatedSession(
+          data.accessToken,
+          data.idToken,
+          data.expiresIn,
+          data.user
+        );
+        return { success: true, user: hydratedUser || undefined };
+      } catch {
+        return { success: false, error: "NETWORK_ERROR" };
+      }
+    },
+    [hydrateAuthenticatedSession]
+  );
+
   const logout = useCallback(
     async (options?: Keycloak.KeycloakLogoutOptions) => {
       try {
@@ -1046,6 +1080,7 @@ export function KeycloakProvider({
       verifyMfaEmailOtp,
       getWebauthnLoginChallenge,
       verifyWebauthnLogin,
+      verifyMfaBackupCode,
     }),
     [
       authenticated,
@@ -1067,6 +1102,7 @@ export function KeycloakProvider({
       sessionTerminated,
       token,
       user,
+      verifyMfaBackupCode,
       verifyMfaEmailOtp,
       verifyMfaTotp,
       verifyWebauthnLogin,

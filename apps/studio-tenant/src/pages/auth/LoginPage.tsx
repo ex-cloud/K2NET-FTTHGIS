@@ -41,6 +41,7 @@ export function LoginPage() {
     verifyMfaEmailOtp,
     getWebauthnLoginChallenge,
     verifyWebauthnLogin,
+    verifyMfaBackupCode,
   } = useAuth();
   const navigate = useNavigate();
   const tenantSlug = extractTenantSlug();
@@ -204,15 +205,29 @@ export function LoginPage() {
         });
       }
       setPendingSaveProfile(null);
-
-      if (callbackUrl === "/") {
-        navigate({ to: "/" });
-      } else if (typeof window !== "undefined") {
-        window.location.replace(callbackUrl);
-      }
+      handleAuthRedirect(result.user, effectiveSlug);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAuthRedirect = (
+    user?: { email?: string; username?: string; name?: string; avatarUrl?: string },
+    effectiveSlug?: string
+  ) => {
+    commitPendingSaveProfile({
+      email: user?.email,
+      username: user?.username,
+      displayName: user?.name,
+      avatarUrl: user?.avatarUrl,
+      tenantSlug: effectiveSlug,
+    });
+    if (callbackUrl === "/") {
+      navigate({ to: "/" });
+    } else if (typeof window !== "undefined") {
+      window.location.replace(callbackUrl);
+    }
+    return true;
   };
 
   const handleVerifyTotp = async (code: string): Promise<boolean> => {
@@ -223,19 +238,7 @@ export function LoginPage() {
       const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
       const result = await verifyMfaTotp(preAuthToken, code);
       if (result.success) {
-        commitPendingSaveProfile({
-          email: result.user?.email,
-          username: result.user?.username,
-          displayName: result.user?.name,
-          avatarUrl: result.user?.avatarUrl,
-          tenantSlug: effectiveSlug,
-        });
-        if (callbackUrl === "/") {
-          navigate({ to: "/" });
-        } else if (typeof window !== "undefined") {
-          window.location.replace(callbackUrl);
-        }
-        return true;
+        return handleAuthRedirect(result.user, effectiveSlug);
       }
       setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_MFA_CODE", result.message, t));
       return false;
@@ -263,19 +266,7 @@ export function LoginPage() {
       const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
       const result = await verifyMfaEmailOtp(preAuthToken, code);
       if (result.success) {
-        commitPendingSaveProfile({
-          email: result.user?.email,
-          username: result.user?.username,
-          displayName: result.user?.name,
-          avatarUrl: result.user?.avatarUrl,
-          tenantSlug: effectiveSlug,
-        });
-        if (callbackUrl === "/") {
-          navigate({ to: "/" });
-        } else if (typeof window !== "undefined") {
-          window.location.replace(callbackUrl);
-        }
-        return true;
+        return handleAuthRedirect(result.user, effectiveSlug);
       }
       setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_CODE", result.message, t));
       return false;
@@ -299,19 +290,7 @@ export function LoginPage() {
       const result = await verifyWebauthnLogin(preAuthToken, assertionPayload);
 
       if (result.success) {
-        commitPendingSaveProfile({
-          email: result.user?.email,
-          username: result.user?.username,
-          displayName: result.user?.name,
-          avatarUrl: result.user?.avatarUrl,
-          tenantSlug: effectiveSlug,
-        });
-        if (callbackUrl === "/") {
-          navigate({ to: "/" });
-        } else if (typeof window !== "undefined") {
-          window.location.replace(callbackUrl);
-        }
-        return true;
+        return handleAuthRedirect(result.user, effectiveSlug);
       }
       setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_WEBAUTHN_ASSERTION", result.message, t));
       return false;
@@ -321,6 +300,23 @@ export function LoginPage() {
       } else {
         setErrorMessage(err instanceof Error ? err.message : "Passkey verification failed");
       }
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyBackupCode = async (code: string): Promise<boolean> => {
+    if (!preAuthToken || !verifyMfaBackupCode) return false;
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const effectiveSlug = tenantCtx?.targetSlug || tenantCtx?.slug || tenantSlug;
+      const result = await verifyMfaBackupCode(preAuthToken, code);
+      if (result.success) {
+        return handleAuthRedirect(result.user, effectiveSlug);
+      }
+      setErrorMessage(resolveAuthErrorMessage(result.error || "INVALID_BACKUP_CODE", result.message, t));
       return false;
     } finally {
       setIsSubmitting(false);
@@ -427,6 +423,7 @@ export function LoginPage() {
         onSendEmailOtp={handleSendEmailOtp}
         onVerifyEmailOtp={handleVerifyEmailOtp}
         onVerifyWebauthn={handleVerifyWebauthn}
+        onVerifyBackupCode={handleVerifyBackupCode}
         turnstileSiteKey={turnstileSiteKey}
         errorMessage={errorMessage}
         onSubmitCredentials={handleSubmitCredentials}

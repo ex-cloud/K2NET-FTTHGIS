@@ -567,8 +567,10 @@ export function AuthMfaStepUp({
                     placeholder={labels?.mfaBackupCodePlaceholder || "XXXX-XXXX"}
                     value={backupCodeInput}
                     onChange={(e) => {
-                      let val = e.target.value.toUpperCase().replace(/[^23456789ABCDEFGHJKLMNPQRSTUVWXYZ-]/g, "");
-                      if (val.length === 4 && !val.includes("-") && e.target.value.length > backupCodeInput.length) {
+                      let val = e.target.value.toUpperCase().replace(/\s+/g, "-").replace(/[^23456789ABCDEFGHJKLMNPQRSTUVWXYZ-]/g, "");
+                      if (val.length === 8 && !val.includes("-")) {
+                        val = val.slice(0, 4) + "-" + val.slice(4);
+                      } else if (val.length === 4 && !val.includes("-") && e.target.value.length > backupCodeInput.length) {
                         val = val + "-";
                       }
                       setBackupCodeInput(val.slice(0, 9));

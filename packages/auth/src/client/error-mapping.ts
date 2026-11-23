@@ -27,6 +27,8 @@ export function resolveAuthErrorMessage(
       return t("auth.login_error_invalid_credentials_format");
     case "INVALID_MFA_CODE":
       return t("auth.login_error_invalid_mfa_code");
+    case "INVALID_BACKUP_CODE":
+      return t("auth.login_error_invalid_backup_code");
     case "MFA_ENROLLMENT_REQUIRED":
       return t("auth.login_error_mfa_enrollment_required");
     case "ORGANIZATION_SUSPENDED":
