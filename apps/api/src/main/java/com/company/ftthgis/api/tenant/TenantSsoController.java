@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.api.security.dto.*;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.config.tenant.LicenseCheck;
 import com.company.ftthgis.service.TenantSsoDomainService;
 import com.company.ftthgis.service.TenantSsoService;
@@ -56,6 +57,7 @@ public class TenantSsoController {
      */
     @PutMapping
     @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.sso.manage') or hasAuthority('organizations.update'))")
+    @RequireSudoMode(action = "tenant.sso.update")
     public ResponseEntity<?> updateSsoConfig(
             @PathVariable String slug,
             @Valid @RequestBody UpdateTenantSsoConfigRequest request,
@@ -80,6 +82,7 @@ public class TenantSsoController {
      */
     @DeleteMapping
     @PreAuthorize("@tenantSecurity.isOwner(#slug) and hasAuthority('security.sso.manage')")
+    @RequireSudoMode(action = "tenant.sso.delete")
     public ResponseEntity<?> deleteSsoConfig(
             @PathVariable String slug,
             @AuthenticationPrincipal Jwt jwt) {
@@ -121,6 +124,7 @@ public class TenantSsoController {
      */
     @PostMapping("/domains")
     @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.sso.manage') or hasAuthority('organizations.update'))")
+    @RequireSudoMode(action = "tenant.sso.domain.add")
     public ResponseEntity<?> addDomain(
             @PathVariable String slug,
             @Valid @RequestBody AddSsoDomainRequest request,
@@ -177,6 +181,7 @@ public class TenantSsoController {
      */
     @DeleteMapping("/domains/{domainId}")
     @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.sso.manage') or hasAuthority('organizations.update'))")
+    @RequireSudoMode(action = "tenant.sso.domain.delete")
     public ResponseEntity<?> deleteDomain(
             @PathVariable String slug,
             @PathVariable UUID domainId,

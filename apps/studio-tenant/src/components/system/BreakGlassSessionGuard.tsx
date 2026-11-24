@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { ShieldCheck, Lock } from "lucide-react";
+import { ShieldCheck, Lock, Loader2 } from "lucide-react";
 import {
   Button,
   Dialog,
@@ -11,13 +11,18 @@ import {
   DialogTitle,
   FloatingBanner,
 } from "@k2net/ui";
-import { useAuth } from "@k2net/auth/client";
+import {
+  useAuth,
+  fetchSudoStatus,
+  onSudoStatusChange,
+  requestSudoElevation,
+  type SudoStatusResponse,
+} from "@k2net/auth/client";
 import { useTranslation } from "@k2net/i18n";
-import { toast } from "sonner";
+import { getApiAuthToken } from "../../lib/api-client";
 
-const STEP_UP_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const STEP_UP_STORAGE_KEY = "k2net_break_glass_stepup_until";
 const BANNER_DISMISSED_STORAGE_KEY = "k2net_break_glass_banner_dismissed";
+const LEGACY_STEP_UP_STORAGE_KEY = "k2net_break_glass_stepup_until";
 
 function isHighRiskPath(pathname: string): { isHighRisk: boolean; moduleLabel: string } {
   if (pathname.startsWith("/billing")) {
@@ -34,24 +39,19 @@ function isHighRiskPath(pathname: string): { isHighRisk: boolean; moduleLabel: s
 
 export function BreakGlassSessionGuard() {
   const { t } = useTranslation();
-  const { isBreakGlassSession } = useAuth();
+  const { isBreakGlassSession, token } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
 
-  const [stepUpVerifiedUntil, setStepUpVerifiedUntil] = React.useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    try {
-      return Number(window.sessionStorage.getItem(STEP_UP_STORAGE_KEY) || "0");
-    } catch {
-      return 0;
-    }
-  });
+  const [sudoStatus, setSudoStatus] = React.useState<SudoStatusResponse | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = React.useState(false);
 
   const [isBannerDismissed, setIsBannerDismissed] = React.useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
+      window.sessionStorage.removeItem(LEGACY_STEP_UP_STORAGE_KEY);
       return window.sessionStorage.getItem(BANNER_DISMISSED_STORAGE_KEY) === "1";
     } catch {
       return false;
@@ -59,21 +59,47 @@ export function BreakGlassSessionGuard() {
   });
 
   const { isHighRisk, moduleLabel } = React.useMemo(() => isHighRiskPath(pathname), [pathname]);
+  const activeToken = token || getApiAuthToken();
+
+  // Keep synchronized with live server Sudo elevation state (and Lock Sudo Mode revocations)
+  React.useEffect(() => {
+    const unsubscribe = onSudoStatusChange((next) => {
+      if (next) {
+        setSudoStatus(next);
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  React.useEffect(() => {
+    if (!isBreakGlassSession || !isHighRisk) return;
+    let cancelled = false;
+    setIsCheckingStatus(true);
+    void fetchSudoStatus(activeToken).then((status) => {
+      if (!cancelled) {
+        setSudoStatus(status);
+        setIsCheckingStatus(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isBreakGlassSession, isHighRisk, activeToken]);
 
   const requiresStepUpModal =
-    Boolean(isBreakGlassSession) && isHighRisk && Date.now() >= stepUpVerifiedUntil;
+    Boolean(isBreakGlassSession) && isHighRisk && !sudoStatus?.sudoActive;
 
-  const handleConfirmStepUp = () => {
-    const expiry = Date.now() + STEP_UP_WINDOW_MS;
-    setStepUpVerifiedUntil(expiry);
-    if (typeof window !== "undefined") {
-      try {
-        window.sessionStorage.setItem(STEP_UP_STORAGE_KEY, String(expiry));
-      } catch {
-        // ignore storage error
+  const handleConfirmStepUp = async () => {
+    const elevated = await requestSudoElevation({
+      action: "break_glass.module_access",
+      isBreakGlass: true,
+    });
+    if (elevated) {
+      const updated = await fetchSudoStatus(activeToken);
+      if (updated) {
+        setSudoStatus(updated);
       }
     }
-    toast.success(t("settings.break_glass_stepup_verified_toast"));
   };
 
   const handleDismissBanner = () => {
@@ -120,14 +146,28 @@ export function BreakGlassSessionGuard() {
               {t("settings.break_glass_stepup_desc", { module: moduleLabel })}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="pt-2">
+          <DialogFooter className="gap-2 sm:gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void navigate({ to: "/projects" })}
+              className="h-7 px-2.5 text-xs font-medium"
+            >
+              {t("auth.sudo.cancel_btn")}
+            </Button>
             <Button
               type="button"
               size="sm"
-              onClick={handleConfirmStepUp}
-              className="h-7 px-2.5 text-xs font-medium gap-1.5 w-full sm:w-auto"
+              disabled={isCheckingStatus}
+              onClick={() => void handleConfirmStepUp()}
+              className="h-7 px-2.5 text-xs font-medium gap-1.5"
             >
-              <ShieldCheck className="size-3.5" />
+              {isCheckingStatus ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <ShieldCheck className="size-3.5" />
+              )}
               <span>{t("settings.break_glass_stepup_verify_btn")}</span>
             </Button>
           </DialogFooter>

@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestControllerAdvice
@@ -97,6 +99,20 @@ public class GlobalExceptionHandler {
                 .details("Lisensi organisasi dalam mode Hanya-Baca karena tagihan tertunggak.")
                 .build();
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(SudoRequiredException.class)
+    public ResponseEntity<Map<String, Object>> handleSudoRequired(SudoRequiredException ex) {
+        log.warn("SUDO_REQUIRED [action={}, breakGlass={}]: {}", ex.getAction(), ex.isBreakGlassSession(), ex.getMessage());
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        body.put("error", "SUDO_REQUIRED");
+        body.put("code", "SUDO_REQUIRED");
+        body.put("action", ex.getAction());
+        body.put("isBreakGlass", ex.isBreakGlassSession());
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
 
     /**

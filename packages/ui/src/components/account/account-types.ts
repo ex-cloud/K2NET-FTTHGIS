@@ -246,4 +246,22 @@ export interface AccountLabels {
   backupCodesRegenerateConfirmDesc?: string;
   doneBtn?: string;
   cancelBtn?: string;
+  sudoCardTitle?: string;
+  sudoCardDesc?: string;
+  sudoStatusActive?: string;
+  sudoStatusFreshLogin?: string;
+  sudoStatusLocked?: string;
+  sudoStatusBreakGlassNotice?: string;
+  sudoLockBtn?: string;
+  sudoLockingBtn?: string;
+  sudoVerifyBtn?: string;
+}
+
+export interface SudoStatusViewData {
+  elevated: boolean;
+  sudoActive: boolean;
+  freshLoginActive: boolean;
+  isBreakGlass: boolean;
+  source: string;
+  remainingSeconds: number;
 }

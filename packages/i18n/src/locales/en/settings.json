@@ -593,7 +593,18 @@
     "backup_codes_download_btn": "Download .txt",
     "backup_codes_print_btn": "Print",
     "backup_codes_regenerate_confirm_title": "Regenerate All Recovery Codes?",
-    "backup_codes_regenerate_confirm_desc": "Generating a new set of recovery codes will immediately invalidate all 10 previous codes. Any unused previous codes will no longer work."
+    "backup_codes_regenerate_confirm_desc": "Generating a new set of recovery codes will immediately invalidate all 10 previous codes. Any unused previous codes will no longer work.",
+    "sudo_card_title": "Sudo Mode (Privileged Step-Up Session)",
+    "sudo_card_desc": "Protects destructive security, SSO, member, and MFA changes with a time-boxed 15-minute cryptographic elevation window.",
+    "sudo_status_active": "Elevated ({{minutes}}m {{seconds}}s left)",
+    "sudo_status_fresh_login": "Fresh Login Window ({{minutes}}m {{seconds}}s left)",
+    "sudo_status_locked": "Verification Required",
+    "sudo_status_break_glass_notice": "Break-Glass sessions do not receive a fresh-login grace window and require explicit MFA elevation.",
+    "sudo_lock_btn": "Lock Sudo Mode",
+    "sudo_locking_btn": "Locking...",
+    "sudo_verify_btn": "Verify Sudo Mode",
+    "sudo_locked_success": "Sudo Mode locked immediately. High-risk changes now require re-verification.",
+    "sudo_verified_success": "Sudo Mode unlocked for 15 minutes."
   }
 }
 

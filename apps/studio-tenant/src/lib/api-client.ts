@@ -1,4 +1,5 @@
 import { extractTenantSlug } from "./keycloak-config";
+import { isSudoRequiredPayload, requestSudoElevation } from "@k2net/auth/client";
 
 let activeToken: string | null = null;
 let activeImpersonationSessionId: string | null = null;
@@ -99,6 +100,7 @@ export async function refreshImpersonationToken(): Promise<string | null> {
 
 export interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
+  _sudoRetried?: boolean;
 }
 
 function buildRequestUrl(
@@ -119,8 +121,54 @@ function resolveTenantSlug(): string | null {
   return slug && slug !== "__invalid_reserved__" ? slug : null;
 }
 
+async function tryRefreshUnauthorizedRequest(
+  url: string,
+  customConfig: RequestInit,
+  reqHeaders: Record<string, string>,
+  impersonationSessionId: string | null,
+  initialResponse: Response
+): Promise<Response> {
+  if (impersonationSessionId) {
+    const newToken = await refreshImpersonationToken();
+    if (!newToken) return initialResponse;
+    reqHeaders["Authorization"] = `Bearer ${newToken}`;
+    return fetch(url, { headers: reqHeaders, ...customConfig });
+  }
+  if (typeof window === "undefined") return initialResponse;
+
+  const authBridge = (
+    window as unknown as {
+      __K2NET_AUTH__?: {
+        updateToken?: (minValidity?: number) => Promise<boolean>;
+        token?: string;
+      };
+    }
+  ).__K2NET_AUTH__;
+  if (!authBridge?.updateToken) return initialResponse;
+
+  const refreshed = await authBridge.updateToken(30);
+  if (!refreshed || !authBridge.token) return initialResponse;
+
+  setApiAuthToken(authBridge.token);
+  reqHeaders["Authorization"] = `Bearer ${authBridge.token}`;
+  return fetch(url, { headers: reqHeaders, ...customConfig });
+}
+
+async function parseApiErrorMessage(response: Response): Promise<string> {
+  const errorBody = await response.text().catch(() => "Unknown error");
+  try {
+    const parsed = JSON.parse(errorBody) as { message?: string; error?: string };
+    if (parsed && typeof parsed === "object") {
+      return parsed.message || parsed.error || errorBody;
+    }
+  } catch {
+    // Not JSON, use raw text
+  }
+  return errorBody;
+}
+
 export async function apiClient<T = unknown>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { params, headers = {}, ...customConfig } = options;
+  const { params, headers = {}, _sudoRetried = false, ...customConfig } = options;
   const url = buildRequestUrl(endpoint, params);
 
   const reqHeaders: Record<string, string> = {
@@ -148,37 +196,29 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
     ...customConfig,
   });
 
-  // Auto-heal 401 during active impersonation or via Edge Auth BFF silent cookie refresh
   if (response.status === 401) {
-    if (impersonationSessionId) {
-      const newToken = await refreshImpersonationToken();
-      if (newToken) {
-        reqHeaders["Authorization"] = `Bearer ${newToken}`;
-        response = await fetch(url, {
-          headers: reqHeaders,
-          ...customConfig,
-        });
+    response = await tryRefreshUnauthorizedRequest(
+      url,
+      customConfig,
+      reqHeaders,
+      impersonationSessionId,
+      response
+    );
+  }
+
+  // Fase 7.11: Intercept 403 SUDO_REQUIRED, open single-flight Sudo modal, and retry ONCE
+  if (response.status === 403 && !_sudoRetried) {
+    const sudoCheckPayload = await response.clone().json().catch(() => null);
+    const sudoInfo = isSudoRequiredPayload(sudoCheckPayload);
+    if (sudoInfo.isSudoRequired) {
+      const elevated = await requestSudoElevation({
+        action: sudoInfo.action,
+        isBreakGlass: sudoInfo.isBreakGlass,
+      });
+      if (elevated) {
+        return apiClient<T>(endpoint, { ...options, _sudoRetried: true });
       }
-    } else if (typeof window !== "undefined") {
-      const authBridge = (
-        window as unknown as {
-          __K2NET_AUTH__?: {
-            updateToken?: (minValidity?: number) => Promise<boolean>;
-            token?: string;
-          };
-        }
-      ).__K2NET_AUTH__;
-      if (authBridge?.updateToken) {
-        const refreshed = await authBridge.updateToken(30);
-        if (refreshed && authBridge.token) {
-          setApiAuthToken(authBridge.token);
-          reqHeaders["Authorization"] = `Bearer ${authBridge.token}`;
-          response = await fetch(url, {
-            headers: reqHeaders,
-            ...customConfig,
-          });
-        }
-      }
+      throw new Error(sudoInfo.message || "Sudo verification is required to continue.");
     }
   }
 
@@ -187,16 +227,7 @@ export async function apiClient<T = unknown>(endpoint: string, options: FetchOpt
       setApiAuthToken(null);
       setImpersonationSessionId(null);
     }
-    const errorBody = await response.text().catch(() => "Unknown error");
-    let extractedMessage = errorBody;
-    try {
-      const parsed = JSON.parse(errorBody) as { message?: string; error?: string };
-      if (parsed && typeof parsed === "object") {
-        extractedMessage = parsed.message || parsed.error || errorBody;
-      }
-    } catch {
-      // Not JSON, use raw text
-    }
+    const extractedMessage = await parseApiErrorMessage(response);
     throw new Error(extractedMessage || `HTTP ${response.status} ${response.statusText}`);
   }
 

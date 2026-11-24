@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.api.tenant.dto.*;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.service.organization.OrganizationMemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,7 @@ public class TenantMemberController {
 
     @DeleteMapping("/{memberId}")
     @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and (@tenantSecurity.hasEffectivePermission('members.manage') or @tenantSecurity.hasEffectivePermission('team.manage') or @tenantSecurity.hasEffectivePermission('users.manage')))")
+    @RequireSudoMode(action = "tenant.member.remove")
     public ResponseEntity<Map<String, Object>> removeMember(
             @PathVariable String slug,
             @PathVariable UUID memberId,

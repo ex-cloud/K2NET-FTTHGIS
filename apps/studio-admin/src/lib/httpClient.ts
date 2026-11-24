@@ -1,6 +1,9 @@
+import { isSudoRequiredPayload, requestSudoElevation } from "@k2net/auth/client";
+
 export interface HttpClientOptions extends RequestInit {
   token?: string;
   projectId?: string;
+  _sudoRetried?: boolean;
 }
 
 async function handleOfflineEnqueue(
@@ -27,13 +30,32 @@ async function handleOfflineEnqueue(
   }
 }
 
-async function handle403Response(response: Response): Promise<Response> {
+async function handle403Response(
+  response: Response,
+  url: string,
+  rest: RequestInit,
+  requestHeaders: Headers,
+  sudoRetried: boolean,
+  effectiveToken?: string
+): Promise<Response> {
   const clone = response.clone();
   try {
     const errorData = await clone.json();
-    if (errorData.error === "ORGANIZATION_SUSPENDED") {
+    if (errorData?.error === "ORGANIZATION_SUSPENDED") {
       const { useUIStore } = await import("@/store/ui-store");
       useUIStore.getState().setOrganizationSuspended(true);
+      return response;
+    }
+    const sudoInfo = isSudoRequiredPayload(errorData);
+    if (sudoInfo.isSudoRequired && !sudoRetried) {
+      const elevated = await requestSudoElevation({
+        action: sudoInfo.action,
+        isBreakGlass: sudoInfo.isBreakGlass,
+      });
+      if (elevated) {
+        const retryResponse = await fetch(url, { ...rest, headers: requestHeaders });
+        return handleResponseStatus(retryResponse, url, rest, requestHeaders, effectiveToken, true);
+      }
     }
   } catch {
     // Not JSON or other error, ignore
@@ -99,10 +121,11 @@ async function handleResponseStatus(
   url: string,
   rest: RequestInit,
   requestHeaders: Headers,
-  effectiveToken?: string
+  effectiveToken?: string,
+  sudoRetried = false
 ): Promise<Response> {
   if (response.status === 403) {
-    return handle403Response(response);
+    return handle403Response(response, url, rest, requestHeaders, sudoRetried, effectiveToken);
   }
 
   if (response.status === 401) {
@@ -123,7 +146,7 @@ async function handleResponseStatus(
  * 3. Graceful 401 Unauthorized handling
  */
 export async function httpClient(url: string, options: HttpClientOptions = {}): Promise<Response> {
-  const { token, projectId: _pid, ...rest } = options;
+  const { token, projectId: _pid, _sudoRetried = false, ...rest } = options;
   const method = (rest.method || "GET").toUpperCase();
   const isWrite = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
 
@@ -146,7 +169,7 @@ export async function httpClient(url: string, options: HttpClientOptions = {}): 
       headers: requestHeaders,
     });
 
-    return await handleResponseStatus(response, url, rest, requestHeaders, effectiveToken);
+    return await handleResponseStatus(response, url, rest, requestHeaders, effectiveToken, _sudoRetried);
   } catch (error) {
     console.error(`[HTTP Client] Fetch error at ${url}:`, error);
 

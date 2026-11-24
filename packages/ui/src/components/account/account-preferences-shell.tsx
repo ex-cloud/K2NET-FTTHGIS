@@ -8,6 +8,7 @@ import { PasswordSecurityCard } from "./password-security-card";
 import { MfaPasskeyCard } from "./mfa-passkey-card";
 import { ActiveSessionsCard } from "./active-sessions-card";
 import { SocialIdentitiesCard } from "./social-identities-card";
+import { SudoModeCard } from "./sudo-mode-card";
 import {
   PlaneType,
   UserProfileData,
@@ -18,6 +19,7 @@ import {
   WebauthnCredentialData,
   SocialIdentityData,
   BackupCodesStatusData,
+  SudoStatusViewData,
 } from "./account-types";
 
 export interface AccountPreferencesShellProps {
@@ -51,6 +53,10 @@ export interface AccountPreferencesShellProps {
   onRevokeAllSessions?: () => Promise<void> | void;
   onConnectProvider?: (provider: "google" | "github" | string) => Promise<void> | void;
   onDisconnectProvider?: (provider: "google" | "github" | string) => Promise<void> | void;
+  sudoStatus?: SudoStatusViewData | null;
+  onLockSudo?: () => Promise<void> | void;
+  onElevateSudo?: () => Promise<void> | void;
+  isLockingSudo?: boolean;
   isLoading?: boolean;
 }
 
@@ -78,6 +84,10 @@ export function AccountPreferencesShell({
   onRevokeAllSessions,
   onConnectProvider,
   onDisconnectProvider,
+  sudoStatus,
+  onLockSudo,
+  onElevateSudo,
+  isLockingSudo = false,
   isLoading = false,
 }: AccountPreferencesShellProps) {
   const [activeTab, setActiveTab] = React.useState("general");
@@ -126,6 +136,16 @@ export function AccountPreferencesShell({
         </TabsContent>
 
         <TabsContent value="security" className="space-y-4">
+          {(onLockSudo || onElevateSudo || sudoStatus) && (
+            <SudoModeCard
+              sudoStatus={sudoStatus}
+              labels={labels}
+              onLockSudo={onLockSudo}
+              onElevateSudo={onElevateSudo}
+              isLocking={isLockingSudo}
+              isLoading={isLoading}
+            />
+          )}
           <MfaPasskeyCard
             plane={plane}
             summary={summary}

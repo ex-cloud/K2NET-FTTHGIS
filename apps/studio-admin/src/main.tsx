@@ -6,6 +6,7 @@ import { KeycloakProvider } from "@k2net/auth/client";
 import { ThemeProvider } from "@k2net/ui";
 import { I18nProvider } from "@k2net/i18n";
 import { NetworkStatusIndicator } from "./components/NetworkStatusIndicator";
+import { SudoReauthHost } from "./components/system/SudoReauthHost";
 import { ErrorBoundary } from "./components/error-boundary";
 import { Toaster } from "sonner";
 import { getAdminKeycloakConfig } from "./lib/keycloak-config";
@@ -70,6 +71,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <ErrorBoundary>
               <RouterProvider router={router} />
             </ErrorBoundary>
+            <SudoReauthHost />
             <NetworkStatusIndicator />
             <Toaster position="top-right" richColors />
           </I18nProvider>

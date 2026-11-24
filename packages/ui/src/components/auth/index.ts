@@ -13,3 +13,4 @@ export * from "./auth-invite-accept-card";
 export * from "./auth-mfa-step-up";
 export * from "./saved-profiles";
 export * from "./webauthn-passkey";
+export * from "./sudo-reauth-modal";

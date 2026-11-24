@@ -12,3 +12,4 @@ export * from "./totp-setup-modal";
 export * from "./passkey-register-modal";
 export * from "./email-otp-setup-modal";
 export * from "./backup-codes-modal";
+export * from "./sudo-mode-card";

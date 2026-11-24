@@ -593,7 +593,18 @@
     "backup_codes_download_btn": "Unduh .txt",
     "backup_codes_print_btn": "Cetak",
     "backup_codes_regenerate_confirm_title": "Buat Ulang Seluruh Kode Pemulihan?",
-    "backup_codes_regenerate_confirm_desc": "Membuat rangkaian kode pemulihan baru akan langsung membatalkan seluruh 10 kode sebelumnya. Kode lama yang belum terpakai tidak akan dapat digunakan lagi."
+    "backup_codes_regenerate_confirm_desc": "Membuat rangkaian kode pemulihan baru akan langsung membatalkan seluruh 10 kode sebelumnya. Kode lama yang belum terpakai tidak akan dapat digunakan lagi.",
+    "sudo_card_title": "Sudo Mode (Elevasi Keamanan Terkunci Sesi)",
+    "sudo_card_desc": "Melindungi perubahan kebijakan keamanan, SSO, penghapusan anggota, dan pencabutan MFA dengan jendela verifikasi kriptografis 15 menit.",
+    "sudo_status_active": "Ter-elevasi ({{minutes}}m {{seconds}}d tersisa)",
+    "sudo_status_fresh_login": "Jendela Login Baru ({{minutes}}m {{seconds}}d tersisa)",
+    "sudo_status_locked": "Verifikasi Diperlukan",
+    "sudo_status_break_glass_notice": "Sesi Break-Glass tidak mendapat jendela rahmat login awal dan wajib verifikasi MFA eksplisit.",
+    "sudo_lock_btn": "Kunci Sudo Mode",
+    "sudo_locking_btn": "Mengunci...",
+    "sudo_verify_btn": "Verifikasi Sudo Mode",
+    "sudo_locked_success": "Sudo Mode langsung dikunci. Perubahan berisiko tinggi kini memerlukan verifikasi ulang.",
+    "sudo_verified_success": "Sudo Mode aktif selama 15 menit."
   }
 }
 

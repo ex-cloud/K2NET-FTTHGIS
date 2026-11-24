@@ -50,14 +50,18 @@ var (
 
 // Handler serves BFF authentication endpoints on gateway-auth (:5014).
 type Handler struct {
-	cfg            *config.Config
-	repo           Repository
-	auditClient    *auditclient.Client
-	httpClient     *http.Client
-	rdb            *redis.Client
-	kcAdmin        *KeycloakAdminClient
-	notifClient    *NotificationClient
-	discChallenges sync.Map
+	cfg               *config.Config
+	repo              Repository
+	auditClient       *auditclient.Client
+	httpClient        *http.Client
+	rdb               *redis.Client
+	kcAdmin           *KeycloakAdminClient
+	notifClient       *NotificationClient
+	discChallenges    sync.Map
+	sudoStore         sudoCacheStore
+	userinfoVerifier  func(ctx context.Context, realm, bearerToken string) (*sudoUserInfo, error)
+	totpConfigFetcher func(ctx context.Context, realm, userID string) (bool, string, bool, error)
+	passwordVerifier  func(ctx context.Context, realm, identifier, password string) (bool, error)
 }
 
 // NewHandler creates a new BFF authentication HTTP handler.
@@ -713,6 +717,15 @@ func (h *Handler) completeLoginSession(c *gin.Context, session *PreAuthSession, 
 	}
 	h.setSessionCookies(c, session.RefreshToken, session.TargetRealm, maxAge)
 	h.setBreakGlassCookieAndState(c, session.UserID, session.IsBreakGlass)
+	if store := h.getSudoStore(); store != nil && strings.TrimSpace(session.UserID) != "" {
+		freshKey := loginFreshRedisKey(session.UserID, sessionID)
+		if session.IsBreakGlass {
+			// Fase 7.11: Break-Glass sessions NEVER receive fresh-login grace window
+			_ = store.Del(c.Request.Context(), freshKey, sudoRedisKey(session.UserID, sessionID))
+		} else {
+			_ = store.Set(c.Request.Context(), freshKey, "1", loginFreshGraceTTL)
+		}
+	}
 
 	// 3. Async Audit Log to gateway-audit (:5009)
 	auditSlug := session.TenantSlug
@@ -2231,6 +2244,45 @@ func (h *Handler) Logout(c *gin.Context) {
 
 	if refreshToken != "" {
 		h.revokeKeycloakSession(c.Request.Context(), targetRealm, refreshToken)
+	}
+
+	// Fase 7.11: Purge session-bound Sudo Mode & Fresh-Login grace keys on logout
+	if store := h.getSudoStore(); store != nil {
+		rawAuth := strings.TrimSpace(c.GetHeader("Authorization"))
+		bearerToken := ""
+		if len(rawAuth) > 7 && strings.EqualFold(rawAuth[:7], "Bearer ") {
+			bearerToken = strings.TrimSpace(rawAuth[7:])
+		}
+		var userID, sid string
+		if bearerToken != "" {
+			if claims, err := ParseJWTClaimsFromInternalToken(bearerToken); err == nil && claims != nil {
+				userID = strings.TrimSpace(claims.Sub)
+				sid = strings.TrimSpace(claims.Sid)
+				if sid == "" {
+					sid = strings.TrimSpace(claims.SessionState)
+				}
+			}
+		}
+		if userID == "" && refreshToken != "" {
+			if claims, err := ParseJWTClaimsFromInternalToken(refreshToken); err == nil && claims != nil {
+				userID = strings.TrimSpace(claims.Sub)
+				if sid == "" {
+					sid = strings.TrimSpace(claims.Sid)
+					if sid == "" {
+						sid = strings.TrimSpace(claims.SessionState)
+					}
+				}
+			}
+		}
+		if userID != "" {
+			_ = store.Del(
+				c.Request.Context(),
+				sudoRedisKey(userID, sid),
+				loginFreshRedisKey(userID, sid),
+				"auth:sudo:"+userID,
+				"auth:login-fresh:"+userID,
+			)
+		}
 	}
 
 	h.clearSessionCookies(c)

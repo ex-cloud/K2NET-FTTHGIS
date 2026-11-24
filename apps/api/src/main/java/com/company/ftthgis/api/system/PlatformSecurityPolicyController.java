@@ -2,6 +2,7 @@ package com.company.ftthgis.api.system;
 
 import com.company.ftthgis.api.security.dto.PlatformSecurityPolicyDto;
 import com.company.ftthgis.api.security.dto.UpdatePlatformSecurityPolicyRequest;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.service.SecurityPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ public class PlatformSecurityPolicyController {
 
     @PutMapping
     @PreAuthorize("hasAuthority('system.security.manage') or hasAuthority('system.security.policy.manage')")
+    @RequireSudoMode(action = "platform.security_policy.update")
     public ResponseEntity<PlatformSecurityPolicyDto> updatePlatformPolicy(
             @RequestBody UpdatePlatformSecurityPolicyRequest request,
             @AuthenticationPrincipal Jwt jwt) {

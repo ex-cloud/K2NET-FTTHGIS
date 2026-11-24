@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.user;
 
 import com.company.ftthgis.api.security.dto.EffectiveSecurityPolicyDto;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.api.system.DeviceVerificationController.TrustDevicePayload;
 import com.company.ftthgis.api.system.DeviceVerificationController.UserDeviceDto;
 import com.company.ftthgis.api.user.dto.PersonalSecuritySummaryDto;
@@ -604,6 +605,7 @@ public class PersonalSecurityController {
 
     @PostMapping("/mfa/backup-codes/generate")
     @PreAuthorize("isAuthenticated()")
+    @RequireSudoMode(action = "account.backup_codes.generate")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Map<String, Object>> generateBackupCodes(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
@@ -752,6 +754,7 @@ public class PersonalSecurityController {
 
     @DeleteMapping("/mfa/totp")
     @PreAuthorize("isAuthenticated()")
+    @RequireSudoMode(action = "account.mfa.totp.disable")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> disableTotp(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
@@ -940,6 +943,7 @@ public class PersonalSecurityController {
 
     @DeleteMapping("/mfa/email")
     @PreAuthorize("isAuthenticated()")
+    @RequireSudoMode(action = "account.mfa.email.disable")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> disableEmailOtp(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
@@ -1164,6 +1168,7 @@ public class PersonalSecurityController {
 
     @DeleteMapping("/webauthn/credentials/{credentialId}")
     @PreAuthorize("isAuthenticated()")
+    @RequireSudoMode(action = "account.webauthn.delete")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> deleteWebauthnCredential(
             @AuthenticationPrincipal Jwt jwt,

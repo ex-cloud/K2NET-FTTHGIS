@@ -18,8 +18,15 @@ import {
   type SocialIdentityData,
   type BackupCodesStatusData,
 } from "@k2net/ui";
-import { useAuth } from "@k2net/auth/client";
-import { apiClient } from "../../lib/api-client";
+import {
+  useAuth,
+  fetchSudoStatus,
+  revokeSudoMode,
+  requestSudoElevation,
+  onSudoStatusChange,
+  type SudoStatusResponse,
+} from "@k2net/auth/client";
+import { apiClient, getApiAuthToken } from "../../lib/api-client";
 
 function useAccountLabels(): AccountLabels {
   const { t } = useTranslation();
@@ -187,14 +194,24 @@ function useAccountLabels(): AccountLabels {
       backupCodesRegenerateConfirmDesc: t("settings.account.backup_codes_regenerate_confirm_desc"),
       doneBtn: t("settings.account.done_btn"),
       cancelBtn: t("settings.account.cancel_btn"),
+      sudoCardTitle: t("settings.account.sudo_card_title"),
+      sudoCardDesc: t("settings.account.sudo_card_desc"),
+      sudoStatusActive: t("settings.account.sudo_status_active"),
+      sudoStatusFreshLogin: t("settings.account.sudo_status_fresh_login"),
+      sudoStatusLocked: t("settings.account.sudo_status_locked"),
+      sudoStatusBreakGlassNotice: t("settings.account.sudo_status_break_glass_notice"),
+      sudoLockBtn: t("settings.account.sudo_lock_btn"),
+      sudoLockingBtn: t("settings.account.sudo_locking_btn"),
+      sudoVerifyBtn: t("settings.account.sudo_verify_btn"),
     }),
     [t]
   );
 }
 
 export function PreferencesPage() {
+  const { t } = useTranslation();
   const labels = useAccountLabels();
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [userProfile, setUserProfile] = React.useState<UserProfileData | undefined>(undefined);
@@ -204,6 +221,17 @@ export function PreferencesPage() {
   const [passkeys, setPasskeys] = React.useState<WebauthnCredentialData[]>([]);
   const [socialIdentities, setSocialIdentities] = React.useState<SocialIdentityData[]>([]);
   const [isPasskeyModalOpen, setIsPasskeyModalOpen] = React.useState(false);
+  const [sudoStatus, setSudoStatus] = React.useState<SudoStatusResponse | null>(null);
+  const [isLockingSudo, setIsLockingSudo] = React.useState(false);
+
+  const activeToken = getApiAuthToken() || token || null;
+
+  React.useEffect(() => {
+    const unsub = onSudoStatusChange((next) => {
+      if (next) setSudoStatus(next);
+    });
+    return unsub;
+  }, []);
 
   // Client-side idle lock hook reading timeout (default 30 min)
   const { isIdle, unlock } = useIdleTimeout({
@@ -215,13 +243,17 @@ export function PreferencesPage() {
     try {
       setIsLoading(true);
 
-      const [secData, devData, polData, passkeysData, socialData] = await Promise.all([
+      const [secData, devData, polData, passkeysData, socialData, fetchedSudo] = await Promise.all([
         apiClient<PersonalSecuritySummaryData>("/api/v1/me/security").catch(() => null),
         apiClient<DeviceSessionData[]>("/api/v1/me/devices").catch(() => []),
         apiClient<PasswordPolicyData>("/api/v1/users/password-policy").catch(() => null),
         apiClient<WebauthnCredentialData[]>("/api/v1/me/webauthn/credentials").catch(() => []),
         apiClient<SocialIdentityData[]>("/api/v1/users/me/social-identities").catch(() => []),
+        fetchSudoStatus(activeToken),
       ]);
+      if (fetchedSudo) {
+        setSudoStatus(fetchedSudo);
+      }
 
       if (secData) {
         setSecuritySummary(secData);
@@ -255,7 +287,7 @@ export function PreferencesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, activeToken]);
 
   React.useEffect(() => {
     if (user) {
@@ -268,7 +300,7 @@ export function PreferencesPage() {
         avatarUrl: user.avatarUrl || prev?.avatarUrl,
       }));
     }
-  }, [user]);
+  }, [user, activeToken]);
 
   React.useEffect(() => {
     fetchData();
@@ -459,6 +491,22 @@ export function PreferencesPage() {
     });
   }, []);
 
+  const handleLockSudo = React.useCallback(async () => {
+    try {
+      setIsLockingSudo(true);
+      const ok = await revokeSudoMode(activeToken);
+      if (ok) {
+        toast.success(t("settings.account.sudo_locked_success"));
+      }
+    } finally {
+      setIsLockingSudo(false);
+    }
+  }, [activeToken, t]);
+
+  const handleElevateSudo = React.useCallback(async () => {
+    await requestSudoElevation({ action: "account.sudo.manual" });
+  }, []);
+
   return (
     <>
       <AccountPreferencesShell
@@ -470,6 +518,10 @@ export function PreferencesPage() {
         policy={passwordPolicy}
         devices={devices}
         labels={labels}
+        sudoStatus={sudoStatus}
+        onLockSudo={handleLockSudo}
+        onElevateSudo={handleElevateSudo}
+        isLockingSudo={isLockingSudo}
         onSaveProfile={handleSaveProfile}
         onChangePassword={handleChangePassword}
         onSetupTotp={() => setIsTotpModalOpen(true)}

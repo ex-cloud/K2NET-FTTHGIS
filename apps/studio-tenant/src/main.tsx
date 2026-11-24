@@ -9,6 +9,7 @@ import { I18nProvider } from "@k2net/i18n";
 import { getImpersonationSessionId, setApiAuthToken } from "./lib/api-client";
 import { initWebVitals } from "./lib/web-vitals";
 import { ImpersonationProvider } from "./lib/useImpersonationSession";
+import { SudoReauthHost } from "./components/system/SudoReauthHost";
 import { App } from "./App";
 import "./index.css";
 
@@ -80,6 +81,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <QueryClientProvider client={queryClient}>
             <ImpersonationProvider>
               <App />
+              <SudoReauthHost />
               <Toaster position="top-right" richColors />
             </ImpersonationProvider>
           </QueryClientProvider>

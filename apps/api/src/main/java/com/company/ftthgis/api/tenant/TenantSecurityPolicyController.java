@@ -2,6 +2,7 @@ package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.api.security.dto.TenantSecurityPolicyDto;
 import com.company.ftthgis.api.security.dto.UpdateTenantSecurityPolicyRequest;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.service.SecurityPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ public class TenantSecurityPolicyController {
 
     @PutMapping
     @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.policy.manage') or hasAuthority('organizations.update'))")
+    @RequireSudoMode(action = "tenant.security_policy.update")
     public ResponseEntity<?> updateTenantPolicy(
             @PathVariable String slug,
             @RequestBody UpdateTenantSecurityPolicyRequest request,
@@ -62,6 +64,7 @@ public class TenantSecurityPolicyController {
 
     @PostMapping("/members/{memberId}/reset-mfa")
     @PreAuthorize("hasAuthority('system.security.policy.manage') or (@tenantSecurity.isOwner(#slug) and (hasAuthority('security.policy.manage') or hasAuthority('organizations.update')))")
+    @RequireSudoMode(action = "tenant.member.reset_mfa")
     public ResponseEntity<?> resetMemberMfa(
             @PathVariable String slug,
             @PathVariable java.util.UUID memberId,
