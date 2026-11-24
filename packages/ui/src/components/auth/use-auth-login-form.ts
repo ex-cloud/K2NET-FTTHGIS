@@ -41,6 +41,12 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
     const initialProfiles = getSavedProfiles(tenantSlug);
     return initialProfiles.length > 0 && !defaultEmail ? "SAVED_PROFILES" : "CREDENTIALS";
   });
+  const onAuthViewChangeRef = useRef(props.onAuthViewChange);
+  onAuthViewChangeRef.current = props.onAuthViewChange;
+
+  useEffect(() => {
+    onAuthViewChangeRef.current?.(authView);
+  }, [authView]);
 
   const [usernameOrEmail, setUsernameOrEmail] = useState(defaultEmail);
   const [password, setPassword] = useState("");
@@ -339,16 +345,17 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
 
   // Profile actions
   const handleSelectProfile = (profile: SavedAccountProfile) => {
+    if (props.isPasskeyLoading || isLoading) return;
     viewTouchedRef.current = true;
     const resolvedIdentifier = profile.email || profile.username || "";
     setUsernameOrEmail(resolvedIdentifier);
     setPassword("");
     setShowPassword(false);
-    setAuthView("CREDENTIALS");
     if (profile.authMethod === "passkey" && props.onPasswordlessPasskeyLogin && !props.enforceSso) {
       void props.onPasswordlessPasskeyLogin(resolvedIdentifier);
       return;
     }
+    setAuthView("CREDENTIALS");
     setTimeout(() => {
       passwordInputRef.current?.focus();
     }, 50);

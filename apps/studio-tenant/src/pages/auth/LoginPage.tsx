@@ -111,6 +111,7 @@ export function LoginPage() {
   const [availableMfaMethods, setAvailableMfaMethods] = useState<string[]>(["totp", "email_otp"]);
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [authView, setAuthView] = useState<"SAVED_PROFILES" | "CREDENTIALS" | "FORGOT_PASSWORD">("SAVED_PROFILES");
 
   const turnstileSiteKey = resolveTenantTurnstileKey();
 
@@ -365,6 +366,7 @@ export function LoginPage() {
 
   const { isPasskeyLoading, handlePasswordlessPasskeyLogin } = usePasswordlessPasskeyFlow({
     enabled: canUsePasskey,
+    conditionalEnabled: canUsePasskey && authView === "CREDENTIALS",
     plane: "TENANT",
     tenantSlug: effectiveTenantSlug,
     getChallenge: getPasskeyPasswordlessChallenge,
@@ -381,7 +383,7 @@ export function LoginPage() {
     },
     onClearError: () => setErrorMessage(null),
     unsupportedMessage: t("settings.account.passkey_unsupported"),
-    cancelledMessage: t("settings.account.passkey_cancelled"),
+    cancelledMessage: t("auth.passkey_login_cancelled"),
   });
 
   const handleSocialLogin = async (providerId: string) => {
@@ -487,6 +489,7 @@ export function LoginPage() {
         onVerifyBackupCode={handleVerifyBackupCode}
         onPasswordlessPasskeyLogin={handlePasswordlessPasskeyLogin}
         isPasskeyLoading={isPasskeyLoading}
+        onAuthViewChange={setAuthView}
         turnstileSiteKey={turnstileSiteKey}
         errorMessage={errorMessage}
         onSubmitCredentials={handleSubmitCredentials}

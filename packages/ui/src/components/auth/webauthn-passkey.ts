@@ -20,6 +20,7 @@ export interface DiscoverablePasskeyAssertionPayload {
 }
 
 let activeConditionalAbortController: AbortController | null = null;
+let activeConditionalPromise: Promise<void> | null = null;
 
 /**
  * Synchronously aborts any pending background WebAuthn Conditional UI request
@@ -35,6 +36,23 @@ export function abortPendingConditionalPasskey(): void {
     }
     activeConditionalAbortController = null;
   }
+}
+
+/**
+ * Aborts any active background Conditional UI transaction and waits briefly
+ * for Firefox / Chromium's WebAuthn subsystem to settle before issuing an
+ * explicit `navigator.credentials.get()` ceremony.
+ */
+export async function abortAndAwaitConditionalPasskey(maxWaitMs = 150): Promise<void> {
+  const pending = activeConditionalPromise;
+  abortPendingConditionalPasskey();
+  if (!pending) return;
+  await Promise.race([
+    pending.catch(() => undefined),
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, maxWaitMs);
+    }),
+  ]);
 }
 
 /**
@@ -189,6 +207,7 @@ export function useWebauthnConditionalUI<TUser>(
 
     let unmounted = false;
     const controller = new AbortController();
+    let conditionalTask: Promise<void> | null = null;
 
     const startConditionalMediation = async () => {
       const supported = await isConditionalPasskeyAvailable();
@@ -198,6 +217,7 @@ export function useWebauthnConditionalUI<TUser>(
 
       abortPendingConditionalPasskey();
       activeConditionalAbortController = controller;
+      let didBeginVerify = false;
 
       try {
         const challengeData = await getChallenge({
@@ -217,6 +237,7 @@ export function useWebauthnConditionalUI<TUser>(
           return;
         }
 
+        didBeginVerify = true;
         callbacksRef.current.onBeginVerify?.();
         const result = await verifyLogin({
           challengeId: challengeData.challengeId,
@@ -245,14 +266,19 @@ export function useWebauthnConditionalUI<TUser>(
         if (activeConditionalAbortController === controller) {
           activeConditionalAbortController = null;
         }
-        if (!unmounted) {
+        if (conditionalTask && activeConditionalPromise === conditionalTask) {
+          activeConditionalPromise = null;
+        }
+        if (!unmounted && didBeginVerify) {
           callbacksRef.current.onEndVerify?.();
         }
       }
     };
 
     const timer = setTimeout(() => {
-      void startConditionalMediation();
+      conditionalTask = startConditionalMediation();
+      activeConditionalPromise = conditionalTask;
+      void conditionalTask;
     }, 120);
 
     return () => {
@@ -284,6 +310,7 @@ export interface PasskeyAuthenticatedUserLike {
 
 export interface UsePasswordlessPasskeyFlowOptions<TUser extends PasskeyAuthenticatedUserLike> {
   enabled: boolean;
+  conditionalEnabled?: boolean;
   plane: "PLATFORM" | "TENANT";
   tenantSlug?: string;
   getChallenge?: (input?: {
@@ -324,6 +351,7 @@ export function usePasswordlessPasskeyFlow<TUser extends PasskeyAuthenticatedUse
 ) {
   const {
     enabled,
+    conditionalEnabled,
     plane,
     tenantSlug,
     getChallenge,
@@ -336,6 +364,7 @@ export function usePasswordlessPasskeyFlow<TUser extends PasskeyAuthenticatedUse
   } = options;
 
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
+  const inFlightRef = useRef(false);
 
   const persistPasskeyProfileAndComplete = useCallback(
     (user?: TUser, fallbackEmail?: string) => {
@@ -364,7 +393,7 @@ export function usePasswordlessPasskeyFlow<TUser extends PasskeyAuthenticatedUse
   );
 
   const { restartConditionalUI } = useWebauthnConditionalUI<TUser>({
-    enabled: enabled && !isPasskeyLoading,
+    enabled: (conditionalEnabled ?? enabled) && !isPasskeyLoading,
     plane,
     tenantSlug,
     getChallenge: getChallenge
@@ -400,7 +429,7 @@ export function usePasswordlessPasskeyFlow<TUser extends PasskeyAuthenticatedUse
 
   const handlePasswordlessPasskeyLogin = useCallback(
     async (usernameHint?: string): Promise<boolean> => {
-      if (!getChallenge || !verifyLogin) return false;
+      if (inFlightRef.current || !getChallenge || !verifyLogin) return false;
       if (typeof window === "undefined" || !window.PublicKeyCredential) {
         onError("PASSKEY_UNSUPPORTED", unsupportedMessage);
         return false;
@@ -408,23 +437,42 @@ export function usePasswordlessPasskeyFlow<TUser extends PasskeyAuthenticatedUse
 
       // 1. Immediately abort any pending background Conditional UI request to prevent DOMException collision
       abortPendingConditionalPasskey();
+      inFlightRef.current = true;
       setIsPasskeyLoading(true);
       onClearError?.();
 
       try {
-        // Yield a microtask so browser cleans up the aborted conditional request
-        await Promise.resolve();
+        const [, challengeData] = await Promise.all([
+          abortAndAwaitConditionalPasskey(150),
+          getChallenge({
+            plane,
+            tenantSlug,
+            username: usernameHint?.trim() || undefined,
+            conditional: false,
+          }),
+        ]);
 
-        const challengeData = await getChallenge({
-          plane,
-          tenantSlug,
-          username: usernameHint?.trim() || undefined,
-          conditional: false,
-        });
-
-        const assertion = await requestDiscoverablePasskeyAssertion(challengeData, {
-          conditional: false,
-        });
+        let assertion: DiscoverablePasskeyAssertionPayload;
+        const assertionStart = Date.now();
+        try {
+          assertion = await requestDiscoverablePasskeyAssertion(challengeData, {
+            conditional: false,
+          });
+        } catch (firstErr: unknown) {
+          const isImmediateBrowserRace =
+            Date.now() - assertionStart < 500 &&
+            firstErr instanceof Error &&
+            (firstErr.name === "AbortError" || firstErr.name === "InvalidStateError");
+          if (!isImmediateBrowserRace) {
+            throw firstErr;
+          }
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, 120);
+          });
+          assertion = await requestDiscoverablePasskeyAssertion(challengeData, {
+            conditional: false,
+          });
+        }
 
         const result = await verifyLogin({
           challengeId: challengeData.challengeId,
@@ -454,6 +502,7 @@ export function usePasswordlessPasskeyFlow<TUser extends PasskeyAuthenticatedUse
         restartConditionalUI();
         return false;
       } finally {
+        inFlightRef.current = false;
         setIsPasskeyLoading(false);
       }
     },

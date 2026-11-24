@@ -144,6 +144,7 @@ export default function AdminLoginPage() {
   const [availableMfaMethods, setAvailableMfaMethods] = useState<string[]>(["totp", "email_otp"]);
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [authView, setAuthView] = useState<"SAVED_PROFILES" | "CREDENTIALS" | "FORGOT_PASSWORD">("SAVED_PROFILES");
 
   const turnstileSiteKey =
     (import.meta.env.VITE_TURNSTILE_ADMIN_SITE_KEY as string | undefined)?.trim() ||
@@ -189,6 +190,7 @@ export default function AdminLoginPage() {
 
   const { isPasskeyLoading, handlePasswordlessPasskeyLogin } = usePasswordlessPasskeyFlow({
     enabled: initialized && !authenticated && !mfaRequired,
+    conditionalEnabled: initialized && !authenticated && !mfaRequired && authView === "CREDENTIALS",
     plane: "PLATFORM",
     tenantSlug: "system",
     getChallenge: getPasskeyPasswordlessChallenge,
@@ -205,7 +207,7 @@ export default function AdminLoginPage() {
     },
     onClearError: () => setErrorMessage(null),
     unsupportedMessage: t("settings.account.passkey_unsupported"),
-    cancelledMessage: t("settings.account.passkey_cancelled"),
+    cancelledMessage: t("auth.passkey_login_cancelled"),
   });
 
   const handleSubmitCredentials = async (payload: AuthCredentialsSubmitPayload) => {
@@ -462,6 +464,7 @@ export default function AdminLoginPage() {
         onVerifyBackupCode={handleVerifyBackupCode}
         onPasswordlessPasskeyLogin={handlePasswordlessPasskeyLogin}
         isPasskeyLoading={isPasskeyLoading}
+        onAuthViewChange={setAuthView}
         turnstileSiteKey={turnstileSiteKey}
         errorMessage={errorMessage}
         onSubmitCredentials={handleSubmitCredentials}

@@ -31,11 +31,20 @@ export function AuthLoginSavedProfiles({ form, props }: AuthLoginSavedProfilesPr
       <div className="space-y-2">
         {savedProfiles.map((profile, idx) => {
           const isLastUsed = idx === 0;
+          const isInteractionLocked = Boolean(props?.isPasskeyLoading || props?.isLoading);
+          const isPasskeyProfileLoading =
+            Boolean(props?.isPasskeyLoading) && profile.authMethod === "passkey";
           return (
             <div
               key={profile.email}
-              onClick={() => handleSelectProfile(profile)}
-              className="group relative flex items-center justify-between p-3 rounded-lg border border-border/70 bg-background/50 hover:bg-accent/40 hover:border-foreground/30 transition-all cursor-pointer shadow-2xs"
+              onClick={() => {
+                if (!isInteractionLocked) {
+                  handleSelectProfile(profile);
+                }
+              }}
+              className={`group relative flex items-center justify-between p-3 rounded-lg border border-border/70 bg-background/50 hover:bg-accent/40 hover:border-foreground/30 transition-all cursor-pointer shadow-2xs ${
+                props?.isPasskeyLoading ? "opacity-75 pointer-events-none" : ""
+              }`}
             >
               <div className="flex items-center gap-2.5 min-w-0 pr-2">
                 <div className="size-7 rounded-full bg-muted border border-border flex items-center justify-center text-foreground shrink-0">
@@ -72,7 +81,11 @@ export function AuthLoginSavedProfiles({ form, props }: AuthLoginSavedProfilesPr
                     {copy.lastUsed}
                   </span>
                 )}
-                <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                {isPasskeyProfileLoading ? (
+                  <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+                ) : (
+                  <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                )}
                 <button
                   type="button"
                   onClick={(e) => handleRemoveProfile(e, profile.email)}

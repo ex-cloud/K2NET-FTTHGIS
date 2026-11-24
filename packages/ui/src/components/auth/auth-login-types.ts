@@ -152,6 +152,7 @@ export interface AuthLoginFormProps {
   onVerifyBackupCode?: (code: string) => Promise<boolean>;
   onPasswordlessPasskeyLogin?: (usernameHint?: string) => Promise<boolean>;
   isPasskeyLoading?: boolean;
+  onAuthViewChange?: (view: "SAVED_PROFILES" | "CREDENTIALS" | "FORGOT_PASSWORD") => void;
   turnstileSiteKey?: string;
   isLoading?: boolean;
   defaultEmail?: string;
