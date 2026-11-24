@@ -884,6 +884,122 @@ func TestSsoExchange_InviteFirstAndGovernanceMatrix(t *testing.T) {
 	}
 }
 
+func TestSsoExchange_GoogleHostedDomainRestriction(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var revokeCalled atomic.Int32
+	mockKC := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/protocol/openid-connect/token") {
+			_ = r.ParseForm()
+			rt := r.Form.Get("refresh_token")
+			email := "staff@gmail.com"
+			idp := "google"
+			switch rt {
+			case "corp-google":
+				email = "staff@ispnusantara.net"
+				idp = "google"
+			case "personal-github":
+				email = "dev@gmail.com"
+				idp = "github"
+			}
+			jwt := buildTestJWT(map[string]any{
+				"sub":                "sub-" + rt,
+				"email":              email,
+				"email_verified":     true,
+				"identity_provider":  idp,
+				"preferred_username": email,
+				"name":               "Workspace User",
+			})
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(KeycloakTokenResponse{
+				AccessToken:      jwt,
+				RefreshToken:     "ref-" + rt,
+				IDToken:          jwt,
+				ExpiresIn:        300,
+				RefreshExpiresIn: 86400,
+				TokenType:        "Bearer",
+			})
+			return
+		}
+		if strings.Contains(r.URL.Path, "/protocol/openid-connect/logout") {
+			revokeCalled.Add(1)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockKC.Close()
+
+	repo := &mockRepo{
+		tenants: map[string]*TenantContextResponse{
+			"nusantara": {
+				ID:                 "cccccccc-cccc-cccc-cccc-cccccccccccc",
+				Name:               "Nusantara ISP",
+				Slug:               "nusantara",
+				RealmKey:           config.TenantSharedRealm,
+				AllowSocialLogin:   true,
+				GoogleHostedDomain: "ispnusantara.net",
+				Status:             "ACTIVE",
+			},
+		},
+		userOrgMatch: map[string]bool{
+			"staff@gmail.com:cccccccc-cccc-cccc-cccc-cccccccccccc":        true,
+			"staff@ispnusantara.net:cccccccc-cccc-cccc-cccc-cccccccccccc": true,
+			"dev@gmail.com:cccccccc-cccc-cccc-cccc-cccccccccccc":          true,
+		},
+	}
+
+	cfg := &config.Config{
+		Port:                "5014",
+		KeycloakInternalURL: mockKC.URL,
+		KeycloakClientID:    "ftth-gis-frontend",
+		CookieSecure:        true,
+	}
+
+	handler := NewHandler(cfg, repo, nil, nil)
+	r := gin.New()
+	r.POST("/api/v1/auth/login/sso-exchange", handler.SsoExchange)
+
+	// 1. Personal @gmail.com bypass attempt via Google -> Denied 403 GOOGLE_DOMAIN_RESTRICTED & revokes session
+	w1 := httptest.NewRecorder()
+	b1, _ := json.Marshal(SsoExchangeRequest{
+		RefreshToken: "gmail-google",
+		TenantSlug:   "nusantara",
+		Plane:        "TENANT",
+	})
+	r.ServeHTTP(w1, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/sso-exchange", bytes.NewReader(b1)))
+	if w1.Code != http.StatusForbidden || !strings.Contains(w1.Body.String(), "GOOGLE_DOMAIN_RESTRICTED") {
+		t.Fatalf("expected 403 GOOGLE_DOMAIN_RESTRICTED for gmail, got %d: %s", w1.Code, w1.Body.String())
+	}
+	if revokeCalled.Load() < 1 {
+		t.Fatalf("expected Keycloak session revocation when hd mismatch detected")
+	}
+
+	// 2. Corporate @ispnusantara.net via Google -> Allowed 200 OK
+	w2 := httptest.NewRecorder()
+	b2, _ := json.Marshal(SsoExchangeRequest{
+		RefreshToken: "corp-google",
+		TenantSlug:   "nusantara",
+		Plane:        "TENANT",
+	})
+	r.ServeHTTP(w2, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/sso-exchange", bytes.NewReader(b2)))
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected 200 for authorized Google Workspace domain, got %d: %s", w2.Code, w2.Body.String())
+	}
+
+	// 3. GitHub user with @gmail.com -> Not restricted by Google hd setting -> Allowed 200 OK
+	w3 := httptest.NewRecorder()
+	b3, _ := json.Marshal(SsoExchangeRequest{
+		RefreshToken: "personal-github",
+		TenantSlug:   "nusantara",
+		Plane:        "TENANT",
+	})
+	r.ServeHTTP(w3, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/sso-exchange", bytes.NewReader(b3)))
+	if w3.Code != http.StatusOK {
+		t.Fatalf("expected 200 for GitHub user unaffected by Google hd policy, got %d: %s", w3.Code, w3.Body.String())
+	}
+}
+
 func TestVerifyMfaBackupCode_BurnOnUse(t *testing.T) {
 	logger.InitLogger()
 	userID := "user-backup-123"

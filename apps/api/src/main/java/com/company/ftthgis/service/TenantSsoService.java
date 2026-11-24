@@ -3,9 +3,12 @@ package com.company.ftthgis.service;
 import com.company.ftthgis.api.auth.dto.SsoDiscoveryResponse;
 import com.company.ftthgis.api.security.dto.*;
 import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.entity.OrganizationSlugAlias;
 import com.company.ftthgis.domain.tenant.entity.OrganizationSsoConfig;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.company.ftthgis.domain.tenant.repository.OrganizationSlugAliasRepository;
 import com.company.ftthgis.domain.tenant.repository.OrganizationSsoConfigRepository;
+import com.company.ftthgis.domain.tenant.repository.OrganizationVerifiedDomainRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,6 +53,12 @@ public class TenantSsoService {
 
     @Autowired(required = false)
     private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    @Autowired(required = false)
+    private OrganizationVerifiedDomainRepository verifiedDomainRepository;
+
+    @Autowired(required = false)
+    private OrganizationSlugAliasRepository slugAliasRepository;
 
     @org.springframework.beans.factory.annotation.Value("${keycloak.server-url:https://auth-gis.kdua.net}")
     private String keycloakPublicUrl = "https://auth-gis.kdua.net";
@@ -216,7 +225,10 @@ public class TenantSsoService {
 
         // Format JSON untuk domain mappings & attribute mapping
         try {
-            if (request.getDomainMappings() != null) {
+            if (verifiedDomainRepository != null && org.getId() != null) {
+                List<String> verifiedDomains = verifiedDomainRepository.findVerifiedDomainNamesByOrganizationIdNative(org.getId());
+                config.setDomainMappings(objectMapper.writeValueAsString(verifiedDomains != null ? verifiedDomains : List.of()));
+            } else if (request.getDomainMappings() != null) {
                 config.setDomainMappings(objectMapper.writeValueAsString(request.getDomainMappings()));
             }
             if (request.getAttributeMapping() != null) {
@@ -234,7 +246,7 @@ public class TenantSsoService {
         }
 
         OrganizationSsoConfig saved = ssoConfigRepository.save(config);
-        evictTenantAuthCache(org.getSlug(), request.getDomainMappings());
+        evictTenantAuthCache(org.getSlug(), parseDomainList(saved.getDomainMappings()));
         log.info("🛡️ Konfigurasi SSO untuk tenant '{}' ({}) berhasil diperbarui oleh {}",
                 orgSlug, saved.getProviderType(), actor);
 
@@ -379,13 +391,32 @@ public class TenantSsoService {
             return;
         }
         try {
+            Set<String> slugs = new LinkedHashSet<>();
             if (orgSlug != null && !orgSlug.isBlank()) {
-                redisTemplate.delete("auth:tenant-ctx:" + orgSlug.trim().toLowerCase(Locale.ROOT));
+                slugs.add(orgSlug.trim().toLowerCase(Locale.ROOT));
+                if (slugAliasRepository != null) {
+                    organizationRepository.findBySlug(orgSlug.trim()).ifPresent(org -> {
+                        try {
+                            for (OrganizationSlugAlias alias : slugAliasRepository.findByOrganizationIdOrderByMigratedAtDesc(org.getId())) {
+                                if (alias.getOldSlug() != null && !alias.getOldSlug().isBlank()) {
+                                    slugs.add(alias.getOldSlug().trim().toLowerCase(Locale.ROOT));
+                                }
+                            }
+                        } catch (Exception ignored) {}
+                    });
+                }
+            }
+            for (String s : slugs) {
+                redisTemplate.delete("auth:tenant-ctx:" + s);
             }
             if (domains != null) {
                 for (String domain : domains) {
                     if (domain != null && !domain.isBlank()) {
-                        redisTemplate.delete("auth:sso-disc:" + domain.trim().toLowerCase(Locale.ROOT));
+                        String cleanDomain = domain.trim().toLowerCase(Locale.ROOT);
+                        redisTemplate.delete("auth:sso-disc:" + cleanDomain);
+                        for (String s : slugs) {
+                            redisTemplate.delete("auth:sso-disc:" + s + ":" + cleanDomain);
+                        }
                     }
                 }
             }
@@ -529,7 +560,9 @@ public class TenantSsoService {
         Map<String, String> attributes = Collections.emptyMap();
 
         try {
-            if (entity.getDomainMappings() != null && !entity.getDomainMappings().isBlank()) {
+            if (verifiedDomainRepository != null && entity.getOrganization() != null && entity.getOrganization().getId() != null) {
+                domains = verifiedDomainRepository.findVerifiedDomainNamesByOrganizationIdNative(entity.getOrganization().getId());
+            } else if (entity.getDomainMappings() != null && !entity.getDomainMappings().isBlank()) {
                 domains = objectMapper.readValue(entity.getDomainMappings(), new TypeReference<List<String>>() {});
             }
             if (entity.getAttributeMapping() != null && !entity.getAttributeMapping().isBlank()) {

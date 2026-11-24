@@ -3,6 +3,7 @@ package com.company.ftthgis.domain.tenant.repository;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.OrganizationSsoConfig;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,7 +32,11 @@ public interface OrganizationSsoConfigRepository extends JpaRepository<Organizat
     @Query(value = "SELECT osc.* FROM organization_sso_configs osc JOIN organizations o ON osc.organization_id = o.id WHERE o.slug = :slug AND osc.provider_type = :providerType LIMIT 1", nativeQuery = true)
     Optional<OrganizationSsoConfig> findByOrganizationSlugAndProviderTypeNative(@Param("slug") String slug, @Param("providerType") String providerType);
 
-    @Query(value = "SELECT osc.* FROM organization_sso_configs osc JOIN organizations o ON osc.organization_id = o.id WHERE osc.status = 'ACTIVE' AND o.deleted_at IS NULL AND osc.domain_mappings @> to_jsonb(CAST(:domain AS text)) ORDER BY osc.enforce_sso DESC, osc.created_at DESC LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT osc.* FROM organization_sso_configs osc JOIN organizations o ON osc.organization_id = o.id JOIN organization_verified_domains ovd ON ovd.organization_id = osc.organization_id WHERE osc.status = 'ACTIVE' AND o.deleted_at IS NULL AND ovd.status = 'VERIFIED' AND LOWER(ovd.domain) = LOWER(CAST(:domain AS text)) ORDER BY osc.enforce_sso DESC, osc.created_at DESC LIMIT 1", nativeQuery = true)
     Optional<OrganizationSsoConfig> findActiveConfigByEmailDomainNative(@Param("domain") String domain);
+
+    @Modifying
+    @Query(value = "UPDATE organization_sso_configs SET domain_mappings = CAST(:domainsJson AS jsonb) WHERE organization_id = :orgId", nativeQuery = true)
+    int syncVerifiedDomainMappingsNative(@Param("orgId") UUID orgId, @Param("domainsJson") String domainsJson);
 }
 

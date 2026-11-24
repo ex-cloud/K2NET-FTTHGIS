@@ -2048,6 +2048,33 @@ func (h *Handler) SsoExchange(c *gin.Context) {
 		return
 	}
 
+	// Gate 3b (Fase 7.7 / ADR-0023): Google Workspace Hosted Domain (hd) Anti-Bypass Enforcement
+	if plane == "TENANT" && tenantCtx != nil && idp == "google" {
+		expectedHD := strings.ToLower(strings.TrimSpace(tenantCtx.GoogleHostedDomain))
+		if expectedHD != "" {
+			emailParts := strings.Split(strings.ToLower(strings.TrimSpace(claims.Email)), "@")
+			actualDomain := ""
+			if len(emailParts) == 2 {
+				actualDomain = strings.TrimSpace(emailParts[1])
+			}
+			if actualDomain == "" || actualDomain != expectedHD {
+				h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+				h.emitAudit(c.Request.Context(), tenantCtx.Slug, "auth", claims.Sub, clientIP, "AUTH_SOCIAL_LOGIN_DENIED", map[string]any{
+					"email":                  claims.Email,
+					"provider":               idp,
+					"expected_hosted_domain": expectedHD,
+					"actual_domain":          actualDomain,
+					"reason":                 "GOOGLE_HOSTED_DOMAIN_MISMATCH",
+				})
+				c.JSON(http.StatusForbidden, gin.H{
+					"error":   "GOOGLE_DOMAIN_RESTRICTED",
+					"message": fmt.Sprintf("Login Google untuk organisasi ini dibatasi khusus akun Google Workspace @%s.", expectedHD),
+				})
+				return
+			}
+		}
+	}
+
 	roles := claims.ExtractRoles(h.cfg.KeycloakClientID)
 	resolvedOrgID := strings.TrimSpace(claims.OrganizationID)
 	if resolvedOrgID == "" {

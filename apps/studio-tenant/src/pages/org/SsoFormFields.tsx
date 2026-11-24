@@ -24,7 +24,6 @@ export interface SsoFormFieldsProps {
   singleSignOnUrl: string;
   entityId: string;
   signingCertificate: string;
-  domainMappings: string;
   onProviderTypeChange: (val: string) => void;
   onDisplayNameChange: (val: string) => void;
   onClientIdChange: (val: string) => void;
@@ -33,7 +32,6 @@ export interface SsoFormFieldsProps {
   onSingleSignOnUrlChange: (val: string) => void;
   onEntityIdChange: (val: string) => void;
   onSigningCertificateChange: (val: string) => void;
-  onDomainMappingsChange: (val: string) => void;
 }
 
 export function SsoFormFields({
@@ -48,7 +46,6 @@ export function SsoFormFields({
   singleSignOnUrl,
   entityId,
   signingCertificate,
-  domainMappings,
   onProviderTypeChange,
   onDisplayNameChange,
   onClientIdChange,
@@ -57,7 +54,6 @@ export function SsoFormFields({
   onSingleSignOnUrlChange,
   onEntityIdChange,
   onSigningCertificateChange,
-  onDomainMappingsChange,
 }: SsoFormFieldsProps) {
   const { t } = useTranslation();
   const isSaml = providerType === "SAML_CUSTOM";
@@ -185,20 +181,6 @@ export function SsoFormFields({
           </div>
         </>
       )}
-
-      <div className="space-y-1.5 md:col-span-2">
-        <Label className="text-xs font-semibold">{t("settings.sso_domains_label")}</Label>
-        <Input
-          disabled={!isSsoAllowed || isLoading}
-          value={domainMappings}
-          onChange={(e) => onDomainMappingsChange(e.target.value)}
-          placeholder={t("settings.sso_domains_placeholder")}
-          className="h-8.5 text-xs font-mono bg-background border-border/80"
-        />
-        <p className="text-[10px] text-muted-foreground">
-          {t("settings.sso_domains_desc")}
-        </p>
-      </div>
     </div>
   );
 }

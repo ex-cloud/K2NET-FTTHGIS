@@ -57,6 +57,8 @@ export function resolveAuthErrorMessage(
     case "SSO_BROKER_ERROR":
     case "ACCESS_DENIED":
       return rawMessage || t("auth.login_error_sso_not_available");
+    case "GOOGLE_DOMAIN_RESTRICTED":
+      return rawMessage || t("auth.login_error_google_domain_restricted");
     case "NETWORK_ERROR":
       return t("auth.login_error_network");
     case "INTERNAL_ERROR":

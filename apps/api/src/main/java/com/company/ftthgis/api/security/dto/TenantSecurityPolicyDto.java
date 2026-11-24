@@ -15,6 +15,7 @@ public class TenantSecurityPolicyDto {
     private String organizationName;
     private boolean mfaEnforced;
     private boolean allowSocialLogin;
+    private String googleHostedDomain;
     private List<String> allowedMethods;
     private int gracePeriodDays;
     private int sessionIdleMinutes;

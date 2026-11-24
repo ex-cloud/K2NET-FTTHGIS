@@ -434,4 +434,38 @@ public class SecurityPolicyServiceTest {
         assertNotNull(res);
         assertEquals("192.168.1.0/24", res.getIpAllowlistCidrs());
     }
+
+    @Test
+    @DisplayName("S16: updateTenantPolicy validates, normalizes, and clears Google Workspace Hosted Domain (hd)")
+    void testUpdateTenantPolicy_GoogleHostedDomainValidation() {
+        TenantSecurityPolicy existing = TenantSecurityPolicy.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .allowSocialLogin(true)
+                .build();
+        when(tenantPolicyRepository.findByOrganizationIdNative(testOrgId)).thenReturn(Optional.of(existing));
+        when(tenantPolicyRepository.save(any(TenantSecurityPolicy.class))).thenAnswer(i -> i.getArgument(0));
+
+        // 1. Valid corporate domain normalized cleanly and syncs Keycloak forwardParameters=hd
+        UpdateTenantSecurityPolicyRequest validReq = new UpdateTenantSecurityPolicyRequest(
+                null, true, null, null, null, null, null, "@ISPNusantara.NET "
+        );
+        TenantSecurityPolicyDto validDto = securityPolicyService.updateTenantPolicy("fibernet", validReq, "admin@ispnusantara.net");
+        assertEquals("ispnusantara.net", validDto.getGoogleHostedDomain());
+        verify(keycloakAdminService).ensureIdentityProviderForwardParameter("k2net-tenants", "google", "hd");
+
+        // 2. Rejects consumer domains (gmail.com)
+        UpdateTenantSecurityPolicyRequest consumerReq = new UpdateTenantSecurityPolicyRequest(
+                null, true, null, null, null, null, null, "gmail.com"
+        );
+        assertThrows(IllegalArgumentException.class, () ->
+                securityPolicyService.updateTenantPolicy("fibernet", consumerReq, "admin@ispnusantara.net"));
+
+        // 3. Clearing with empty string stores null
+        UpdateTenantSecurityPolicyRequest clearReq = new UpdateTenantSecurityPolicyRequest(
+                null, true, null, null, null, null, null, "   "
+        );
+        TenantSecurityPolicyDto clearedDto = securityPolicyService.updateTenantPolicy("fibernet", clearReq, "admin@ispnusantara.net");
+        assertNull(clearedDto.getGoogleHostedDomain());
+    }
 }

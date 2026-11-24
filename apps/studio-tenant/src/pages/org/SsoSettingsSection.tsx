@@ -30,6 +30,7 @@ import { useTenantLicense } from "../../hooks/useTenantLicense";
 import { useTenantSubscription } from "../../hooks/useTenantSubscription";
 import { usePermissions } from "../../hooks/use-permissions";
 import { SsoFormFields } from "./SsoFormFields";
+import { SsoVerifiedDomainsCard } from "./SsoVerifiedDomainsCard";
 
 export interface SsoConfigResponse {
   providerType: string;
@@ -75,7 +76,6 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
   const [signingCertificate, setSigningCertificate] = React.useState<string>("");
   const [enforceSso, setEnforceSso] = React.useState<boolean>(false);
   const [allowBreakGlassBypass, setAllowBreakGlassBypass] = React.useState<boolean>(true);
-  const [domainMappings, setDomainMappings] = React.useState<string>("");
   const [lastTestStatus, setLastTestStatus] = React.useState<string | undefined>(undefined);
   const [lastTestAt, setLastTestAt] = React.useState<string | undefined>(undefined);
   const [version, setVersion] = React.useState<number | undefined>(undefined);
@@ -108,7 +108,6 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         setSigningCertificate(res.signingCertificate || "");
         setEnforceSso(Boolean(res.enforceSso));
         setAllowBreakGlassBypass(res.allowBreakGlassBypass !== false);
-        setDomainMappings(Array.isArray(res.domainMappings) ? res.domainMappings.join(", ") : "");
         setLastTestStatus(res.lastTestStatus);
         setLastTestAt(res.lastTestAt);
         setVersion(res.version);
@@ -206,10 +205,6 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         signingCertificate: signingCertificate.trim() || undefined,
         enforceSso,
         allowBreakGlassBypass,
-        domainMappings: domainMappings
-          .split(/[,\n]/)
-          .map((d) => d.trim().toLowerCase())
-          .filter((d) => d.length > 0),
         status: "ACTIVE",
         version,
       };
@@ -299,7 +294,6 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           singleSignOnUrl={singleSignOnUrl}
           entityId={entityId}
           signingCertificate={signingCertificate}
-          domainMappings={domainMappings}
           onProviderTypeChange={handleProviderTypeChange}
           onDisplayNameChange={setDisplayName}
           onClientIdChange={setClientId}
@@ -308,7 +302,6 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           onSingleSignOnUrlChange={setSingleSignOnUrl}
           onEntityIdChange={setEntityId}
           onSigningCertificateChange={setSigningCertificate}
-          onDomainMappingsChange={setDomainMappings}
         />
 
         <SsoEnforcementSwitches
@@ -353,6 +346,12 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           </div>
         )}
       </Card>
+
+      <SsoVerifiedDomainsCard
+        slug={slug}
+        isSsoInteractive={isSsoInteractive}
+        canManageSso={canManageSso}
+      />
 
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
         <DialogContent className="sm:max-w-md border-border/80 bg-card">

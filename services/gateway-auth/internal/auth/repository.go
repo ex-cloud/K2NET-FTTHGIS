@@ -148,7 +148,8 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			COALESCE(osc.provider_type, '') AS sso_provider_type,
 			COALESCE(osc.display_name, '') AS sso_display_name,
 			COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs,
-			COALESCE(tsp.allow_social_login, false) AS allow_social_login
+			COALESCE(tsp.allow_social_login, false) AS allow_social_login,
+			COALESCE(NULLIF(TRIM(tsp.google_hosted_domain), ''), '') AS google_hosted_domain
 		FROM organizations o
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 		LEFT JOIN LATERAL (
@@ -204,7 +205,8 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 				COALESCE(osc.provider_type, '') AS sso_provider_type,
 				COALESCE(osc.display_name, '') AS sso_display_name,
 				COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs,
-				COALESCE(tsp.allow_social_login, false) AS allow_social_login
+				COALESCE(tsp.allow_social_login, false) AS allow_social_login,
+				COALESCE(NULLIF(TRIM(tsp.google_hosted_domain), ''), '') AS google_hosted_domain
 			FROM organization_slug_aliases osa
 			JOIN organizations o ON osa.organization_id = o.id
 			LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
@@ -271,6 +273,7 @@ func (r *PostgresRepository) scanTenantRow(
 		ssoDisplayName       string
 		ipAllowlistCidrs     string
 		allowSocialLogin     bool
+		googleHostedDomain   string
 	)
 	err := r.db.QueryRow(ctx, query, querySlug).Scan(
 		&id,
@@ -288,6 +291,7 @@ func (r *PostgresRepository) scanTenantRow(
 		&ssoDisplayName,
 		&ipAllowlistCidrs,
 		&allowSocialLogin,
+		&googleHostedDomain,
 	)
 	if err != nil {
 		return nil, err
@@ -317,25 +321,26 @@ func (r *PostgresRepository) scanTenantRow(
 	}
 
 	out := &TenantContextResponse{
-		ID:               id,
-		Name:             name,
-		Slug:             requestedSlug,
-		IsAlias:          isAlias,
-		RealmKey:         realmKey,
-		LogoURL:          logoURL,
-		Plan:             planCode,
-		PlanDisplayName:  mapPlanDisplayName(planCode),
-		AuthMode:         authMode,
-		Status:           status,
-		HasSSO:           effectiveSSO,
-		AllowSocialLogin: allowSocialLogin,
-		AllowedMethods:   allowedMethods,
-		MFARequired:      effectiveMfaRequired,
-		EnforceSSO:       enforceSso && effectiveSSO,
-		AllowBreakGlass:  allowBreakGlass,
-		SSOProviderType:  cleanProviderType,
-		SSODisplayName:   cleanDisplayName,
-		IPAllowlistCIDRs: ipAllowlistCidrs,
+		ID:                 id,
+		Name:               name,
+		Slug:               requestedSlug,
+		IsAlias:            isAlias,
+		RealmKey:           realmKey,
+		LogoURL:            logoURL,
+		Plan:               planCode,
+		PlanDisplayName:    mapPlanDisplayName(planCode),
+		AuthMode:           authMode,
+		Status:             status,
+		HasSSO:             effectiveSSO,
+		AllowSocialLogin:   allowSocialLogin,
+		GoogleHostedDomain: strings.ToLower(strings.TrimSpace(googleHostedDomain)),
+		AllowedMethods:     allowedMethods,
+		MFARequired:        effectiveMfaRequired,
+		EnforceSSO:         enforceSso && effectiveSSO,
+		AllowBreakGlass:    allowBreakGlass,
+		SSOProviderType:    cleanProviderType,
+		SSODisplayName:     cleanDisplayName,
+		IPAllowlistCIDRs:   ipAllowlistCidrs,
 	}
 	if isAlias && activeSlg != requestedSlug {
 		out.TargetSlug = activeSlg
@@ -839,6 +844,10 @@ func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email strin
 			) AS sso_entitled
 		FROM organization_sso_configs osc
 		JOIN organizations o ON osc.organization_id = o.id
+		JOIN organization_verified_domains ovd
+			ON ovd.organization_id = osc.organization_id
+		   AND ovd.status = 'VERIFIED'
+		   AND LOWER(ovd.domain) = LOWER($1)
 		LEFT JOIN subscription_plans sp ON o.plan_id = sp.id
 		LEFT JOIN LATERAL (
 			SELECT tl.id, tl.feature_sso_enabled, tl.activation_type
@@ -856,7 +865,6 @@ func (r *PostgresRepository) DiscoverSsoByEmail(ctx context.Context, email strin
 		  AND o.deleted_at IS NULL
 		  AND o.status = 'ACTIVE'
 		  AND o.slug = $2
-		  AND osc.domain_mappings @> to_jsonb(CAST($1 AS text))
 		ORDER BY osc.updated_at DESC
 		LIMIT 1
 	`

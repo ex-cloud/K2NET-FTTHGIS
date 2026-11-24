@@ -9,8 +9,21 @@ public record UpdateTenantSecurityPolicyRequest(
     Integer gracePeriodDays,
     Integer sessionIdleMinutes,
     Boolean deviceVerificationRequired,
-    String ipAllowlistCidrs
+    String ipAllowlistCidrs,
+    String googleHostedDomain
 ) {
+    public UpdateTenantSecurityPolicyRequest(
+        Boolean mfaEnforced,
+        Boolean allowSocialLogin,
+        List<String> allowedMethods,
+        Integer gracePeriodDays,
+        Integer sessionIdleMinutes,
+        Boolean deviceVerificationRequired,
+        String ipAllowlistCidrs
+    ) {
+        this(mfaEnforced, allowSocialLogin, allowedMethods, gracePeriodDays, sessionIdleMinutes, deviceVerificationRequired, ipAllowlistCidrs, null);
+    }
+
     public UpdateTenantSecurityPolicyRequest(
         Boolean mfaEnforced,
         List<String> allowedMethods,
@@ -19,7 +32,7 @@ public record UpdateTenantSecurityPolicyRequest(
         Boolean deviceVerificationRequired,
         String ipAllowlistCidrs
     ) {
-        this(mfaEnforced, null, allowedMethods, gracePeriodDays, sessionIdleMinutes, deviceVerificationRequired, ipAllowlistCidrs);
+        this(mfaEnforced, null, allowedMethods, gracePeriodDays, sessionIdleMinutes, deviceVerificationRequired, ipAllowlistCidrs, null);
     }
 }
 

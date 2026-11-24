@@ -34,6 +34,9 @@ public class TenantSecurityPolicy extends OrganizationAwareEntity {
     @Builder.Default
     private boolean allowSocialLogin = false;
 
+    @Column(name = "google_hosted_domain", length = 255)
+    private String googleHostedDomain;
+
     @Column(name = "allowed_methods", nullable = false, length = 255)
     @Builder.Default
     private String allowedMethods = "totp,webauthn";

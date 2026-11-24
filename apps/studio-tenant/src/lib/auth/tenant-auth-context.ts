@@ -13,6 +13,8 @@ export interface TenantAuthContextDto {
   authMode?: string;
   status?: string;
   hasSso?: boolean;
+  allowSocialLogin?: boolean;
+  googleHostedDomain?: string;
   allowedMethods?: string[];
   mfaRequired?: boolean;
   enforceSso?: boolean;

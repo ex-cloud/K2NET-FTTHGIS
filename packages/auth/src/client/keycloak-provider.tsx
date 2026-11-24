@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import Keycloak from "keycloak-js";
 import type {
+  AuthLoginOptions,
   AuthPlane,
   CredentialLoginInput,
   CredentialLoginResult,
@@ -506,10 +507,15 @@ export function KeycloakProvider({
   );
 
   const login = useCallback(
-    async (options?: Keycloak.KeycloakLoginOptions) => {
+    async (options?: AuthLoginOptions) => {
       // Only trigger external OIDC broker redirect when an explicit social/enterprise IdP hint is requested
       if (options?.idpHint) {
         const redirectTarget = options.redirectUri || window.location.origin + "/";
+        const { extraParams, ...kcOptions } = options;
+        const extraEntries = extraParams
+          ? Object.entries(extraParams).filter(([, v]) => typeof v === "string" && v.trim().length > 0)
+          : [];
+
         if (keycloakInstance) {
           try {
             if (!keycloakInstance.authenticated && !keycloakInstance.didInitialize) {
@@ -519,8 +525,20 @@ export function KeycloakProvider({
                 enableLogging: false,
               });
             }
+            if (extraEntries.length > 0) {
+              const generatedUrl = await keycloakInstance.createLoginUrl({
+                ...kcOptions,
+                redirectUri: redirectTarget,
+              });
+              const targetUrl = new URL(generatedUrl);
+              for (const [k, v] of extraEntries) {
+                targetUrl.searchParams.set(k, v.trim());
+              }
+              window.location.assign(targetUrl.toString());
+              return;
+            }
             await keycloakInstance.login({
-              ...options,
+              ...kcOptions,
               redirectUri: redirectTarget,
             });
             return;
@@ -528,8 +546,11 @@ export function KeycloakProvider({
             // fallback to explicit OIDC authorization URL with kc_idp_hint
           }
         }
-        const promptParam = options.prompt ? `&prompt=${encodeURIComponent(options.prompt)}` : "";
-        const authUrl = `${config.url}/realms/${encodeURIComponent(config.realm)}/protocol/openid-connect/auth?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(redirectTarget)}&response_type=code&scope=openid%20profile%20email&kc_idp_hint=${encodeURIComponent(options.idpHint)}${promptParam}`;
+        const promptParam = kcOptions.prompt ? `&prompt=${encodeURIComponent(kcOptions.prompt)}` : "";
+        const extraQuery = extraEntries
+          .map(([k, v]) => `&${encodeURIComponent(k)}=${encodeURIComponent(v.trim())}`)
+          .join("");
+        const authUrl = `${config.url}/realms/${encodeURIComponent(config.realm)}/protocol/openid-connect/auth?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(redirectTarget)}&response_type=code&scope=openid%20profile%20email&kc_idp_hint=${encodeURIComponent(options.idpHint)}${promptParam}${extraQuery}`;
         window.location.assign(authUrl);
         return;
       }

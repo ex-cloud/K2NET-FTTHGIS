@@ -14,6 +14,8 @@ import org.keycloak.representations.idm.UserSessionRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.FederatedIdentityRepresentation;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
@@ -1133,6 +1135,67 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             log.error("Failed to reset MFA for user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
             throw new RuntimeException("Failed to reset MFA in Keycloak: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Memastikan Identity Provider di Keycloak memiliki parameter query yang diteruskan (misal {@code hd} untuk Google).
+     */
+    public boolean ensureIdentityProviderForwardParameter(String realm, String alias, String paramName) {
+        if (realm == null || realm.isBlank() || alias == null || alias.isBlank() || paramName == null || paramName.isBlank()) {
+            return false;
+        }
+        try {
+            var idpsResource = keycloak.realm(realm).identityProviders();
+            List<IdentityProviderRepresentation> existing = idpsResource.findAll();
+            Optional<IdentityProviderRepresentation> providerOpt = existing.stream()
+                    .filter(i -> alias.equalsIgnoreCase(i.getAlias()))
+                    .findFirst();
+            if (providerOpt.isEmpty()) {
+                log.debug("Keycloak IdP '{}' not found in realm '{}' while checking forwardParameters={}", alias, realm, paramName);
+                return false;
+            }
+
+            IdentityProviderRepresentation idp = providerOpt.get();
+            Map<String, String> config = idp.getConfig();
+            if (config == null) {
+                config = new java.util.HashMap<>();
+            }
+            String current = config.getOrDefault("forwardParameters", "");
+            List<String> params = new java.util.ArrayList<>();
+            boolean alreadyPresent = false;
+            if (!current.isBlank()) {
+                for (String item : current.split(",")) {
+                    String trimmed = item.trim();
+                    if (!trimmed.isEmpty()) {
+                        params.add(trimmed);
+                        if (trimmed.equalsIgnoreCase(paramName.trim())) {
+                            alreadyPresent = true;
+                        }
+                    }
+                }
+            }
+            if (alreadyPresent) {
+                return true;
+            }
+            params.add(paramName.trim());
+            config.put("forwardParameters", String.join(",", params));
+            idp.setConfig(config);
+            idpsResource.get(idp.getAlias()).update(idp);
+            log.info("✅ Keycloak IdP '{}' di realm '{}' diperbarui: forwardParameters={}", alias, realm, config.get("forwardParameters"));
+            return true;
+        } catch (Exception e) {
+            log.warn("⚠️ Tidak dapat memperbarui forwardParameters='{}' pada IdP '{}' realm '{}': {}", paramName, alias, realm, e.getMessage());
+            return false;
+        }
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void reconcileGoogleForwardParametersOnStartup() {
+        try {
+            ensureIdentityProviderForwardParameter("k2net-tenants", "google", "hd");
+        } catch (Exception e) {
+            log.debug("Skipping Google forwardParameters startup check: {}", e.getMessage());
         }
     }
 }

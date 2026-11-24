@@ -3,6 +3,10 @@ import type { KeycloakLoginOptions, KeycloakLogoutOptions } from "keycloak-js";
 
 export type { KeycloakLoginOptions, KeycloakLogoutOptions };
 
+export interface AuthLoginOptions extends KeycloakLoginOptions {
+  extraParams?: Record<string, string>;
+}
+
 export type AuthPlane = "PLATFORM" | "TENANT";
 
 export interface KeycloakUser {
@@ -94,7 +98,7 @@ export interface KeycloakAuthContextValue {
   token: string | null;
   user: KeycloakUser | null;
   roles: string[];
-  login: (options?: KeycloakLoginOptions) => Promise<void>;
+  login: (options?: AuthLoginOptions) => Promise<void>;
   loginWithCredentials: (input: CredentialLoginInput) => Promise<CredentialLoginResult>;
   logout: (options?: KeycloakLogoutOptions) => Promise<void>;
   clearSessionTerminated: () => void;

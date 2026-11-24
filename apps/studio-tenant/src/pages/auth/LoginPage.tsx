@@ -417,10 +417,27 @@ export function LoginPage() {
         return;
       }
 
-      // Social Identity Login (Google / GitHub)
+      // Social Identity Login (Google / GitHub) — Atomic live pre-flight verification
+      const liveSocialCtx = await fetchTenantAuthContext(effectiveSlug, true);
+      if (!liveSocialCtx || !liveSocialCtx.allowSocialLogin) {
+        await refetchTenantCtx();
+        setErrorMessage(
+          resolveAuthErrorMessage(
+            "SSO_NOT_AVAILABLE",
+            t("auth.sso_disabled_or_updating"),
+            t
+          )
+        );
+        return;
+      }
+
+      const hostedDomain =
+        providerId === "google" ? liveSocialCtx.googleHostedDomain?.trim() : "";
+
       await login({
         idpHint: providerId,
         redirectUri: window.location.origin + callbackUrl,
+        ...(hostedDomain ? { extraParams: { hd: hostedDomain } } : {}),
       });
     } finally {
       setIsSubmitting(false);

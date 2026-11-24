@@ -125,6 +125,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
   const [isSaving, setIsSaving] = React.useState(false);
   const [mfaEnforced, setMfaEnforced] = React.useState(false);
   const [allowSocialLogin, setAllowSocialLogin] = React.useState(false);
+  const [googleHostedDomain, setGoogleHostedDomain] = React.useState<string>("");
   const [sessionTimeout, setSessionTimeout] = React.useState(30);
   const [isPlatformEnforced, setIsPlatformEnforced] = React.useState(false);
   const [ipAllowlistCidrs, setIpAllowlistCidrs] = React.useState<string>("");
@@ -145,10 +146,12 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           isMfaEnforcedByPlatform?: boolean;
           ipAllowlistCidrs?: string;
           allowSocialLogin?: boolean;
+          googleHostedDomain?: string;
         }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`);
         if (res && isMounted) {
           setMfaEnforced(Boolean(res.mfaEnforced));
           setAllowSocialLogin(Boolean(res.allowSocialLogin));
+          setGoogleHostedDomain(res.googleHostedDomain || "");
           setSessionTimeout(res.sessionIdleMinutes ?? res.sessionIdleTimeoutMinutes ?? 30);
           setIsPlatformEnforced(
             Boolean(res.lockedByPlatform ?? res.isLockedByPlatform ?? res.isMfaEnforcedByPlatform)
@@ -178,6 +181,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         isLockedByPlatform?: boolean;
         ipAllowlistCidrs?: string;
         allowSocialLogin?: boolean;
+        googleHostedDomain?: string;
       }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`, {
         method: "PUT",
         body: JSON.stringify({
@@ -185,11 +189,13 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           sessionIdleMinutes: sessionTimeout,
           ipAllowlistCidrs: ipAllowlistCidrs.trim(),
           allowSocialLogin,
+          googleHostedDomain: googleHostedDomain.trim(),
         }),
       });
       if (updated) {
         setMfaEnforced(Boolean(updated.mfaEnforced));
         setAllowSocialLogin(Boolean(updated.allowSocialLogin));
+        setGoogleHostedDomain(updated.googleHostedDomain || "");
         if (updated.sessionIdleMinutes) {
           setSessionTimeout(updated.sessionIdleMinutes);
         }
@@ -227,18 +233,41 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         />
       </div>
 
-      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
-        <div className="space-y-0.5 max-w-lg">
-          <Label className="text-xs font-semibold">{t("settings.allow_social_label")}</Label>
-          <p className="text-[11px] text-muted-foreground">
-            {t("settings.allow_social_desc")}
-          </p>
+      <div className="space-y-3 p-3 rounded-lg bg-muted/30 border border-border/40">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5 max-w-lg">
+            <Label className="text-xs font-semibold">{t("settings.allow_social_label")}</Label>
+            <p className="text-[11px] text-muted-foreground">
+              {t("settings.allow_social_desc")}
+            </p>
+          </div>
+          <Switch
+            checked={allowSocialLogin}
+            disabled={loading || isSaving || !canManageSecurity}
+            onCheckedChange={setAllowSocialLogin}
+          />
         </div>
-        <Switch
-          checked={allowSocialLogin}
-          disabled={loading || isSaving || !canManageSecurity}
-          onCheckedChange={setAllowSocialLogin}
-        />
+
+        {allowSocialLogin && (
+          <div className="pt-3 border-t border-border/40 space-y-1.5 max-w-md">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs font-semibold">{t("settings.google_hd_label")}</Label>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-border bg-muted text-muted-foreground">
+                {t("settings.google_hd_badge")}
+              </span>
+            </div>
+            <Input
+              value={googleHostedDomain}
+              onChange={(e) => setGoogleHostedDomain(e.target.value)}
+              disabled={loading || isSaving || !canManageSecurity}
+              placeholder={t("settings.google_hd_placeholder")}
+              className="h-8 text-xs font-mono bg-background border-border/80"
+            />
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              {t("settings.google_hd_desc")}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1.5 max-w-xs">

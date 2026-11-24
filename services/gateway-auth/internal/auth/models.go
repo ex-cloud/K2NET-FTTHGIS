@@ -21,9 +21,10 @@ type TenantContextResponse struct {
 	PlanDisplayName string   `json:"planDisplayName"`
 	AuthMode        string   `json:"authMode"`
 	Status          string   `json:"status"`
-	HasSSO          bool     `json:"hasSso"`
-	AllowSocialLogin bool    `json:"allowSocialLogin"`
-	AllowedMethods  []string `json:"allowedMethods"`
+	HasSSO             bool     `json:"hasSso"`
+	AllowSocialLogin   bool     `json:"allowSocialLogin"`
+	GoogleHostedDomain string   `json:"googleHostedDomain,omitempty"`
+	AllowedMethods     []string `json:"allowedMethods"`
 	MFARequired     bool     `json:"mfaRequired"`
 	EnforceSSO      bool     `json:"enforceSso"`
 	AllowBreakGlass bool     `json:"allowBreakGlass"`

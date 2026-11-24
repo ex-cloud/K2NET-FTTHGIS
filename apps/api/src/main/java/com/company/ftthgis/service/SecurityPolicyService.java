@@ -185,6 +185,7 @@ public class SecurityPolicyService {
                 .organizationName(org.getName())
                 .mfaEnforced(policy.isMfaEnforced())
                 .allowSocialLogin(policy.isAllowSocialLogin())
+                .googleHostedDomain(policy.getGoogleHostedDomain())
                 .allowedMethods(parseMethods(policy.getAllowedMethods()))
                 .gracePeriodDays(policy.getGracePeriodDays())
                 .sessionIdleMinutes(policy.getSessionIdleMinutes())
@@ -283,6 +284,23 @@ public class SecurityPolicyService {
         if (request.allowSocialLogin() != null) {
             policy.setAllowSocialLogin(request.allowSocialLogin());
         }
+        if (request.googleHostedDomain() != null) {
+            String rawHd = request.googleHostedDomain().trim().toLowerCase(Locale.ROOT);
+            if (rawHd.startsWith("@")) {
+                rawHd = rawHd.substring(1).trim();
+            }
+            if (rawHd.isBlank()) {
+                policy.setGoogleHostedDomain(null);
+            } else {
+                String cleanHd = TenantSsoDomainService.normalizeAndValidateDomain(rawHd);
+                policy.setGoogleHostedDomain(cleanHd);
+                try {
+                    keycloakAdminService.ensureIdentityProviderForwardParameter("k2net-tenants", "google", "hd");
+                } catch (Exception e) {
+                    log.debug("Could not reconcile Keycloak Google forwardParameters: {}", e.getMessage());
+                }
+            }
+        }
 
         // IP Allowlist & Anti-Lockout Validation
         if (request.ipAllowlistCidrs() != null) {
@@ -334,11 +352,15 @@ public class SecurityPolicyService {
 
         auditLoggingService.logEvent(org.getSlug(), "TENANT_SECURITY_POLICY_UPDATE", "TENANT_POLICY",
                 saved.getId() != null ? saved.getId().toString() : "unknown", Map.of(),
-                Map.of("mfaEnforced", saved.isMfaEnforced(), "allowSocialLogin", saved.isAllowSocialLogin()),
+                Map.of(
+                        "mfaEnforced", saved.isMfaEnforced(),
+                        "allowSocialLogin", saved.isAllowSocialLogin(),
+                        "googleHostedDomain", saved.getGoogleHostedDomain() != null ? saved.getGoogleHostedDomain() : ""
+                ),
                 Map.of("actor", actor != null ? actor : "admin"));
 
-        log.info("🛡️ Tenant security policy updated for org '{}' by {}: MFA={}, Social={}, SessionIdle={}m",
-                orgSlug, actor, saved.isMfaEnforced(), saved.isAllowSocialLogin(), saved.getSessionIdleMinutes());
+        log.info("🛡️ Tenant security policy updated for org '{}' by {}: MFA={}, Social={}, GoogleHD={}, SessionIdle={}m",
+                orgSlug, actor, saved.isMfaEnforced(), saved.isAllowSocialLogin(), saved.getGoogleHostedDomain(), saved.getSessionIdleMinutes());
 
         return getTenantPolicy(orgSlug);
     }
