@@ -184,6 +184,7 @@
   "break_glass_banner_badge": "BREAK-GLASS SESSION (MAX 60M)",
   "break_glass_banner_title": "Emergency Break-Glass Bypass Mode Active",
   "break_glass_banner_desc": "This emergency session has a strict 60-minute lifetime ceiling and requires step-up confirmation for sensitive billing and security operations.",
+  "break_glass_banner_action_btn": "Inspect SSO Settings",
   "break_glass_stepup_title": "Break-Glass High-Risk Step-Up Verification",
   "break_glass_stepup_desc": "You are accessing a critical administrative module ({{module}}) during an Emergency Break-Glass session. Please verify your elevated session intent to proceed for the next 15 minutes.",
   "break_glass_stepup_verify_btn": "Confirm & Unlock Module (15m)",

@@ -316,6 +316,7 @@ export function KeycloakProvider({
       try {
         window.sessionStorage.removeItem("k2net_break_glass_session");
         window.sessionStorage.removeItem("k2net_break_glass_stepup_until");
+        window.sessionStorage.removeItem("k2net_break_glass_banner_dismissed");
       } catch {
         // ignore storage error
       }

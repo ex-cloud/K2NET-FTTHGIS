@@ -1,8 +1,7 @@
 import * as React from "react";
-import { useRouterState } from "@tanstack/react-router";
-import { ShieldAlert, ShieldCheck, Lock } from "lucide-react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { ShieldCheck, Lock } from "lucide-react";
 import {
-  Badge,
   Button,
   Dialog,
   DialogContent,
@@ -10,6 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  FloatingBanner,
 } from "@k2net/ui";
 import { useAuth } from "@k2net/auth/client";
 import { useTranslation } from "@k2net/i18n";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 const STEP_UP_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const STEP_UP_STORAGE_KEY = "k2net_break_glass_stepup_until";
+const BANNER_DISMISSED_STORAGE_KEY = "k2net_break_glass_banner_dismissed";
 
 function isHighRiskPath(pathname: string): { isHighRisk: boolean; moduleLabel: string } {
   if (pathname.startsWith("/billing")) {
@@ -34,6 +35,7 @@ function isHighRiskPath(pathname: string): { isHighRisk: boolean; moduleLabel: s
 export function BreakGlassSessionGuard() {
   const { t } = useTranslation();
   const { isBreakGlassSession } = useAuth();
+  const navigate = useNavigate();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -44,6 +46,15 @@ export function BreakGlassSessionGuard() {
       return Number(window.sessionStorage.getItem(STEP_UP_STORAGE_KEY) || "0");
     } catch {
       return 0;
+    }
+  });
+
+  const [isBannerDismissed, setIsBannerDismissed] = React.useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.sessionStorage.getItem(BANNER_DISMISSED_STORAGE_KEY) === "1";
+    } catch {
+      return false;
     }
   });
 
@@ -65,29 +76,34 @@ export function BreakGlassSessionGuard() {
     toast.success(t("settings.break_glass_stepup_verified_toast"));
   };
 
+  const handleDismissBanner = () => {
+    setIsBannerDismissed(true);
+    if (typeof window !== "undefined") {
+      try {
+        window.sessionStorage.setItem(BANNER_DISMISSED_STORAGE_KEY, "1");
+      } catch {
+        // ignore storage error
+      }
+    }
+  };
+
   if (!isBreakGlassSession) {
     return null;
   }
 
   return (
     <>
-      <div className="w-full border-b border-border/80 bg-muted/60 px-4 py-1.5 flex items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 min-w-0">
-          <ShieldAlert className="size-3.5 text-foreground shrink-0" />
-          <Badge
-            variant="outline"
-            className="border-foreground/30 bg-foreground/10 text-foreground text-[10px] font-mono shrink-0"
-          >
-            {t("settings.break_glass_banner_badge")}
-          </Badge>
-          <span className="font-semibold text-foreground truncate">
-            {t("settings.break_glass_banner_title")}
-          </span>
-          <span className="hidden md:inline text-muted-foreground truncate">
-            — {t("settings.break_glass_banner_desc")}
-          </span>
-        </div>
-      </div>
+      {!isBannerDismissed && (
+        <FloatingBanner
+          variant="warning"
+          badgeText={t("settings.break_glass_banner_badge")}
+          title={t("settings.break_glass_banner_title")}
+          description={t("settings.break_glass_banner_desc")}
+          actionText={t("settings.break_glass_banner_action_btn")}
+          onAction={() => void navigate({ to: "/settings/sso" })}
+          onClose={handleDismissBanner}
+        />
+      )}
 
       <Dialog open={requiresStepUpModal}>
         <DialogContent className="sm:max-w-md [&>button]:hidden">
