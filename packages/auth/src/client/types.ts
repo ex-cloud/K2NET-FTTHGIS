@@ -42,6 +42,35 @@ export interface CredentialLoginResult {
   user?: KeycloakUser;
 }
 
+export interface DiscoverableWebauthnChallengeInput {
+  plane?: AuthPlane;
+  tenantSlug?: string;
+  username?: string;
+  conditional?: boolean;
+}
+
+export interface DiscoverableWebauthnChallengeResponse {
+  challengeId: string;
+  challenge: string;
+  rpId: string;
+  allowCredentials?: Array<{ type: string; id: string }>;
+  timeout?: number;
+  userVerification?: string;
+}
+
+export interface DiscoverableWebauthnVerifyInput {
+  challengeId: string;
+  credentialId: string;
+  clientDataJSON: string;
+  authenticatorData: string;
+  signature: string;
+  userHandle?: string;
+  plane?: AuthPlane;
+  tenantSlug?: string;
+  rememberMe?: boolean;
+  isBreakGlass?: boolean;
+}
+
 export interface KeycloakAuthConfig {
   url: string;
   realm: string;
@@ -77,5 +106,7 @@ export interface KeycloakAuthContextValue {
   verifyMfaEmailOtp?: (preAuthToken: string, code: string) => Promise<CredentialLoginResult>;
   getWebauthnLoginChallenge?: (preAuthToken: string) => Promise<{ challenge: string; rpId: string; allowCredentials?: Array<{ type: string; id: string }> }>;
   verifyWebauthnLogin?: (preAuthToken: string, payload: { credentialId: string; clientDataJSON: string; authenticatorData: string; signature: string }) => Promise<CredentialLoginResult>;
+  getPasskeyPasswordlessChallenge?: (input?: DiscoverableWebauthnChallengeInput) => Promise<DiscoverableWebauthnChallengeResponse>;
+  verifyPasskeyPasswordlessLogin?: (input: DiscoverableWebauthnVerifyInput) => Promise<CredentialLoginResult>;
   verifyMfaBackupCode?: (preAuthToken: string, code: string) => Promise<CredentialLoginResult>;
 }

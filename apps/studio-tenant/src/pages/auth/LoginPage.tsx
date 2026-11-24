@@ -13,6 +13,8 @@ import {
   saveAccountProfile,
   setPendingSaveProfile,
   commitPendingSaveProfile,
+  usePasswordlessPasskeyFlow,
+  abortPendingConditionalPasskey,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
 } from "@k2net/ui";
@@ -29,6 +31,61 @@ import {
 } from "../../lib/auth/tenant-auth-context";
 import { buildTenantFormLabels } from "../../lib/auth/login-form-labels";
 
+function inspectImpersonationOnLoginMount(): { impersonateCode?: string; hasActiveSession?: boolean } {
+  if (typeof window === "undefined") return {};
+  const url = new URL(window.location.href);
+  const code = url.searchParams.get("impersonate_code");
+  if (code) {
+    return { impersonateCode: code };
+  }
+  if (sessionStorage.getItem("k2net_impersonation_meta")) {
+    return { hasActiveSession: true };
+  }
+  localStorage.removeItem("k2net_impersonation_meta");
+  localStorage.removeItem("k2net_impersonation_token");
+  localStorage.removeItem("k2net_impersonation_session_id");
+  localStorage.removeItem("k2net_impersonating_in_progress");
+  return {};
+}
+
+function extractInitialLoginError(t: (key: string) => string): { message: string; toastId: string } | null {
+  const err = consumeSessionOAuthError();
+  if (err) {
+    return {
+      message: resolveAuthErrorMessage(err.code, err.description, t),
+      toastId: "login-oauth-error",
+    };
+  }
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get("error");
+    if (errorParam) {
+      const msg = resolveAuthErrorMessage(errorParam, undefined, t);
+      urlParams.delete("error");
+      const newSearch = urlParams.toString();
+      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "");
+      window.history.replaceState({}, "", newUrl);
+      return { message: msg, toastId: "login-error-param" };
+    }
+  }
+  return null;
+}
+
+function resolveTenantTurnstileKey(): string {
+  return (
+    (import.meta.env.VITE_TURNSTILE_TENANT_SITE_KEY as string | undefined)?.trim() ||
+    (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ||
+    "0x4AAAAAAFq1LAd5fwZMDgz5"
+  );
+}
+
+function resolveEffectiveTenantSlug(
+  tenantCtx: TenantAuthContextDto | null | undefined,
+  fallbackSlug: string
+): string {
+  return tenantCtx?.targetSlug || tenantCtx?.slug || fallbackSlug;
+}
+
 export function LoginPage() {
   const { t, locale, setLocale } = useTranslation();
   const {
@@ -41,6 +98,8 @@ export function LoginPage() {
     verifyMfaEmailOtp,
     getWebauthnLoginChallenge,
     verifyWebauthnLogin,
+    getPasskeyPasswordlessChallenge,
+    verifyPasskeyPasswordlessLogin,
     verifyMfaBackupCode,
   } = useAuth();
   const navigate = useNavigate();
@@ -53,10 +112,7 @@ export function LoginPage() {
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const turnstileSiteKey =
-    (import.meta.env.VITE_TURNSTILE_TENANT_SITE_KEY as string | undefined)?.trim() ||
-    (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ||
-    "0x4AAAAAAFq1LAd5fwZMDgz5";
+  const turnstileSiteKey = resolveTenantTurnstileKey();
 
   const callbackUrl = useMemo(() => {
     if (typeof window === "undefined") return "/";
@@ -65,21 +121,14 @@ export function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      const code = url.searchParams.get("impersonate_code");
-      if (code) {
-        navigate({ to: "/", search: { impersonate_code: code } });
-        return;
-      }
-      if (sessionStorage.getItem("k2net_impersonation_meta")) {
-        navigate({ to: "/" });
-        return;
-      }
-      localStorage.removeItem("k2net_impersonation_meta");
-      localStorage.removeItem("k2net_impersonation_token");
-      localStorage.removeItem("k2net_impersonation_session_id");
-      localStorage.removeItem("k2net_impersonating_in_progress");
+    const imp = inspectImpersonationOnLoginMount();
+    if (imp.impersonateCode) {
+      navigate({ to: "/", search: { impersonate_code: imp.impersonateCode } });
+      return;
+    }
+    if (imp.hasActiveSession) {
+      navigate({ to: "/" });
+      return;
     }
 
     if (initialized && authenticated) {
@@ -118,25 +167,10 @@ export function LoginPage() {
 
   // Surface any OAuth/SSO callback error or redirected session expiry error cleanly in the SPA
   useEffect(() => {
-    const err = consumeSessionOAuthError();
-    if (err) {
-      const msg = resolveAuthErrorMessage(err.code, err.description, t);
-      setErrorMessage(msg);
-      toast.error(msg, { id: "login-oauth-error" });
-      return;
-    }
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const errorParam = urlParams.get("error");
-      if (errorParam) {
-        const msg = resolveAuthErrorMessage(errorParam, undefined, t);
-        setErrorMessage(msg);
-        toast.error(msg, { id: "login-error-param" });
-        urlParams.delete("error");
-        const newSearch = urlParams.toString();
-        const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "");
-        window.history.replaceState({}, "", newUrl);
-      }
+    const found = extractInitialLoginError(t);
+    if (found) {
+      setErrorMessage(found.message);
+      toast.error(found.message, { id: found.toastId });
     }
   }, [t]);
 
@@ -151,6 +185,7 @@ export function LoginPage() {
   );
 
   const handleSubmitCredentials = async (payload: AuthCredentialsSubmitPayload) => {
+    abortPendingConditionalPasskey();
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
@@ -323,6 +358,32 @@ export function LoginPage() {
     }
   };
 
+  const effectiveTenantSlug = resolveEffectiveTenantSlug(tenantCtx, tenantSlug);
+  const canUsePasskey = Boolean(
+    initialized && !authenticated && !isTenantCtxLoading && tenantCtx && !mfaRequired && !tenantCtx.enforceSso
+  );
+
+  const { isPasskeyLoading, handlePasswordlessPasskeyLogin } = usePasswordlessPasskeyFlow({
+    enabled: canUsePasskey,
+    plane: "TENANT",
+    tenantSlug: effectiveTenantSlug,
+    getChallenge: getPasskeyPasswordlessChallenge,
+    verifyLogin: verifyPasskeyPasswordlessLogin,
+    onSuccess: (user) => {
+      handleAuthRedirect(user, effectiveTenantSlug);
+    },
+    onError: (errCode, rawMsg) => {
+      const msg =
+        errCode === "PASSKEY_UNSUPPORTED" || errCode === "PASSKEY_CANCELLED"
+          ? rawMsg || null
+          : resolveAuthErrorMessage(errCode, rawMsg, t);
+      setErrorMessage(msg);
+    },
+    onClearError: () => setErrorMessage(null),
+    unsupportedMessage: t("settings.account.passkey_unsupported"),
+    cancelledMessage: t("settings.account.passkey_cancelled"),
+  });
+
   const handleSocialLogin = async (providerId: string) => {
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -400,11 +461,11 @@ export function LoginPage() {
         orgName={tenantCtx.name}
         description={t("auth.tenant_org_subtitle")}
         logoUrl={tenantCtx.logoUrl}
-        plan={tenantCtx.plan || "FREE"}
-        planDisplayName={tenantCtx.planDisplayName || "STARTER TRIAL"}
+        plan={tenantCtx.plan}
+        planDisplayName={tenantCtx.planDisplayName}
         authMode={tenantCtx.authMode}
-        status={tenantCtx.status || "ACTIVE"}
-        tenantSlug={tenantCtx.targetSlug || tenantCtx.slug || tenantSlug}
+        status={tenantCtx.status}
+        tenantSlug={effectiveTenantSlug}
         plane="TENANT"
         hasSso={Boolean(tenantCtx.hasSso)}
         enforceSso={tenantCtx.enforceSso}
@@ -424,6 +485,8 @@ export function LoginPage() {
         onVerifyEmailOtp={handleVerifyEmailOtp}
         onVerifyWebauthn={handleVerifyWebauthn}
         onVerifyBackupCode={handleVerifyBackupCode}
+        onPasswordlessPasskeyLogin={handlePasswordlessPasskeyLogin}
+        isPasskeyLoading={isPasskeyLoading}
         turnstileSiteKey={turnstileSiteKey}
         errorMessage={errorMessage}
         onSubmitCredentials={handleSubmitCredentials}

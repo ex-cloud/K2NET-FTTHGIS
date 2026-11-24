@@ -12,3 +12,4 @@ export * from "./auth-workspace-chooser";
 export * from "./auth-invite-accept-card";
 export * from "./auth-mfa-step-up";
 export * from "./saved-profiles";
+export * from "./webauthn-passkey";

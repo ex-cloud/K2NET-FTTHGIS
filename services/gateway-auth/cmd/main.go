@@ -110,6 +110,8 @@ func main() {
 		authAPI.POST("/mfa/email/verify", mutationLimiter, handler.VerifyMfaEmailOTP)
 		authAPI.POST("/webauthn/login/challenge", mutationLimiter, handler.GetWebauthnLoginChallenge)
 		authAPI.POST("/webauthn/login/verify", mutationLimiter, handler.VerifyWebauthnLogin)
+		authAPI.POST("/webauthn/discoverable/challenge", mutationLimiter, handler.GetDiscoverableWebauthnChallenge)
+		authAPI.POST("/webauthn/discoverable/verify", mutationLimiter, handler.VerifyDiscoverableWebauthnLogin)
 		authAPI.POST("/refresh", handler.Refresh)
 		authAPI.POST("/logout", handler.Logout)
 		authAPI.POST("/register", mutationLimiter, handler.Register)

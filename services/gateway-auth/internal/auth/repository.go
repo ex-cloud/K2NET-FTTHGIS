@@ -44,6 +44,8 @@ type Repository interface {
 	SwitchUserContext(ctx context.Context, userID, targetOrgID string) (*TenantContextResponse, error)
 	DiscoverSsoByEmail(ctx context.Context, email string, tenantSlug string) (*SsoDiscoveryResponse, error)
 	GetUserWebauthnCredentials(ctx context.Context, userID string) ([]WebauthnCredentialModel, error)
+	GetDiscoverableWebauthnCredentials(ctx context.Context, plane, tenantSlug, username string) ([]WebauthnCredentialModel, error)
+	GetWebauthnCredentialByCredentialID(ctx context.Context, credentialID string) (*WebauthnCredentialOwner, error)
 	UpdateWebauthnSignCounter(ctx context.Context, credentialID string, newCounter int64) error
 	IsUserMfaEnabled(ctx context.Context, userID string) (bool, error)
 	HasActiveBackupCodes(ctx context.Context, userID string) (bool, error)
@@ -867,6 +869,164 @@ func (r *PostgresRepository) GetUserWebauthnCredentials(ctx context.Context, use
 		}
 	}
 	return creds, nil
+}
+
+// GetDiscoverableWebauthnCredentials queries registered FIDO2 passkeys scoped to a plane/tenant (and optional username hint).
+func (r *PostgresRepository) GetDiscoverableWebauthnCredentials(ctx context.Context, plane, tenantSlug, username string) ([]WebauthnCredentialModel, error) {
+	if r.db == nil {
+		return nil, nil
+	}
+	cleanPlane := strings.ToUpper(strings.TrimSpace(plane))
+	cleanSlug := strings.ToLower(strings.TrimSpace(tenantSlug))
+	cleanUser := strings.ToLower(strings.TrimSpace(username))
+
+	scanCredRows := func(query string, args ...any) ([]WebauthnCredentialModel, error) {
+		rows, err := r.db.Query(ctx, query, args...)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var creds []WebauthnCredentialModel
+		for rows.Next() {
+			var c WebauthnCredentialModel
+			if err := rows.Scan(&c.ID, &c.UserID, &c.CredentialID, &c.PublicKeyPEM, &c.Algorithm, &c.SignCounter, &c.DeviceName); err == nil {
+				creds = append(creds, c)
+			}
+		}
+		return creds, nil
+	}
+
+	if cleanPlane == "PLATFORM" || cleanSlug == "system" {
+		if cleanUser != "" {
+			qUser := `
+				SELECT uwc.id::text, uwc.user_id::text, uwc.credential_id, COALESCE(uwc.public_key_pem, ''), uwc.algorithm, uwc.sign_counter, uwc.device_name
+				FROM user_webauthn_credentials uwc
+				JOIN users u ON u.id = uwc.user_id
+				LEFT JOIN roles rl ON u.role_id = rl.id
+				WHERE u.status = 'ACTIVE'
+				  AND (UPPER(COALESCE(rl.scope, 'SYSTEM')) = 'SYSTEM' OR u.organization_id IS NULL)
+				  AND (LOWER(u.email) = $1 OR LOWER(u.username) = $1)
+				ORDER BY uwc.last_used_at DESC NULLS LAST, uwc.created_at DESC
+				LIMIT 32
+			`
+			if creds, err := scanCredRows(qUser, cleanUser); err == nil && len(creds) > 0 {
+				return creds, nil
+			}
+		}
+		qAllPlatform := `
+			SELECT uwc.id::text, uwc.user_id::text, uwc.credential_id, COALESCE(uwc.public_key_pem, ''), uwc.algorithm, uwc.sign_counter, uwc.device_name
+			FROM user_webauthn_credentials uwc
+			JOIN users u ON u.id = uwc.user_id
+			LEFT JOIN roles rl ON u.role_id = rl.id
+			WHERE u.status = 'ACTIVE'
+			  AND (UPPER(COALESCE(rl.scope, 'SYSTEM')) = 'SYSTEM' OR u.organization_id IS NULL)
+			ORDER BY uwc.last_used_at DESC NULLS LAST, uwc.created_at DESC
+			LIMIT 32
+		`
+		return scanCredRows(qAllPlatform)
+	}
+
+	if cleanSlug == "" {
+		return nil, nil
+	}
+
+	const tenantBaseWhere = `
+		u.status = 'ACTIVE'
+		AND (
+			EXISTS (
+				SELECT 1 FROM organization_members om
+				JOIN organizations o ON o.id = om.organization_id
+				LEFT JOIN organization_slug_aliases osa ON osa.organization_id = o.id
+				WHERE om.user_id = u.id
+				  AND om.status = 'ACTIVE'
+				  AND o.deleted_at IS NULL
+				  AND (o.slug = $1 OR osa.old_slug = $1)
+			)
+			OR EXISTS (
+				SELECT 1 FROM organizations o
+				LEFT JOIN organization_slug_aliases osa ON osa.organization_id = o.id
+				WHERE o.id = u.organization_id
+				  AND o.deleted_at IS NULL
+				  AND (o.slug = $1 OR osa.old_slug = $1)
+			)
+		)
+	`
+
+	if cleanUser != "" {
+		qTenantUser := `
+			SELECT uwc.id::text, uwc.user_id::text, uwc.credential_id, COALESCE(uwc.public_key_pem, ''), uwc.algorithm, uwc.sign_counter, uwc.device_name
+			FROM user_webauthn_credentials uwc
+			JOIN users u ON u.id = uwc.user_id
+			WHERE ` + tenantBaseWhere + `
+			  AND (LOWER(u.email) = $2 OR LOWER(u.username) = $2)
+			ORDER BY uwc.last_used_at DESC NULLS LAST, uwc.created_at DESC
+			LIMIT 32
+		`
+		if creds, err := scanCredRows(qTenantUser, cleanSlug, cleanUser); err == nil && len(creds) > 0 {
+			return creds, nil
+		}
+	}
+
+	qTenantAll := `
+		SELECT uwc.id::text, uwc.user_id::text, uwc.credential_id, COALESCE(uwc.public_key_pem, ''), uwc.algorithm, uwc.sign_counter, uwc.device_name
+		FROM user_webauthn_credentials uwc
+		JOIN users u ON u.id = uwc.user_id
+		WHERE ` + tenantBaseWhere + `
+		ORDER BY uwc.last_used_at DESC NULLS LAST, uwc.created_at DESC
+		LIMIT 32
+	`
+	return scanCredRows(qTenantAll, cleanSlug)
+}
+
+// GetWebauthnCredentialByCredentialID locates a registered FIDO2 credential and its owning user by credential_id.
+func (r *PostgresRepository) GetWebauthnCredentialByCredentialID(ctx context.Context, credentialID string) (*WebauthnCredentialOwner, error) {
+	if r.db == nil || strings.TrimSpace(credentialID) == "" {
+		return nil, nil
+	}
+	const query = `
+		SELECT
+			uwc.credential_id,
+			COALESCE(uwc.public_key_pem, ''),
+			uwc.algorithm,
+			uwc.sign_counter,
+			COALESCE(uwc.device_name, 'Passkey'),
+			u.id::text,
+			u.email,
+			u.username,
+			COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS full_name,
+			COALESCE(u.status, 'ACTIVE') AS user_status,
+			COALESCE(u.organization_id::text, ''),
+			COALESCE(rl.name, 'viewer') AS role_name,
+			COALESCE(rl.scope, 'TENANT') AS role_scope
+		FROM user_webauthn_credentials uwc
+		JOIN users u ON u.id = uwc.user_id
+		LEFT JOIN roles rl ON u.role_id = rl.id
+		WHERE uwc.credential_id = $1
+		LIMIT 1
+	`
+	var out WebauthnCredentialOwner
+	err := r.db.QueryRow(ctx, query, strings.TrimSpace(credentialID)).Scan(
+		&out.CredentialID,
+		&out.PublicKeyPEM,
+		&out.Algorithm,
+		&out.SignCounter,
+		&out.DeviceName,
+		&out.UserID,
+		&out.Email,
+		&out.Username,
+		&out.FullName,
+		&out.UserStatus,
+		&out.OrganizationID,
+		&out.RoleName,
+		&out.RoleScope,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &out, nil
 }
 
 // UpdateWebauthnSignCounter updates the FIDO2 counter to prevent replay cloning attacks.

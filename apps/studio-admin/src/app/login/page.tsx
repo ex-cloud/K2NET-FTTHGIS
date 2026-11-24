@@ -10,11 +10,100 @@ import {
   saveAccountProfile,
   setPendingSaveProfile,
   commitPendingSaveProfile,
+  usePasswordlessPasskeyFlow,
+  abortPendingConditionalPasskey,
   base64UrlToBuffer,
   bufferToBase64Url,
   type AuthCredentialsSubmitPayload,
   type AuthLoginFormLabels,
 } from "@k2net/ui";
+
+function buildAdminFormLabels(t: (key: string) => string): AuthLoginFormLabels {
+  return {
+    loginFailedTitle: t("auth.login_failed_title"),
+    accountEmailOrUsername: t("auth.account_email_or_username"),
+    accountPlaceholder: t("auth.account_placeholder"),
+    requiredBadge: t("auth.required_badge"),
+    passwordUpper: t("auth.password_upper"),
+    passwordPlaceholder: t("auth.password_placeholder"),
+    forgotPassword: t("auth.forgot_password"),
+    forgotPasswordNotice: t("auth.forgot_password_notice"),
+    showPassword: t("auth.show_password"),
+    hidePassword: t("auth.hide_password"),
+    rememberMeBrowser: t("auth.remember_me_browser"),
+    orContinueWith: t("auth.or_continue_with"),
+    continueWithGoogle: t("auth.continue_with_google"),
+    continueWithGithub: t("auth.continue_with_github"),
+    continueWithProviderPrefix: t("auth.continue_with_provider_prefix"),
+    signInPlatformAdmin: t("auth.sign_in_platform_admin"),
+    continueIspWorkspace: t("auth.continue_isp_workspace"),
+    mfaCodeLabel: t("auth.mfa_code_label"),
+    mfaCodePlaceholder: t("auth.mfa_code_placeholder"),
+    mfaCodeHint: t("auth.mfa_code_hint"),
+    mfaVerifySubmit: t("auth.mfa_verify_submit"),
+    mfaBackToLogin: t("auth.mfa_back_to_login"),
+    turnstileVerifying: t("auth.turnstile_verifying"),
+    suspendedTitle: t("auth.suspended_title"),
+    suspendedDesc: t("auth.suspended_desc"),
+    tierInternalLabel: t("auth.tier_internal_label"),
+    tierInternalValue: t("auth.tier_internal_value"),
+    tierInternalDesc: t("auth.tier_internal_desc"),
+    complianceBanner: t("auth.compliance_banner"),
+    signInWithAnotherProfile: t("auth.sign_in_with_another_profile"),
+    viewSavedProfiles: t("auth.view_saved_profiles"),
+    saveEmailOnDevice: t("auth.save_email_on_device"),
+    lastUsed: t("auth.last_used"),
+    removeSavedProfile: t("auth.remove_saved_profile"),
+    savedProfilesTitle: t("auth.saved_profiles_title"),
+    savedProfilesOr: t("auth.saved_profiles_or"),
+    forgotPasswordTitle: t("auth.forgot_password_title"),
+    forgotPasswordSubtitle: t("auth.forgot_password_subtitle"),
+    sendResetLink: t("auth.send_reset_link"),
+    sendingResetLink: t("auth.sending_reset_link"),
+    backToSignIn: t("auth.back_to_sign_in"),
+    checkInboxTitle: t("auth.check_inbox_title"),
+    checkInboxDesc: t("auth.check_inbox_desc"),
+    resendInstructions: t("auth.resend_instructions"),
+    resendCooldown: t("auth.resend_cooldown"),
+    ssoDiscoveredTitle: t("auth.sso_discovered_title"),
+    ssoDiscoveredDesc: t("auth.sso_discovered_desc"),
+    continueWithSso: t("auth.continue_with_sso"),
+    defaultSsoDisplayName: t("auth.default_sso_display_name"),
+    orContinueWithCredentials: t("auth.or_continue_with_credentials"),
+    ssoDomainRecognized: t("auth.sso_domain_recognized"),
+    breakGlassModeActive: t("auth.break_glass_mode_active"),
+    breakGlassNotice: t("auth.break_glass_notice"),
+    breakGlassToggle: t("auth.break_glass_toggle"),
+    cancelBreakGlass: t("auth.cancel_break_glass"),
+    ipNotAllowedTitle: t("auth.ip_not_allowed_title"),
+    ipNotAllowedDesc: t("auth.ip_not_allowed_desc"),
+    mfaTabTotp: t("auth.mfa_tab_totp"),
+    mfaTabWebauthn: t("auth.mfa_tab_webauthn"),
+    mfaTabEmailOtp: t("auth.mfa_tab_email_otp"),
+    mfaTabBackupCode: t("auth.mfa_tab_backup_code"),
+    mfaPasskeyPrompt: t("auth.mfa_passkey_prompt"),
+    mfaPasskeyBtn: t("auth.mfa_passkey_btn"),
+    mfaEmailPrompt: t("auth.mfa_email_prompt"),
+    mfaSendEmailBtn: t("auth.mfa_send_email_btn"),
+    mfaSendingEmail: t("auth.mfa_sending_email"),
+    mfaEmailSentDesc: t("auth.mfa_email_sent_desc"),
+    mfaResendEmailIn: t("auth.mfa_resend_email_in"),
+    mfaTryAnotherMethod: t("auth.mfa_try_another_method"),
+    mfaChooseMethodTitle: t("auth.mfa_choose_method_title"),
+    mfaChooseMethodDesc: t("auth.mfa_choose_method_desc"),
+    mfaMethodWebauthnDesc: t("auth.mfa_method_webauthn_desc"),
+    mfaMethodTotpDesc: t("auth.mfa_method_totp_desc"),
+    mfaMethodEmailDesc: t("auth.mfa_method_email_desc"),
+    mfaMethodBackupCodeDesc: t("auth.mfa_method_backup_code_desc"),
+    mfaBackupCodePrompt: t("auth.mfa_backup_code_prompt"),
+    mfaBackupCodePlaceholder: t("auth.mfa_backup_code_placeholder"),
+    mfaBackupCodeSingleUseWarning: t("auth.mfa_backup_code_single_use_warning"),
+    mfaBackupCodeVerifySubmit: t("auth.mfa_backup_code_verify_submit"),
+    mfaBackToPrimary: t("auth.mfa_back_to_primary"),
+    continueWithPasskey: t("auth.continue_with_passkey"),
+    waitingForPasskey: t("auth.waiting_for_passkey"),
+  };
+}
 
 function sanitizeCallbackPath(raw: string | null): string {
   if (!raw) return "/overview";
@@ -41,6 +130,8 @@ export default function AdminLoginPage() {
     verifyMfaEmailOtp,
     getWebauthnLoginChallenge,
     verifyWebauthnLogin,
+    getPasskeyPasswordlessChallenge,
+    verifyPasskeyPasswordlessLogin,
     verifyMfaBackupCode,
   } = useAuth();
   const router = useRouter();
@@ -75,88 +166,50 @@ export default function AdminLoginPage() {
   }, [searchParams, t]);
 
   const formLabels = useMemo<AuthLoginFormLabels>(
-    () => ({
-      loginFailedTitle: t("auth.login_failed_title"),
-      accountEmailOrUsername: t("auth.account_email_or_username"),
-      accountPlaceholder: t("auth.account_placeholder"),
-      requiredBadge: t("auth.required_badge"),
-      passwordUpper: t("auth.password_upper"),
-      passwordPlaceholder: t("auth.password_placeholder"),
-      forgotPassword: t("auth.forgot_password"),
-      forgotPasswordNotice: t("auth.forgot_password_notice"),
-      showPassword: t("auth.show_password"),
-      hidePassword: t("auth.hide_password"),
-      rememberMeBrowser: t("auth.remember_me_browser"),
-      orContinueWith: t("auth.or_continue_with"),
-      continueWithGoogle: t("auth.continue_with_google"),
-      continueWithGithub: t("auth.continue_with_github"),
-      continueWithProviderPrefix: t("auth.continue_with_provider_prefix"),
-      signInPlatformAdmin: t("auth.sign_in_platform_admin"),
-      continueIspWorkspace: t("auth.continue_isp_workspace"),
-      mfaCodeLabel: t("auth.mfa_code_label"),
-      mfaCodePlaceholder: t("auth.mfa_code_placeholder"),
-      mfaCodeHint: t("auth.mfa_code_hint"),
-      mfaVerifySubmit: t("auth.mfa_verify_submit"),
-      mfaBackToLogin: t("auth.mfa_back_to_login"),
-      turnstileVerifying: t("auth.turnstile_verifying"),
-      suspendedTitle: t("auth.suspended_title"),
-      suspendedDesc: t("auth.suspended_desc"),
-      tierInternalLabel: t("auth.tier_internal_label"),
-      tierInternalValue: t("auth.tier_internal_value"),
-      tierInternalDesc: t("auth.tier_internal_desc"),
-      complianceBanner: t("auth.compliance_banner"),
-      signInWithAnotherProfile: t("auth.sign_in_with_another_profile"),
-      viewSavedProfiles: t("auth.view_saved_profiles"),
-      saveEmailOnDevice: t("auth.save_email_on_device"),
-      lastUsed: t("auth.last_used"),
-      removeSavedProfile: t("auth.remove_saved_profile"),
-      savedProfilesTitle: t("auth.saved_profiles_title"),
-      savedProfilesOr: t("auth.saved_profiles_or"),
-      forgotPasswordTitle: t("auth.forgot_password_title"),
-      forgotPasswordSubtitle: t("auth.forgot_password_subtitle"),
-      sendResetLink: t("auth.send_reset_link"),
-      sendingResetLink: t("auth.sending_reset_link"),
-      backToSignIn: t("auth.back_to_sign_in"),
-      checkInboxTitle: t("auth.check_inbox_title"),
-      checkInboxDesc: t("auth.check_inbox_desc"),
-      resendInstructions: t("auth.resend_instructions"),
-      resendCooldown: t("auth.resend_cooldown"),
-      ssoDiscoveredTitle: t("auth.sso_discovered_title"),
-      ssoDiscoveredDesc: t("auth.sso_discovered_desc"),
-      continueWithSso: t("auth.continue_with_sso"),
-      defaultSsoDisplayName: t("auth.default_sso_display_name"),
-      orContinueWithCredentials: t("auth.or_continue_with_credentials"),
-      ssoDomainRecognized: t("auth.sso_domain_recognized"),
-      breakGlassModeActive: t("auth.break_glass_mode_active"),
-      breakGlassNotice: t("auth.break_glass_notice"),
-      breakGlassToggle: t("auth.break_glass_toggle"),
-      cancelBreakGlass: t("auth.cancel_break_glass"),
-      ipNotAllowedTitle: t("auth.ip_not_allowed_title"),
-      ipNotAllowedDesc: t("auth.ip_not_allowed_desc"),
-      mfaTabTotp: t("auth.mfa_tab_totp"),
-      mfaTabWebauthn: t("auth.mfa_tab_webauthn"),
-      mfaTabEmailOtp: t("auth.mfa_tab_email_otp"),
-      mfaPasskeyPrompt: t("auth.mfa_passkey_prompt"),
-      mfaPasskeyBtn: t("auth.mfa_passkey_btn"),
-      mfaEmailPrompt: t("auth.mfa_email_prompt"),
-      mfaSendEmailBtn: t("auth.mfa_send_email_btn"),
-      mfaSendingEmail: t("auth.mfa_sending_email"),
-      mfaEmailSentDesc: t("auth.mfa_email_sent_desc"),
-      mfaResendEmailIn: t("auth.mfa_resend_email_in"),
-      mfaTryAnotherMethod: t("auth.mfa_try_another_method"),
-      mfaChooseMethodTitle: t("auth.mfa_choose_method_title"),
-      mfaChooseMethodDesc: t("auth.mfa_choose_method_desc"),
-      mfaMethodWebauthnDesc: t("auth.mfa_method_webauthn_desc"),
-      mfaMethodTotpDesc: t("auth.mfa_method_totp_desc"),
-      mfaMethodEmailDesc: t("auth.mfa_method_email_desc"),
-      mfaBackToPrimary: t("auth.mfa_back_to_primary"),
-      continueWithPasskey: t("auth.continue_with_passkey"),
-      waitingForPasskey: t("auth.waiting_for_passkey"),
-    }),
+    () => buildAdminFormLabels((key) => t(key as Parameters<typeof t>[0])),
     [t]
   );
 
+  const handleAuthRedirect = (user?: {
+    email?: string;
+    username?: string;
+    name?: string;
+    avatarUrl?: string;
+  }) => {
+    commitPendingSaveProfile({
+      email: user?.email,
+      username: user?.username,
+      displayName: user?.name,
+      avatarUrl: user?.avatarUrl,
+      tenantSlug: "system",
+    });
+    router.replace(callbackUrl);
+    return true;
+  };
+
+  const { isPasskeyLoading, handlePasswordlessPasskeyLogin } = usePasswordlessPasskeyFlow({
+    enabled: initialized && !authenticated && !mfaRequired,
+    plane: "PLATFORM",
+    tenantSlug: "system",
+    getChallenge: getPasskeyPasswordlessChallenge,
+    verifyLogin: verifyPasskeyPasswordlessLogin,
+    onSuccess: (user) => {
+      handleAuthRedirect(user);
+    },
+    onError: (errCode, rawMsg) => {
+      if (errCode === "PASSKEY_UNSUPPORTED" || errCode === "PASSKEY_CANCELLED") {
+        setErrorMessage(rawMsg || null);
+        return;
+      }
+      setErrorMessage(resolveAuthErrorMessage(errCode, rawMsg, t));
+    },
+    onClearError: () => setErrorMessage(null),
+    unsupportedMessage: t("settings.account.passkey_unsupported"),
+    cancelledMessage: t("settings.account.passkey_cancelled"),
+  });
+
   const handleSubmitCredentials = async (payload: AuthCredentialsSubmitPayload) => {
+    abortPendingConditionalPasskey();
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
@@ -407,6 +460,8 @@ export default function AdminLoginPage() {
         onVerifyEmailOtp={handleVerifyEmailOtp}
         onVerifyWebauthn={handleVerifyWebauthn}
         onVerifyBackupCode={handleVerifyBackupCode}
+        onPasswordlessPasskeyLogin={handlePasswordlessPasskeyLogin}
+        isPasskeyLoading={isPasskeyLoading}
         turnstileSiteKey={turnstileSiteKey}
         errorMessage={errorMessage}
         onSubmitCredentials={handleSubmitCredentials}

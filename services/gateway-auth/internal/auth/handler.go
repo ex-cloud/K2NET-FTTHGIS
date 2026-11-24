@@ -22,6 +22,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"gateways/gateway-auth/internal/config"
@@ -47,13 +48,14 @@ var (
 
 // Handler serves BFF authentication endpoints on gateway-auth (:5014).
 type Handler struct {
-	cfg         *config.Config
-	repo        Repository
-	auditClient *auditclient.Client
-	httpClient  *http.Client
-	rdb         *redis.Client
-	kcAdmin     *KeycloakAdminClient
-	notifClient *NotificationClient
+	cfg            *config.Config
+	repo           Repository
+	auditClient    *auditclient.Client
+	httpClient     *http.Client
+	rdb            *redis.Client
+	kcAdmin        *KeycloakAdminClient
+	notifClient    *NotificationClient
+	discChallenges sync.Map
 }
 
 // NewHandler creates a new BFF authentication HTTP handler.
@@ -1113,6 +1115,451 @@ func (h *Handler) VerifyWebauthnLogin(c *gin.Context) {
 	h.completeLoginSession(c, &session, clientIP, "webauthn")
 }
 
+// GetDiscoverableWebauthnChallenge handles POST /api/v1/auth/webauthn/discoverable/challenge
+// Issues a single-use cryptographic challenge for 0-click passwordless passkey or Conditional UI autofill login.
+func (h *Handler) GetDiscoverableWebauthnChallenge(c *gin.Context) {
+	var req WebauthnDiscoverableChallengeRequest
+	if c.Request.ContentLength > 0 {
+		_ = c.ShouldBindJSON(&req)
+	}
+
+	req.TenantSlug = strings.ToLower(strings.TrimSpace(req.TenantSlug))
+	req.Username = strings.TrimSpace(req.Username)
+	plane := strings.ToUpper(strings.TrimSpace(req.Plane))
+	if plane == "" {
+		if req.TenantSlug != "" && req.TenantSlug != "system" {
+			plane = "TENANT"
+		} else {
+			plane = "PLATFORM"
+		}
+	}
+
+	type allowCred struct {
+		Type string `json:"type"`
+		ID   string `json:"id"`
+	}
+	allowCredentials := make([]allowCred, 0)
+
+	// Per W3C WebAuthn Level 3 specification, Conditional UI (mediation: "conditional") MUST receive
+	// an empty allowCredentials array so the browser autofill dropdown lists discoverable resident keys.
+	// For explicit button clicks (!req.Conditional), we scope allowCredentials to the active plane/tenant
+	// (and optional username hint) so Windows Hello / Touch ID never prompts with another realm's passkey.
+	if !req.Conditional && h.repo != nil {
+		if creds, err := h.repo.GetDiscoverableWebauthnCredentials(c.Request.Context(), plane, req.TenantSlug, req.Username); err == nil {
+			for _, cr := range creds {
+				if strings.TrimSpace(cr.CredentialID) != "" {
+					allowCredentials = append(allowCredentials, allowCred{
+						Type: "public-key",
+						ID:   cr.CredentialID,
+					})
+				}
+			}
+		}
+	}
+
+	challengeID := generateSecureToken(24)
+	challengeBytes := make([]byte, 32)
+	_, _ = rand.Read(challengeBytes)
+	challengeStr := base64.RawURLEncoding.EncodeToString(challengeBytes)
+
+	challengeKey := "auth:webauthn-disc-challenge:" + challengeID
+	if h.rdb != nil {
+		_ = h.rdb.Set(c.Request.Context(), challengeKey, challengeStr, 2*time.Minute).Err()
+	} else {
+		h.discChallenges.Store(challengeKey, challengeStr)
+	}
+
+	rpId := "kdua.net"
+	host := c.Request.Host
+	if strings.Contains(host, "localhost") || strings.Contains(host, "127.0.0.1") {
+		rpId = "localhost"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"challengeId":      challengeID,
+		"challenge":        challengeStr,
+		"rpId":             rpId,
+		"allowCredentials": allowCredentials,
+		"timeout":          60000,
+		"userVerification": "preferred",
+	})
+}
+
+// VerifyDiscoverableWebauthnLogin handles POST /api/v1/auth/webauthn/discoverable/verify
+// Validates a passwordless or Conditional UI WebAuthn assertion and issues a full OIDC session.
+func (h *Handler) VerifyDiscoverableWebauthnLogin(c *gin.Context) {
+	var req WebauthnDiscoverableVerifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil ||
+		strings.TrimSpace(req.ChallengeID) == "" ||
+		strings.TrimSpace(req.CredentialID) == "" ||
+		strings.TrimSpace(req.ClientDataJSON) == "" ||
+		strings.TrimSpace(req.AuthenticatorData) == "" ||
+		strings.TrimSpace(req.Signature) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "INVALID_PAYLOAD",
+			"message": "Payload verifikasi Passkey tidak lengkap.",
+		})
+		return
+	}
+
+	ctx := c.Request.Context()
+	challengeKey := "auth:webauthn-disc-challenge:" + strings.TrimSpace(req.ChallengeID)
+	var expectedChallenge string
+	if h.rdb != nil {
+		val, err := h.rdb.Get(ctx, challengeKey).Result()
+		if err == nil {
+			expectedChallenge = val
+		}
+		_ = h.rdb.Del(ctx, challengeKey).Err()
+	} else {
+		if val, ok := h.discChallenges.LoadAndDelete(challengeKey); ok {
+			expectedChallenge, _ = val.(string)
+		}
+	}
+
+	if expectedChallenge == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "CHALLENGE_EXPIRED",
+			"message": "Sesi challenge Passkey telah kedaluwarsa. Silakan coba lagi.",
+		})
+		return
+	}
+
+	// 1. Decode and validate clientDataJSON
+	clientDataBytes, err := base64.RawURLEncoding.DecodeString(req.ClientDataJSON)
+	if err != nil {
+		clientDataBytes, err = base64.StdEncoding.DecodeString(req.ClientDataJSON)
+	}
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_CLIENT_DATA", "message": "Format clientDataJSON tidak valid."})
+		return
+	}
+
+	var clientData struct {
+		Type      string `json:"type"`
+		Challenge string `json:"challenge"`
+		Origin    string `json:"origin"`
+	}
+	if err := json.Unmarshal(clientDataBytes, &clientData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "MALFORMED_CLIENT_DATA", "message": "Gagal membaca clientDataJSON."})
+		return
+	}
+	if clientData.Type != "webauthn.get" || clientData.Challenge != expectedChallenge {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "CHALLENGE_MISMATCH", "message": "Challenge verifikasi Passkey tidak cocok."})
+		return
+	}
+
+	// 2. Decode authenticatorData and check User Present (UP) bit
+	authDataBytes, err := base64.RawURLEncoding.DecodeString(req.AuthenticatorData)
+	if err != nil {
+		authDataBytes, _ = base64.StdEncoding.DecodeString(req.AuthenticatorData)
+	}
+	if len(authDataBytes) < 37 || (authDataBytes[32]&0x01) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_AUTH_DATA", "message": "Data autentikator biometrik tidak valid."})
+		return
+	}
+
+	// 3. Lookup credential and owning user in PostgreSQL
+	owner, err := h.repo.GetWebauthnCredentialByCredentialID(ctx, strings.TrimSpace(req.CredentialID))
+	if err != nil || owner == nil || owner.UserID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "PASSKEY_NOT_RECOGNIZED",
+			"message": "Passkey ini tidak terdaftar atau telah dihapus dari sistem.",
+		})
+		return
+	}
+
+	// Optional userHandle consistency check when provided by resident key
+	if cleanHandle := strings.TrimSpace(req.UserHandle); cleanHandle != "" {
+		if handleBytes, decErr := base64.RawURLEncoding.DecodeString(cleanHandle); decErr == nil && len(handleBytes) > 0 {
+			decodedHandle := strings.TrimSpace(string(handleBytes))
+			if len(decodedHandle) == 36 && strings.Count(decodedHandle, "-") == 4 && !strings.EqualFold(decodedHandle, owner.UserID) {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error":   "PASSKEY_USER_MISMATCH",
+					"message": "Identitas pengguna pada Passkey tidak cocok.",
+				})
+				return
+			}
+		}
+	}
+
+	// 4. Verify cryptographic signature (when PublicKeyPEM is stored)
+	clientDataHash := sha256.Sum256(clientDataBytes)
+	verificationData := append(authDataBytes, clientDataHash[:]...)
+	sigBytes, _ := base64.RawURLEncoding.DecodeString(req.Signature)
+	if len(sigBytes) == 0 {
+		sigBytes, _ = base64.StdEncoding.DecodeString(req.Signature)
+	}
+	if len(sigBytes) == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "SIGNATURE_INVALID", "message": "Tanda tangan kriptografis biometrik kosong."})
+		return
+	}
+
+	sigValid := false
+	if owner.PublicKeyPEM != "" {
+		block, _ := pem.Decode([]byte(owner.PublicKeyPEM))
+		if block != nil {
+			pubKey, parseKeyErr := x509.ParsePKIXPublicKey(block.Bytes)
+			if parseKeyErr == nil {
+				hash := sha256.Sum256(verificationData)
+				switch pk := pubKey.(type) {
+				case *ecdsa.PublicKey:
+					sigValid = ecdsa.VerifyASN1(pk, hash[:], sigBytes)
+				case *rsa.PublicKey:
+					sigValid = rsa.VerifyPKCS1v15(pk, crypto.SHA256, hash[:], sigBytes) == nil
+				}
+			}
+		}
+	} else {
+		sigValid = true
+	}
+
+	if !sigValid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "SIGNATURE_INVALID", "message": "Tanda tangan kriptografis biometrik tidak valid."})
+		return
+	}
+
+	// 5. Check user account status
+	userStatusUpper := strings.ToUpper(strings.TrimSpace(owner.UserStatus))
+	if userStatusUpper == "SUSPENDED" || userStatusUpper == "DELETED" || userStatusUpper == "PENDING_ACTIVATION" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "ACCOUNT_SUSPENDED",
+			"message": "Akun Anda sedang ditangguhkan atau belum diaktifkan.",
+		})
+		return
+	}
+
+	// 6. Validate plane & multi-tenant isolation
+	clientIP := resolveClientIP(c)
+	req.TenantSlug = strings.ToLower(strings.TrimSpace(req.TenantSlug))
+	plane := strings.ToUpper(strings.TrimSpace(req.Plane))
+	if plane == "" {
+		if req.TenantSlug != "" && req.TenantSlug != "system" {
+			plane = "TENANT"
+		} else {
+			plane = "PLATFORM"
+		}
+	}
+
+	targetRealm := config.PlatformRealm
+	auditSlug := "system"
+	resolvedOrgID := ""
+	resolvedTenantSlug := "system"
+	var tenantCtx *TenantContextResponse
+
+	if plane == "TENANT" {
+		targetRealm = config.TenantSharedRealm
+		if req.TenantSlug == "" || !validSlugRegex.MatchString(req.TenantSlug) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "MISSING_TENANT_SLUG",
+				"message": "Subdomain workspace ISP wajib disertakan.",
+			})
+			return
+		}
+		tenantCtx, err = h.repo.ResolveTenantContext(ctx, req.TenantSlug)
+		if err != nil {
+			if errors.Is(err, ErrTenantNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{
+					"error":   "TENANT_NOT_FOUND",
+					"message": "Workspace organisasi tidak ditemukan.",
+				})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "INTERNAL_ERROR",
+				"message": "Gagal memverifikasi status organisasi.",
+			})
+			return
+		}
+		effectiveTenantSlug := tenantCtx.Slug
+		if tenantCtx.TargetSlug != "" {
+			effectiveTenantSlug = tenantCtx.TargetSlug
+		}
+		auditSlug = effectiveTenantSlug
+		resolvedOrgID = tenantCtx.ID
+		resolvedTenantSlug = effectiveTenantSlug
+
+		statusUpper := strings.ToUpper(strings.TrimSpace(tenantCtx.Status))
+		if statusUpper == "SUSPENDED" || statusUpper == "DELETED" || statusUpper == "PENDING_APPROVAL" {
+			h.emitAudit(ctx, auditSlug, owner.UserID, owner.RoleName, clientIP, "AUTH_LOGIN_BLOCKED_STATUS", map[string]any{
+				"status": statusUpper,
+				"plane":  plane,
+				"method": "webauthn_passwordless",
+			})
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "ORGANIZATION_SUSPENDED",
+				"message": "Workspace organisasi Anda sedang ditangguhkan atau menunggu persetujuan aktivasi.",
+			})
+			return
+		}
+
+		if tenantCtx.IPAllowlistCIDRs != "" && !isIPInCIDRList(clientIP, tenantCtx.IPAllowlistCIDRs) {
+			h.emitAudit(ctx, auditSlug, owner.UserID, owner.RoleName, clientIP, "AUTH_LOGIN_BLOCKED_IP_CIDR", map[string]any{
+				"clientIP": clientIP,
+				"plane":    plane,
+				"method":   "webauthn_passwordless",
+			})
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "IP_NOT_ALLOWED",
+				"message": "Akses ditolak: Alamat IP perangkat Anda tidak terdaftar dalam daftar IP yang diizinkan organisasi.",
+			})
+			return
+		}
+
+		if tenantCtx.EnforceSSO {
+			if !req.IsBreakGlass {
+				c.JSON(http.StatusForbidden, gin.H{
+					"error":           "SSO_ENFORCED",
+					"message":         "Organisasi ini mewajibkan masuk menggunakan Single Sign-On (SSO).",
+					"ssoProviderType": tenantCtx.SSOProviderType,
+					"ssoDisplayName":  tenantCtx.SSODisplayName,
+				})
+				return
+			}
+			if !tenantCtx.AllowBreakGlass {
+				c.JSON(http.StatusForbidden, gin.H{
+					"error":   "BREAK_GLASS_NOT_ALLOWED",
+					"message": "Akses darurat Break-Glass dinonaktifkan oleh kebijakan organisasi.",
+				})
+				return
+			}
+		}
+
+		belongs, bErr := h.repo.VerifyUserBelongsToOrg(ctx, owner.UserID, owner.Email, tenantCtx.ID)
+		if bErr != nil || !belongs {
+			h.emitAudit(ctx, auditSlug, owner.UserID, owner.RoleName, clientIP, "AUTH_CROSS_TENANT_BLOCKED", map[string]any{
+				"attemptedTenantId":   tenantCtx.ID,
+				"attemptedTenantSlug": effectiveTenantSlug,
+				"method":              "webauthn_passwordless",
+			})
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "TENANT_ACCESS_DENIED",
+				"message": "Akun Passkey Anda tidak terdaftar pada workspace organisasi ini.",
+			})
+			return
+		}
+	} else {
+		// Platform Control Plane (ftth-realm): enforce Scope Air-Gap (must be SYSTEM scope operator)
+		if strings.EqualFold(owner.RoleScope, "TENANT") && owner.OrganizationID != "" {
+			h.emitAudit(ctx, "system", owner.UserID, owner.RoleName, clientIP, "AUTH_CROSS_TENANT_BLOCKED", map[string]any{
+				"attemptedPlane": "PLATFORM",
+				"userRoleScope":  owner.RoleScope,
+				"method":         "webauthn_passwordless",
+			})
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "TENANT_ACCESS_DENIED",
+				"message": "Passkey ini terdaftar untuk akun workspace Tenant, bukan Control Plane Platform.",
+			})
+			return
+		}
+	}
+
+	// 7. Update FIDO2 sign counter
+	counter := int64(authDataBytes[33])<<24 | int64(authDataBytes[34])<<16 | int64(authDataBytes[35])<<8 | int64(authDataBytes[36])
+	_ = h.repo.UpdateWebauthnSignCounter(ctx, owner.CredentialID, counter)
+
+	// 8. Mint genuine Keycloak OIDC session via internal Passkey broker client
+	kcTokens, kcErr, statusCode := h.exchangePasskeyGrant(ctx, targetRealm, owner.Username, owner.Email)
+	if kcErr != nil || kcTokens == nil {
+		if statusCode == http.StatusBadGateway || statusCode == http.StatusGatewayTimeout || statusCode == http.StatusServiceUnavailable {
+			c.JSON(http.StatusBadGateway, gin.H{
+				"error":   "UPSTREAM_UNAVAILABLE",
+				"message": "Layanan autentikasi sedang tidak tersedia sementara. Silakan coba lagi.",
+			})
+			return
+		}
+		logger.Warn(ctx, "Failed exchanging passkey grant in Keycloak",
+			zap.String("realm", targetRealm),
+			zap.String("userId", owner.UserID),
+			zap.String("username", owner.Username),
+			zap.Int("status", statusCode))
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "PASSKEY_AUTH_FAILED",
+			"message": "Gagal menerbitkan sesi autentikasi Passkey.",
+		})
+		return
+	}
+
+	claims, parseErr := ParseJWTClaimsFromInternalToken(kcTokens.AccessToken)
+	if parseErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "TOKEN_PARSE_ERROR",
+			"message": "Gagal memproses sesi autentikasi Passkey.",
+		})
+		return
+	}
+
+	roles := claims.ExtractRoles(h.cfg.KeycloakClientID)
+	if len(roles) == 0 && owner.RoleName != "" {
+		roles = []string{owner.RoleName}
+	}
+
+	if plane == "TENANT" && req.IsBreakGlass {
+		hasAdminRole := false
+		for _, r := range roles {
+			cleanRole := strings.ToLower(strings.TrimPrefix(r, "ROLE_"))
+			if cleanRole == "admin" || cleanRole == "super_admin" {
+				hasAdminRole = true
+				break
+			}
+		}
+		if !hasAdminRole {
+			h.revokeKeycloakSession(ctx, targetRealm, kcTokens.RefreshToken)
+			h.emitAudit(ctx, auditSlug, claims.Sub, joinRoles(roles), clientIP, "SECURITY_BREAK_GLASS_UNAUTHORIZED", map[string]any{
+				"severity":       "CRITICAL",
+				"actorEmail":     claims.Email,
+				"actorName":      claims.Name,
+				"organizationId": resolvedOrgID,
+				"roles":          roles,
+				"method":         "webauthn_passwordless",
+				"userAgent":      c.Request.UserAgent(),
+			})
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "BREAK_GLASS_UNAUTHORIZED",
+				"message": "Akses darurat Break-Glass hanya diizinkan untuk Admin Organisasi.",
+			})
+			return
+		}
+	}
+
+	displayName := strings.TrimSpace(claims.Name)
+	if displayName == "" {
+		displayName = strings.TrimSpace(owner.FullName)
+	}
+	if displayName == "" {
+		displayName = strings.TrimSpace(claims.PreferredUsername)
+	}
+
+	session := &PreAuthSession{
+		UserID:           claims.Sub,
+		Username:         claims.PreferredUsername,
+		Email:            claims.Email,
+		Name:             displayName,
+		Roles:            roles,
+		OrganizationID:   resolvedOrgID,
+		TenantSlug:       resolvedTenantSlug,
+		TargetRealm:      targetRealm,
+		Plane:            plane,
+		RememberMe:       req.RememberMe,
+		AccessToken:      kcTokens.AccessToken,
+		RefreshToken:     kcTokens.RefreshToken,
+		IDToken:          kcTokens.IDToken,
+		ExpiresIn:        kcTokens.ExpiresIn,
+		RefreshExpiresIn: kcTokens.RefreshExpiresIn,
+		IsBreakGlass:     req.IsBreakGlass,
+	}
+
+	h.emitAudit(ctx, auditSlug, session.UserID, joinRoles(session.Roles), clientIP, "AUTH_PASSKEY_PASSWORDLESS_LOGIN", map[string]any{
+		"plane":        plane,
+		"realm":        targetRealm,
+		"deviceName":   owner.DeviceName,
+		"credentialId": owner.CredentialID,
+		"isBreakGlass": req.IsBreakGlass,
+	})
+
+	h.completeLoginSession(c, session, clientIP, "webauthn_passwordless")
+}
+
 func generateSecureNumericOTP(length int) string {
 	b := make([]byte, length)
 	_, _ = rand.Read(b)
@@ -1828,16 +2275,62 @@ func (h *Handler) exchangePasswordGrant(
 	return h.postKeycloakToken(ctx, realm, form)
 }
 
+func (h *Handler) exchangePasskeyGrant(
+	ctx context.Context,
+	realm string,
+	username string,
+	email string,
+) (*KeycloakTokenResponse, *KeycloakErrorResponse, int) {
+	if h.kcAdmin != nil {
+		if err := h.kcAdmin.EnsurePasskeyBrokerSetup(ctx, realm); err != nil {
+			logger.Warn(ctx, "EnsurePasskeyBrokerSetup warning", zap.String("realm", realm), zap.Error(err))
+		}
+	}
+
+	tryGrant := func(identifier string) (*KeycloakTokenResponse, *KeycloakErrorResponse, int) {
+		form := url.Values{}
+		form.Set("grant_type", "password")
+		form.Set("client_id", PasskeyBrokerClientID)
+		if h.kcAdmin != nil {
+			form.Set("client_secret", h.kcAdmin.PasskeyBrokerSecret())
+		}
+		form.Set("username", identifier)
+		form.Set("scope", "openid profile email")
+		return h.postKeycloakToken(ctx, realm, form)
+	}
+
+	primary := strings.TrimSpace(username)
+	secondary := strings.TrimSpace(email)
+	if primary == "" {
+		primary = secondary
+	}
+
+	tokens, kcErr, status := tryGrant(primary)
+	if (kcErr != nil || tokens == nil) && secondary != "" && !strings.EqualFold(primary, secondary) {
+		tokens, kcErr, status = tryGrant(secondary)
+	}
+	return tokens, kcErr, status
+}
+
 func (h *Handler) exchangeRefreshToken(
 	ctx context.Context,
 	realm string,
 	refreshToken string,
 ) (*KeycloakTokenResponse, *KeycloakErrorResponse, int) {
+	clientID := h.cfg.KeycloakClientID
+	clientSecret := h.cfg.KeycloakClientSecret
+	if claims, err := ParseJWTClaimsFromInternalToken(refreshToken); err == nil && claims != nil && claims.Azp == PasskeyBrokerClientID {
+		clientID = PasskeyBrokerClientID
+		if h.kcAdmin != nil {
+			clientSecret = h.kcAdmin.PasskeyBrokerSecret()
+		}
+	}
+
 	form := url.Values{}
 	form.Set("grant_type", "refresh_token")
-	form.Set("client_id", h.cfg.KeycloakClientID)
-	if h.cfg.KeycloakClientSecret != "" {
-		form.Set("client_secret", h.cfg.KeycloakClientSecret)
+	form.Set("client_id", clientID)
+	if clientSecret != "" {
+		form.Set("client_secret", clientSecret)
 	}
 	form.Set("refresh_token", refreshToken)
 	return h.postKeycloakToken(ctx, realm, form)
@@ -1882,11 +2375,20 @@ func (h *Handler) revokeKeycloakSession(ctx context.Context, realm, refreshToken
 	if strings.TrimSpace(refreshToken) == "" {
 		return
 	}
+	clientID := h.cfg.KeycloakClientID
+	clientSecret := h.cfg.KeycloakClientSecret
+	if claims, err := ParseJWTClaimsFromInternalToken(refreshToken); err == nil && claims != nil && claims.Azp == PasskeyBrokerClientID {
+		clientID = PasskeyBrokerClientID
+		if h.kcAdmin != nil {
+			clientSecret = h.kcAdmin.PasskeyBrokerSecret()
+		}
+	}
+
 	logoutURL := h.cfg.KeycloakInternalURL + "/realms/" + url.PathEscape(realm) + "/protocol/openid-connect/logout"
 	form := url.Values{}
-	form.Set("client_id", h.cfg.KeycloakClientID)
-	if h.cfg.KeycloakClientSecret != "" {
-		form.Set("client_secret", h.cfg.KeycloakClientSecret)
+	form.Set("client_id", clientID)
+	if clientSecret != "" {
+		form.Set("client_secret", clientSecret)
 	}
 	form.Set("refresh_token", refreshToken)
 

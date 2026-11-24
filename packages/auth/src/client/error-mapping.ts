@@ -29,6 +29,19 @@ export function resolveAuthErrorMessage(
       return t("auth.login_error_invalid_mfa_code");
     case "INVALID_BACKUP_CODE":
       return t("auth.login_error_invalid_backup_code");
+    case "PASSKEY_NOT_RECOGNIZED":
+    case "PASSKEY_USER_MISMATCH":
+    case "CREDENTIAL_NOT_FOUND":
+      return t("auth.login_error_passkey_not_recognized");
+    case "CHALLENGE_EXPIRED":
+      return t("auth.login_error_passkey_challenge_expired");
+    case "PASSKEY_AUTH_FAILED":
+    case "CHALLENGE_MISMATCH":
+    case "SIGNATURE_INVALID":
+    case "INVALID_WEBAUTHN_ASSERTION":
+      return t("auth.login_error_passkey_failed");
+    case "ACCOUNT_SUSPENDED":
+      return t("auth.login_error_account_suspended");
     case "MFA_ENROLLMENT_REQUIRED":
       return t("auth.login_error_mfa_enrollment_required");
     case "ORGANIZATION_SUSPENDED":

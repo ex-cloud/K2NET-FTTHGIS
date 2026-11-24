@@ -66,6 +66,7 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
     onVerifyWebauthn,
     onVerifyBackupCode,
     onPasswordlessPasskeyLogin,
+    isPasskeyLoading = false,
     turnstileSiteKey,
     isLoading = false,
     enforceSso = false,
@@ -271,12 +272,23 @@ export function AuthLoginCredentials({ form, props }: AuthLoginCredentialsProps)
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={onPasswordlessPasskeyLogin}
-                      disabled={isLoading || isSuspended}
+                      onClick={() => {
+                        void onPasswordlessPasskeyLogin(usernameOrEmail.trim() || undefined);
+                      }}
+                      disabled={isLoading || isPasskeyLoading || isSuspended}
                       className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/70 bg-background/60 text-foreground/90 hover:bg-accent hover:text-foreground rounded-md transition-colors shadow-2xs cursor-pointer"
                     >
-                      <KeyRound className="size-3.5" />
-                      <span>{props.labels?.continueWithPasskey || "Log in with passkey"}</span>
+                      {isPasskeyLoading ? (
+                        <>
+                          <Loader2 className="size-3.5 animate-spin" />
+                          <span>{props.labels?.waitingForPasskey || "Waiting for passkey..."}</span>
+                        </>
+                      ) : (
+                        <>
+                          <KeyRound className="size-3.5" />
+                          <span>{props.labels?.continueWithPasskey || "Log in with passkey"}</span>
+                        </>
+                      )}
                     </Button>
                   )}
                 </>

@@ -1,16 +1,19 @@
 import React from "react";
-import { ArrowRight, User, X } from "lucide-react";
+import { ArrowRight, KeyRound, Loader2, User, X } from "lucide-react";
 import { Button } from "../button";
+import type { AuthLoginFormProps } from "./auth-login-types";
 import type { UseAuthLoginFormReturn } from "./use-auth-login-form";
 
 export interface AuthLoginSavedProfilesProps {
   form: UseAuthLoginFormReturn;
+  props?: AuthLoginFormProps;
 }
 
-export function AuthLoginSavedProfiles({ form }: AuthLoginSavedProfilesProps) {
+export function AuthLoginSavedProfiles({ form, props }: AuthLoginSavedProfilesProps) {
   const {
     savedProfiles,
     copy,
+    isSuspended,
     handleSelectProfile,
     handleRemoveProfile,
     handleSwitchToNewProfile,
@@ -93,16 +96,43 @@ export function AuthLoginSavedProfiles({ form }: AuthLoginSavedProfilesProps) {
         </span>
       </div>
 
-      {/* Switch to Another Profile Button */}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleSwitchToNewProfile}
-        className="w-full h-8 text-xs font-medium border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs cursor-pointer"
-      >
-        <span>{copy.signInWithAnotherProfile}</span>
-      </Button>
+      {/* Switch to Another Profile & Instant Passkey Login Buttons */}
+      <div className="space-y-2">
+        {props?.onPasswordlessPasskeyLogin && !props?.enforceSso && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void props.onPasswordlessPasskeyLogin?.(savedProfiles[0]?.email);
+            }}
+            disabled={Boolean(props.isLoading) || Boolean(props.isPasskeyLoading) || isSuspended}
+            className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs cursor-pointer"
+          >
+            {props.isPasskeyLoading ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" />
+                <span>{props.labels?.waitingForPasskey || "Waiting for passkey..."}</span>
+              </>
+            ) : (
+              <>
+                <KeyRound className="size-3.5" />
+                <span>{props.labels?.continueWithPasskey || "Log in with passkey"}</span>
+              </>
+            )}
+          </Button>
+        )}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleSwitchToNewProfile}
+          className="w-full h-8 text-xs font-medium border-border/80 bg-background/50 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs cursor-pointer"
+        >
+          <span>{copy.signInWithAnotherProfile}</span>
+        </Button>
+      </div>
     </div>
   );
 }

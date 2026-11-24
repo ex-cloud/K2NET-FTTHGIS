@@ -12,6 +12,9 @@ import type {
   AuthPlane,
   CredentialLoginInput,
   CredentialLoginResult,
+  DiscoverableWebauthnChallengeInput,
+  DiscoverableWebauthnChallengeResponse,
+  DiscoverableWebauthnVerifyInput,
   KeycloakAuthConfig,
   KeycloakAuthContextValue,
   KeycloakUser,
@@ -114,7 +117,7 @@ function commitPendingSavedProfileInStorage(user: KeycloakUser): void {
       username?: string;
       displayName?: string;
       tenantSlug?: string;
-      authMethod?: "password" | "google" | "github" | "sso";
+      authMethod?: "password" | "google" | "github" | "sso" | "passkey";
       shouldSave?: boolean;
     };
     if (pending.shouldSave === false) return;
@@ -133,7 +136,7 @@ function commitPendingSavedProfileInStorage(user: KeycloakUser): void {
       avatarUrl?: string | null;
       tenantSlug?: string;
       lastUsedAt: number;
-      authMethod: "password" | "google" | "github" | "sso";
+      authMethod: "password" | "google" | "github" | "sso" | "passkey";
     }> = rawList ? JSON.parse(rawList) : [];
     if (!Array.isArray(list)) list = [];
 
@@ -756,6 +759,78 @@ export function KeycloakProvider({
     [hydrateAuthenticatedSession]
   );
 
+  const getPasskeyPasswordlessChallenge = useCallback(
+    async (
+      input?: DiscoverableWebauthnChallengeInput
+    ): Promise<DiscoverableWebauthnChallengeResponse> => {
+      const res = await fetch("/api/v1/auth/webauthn/discoverable/challenge", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "K2NET-BFF",
+        },
+        body: JSON.stringify({
+          plane: input?.plane || plane,
+          tenantSlug: input?.tenantSlug || config.tenantSlug,
+          username: input?.username?.trim() || undefined,
+          conditional: Boolean(input?.conditional),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to obtain Passkey login challenge");
+      }
+      return (await res.json()) as DiscoverableWebauthnChallengeResponse;
+    },
+    [config.tenantSlug, plane]
+  );
+
+  const verifyPasskeyPasswordlessLogin = useCallback(
+    async (input: DiscoverableWebauthnVerifyInput): Promise<CredentialLoginResult> => {
+      try {
+        const res = await fetch("/api/v1/auth/webauthn/discoverable/verify", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "K2NET-BFF",
+          },
+          body: JSON.stringify({
+            challengeId: input.challengeId,
+            credentialId: input.credentialId,
+            clientDataJSON: input.clientDataJSON,
+            authenticatorData: input.authenticatorData,
+            signature: input.signature,
+            userHandle: input.userHandle || undefined,
+            plane: input.plane || plane,
+            tenantSlug: input.tenantSlug || config.tenantSlug,
+            rememberMe: input.rememberMe !== false,
+            isBreakGlass: input.isBreakGlass || undefined,
+          }),
+        });
+        const data = (await res.json().catch(() => ({}))) as BffLoginApiResponse;
+        if (!res.ok || !data.accessToken) {
+          return {
+            success: false,
+            error: data.error || "PASSKEY_AUTH_FAILED",
+            message: data.message,
+          };
+        }
+        const hydratedUser = hydrateAuthenticatedSession(
+          data.accessToken,
+          data.idToken,
+          data.expiresIn,
+          data.user
+        );
+        return { success: true, user: hydratedUser || undefined };
+      } catch {
+        return { success: false, error: "NETWORK_ERROR" };
+      }
+    },
+    [config.tenantSlug, hydrateAuthenticatedSession, plane]
+  );
+
   const logout = useCallback(
     async (options?: Keycloak.KeycloakLogoutOptions) => {
       try {
@@ -1080,11 +1155,14 @@ export function KeycloakProvider({
       verifyMfaEmailOtp,
       getWebauthnLoginChallenge,
       verifyWebauthnLogin,
+      getPasskeyPasswordlessChallenge,
+      verifyPasskeyPasswordlessLogin,
       verifyMfaBackupCode,
     }),
     [
       authenticated,
       clearSessionTerminated,
+      getPasskeyPasswordlessChallenge,
       getWebauthnLoginChallenge,
       hasAnyRole,
       hasRole,
@@ -1105,6 +1183,7 @@ export function KeycloakProvider({
       verifyMfaBackupCode,
       verifyMfaEmailOtp,
       verifyMfaTotp,
+      verifyPasskeyPasswordlessLogin,
       verifyWebauthnLogin,
     ]
   );

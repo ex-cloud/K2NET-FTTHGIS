@@ -162,6 +162,45 @@ type WebauthnLoginVerifyRequest struct {
 	Signature         string `json:"signature" binding:"required"`
 }
 
+// WebauthnDiscoverableChallengeRequest requests a challenge for 0-click passwordless or conditional UI passkey login.
+type WebauthnDiscoverableChallengeRequest struct {
+	Plane       string `json:"plane,omitempty"`       // "PLATFORM" or "TENANT"
+	TenantSlug  string `json:"tenantSlug,omitempty"`  // e.g. "system" or "ops"
+	Username    string `json:"username,omitempty"`    // Optional hint if user typed email/username
+	Conditional bool   `json:"conditional,omitempty"` // True when requested by background Conditional UI autofill
+}
+
+// WebauthnDiscoverableVerifyRequest submits a discoverable/passwordless WebAuthn assertion.
+type WebauthnDiscoverableVerifyRequest struct {
+	ChallengeID       string `json:"challengeId" binding:"required"`
+	CredentialID      string `json:"credentialId" binding:"required"`
+	ClientDataJSON    string `json:"clientDataJSON" binding:"required"`
+	AuthenticatorData string `json:"authenticatorData" binding:"required"`
+	Signature         string `json:"signature" binding:"required"`
+	UserHandle        string `json:"userHandle,omitempty"`
+	Plane             string `json:"plane,omitempty"`
+	TenantSlug        string `json:"tenantSlug,omitempty"`
+	RememberMe        bool   `json:"rememberMe"`
+	IsBreakGlass      bool   `json:"isBreakGlass,omitempty"`
+}
+
+// WebauthnCredentialOwner represents a matched passkey credential and its owner user metadata.
+type WebauthnCredentialOwner struct {
+	CredentialID   string `json:"credentialId"`
+	PublicKeyPEM   string `json:"publicKeyPem"`
+	Algorithm      int    `json:"algorithm"`
+	SignCounter    int64  `json:"signCounter"`
+	DeviceName     string `json:"deviceName"`
+	UserID         string `json:"userId"`
+	Email          string `json:"email"`
+	Username       string `json:"username"`
+	FullName       string `json:"fullName"`
+	UserStatus     string `json:"userStatus"`
+	OrganizationID string `json:"organizationId"`
+	RoleName       string `json:"roleName"`
+	RoleScope      string `json:"roleScope"`
+}
+
 
 // KeycloakTokenResponse maps Keycloak's /protocol/openid-connect/token JSON output.
 type KeycloakTokenResponse struct {
@@ -184,6 +223,7 @@ type KeycloakErrorResponse struct {
 // JWTClaims extracts identity & multi-tenant attributes from a Keycloak-issued access token.
 type JWTClaims struct {
 	Sub               string `json:"sub"`
+	Azp               string `json:"azp,omitempty"`
 	Email             string `json:"email"`
 	EmailVerified     *bool  `json:"email_verified,omitempty"`
 	IdentityProvider  string `json:"identity_provider,omitempty"`

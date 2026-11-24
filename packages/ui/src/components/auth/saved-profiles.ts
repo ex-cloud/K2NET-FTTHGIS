@@ -5,7 +5,7 @@ export interface SavedAccountProfile {
   avatarUrl?: string | null;
   tenantSlug?: string;
   lastUsedAt: number;
-  authMethod: "password" | "google" | "github" | "sso";
+  authMethod: "password" | "google" | "github" | "sso" | "passkey";
 }
 
 export type SavedAccountProfileInput = Omit<SavedAccountProfile, "lastUsedAt"> & {
@@ -21,7 +21,7 @@ export interface PendingSaveProfile {
   username?: string;
   displayName?: string;
   tenantSlug?: string;
-  authMethod: "password" | "google" | "github" | "sso";
+  authMethod: "password" | "google" | "github" | "sso" | "passkey";
   shouldSave: boolean;
 }
 
@@ -50,7 +50,7 @@ export function commitPendingSaveProfile(fallback?: {
   displayName?: string;
   avatarUrl?: string | null;
   tenantSlug?: string;
-  authMethod?: "password" | "google" | "github" | "sso";
+  authMethod?: "password" | "google" | "github" | "sso" | "passkey";
 }): void {
   if (typeof window === "undefined") return;
   try {

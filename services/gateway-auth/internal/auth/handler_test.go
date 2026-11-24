@@ -18,10 +18,12 @@ import (
 )
 
 type mockRepo struct {
-	tenants      map[string]*TenantContextResponse
-	userOrgMatch map[string]bool
-	syncedUsers  []JITUserSyncInput
-	backupCodes  map[string]bool
+	tenants           map[string]*TenantContextResponse
+	userOrgMatch      map[string]bool
+	syncedUsers       []JITUserSyncInput
+	backupCodes       map[string]bool
+	discoverableCreds []WebauthnCredentialModel
+	credOwners        map[string]*WebauthnCredentialOwner
 }
 
 func (m *mockRepo) ResolveTenantContext(_ context.Context, slug string) (*TenantContextResponse, error) {
@@ -122,6 +124,19 @@ func (m *mockRepo) GetUserWebauthnCredentials(_ context.Context, _ string) ([]We
 	return nil, nil
 }
 
+func (m *mockRepo) GetDiscoverableWebauthnCredentials(_ context.Context, _, _, _ string) ([]WebauthnCredentialModel, error) {
+	return m.discoverableCreds, nil
+}
+
+func (m *mockRepo) GetWebauthnCredentialByCredentialID(_ context.Context, credentialID string) (*WebauthnCredentialOwner, error) {
+	if m.credOwners != nil {
+		if owner, ok := m.credOwners[credentialID]; ok {
+			return owner, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *mockRepo) UpdateWebauthnSignCounter(_ context.Context, _ string, _ int64) error {
 	return nil
 }
@@ -172,6 +187,8 @@ func setupTestRouter(h *Handler) *gin.Engine {
 		v1.POST("/login", h.Login)
 		v1.POST("/mfa/verify", h.VerifyMFA)
 		v1.POST("/mfa/backup-code/verify", h.VerifyMfaBackupCode)
+		v1.POST("/webauthn/discoverable/challenge", h.GetDiscoverableWebauthnChallenge)
+		v1.POST("/webauthn/discoverable/verify", h.VerifyDiscoverableWebauthnLogin)
 		v1.POST("/refresh", h.Refresh)
 		v1.POST("/logout", h.Logout)
 	}
@@ -926,5 +943,226 @@ func TestVerifyMfaBackupCode_BurnOnUse(t *testing.T) {
 	_ = handler
 	_ = session
 	_ = preAuthToken
+}
+
+func TestDiscoverableWebauthnPasswordlessAndConditionalUI(t *testing.T) {
+	logger.InitLogger()
+
+	mockKC := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/protocol/openid-connect/token") {
+			_ = r.ParseForm()
+			username := r.FormValue("username")
+			clientID := r.FormValue("client_id")
+			if username == "admin-cli" || clientID == "admin-cli" {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"access_token":"master-admin-token","expires_in":300}`))
+				return
+			}
+			jwt := buildTestJWT(map[string]any{
+				"sub":                "ae6582e2-1fc4-4943-ac31-1b54fc64a106",
+				"azp":                PasskeyBrokerClientID,
+				"email":              "andiansyah0425@gmail.com",
+				"preferred_username": username,
+				"name":               "Andiansyah Admin",
+				"organization_id":    "00000000-0000-0000-0000-000000000001",
+				"tenant_id":          "00000000-0000-0000-0000-000000000001",
+				"tenant_slug":        "ops",
+				"realm_access":       map[string]any{"roles": []string{"admin"}},
+			})
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(KeycloakTokenResponse{
+				AccessToken:      jwt,
+				RefreshToken:     jwt,
+				IDToken:          jwt,
+				ExpiresIn:        300,
+				RefreshExpiresIn: 86400,
+				TokenType:        "Bearer",
+			})
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/authentication/flows") {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[{"id":"flow-123","alias":"k2net-passkey-direct-grant"}]`))
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/executions") {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[{"id":"exec-1","providerId":"direct-grant-validate-username","requirement":"REQUIRED"}]`))
+			return
+		}
+		if strings.Contains(r.URL.Path, "/clients") {
+			w.Header().Set("Content-Type", "application/json")
+			if r.Method == http.MethodGet {
+				_, _ = w.Write([]byte(`[{"id":"client-uuid-1","clientId":"k2net-passkey-broker"}]`))
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockKC.Close()
+
+	repo := &mockRepo{
+		tenants: map[string]*TenantContextResponse{
+			"ops": {
+				ID:       "00000000-0000-0000-0000-000000000001",
+				Name:     "K2NET Ops",
+				Slug:     "ops",
+				RealmKey: "k2net-tenants",
+				Status:   "ACTIVE",
+			},
+			"other": {
+				ID:       "99999999-9999-9999-9999-999999999999",
+				Name:     "Other ISP",
+				Slug:     "other",
+				RealmKey: "k2net-tenants",
+				Status:   "ACTIVE",
+			},
+		},
+		userOrgMatch: map[string]bool{
+			"ae6582e2-1fc4-4943-ac31-1b54fc64a106:00000000-0000-0000-0000-000000000001": true,
+		},
+		discoverableCreds: []WebauthnCredentialModel{
+			{
+				ID:           "cred-row-1",
+				UserID:       "ae6582e2-1fc4-4943-ac31-1b54fc64a106",
+				CredentialID: "dFsa43dufmTnI0nQLfFWZk4vQQHsJ0a-FzwYvMc89zs",
+				DeviceName:   "Windows Hello",
+			},
+		},
+		credOwners: map[string]*WebauthnCredentialOwner{
+			"dFsa43dufmTnI0nQLfFWZk4vQQHsJ0a-FzwYvMc89zs": {
+				CredentialID:   "dFsa43dufmTnI0nQLfFWZk4vQQHsJ0a-FzwYvMc89zs",
+				DeviceName:     "Windows Hello",
+				UserID:         "ae6582e2-1fc4-4943-ac31-1b54fc64a106",
+				Email:          "andiansyah0425@gmail.com",
+				Username:       "andiansyah0425@gmail.com",
+				FullName:       "Andiansyah Admin",
+				UserStatus:     "ACTIVE",
+				OrganizationID: "00000000-0000-0000-0000-000000000001",
+				RoleName:       "admin",
+				RoleScope:      "TENANT",
+			},
+		},
+	}
+
+	cfg := &config.Config{
+		Port:                "5014",
+		KeycloakInternalURL: mockKC.URL,
+		KeycloakClientID:    "ftth-gis-frontend",
+		CookieSecure:        false,
+	}
+	h := NewHandler(cfg, repo, nil, nil)
+	r := setupTestRouter(h)
+
+	// 1. Conditional UI Challenge (conditional: true) -> must return empty allowCredentials: []
+	condBody, _ := json.Marshal(WebauthnDiscoverableChallengeRequest{
+		Plane:       "TENANT",
+		TenantSlug:  "ops",
+		Conditional: true,
+	})
+	reqCond := httptest.NewRequest(http.MethodPost, "/api/v1/auth/webauthn/discoverable/challenge", bytes.NewReader(condBody))
+	reqCond.Header.Set("Content-Type", "application/json")
+	reqCond.Header.Set("X-Requested-With", "K2NET-BFF")
+	wCond := httptest.NewRecorder()
+	r.ServeHTTP(wCond, reqCond)
+	if wCond.Code != http.StatusOK {
+		t.Fatalf("expected 200 for conditional challenge, got %d: %s", wCond.Code, wCond.Body.String())
+	}
+	var condResp struct {
+		ChallengeID      string `json:"challengeId"`
+		Challenge        string `json:"challenge"`
+		AllowCredentials []any  `json:"allowCredentials"`
+	}
+	_ = json.Unmarshal(wCond.Body.Bytes(), &condResp)
+	if condResp.ChallengeID == "" || condResp.Challenge == "" || len(condResp.AllowCredentials) != 0 {
+		t.Fatalf("expected empty allowCredentials for conditional UI, got %+v", condResp)
+	}
+
+	// 2. Modal Button Click Challenge (conditional: false) -> must return scoped allowCredentials
+	modalBody, _ := json.Marshal(WebauthnDiscoverableChallengeRequest{
+		Plane:       "TENANT",
+		TenantSlug:  "ops",
+		Conditional: false,
+	})
+	reqModal := httptest.NewRequest(http.MethodPost, "/api/v1/auth/webauthn/discoverable/challenge", bytes.NewReader(modalBody))
+	reqModal.Header.Set("Content-Type", "application/json")
+	reqModal.Header.Set("X-Requested-With", "K2NET-BFF")
+	wModal := httptest.NewRecorder()
+	r.ServeHTTP(wModal, reqModal)
+	var modalResp struct {
+		ChallengeID      string `json:"challengeId"`
+		Challenge        string `json:"challenge"`
+		AllowCredentials []any  `json:"allowCredentials"`
+	}
+	_ = json.Unmarshal(wModal.Body.Bytes(), &modalResp)
+	if len(modalResp.AllowCredentials) != 1 {
+		t.Fatalf("expected 1 scoped allowCredential for modal click, got %d", len(modalResp.AllowCredentials))
+	}
+
+	// Build valid assertion payload for modalResp
+	clientDataJSONBytes, _ := json.Marshal(map[string]any{
+		"type":      "webauthn.get",
+		"challenge": modalResp.Challenge,
+		"origin":    "https://ops.kdua.net",
+	})
+	authData := make([]byte, 37)
+	authData[32] = 0x05 // UP (User Present) + UV (User Verified)
+	authData[36] = 48   // counter = 48
+
+	// 3. Cross-Plane Rejection: TENANT passkey used on PLATFORM Control Plane -> 403 TENANT_ACCESS_DENIED
+	crossPlaneVerify, _ := json.Marshal(WebauthnDiscoverableVerifyRequest{
+		ChallengeID:       condResp.ChallengeID,
+		CredentialID:      "dFsa43dufmTnI0nQLfFWZk4vQQHsJ0a-FzwYvMc89zs",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString(bytes.ReplaceAll(clientDataJSONBytes, []byte(modalResp.Challenge), []byte(condResp.Challenge))),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString(authData),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("valid-sig-bytes")),
+		Plane:             "PLATFORM",
+		TenantSlug:        "system",
+	})
+	reqCross := httptest.NewRequest(http.MethodPost, "/api/v1/auth/webauthn/discoverable/verify", bytes.NewReader(crossPlaneVerify))
+	reqCross.Header.Set("Content-Type", "application/json")
+	reqCross.Header.Set("X-Requested-With", "K2NET-BFF")
+	wCross := httptest.NewRecorder()
+	r.ServeHTTP(wCross, reqCross)
+	if wCross.Code != http.StatusForbidden || !strings.Contains(wCross.Body.String(), "TENANT_ACCESS_DENIED") {
+		t.Fatalf("expected 403 TENANT_ACCESS_DENIED for cross-plane passkey use, got %d: %s", wCross.Code, wCross.Body.String())
+	}
+
+	// 4. Valid Passwordless Passkey Verification on Tenant 'ops' -> 200 OK with full session
+	validVerify, _ := json.Marshal(WebauthnDiscoverableVerifyRequest{
+		ChallengeID:       modalResp.ChallengeID,
+		CredentialID:      "dFsa43dufmTnI0nQLfFWZk4vQQHsJ0a-FzwYvMc89zs",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString(clientDataJSONBytes),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString(authData),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("valid-sig-bytes")),
+		Plane:             "TENANT",
+		TenantSlug:        "ops",
+		RememberMe:        true,
+	})
+	reqVerify := httptest.NewRequest(http.MethodPost, "/api/v1/auth/webauthn/discoverable/verify", bytes.NewReader(validVerify))
+	reqVerify.Header.Set("Content-Type", "application/json")
+	reqVerify.Header.Set("X-Requested-With", "K2NET-BFF")
+	wVerify := httptest.NewRecorder()
+	r.ServeHTTP(wVerify, reqVerify)
+	if wVerify.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for valid passwordless passkey verify, got %d: %s", wVerify.Code, wVerify.Body.String())
+	}
+	var loginRes LoginResponse
+	_ = json.Unmarshal(wVerify.Body.Bytes(), &loginRes)
+	if loginRes.AccessToken == "" || loginRes.User == nil || loginRes.User.Email != "andiansyah0425@gmail.com" {
+		t.Fatalf("expected hydrated user session from passkey login, got %+v", loginRes)
+	}
+
+	// 5. Anti-Replay: Re-submitting the same challengeId must be rejected 401 CHALLENGE_EXPIRED
+	reqReplay := httptest.NewRequest(http.MethodPost, "/api/v1/auth/webauthn/discoverable/verify", bytes.NewReader(validVerify))
+	reqReplay.Header.Set("Content-Type", "application/json")
+	reqReplay.Header.Set("X-Requested-With", "K2NET-BFF")
+	wReplay := httptest.NewRecorder()
+	r.ServeHTTP(wReplay, reqReplay)
+	if wReplay.Code != http.StatusUnauthorized || !strings.Contains(wReplay.Body.String(), "CHALLENGE_EXPIRED") {
+		t.Fatalf("expected 401 CHALLENGE_EXPIRED on challenge replay, got %d: %s", wReplay.Code, wReplay.Body.String())
+	}
 }
 

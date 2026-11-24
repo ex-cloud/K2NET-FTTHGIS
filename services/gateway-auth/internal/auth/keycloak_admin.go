@@ -5,14 +5,18 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base32"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"gateways/shared/logger"
@@ -20,13 +24,19 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	PasskeyBrokerClientID       = "k2net-passkey-broker"
+	PasskeyDirectGrantFlowAlias = "k2net-passkey-direct-grant"
+)
+
 // KeycloakAdminClient performs administrative user management in Keycloak
 type KeycloakAdminClient struct {
-	baseURL    string
-	username   string
-	password   string
-	httpClient *http.Client
-	rdb        *redis.Client
+	baseURL            string
+	username           string
+	password           string
+	httpClient         *http.Client
+	rdb                *redis.Client
+	passkeyBrokerReady sync.Map
 }
 
 // NewKeycloakAdminClient creates a new KeycloakAdminClient instance
@@ -316,4 +326,268 @@ func generateTOTPAtStep(key []byte, step int64) string {
 		int(sum[offset+3]&0xff)
 	otp := binCode % 1000000
 	return fmt.Sprintf("%06d", otp)
+}
+
+// PasskeyBrokerSecret returns the confidential client secret for the internal Passkey broker client.
+func (k *KeycloakAdminClient) PasskeyBrokerSecret() string {
+	if envSecret := strings.TrimSpace(os.Getenv("KC_PASSKEY_BROKER_SECRET")); envSecret != "" {
+		return envSecret
+	}
+	seed := "k2net-default-passkey-seed"
+	if k != nil && k.password != "" {
+		seed = k.password
+	}
+	mac := hmac.New(sha256.New, []byte(seed))
+	_, _ = mac.Write([]byte("k2net-passkey-broker-fido2-v1"))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// EnsurePasskeyBrokerSetup idempotently provisions the internal k2net-passkey-direct-grant flow
+// and confidential k2net-passkey-broker client in the target Keycloak realm so gateway-auth
+// can mint genuine OIDC tokens after verifying a cryptographic FIDO2 Passkey assertion.
+func (k *KeycloakAdminClient) EnsurePasskeyBrokerSetup(ctx context.Context, realm string) error {
+	if k == nil || k.baseURL == "" || strings.TrimSpace(realm) == "" {
+		return nil
+	}
+	cleanRealm := strings.TrimSpace(realm)
+	if _, ok := k.passkeyBrokerReady.Load(cleanRealm); ok {
+		return nil
+	}
+
+	adminToken, err := k.getAdminToken(ctx)
+	if err != nil {
+		return err
+	}
+
+	// 1. Ensure custom Direct Grant flow (k2net-passkey-direct-grant) with direct-grant-validate-username REQUIRED
+	flowsURL := fmt.Sprintf("%s/admin/realms/%s/authentication/flows", k.baseURL, url.PathEscape(cleanRealm))
+	flowID, err := k.findAuthFlowID(ctx, adminToken, flowsURL, PasskeyDirectGrantFlowAlias)
+	if err != nil {
+		return err
+	}
+	if flowID == "" {
+		createFlowPayload, _ := json.Marshal(map[string]any{
+			"alias":       PasskeyDirectGrantFlowAlias,
+			"description": "Internal BFF Passkey FIDO2 Verified Direct Grant",
+			"providerId":  "basic-flow",
+			"topLevel":    true,
+			"builtIn":     false,
+		})
+		req, _ := http.NewRequestWithContext(ctx, http.MethodPost, flowsURL, bytes.NewReader(createFlowPayload))
+		req.Header.Set("Authorization", "Bearer "+adminToken)
+		req.Header.Set("Content-Type", "application/json")
+		if resp, doErr := k.httpClient.Do(req); doErr == nil {
+			_ = resp.Body.Close()
+		}
+		flowID, err = k.findAuthFlowID(ctx, adminToken, flowsURL, PasskeyDirectGrantFlowAlias)
+		if err != nil || flowID == "" {
+			return fmt.Errorf("failed to resolve created auth flow %s in realm %s", PasskeyDirectGrantFlowAlias, cleanRealm)
+		}
+	}
+
+	// Ensure direct-grant-validate-username execution is present and REQUIRED
+	execsURL := fmt.Sprintf("%s/admin/realms/%s/authentication/flows/%s/executions",
+		k.baseURL, url.PathEscape(cleanRealm), url.PathEscape(PasskeyDirectGrantFlowAlias))
+	if err := k.ensureUsernameExecutionRequired(ctx, adminToken, execsURL); err != nil {
+		return err
+	}
+
+	// 2. Fetch protocolMappers from ftth-gis-frontend so custom claims (organization_id, tenant_id, tenant_slug) match 100%
+	var cleanMappers []map[string]any
+	frontendClientsURL := fmt.Sprintf("%s/admin/realms/%s/clients?clientId=ftth-gis-frontend", k.baseURL, url.PathEscape(cleanRealm))
+	if feReq, reqErr := http.NewRequestWithContext(ctx, http.MethodGet, frontendClientsURL, nil); reqErr == nil {
+		feReq.Header.Set("Authorization", "Bearer "+adminToken)
+		if feResp, doErr := k.httpClient.Do(feReq); doErr == nil {
+			var feClients []map[string]any
+			_ = json.NewDecoder(feResp.Body).Decode(&feClients)
+			_ = feResp.Body.Close()
+			if len(feClients) > 0 {
+				if rawMappers, ok := feClients[0]["protocolMappers"].([]any); ok {
+					for _, rm := range rawMappers {
+						if mMap, ok := rm.(map[string]any); ok {
+							copied := make(map[string]any, len(mMap))
+							for mk, mv := range mMap {
+								if mk != "id" {
+									copied[mk] = mv
+								}
+							}
+							cleanMappers = append(cleanMappers, copied)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 3. Create or update confidential client k2net-passkey-broker
+	brokerQueryURL := fmt.Sprintf("%s/admin/realms/%s/clients?clientId=%s",
+		k.baseURL, url.PathEscape(cleanRealm), url.QueryEscape(PasskeyBrokerClientID))
+	var existingClients []map[string]any
+	if bReq, reqErr := http.NewRequestWithContext(ctx, http.MethodGet, brokerQueryURL, nil); reqErr == nil {
+		bReq.Header.Set("Authorization", "Bearer "+adminToken)
+		if bResp, doErr := k.httpClient.Do(bReq); doErr == nil {
+			_ = json.NewDecoder(bResp.Body).Decode(&existingClients)
+			_ = bResp.Body.Close()
+		}
+	}
+
+	clientRep := map[string]any{
+		"clientId":                  PasskeyBrokerClientID,
+		"name":                      "K2NET Internal Passkey FIDO2 Broker",
+		"enabled":                   true,
+		"publicClient":              false,
+		"clientAuthenticatorType":   "client-secret",
+		"secret":                    k.PasskeyBrokerSecret(),
+		"directAccessGrantsEnabled": true,
+		"standardFlowEnabled":       false,
+		"serviceAccountsEnabled":    false,
+		"fullScopeAllowed":          true,
+		"authenticationFlowBindingOverrides": map[string]string{
+			"direct_grant": flowID,
+		},
+	}
+	if len(cleanMappers) > 0 {
+		clientRep["protocolMappers"] = cleanMappers
+	}
+
+	if len(existingClients) == 0 {
+		createClientURL := fmt.Sprintf("%s/admin/realms/%s/clients", k.baseURL, url.PathEscape(cleanRealm))
+		bodyBytes, _ := json.Marshal(clientRep)
+		req, _ := http.NewRequestWithContext(ctx, http.MethodPost, createClientURL, bytes.NewReader(bodyBytes))
+		req.Header.Set("Authorization", "Bearer "+adminToken)
+		req.Header.Set("Content-Type", "application/json")
+		resp, doErr := k.httpClient.Do(req)
+		if doErr != nil {
+			return doErr
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusConflict {
+			return fmt.Errorf("failed creating %s in realm %s (HTTP %d)", PasskeyBrokerClientID, cleanRealm, resp.StatusCode)
+		}
+	} else {
+		clientUUID, _ := existingClients[0]["id"].(string)
+		if clientUUID != "" {
+			clientRep["id"] = clientUUID
+			// Preserve existing protocolMappers on update so we do not duplicate mapper names
+			delete(clientRep, "protocolMappers")
+			updateClientURL := fmt.Sprintf("%s/admin/realms/%s/clients/%s",
+				k.baseURL, url.PathEscape(cleanRealm), url.PathEscape(clientUUID))
+			bodyBytes, _ := json.Marshal(clientRep)
+			req, _ := http.NewRequestWithContext(ctx, http.MethodPut, updateClientURL, bytes.NewReader(bodyBytes))
+			req.Header.Set("Authorization", "Bearer "+adminToken)
+			req.Header.Set("Content-Type", "application/json")
+			if resp, doErr := k.httpClient.Do(req); doErr == nil {
+				_ = resp.Body.Close()
+			}
+		}
+	}
+
+	k.passkeyBrokerReady.Store(cleanRealm, true)
+	logger.Info(ctx, "Keycloak internal Passkey FIDO2 broker client ready",
+		zap.String("realm", cleanRealm),
+		zap.String("clientId", PasskeyBrokerClientID),
+		zap.String("flowId", flowID))
+	return nil
+}
+
+func (k *KeycloakAdminClient) findAuthFlowID(ctx context.Context, adminToken, flowsURL, targetAlias string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, flowsURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	resp, err := k.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", nil
+	}
+	var flows []struct {
+		ID    string `json:"id"`
+		Alias string `json:"alias"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&flows); err != nil {
+		return "", err
+	}
+	for _, f := range flows {
+		if f.Alias == targetAlias {
+			return f.ID, nil
+		}
+	}
+	return "", nil
+}
+
+func (k *KeycloakAdminClient) ensureUsernameExecutionRequired(ctx context.Context, adminToken, execsURL string) error {
+	getExecs := func() ([]map[string]any, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, execsURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bearer "+adminToken)
+		resp, err := k.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return nil, nil
+		}
+		var list []map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&list)
+		return list, nil
+	}
+
+	execs, err := getExecs()
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for _, ex := range execs {
+		if pid, _ := ex["providerId"].(string); pid == "direct-grant-validate-username" {
+			found = true
+			if reqVal, _ := ex["requirement"].(string); reqVal != "REQUIRED" {
+				ex["requirement"] = "REQUIRED"
+				bodyBytes, _ := json.Marshal(ex)
+				putReq, _ := http.NewRequestWithContext(ctx, http.MethodPut, execsURL, bytes.NewReader(bodyBytes))
+				putReq.Header.Set("Authorization", "Bearer "+adminToken)
+				putReq.Header.Set("Content-Type", "application/json")
+				if resp, doErr := k.httpClient.Do(putReq); doErr == nil {
+					_ = resp.Body.Close()
+				}
+			}
+			break
+		}
+	}
+
+	if !found {
+		addURL := execsURL + "/execution"
+		addPayload, _ := json.Marshal(map[string]string{
+			"provider": "direct-grant-validate-username",
+		})
+		addReq, _ := http.NewRequestWithContext(ctx, http.MethodPost, addURL, bytes.NewReader(addPayload))
+		addReq.Header.Set("Authorization", "Bearer "+adminToken)
+		addReq.Header.Set("Content-Type", "application/json")
+		if resp, doErr := k.httpClient.Do(addReq); doErr == nil {
+			_ = resp.Body.Close()
+		}
+
+		execs, _ = getExecs()
+		for _, ex := range execs {
+			if pid, _ := ex["providerId"].(string); pid == "direct-grant-validate-username" {
+				ex["requirement"] = "REQUIRED"
+				bodyBytes, _ := json.Marshal(ex)
+				putReq, _ := http.NewRequestWithContext(ctx, http.MethodPut, execsURL, bytes.NewReader(bodyBytes))
+				putReq.Header.Set("Authorization", "Bearer "+adminToken)
+				putReq.Header.Set("Content-Type", "application/json")
+				if resp, doErr := k.httpClient.Do(putReq); doErr == nil {
+					_ = resp.Body.Close()
+				}
+				break
+			}
+		}
+	}
+	return nil
 }

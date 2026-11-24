@@ -340,10 +340,15 @@ export function useAuthLoginForm(props: AuthLoginFormProps) {
   // Profile actions
   const handleSelectProfile = (profile: SavedAccountProfile) => {
     viewTouchedRef.current = true;
-    setUsernameOrEmail(profile.email || profile.username || "");
+    const resolvedIdentifier = profile.email || profile.username || "";
+    setUsernameOrEmail(resolvedIdentifier);
     setPassword("");
     setShowPassword(false);
     setAuthView("CREDENTIALS");
+    if (profile.authMethod === "passkey" && props.onPasswordlessPasskeyLogin && !props.enforceSso) {
+      void props.onPasswordlessPasskeyLogin(resolvedIdentifier);
+      return;
+    }
     setTimeout(() => {
       passwordInputRef.current?.focus();
     }, 50);
