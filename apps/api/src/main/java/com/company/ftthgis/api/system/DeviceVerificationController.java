@@ -156,6 +156,20 @@ public class DeviceVerificationController {
             String ipAddress,
             boolean verified,
             String lastUsedAt,
-            String createdAt
-    ) {}
+            String createdAt,
+            boolean isCurrent
+    ) {
+        public UserDeviceDto(
+                Long id,
+                String deviceFingerprint,
+                String browser,
+                String os,
+                String ipAddress,
+                boolean verified,
+                String lastUsedAt,
+                String createdAt
+        ) {
+            this(id, deviceFingerprint, browser, os, ipAddress, verified, lastUsedAt, createdAt, false);
+        }
+    }
 }

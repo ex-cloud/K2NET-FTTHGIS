@@ -1166,3 +1166,103 @@ func TestDiscoverableWebauthnPasswordlessAndConditionalUI(t *testing.T) {
 	}
 }
 
+func TestBreakGlassAggressiveSessionTimeoutAndDeviceSync(t *testing.T) {
+	logger.InitLogger()
+	gin.SetMode(gin.TestMode)
+
+	repo := &mockRepo{
+		tenants: map[string]*TenantContextResponse{
+			"ops": {
+				ID:       "00000000-0000-0000-0000-000000000001",
+				Name:     "K2NET Ops",
+				Slug:     "ops",
+				RealmKey: "k2net-tenants",
+				Status:   "ACTIVE",
+			},
+		},
+	}
+
+	cfg := &config.Config{
+		Port:         "5014",
+		CookieSecure: false,
+	}
+	h := NewHandler(cfg, repo, nil, nil)
+
+	jwt := buildTestJWT(map[string]any{
+		"sub":                "ae6582e2-1fc4-4943-ac31-1b54fc64a106",
+		"sid":                "kc-session-uuid-999",
+		"email":              "andiansyah0425@gmail.com",
+		"preferred_username": "andiansyah0425@gmail.com",
+		"name":               "Andiansyah Admin",
+		"organization_id":    "00000000-0000-0000-0000-000000000001",
+		"tenant_id":          "00000000-0000-0000-0000-000000000001",
+		"tenant_slug":        "ops",
+		"realm_access":       map[string]any{"roles": []string{"admin"}},
+	})
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/mfa/verify", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36")
+	c.Request = req
+
+	session := PreAuthSession{
+		AccessToken:  jwt,
+		RefreshToken: "refresh-token-bg",
+		IDToken:      jwt,
+		ExpiresIn:    300,
+		TargetRealm:  "k2net-tenants",
+		TenantSlug:   "ops",
+		Plane:        "TENANT",
+		RememberMe:   true, // Even if RememberMe is requested, Break-Glass must clamp to 3600s (60m)
+		IsBreakGlass: true,
+		UserID:       "ae6582e2-1fc4-4943-ac31-1b54fc64a106",
+		Email:        "andiansyah0425@gmail.com",
+		Username:     "andiansyah0425@gmail.com",
+		Name:         "Andiansyah Admin",
+		Roles:        []string{"admin"},
+	}
+
+	h.completeLoginSession(c, &session, "test-pre-auth-token", "TOTP")
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK from completeLoginSession, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp LoginResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal LoginResponse: %v", err)
+	}
+
+	if !resp.IsBreakGlass {
+		t.Fatalf("expected IsBreakGlass=true in response, got false")
+	}
+	if resp.SessionMaxAge != 3600 {
+		t.Fatalf("expected SessionMaxAge=3600 (60m) for Break-Glass session, got %d", resp.SessionMaxAge)
+	}
+
+	// Verify k2net_break_glass_session cookie is set with MaxAge 3600
+	cookies := w.Result().Cookies()
+	foundBgCookie := false
+	for _, ck := range cookies {
+		if ck.Name == breakGlassCookieName && ck.Value == "1" && ck.MaxAge == 3600 {
+			foundBgCookie = true
+		}
+	}
+	if !foundBgCookie {
+		t.Fatalf("expected %s cookie with MaxAge=3600 to be set", breakGlassCookieName)
+	}
+
+	// Verify SyncUserJIT received SessionID and UserAgent for user_devices tracking
+	if len(repo.syncedUsers) != 1 {
+		t.Fatalf("expected 1 synced user call, got %d", len(repo.syncedUsers))
+	}
+	if repo.syncedUsers[0].SessionID != "kc-session-uuid-999" {
+		t.Fatalf("expected SessionID 'kc-session-uuid-999', got '%s'", repo.syncedUsers[0].SessionID)
+	}
+	if !strings.Contains(repo.syncedUsers[0].UserAgent, "Chrome/131.0.0.0") {
+		t.Fatalf("expected UserAgent to be propagated to SyncUserJIT, got '%s'", repo.syncedUsers[0].UserAgent)
+	}
+}
+
+

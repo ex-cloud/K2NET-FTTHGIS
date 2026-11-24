@@ -88,6 +88,8 @@ export interface KeycloakAuthContextValue {
   initialized: boolean;
   authenticated: boolean;
   sessionTerminated: boolean;
+  isBreakGlassSession?: boolean;
+  sessionMaxAge?: number;
   loginPath: string;
   token: string | null;
   user: KeycloakUser | null;

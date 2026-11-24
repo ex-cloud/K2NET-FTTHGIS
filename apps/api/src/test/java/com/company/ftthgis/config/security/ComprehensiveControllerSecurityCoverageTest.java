@@ -91,6 +91,7 @@ public class ComprehensiveControllerSecurityCoverageTest {
             "DeviceVerificationController.trustCurrentDevice",
             "PersonalSecurityController.getDevices",
             "PersonalSecurityController.revokeDevice",
+            "PersonalSecurityController.revokeOtherDevices",
             "PersonalSecurityController.trustCurrentDevice",
             "PersonalSecurityController.getSecuritySummary",
             "PersonalSecurityController.generateTotpSetup",

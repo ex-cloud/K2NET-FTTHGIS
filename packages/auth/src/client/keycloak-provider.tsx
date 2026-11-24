@@ -66,6 +66,8 @@ interface BffLoginApiResponse {
   accessToken?: string;
   idToken?: string;
   expiresIn?: number;
+  sessionMaxAge?: number;
+  isBreakGlass?: boolean;
   realm?: string;
   mfaRequired?: boolean;
   preAuthToken?: string;
@@ -149,6 +151,7 @@ function commitPendingSavedProfileInStorage(user: KeycloakUser): void {
         (!resolvedSlug || p.tenantSlug === resolvedSlug)
     );
 
+    const existingAuthMethod = existingIndex >= 0 ? list[existingIndex]?.authMethod : undefined;
     const updatedProfile = {
       email: cleanEmail,
       username: user.username || pending.username || cleanEmail,
@@ -156,7 +159,7 @@ function commitPendingSavedProfileInStorage(user: KeycloakUser): void {
       avatarUrl: user.avatarUrl,
       tenantSlug: resolvedSlug,
       lastUsedAt: now,
-      authMethod: pending.authMethod || "password",
+      authMethod: pending.authMethod || existingAuthMethod || "password",
     };
 
     if (existingIndex >= 0) {
@@ -261,6 +264,15 @@ export function KeycloakProvider({
   const [initialized, setInitialized] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [sessionTerminated, setSessionTerminated] = useState(false);
+  const [isBreakGlassSession, setIsBreakGlassSession] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.sessionStorage.getItem("k2net_break_glass_session") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [sessionMaxAge, setSessionMaxAge] = useState<number | undefined>(undefined);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<KeycloakUser | null>(null);
 
@@ -298,6 +310,16 @@ export function KeycloakProvider({
     activeTokenRef.current = null;
     activeUserRef.current = null;
     setAuthenticated(false);
+    setIsBreakGlassSession(false);
+    setSessionMaxAge(undefined);
+    if (typeof window !== "undefined") {
+      try {
+        window.sessionStorage.removeItem("k2net_break_glass_session");
+        window.sessionStorage.removeItem("k2net_break_glass_stepup_until");
+      } catch {
+        // ignore storage error
+      }
+    }
     setToken(null);
     setUser(null);
     clearWindowBridge();
@@ -372,7 +394,13 @@ export function KeycloakProvider({
   );
 
   const hydrateAuthenticatedSession = useCallback(
-    (accessToken: string, idToken: string | undefined, expiresIn: number | undefined, bffUser?: BffAuthUserPayload): KeycloakUser | null => {
+    (
+      accessToken: string,
+      idToken: string | undefined,
+      expiresIn: number | undefined,
+      bffUser?: BffAuthUserPayload,
+      meta?: { isBreakGlass?: boolean; sessionMaxAge?: number }
+    ): KeycloakUser | null => {
       const resolvedUser = buildKeycloakUser(accessToken, config.clientId, bffUser);
       if (!resolvedUser) return null;
 
@@ -382,6 +410,19 @@ export function KeycloakProvider({
       setUser(resolvedUser);
       setAuthenticated(true);
       setSessionTerminated(false);
+      if (meta?.isBreakGlass) {
+        setIsBreakGlassSession(true);
+        if (typeof window !== "undefined") {
+          try {
+            window.sessionStorage.setItem("k2net_break_glass_session", "1");
+          } catch {
+            // ignore
+          }
+        }
+      }
+      if (meta?.sessionMaxAge && meta.sessionMaxAge > 0) {
+        setSessionMaxAge(meta.sessionMaxAge);
+      }
       syncWindowBridge(accessToken, resolvedUser);
       commitPendingSavedProfileInStorage(resolvedUser);
 
@@ -425,7 +466,8 @@ export function KeycloakProvider({
               bffRefreshed.accessToken,
               bffRefreshed.idToken,
               bffRefreshed.expiresIn,
-              bffRefreshed.user
+              bffRefreshed.user,
+              { isBreakGlass: bffRefreshed.isBreakGlass, sessionMaxAge: bffRefreshed.sessionMaxAge }
             );
             return Boolean(hydrated);
           }
@@ -552,7 +594,8 @@ export function KeycloakProvider({
           data.accessToken,
           data.idToken,
           data.expiresIn,
-          data.user
+          data.user,
+          { isBreakGlass: data.isBreakGlass || Boolean(input.isBreakGlass), sessionMaxAge: data.sessionMaxAge }
         );
 
         if (!hydratedUser) {
@@ -602,7 +645,8 @@ export function KeycloakProvider({
           data.accessToken,
           data.idToken,
           data.expiresIn,
-          data.user
+          data.user,
+          { isBreakGlass: data.isBreakGlass, sessionMaxAge: data.sessionMaxAge }
         );
         return { success: true, user: hydratedUser || undefined };
       } catch {
@@ -661,7 +705,8 @@ export function KeycloakProvider({
           data.accessToken,
           data.idToken,
           data.expiresIn,
-          data.user
+          data.user,
+          { isBreakGlass: data.isBreakGlass, sessionMaxAge: data.sessionMaxAge }
         );
         return { success: true, user: hydratedUser || undefined };
       } catch {
@@ -715,7 +760,8 @@ export function KeycloakProvider({
           data.accessToken,
           data.idToken,
           data.expiresIn,
-          data.user
+          data.user,
+          { isBreakGlass: data.isBreakGlass, sessionMaxAge: data.sessionMaxAge }
         );
         return { success: true, user: hydratedUser || undefined };
       } catch {
@@ -749,7 +795,8 @@ export function KeycloakProvider({
           data.accessToken,
           data.idToken,
           data.expiresIn,
-          data.user
+          data.user,
+          { isBreakGlass: data.isBreakGlass, sessionMaxAge: data.sessionMaxAge }
         );
         return { success: true, user: hydratedUser || undefined };
       } catch {
@@ -817,11 +864,29 @@ export function KeycloakProvider({
             message: data.message,
           };
         }
+        if (typeof window !== "undefined") {
+          try {
+            window.sessionStorage.setItem(
+              "k2net_pending_save_profile",
+              JSON.stringify({
+                email: data.user?.email || data.user?.username,
+                username: data.user?.username,
+                displayName: data.user?.name,
+                tenantSlug: input.tenantSlug || config.tenantSlug,
+                authMethod: "passkey",
+                shouldSave: input.rememberMe !== false,
+              })
+            );
+          } catch {
+            // ignore storage error
+          }
+        }
         const hydratedUser = hydrateAuthenticatedSession(
           data.accessToken,
           data.idToken,
           data.expiresIn,
-          data.user
+          data.user,
+          { isBreakGlass: data.isBreakGlass || Boolean(input.isBreakGlass), sessionMaxAge: data.sessionMaxAge }
         );
         return { success: true, user: hydratedUser || undefined };
       } catch {
@@ -1046,7 +1111,8 @@ export function KeycloakProvider({
           bffSession.accessToken,
           bffSession.idToken,
           bffSession.expiresIn,
-          bffSession.user
+          bffSession.user,
+          { isBreakGlass: bffSession.isBreakGlass, sessionMaxAge: bffSession.sessionMaxAge }
         );
       } else {
         clearSessionState();
@@ -1137,6 +1203,8 @@ export function KeycloakProvider({
       initialized,
       authenticated,
       sessionTerminated,
+      isBreakGlassSession,
+      sessionMaxAge,
       loginPath,
       token,
       user,
@@ -1167,6 +1235,7 @@ export function KeycloakProvider({
       hasAnyRole,
       hasRole,
       initialized,
+      isBreakGlassSession,
       isSuperAdmin,
       isTenantAdmin,
       keycloakInstance,
@@ -1177,6 +1246,7 @@ export function KeycloakProvider({
       refreshToken,
       roles,
       sendMfaEmailOtp,
+      sessionMaxAge,
       sessionTerminated,
       token,
       user,

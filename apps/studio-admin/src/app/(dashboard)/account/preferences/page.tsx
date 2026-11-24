@@ -108,11 +108,20 @@ function useAccountLabels(): AccountLabels {
       mfaPasskeyNotice: t("settings.account.mfa_passkey_notice"),
       sessionsTitle: t("settings.account.sessions_title"),
       sessionsDesc: t("settings.account.sessions_desc"),
+      sessionsColDeviceOs: t("settings.account.sessions_col_device_os"),
+      sessionsColBrowser: t("settings.account.sessions_col_browser"),
+      sessionsColIp: t("settings.account.sessions_col_ip"),
+      sessionsColLastActive: t("settings.account.sessions_col_last_active"),
+      sessionsColStatus: t("settings.account.sessions_col_status"),
+      sessionsColAction: t("settings.account.sessions_col_action"),
       currentDeviceBadge: t("settings.account.current_device_badge"),
       trustedBadge: t("settings.account.trusted_badge"),
       untrustedBadge: t("settings.account.untrusted_badge"),
       revokeDeviceBtn: t("settings.account.revoke_device_btn"),
       revokeAllSessionsBtn: t("settings.account.revoke_all_sessions_btn"),
+      revokeAllConfirmTitle: t("settings.account.revoke_all_confirm_title"),
+      revokeAllConfirmDesc: t("settings.account.revoke_all_confirm_desc"),
+      revokeAllConfirmBtn: t("settings.account.revoke_all_confirm_btn"),
       deviceRevokedSuccess: t("settings.account.device_revoked_success"),
       deviceRevokeFailed: t("settings.account.device_revoke_failed"),
       allSessionsRevokedSuccess: t("settings.account.all_sessions_revoked_success"),
@@ -328,18 +337,16 @@ export default function AdminAccountPreferencesPage() {
     if (!session?.accessToken) return;
     const baseUrl = getBackendBaseUrl();
     const authToken = session.accessToken ?? undefined;
-    // Revoke all devices except the first/current
-    const nonCurrent = devices.slice(1);
-    await Promise.all(
-      nonCurrent.map((d) =>
-        httpClient(`${baseUrl}/me/devices/${d.id}`, {
-          method: "DELETE",
-          token: authToken,
-        })
-      )
-    );
-    toast.success(labels.allSessionsRevokedSuccess || "All other active sessions have been terminated.");
-    fetchData();
+    const res = await httpClient(`${baseUrl}/me/devices/others`, {
+      method: "DELETE",
+      token: authToken,
+    });
+    if (res.ok) {
+      toast.success(labels.allSessionsRevokedSuccess || "All other active sessions have been terminated.");
+      fetchData();
+    } else {
+      toast.error(labels.deviceRevokeFailed || "Failed to revoke sessions.");
+    }
   };
 
   const handleDisconnectProvider = async (provider: string) => {

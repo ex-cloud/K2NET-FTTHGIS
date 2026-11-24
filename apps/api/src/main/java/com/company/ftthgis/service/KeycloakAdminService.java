@@ -415,6 +415,51 @@ public class KeycloakAdminService {
         }
     }
 
+    public List<UserSessionRepresentation> getUserActiveSessionsInRealm(String targetRealm, String userId) {
+        if (targetRealm == null || targetRealm.isBlank() || userId == null || userId.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            List<UserSessionRepresentation> sessions = keycloak.realm(targetRealm).users().get(userId).getUserSessions();
+            return sessions != null ? sessions : Collections.emptyList();
+        } catch (Exception e) {
+            log.debug("Could not fetch user sessions for user {} in realm {}: {}", userId, targetRealm, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    public boolean terminateUserSessionInRealm(String targetRealm, String sessionId) {
+        if (targetRealm == null || targetRealm.isBlank() || sessionId == null || sessionId.isBlank()) {
+            return false;
+        }
+        try {
+            keycloak.realm(targetRealm).deleteSession(sessionId, false);
+            log.info("Successfully terminated active Keycloak session {} in realm {}", sessionId, targetRealm);
+            return true;
+        } catch (Exception e) {
+            try {
+                keycloak.realm(targetRealm).deleteSession(sessionId, true);
+                log.info("Successfully terminated offline Keycloak session {} in realm {}", sessionId, targetRealm);
+                return true;
+            } catch (Exception ex) {
+                log.debug("Keycloak session {} not found in realm {}: {}", sessionId, targetRealm, ex.getMessage());
+                return false;
+            }
+        }
+    }
+
+    public int terminateOtherUserSessionsInRealm(String targetRealm, String userId, String keepSessionId) {
+        int terminated = 0;
+        for (UserSessionRepresentation sess : getUserActiveSessionsInRealm(targetRealm, userId)) {
+            if (sess.getId() != null && (keepSessionId == null || keepSessionId.isBlank() || !sess.getId().equals(keepSessionId))) {
+                if (terminateUserSessionInRealm(targetRealm, sess.getId())) {
+                    terminated++;
+                }
+            }
+        }
+        return terminated;
+    }
+
     public List<IdentityProviderRepresentation> getIdentityProviders() {
         try {
             return keycloak.realm(defaultRealm).identityProviders().findAll();

@@ -28,6 +28,7 @@ import { TenantOrgSidebar } from "./TenantOrgSidebar";
 import { TenantSecondarySidebar } from "./TenantSecondarySidebar";
 import { TenantMobileFloatingDock } from "../system/TenantMobileFloatingDock";
 import { TrialPausedBanner } from "../system/TrialPausedBanner";
+import { BreakGlassSessionGuard } from "../system/BreakGlassSessionGuard";
 import { TenantLicenseAlertBanner } from "../licenses/TenantLicenseAlertBanner";
 
 function TenantOrgLayoutContent() {
@@ -156,6 +157,7 @@ function TenantOrgLayoutContent() {
       />
 
       {/* ── 2.5 Trial Lifecycle & Grace Period Paused Alert Banner ───────── */}
+      <BreakGlassSessionGuard />
       <TrialPausedBanner />
       <TenantLicenseAlertBanner />
 

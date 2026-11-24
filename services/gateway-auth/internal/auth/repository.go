@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,6 +32,8 @@ type JITUserSyncInput struct {
 	Roles          []string
 	MFAUsed        bool
 	ClientIP       string
+	UserAgent      string
+	SessionID      string
 }
 
 // Repository abstracts PostgreSQL + Redis lookups for tenant context resolution and JIT user sync.
@@ -468,6 +472,7 @@ func (r *PostgresRepository) SyncUserJIT(ctx context.Context, in JITUserSyncInpu
 	`
 	tag, err := r.db.Exec(ctx, updateExistingSQL, in.UserID, in.Email, clientIP, in.MFAUsed)
 	if err == nil && tag.RowsAffected() > 0 {
+		r.upsertUserDeviceSession(ctx, in.UserID, in.SessionID, in.UserAgent, clientIP)
 		return nil
 	}
 
@@ -500,7 +505,82 @@ func (r *PostgresRepository) SyncUserJIT(ctx context.Context, in JITUserSyncInpu
 		in.MFAUsed,
 		clientIP,
 	)
+	if execErr == nil {
+		r.upsertUserDeviceSession(ctx, in.UserID, in.SessionID, in.UserAgent, clientIP)
+	}
 	return execErr
+}
+
+func (r *PostgresRepository) upsertUserDeviceSession(ctx context.Context, userID, sessionID, userAgent, clientIP string) {
+	if r.db == nil || strings.TrimSpace(userID) == "" {
+		return
+	}
+	browser, osName := parseUserAgentMetadata(userAgent)
+	ip := strings.TrimSpace(clientIP)
+	if ip == "" {
+		ip = "127.0.0.1"
+	}
+	fp := computeDeviceFingerprint(sessionID, browser, osName, ip)
+
+	const upsertDeviceSQL = `
+		INSERT INTO user_devices (
+			user_id, device_fingerprint, browser, os, ip_address, verified, last_used_at, created_at
+		)
+		VALUES ($1::uuid, $2, $3, $4, $5, TRUE, NOW(), NOW())
+		ON CONFLICT (user_id, device_fingerprint) DO UPDATE SET
+			browser = EXCLUDED.browser,
+			os = EXCLUDED.os,
+			ip_address = EXCLUDED.ip_address,
+			verified = TRUE,
+			last_used_at = NOW()
+	`
+	_, _ = r.db.Exec(ctx, upsertDeviceSQL, userID, fp, browser, osName, ip)
+}
+
+func parseUserAgentMetadata(ua string) (string, string) {
+	clean := strings.TrimSpace(ua)
+	browser := "Web Browser"
+	osName := "Desktop OS"
+	if clean == "" {
+		return browser, osName
+	}
+
+	switch {
+	case strings.Contains(clean, "Edg/"):
+		browser = "Microsoft Edge"
+	case strings.Contains(clean, "OPR/") || strings.Contains(clean, "Opera"):
+		browser = "Opera"
+	case strings.Contains(clean, "Chrome/"):
+		browser = "Google Chrome"
+	case strings.Contains(clean, "Firefox/"):
+		browser = "Mozilla Firefox"
+	case strings.Contains(clean, "Safari/"):
+		browser = "Apple Safari"
+	}
+
+	switch {
+	case strings.Contains(clean, "Windows"):
+		osName = "Windows"
+	case strings.Contains(clean, "Android"):
+		osName = "Android"
+	case strings.Contains(clean, "iPhone") || strings.Contains(clean, "iPad"):
+		osName = "iOS"
+	case strings.Contains(clean, "Macintosh") || strings.Contains(clean, "Mac OS X"):
+		osName = "macOS"
+	case strings.Contains(clean, "Linux"):
+		osName = "Linux"
+	}
+
+	return browser, osName
+}
+
+func computeDeviceFingerprint(sessionID, browser, osName, clientIP string) string {
+	cleanSid := strings.TrimSpace(sessionID)
+	if cleanSid != "" {
+		return "kc-" + cleanSid
+	}
+	sum := sha256.Sum256([]byte(browser + "|" + osName + "|" + clientIP))
+	return "fp-" + hex.EncodeToString(sum[:8])
 }
 
 func resolveCanonicalRoleName(roles []string) string {

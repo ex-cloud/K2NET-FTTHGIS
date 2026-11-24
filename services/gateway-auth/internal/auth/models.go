@@ -99,6 +99,8 @@ type LoginResponse struct {
 	TokenType        string             `json:"tokenType,omitempty"`
 	ExpiresIn        int                `json:"expiresIn,omitempty"`
 	RefreshExpiresIn int                `json:"refreshExpiresIn,omitempty"`
+	SessionMaxAge    int                `json:"sessionMaxAge,omitempty"`
+	IsBreakGlass     bool               `json:"isBreakGlass,omitempty"`
 	Realm            string             `json:"realm,omitempty"`
 	User             *AuthenticatedUser `json:"user,omitempty"`
 }
@@ -223,6 +225,8 @@ type KeycloakErrorResponse struct {
 // JWTClaims extracts identity & multi-tenant attributes from a Keycloak-issued access token.
 type JWTClaims struct {
 	Sub               string `json:"sub"`
+	Sid               string `json:"sid,omitempty"`
+	SessionState      string `json:"session_state,omitempty"`
 	Azp               string `json:"azp,omitempty"`
 	Email             string `json:"email"`
 	EmailVerified     *bool  `json:"email_verified,omitempty"`

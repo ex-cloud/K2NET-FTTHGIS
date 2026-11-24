@@ -38,6 +38,8 @@ const (
 	secureRefreshCookieName = "__Secure-k2net_refresh_token"
 	refreshCookieName       = "k2net_refresh_token"
 	realmCookieName         = "k2net_auth_realm"
+	breakGlassCookieName    = "k2net_break_glass_session"
+	breakGlassMaxAgeSeconds = 3600 // 60 minutes strict maximum for Break-Glass sessions (Fase 7.4)
 	cookiePath              = "/api/v1/auth"
 )
 
@@ -675,7 +677,15 @@ func (h *Handler) completeLoginSession(c *gin.Context, session *PreAuthSession, 
 		}
 	}
 
-	// 1. Parameterized JIT User Sync to PostgreSQL ftth_gis.users
+	// 1. Parameterized JIT User Sync & Device Session Fingerprinting to PostgreSQL ftth_gis
+	sessionID := ""
+	if claims, err := ParseJWTClaimsFromInternalToken(session.AccessToken); err == nil && claims != nil {
+		if claims.Sid != "" {
+			sessionID = claims.Sid
+		} else if claims.SessionState != "" {
+			sessionID = claims.SessionState
+		}
+	}
 	if syncErr := h.repo.SyncUserJIT(c.Request.Context(), JITUserSyncInput{
 		UserID:         session.UserID,
 		Email:          session.Email,
@@ -685,18 +695,24 @@ func (h *Handler) completeLoginSession(c *gin.Context, session *PreAuthSession, 
 		Roles:          session.Roles,
 		MFAUsed:        mfaMethodUsed != "",
 		ClientIP:       clientIP,
+		UserAgent:      c.Request.UserAgent(),
+		SessionID:      sessionID,
 	}); syncErr != nil {
 		logger.Warn(c.Request.Context(), "Non-fatal JIT user sync warning", zap.String("userId", session.UserID), zap.Error(syncErr))
 	}
 
 	// 2. Set HttpOnly; Secure; SameSite=Strict refresh token & realm cookies
+	// Fase 7.4: Break-Glass Emergency Sessions enforce an aggressive 60-minute (3600s) hard ceiling
 	maxAge := 86400 // 24 hours default
-	if session.RememberMe {
+	if session.IsBreakGlass {
+		maxAge = breakGlassMaxAgeSeconds
+	} else if session.RememberMe {
 		maxAge = 2592000 // 30 days
 	} else if session.RefreshExpiresIn > 0 {
 		maxAge = session.RefreshExpiresIn
 	}
 	h.setSessionCookies(c, session.RefreshToken, session.TargetRealm, maxAge)
+	h.setBreakGlassCookieAndState(c, session.UserID, session.IsBreakGlass)
 
 	// 3. Async Audit Log to gateway-audit (:5009)
 	auditSlug := session.TenantSlug
@@ -744,6 +760,8 @@ func (h *Handler) completeLoginSession(c *gin.Context, session *PreAuthSession, 
 		TokenType:        "Bearer",
 		ExpiresIn:        session.ExpiresIn,
 		RefreshExpiresIn: session.RefreshExpiresIn,
+		SessionMaxAge:    maxAge,
+		IsBreakGlass:     session.IsBreakGlass,
 		Realm:            session.TargetRealm,
 		User: &AuthenticatedUser{
 			ID:             session.UserID,
@@ -1843,6 +1861,36 @@ func (h *Handler) Refresh(c *gin.Context) {
 	if kcTokens.RefreshExpiresIn > 0 {
 		maxAge = kcTokens.RefreshExpiresIn
 	}
+	isBreakGlass := false
+	if bgVal, bgErr := c.Cookie(breakGlassCookieName); bgErr == nil && strings.TrimSpace(bgVal) == "1" {
+		isBreakGlass = true
+	}
+	if h.rdb != nil && claims.Sub != "" {
+		bgKey := "auth:break-glass-exp:" + claims.Sub
+		if ttl, ttlErr := h.rdb.TTL(c.Request.Context(), bgKey).Result(); ttlErr == nil {
+			if ttl > 0 {
+				isBreakGlass = true
+				rem := int(ttl.Seconds())
+				if rem < maxAge {
+					maxAge = rem
+				}
+			} else if isBreakGlass {
+				// Hard 60-minute Break-Glass session window has expired
+				h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+				h.clearSessionCookies(c)
+				c.JSON(419, gin.H{
+					"status":  419,
+					"error":   "SESSION_TERMINATED",
+					"code":    "BREAK_GLASS_EXPIRED",
+					"message": "Sesi darurat Break-Glass (batas 60 menit) telah berakhir. Silakan autentikasi ulang.",
+				})
+				return
+			}
+		}
+	}
+	if isBreakGlass && maxAge > breakGlassMaxAgeSeconds {
+		maxAge = breakGlassMaxAgeSeconds
+	}
 	h.setSessionCookies(c, kcTokens.RefreshToken, targetRealm, maxAge)
 
 	roles := claims.ExtractRoles(h.cfg.KeycloakClientID)
@@ -1862,6 +1910,8 @@ func (h *Handler) Refresh(c *gin.Context) {
 		TokenType:        "Bearer",
 		ExpiresIn:        kcTokens.ExpiresIn,
 		RefreshExpiresIn: kcTokens.RefreshExpiresIn,
+		SessionMaxAge:    maxAge,
+		IsBreakGlass:     isBreakGlass,
 		Realm:            targetRealm,
 		User: &AuthenticatedUser{
 			ID:             claims.Sub,
@@ -2534,6 +2584,47 @@ func (h *Handler) clearSessionCookies(c *gin.Context) {
 		Secure:   secure,
 		SameSite: http.SameSiteStrictMode,
 	})
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     breakGlassCookieName,
+		Value:    "",
+		Path:     cookiePath,
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func (h *Handler) setBreakGlassCookieAndState(c *gin.Context, userID string, isBreakGlass bool) {
+	secure := h.isSecureCookie(c)
+	bgKey := "auth:break-glass-exp:" + strings.TrimSpace(userID)
+	if isBreakGlass {
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     breakGlassCookieName,
+			Value:    "1",
+			Path:     cookiePath,
+			MaxAge:   breakGlassMaxAgeSeconds,
+			HttpOnly: true,
+			Secure:   secure,
+			SameSite: http.SameSiteStrictMode,
+		})
+		if h.rdb != nil && strings.TrimSpace(userID) != "" {
+			_ = h.rdb.Set(c.Request.Context(), bgKey, "1", time.Duration(breakGlassMaxAgeSeconds)*time.Second).Err()
+		}
+	} else {
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     breakGlassCookieName,
+			Value:    "",
+			Path:     cookiePath,
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   secure,
+			SameSite: http.SameSiteStrictMode,
+		})
+		if h.rdb != nil && strings.TrimSpace(userID) != "" {
+			_ = h.rdb.Del(c.Request.Context(), bgKey).Err()
+		}
+	}
 }
 
 func (h *Handler) isSecureCookie(c *gin.Context) bool {

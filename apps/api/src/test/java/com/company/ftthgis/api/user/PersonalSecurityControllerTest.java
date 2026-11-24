@@ -283,4 +283,55 @@ public class PersonalSecurityControllerTest {
         assertEquals("****-A1B2", codesList.get(0).get("codeHint"));
         assertFalse((Boolean) codesList.get(0).get("isUsed"));
     }
+
+    @Test
+    @DisplayName("P10: revokeOtherDevices should retain caller current session and terminate other sessions")
+    void testRevokeOtherDevices() {
+        when(jwt.getClaimAsString("sid")).thenReturn("curr-sid-1");
+
+        UserDevice currentDev = UserDevice.builder()
+                .id(10L)
+                .user(testUser)
+                .deviceFingerprint("kc-curr-sid-1")
+                .browser("Google Chrome")
+                .os("Windows")
+                .ipAddress("103.10.20.1")
+                .verified(true)
+                .lastUsedAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now().minusHours(1))
+                .build();
+
+        UserDevice otherDev = UserDevice.builder()
+                .id(20L)
+                .user(testUser)
+                .deviceFingerprint("kc-other-sid-2")
+                .browser("Mozilla Firefox")
+                .os("Android")
+                .ipAddress("103.10.20.2")
+                .verified(true)
+                .lastUsedAt(LocalDateTime.now().minusHours(2))
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .build();
+
+        when(userDeviceRepository.findAllByUserId(userId)).thenReturn(List.of(currentDev, otherDev));
+        when(keycloakAdminService.terminateOtherUserSessionsInRealm("k2net-tenants", userId.toString(), "curr-sid-1"))
+                .thenReturn(1);
+
+        ResponseEntity<?> response = controller.revokeOtherDevices(jwt, null);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertTrue((Boolean) body.get("success"));
+        assertEquals(1, body.get("revokedCount"));
+
+        verify(keycloakAdminService, times(1))
+                .terminateOtherUserSessionsInRealm("k2net-tenants", userId.toString(), "curr-sid-1");
+        verify(userDeviceRepository, times(1)).deleteAll(argThat(iterable -> {
+            List<UserDevice> list = new ArrayList<>();
+            iterable.forEach(list::add);
+            return list.size() == 1 && list.get(0).getId().equals(20L);
+        }));
+    }
 }

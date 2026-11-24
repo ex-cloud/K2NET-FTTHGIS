@@ -121,50 +121,121 @@ public class PersonalSecurityController {
             @AuthenticationPrincipal Jwt jwt,
             HttpServletRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
-        List<UserDevice> devices = userDeviceRepository.findAllByUserId(userId);
+        User user = userRepository.findById(userId).orElse(null);
+        String targetRealm = resolveRealmFromJwt(jwt);
 
-        if (devices.isEmpty()) {
-            // Auto-enroll active session device if user has none recorded
-            String userAgent = request != null ? request.getHeader("User-Agent") : null;
-            String ipAddress = request != null ? request.getHeader("X-Forwarded-For") : null;
-            if (ipAddress == null || ipAddress.isBlank()) {
-                ipAddress = request != null ? request.getRemoteAddr() : "127.0.0.1";
-            } else if (ipAddress.contains(",")) {
-                ipAddress = ipAddress.split(",")[0].trim();
+        String currentSid = extractCurrentSessionId(jwt);
+        String userAgent = request != null ? request.getHeader("User-Agent") : null;
+        String ipAddress = extractClientIp(request);
+        String browser = parseBrowserFromUserAgent(userAgent);
+        String os = parseOsFromUserAgent(userAgent);
+        String currentFp = resolveCurrentDeviceFingerprint(currentSid, request != null, browser, os, ipAddress);
+
+        List<UserDevice> devices = new ArrayList<>(userDeviceRepository.findAllByUserId(userId));
+
+        // 1. Upsert caller's current device session if we have request metadata or a Keycloak session ID
+        if (user != null && (!currentFp.isBlank() || devices.isEmpty())) {
+            String effectiveFp = !currentFp.isBlank()
+                    ? currentFp
+                    : "session-" + UUID.randomUUID().toString().substring(0, 8);
+            currentFp = effectiveFp;
+
+            UserDevice existingCurrent = null;
+            for (UserDevice d : devices) {
+                if (effectiveFp.equals(d.getDeviceFingerprint())) {
+                    existingCurrent = d;
+                    break;
+                }
             }
 
-            String browser = "Current Web Browser";
-            String os = "Current OS";
-            if (userAgent != null) {
-                if (userAgent.contains("Edg/")) browser = "Microsoft Edge";
-                else if (userAgent.contains("Chrome/")) browser = "Google Chrome";
-                else if (userAgent.contains("Firefox/")) browser = "Mozilla Firefox";
-                else if (userAgent.contains("Safari/")) browser = "Apple Safari";
-
-                if (userAgent.contains("Windows")) os = "Windows";
-                else if (userAgent.contains("Macintosh")) os = "macOS";
-                else if (userAgent.contains("Linux")) os = "Linux";
-                else if (userAgent.contains("Android")) os = "Android";
-                else if (userAgent.contains("iPhone") || userAgent.contains("iPad")) os = "iOS";
-            }
-
-            User user = userRepository.findById(userId).orElse(null);
-            if (user != null) {
-                String fingerprint = "session-" + UUID.randomUUID().toString().substring(0, 8);
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            if (existingCurrent != null) {
+                existingCurrent.setLastUsedAt(now);
+                if (request != null) {
+                    existingCurrent.setBrowser(browser);
+                    existingCurrent.setOs(os);
+                    existingCurrent.setIpAddress(ipAddress);
+                }
+                existingCurrent.setVerified(true);
+                userDeviceRepository.save(existingCurrent);
+            } else {
                 UserDevice activeDevice = UserDevice.builder()
                         .user(user)
-                        .deviceFingerprint(fingerprint)
+                        .deviceFingerprint(effectiveFp)
                         .browser(browser)
                         .os(os)
-                        .ipAddress(ipAddress != null ? ipAddress : "127.0.0.1")
+                        .ipAddress(ipAddress)
                         .verified(true)
-                        .createdAt(java.time.LocalDateTime.now())
-                        .lastUsedAt(java.time.LocalDateTime.now())
+                        .createdAt(now)
+                        .lastUsedAt(now)
                         .build();
-                userDeviceRepository.save(activeDevice);
-                devices = List.of(activeDevice);
+                UserDevice saved = userDeviceRepository.save(activeDevice);
+                devices.add(saved);
             }
         }
+
+        // 2. Reconcile live Keycloak user sessions into user_devices
+        List<org.keycloak.representations.idm.UserSessionRepresentation> kcSessions =
+                keycloakAdminService.getUserActiveSessionsInRealm(targetRealm, userId.toString());
+        if (kcSessions != null && !kcSessions.isEmpty()) {
+            Set<String> activeKcFps = new HashSet<>();
+            Map<String, UserDevice> byFp = new HashMap<>();
+            for (UserDevice d : devices) {
+                if (d.getDeviceFingerprint() != null) {
+                    byFp.put(d.getDeviceFingerprint(), d);
+                }
+            }
+
+            for (var sess : kcSessions) {
+                if (sess.getId() == null || sess.getId().isBlank()) continue;
+                String kcFp = "kc-" + sess.getId();
+                activeKcFps.add(kcFp);
+
+                if (!byFp.containsKey(kcFp) && user != null) {
+                    boolean isThisCurrent = sess.getId().equals(currentSid);
+                    java.time.LocalDateTime startTime = sess.getStart() > 0
+                            ? java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(sess.getStart()), java.time.ZoneId.systemDefault())
+                            : java.time.LocalDateTime.now();
+                    java.time.LocalDateTime lastAccess = sess.getLastAccess() > 0
+                            ? java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(sess.getLastAccess()), java.time.ZoneId.systemDefault())
+                            : startTime;
+
+                    UserDevice synced = UserDevice.builder()
+                            .user(user)
+                            .deviceFingerprint(kcFp)
+                            .browser(isThisCurrent ? browser : "Web Browser Session")
+                            .os(isThisCurrent ? os : "Authenticated Device")
+                            .ipAddress(sess.getIpAddress() != null && !sess.getIpAddress().isBlank() ? sess.getIpAddress() : ipAddress)
+                            .verified(true)
+                            .createdAt(startTime)
+                            .lastUsedAt(lastAccess)
+                            .build();
+                    UserDevice saved = userDeviceRepository.save(synced);
+                    devices.add(saved);
+                    byFp.put(kcFp, saved);
+                }
+            }
+
+            // Prune stale kc-* rows that are no longer active in Keycloak
+            Iterator<UserDevice> it = devices.iterator();
+            while (it.hasNext()) {
+                UserDevice d = it.next();
+                String fp = d.getDeviceFingerprint();
+                if (fp != null && fp.startsWith("kc-") && !activeKcFps.contains(fp) && !fp.equals(currentFp)) {
+                    userDeviceRepository.delete(d);
+                    it.remove();
+                }
+            }
+        }
+
+        // Sort by lastUsedAt descending before determining fallback current session
+        devices.sort((a, b) -> {
+            java.time.LocalDateTime la = a.getLastUsedAt() != null ? a.getLastUsedAt() : java.time.LocalDateTime.MIN;
+            java.time.LocalDateTime lb = b.getLastUsedAt() != null ? b.getLastUsedAt() : java.time.LocalDateTime.MIN;
+            return lb.compareTo(la);
+        });
+
+        final String matchedCurrentFp = resolveMatchedCurrentFingerprint(devices, currentFp);
 
         List<UserDeviceDto> dtos = devices.stream()
                 .map(d -> new UserDeviceDto(
@@ -175,8 +246,10 @@ public class PersonalSecurityController {
                         d.getIpAddress(),
                         d.isVerified(),
                         d.getLastUsedAt() != null ? d.getLastUsedAt().toString() : "",
-                        d.getCreatedAt() != null ? d.getCreatedAt().toString() : ""
+                        d.getCreatedAt() != null ? d.getCreatedAt().toString() : "",
+                        d.getDeviceFingerprint() != null && d.getDeviceFingerprint().equals(matchedCurrentFp)
                 ))
+                .sorted((a, b) -> Boolean.compare(b.isCurrent(), a.isCurrent()))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
@@ -194,6 +267,7 @@ public class PersonalSecurityController {
             @PathVariable Long deviceId) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
+        String targetRealm = resolveRealmFromJwt(jwt);
         return userDeviceRepository.findById(deviceId)
                 .map(device -> {
                     if (!device.getUser().getId().equals(userId)) {
@@ -202,14 +276,158 @@ public class PersonalSecurityController {
                                 "message", "Unauthorized to revoke this device"
                         ));
                     }
+                    String fp = device.getDeviceFingerprint();
+                    if (fp != null && fp.startsWith("kc-")) {
+                        String kcSessionId = fp.substring(3);
+                        keycloakAdminService.terminateUserSessionInRealm(targetRealm, kcSessionId);
+                    }
                     userDeviceRepository.delete(device);
-                    log.info("🗑️ Caller {} untrusted and revoked device {}", userId, deviceId);
+                    log.info("🗑️ Caller {} untrusted and revoked device {} (fp={})", userId, deviceId, fp);
                     return ResponseEntity.ok(Map.of(
                             "success", true,
                             "message", "Device untrusted and deleted successfully"
                     ));
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/devices/others")
+    @PreAuthorize("isAuthenticated()")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<?> revokeOtherDevices(
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletRequest request) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        String targetRealm = resolveRealmFromJwt(jwt);
+        String currentSid = extractCurrentSessionId(jwt);
+        String userAgent = request != null ? request.getHeader("User-Agent") : null;
+        String ipAddress = extractClientIp(request);
+        String browser = parseBrowserFromUserAgent(userAgent);
+        String os = parseOsFromUserAgent(userAgent);
+        String currentFp = resolveCurrentDeviceFingerprint(currentSid, request != null, browser, os, ipAddress);
+
+        // 1. Terminate all other live Keycloak sessions for this user
+        int kcTerminated = keycloakAdminService.terminateOtherUserSessionsInRealm(targetRealm, userId.toString(), currentSid);
+
+        // 2. Delete all other device records in PostgreSQL except the caller's current device
+        List<UserDevice> devices = new ArrayList<>(userDeviceRepository.findAllByUserId(userId));
+        devices.sort((a, b) -> {
+            java.time.LocalDateTime la = a.getLastUsedAt() != null ? a.getLastUsedAt() : java.time.LocalDateTime.MIN;
+            java.time.LocalDateTime lb = b.getLastUsedAt() != null ? b.getLastUsedAt() : java.time.LocalDateTime.MIN;
+            return lb.compareTo(la);
+        });
+
+        String keepFp = resolveMatchedCurrentFingerprint(devices, currentFp);
+        List<UserDevice> toDelete = new ArrayList<>();
+        for (UserDevice d : devices) {
+            if (keepFp == null || !keepFp.equals(d.getDeviceFingerprint())) {
+                String fp = d.getDeviceFingerprint();
+                if (fp != null && fp.startsWith("kc-")) {
+                    String sid = fp.substring(3);
+                    if (!sid.equals(currentSid)) {
+                        keycloakAdminService.terminateUserSessionInRealm(targetRealm, sid);
+                    }
+                }
+                toDelete.add(d);
+            }
+        }
+
+        if (!toDelete.isEmpty()) {
+            userDeviceRepository.deleteAll(toDelete);
+        }
+
+        int revokedCount = Math.max(toDelete.size(), kcTerminated);
+        log.info("🛡️ Caller {} revoked {} other device sessions in realm {}", userId, revokedCount, targetRealm);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "revokedCount", revokedCount,
+                "message", "All other device sessions have been revoked successfully."
+        ));
+    }
+
+    private static String extractCurrentSessionId(Jwt jwt) {
+        if (jwt == null) return "";
+        String sid = jwt.getClaimAsString("sid");
+        if (sid != null && !sid.isBlank()) {
+            return sid.trim();
+        }
+        String sessionState = jwt.getClaimAsString("session_state");
+        if (sessionState != null && !sessionState.isBlank()) {
+            return sessionState.trim();
+        }
+        return "";
+    }
+
+    private static String extractClientIp(HttpServletRequest request) {
+        if (request == null) return "127.0.0.1";
+        String cfIp = request.getHeader("CF-Connecting-IP");
+        if (cfIp != null && !cfIp.isBlank()) {
+            return cfIp.trim();
+        }
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            return xff.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        String remote = request.getRemoteAddr();
+        return (remote != null && !remote.isBlank()) ? remote : "127.0.0.1";
+    }
+
+    private static String parseBrowserFromUserAgent(String userAgent) {
+        if (userAgent == null || userAgent.isBlank()) return "Current Web Browser";
+        if (userAgent.contains("Edg/")) return "Microsoft Edge";
+        if (userAgent.contains("OPR/") || userAgent.contains("Opera")) return "Opera";
+        if (userAgent.contains("Chrome/")) return "Google Chrome";
+        if (userAgent.contains("Firefox/")) return "Mozilla Firefox";
+        if (userAgent.contains("Safari/")) return "Apple Safari";
+        return "Web Browser";
+    }
+
+    private static String parseOsFromUserAgent(String userAgent) {
+        if (userAgent == null || userAgent.isBlank()) return "Current OS";
+        if (userAgent.contains("Windows NT 10.0") || userAgent.contains("Windows")) return "Windows";
+        if (userAgent.contains("Android")) return "Android";
+        if (userAgent.contains("iPhone") || userAgent.contains("iPad")) return "iOS";
+        if (userAgent.contains("Mac OS X") || userAgent.contains("Macintosh")) return "macOS";
+        if (userAgent.contains("Linux")) return "Linux";
+        return "Desktop OS";
+    }
+
+    private static String resolveCurrentDeviceFingerprint(
+            String currentSid, boolean hasRequest, String browser, String os, String ipAddress) {
+        if (currentSid != null && !currentSid.isBlank()) {
+            return "kc-" + currentSid;
+        }
+        if (!hasRequest) {
+            return "";
+        }
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((browser + "|" + os + "|" + ipAddress).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (int i = 0; i < 8 && i < hash.length; i++) {
+                hex.append(String.format("%02x", hash[i]));
+            }
+            return "fp-" + hex;
+        } catch (Exception e) {
+            return "fp-current";
+        }
+    }
+
+    private static String resolveMatchedCurrentFingerprint(List<UserDevice> sortedDevices, String currentFp) {
+        if (sortedDevices == null || sortedDevices.isEmpty()) return null;
+        if (currentFp != null && !currentFp.isBlank()) {
+            for (UserDevice d : sortedDevices) {
+                if (currentFp.equals(d.getDeviceFingerprint())) {
+                    return currentFp;
+                }
+            }
+        }
+        return sortedDevices.get(0).getDeviceFingerprint();
     }
 
     @PostMapping("/devices/trust-current")
@@ -337,7 +555,7 @@ public class PersonalSecurityController {
                 .mfaEnforced(effectivePolicy.isMfaRequired())
                 .mfaEnforcementSource(effectivePolicy.getEffectiveSource())
                 .trustedDevicesCount(devicesCount)
-                .activeSessionsCount(1) // current session minimum
+                .activeSessionsCount(Math.max(devicesCount, 1))
                 .linkedProviders(linkedProviders)
                 .backupCodesConfigured(backupCodesTotal > 0)
                 .backupCodesRemaining((int) backupCodesRemaining)

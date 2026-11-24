@@ -80,13 +80,18 @@ export function commitPendingSaveProfile(fallback?: {
     if (fallback?.email || fallback?.username) {
       const resolvedEmail = (fallback.email || fallback.username || "").trim();
       if (!resolvedEmail) return;
+      const existingProfile = getSavedProfiles(fallback.tenantSlug).find(
+        (p) =>
+          p.email.toLowerCase() === resolvedEmail.toLowerCase() ||
+          (p.username && p.username.toLowerCase() === resolvedEmail.toLowerCase())
+      );
       saveAccountProfile({
         email: resolvedEmail,
         username: fallback.username || resolvedEmail,
         displayName: fallback.displayName,
         avatarUrl: fallback.avatarUrl,
         tenantSlug: fallback.tenantSlug,
-        authMethod: fallback.authMethod || "password",
+        authMethod: fallback.authMethod || existingProfile?.authMethod || "password",
       });
     }
   } catch {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { base64UrlToBuffer, bufferToBase64Url } from "../account/passkey-register-modal";
-import { saveAccountProfile } from "./saved-profiles";
+import { saveAccountProfile, setPendingSaveProfile } from "./saved-profiles";
 
 export interface DiscoverablePasskeyChallengeData {
   challengeId: string;
@@ -341,6 +341,14 @@ export function usePasswordlessPasskeyFlow<TUser extends PasskeyAuthenticatedUse
     (user?: TUser, fallbackEmail?: string) => {
       const resolvedEmail = user?.email || user?.username || fallbackEmail;
       if (resolvedEmail) {
+        setPendingSaveProfile({
+          email: resolvedEmail,
+          username: user?.username || resolvedEmail,
+          displayName: user?.name,
+          tenantSlug,
+          authMethod: "passkey",
+          shouldSave: true,
+        });
         saveAccountProfile({
           email: resolvedEmail,
           username: user?.username || resolvedEmail,
