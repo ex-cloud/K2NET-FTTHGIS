@@ -308,15 +308,20 @@ public class TenantSsoService {
         );
         long latency = System.currentTimeMillis() - startTime;
 
+        Optional<OrganizationSsoConfig> existingOpt = ssoConfigRepository.findFirstByOrganizationIdNative(org.getId());
         List<String> warnings = new ArrayList<>();
         Long tlsDays = outcome.tlsCertInfo() != null ? helper.computeDaysRemaining(outcome.tlsCertInfo().expiresAt(), now) : null;
         Long samlDays = outcome.samlCertInfo() != null ? helper.computeDaysRemaining(outcome.samlCertInfo().expiresAt(), now) : null;
+        Long secretDays = existingOpt.map(c -> helper.computeDaysRemaining(c.getClientSecretExpiresAt(), now)).orElse(null);
 
         if (tlsDays != null && tlsDays <= 30) {
             warnings.add(tlsDays <= 0 ? "Sertifikat TLS server IdP telah kedaluwarsa!" : "Sertifikat TLS IdP akan kedaluwarsa dalam " + tlsDays + " hari.");
         }
         if (samlDays != null && samlDays <= 30) {
             warnings.add(samlDays <= 0 ? "Sertifikat SAML signing telah kedaluwarsa!" : "Sertifikat SAML signing akan kedaluwarsa dalam " + samlDays + " hari.");
+        }
+        if (secretDays != null && secretDays <= 30) {
+            warnings.add(secretDays <= 0 ? "Client Secret OAuth telah kedaluwarsa!" : "Client Secret OAuth akan kedaluwarsa dalam " + secretDays + " hari.");
         }
         if (outcome.samlWarning() != null && outcome.networkOk()) {
             warnings.add(outcome.samlWarning());
@@ -325,11 +330,15 @@ public class TenantSsoService {
         if (outcome.networkOk()) {
             recentSuccessfulProbes.put(org.getId(), now);
 
-            String computedHealth = ((tlsDays != null && tlsDays <= 0) || (samlDays != null && samlDays <= 0))
+            String computedHealth = ((tlsDays != null && tlsDays <= 0)
+                    || (samlDays != null && samlDays <= 0)
+                    || (secretDays != null && secretDays <= 0))
                     ? "UNHEALTHY"
-                    : (((tlsDays != null && tlsDays <= 30) || (samlDays != null && samlDays <= 30)) ? "DEGRADED" : "HEALTHY");
+                    : (((tlsDays != null && tlsDays <= 30)
+                            || (samlDays != null && samlDays <= 30)
+                            || (secretDays != null && secretDays <= 30)) ? "DEGRADED" : "HEALTHY");
 
-            ssoConfigRepository.findFirstByOrganizationIdNative(org.getId()).ifPresent(c -> {
+            existingOpt.ifPresent(c -> {
                 c.setLastTestAt(now);
                 c.setLastTestStatus("SUCCESS");
                 c.setLastTestErrorMessage(null);
@@ -552,36 +561,16 @@ public class TenantSsoService {
     }
 
     private String resolveDiscoveryUrl(TestSsoProbeRequest req) {
-        if (req.getMetadataUrl() != null && !req.getMetadataUrl().isBlank()) {
-            return req.getMetadataUrl().trim();
-        }
-        if (req.getIssuerUrl() != null && !req.getIssuerUrl().isBlank()) {
-            return resolveDiscoveryUrlFromIssuer(req.getIssuerUrl(), null);
-        }
-        if (req.getSingleSignOnUrl() != null && !req.getSingleSignOnUrl().isBlank()) {
-            return req.getSingleSignOnUrl().trim();
-        }
-        if ("GOOGLE".equalsIgnoreCase(req.getProviderType())) {
-            return "https://accounts.google.com/.well-known/openid-configuration";
-        }
-        if ("GITHUB".equalsIgnoreCase(req.getProviderType())) {
-            return "https://api.github.com/meta";
-        }
-        return null;
+        return getHealthProbeHelper().resolveDiscoveryUrl(
+                req.getProviderType(),
+                req.getIssuerUrl(),
+                req.getMetadataUrl(),
+                req.getSingleSignOnUrl()
+        );
     }
 
     private String resolveDiscoveryUrlFromIssuer(String issuerUrl, String metadataUrl) {
-        if (metadataUrl != null && !metadataUrl.isBlank()) {
-            return metadataUrl.trim();
-        }
-        if (issuerUrl == null || issuerUrl.isBlank()) {
-            return null;
-        }
-        String clean = issuerUrl.trim();
-        if (clean.endsWith("/.well-known/openid-configuration")) {
-            return clean;
-        }
-        return clean.endsWith("/") ? clean + ".well-known/openid-configuration" : clean + "/.well-known/openid-configuration";
+        return getHealthProbeHelper().resolveDiscoveryUrl("OIDC_CUSTOM", issuerUrl, metadataUrl, null);
     }
 
     private Organization findOrganization(String orgSlug) {

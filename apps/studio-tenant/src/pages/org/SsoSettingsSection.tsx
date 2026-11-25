@@ -100,6 +100,16 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
 
   const handleProviderTypeChange = (nextType: string) => {
     setProviderType(nextType);
+    if (nextType !== "SAML_CUSTOM") {
+      setMetadataUrl("");
+    }
+  };
+
+  const handleIssuerUrlChange = (nextUrl: string) => {
+    setIssuerUrl(nextUrl);
+    if (providerType !== "SAML_CUSTOM") {
+      setMetadataUrl("");
+    }
   };
 
   const loadSsoConfig = React.useCallback(async () => {
@@ -109,12 +119,13 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
       const { apiClient } = await import("../../lib/api-client");
       const res = await apiClient<SsoConfigResponse>(`/api/v1/organizations/${encodeURIComponent(slug)}/sso`);
       if (res && res.providerType) {
+        const loadedIsSaml = res.providerType === "SAML_CUSTOM";
         setProviderType(res.providerType);
         setDisplayName(res.displayName || "");
         setClientId(res.clientId || "");
         setHasExistingSecret(Boolean(res.hasClientSecret));
-        setIssuerUrl(res.issuerUrl || "");
-        setMetadataUrl(res.metadataUrl || "");
+        setIssuerUrl(res.issuerUrl || (!loadedIsSaml ? res.metadataUrl || "" : ""));
+        setMetadataUrl(loadedIsSaml ? res.metadataUrl || "" : "");
         setSingleSignOnUrl(res.singleSignOnUrl || "");
         setEntityId(res.entityId || "");
         setSigningCertificate(res.signingCertificate || "");
@@ -160,7 +171,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           body: JSON.stringify({
             providerType,
             issuerUrl: issuerUrl || undefined,
-            metadataUrl: metadataUrl || undefined,
+            metadataUrl: providerType === "SAML_CUSTOM" ? (metadataUrl.trim() || undefined) : undefined,
             singleSignOnUrl: singleSignOnUrl || undefined,
             signingCertificate: signingCertificate || undefined,
             clientId,
@@ -220,7 +231,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
             body: JSON.stringify({
               providerType,
               issuerUrl: issuerUrl.trim() || undefined,
-              metadataUrl: metadataUrl.trim() || undefined,
+              metadataUrl: providerType === "SAML_CUSTOM" ? (metadataUrl.trim() || undefined) : undefined,
               singleSignOnUrl: singleSignOnUrl.trim() || undefined,
               signingCertificate: signingCertificate.trim() || undefined,
               clientId: clientId.trim(),
@@ -243,7 +254,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         clientId: clientId.trim(),
         clientSecret: clientSecret.trim() || undefined,
         issuerUrl: issuerUrl.trim() || undefined,
-        metadataUrl: metadataUrl.trim() || undefined,
+        metadataUrl: providerType === "SAML_CUSTOM" ? (metadataUrl.trim() || undefined) : undefined,
         singleSignOnUrl: singleSignOnUrl.trim() || undefined,
         entityId: entityId.trim() || undefined,
         signingCertificate: signingCertificate.trim() || undefined,
@@ -363,7 +374,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           onDisplayNameChange={setDisplayName}
           onClientIdChange={setClientId}
           onClientSecretChange={setClientSecret}
-          onIssuerUrlChange={setIssuerUrl}
+          onIssuerUrlChange={handleIssuerUrlChange}
           onSingleSignOnUrlChange={setSingleSignOnUrl}
           onEntityIdChange={setEntityId}
           onSigningCertificateChange={setSigningCertificate}

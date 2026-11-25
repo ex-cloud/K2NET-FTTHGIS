@@ -356,5 +356,29 @@ public class TenantSsoServiceTest {
         assertEquals("http://keycloak:8081/realms/ftth-realm/protocol/openid-connect/userinfo", kcConfig.get("userInfoUrl"));
         assertEquals("FORCE", kcConfig.get("syncMode"));
     }
+
+    @Test
+    @DisplayName("S13: testProbe rejects SSRF issuerUrl even when stale bare metadataUrl is also passed")
+    void testTestProbe_RejectsSsrfIssuerUrlWhenStaleBareMetadataUrlPresent() {
+        OrganizationSsoConfig existing = OrganizationSsoConfig.builder()
+                .id(testOrgId)
+                .organization(testOrg)
+                .build();
+        when(ssoConfigRepository.findFirstByOrganizationIdNative(testOrgId)).thenReturn(Optional.of(existing));
+
+        TestSsoProbeRequest req = TestSsoProbeRequest.builder()
+                .providerType("KEYCLOAK_OIDC")
+                .issuerUrl("http://169.254.169.254/latest/meta-data")
+                .metadataUrl("https://auth-gis.kdua.net/realms/k2net-corporate")
+                .build();
+
+        TestSsoProbeResponse res = ssoService.testProbe("fibernet", req);
+
+        assertFalse(res.isSuccess());
+        assertEquals("UNHEALTHY", res.getHealthStatus());
+        assertEquals("FAILED", existing.getLastTestStatus());
+        assertNotNull(res.getMessage());
+        assertFalse(res.getMessage().contains("Payload .well-known/openid-configuration tidak lengkap"));
+    }
 }
 

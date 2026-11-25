@@ -203,4 +203,60 @@ class SsoIdpHealthProbeServiceTest {
 
         verify(ssoConfigRepository, never()).findAllActiveWithOrganization();
     }
+
+    @Test
+    @DisplayName("Normalisasi URL OIDC discovery pada metadataUrl bare realm Keycloak")
+    void resolvesAndNormalizesBareOidcRealmMetadataUrl() {
+        String resolved = probeService.resolveDiscoveryUrl(
+                "KEYCLOAK_OIDC",
+                null,
+                "https://auth-gis.kdua.net/realms/k2net-corporate",
+                null
+        );
+        assertEquals(
+                "https://auth-gis.kdua.net/realms/k2net-corporate/.well-known/openid-configuration",
+                resolved
+        );
+    }
+
+    @Test
+    @DisplayName("Input issuerUrl baru mengalahkan metadataUrl bare lama dan tetap ditolak SSRF Guard")
+    void updatedIssuerUrlOverridesStaleBareMetadataUrlAndTriggersSsrfGuard() {
+        String resolved = probeService.resolveDiscoveryUrl(
+                "KEYCLOAK_OIDC",
+                "http://169.254.169.254/latest/meta-data",
+                "https://auth-gis.kdua.net/realms/k2net-corporate",
+                null
+        );
+        assertTrue(resolved.startsWith("http://169.254.169.254/"));
+
+        SsoIdpHealthProbeService.ProbeOutcome outcome = probeService.executeHttpAndCertProbe(
+                resolved,
+                "KEYCLOAK_OIDC",
+                null,
+                LocalDateTime.now()
+        );
+        assertFalse(outcome.networkOk());
+        assertNotNull(outcome.errorMessage());
+    }
+
+    @Test
+    @DisplayName("SAML metadataUrl dan singleSignOnUrl dipertahankan apa adanya tanpa suffix .well-known")
+    void preservesSamlMetadataUrlVerbatim() {
+        String resolvedMeta = probeService.resolveDiscoveryUrl(
+                "SAML_CUSTOM",
+                null,
+                "https://idp.company.com/saml/metadata.xml",
+                "https://idp.company.com/saml/sso"
+        );
+        assertEquals("https://idp.company.com/saml/metadata.xml", resolvedMeta);
+
+        String resolvedSso = probeService.resolveDiscoveryUrl(
+                "SAML_CUSTOM",
+                null,
+                null,
+                "https://idp.company.com/saml/sso"
+        );
+        assertEquals("https://idp.company.com/saml/sso", resolvedSso);
+    }
 }

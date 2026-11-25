@@ -268,14 +268,7 @@ public class SsoIdpHealthProbeService {
             URI currentUri = urlSafetyValidator.validateAndResolve(mappedUrl, isInternalMapped, internalHost);
             String probeHost = currentUri.getHost();
 
-            CertInfo tlsCert = null;
-            if (!isInternalMapped && "https".equalsIgnoreCase(currentUri.getScheme())) {
-                try {
-                    tlsCert = inspectTlsLeafCertificate(currentUri, PROBE_TIMEOUT_MS);
-                } catch (Exception tlsEx) {
-                    log.debug("TLS cert inspection warning for {}: {}", probeHost, tlsEx.getMessage());
-                }
-            }
+            CertInfo tlsCert = tryInspectTlsCert(currentUri, targetUrl, isInternalMapped, probeHost);
 
             HttpResponse<String> response = sendSafeGetInternal(currentUri, isInternalMapped, internalHost);
             int code = response.statusCode();
@@ -418,16 +411,49 @@ public class SsoIdpHealthProbeService {
         return null;
     }
 
+    private CertInfo tryInspectTlsCert(URI currentUri, String targetUrl, boolean isInternalMapped, String probeHost) {
+        try {
+            if (!isInternalMapped && "https".equalsIgnoreCase(currentUri.getScheme())) {
+                return inspectTlsLeafCertificate(currentUri, PROBE_TIMEOUT_MS);
+            }
+            if (isInternalMapped && targetUrl.trim().toLowerCase(Locale.ROOT).startsWith("https://")) {
+                return inspectTlsLeafCertificate(URI.create(targetUrl.trim()), PROBE_TIMEOUT_MS);
+            }
+        } catch (Exception tlsEx) {
+            log.debug("TLS cert inspection warning for {}: {}", probeHost, tlsEx.getMessage());
+        }
+        return null;
+    }
+
     public String resolveDiscoveryUrl(String providerType, String issuerUrl, String metadataUrl, String singleSignOnUrl) {
-        if (metadataUrl != null && !metadataUrl.isBlank()) {
-            return metadataUrl.trim();
+        if (isSamlProvider(providerType)) {
+            if (metadataUrl != null && !metadataUrl.isBlank()) {
+                return metadataUrl.trim();
+            }
+            if (singleSignOnUrl != null && !singleSignOnUrl.isBlank()) {
+                return singleSignOnUrl.trim();
+            }
+            if (issuerUrl != null && !issuerUrl.isBlank()) {
+                return issuerUrl.trim();
+            }
+            return null;
+        }
+        if ("GITHUB".equalsIgnoreCase(providerType)) {
+            if (issuerUrl != null && !issuerUrl.isBlank()
+                    && !"https://github.com/login/oauth".equalsIgnoreCase(issuerUrl.trim())) {
+                return issuerUrl.trim();
+            }
+            if (metadataUrl != null && !metadataUrl.isBlank()) {
+                return metadataUrl.trim();
+            }
+            return "https://api.github.com/meta";
+        }
+        if (metadataUrl != null && !metadataUrl.isBlank()
+                && (metadataUrl.trim().contains("/.well-known/") || issuerUrl == null || issuerUrl.isBlank())) {
+            return normalizeOidcDiscoveryUrl(metadataUrl);
         }
         if (issuerUrl != null && !issuerUrl.isBlank()) {
-            String clean = issuerUrl.trim();
-            if (clean.endsWith("/.well-known/openid-configuration")) {
-                return clean;
-            }
-            return clean.endsWith("/") ? clean + ".well-known/openid-configuration" : clean + "/.well-known/openid-configuration";
+            return normalizeOidcDiscoveryUrl(issuerUrl);
         }
         if (singleSignOnUrl != null && !singleSignOnUrl.isBlank()) {
             return singleSignOnUrl.trim();
@@ -435,10 +461,20 @@ public class SsoIdpHealthProbeService {
         if ("GOOGLE".equalsIgnoreCase(providerType)) {
             return "https://accounts.google.com/.well-known/openid-configuration";
         }
-        if ("GITHUB".equalsIgnoreCase(providerType)) {
-            return "https://api.github.com/meta";
-        }
         return null;
+    }
+
+    private String normalizeOidcDiscoveryUrl(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return null;
+        }
+        String clean = rawUrl.trim();
+        if (clean.endsWith("/.well-known/openid-configuration") || clean.contains("/.well-known/")) {
+            return clean;
+        }
+        return clean.endsWith("/")
+                ? clean + ".well-known/openid-configuration"
+                : clean + "/.well-known/openid-configuration";
     }
 
     public String toInternalKeycloakUrl(String url) {
