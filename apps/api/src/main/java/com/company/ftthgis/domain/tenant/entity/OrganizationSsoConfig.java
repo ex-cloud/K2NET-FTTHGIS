@@ -104,6 +104,44 @@ public class OrganizationSsoConfig extends OrganizationAwareEntity {
     @Column(name = "last_test_error_message", columnDefinition = "TEXT")
     private String lastTestErrorMessage;
 
+    @Column(name = "health_status", nullable = false, length = 32)
+    @Builder.Default
+    private String healthStatus = "UNKNOWN";
+
+    @Column(name = "last_health_check_at")
+    private LocalDateTime lastHealthCheckAt;
+
+    @Column(name = "last_health_latency_ms")
+    private Integer lastHealthLatencyMs;
+
+    @Column(name = "consecutive_probe_failures", nullable = false)
+    @Builder.Default
+    private Integer consecutiveProbeFailures = 0;
+
+    @Column(name = "last_health_error", columnDefinition = "TEXT")
+    private String lastHealthError;
+
+    @Column(name = "tls_cert_expires_at")
+    private LocalDateTime tlsCertExpiresAt;
+
+    @Column(name = "tls_cert_subject", length = 255)
+    private String tlsCertSubject;
+
+    @Column(name = "saml_cert_expires_at")
+    private LocalDateTime samlCertExpiresAt;
+
+    @Column(name = "saml_cert_subject", length = 255)
+    private String samlCertSubject;
+
+    @Column(name = "client_secret_expires_at")
+    private LocalDateTime clientSecretExpiresAt;
+
+    @Column(name = "last_alert_sent_at")
+    private LocalDateTime lastAlertSentAt;
+
+    @Column(name = "last_alert_stage", length = 32)
+    private String lastAlertStage;
+
     @Version
     @Column(name = "version", nullable = false)
     @Builder.Default

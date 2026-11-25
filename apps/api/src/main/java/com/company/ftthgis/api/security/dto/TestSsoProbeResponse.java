@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * DTO respons hasil uji coba koneksi langsung (Live Probe) ke penyedia identitas (IdP).
@@ -25,5 +26,13 @@ public class TestSsoProbeResponse {
     private String userinfoEndpoint;
     private long latencyMs;
     private LocalDateTime testedAt;
+    private String healthStatus;
+    private LocalDateTime tlsCertExpiresAt;
+    private String tlsCertSubject;
+    private Long tlsCertDaysRemaining;
+    private LocalDateTime samlCertExpiresAt;
+    private String samlCertSubject;
+    private Long samlCertDaysRemaining;
+    private List<String> warnings;
 }
 

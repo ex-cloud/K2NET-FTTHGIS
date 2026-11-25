@@ -38,5 +38,13 @@ public interface OrganizationSsoConfigRepository extends JpaRepository<Organizat
     @Modifying
     @Query(value = "UPDATE organization_sso_configs SET domain_mappings = CAST(:domainsJson AS jsonb) WHERE organization_id = :orgId", nativeQuery = true)
     int syncVerifiedDomainMappingsNative(@Param("orgId") UUID orgId, @Param("domainsJson") String domainsJson);
+
+    @Query("SELECT osc FROM OrganizationSsoConfig osc JOIN FETCH osc.organization o " +
+           "WHERE osc.status = 'ACTIVE' AND o.deletedAt IS NULL ORDER BY o.name ASC")
+    List<OrganizationSsoConfig> findAllActiveWithOrganization();
+
+    @Query("SELECT osc FROM OrganizationSsoConfig osc JOIN FETCH osc.organization o " +
+           "WHERE o.deletedAt IS NULL ORDER BY o.name ASC")
+    List<OrganizationSsoConfig> findAllWithOrganization();
 }
 

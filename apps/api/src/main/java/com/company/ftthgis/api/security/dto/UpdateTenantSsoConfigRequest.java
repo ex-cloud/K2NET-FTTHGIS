@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -64,6 +65,11 @@ public class UpdateTenantSsoConfigRequest {
 
     @Builder.Default
     private String status = "ACTIVE";
+
+    /**
+     * Batas kedaluwarsa opsional Client Secret (Microsoft Entra ID / Okta).
+     */
+    private LocalDateTime clientSecretExpiresAt;
 
     /**
      * Versi entitas untuk Optimistic Locking (@Version) guna mencegah tabrakan data (race condition).

@@ -25,5 +25,9 @@ public class TestSsoProbeRequest {
     private String clientId;
 
     private String clientSecret;
+
+    private String singleSignOnUrl;
+
+    private String signingCertificate;
 }
 

@@ -55,6 +55,30 @@ export interface BlockedIp {
 
 export type BlockedIpDto = BlockedIp;
 
+export interface TenantSsoHealthSummary {
+  configId: string;
+  organizationId: string;
+  organizationSlug: string;
+  organizationName: string;
+  providerType: string;
+  displayName?: string | null;
+  status: string;
+  enforceSso: boolean;
+  healthStatus: "UNKNOWN" | "HEALTHY" | "DEGRADED" | "UNHEALTHY" | string;
+  lastHealthCheckAt?: string | null;
+  lastHealthLatencyMs?: number | null;
+  consecutiveProbeFailures: number;
+  lastHealthError?: string | null;
+  tlsCertExpiresAt?: string | null;
+  tlsCertDaysRemaining?: number | null;
+  samlCertExpiresAt?: string | null;
+  samlCertDaysRemaining?: number | null;
+  clientSecretExpiresAt?: string | null;
+  clientSecretDaysRemaining?: number | null;
+  lastAlertStage?: string | null;
+  lastAlertSentAt?: string | null;
+}
+
 function useRealmConfigSection(baseUrl: string, token: string | null | undefined, status: string, queryClient: ReturnType<typeof useQueryClient>) {
   const realmConfigQuery = useQuery<RealmConfig>({
     queryKey: ['system-realm-config', baseUrl, token],
@@ -318,6 +342,69 @@ function useBlockedIpsSection(baseUrl: string, token: string | null | undefined,
   };
 }
 
+function useTenantSsoHealthSection(
+  baseUrl: string,
+  token: string | null | undefined,
+  status: string,
+  queryClient: ReturnType<typeof useQueryClient>
+) {
+  const ssoHealthQuery = useQuery<TenantSsoHealthSummary[]>({
+    queryKey: ['system-sso-health', baseUrl, token],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await httpClient(`${baseUrl}/system/security/sso-health`, { token });
+      if (!res.ok) throw new Error('Failed to fetch tenant SSO health');
+      return res.json();
+    },
+    enabled: status === 'authenticated' && !!token,
+  });
+
+  const runAllSsoProbesMutation = useMutation({
+    mutationFn: async () => {
+      if (!token) throw new Error('Not authenticated');
+      const res = await httpClient(`${baseUrl}/system/security/sso-health/run-probe`, {
+        method: 'POST',
+        token,
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to run SSO health probe');
+      }
+      return res.json() as Promise<TenantSsoHealthSummary[]>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['system-sso-health'] });
+    },
+  });
+
+  const runSingleSsoProbeMutation = useMutation({
+    mutationFn: async (configId: string) => {
+      if (!token) throw new Error('Not authenticated');
+      const res = await httpClient(`${baseUrl}/system/security/sso-health/${encodeURIComponent(configId)}/probe`, {
+        method: 'POST',
+        token,
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to run SSO health probe');
+      }
+      return res.json() as Promise<TenantSsoHealthSummary>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['system-sso-health'] });
+    },
+  });
+
+  return {
+    tenantSsoHealth: ssoHealthQuery.data || [],
+    loadingTenantSsoHealth: ssoHealthQuery.isLoading,
+    runAllSsoProbes: runAllSsoProbesMutation.mutateAsync,
+    isRunningAllSsoProbes: runAllSsoProbesMutation.isPending,
+    runSingleSsoProbe: runSingleSsoProbeMutation.mutateAsync,
+    isRunningSingleSsoProbe: runSingleSsoProbeMutation.isPending,
+  };
+}
+
 export function useSecuritySettings() {
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
@@ -329,6 +416,7 @@ export function useSecuritySettings() {
   const sso = useSsoSection(baseUrl, token, status, queryClient);
   const alerts = useAlertsSection(baseUrl, token, status, queryClient);
   const blockedIps = useBlockedIpsSection(baseUrl, token, status, queryClient);
+  const ssoHealth = useTenantSsoHealthSection(baseUrl, token, status, queryClient);
 
   return {
     ...realm,
@@ -336,5 +424,6 @@ export function useSecuritySettings() {
     ...sso,
     ...alerts,
     ...blockedIps,
+    ...ssoHealth,
   };
 }

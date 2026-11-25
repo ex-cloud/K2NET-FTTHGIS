@@ -7,6 +7,7 @@ import { useTranslation } from "@k2net/i18n";
 import { AuthRealmSettingsCard } from "@/components/security/auth-realm-settings-card";
 import { AuthSsoProvidersCard } from "@/components/security/auth-sso-providers-card";
 import { AuthActiveSessionsCard } from "@/components/security/auth-active-sessions-card";
+import { TenantSsoHealthCard } from "@/components/security/tenant-sso-health-card";
 
 export default function SystemAuthPage() {
   const { t } = useTranslation();
@@ -25,6 +26,12 @@ export default function SystemAuthPage() {
     loadingSsoProviders,
     updateSsoProvider,
     isUpdatingSsoProvider,
+
+    tenantSsoHealth,
+    loadingTenantSsoHealth,
+    runAllSsoProbes,
+    isRunningAllSsoProbes,
+    runSingleSsoProbe,
   } = useSecuritySettings();
 
   const [regAllowed, setRegAllowed] = useState(false);
@@ -144,6 +151,14 @@ export default function SystemAuthPage() {
           sessions={sessions}
           revokeSession={revokeSession}
           isRevokingSession={isRevokingSession}
+        />
+
+        <TenantSsoHealthCard
+          items={tenantSsoHealth}
+          isLoading={loadingTenantSsoHealth}
+          onRunAll={runAllSsoProbes}
+          isRunningAll={isRunningAllSsoProbes}
+          onRunSingle={runSingleSsoProbe}
         />
       </div>
     </div>

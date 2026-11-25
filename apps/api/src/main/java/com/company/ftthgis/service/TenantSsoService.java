@@ -19,11 +19,6 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -60,6 +55,9 @@ public class TenantSsoService {
     @Autowired(required = false)
     private OrganizationSlugAliasRepository slugAliasRepository;
 
+    @Autowired(required = false)
+    private SsoIdpHealthProbeService healthProbeService;
+
     @org.springframework.beans.factory.annotation.Value("${keycloak.server-url:https://auth-gis.kdua.net}")
     private String keycloakPublicUrl = "https://auth-gis.kdua.net";
 
@@ -88,11 +86,6 @@ public class TenantSsoService {
                             ObjectMapper objectMapper) {
         this(organizationRepository, ssoConfigRepository, licenseCryptoService, keycloakAdminService, objectMapper, null);
     }
-
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .build();
 
     private final Map<UUID, LocalDateTime> recentSuccessfulProbes = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -190,6 +183,22 @@ public class TenantSsoService {
         config.setEntityId(request.getEntityId());
         config.setSingleSignOnUrl(request.getSingleSignOnUrl());
         config.setSigningCertificate(request.getSigningCertificate());
+        config.setClientSecretExpiresAt(request.getClientSecretExpiresAt());
+        if (request.getSigningCertificate() != null && !request.getSigningCertificate().isBlank()) {
+            try {
+                SsoIdpHealthProbeService.CertInfo certInfo = getHealthProbeHelper().parsePemCertificate(request.getSigningCertificate());
+                if (certInfo != null) {
+                    config.setSamlCertExpiresAt(certInfo.expiresAt());
+                    String sub = certInfo.subject();
+                    config.setSamlCertSubject(sub != null && sub.length() > 250 ? sub.substring(0, 250) : sub);
+                }
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Format sertifikat SAML X.509 tidak valid: " + e.getMessage());
+            }
+        } else {
+            config.setSamlCertExpiresAt(null);
+            config.setSamlCertSubject(null);
+        }
         config.setEnforceSso(request.isEnforceSso());
         config.setAllowBreakGlassBypass(request.isAllowBreakGlassBypass());
         config.setStatus(request.getStatus() != null ? request.getStatus() : "ACTIVE");
@@ -272,11 +281,13 @@ public class TenantSsoService {
     /**
      * Melakukan Live Probe uji coba koneksi ke IdP Discovery / Metadata URL
      * untuk mencegah kesalahan konfigurasi sebelum SSO diaktifkan.
+     * Dilengkapi SSRF Guard + pembacaan sertifikat TLS leaf & SAML X.509.
      */
     @Transactional
     public TestSsoProbeResponse testProbe(String orgSlug, TestSsoProbeRequest request) {
         Organization org = findOrganization(orgSlug);
         long startTime = System.currentTimeMillis();
+        LocalDateTime now = LocalDateTime.now();
 
         String probeUrl = resolveDiscoveryUrl(request);
         if (probeUrl == null || probeUrl.isBlank()) {
@@ -284,84 +295,113 @@ public class TenantSsoService {
                     .success(false)
                     .providerType(request.getProviderType())
                     .message("URL Discovery atau Metadata IdP wajib diisi untuk melakukan pengujian koneksi.")
-                    .testedAt(LocalDateTime.now())
+                    .testedAt(now)
                     .build();
         }
 
-        try {
-            String internalProbeUrl = toInternalKeycloakUrl(probeUrl);
-            log.info("🔍 Menjalankan Live Probe SSO ke: {} (internal: {})", probeUrl, internalProbeUrl);
-            HttpRequest httpRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(internalProbeUrl))
-                    .timeout(Duration.ofSeconds(5))
-                    .header("Accept", "application/json, application/xml, text/xml")
-                    .GET()
-                    .build();
+        SsoIdpHealthProbeService helper = getHealthProbeHelper();
+        SsoIdpHealthProbeService.ProbeOutcome outcome = helper.executeHttpAndCertProbe(
+                probeUrl,
+                request.getProviderType(),
+                request.getSigningCertificate(),
+                now
+        );
+        long latency = System.currentTimeMillis() - startTime;
 
-            HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            long latency = System.currentTimeMillis() - startTime;
+        List<String> warnings = new ArrayList<>();
+        Long tlsDays = outcome.tlsCertInfo() != null ? helper.computeDaysRemaining(outcome.tlsCertInfo().expiresAt(), now) : null;
+        Long samlDays = outcome.samlCertInfo() != null ? helper.computeDaysRemaining(outcome.samlCertInfo().expiresAt(), now) : null;
 
-            if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                // Parse OIDC OpenID Configuration jika berformat JSON
-                JsonNode json = null;
-                try {
-                    json = objectMapper.readTree(response.body());
-                } catch (Exception ignored) {}
+        if (tlsDays != null && tlsDays <= 30) {
+            warnings.add(tlsDays <= 0 ? "Sertifikat TLS server IdP telah kedaluwarsa!" : "Sertifikat TLS IdP akan kedaluwarsa dalam " + tlsDays + " hari.");
+        }
+        if (samlDays != null && samlDays <= 30) {
+            warnings.add(samlDays <= 0 ? "Sertifikat SAML signing telah kedaluwarsa!" : "Sertifikat SAML signing akan kedaluwarsa dalam " + samlDays + " hari.");
+        }
+        if (outcome.samlWarning() != null && outcome.networkOk()) {
+            warnings.add(outcome.samlWarning());
+        }
 
-                String issuer = json != null && json.has("issuer") ? json.get("issuer").asText() : request.getIssuerUrl();
-                String authEndpoint = json != null && json.has("authorization_endpoint") ? json.get("authorization_endpoint").asText() : null;
-                String tokenEndpoint = json != null && json.has("token_endpoint") ? json.get("token_endpoint").asText() : null;
-                String jwksUri = json != null && json.has("jwks_uri") ? json.get("jwks_uri").asText() : null;
-                String userinfoEndpoint = json != null && json.has("userinfo_endpoint") ? json.get("userinfo_endpoint").asText() : null;
+        if (outcome.networkOk()) {
+            recentSuccessfulProbes.put(org.getId(), now);
 
-                recentSuccessfulProbes.put(org.getId(), LocalDateTime.now());
+            String computedHealth = ((tlsDays != null && tlsDays <= 0) || (samlDays != null && samlDays <= 0))
+                    ? "UNHEALTHY"
+                    : (((tlsDays != null && tlsDays <= 30) || (samlDays != null && samlDays <= 30)) ? "DEGRADED" : "HEALTHY");
 
-                // Catat hasil sukses pada entitas DB jika sudah ada
-                ssoConfigRepository.findFirstByOrganizationIdNative(org.getId()).ifPresent(c -> {
-                    c.setLastTestAt(LocalDateTime.now());
-                    c.setLastTestStatus("SUCCESS");
-                    c.setLastTestErrorMessage(null);
-                    ssoConfigRepository.save(c);
-                    evictTenantAuthCache(org.getSlug(), parseDomainList(c.getDomainMappings()));
-                });
-
-                return TestSsoProbeResponse.builder()
-                        .success(true)
-                        .message("Koneksi ke Identity Provider berhasil diverifikasi! Endpoint otorisasi & token valid.")
-                        .providerType(request.getProviderType())
-                        .issuer(issuer)
-                        .authorizationEndpoint(authEndpoint)
-                        .tokenEndpoint(tokenEndpoint)
-                        .jwksUri(jwksUri)
-                        .userinfoEndpoint(userinfoEndpoint)
-                        .latencyMs(latency)
-                        .testedAt(LocalDateTime.now())
-                        .build();
-            } else {
-                String errorMsg = "Identity Provider mengembalikan HTTP status " + response.statusCode();
-                recordProbeFailure(org.getId(), errorMsg);
-                return TestSsoProbeResponse.builder()
-                        .success(false)
-                        .providerType(request.getProviderType())
-                        .message(errorMsg)
-                        .latencyMs(latency)
-                        .testedAt(LocalDateTime.now())
-                        .build();
-            }
-        } catch (Exception e) {
-            long latency = System.currentTimeMillis() - startTime;
-            String errorMsg = "Gagal menghubungi Identity Provider: " + e.getMessage();
-            log.warn("⚠️ SSO Probe failed for org '{}': {}", orgSlug, errorMsg);
-            recordProbeFailure(org.getId(), errorMsg);
+            ssoConfigRepository.findFirstByOrganizationIdNative(org.getId()).ifPresent(c -> {
+                c.setLastTestAt(now);
+                c.setLastTestStatus("SUCCESS");
+                c.setLastTestErrorMessage(null);
+                c.setHealthStatus(computedHealth);
+                c.setLastHealthCheckAt(now);
+                c.setLastHealthLatencyMs((int) Math.max(0L, latency));
+                c.setConsecutiveProbeFailures(0);
+                c.setLastHealthError(warnings.isEmpty() ? null : String.join("; ", warnings));
+                if (outcome.tlsCertInfo() != null) {
+                    c.setTlsCertExpiresAt(outcome.tlsCertInfo().expiresAt());
+                    c.setTlsCertSubject(outcome.tlsCertInfo().subject());
+                }
+                if (outcome.samlCertInfo() != null) {
+                    c.setSamlCertExpiresAt(outcome.samlCertInfo().expiresAt());
+                    c.setSamlCertSubject(outcome.samlCertInfo().subject());
+                }
+                ssoConfigRepository.save(c);
+                evictTenantAuthCache(org.getSlug(), parseDomainList(c.getDomainMappings()));
+            });
 
             return TestSsoProbeResponse.builder()
-                    .success(false)
+                    .success(true)
+                    .message("Koneksi ke Identity Provider berhasil diverifikasi! Endpoint otorisasi & token valid.")
                     .providerType(request.getProviderType())
-                    .message(errorMsg)
+                    .issuer(outcome.issuer() != null ? outcome.issuer() : request.getIssuerUrl())
+                    .authorizationEndpoint(outcome.authorizationEndpoint())
+                    .tokenEndpoint(outcome.tokenEndpoint())
+                    .jwksUri(outcome.jwksUri())
                     .latencyMs(latency)
-                    .testedAt(LocalDateTime.now())
+                    .testedAt(now)
+                    .healthStatus(computedHealth)
+                    .tlsCertExpiresAt(outcome.tlsCertInfo() != null ? outcome.tlsCertInfo().expiresAt() : null)
+                    .tlsCertSubject(outcome.tlsCertInfo() != null ? outcome.tlsCertInfo().subject() : null)
+                    .tlsCertDaysRemaining(tlsDays)
+                    .samlCertExpiresAt(outcome.samlCertInfo() != null ? outcome.samlCertInfo().expiresAt() : null)
+                    .samlCertSubject(outcome.samlCertInfo() != null ? outcome.samlCertInfo().subject() : null)
+                    .samlCertDaysRemaining(samlDays)
+                    .warnings(warnings)
                     .build();
         }
+
+        String errorMsg = outcome.errorMessage() != null ? outcome.errorMessage() : "Gagal menghubungi Identity Provider.";
+        log.warn("⚠️ SSO Probe failed for org '{}': {}", orgSlug, errorMsg);
+        recordProbeFailure(org.getId(), errorMsg);
+
+        return TestSsoProbeResponse.builder()
+                .success(false)
+                .providerType(request.getProviderType())
+                .message(errorMsg)
+                .latencyMs(latency)
+                .testedAt(now)
+                .healthStatus("UNHEALTHY")
+                .tlsCertExpiresAt(outcome.tlsCertInfo() != null ? outcome.tlsCertInfo().expiresAt() : null)
+                .tlsCertSubject(outcome.tlsCertInfo() != null ? outcome.tlsCertInfo().subject() : null)
+                .tlsCertDaysRemaining(tlsDays)
+                .samlCertExpiresAt(outcome.samlCertInfo() != null ? outcome.samlCertInfo().expiresAt() : null)
+                .samlCertSubject(outcome.samlCertInfo() != null ? outcome.samlCertInfo().subject() : null)
+                .samlCertDaysRemaining(samlDays)
+                .warnings(warnings)
+                .build();
+    }
+
+    private SsoIdpHealthProbeService getHealthProbeHelper() {
+        if (this.healthProbeService != null) {
+            return this.healthProbeService;
+        }
+        return new SsoIdpHealthProbeService(
+                ssoConfigRepository,
+                new SsoUrlSafetyValidator(),
+                objectMapper,
+                null, null, null, null, redisTemplate
+        );
     }
 
     private void recordProbeFailure(UUID orgId, String errorMessage) {
@@ -470,22 +510,13 @@ public class TenantSsoService {
                 String logoutUrl = baseIssuer + "/protocol/openid-connect/logout";
 
                 try {
-                    String internalDiscoveryUrl = toInternalKeycloakUrl(discoveryUrl);
-                    HttpRequest discReq = HttpRequest.newBuilder()
-                            .uri(URI.create(internalDiscoveryUrl))
-                            .timeout(Duration.ofSeconds(3))
-                            .header("Accept", "application/json")
-                            .GET()
-                            .build();
-                    HttpResponse<String> discResp = httpClient.send(discReq, HttpResponse.BodyHandlers.ofString());
-                    if (discResp.statusCode() >= 200 && discResp.statusCode() < 300) {
-                        JsonNode json = objectMapper.readTree(discResp.body());
-                        if (json.has("issuer")) issuer = json.get("issuer").asText();
-                        if (json.has("authorization_endpoint")) authUrl = json.get("authorization_endpoint").asText();
-                        if (json.has("token_endpoint")) tokenUrl = toInternalKeycloakUrl(json.get("token_endpoint").asText());
-                        if (json.has("jwks_uri")) jwksUrl = toInternalKeycloakUrl(json.get("jwks_uri").asText());
-                        if (json.has("userinfo_endpoint")) userInfoUrl = toInternalKeycloakUrl(json.get("userinfo_endpoint").asText());
-                        if (json.has("end_session_endpoint")) logoutUrl = json.get("end_session_endpoint").asText();
+                    SsoIdpHealthProbeService.ProbeOutcome discOutcome = getHealthProbeHelper().executeHttpAndCertProbe(
+                            discoveryUrl, providerType, null, LocalDateTime.now());
+                    if (discOutcome.networkOk()) {
+                        if (discOutcome.issuer() != null) issuer = discOutcome.issuer();
+                        if (discOutcome.authorizationEndpoint() != null) authUrl = discOutcome.authorizationEndpoint();
+                        if (discOutcome.tokenEndpoint() != null) tokenUrl = toInternalKeycloakUrl(discOutcome.tokenEndpoint());
+                        if (discOutcome.jwksUri() != null) jwksUrl = toInternalKeycloakUrl(discOutcome.jwksUri());
                     }
                 } catch (Exception e) {
                     log.debug("Using fallback OIDC endpoints for {}: {}", discoveryUrl, e.getMessage());
@@ -526,6 +557,9 @@ public class TenantSsoService {
         }
         if (req.getIssuerUrl() != null && !req.getIssuerUrl().isBlank()) {
             return resolveDiscoveryUrlFromIssuer(req.getIssuerUrl(), null);
+        }
+        if (req.getSingleSignOnUrl() != null && !req.getSingleSignOnUrl().isBlank()) {
+            return req.getSingleSignOnUrl().trim();
         }
         if ("GOOGLE".equalsIgnoreCase(req.getProviderType())) {
             return "https://accounts.google.com/.well-known/openid-configuration";
@@ -572,6 +606,8 @@ public class TenantSsoService {
 
         boolean hasSecret = entity.getClientSecretEncrypted() != null && !entity.getClientSecretEncrypted().isBlank();
         String maskedSecret = hasSecret ? "••••••••••••••••" : null;
+        LocalDateTime now = LocalDateTime.now();
+        SsoIdpHealthProbeService helper = getHealthProbeHelper();
 
         return TenantSsoConfigDto.builder()
                 .id(entity.getId())
@@ -595,6 +631,20 @@ public class TenantSsoService {
                 .lastTestAt(entity.getLastTestAt())
                 .lastTestStatus(entity.getLastTestStatus())
                 .lastTestErrorMessage(entity.getLastTestErrorMessage())
+                .healthStatus(entity.getHealthStatus() != null ? entity.getHealthStatus() : "UNKNOWN")
+                .lastHealthCheckAt(entity.getLastHealthCheckAt())
+                .lastHealthLatencyMs(entity.getLastHealthLatencyMs())
+                .consecutiveProbeFailures(entity.getConsecutiveProbeFailures())
+                .lastHealthError(entity.getLastHealthError())
+                .tlsCertExpiresAt(entity.getTlsCertExpiresAt())
+                .tlsCertSubject(entity.getTlsCertSubject())
+                .tlsCertDaysRemaining(helper.computeDaysRemaining(entity.getTlsCertExpiresAt(), now))
+                .samlCertExpiresAt(entity.getSamlCertExpiresAt())
+                .samlCertSubject(entity.getSamlCertSubject())
+                .samlCertDaysRemaining(helper.computeDaysRemaining(entity.getSamlCertExpiresAt(), now))
+                .clientSecretExpiresAt(entity.getClientSecretExpiresAt())
+                .clientSecretDaysRemaining(helper.computeDaysRemaining(entity.getClientSecretExpiresAt(), now))
+                .lastAlertStage(entity.getLastAlertStage())
                 .version(entity.getVersion())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

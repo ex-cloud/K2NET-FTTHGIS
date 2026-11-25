@@ -24,6 +24,7 @@ export interface SsoFormFieldsProps {
   singleSignOnUrl: string;
   entityId: string;
   signingCertificate: string;
+  clientSecretExpiresAt: string;
   onProviderTypeChange: (val: string) => void;
   onDisplayNameChange: (val: string) => void;
   onClientIdChange: (val: string) => void;
@@ -32,6 +33,7 @@ export interface SsoFormFieldsProps {
   onSingleSignOnUrlChange: (val: string) => void;
   onEntityIdChange: (val: string) => void;
   onSigningCertificateChange: (val: string) => void;
+  onClientSecretExpiresAtChange: (val: string) => void;
 }
 
 export function SsoFormFields({
@@ -46,6 +48,7 @@ export function SsoFormFields({
   singleSignOnUrl,
   entityId,
   signingCertificate,
+  clientSecretExpiresAt,
   onProviderTypeChange,
   onDisplayNameChange,
   onClientIdChange,
@@ -54,6 +57,7 @@ export function SsoFormFields({
   onSingleSignOnUrlChange,
   onEntityIdChange,
   onSigningCertificateChange,
+  onClientSecretExpiresAtChange,
 }: SsoFormFieldsProps) {
   const { t } = useTranslation();
   const isSaml = providerType === "SAML_CUSTOM";
@@ -125,6 +129,7 @@ export function SsoFormFields({
       </div>
 
       {!isSaml ? (
+        <>
         <div className="space-y-1.5 md:col-span-2">
           <Label className="text-xs font-semibold">{t("settings.sso_discovery_url_label")}</Label>
           <Input
@@ -147,6 +152,23 @@ export function SsoFormFields({
             className="h-8.5 text-xs font-mono bg-background border-border/80"
           />
         </div>
+        <div className="space-y-1.5 md:col-span-2">
+          <Label htmlFor="sso-secret-expiry" className="text-xs font-semibold">
+            {t("settings.sso_client_secret_expiry_label")}
+          </Label>
+          <Input
+            id="sso-secret-expiry"
+            type="date"
+            disabled={!isSsoAllowed || isLoading}
+            value={clientSecretExpiresAt}
+            onChange={(e) => onClientSecretExpiresAtChange(e.target.value)}
+            className="h-8.5 text-xs font-mono bg-background border-border/80 max-w-xs"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            {t("settings.sso_client_secret_expiry_desc")}
+          </p>
+        </div>
+      </>
       ) : (
         <>
           <div className="space-y-1.5 md:col-span-2">
