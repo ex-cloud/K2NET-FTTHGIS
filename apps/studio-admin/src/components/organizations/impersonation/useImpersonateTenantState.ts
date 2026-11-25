@@ -1,22 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth-compat";
+import { httpClient } from "@/lib/httpClient";
 import { getTenantUrl } from "@/lib/domain";
 import { useActiveImpersonation } from "@/hooks/useActiveImpersonation";
 import type { EnrichedOrganization } from "../types";
-
-function isStepUpAuthRequired(status: number, data: { error?: string; message?: string; details?: string }): boolean {
-  if (status !== 403) return false;
-  const str = `${data.error || ""} ${data.message || ""} ${data.details || ""}`.toLowerCase();
-  return str.includes("step_up") || str.includes("step-up") || str.includes("120 detik");
-}
 
 export function useImpersonateTenantState(
   organization: EnrichedOrganization | null,
   isOpen: boolean,
   onClose: () => void
 ) {
-  const { data: session, signIn } = useSession();
+  const { data: session } = useSession();
   const { activeSession, refetch: refetchActiveSession } = useActiveImpersonation();
   const [reason, setReason] = useState("");
   const [ticketReference, setTicketReference] = useState("");
@@ -31,33 +26,6 @@ export function useImpersonateTenantState(
   );
 
   const isReasonValid = reason.trim().length >= 10;
-
-  const handleStepUpAuth = useCallback(
-    async (finalReason: string, finalTicket: string, autoSwitch: boolean) => {
-      if (!organization) return;
-      toast.info("Verifikasi Kredensial Diperlukan", {
-        description: "Mengalihkan ke Keycloak untuk verifikasi kata sandi ulang...",
-      });
-
-      sessionStorage.setItem(
-        "pending_impersonate",
-        JSON.stringify({
-          orgId: organization.id,
-          orgSlug: organization.slug,
-          reason: finalReason,
-          ticketReference: finalTicket,
-          autoSwitch,
-        })
-      );
-
-      await signIn(undefined, {
-        prompt: "login",
-        maxAge: 0,
-        redirectUri: window.location.href,
-      });
-    },
-    [organization, signIn]
-  );
 
   const handleSuccess = useCallback(
     async (data: { exchangeCode?: string; targetTenantSlug?: string }) => {
@@ -90,12 +58,12 @@ export function useImpersonateTenantState(
 
       try {
         const tenantIdentifier = organization.id || organization.slug;
-        const res = await fetch(`/api/v1/system/tenants/${tenantIdentifier}/impersonate/start`, {
+        const res = await httpClient(`/api/v1/system/tenants/${tenantIdentifier}/impersonate/start`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.accessToken}`,
           },
+          token: session?.accessToken ?? undefined,
           body: JSON.stringify({
             reason: finalReason,
             ticketReference: finalTicket || undefined,
@@ -105,11 +73,6 @@ export function useImpersonateTenantState(
         });
 
         const data = await res.json().catch(() => ({}));
-
-        if (isStepUpAuthRequired(res.status, data)) {
-          await handleStepUpAuth(finalReason, finalTicket, shouldAutoSwitch);
-          return;
-        }
 
         if (res.status === 409) {
           setConflictError(data.details || data.message || "Anda masih memiliki sesi impersonasi aktif untuk tenant lain.");
@@ -138,7 +101,6 @@ export function useImpersonateTenantState(
       hasDifferentActiveSession,
       session?.accessToken,
       session?.refreshToken,
-      handleStepUpAuth,
       handleSuccess,
     ]
   );
@@ -146,28 +108,7 @@ export function useImpersonateTenantState(
   useEffect(() => {
     if (!isOpen || !organization) return;
     setConflictError(null);
-
-    const pending = sessionStorage.getItem("pending_impersonate");
-    if (pending) {
-      try {
-        const parsed = JSON.parse(pending);
-        if (
-          parsed.orgId === organization.id ||
-          parsed.orgSlug === organization.slug ||
-          parsed.orgId === organization.slug
-        ) {
-          sessionStorage.removeItem("pending_impersonate");
-          setReason(parsed.reason || "");
-          setTicketReference(parsed.ticketReference || "");
-          setTimeout(() => {
-            triggerStart(parsed.reason, parsed.ticketReference, parsed.autoSwitch ?? false);
-          }, 300);
-        }
-      } catch (e) {
-        console.error("Failed to parse pending impersonate", e);
-      }
-    }
-  }, [isOpen, organization, triggerStart]);
+  }, [isOpen, organization]);
 
   return {
     reason,

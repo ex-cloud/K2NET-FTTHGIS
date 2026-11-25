@@ -2,6 +2,7 @@ package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.api.tenant.dto.OrganizationCreateRequest;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.service.OrganizationService;
 import com.company.ftthgis.config.tenant.KeycloakService;
 import lombok.RequiredArgsConstructor;
@@ -248,6 +249,7 @@ public class OrganizationController {
 
     @DeleteMapping("/{idOrSlug}")
     @PreAuthorize("hasAuthority('system.organizations.delete') or hasAuthority('system.organizations.manage') or hasAuthority('system.tenants.suspend') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.delete'))")
+    @RequireSudoMode(action = "system.organizations.delete")
     public ResponseEntity<Void> delete(
             @PathVariable String idOrSlug,
             @RequestParam(required = false, defaultValue = "soft") String mode,
@@ -278,6 +280,7 @@ public class OrganizationController {
 
     @PostMapping("/{slug}/reset-realm")
     @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.security.manage')")
+    @RequireSudoMode(action = "system.organizations.reset_realm")
     public ResponseEntity<java.util.Map<String, Object>> resetRealm(@PathVariable String slug) {
         boolean success = organizationService.resetTenantRealm(slug);
         return ResponseEntity.ok(java.util.Map.of("success", success, "message", "Realm synchronized successfully"));

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "@/lib/auth-compat";
+import { httpClient } from "@/lib/httpClient";
 import { memoryCache } from "@/lib/memoryCache";
 import { toast } from "sonner";
 import {
@@ -16,6 +17,24 @@ import {
 export type { TrashItem, TrashStats };
 
 const CACHE_KEY_PREFIX = "trash_can_";
+
+async function executeTrashDeleteRequest(
+  url: string,
+  accessToken: string,
+  body?: string
+): Promise<void> {
+  const res = await httpClient(url, {
+    method: "DELETE",
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    token: accessToken,
+    body,
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    throw new Error(errData?.message || errData?.error || `HTTP ${res.status}`);
+  }
+}
 
 export function useTrashCan(category: string = "all", searchQuery: string = "") {
   const { data: session } = useSession();
@@ -161,16 +180,11 @@ export function useTrashCan(category: string = "all", searchQuery: string = "") 
 
       if (!session?.accessToken) return false;
       try {
-        const res = await fetch("/api/v1/system/trash/permanent", {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-          body: JSON.stringify({ type, id }),
-        });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await executeTrashDeleteRequest(
+          "/api/v1/system/trash/permanent",
+          session.accessToken,
+          JSON.stringify({ type, id })
+        );
 
         toast.success("Item Dihapus Permanen", {
           description: `"${name}" telah dihapus secara fisik dari database.`,
@@ -191,23 +205,22 @@ export function useTrashCan(category: string = "all", searchQuery: string = "") 
 
   const emptyTrash = useCallback(
     async (cat: string = "all") => {
-      if (cat === "all" || cat === "documents") {
-        saveLocalTrashItems([]);
-      }
-
       if (cat !== "documents" && session?.accessToken) {
         try {
-          const res = await fetch(`/api/v1/system/trash/empty?category=${cat}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${session.accessToken}`,
-            },
-          });
-
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          await executeTrashDeleteRequest(
+            `/api/v1/system/trash/empty?category=${cat}`,
+            session.accessToken
+          );
         } catch (err) {
-          console.warn("Failed to empty server trash", err);
+          toast.error("Gagal Mengosongkan Recycle Bin", {
+            description: err instanceof Error ? err.message : "Terjadi kesalahan server.",
+          });
+          return false;
         }
+      }
+
+      if (cat === "all" || cat === "documents") {
+        saveLocalTrashItems([]);
       }
 
       toast.success("Recycle Bin Dikosongkan", {

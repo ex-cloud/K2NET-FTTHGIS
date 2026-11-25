@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth-compat";
+import { httpClient } from "@/lib/httpClient";
 
 export type ModuleScope = "SYSTEM" | "TENANT";
 export type ModuleStatus =
@@ -132,12 +133,12 @@ export function useUpdateModuleStatus() {
 
   return useMutation({
     mutationFn: async (payload: UpdateModuleStatusPayload) => {
-      const res = await fetch(`/api/v1/system/modules/${encodeURIComponent(payload.code)}/status`, {
+      const res = await httpClient(`/api/v1/system/modules/${encodeURIComponent(payload.code)}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
         },
+        token: session?.accessToken ?? undefined,
         body: JSON.stringify({
           status: payload.status,
           minPlanTier: payload.minPlanTier,
@@ -146,7 +147,8 @@ export function useUpdateModuleStatus() {
       });
 
       if (!res.ok) {
-        const errorText = await res.text();
+        const errData = await res.clone().json().catch(() => null);
+        const errorText = errData?.message || errData?.error || (await res.text().catch(() => ""));
         throw new Error(errorText || `Failed to update status: HTTP ${res.status}`);
       }
 

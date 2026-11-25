@@ -137,4 +137,66 @@ class SudoModeAspectTest {
         );
         assertDoesNotThrow(() -> aspect.enforceSudoMode(annotation("tenant.sso.update")));
     }
+
+    @Test
+    void controlPlaneTierZeroEndpointsCarryExpectedSudoAnnotations() throws NoSuchMethodException {
+        RequireSudoMode impersonateSudo = com.company.ftthgis.api.tenant.ImpersonationController.class
+                .getMethod(
+                        "start",
+                        String.class,
+                        com.company.ftthgis.api.tenant.dto.ImpersonationStartRequest.class,
+                        Jwt.class
+                )
+                .getAnnotation(RequireSudoMode.class);
+        assertNotNull(impersonateSudo);
+        assertEquals("system.support.impersonate", impersonateSudo.action());
+
+        RequireSudoMode trashDeleteSudo = com.company.ftthgis.api.system.TrashController.class
+                .getMethod(
+                        "permanentDelete",
+                        com.company.ftthgis.api.system.dto.TrashDto.TrashActionRequest.class
+                )
+                .getAnnotation(RequireSudoMode.class);
+        assertNotNull(trashDeleteSudo);
+        assertEquals("system.trash.permanent_delete", trashDeleteSudo.action());
+
+        RequireSudoMode trashEmptySudo = com.company.ftthgis.api.system.TrashController.class
+                .getMethod("emptyTrash", String.class)
+                .getAnnotation(RequireSudoMode.class);
+        assertNotNull(trashEmptySudo);
+        assertEquals("system.trash.empty", trashEmptySudo.action());
+
+        RequireSudoMode moduleStatusSudo = com.company.ftthgis.api.system.PlatformModuleAdminController.class
+                .getMethod(
+                        "updateModuleStatus",
+                        String.class,
+                        com.company.ftthgis.api.system.dto.UpdateModuleStatusRequest.class
+                )
+                .getAnnotation(RequireSudoMode.class);
+        assertNotNull(moduleStatusSudo);
+        assertEquals("system.modules.status_update", moduleStatusSudo.action());
+
+        RequireSudoMode licenseRevokeSudo = com.company.ftthgis.api.system.OrganizationLicenseController.class
+                .getMethod(
+                        "revokeLicense",
+                        java.util.UUID.class,
+                        java.util.UUID.class,
+                        com.company.ftthgis.api.system.dto.LicenseRevokeRequest.class
+                )
+                .getAnnotation(RequireSudoMode.class);
+        assertNotNull(licenseRevokeSudo);
+        assertEquals("system.licensing.revoke", licenseRevokeSudo.action());
+
+        RequireSudoMode orgDeleteSudo = com.company.ftthgis.api.tenant.OrganizationController.class
+                .getMethod("delete", String.class, String.class, String.class)
+                .getAnnotation(RequireSudoMode.class);
+        assertNotNull(orgDeleteSudo);
+        assertEquals("system.organizations.delete", orgDeleteSudo.action());
+
+        RequireSudoMode orgResetRealmSudo = com.company.ftthgis.api.tenant.OrganizationController.class
+                .getMethod("resetRealm", String.class)
+                .getAnnotation(RequireSudoMode.class);
+        assertNotNull(orgResetRealmSudo);
+        assertEquals("system.organizations.reset_realm", orgResetRealmSudo.action());
+    }
 }

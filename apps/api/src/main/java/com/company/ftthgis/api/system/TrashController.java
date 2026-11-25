@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.system;
 
 import com.company.ftthgis.api.system.dto.TrashDto.*;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.service.system.TrashService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +71,7 @@ public class TrashController {
      * Memusnahkan item recycle bin secara permanen dari basis data.
      */
     @DeleteMapping("/permanent")
+    @RequireSudoMode(action = "system.trash.permanent_delete")
     public ResponseEntity<?> permanentDelete(@RequestBody TrashActionRequest req) {
         if (req.type() == null || req.id() == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "type and id are required"));
@@ -94,6 +96,7 @@ public class TrashController {
      * Mengosongkan seluruh item dalam Recycle Bin untuk kategori terpilih.
      */
     @DeleteMapping("/empty")
+    @RequireSudoMode(action = "system.trash.empty")
     public ResponseEntity<?> emptyTrash(@RequestParam(required = false, defaultValue = "all") String category) {
         try {
             int totalDeleted = trashService.emptyTrash(category);

@@ -166,7 +166,8 @@ export function useOrganizations() {
       });
 
       if (!res.ok) {
-        const errorText = await res.text().catch(() => '');
+        const errData = await res.clone().json().catch(() => null);
+        const errorText = errData?.message || errData?.error || (await res.text().catch(() => ''));
         throw new Error(errorText || 'Failed to delete organization');
       }
       return true;

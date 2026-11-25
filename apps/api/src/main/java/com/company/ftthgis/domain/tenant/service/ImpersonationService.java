@@ -2,7 +2,6 @@ package com.company.ftthgis.domain.tenant.service;
 
 import com.company.ftthgis.api.exception.ActiveSessionConflictException;
 import com.company.ftthgis.api.exception.InvalidImpersonationSessionException;
-import com.company.ftthgis.api.exception.StepUpAuthRequiredException;
 import com.company.ftthgis.api.tenant.dto.*;
 import com.company.ftthgis.domain.tenant.dto.ImpersonationExchangeCache;
 import com.company.ftthgis.domain.tenant.dto.ImpersonationSessionCache;
@@ -44,7 +43,6 @@ public class ImpersonationService {
     private static final String EXCHANGE_CACHE_PREFIX = "impersonation:exchange:";
     private static final long SESSION_TTL_SECONDS = 1800; // 30 minutes
     private static final long EXCHANGE_CODE_TTL_SECONDS = 60; // 60 seconds single-use
-    private static final long STEP_UP_MAX_AGE_SECONDS = 120; // 2 minutes max age for re-auth
 
     private final ImpersonationSessionRepository impersonationSessionRepository;
     private final UserRepository userRepository;
@@ -63,31 +61,13 @@ public class ImpersonationService {
     /**
      * Start an impersonation session for the given target tenant.
      * Accepts either UUID string or organization slug.
-     * Enforces Step-Up MFA freshness (auth_time <= 120s) and single active session per actor (with auto-switch support).
+     * Step-up re-authentication is enforced declaratively via @RequireSudoMode (ADR-0024) and single active session per actor (with auto-switch support).
      */
     @Transactional
     public ImpersonationSessionResponse startSession(String tenantIdentifier, ImpersonationStartRequest request, Jwt jwt) {
         UUID actorUserId = UUID.fromString(jwt.getSubject());
 
-        // 1. Validasi kesegaran re-autentikasi (Step-Up MFA)
-        long authTimeEpoch;
-        Object authTimeClaim = jwt.getClaim("auth_time");
-        if (authTimeClaim instanceof Instant instant) {
-            authTimeEpoch = instant.getEpochSecond();
-        } else if (authTimeClaim instanceof Number num) {
-            authTimeEpoch = num.longValue();
-        } else if (jwt.getIssuedAt() != null) {
-            authTimeEpoch = jwt.getIssuedAt().getEpochSecond();
-        } else {
-            throw new StepUpAuthRequiredException("Klaim auth_time/iat tidak ditemukan pada token. Lakukan re-autentikasi (Step-Up MFA).");
-        }
-
-        long currentEpoch = Instant.now().getEpochSecond();
-        if (currentEpoch - authTimeEpoch > STEP_UP_MAX_AGE_SECONDS) {
-            throw new StepUpAuthRequiredException("Sesi otentikasi telah melebihi 120 detik. Lakukan re-autentikasi (Step-Up MFA) untuk melanjutkan.");
-        }
-
-        // 2. Validasi aktor dan tenant target (fleksibel: bisa UUID atau slug)
+        // 1. Validasi aktor dan tenant target (fleksibel: bisa UUID atau slug)
         User actor = userRepository.findById(actorUserId)
                 .orElseThrow(() -> new NoSuchElementException("Pengguna Super Admin tidak ditemukan"));
 
@@ -125,7 +105,7 @@ public class ImpersonationService {
         // 4. Buat dan simpan sesi di PostgreSQL
         Instant now = Instant.now();
         Instant expiresAt = now.plus(Duration.ofSeconds(SESSION_TTL_SECONDS));
-        Instant stepUpVerifiedAt = Instant.ofEpochSecond(authTimeEpoch);
+        Instant stepUpVerifiedAt = now;
 
         ImpersonationSession session = ImpersonationSession.builder()
                 .actorUser(actor)

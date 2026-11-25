@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.api.tenant.dto.*;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.domain.tenant.service.ImpersonationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +30,11 @@ public class ImpersonationController {
     /**
      * Memulai sesi impersonasi ke tenant target.
      * Wajib memiliki role Super Admin atau authority system.support.impersonate.
-     * Mewajibkan validasi kesegaran Step-Up MFA (auth_time <= 120s).
+     * Mewajibkan elevasi Sudo Mode kriptografis (ADR-0024).
      */
     @PostMapping("/api/v1/system/tenants/{tenantId}/impersonate/start")
     @PreAuthorize("hasAuthority('system.support.impersonate')")
+    @RequireSudoMode(action = "system.support.impersonate")
     public ResponseEntity<ImpersonationSessionResponse> start(
             @PathVariable("tenantId") String tenantId,
             @Valid @RequestBody ImpersonationStartRequest request,

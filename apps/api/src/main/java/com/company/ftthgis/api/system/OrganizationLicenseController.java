@@ -13,6 +13,7 @@ import com.company.ftthgis.api.system.dto.UpdateMessageTemplateRequest;
 import com.company.ftthgis.api.tenant.dto.BillingInvoiceResponseDto;
 import com.company.ftthgis.api.tenant.dto.LicenseIssueRequest;
 import com.company.ftthgis.api.tenant.dto.LicenseResponseDto;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.domain.tenant.entity.MessageTemplate;
 import com.company.ftthgis.domain.tenant.entity.PlanVersion;
 import com.company.ftthgis.domain.tenant.entity.TenantLicense;
@@ -132,6 +133,7 @@ public class OrganizationLicenseController {
      */
     @PostMapping("/organizations/{orgId}/licenses/{licenseId}/revoke")
     @PreAuthorize("hasAuthority('system.organizations.manage')")
+    @RequireSudoMode(action = "system.licensing.revoke")
     public ResponseEntity<Map<String, Object>> revokeLicense(
             @PathVariable UUID orgId,
             @PathVariable UUID licenseId,

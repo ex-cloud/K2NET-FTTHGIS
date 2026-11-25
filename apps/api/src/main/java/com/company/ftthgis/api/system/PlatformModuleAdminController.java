@@ -3,6 +3,7 @@ package com.company.ftthgis.api.system;
 import com.company.ftthgis.api.system.dto.OrphanAuditResultDto;
 import com.company.ftthgis.api.system.dto.PlatformModuleResponseDto;
 import com.company.ftthgis.api.system.dto.UpdateModuleStatusRequest;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.service.PlatformModuleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,7 @@ public class PlatformModuleAdminController {
      */
     @PutMapping("/{moduleKey}/status")
     @PreAuthorize("hasAuthority('system.modules.manage') or hasRole('super_admin')")
+    @RequireSudoMode(action = "system.modules.status_update")
     public ResponseEntity<PlatformModuleResponseDto> updateModuleStatus(
             @PathVariable String moduleKey,
             @Valid @RequestBody UpdateModuleStatusRequest request) {
