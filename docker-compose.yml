@@ -85,7 +85,7 @@ services:
       - "traefik.http.routers.kong.rule=(Host(`gis.kdua.net`) || Host(`system-gis.kdua.net`) || Host(`api-gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`)) && !PathPrefix(`/api/auth`)"
       - "traefik.http.routers.kong.entrypoints=websecure"
       - "traefik.http.routers.kong.tls=true"
-      - "traefik.http.routers.kong.priority=100"
+      - "traefik.http.routers.kong.priority=200"
       - "traefik.http.services.kong.loadbalancer.server.port=8000"
     deploy:
       resources:
@@ -161,6 +161,7 @@ services:
       - "traefik.http.routers.keycloak.rule=Host(`auth-gis.kdua.net`)"
       - "traefik.http.routers.keycloak.entrypoints=websecure"
       - "traefik.http.routers.keycloak.tls=true"
+      - "traefik.http.routers.keycloak.priority=160"
       - "traefik.http.services.keycloak.loadbalancer.server.port=8081"
     volumes:
       - keycloak_data:/opt/keycloak/data
@@ -185,7 +186,7 @@ services:
       - "traefik.http.routers.martin.rule=(HostRegexp(`^[a-z0-9-]+\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && !Host(`system-gis.kdua.net`) && !Host(`auth-gis.kdua.net`) && !Host(`api-gis.kdua.net`) && (PathPrefix(`/catalog`) || PathPrefix(`/get_mvt_data/`))"
       - "traefik.http.routers.martin.entrypoints=websecure"
       - "traefik.http.routers.martin.tls=true"
-      - "traefik.http.routers.martin.priority=10"
+      - "traefik.http.routers.martin.priority=120"
       - "traefik.http.services.martin.loadbalancer.server.port=3001"
     command: --listen-addresses 0.0.0.0:3001
     depends_on:
@@ -468,7 +469,7 @@ services:
       - "traefik.http.routers.frontend-admin.rule=Host(`system-gis.kdua.net`)"
       - "traefik.http.routers.frontend-admin.entrypoints=websecure"
       - "traefik.http.routers.frontend-admin.tls=true"
-      - "traefik.http.routers.frontend-admin.priority=10"
+      - "traefik.http.routers.frontend-admin.priority=150"
       - "traefik.http.routers.frontend-admin.middlewares=secHeaders@file"
       - "traefik.http.services.frontend-admin.loadbalancer.server.port=3001"
     depends_on:

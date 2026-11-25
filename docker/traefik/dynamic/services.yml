@@ -6,7 +6,7 @@ http:
         - websecure
       tls: {}
       service: sms-webhook-service
-      priority: 15
+      priority: 110
 
   middlewares:
     secHeaders:

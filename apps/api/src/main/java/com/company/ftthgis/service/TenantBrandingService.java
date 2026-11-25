@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
 
 import javax.naming.NamingEnumeration;
 import javax.naming.directory.Attribute;
@@ -22,9 +24,13 @@ import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -38,11 +44,36 @@ public class TenantBrandingService {
     private final TenantLicenseRepository tenantLicenseRepository;
     private final TenantPackageSubscriptionService packageSubscriptionService;
 
+    public static final int TENANT_CUSTOM_DOMAIN_PRIORITY = 30;
+
+    private static final String FQDN_REGEX =
+            "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$";
+    private static final String IPV4_LITERAL_REGEX = "^\\d+(\\.\\d+){3}$";
+
+    private static final Set<String> RESERVED_INTERNAL_EXACT_HOSTS = Set.of(
+            "localhost", "localhost.localdomain", "ip6-localhost", "ip6-loopback"
+    );
+
+    private static final Set<String> RESERVED_INTERNAL_TLDS = Set.of(
+            ".localhost", ".local", ".internal", ".lan", ".home.arpa", ".test", ".invalid", ".example", ".arpa"
+    );
+
+    private static final Set<String> RESERVED_PLATFORM_PREFIXES = Set.of(
+            "system-gis", "auth-gis", "api-gis", "ops", "gis", "admin", "portal",
+            "mail", "edge", "www", "minio", "grafana", "prometheus", "keycloak", "kong", "traefik"
+    );
+
     @Value("${app.traefik.dynamic-dir:/opt/project5/docker/traefik/dynamic}")
     private String traefikDynamicDir = "/opt/project5/docker/traefik/dynamic";
 
     @Value("${app.edge.cname-target:edge.kdua.net}")
     private String defaultCnameTarget = "edge.kdua.net";
+
+    @Value("${app.platform.base-domain:kdua.net}")
+    private String platformBaseDomain = "kdua.net";
+
+    @Value("${app.branding.allow-test-domains:false}")
+    private boolean allowTestDomains = false;
 
     /**
      * Mendapatkan atau menginisialisasi profil branding organisasi tenant.
@@ -83,10 +114,8 @@ public class TenantBrandingService {
         }
 
         if (newDomain != null && !newDomain.equalsIgnoreCase(branding.getCustomDomain())) {
-            // Validasi format domain dasar
-            if (!newDomain.matches("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$")) {
-                throw new IllegalArgumentException("Invalid domain format. Example: gis.mycompany.net");
-            }
+            // Validasi format domain + Anti Host-Collision (Reserved Platform & Internal Domains)
+            validateCustomDomain(newDomain);
 
             // Validasi keunikan domain
             Optional<TenantBranding> existing = tenantBrandingRepository.findByCustomDomain(newDomain);
@@ -212,7 +241,58 @@ public class TenantBrandingService {
     }
 
     /**
-     * Sinkronisasi berkas routing dinamis Traefik (/etc/traefik/dynamic/custom-domains.yml).
+     * Memvalidasi custom domain terhadap format FQDN, IP literal, zona platform terproteksi,
+     * serta host/TLD internal guna mencegah Host-Collision & Traefik Router Hijacking (ADR-0027).
+     */
+    public void validateCustomDomain(String domain) {
+        if (domain == null || domain.isBlank()) {
+            throw new IllegalArgumentException("Invalid domain format. Example: gis.mycompany.net");
+        }
+
+        String clean = domain.trim().toLowerCase(Locale.ROOT);
+        while (clean.endsWith(".")) {
+            clean = clean.substring(0, clean.length() - 1);
+        }
+
+        if (clean.length() > 253 || clean.contains("`") || clean.matches(".*\\s+.*")) {
+            throw new IllegalArgumentException("Invalid domain format. Example: gis.mycompany.net");
+        }
+
+        if (clean.matches(IPV4_LITERAL_REGEX) || !clean.matches(FQDN_REGEX)) {
+            throw new IllegalArgumentException("Invalid domain format. Example: gis.mycompany.net");
+        }
+
+        String baseDomain = (platformBaseDomain != null && !platformBaseDomain.isBlank())
+                ? platformBaseDomain.trim().toLowerCase(Locale.ROOT)
+                : "kdua.net";
+
+        if (clean.equals(baseDomain) || clean.endsWith("." + baseDomain)) {
+            throw new IllegalArgumentException("Domain ini adalah domain sistem yang dilindungi.");
+        }
+
+        if (RESERVED_INTERNAL_EXACT_HOSTS.contains(clean)) {
+            throw new IllegalArgumentException("Domain ini adalah domain sistem yang dilindungi.");
+        }
+
+        for (String reservedTld : RESERVED_INTERNAL_TLDS) {
+            if (clean.endsWith(reservedTld)) {
+                boolean allowedInTestMode = allowTestDomains && (".test".equals(reservedTld) || ".local".equals(reservedTld));
+                if (!allowedInTestMode) {
+                    throw new IllegalArgumentException("Domain ini adalah domain sistem yang dilindungi.");
+                }
+            }
+        }
+
+        // Tolak jika hostname sama persis dengan reserved system prefix (tanpa domain publik yang sah)
+        if (RESERVED_PLATFORM_PREFIXES.contains(clean)) {
+            throw new IllegalArgumentException("Domain ini adalah domain sistem yang dilindungi.");
+        }
+    }
+
+    /**
+     * Sinkronisasi berkas routing dinamis Traefik (/etc/traefik/dynamic/custom-domains.yml)
+     * menggunakan serializer SnakeYAML terstruktur, re-validasi domain, prioritas maks 30,
+     * dan penulisan file secara atomik (ADR-0027).
      */
     public synchronized void syncTraefikDynamicRouter() {
         if (traefikDynamicDir == null || traefikDynamicDir.isBlank()) {
@@ -227,45 +307,78 @@ public class TenantBrandingService {
             }
 
             List<TenantBranding> activeDomains = tenantBrandingRepository.findAllActiveCustomDomainsNative();
-            File targetFile = new File(dynamicDir, "custom-domains.yml");
+            Path targetPath = dynamicDir.toPath().resolve("custom-domains.yml");
+            Path tempPath = dynamicDir.toPath().resolve("custom-domains.yml.tmp");
 
-            StringBuilder yaml = new StringBuilder();
-            yaml.append("# ==============================================================================\n");
-            yaml.append("# K2NET FTTH GIS — Auto-generated Traefik Dynamic Custom Domains Configuration\n");
-            yaml.append("# Generated at: ").append(LocalDateTime.now()).append("\n");
-            yaml.append("# Do not edit manually. Changes will be overwritten on branding sync.\n");
-            yaml.append("# ==============================================================================\n\n");
+            StringBuilder header = new StringBuilder();
+            header.append("# ==============================================================================\n");
+            header.append("# K2NET FTTH GIS — Auto-generated Traefik Dynamic Custom Domains Configuration\n");
+            header.append("# Generated at: ").append(LocalDateTime.now()).append("\n");
+            header.append("# Do not edit manually. Changes will be overwritten on branding sync.\n");
+            header.append("# ==============================================================================\n\n");
 
-            if (activeDomains.isEmpty()) {
-                yaml.append("# No active custom domains provisioned yet\n");
-            } else {
-                yaml.append("http:\n");
-                yaml.append("  routers:\n");
+            Map<String, Object> routers = new LinkedHashMap<>();
+            if (activeDomains != null) {
                 for (TenantBranding tb : activeDomains) {
                     String domain = tb.getCustomDomain();
                     if (domain == null || domain.isBlank()) continue;
 
-                    String safeSlug = tb.getOrganization() != null ? tb.getOrganization().getSlug() : "org-" + tb.getId();
-                    String routerName = "tenant-domain-" + safeSlug.replaceAll("[^a-zA-Z0-9-]", "-");
+                    String cleanDomain = domain.trim().toLowerCase(Locale.ROOT);
+                    try {
+                        validateCustomDomain(cleanDomain);
+                    } catch (IllegalArgumentException invalidEx) {
+                        log.error("🚨 CRITICAL SECURITY GUARD: Melewati sinkronisasi router Traefik untuk domain tidak valid/terlarang '{}' (brandingId={}): {}",
+                                cleanDomain, tb.getId(), invalidEx.getMessage());
+                        continue;
+                    }
 
-                    yaml.append("    ").append(routerName).append(":\n");
-                    yaml.append("      rule: \"Host(`").append(domain).append("`)\"\n");
-                    yaml.append("      entrypoints:\n");
-                    yaml.append("        - websecure\n");
-                    yaml.append("      tls: {}\n");
-                    yaml.append("      middlewares:\n");
-                    yaml.append("        - secHeaders@file\n");
-                    yaml.append("      service: frontend-tenant@docker\n");
-                    yaml.append("      priority: 25\n\n");
+                    String safeSlug = tb.getOrganization() != null && tb.getOrganization().getSlug() != null
+                            ? tb.getOrganization().getSlug()
+                            : "org-" + tb.getId();
+                    String routerName = "tenant-domain-" + safeSlug.replaceAll("[^a-zA-Z0-9-]", "-");
+                    if (routers.containsKey(routerName)) {
+                        routerName = routerName + "-" + Math.abs(cleanDomain.hashCode());
+                    }
+
+                    Map<String, Object> routerSpec = new LinkedHashMap<>();
+                    routerSpec.put("rule", "Host(`" + cleanDomain + "`)");
+                    routerSpec.put("entrypoints", List.of("websecure"));
+                    routerSpec.put("tls", Collections.emptyMap());
+                    routerSpec.put("middlewares", List.of("secHeaders@file"));
+                    routerSpec.put("service", "frontend-tenant@docker");
+                    routerSpec.put("priority", TENANT_CUSTOM_DOMAIN_PRIORITY);
+
+                    routers.put(routerName, routerSpec);
                 }
             }
 
-            try (FileWriter writer = new FileWriter(targetFile)) {
-                writer.write(yaml.toString());
+            final String content;
+            if (routers.isEmpty()) {
+                content = header + "# No active custom domains provisioned yet\n";
+            } else {
+                Map<String, Object> httpSection = new LinkedHashMap<>();
+                httpSection.put("routers", routers);
+                Map<String, Object> root = new LinkedHashMap<>();
+                root.put("http", httpSection);
+
+                DumperOptions options = new DumperOptions();
+                options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+                options.setPrettyFlow(true);
+                options.setIndent(2);
+                options.setIndicatorIndent(0);
+                Yaml yamlSerializer = new Yaml(options);
+                content = header + yamlSerializer.dump(root);
+            }
+
+            Files.writeString(tempPath, content, StandardCharsets.UTF_8);
+            try {
+                Files.move(tempPath, targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(tempPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
             }
 
             log.info("🚀 Traefik dynamic custom domains synchronized: {} active hosts written to '{}'",
-                    activeDomains.size(), targetFile.getAbsolutePath());
+                    routers.size(), targetPath.toAbsolutePath());
 
         } catch (IOException e) {
             log.error("Failed to write Traefik custom domains YAML: {}", e.getMessage(), e);
@@ -375,18 +488,33 @@ public class TenantBrandingService {
         }
     }
 
-    private boolean isDnsTargetMatched(String domain, String resolvedCname) {
-        if (domain.endsWith(".test") || domain.endsWith(".local") || domain.equals("test.example.com")) {
+    boolean isDnsTargetMatched(String domain, String resolvedCname) {
+        if (allowTestDomains && domain != null
+                && (domain.endsWith(".test") || domain.endsWith(".local") || domain.equals("test.example.com"))) {
             return true;
         }
 
-        if (resolvedCname == null) {
+        if (resolvedCname == null || resolvedCname.isBlank()) {
             return false;
         }
 
-        return resolvedCname.equalsIgnoreCase(defaultCnameTarget)
-                || resolvedCname.contains("kdua.net")
-                || resolvedCname.contains("edge.kdua.net");
+        String cleanCname = resolvedCname.trim().toLowerCase(Locale.ROOT);
+        while (cleanCname.endsWith(".")) {
+            cleanCname = cleanCname.substring(0, cleanCname.length() - 1);
+        }
+
+        String cleanTarget = (defaultCnameTarget != null && !defaultCnameTarget.isBlank())
+                ? defaultCnameTarget.trim().toLowerCase(Locale.ROOT)
+                : "edge.kdua.net";
+        while (cleanTarget.endsWith(".")) {
+            cleanTarget = cleanTarget.substring(0, cleanTarget.length() - 1);
+        }
+
+        String baseDomain = (platformBaseDomain != null && !platformBaseDomain.isBlank())
+                ? platformBaseDomain.trim().toLowerCase(Locale.ROOT)
+                : "kdua.net";
+
+        return cleanCname.equals(cleanTarget) || cleanCname.equals("edge." + baseDomain);
     }
 
     public String normalizeUrl(String url) {
