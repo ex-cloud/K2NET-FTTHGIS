@@ -25,6 +25,8 @@ type Config struct {
 	TurnstileTenantSecretKey string
 	TurnstileVerifyURL       string
 	CookieSecure             bool
+	SessionBindingMode       string
+	SessionBindingSecret     string
 }
 
 // LoadConfig reads runtime configuration strictly from environment variables.
@@ -32,6 +34,11 @@ func LoadConfig() *Config {
 	cookieSecure := true
 	if strings.EqualFold(strings.TrimSpace(os.Getenv("COOKIE_SECURE")), "false") {
 		cookieSecure = false
+	}
+
+	bindingMode := strings.ToLower(strings.TrimSpace(getEnv("SESSION_BINDING_MODE", "balanced")))
+	if bindingMode != "balanced" && bindingMode != "strict" && bindingMode != "audit" {
+		bindingMode = "balanced"
 	}
 
 	return &Config{
@@ -48,6 +55,8 @@ func LoadConfig() *Config {
 		TurnstileTenantSecretKey: strings.TrimSpace(os.Getenv("TURNSTILE_TENANT_SECRET_KEY")),
 		TurnstileVerifyURL:       getEnv("TURNSTILE_VERIFY_URL", "https://challenges.cloudflare.com/turnstile/v0/siteverify"),
 		CookieSecure:             cookieSecure,
+		SessionBindingMode:       bindingMode,
+		SessionBindingSecret:     strings.TrimSpace(os.Getenv("SESSION_BINDING_SECRET")),
 	}
 }
 

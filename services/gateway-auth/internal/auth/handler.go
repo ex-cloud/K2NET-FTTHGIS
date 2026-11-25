@@ -717,6 +717,7 @@ func (h *Handler) completeLoginSession(c *gin.Context, session *PreAuthSession, 
 	}
 	h.setSessionCookies(c, session.RefreshToken, session.TargetRealm, maxAge)
 	h.setBreakGlassCookieAndState(c, session.UserID, session.IsBreakGlass)
+	h.issueNetworkBinding(c, session.UserID, sessionID, maxAge)
 	if store := h.getSudoStore(); store != nil && strings.TrimSpace(session.UserID) != "" {
 		freshKey := loginFreshRedisKey(session.UserID, sessionID)
 		if session.IsBreakGlass {
@@ -1904,6 +1905,13 @@ func (h *Handler) Refresh(c *gin.Context) {
 	if isBreakGlass && maxAge > breakGlassMaxAgeSeconds {
 		maxAge = breakGlassMaxAgeSeconds
 	}
+	sid := strings.TrimSpace(claims.Sid)
+	if sid == "" {
+		sid = strings.TrimSpace(claims.SessionState)
+	}
+	if !h.enforceNetworkBindingOnRefresh(c, targetRealm, claims, sid, kcTokens.RefreshToken, maxAge) {
+		return
+	}
 	h.setSessionCookies(c, kcTokens.RefreshToken, targetRealm, maxAge)
 
 	roles := claims.ExtractRoles(h.cfg.KeycloakClientID)
@@ -2277,8 +2285,10 @@ func (h *Handler) Logout(c *gin.Context) {
 		if userID != "" {
 			_ = store.Del(
 				c.Request.Context(),
+				netBindRedisKey(userID, sid),
 				sudoRedisKey(userID, sid),
 				loginFreshRedisKey(userID, sid),
+				"auth:net-bind:"+userID,
 				"auth:sudo:"+userID,
 				"auth:login-fresh:"+userID,
 			)
@@ -2527,6 +2537,9 @@ func (h *Handler) revokeKeycloakSession(ctx context.Context, realm, refreshToken
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
+	if h.httpClient == nil {
+		return
+	}
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
 		logger.Warn(ctx, "Non-fatal: failed calling Keycloak logout endpoint", zap.String("realm", realm), zap.Error(err))
@@ -2665,6 +2678,15 @@ func (h *Handler) clearSessionCookies(c *gin.Context) {
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     breakGlassCookieName,
+		Value:    "",
+		Path:     cookiePath,
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+	})
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     networkBindCookieName,
 		Value:    "",
 		Path:     cookiePath,
 		MaxAge:   -1,

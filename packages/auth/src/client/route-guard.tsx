@@ -22,6 +22,7 @@ export function ProtectedRoute({
     initialized,
     authenticated,
     sessionTerminated,
+    sessionTerminationCode,
     loginPath,
     clearSessionTerminated,
     hasAnyRole,
@@ -82,8 +83,12 @@ export function ProtectedRoute({
       typeof window !== "undefined"
     ) {
       if (window.location.pathname !== loginPath) {
+        const errorCode =
+          sessionTerminationCode === "SESSION_NETWORK_ANOMALY"
+            ? "SESSION_NETWORK_ANOMALY"
+            : "SESSION_EXPIRED";
         const redirectUrl = sessionTerminated
-          ? `${targetLoginUrl}${targetLoginUrl.includes("?") ? "&" : "?"}error=SESSION_EXPIRED`
+          ? `${targetLoginUrl}${targetLoginUrl.includes("?") ? "&" : "?"}error=${errorCode}`
           : targetLoginUrl;
 
         if (sessionTerminated) {
@@ -93,7 +98,7 @@ export function ProtectedRoute({
         window.location.replace(redirectUrl);
       }
     }
-  }, [initialized, authenticated, sessionTerminated, autoRedirect, isImpersonating, loginPath, targetLoginUrl, clearSessionTerminated]);
+  }, [initialized, authenticated, sessionTerminated, sessionTerminationCode, autoRedirect, isImpersonating, loginPath, targetLoginUrl, clearSessionTerminated]);
 
   if (isImpersonating) {
     return <>{children}</>;

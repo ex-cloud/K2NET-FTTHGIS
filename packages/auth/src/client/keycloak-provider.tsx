@@ -265,6 +265,7 @@ export function KeycloakProvider({
   const [initialized, setInitialized] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [sessionTerminated, setSessionTerminated] = useState(false);
+  const [sessionTerminationCode, setSessionTerminationCode] = useState<string | null>(null);
   const [isBreakGlassSession, setIsBreakGlassSession] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -290,6 +291,7 @@ export function KeycloakProvider({
   );
   const clearSessionTerminated = useCallback(() => {
     setSessionTerminated(false);
+    setSessionTerminationCode(null);
   }, []);
 
   const clearRefreshTimer = useCallback(() => {
@@ -343,7 +345,9 @@ export function KeycloakProvider({
         }),
       });
       if (!res.ok) {
+        const errBody = (await res.json().catch(() => null)) as { code?: string; error?: string } | null;
         if (res.status === 419 || activeTokenRef.current !== null) {
+          setSessionTerminationCode(errBody?.code || errBody?.error || "SESSION_EXPIRED");
           setSessionTerminated(true);
         }
         return null;
@@ -412,6 +416,7 @@ export function KeycloakProvider({
       setUser(resolvedUser);
       setAuthenticated(true);
       setSessionTerminated(false);
+      setSessionTerminationCode(null);
       if (meta?.isBreakGlass) {
         setIsBreakGlassSession(true);
         if (typeof window !== "undefined") {
@@ -1225,6 +1230,7 @@ export function KeycloakProvider({
       initialized,
       authenticated,
       sessionTerminated,
+      sessionTerminationCode,
       isBreakGlassSession,
       sessionMaxAge,
       loginPath,
@@ -1270,6 +1276,7 @@ export function KeycloakProvider({
       sendMfaEmailOtp,
       sessionMaxAge,
       sessionTerminated,
+      sessionTerminationCode,
       token,
       user,
       verifyMfaBackupCode,

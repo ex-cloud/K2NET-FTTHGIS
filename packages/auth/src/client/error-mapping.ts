@@ -53,6 +53,8 @@ export function resolveAuthErrorMessage(
     case "SESSION_EXPIRED":
     case "SESSION_TERMINATED":
       return t("auth.login_error_session_expired");
+    case "SESSION_NETWORK_ANOMALY":
+      return t("auth.login_error_session_network_anomaly");
     case "SSO_NOT_AVAILABLE":
     case "SSO_BROKER_ERROR":
     case "ACCESS_DENIED":
