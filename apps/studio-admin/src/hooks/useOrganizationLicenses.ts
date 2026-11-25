@@ -306,8 +306,10 @@ export function useRevokeLicense() {
       );
 
       if (!res.ok) {
-        const errorText = await res.text().catch(() => "Unknown error");
-        throw new Error(`Failed to revoke license: ${res.status} - ${errorText}`);
+        const errData = await res.clone().json().catch(() => null);
+        const errorText =
+          errData?.message || errData?.error || (await res.text().catch(() => "Unknown error"));
+        throw new Error(errorText || `Failed to revoke license (HTTP ${res.status})`);
       }
       return res.json();
     },

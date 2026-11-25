@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Label, Input, Badge, Button } from "@k2net/ui";
+import { useTranslation } from "@k2net/i18n";
 import { ArrowRightLeft, AlertTriangle, FileText, Lock, Clock } from "lucide-react";
 import type { EnrichedOrganization } from "../types";
 
@@ -30,13 +31,17 @@ export function ImpersonateFormBody({
   isReasonValid,
   onRetryWithAutoSwitch,
 }: ImpersonateFormBodyProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-4 py-3 text-sm">
       {/* Tenant Target Info */}
       <div className="flex items-center justify-between rounded-lg border border-border/80 bg-muted/40 p-3">
         <div>
           <div className="font-semibold text-foreground">{organization.name}</div>
-          <div className="text-xs text-muted-foreground font-mono">slug: {organization.slug}</div>
+          <div className="text-xs text-muted-foreground font-mono">
+            {t("organizations.impersonation_form_slug_prefix", { slug: organization.slug })}
+          </div>
         </div>
         <Badge variant="outline" className="font-mono text-[10px] uppercase">
           {organization.planTier || "PRO"}
@@ -50,13 +55,14 @@ export function ImpersonateFormBody({
             <ArrowRightLeft className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
             <div className="space-y-1">
               <p className="font-semibold text-foreground flex items-center gap-1.5">
-                <span>Sesi Aktif di Tenant Lain:</span>
+                <span>{t("organizations.impersonation_form_active_other_title")}</span>
                 <span className="font-mono text-primary underline">{activeTargetOrgName}</span>
               </p>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Sistem akan secara otomatis mengakhiri sesi aktif di{" "}
-                <strong className="text-foreground">{activeTargetOrgName}</strong> dan langsung beralih ke
-                portal <strong className="text-foreground">{organization.name}</strong> secara mulus.
+                {t("organizations.impersonation_form_auto_switch_desc", {
+                  fromOrg: activeTargetOrgName || "",
+                  toOrg: organization.name,
+                })}
               </p>
             </div>
           </div>
@@ -69,7 +75,7 @@ export function ImpersonateFormBody({
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="font-semibold">Sesi Impersonasi Lain Masih Terdeteksi</p>
+              <p className="font-semibold">{t("organizations.impersonation_form_conflict_title")}</p>
               <p className="text-[11px] leading-relaxed opacity-90">{conflictError}</p>
             </div>
           </div>
@@ -82,7 +88,7 @@ export function ImpersonateFormBody({
               className="h-7 text-xs font-medium gap-1.5"
             >
               <ArrowRightLeft className="h-3.5 w-3.5" />
-              <span>Akhiri Sesi Lama & Beralih Sekarang</span>
+              <span>{t("organizations.impersonation_form_switch_now_btn")}</span>
             </Button>
           </div>
         </div>
@@ -92,14 +98,14 @@ export function ImpersonateFormBody({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label htmlFor="impersonate-reason" className="text-xs font-semibold">
-            Alasan Investigasi / Bantuan <span className="text-destructive">*</span>
+            {t("organizations.impersonation_form_reason_label")} <span className="text-destructive">*</span>
           </Label>
           <span
             className={`text-[10px] font-mono ${
               isReasonValid ? "text-muted-foreground" : "text-destructive font-semibold"
             }`}
           >
-            {reason.trim().length}/10 karakter min
+            {t("organizations.impersonation_form_reason_counter", { count: reason.trim().length })}
           </span>
         </div>
         <textarea
@@ -108,12 +114,12 @@ export function ImpersonateFormBody({
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           disabled={submitting}
-          placeholder="Jelaskan kebutuhan akses dukungan (cth: Investigasi kendala ODP wilayah timur tiket #4928)..."
+          placeholder={t("organizations.impersonation_form_reason_placeholder")}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         />
         {!isReasonValid && reason.length > 0 && (
           <p className="text-[10px] text-destructive flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" /> Minimal 10 karakter diperlukan untuk audit kepatuhan.
+            <AlertTriangle className="h-3 w-3" /> {t("organizations.impersonation_form_reason_min_error")}
           </p>
         )}
       </div>
@@ -122,14 +128,14 @@ export function ImpersonateFormBody({
       <div className="space-y-1.5">
         <Label htmlFor="ticket-ref" className="text-xs font-semibold flex items-center gap-1.5">
           <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-          Nomor Tiket Dukungan (Opsional)
+          {t("organizations.impersonation_form_ticket_label")}
         </Label>
         <Input
           id="ticket-ref"
           value={ticketReference}
           onChange={(e) => setTicketReference(e.target.value)}
           disabled={submitting}
-          placeholder="Contoh: TKT-2026-9021 atau INC-0042"
+          placeholder={t("organizations.impersonation_form_ticket_placeholder")}
           className="text-xs"
         />
       </div>
@@ -139,11 +145,10 @@ export function ImpersonateFormBody({
         <Lock className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
         <div className="space-y-1 leading-relaxed">
           <p className="font-semibold text-amber-900 dark:text-amber-100 flex items-center gap-1">
-            <Clock className="h-3 w-3" /> Time-Box 30 Menit & Step-Up Re-Auth
+            <Clock className="h-3 w-3" /> {t("organizations.impersonation_form_security_title")}
           </p>
           <p className="text-[11px] opacity-90">
-            Sistem akan memvalidasi kesegaran otentikasi akun Anda (≤ 120 detik). Jika telah kedaluwarsa, Anda akan
-            diminta memasukkan kredensial ulang sebelum sesi dibuka.
+            {t("organizations.impersonation_form_security_desc")}
           </p>
         </div>
       </div>

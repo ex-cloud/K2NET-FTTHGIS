@@ -503,5 +503,18 @@
   "action_resend_magic_link": "Kirim Ulang Tautan Aktivasi",
   "action_purge_expired": "Bersihkan Organisasi Kedaluwarsa",
   "magic_link_resent_success": "Tautan aktivasi berhasil dikirim ulang ke PIC Teknis",
-  "purge_expired_success": "Organisasi kedaluwarsa berhasil dibersihkan dari sistem"
+  "purge_expired_success": "Organisasi kedaluwarsa berhasil dibersihkan dari sistem",
+  "impersonation_form_slug_prefix": "slug: {{slug}}",
+  "impersonation_form_active_other_title": "Sesi Aktif di Tenant Lain:",
+  "impersonation_form_auto_switch_desc": "Sistem akan secara otomatis mengakhiri sesi aktif di {{fromOrg}} dan langsung beralih ke portal {{toOrg}} secara mulus.",
+  "impersonation_form_conflict_title": "Sesi Impersonasi Lain Masih Terdeteksi",
+  "impersonation_form_switch_now_btn": "Akhiri Sesi Lama & Beralih Sekarang",
+  "impersonation_form_reason_label": "Alasan Investigasi / Bantuan",
+  "impersonation_form_reason_counter": "{{count}}/10 karakter min",
+  "impersonation_form_reason_placeholder": "Jelaskan kebutuhan akses dukungan (cth: Investigasi kendala ODP wilayah timur tiket #4928)...",
+  "impersonation_form_reason_min_error": "Minimal 10 karakter diperlukan untuk audit kepatuhan.",
+  "impersonation_form_ticket_label": "Nomor Tiket Dukungan (Opsional)",
+  "impersonation_form_ticket_placeholder": "Contoh: TKT-2026-9021 atau INC-0042",
+  "impersonation_form_security_title": "Time-Box 30 Menit & Sudo Mode (15 Menit)",
+  "impersonation_form_security_desc": "Aksi ini dilindungi Sudo Mode (elevasi 15 menit). Jika Sudo Mode terkunci atau telah kedaluwarsa, Anda akan diminta memverifikasi identitas (Passkey / Authenticator / Backup Code) sebelum sesi dibuka."
 }

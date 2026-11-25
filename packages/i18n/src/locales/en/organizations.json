@@ -503,5 +503,18 @@
   "action_resend_magic_link": "Resend Activation Link",
   "action_purge_expired": "Purge Expired Organization",
   "magic_link_resent_success": "Activation link has been re-dispatched to Technical PIC",
-  "purge_expired_success": "Expired organization has been successfully purged"
+  "purge_expired_success": "Expired organization has been successfully purged",
+  "impersonation_form_slug_prefix": "slug: {{slug}}",
+  "impersonation_form_active_other_title": "Active Session in Another Tenant:",
+  "impersonation_form_auto_switch_desc": "The system will automatically terminate the active session in {{fromOrg}} and seamlessly switch to the {{toOrg}} portal.",
+  "impersonation_form_conflict_title": "Another Impersonation Session Detected",
+  "impersonation_form_switch_now_btn": "End Previous Session & Switch Now",
+  "impersonation_form_reason_label": "Investigation / Support Reason",
+  "impersonation_form_reason_counter": "{{count}}/10 min characters",
+  "impersonation_form_reason_placeholder": "Explain the support access need (e.g., Investigating east region ODP issue ticket #4928)...",
+  "impersonation_form_reason_min_error": "At least 10 characters are required for compliance auditing.",
+  "impersonation_form_ticket_label": "Support Ticket Number (Optional)",
+  "impersonation_form_ticket_placeholder": "Example: TKT-2026-9021 or INC-0042",
+  "impersonation_form_security_title": "30-Minute Time-Box & Sudo Mode (15 Minutes)",
+  "impersonation_form_security_desc": "This action is protected by Sudo Mode (15-minute elevation). If Sudo Mode is locked or expired, you will be prompted to verify your identity (Passkey / Authenticator / Backup Code) before opening the session."
 }
