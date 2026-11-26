@@ -201,85 +201,97 @@ public class ConfigurableUserService {
         
         UUID keycloakId = UUID.fromString(keycloakIdStr);
 
-        boolean isDirectCreation = "DIRECT".equalsIgnoreCase(request.getCreationMode());
-        String initialStatus = isDirectCreation ? "ACTIVE" : "INVITED";
+        try {
+            boolean isDirectCreation = "DIRECT".equalsIgnoreCase(request.getCreationMode());
+            String initialStatus = isDirectCreation ? "ACTIVE" : "INVITED";
 
-        // 4. Create Local User Record
-        User user = userRepository.findByEmailGlobal(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT)).orElse(null);
-        if (user == null) {
-            user = new User();
-            user.setId(keycloakId);
-        }
-        user.setEmail(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT));
-        user.setUsername(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT));
-        user.setFullName(request.getFullName());
-        if (request.getPhone() != null && !request.getPhone().isBlank()) {
-            user.setPhone(request.getPhone().trim());
-        }
-        if (request.getJobTitle() != null && !request.getJobTitle().isBlank()) {
-            user.setJobTitle(request.getJobTitle().trim());
-        }
-        user.setRole(globalRole);
-        user.setOrganization(organization);
-        user.setStatus(initialStatus);
-        
-        user = userRepository.save(user);
-        log.info("✅ Successfully invited and saved local user record for: {} (status={})", request.getEmail(), initialStatus);
-
-        if (organization != null) {
-            OrganizationMember orgMember = organizationMemberRepository
-                    .findByUserIdAndOrganizationId(user.getId(), organization.getId())
-                    .orElseGet(OrganizationMember::new);
-            orgMember.setUser(user);
-            orgMember.setOrganization(organization);
-            orgMember.setRole(globalRole);
-            orgMember.setRoleName(globalRole.getName());
-            orgMember.setStatus(initialStatus);
-            orgMember.setDefault(true);
-            if (isDirectCreation) {
-                orgMember.setJoinedAt(java.time.LocalDateTime.now());
-                orgMember.setInvitationToken(null);
-                orgMember.setInvitationExpiresAt(null);
-            } else {
-                String inviteToken = UUID.randomUUID().toString().replace("-", "");
-                orgMember.setInvitationToken(inviteToken);
-                orgMember.setInvitationExpiresAt(java.time.LocalDateTime.now().plusHours(48));
-                dispatchWorkspaceVerificationEmail(organization, user.getEmail(), inviteToken);
+            // 4. Create Local User Record
+            User user = userRepository.findByEmailGlobal(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT)).orElse(null);
+            if (user == null) {
+                user = new User();
+                user.setId(keycloakId);
             }
-            organizationMemberRepository.save(orgMember);
-        } else if (!isDirectCreation) {
-            dispatchPlatformVerificationEmail(user.getEmail(), user.getFullName(), globalRole.getDisplayName());
-        }
+            user.setEmail(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT));
+            user.setUsername(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT));
+            user.setFullName(request.getFullName());
+            if (request.getPhone() != null && !request.getPhone().isBlank()) {
+                user.setPhone(request.getPhone().trim());
+            }
+            if (request.getJobTitle() != null && !request.getJobTitle().isBlank()) {
+                user.setJobTitle(request.getJobTitle().trim());
+            }
+            user.setRole(globalRole);
+            user.setOrganization(organization);
+            user.setStatus(initialStatus);
+            
+            user = userRepository.save(user);
+            log.info("✅ Successfully invited and saved local user record for: {} (status={})", request.getEmail(), initialStatus);
 
-        // Sync role to Keycloak specifically in the user's organization realm
-        log.info("🛡️ Syncing role '{}' to Keycloak for {}", globalRole.getName(), request.getEmail());
-        keycloakAdminService.updateUserRoleInRealm(targetRealm, request.getEmail(), globalRole.getName());
-
-        // 5. Create Project Role Assignments (only for tenant users with an active organization)
-        if (organization != null && request.getProjectRoles() != null && !request.getProjectRoles().isEmpty()) {
-            final UUID orgIdForProjects = finalOrgId;
-            for (UserInviteRequest.ProjectRoleAssignment assignment : request.getProjectRoles()) {
-                Project project = projectRepository.findById(assignment.getProjectId())
-                        .orElseThrow(() -> new RuntimeException("Project not found: " + assignment.getProjectId()));
-                
-                // Ensure project belongs to the same organization
-                if (!project.getOrganization().getId().equals(orgIdForProjects)) {
-                    throw new RuntimeException("Cannot assign user to a project in a different organization");
+            if (organization != null) {
+                OrganizationMember orgMember = organizationMemberRepository
+                        .findByUserIdAndOrganizationId(user.getId(), organization.getId())
+                        .orElseGet(OrganizationMember::new);
+                orgMember.setUser(user);
+                orgMember.setOrganization(organization);
+                orgMember.setRole(globalRole);
+                orgMember.setRoleName(globalRole.getName());
+                orgMember.setStatus(initialStatus);
+                orgMember.setDefault(true);
+                if (isDirectCreation) {
+                    orgMember.setJoinedAt(java.time.LocalDateTime.now());
+                    orgMember.setInvitationToken(null);
+                    orgMember.setInvitationExpiresAt(null);
+                } else {
+                    String inviteToken = UUID.randomUUID().toString().replace("-", "");
+                    orgMember.setInvitationToken(inviteToken);
+                    orgMember.setInvitationExpiresAt(java.time.LocalDateTime.now().plusHours(48));
+                    dispatchWorkspaceVerificationEmail(organization, user.getEmail(), inviteToken);
                 }
-
-                Role projectRole = roleRepository.findById(assignment.getRoleId())
-                        .orElseThrow(() -> new RuntimeException("Project Role not found: " + assignment.getRoleId()));
-
-                ProjectMember member = new ProjectMember();
-                member.setUser(user);
-                member.setProject(project);
-                member.setRole(projectRole);
-                member.setOrganization(organization); // 🔥 Fix: Set organization to avoid null constraint error
-                projectMemberRepository.save(member);
+                organizationMemberRepository.save(orgMember);
+            } else if (!isDirectCreation) {
+                dispatchPlatformVerificationEmail(user.getEmail(), user.getFullName(), globalRole.getDisplayName());
             }
-        }
 
-        return mapToDto(user);
+            // Sync role to Keycloak specifically in the user's organization realm
+            log.info("🛡️ Syncing role '{}' to Keycloak for {}", globalRole.getName(), request.getEmail());
+            keycloakAdminService.updateUserRoleInRealm(targetRealm, request.getEmail(), globalRole.getName());
+
+            // 5. Create Project Role Assignments (only for tenant users with an active organization)
+            if (organization != null && request.getProjectRoles() != null && !request.getProjectRoles().isEmpty()) {
+                final UUID orgIdForProjects = finalOrgId;
+                for (UserInviteRequest.ProjectRoleAssignment assignment : request.getProjectRoles()) {
+                    Project project = projectRepository.findById(assignment.getProjectId())
+                            .orElseThrow(() -> new RuntimeException("Project not found: " + assignment.getProjectId()));
+                    
+                    // Ensure project belongs to the same organization
+                    if (!project.getOrganization().getId().equals(orgIdForProjects)) {
+                        throw new RuntimeException("Cannot assign user to a project in a different organization");
+                    }
+
+                    Role projectRole = roleRepository.findById(assignment.getRoleId())
+                            .orElseThrow(() -> new RuntimeException("Project Role not found: " + assignment.getRoleId()));
+
+                    ProjectMember member = new ProjectMember();
+                    member.setUser(user);
+                    member.setProject(project);
+                    member.setRole(projectRole);
+                    member.setOrganization(organization); // 🔥 Fix: Set organization to avoid null constraint error
+                    projectMemberRepository.save(member);
+                }
+            }
+
+            return mapToDto(user);
+        } catch (RuntimeException ex) {
+            log.warn("🔄 Compensating rollback Keycloak user '{}' in realm '{}' due to PostgreSQL failure: {}",
+                    keycloakIdStr, targetRealm, ex.getMessage());
+            try {
+                keycloakAdminService.deleteUser(targetRealm, keycloakIdStr);
+            } catch (Exception rollbackEx) {
+                log.error("⚠️ Failed compensating Keycloak rollback for user '{}' in realm '{}': {}",
+                        keycloakIdStr, targetRealm, rollbackEx.getMessage());
+            }
+            throw ex;
+        }
     }
 
     public UserStatsDto getUserStats() {

@@ -8,6 +8,7 @@ import { AuthRealmSettingsCard } from "@/components/security/auth-realm-settings
 import { AuthSsoProvidersCard } from "@/components/security/auth-sso-providers-card";
 import { AuthActiveSessionsCard } from "@/components/security/auth-active-sessions-card";
 import { TenantSsoHealthCard } from "@/components/security/tenant-sso-health-card";
+import { IamIntegrityMonitorCard } from "@/components/security/iam-integrity-monitor-card";
 
 export default function SystemAuthPage() {
   const { t } = useTranslation();
@@ -32,6 +33,14 @@ export default function SystemAuthPage() {
     runAllSsoProbes,
     isRunningAllSsoProbes,
     runSingleSsoProbe,
+
+    iamIntegrity,
+    loadingIamIntegrity,
+    isScanningIamIntegrity,
+    rescanIamIntegrity,
+    purgeAllOrphans,
+    isPurgingAllOrphans,
+    purgeSingleOrphan,
   } = useSecuritySettings();
 
   const [regAllowed, setRegAllowed] = useState(false);
@@ -159,6 +168,16 @@ export default function SystemAuthPage() {
           onRunAll={runAllSsoProbes}
           isRunningAll={isRunningAllSsoProbes}
           onRunSingle={runSingleSsoProbe}
+        />
+
+        <IamIntegrityMonitorCard
+          summary={iamIntegrity}
+          isLoading={loadingIamIntegrity}
+          isScanning={isScanningIamIntegrity}
+          isPurgingAll={isPurgingAllOrphans}
+          onRescan={rescanIamIntegrity}
+          onPurgeAll={purgeAllOrphans}
+          onPurgeSingle={purgeSingleOrphan}
         />
       </div>
     </div>

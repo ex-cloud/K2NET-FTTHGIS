@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { httpClient } from '@/lib/httpClient';
 import { getBackendBaseUrl } from '@/lib/api-config';
 import { useSession } from '@/lib/auth-compat';
+import { useIamIntegrity } from '@/hooks/useIamIntegrity';
+
+export type { IamIntegrityFinding, IamIntegrityScanSummary } from '@/hooks/useIamIntegrity';
 
 export interface RealmConfig {
   registrationAllowed: boolean;
@@ -417,6 +420,7 @@ export function useSecuritySettings() {
   const alerts = useAlertsSection(baseUrl, token, status, queryClient);
   const blockedIps = useBlockedIpsSection(baseUrl, token, status, queryClient);
   const ssoHealth = useTenantSsoHealthSection(baseUrl, token, status, queryClient);
+  const iamIntegrity = useIamIntegrity();
 
   return {
     ...realm,
@@ -425,5 +429,6 @@ export function useSecuritySettings() {
     ...alerts,
     ...blockedIps,
     ...ssoHealth,
+    ...iamIntegrity,
   };
 }

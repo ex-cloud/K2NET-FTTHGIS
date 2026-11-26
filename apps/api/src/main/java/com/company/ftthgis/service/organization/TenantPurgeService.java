@@ -25,6 +25,8 @@ import java.util.Map;
 @Slf4j
 public class TenantPurgeService {
 
+    static final String REDIS_LOCK_KEY = "lock:tenant-pending-purge";
+
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationLifecycleService organizationLifecycleService;
@@ -41,31 +43,60 @@ public class TenantPurgeService {
     @Scheduled(cron = "${ftth.tenant.purge-cron:0 0 * * * *}")
     @Transactional
     public int purgeExpiredPendingTenants() {
-        LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
-        List<User> pendingUsers = userRepository.findPendingUnactivatedUsers(cutoff);
-
-        if (pendingUsers.isEmpty()) {
-            log.debug("🧹 Auto-Purge: No expired pending unactivated users found.");
-            return 0;
-        }
-
-        log.info("🧹 Auto-Purge: Found {} expired pending users created before {}.", pendingUsers.size(), cutoff);
-        int purgedCount = 0;
-
-        for (User user : pendingUsers) {
+        String lockToken = java.util.UUID.randomUUID().toString();
+        if (redisTemplate != null) {
             try {
-                boolean success = purgePendingUserAndTenant(user, "Scheduled Auto-Purge (>24h Expired)");
-                if (success) {
-                    purgedCount++;
+                var ops = redisTemplate.opsForValue();
+                if (ops != null) {
+                    Boolean acquired = ops.setIfAbsent(REDIS_LOCK_KEY, lockToken, java.time.Duration.ofMinutes(10));
+                    if (!Boolean.TRUE.equals(acquired)) {
+                        log.debug("⏭️ Auto-Purge skipped: Redis lock '{}' held by another replica.", REDIS_LOCK_KEY);
+                        return 0;
+                    }
                 }
-            } catch (Exception ex) {
-                log.error("❌ Failed purging expired pending user '{}' (ID: {}): {}",
-                        user.getEmail(), user.getId(), ex.getMessage(), ex);
+            } catch (Exception e) {
+                log.debug("Could not acquire Redis lock {}: {}", REDIS_LOCK_KEY, e.getMessage());
             }
         }
 
-        log.info("✅ Auto-Purge completed: Successfully purged {} expired pending tenants/users.", purgedCount);
-        return purgedCount;
+        try {
+            LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
+            List<User> pendingUsers = userRepository.findPendingUnactivatedUsers(cutoff);
+
+            if (pendingUsers.isEmpty()) {
+                log.debug("🧹 Auto-Purge: No expired pending unactivated users found.");
+                return 0;
+            }
+
+            log.info("🧹 Auto-Purge: Found {} expired pending users created before {}.", pendingUsers.size(), cutoff);
+            int purgedCount = 0;
+
+            for (User user : pendingUsers) {
+                try {
+                    boolean success = purgePendingUserAndTenant(user, "Scheduled Auto-Purge (>24h Expired)");
+                    if (success) {
+                        purgedCount++;
+                    }
+                } catch (Exception ex) {
+                    log.error("❌ Failed purging expired pending user '{}' (ID: {}): {}",
+                            user.getEmail(), user.getId(), ex.getMessage(), ex);
+                }
+            }
+
+            log.info("✅ Auto-Purge completed: Successfully purged {} expired pending tenants/users.", purgedCount);
+            return purgedCount;
+        } finally {
+            if (redisTemplate != null) {
+                try {
+                    var ops = redisTemplate.opsForValue();
+                    if (ops != null && lockToken.equals(ops.get(REDIS_LOCK_KEY))) {
+                        redisTemplate.delete(REDIS_LOCK_KEY);
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not release Redis lock {}: {}", REDIS_LOCK_KEY, e.getMessage());
+                }
+            }
+        }
     }
 
     /**

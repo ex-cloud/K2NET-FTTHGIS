@@ -240,6 +240,61 @@ public class KeycloakAdminService {
         }
     }
 
+    /**
+     * Mengambil seluruh pengguna dalam satu realm Keycloak dengan paginasi penuh
+     * agar tidak terpotong batas default 100 entri. Fail-close bila Keycloak Admin gagal diakses.
+     */
+    public List<UserRepresentation> listAllUsersInRealmPaginated(String targetRealm, int pageSize, int maxTotalUsers) {
+        int safePageSize = Math.max(10, Math.min(pageSize, 500));
+        int safeCap = Math.max(safePageSize, maxTotalUsers);
+        List<UserRepresentation> allUsers = new java.util.ArrayList<>();
+        int first = 0;
+
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            while (first < safeCap) {
+                List<UserRepresentation> batch = usersResource.list(first, safePageSize);
+                if (batch == null || batch.isEmpty()) {
+                    break;
+                }
+                allUsers.addAll(batch);
+                if (batch.size() < safePageSize) {
+                    break;
+                }
+                first += batch.size();
+            }
+            return allUsers;
+        } catch (Exception e) {
+            log.error("Failed to fetch paginated users from Keycloak realm '{}': {}", targetRealm, e.getMessage());
+            throw new IllegalStateException("Gagal memuat daftar pengguna terpaginasi dari Keycloak realm '" + targetRealm + "': " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Membaca daftar role realm efektif (lowercase) milik seorang user Keycloak secara fail-close.
+     * Mengembalikan Optional.empty() apabila query Keycloak gagal sehingga user aman dilompati oleh reaper.
+     */
+    public Optional<java.util.Set<String>> getUserRealmRoleNames(String targetRealm, String userId) {
+        if (targetRealm == null || targetRealm.isBlank() || userId == null || userId.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            List<RoleRepresentation> roles = keycloak.realm(targetRealm).users().get(userId).roles().realmLevel().listEffective();
+            java.util.Set<String> names = new java.util.HashSet<>();
+            if (roles != null) {
+                for (RoleRepresentation role : roles) {
+                    if (role != null && role.getName() != null && !role.getName().isBlank()) {
+                        names.add(role.getName().trim().toLowerCase(java.util.Locale.ROOT));
+                    }
+                }
+            }
+            return Optional.of(names);
+        } catch (Exception e) {
+            log.warn("Could not read Keycloak realm roles for user '{}' in realm '{}' (fail-closed): {}", userId, targetRealm, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
     public RealmRepresentation getRealmConfig() {
         return keycloak.realm(defaultRealm).toRepresentation();
     }
@@ -775,6 +830,20 @@ public class KeycloakAdminService {
             log.info("Successfully deleted user {} in realm {}", userId, realm);
         } catch (Exception e) {
             log.error("Failed to delete user {} in realm {}: {}", userId, realm, e.getMessage());
+        }
+    }
+
+    /**
+     * Menghapus user dari Keycloak secara eksplisit dengan mengembalikan status keberhasilan nyata.
+     */
+    public boolean deleteUserStrict(String realm, String userId) {
+        try {
+            keycloak.realm(realm).users().get(userId).remove();
+            log.info("🧹 Strictly deleted user {} in realm {}", userId, realm);
+            return true;
+        } catch (Exception e) {
+            log.error("❌ Failed strict deletion for user {} in realm {}: {}", userId, realm, e.getMessage());
+            return false;
         }
     }
 

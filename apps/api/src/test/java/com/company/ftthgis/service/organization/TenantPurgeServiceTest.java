@@ -88,9 +88,10 @@ class TenantPurgeServiceTest {
     @Test
     @DisplayName("Auto-Purge cleans expired pending tenants (>24h) from Keycloak, Redis, and Database")
     void testPurgeExpiredPendingTenants_Success() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(anyString(), anyString(), any(java.time.Duration.class))).thenReturn(Boolean.TRUE);
         when(userRepository.findPendingUnactivatedUsers(any(LocalDateTime.class)))
                 .thenReturn(List.of(testUser));
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("auth:org-activate-token:victim-isp")).thenReturn("test-token-123");
         when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), eq(testOrgId)))
                 .thenReturn(0);
@@ -103,6 +104,20 @@ class TenantPurgeServiceTest {
         verify(redisTemplate).delete("auth:activate:test-token-123");
         verify(organizationLifecycleService).purgeOrganizationInternally(eq(testOrg), contains("Auto-Purge"));
         verify(auditLoggingService).logEvent(eq("system"), eq("TENANT_PROVISIONING_EXPIRED_PURGED"), eq("USER"), eq(testUserId.toString()), anyMap(), anyMap(), anyMap());
+    }
+
+    @Test
+    @DisplayName("Auto-Purge skips execution when Redis Distributed Lock is held by another instance")
+    void testPurgeExpiredPendingTenants_SkipsWhenRedisLockHeld() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(anyString(), anyString(), any(java.time.Duration.class))).thenReturn(Boolean.FALSE);
+
+        int purged = purgeService.purgeExpiredPendingTenants();
+
+        assertEquals(0, purged);
+        verifyNoInteractions(userRepository);
+        verifyNoInteractions(organizationLifecycleService);
+        verifyNoInteractions(keycloakAdminService);
     }
 
     @Test
