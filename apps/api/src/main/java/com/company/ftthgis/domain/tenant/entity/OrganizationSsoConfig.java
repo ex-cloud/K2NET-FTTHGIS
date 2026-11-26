@@ -73,6 +73,9 @@ public class OrganizationSsoConfig extends OrganizationAwareEntity {
     @Column(name = "signing_certificate", columnDefinition = "TEXT")
     private String signingCertificate;
 
+    @Column(name = "secondary_signing_certificate", columnDefinition = "TEXT")
+    private String secondarySigningCertificate;
+
     @Column(name = "enforce_sso", nullable = false)
     @Builder.Default
     private boolean enforceSso = false;
@@ -132,6 +135,24 @@ public class OrganizationSsoConfig extends OrganizationAwareEntity {
 
     @Column(name = "saml_cert_subject", length = 255)
     private String samlCertSubject;
+
+    @Column(name = "saml_cert_fingerprint", length = 95)
+    private String samlCertFingerprint;
+
+    @Column(name = "secondary_saml_cert_expires_at")
+    private LocalDateTime secondarySamlCertExpiresAt;
+
+    @Column(name = "secondary_saml_cert_subject", length = 255)
+    private String secondarySamlCertSubject;
+
+    @Column(name = "secondary_saml_cert_fingerprint", length = 95)
+    private String secondarySamlCertFingerprint;
+
+    @Column(name = "saml_cert_overlap_started_at")
+    private LocalDateTime samlCertOverlapStartedAt;
+
+    @Column(name = "saml_cert_rotated_at")
+    private LocalDateTime samlCertRotatedAt;
 
     @Column(name = "client_secret_expires_at")
     private LocalDateTime clientSecretExpiresAt;

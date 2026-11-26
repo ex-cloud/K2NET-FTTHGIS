@@ -11,9 +11,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.OptimisticLockingFailureException;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -379,6 +382,180 @@ public class TenantSsoServiceTest {
         assertEquals("FAILED", existing.getLastTestStatus());
         assertNotNull(res.getMessage());
         assertFalse(res.getMessage().contains("Payload .well-known/openid-configuration tidak lengkap"));
+    }
+
+    private String generateTestPemCert(Path dir, String name, String cn, String startDateOpt, int validityDays) throws Exception {
+        Path ks = dir.resolve(name + ".p12");
+        Path pem = dir.resolve(name + ".pem");
+        List<String> genCmd = new ArrayList<>(List.of(
+                "keytool", "-genkeypair",
+                "-alias", name,
+                "-keyalg", "RSA",
+                "-keysize", "2048",
+                "-validity", String.valueOf(validityDays),
+                "-dname", "CN=" + cn,
+                "-keystore", ks.toString(),
+                "-storepass", "changeit",
+                "-storetype", "PKCS12"
+        ));
+        if (startDateOpt != null) {
+            genCmd.add("-startdate");
+            genCmd.add(startDateOpt);
+        }
+        Process gen = new ProcessBuilder(genCmd).redirectErrorStream(true).start();
+        assertEquals(0, gen.waitFor());
+
+        Process exp = new ProcessBuilder(
+                "keytool", "-exportcert",
+                "-alias", name,
+                "-rfc",
+                "-keystore", ks.toString(),
+                "-storepass", "changeit",
+                "-file", pem.toString()
+        ).redirectErrorStream(true).start();
+        assertEquals(0, exp.waitFor());
+        return Files.readString(pem);
+    }
+
+    @Test
+    @DisplayName("S14 (BUG-SAML-01 & 03): updateSsoConfig SAML_CUSTOM tanpa clientId sukses, aktifkan validateSignature=true & strip PEM ke compact DER")
+    void testUpdateSsoConfig_SamlWithoutClientId_NormalizesDerAndEnablesSignatureValidation(@TempDir Path tempDir) throws Exception {
+        String pemA = generateTestPemCert(tempDir, "certa", "idp-a.fibernet.net", null, 30);
+        when(ssoConfigRepository.findFirstByOrganizationIdNative(testOrgId)).thenReturn(Optional.empty());
+        when(ssoConfigRepository.save(any(OrganizationSsoConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateTenantSsoConfigRequest request = UpdateTenantSsoConfigRequest.builder()
+                .providerType("SAML_CUSTOM")
+                .displayName("Fibernet SAML 2.0")
+                .entityId("https://idp.fibernet.net/saml/metadata")
+                .metadataUrl("https://idp.fibernet.net/saml/metadata.xml")
+                .singleSignOnUrl("https://idp.fibernet.net/saml/sso")
+                .signingCertificate(pemA)
+                .build();
+
+        TenantSsoConfigDto dto = ssoService.updateSsoConfig("fibernet", request, "admin@fibernet.net");
+
+        assertEquals("https://idp.fibernet.net/saml/metadata", dto.getClientId());
+        assertNotNull(dto.getSamlCertFingerprint());
+        assertFalse(dto.isSamlOverlapActive());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> kcCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(keycloakAdminService).upsertRealmIdentityProvider(
+                eq("k2net-tenants"),
+                eq("sso-fibernet"),
+                eq("saml"),
+                eq("Fibernet SAML 2.0"),
+                kcCaptor.capture()
+        );
+        Map<String, String> kc = kcCaptor.getValue();
+        assertEquals("true", kc.get("validateSignature"));
+        assertEquals("true", kc.get("wantAssertionsSigned"));
+        assertEquals("false", kc.get("useMetadataDescriptorUrl"));
+        assertFalse(kc.get("signingCertificate").contains("BEGIN CERTIFICATE"));
+        assertFalse(kc.get("signingCertificate").contains("\n"));
+    }
+
+    @Test
+    @DisplayName("S15 (BUG-SAML-02): updateSsoConfig dan stageSecondary menolak cert expired serta duplikat SHA-256 fingerprint")
+    void testSamlCertValidation_RejectsExpiredAndDuplicate(@TempDir Path tempDir) throws Exception {
+        String validPem = generateTestPemCert(tempDir, "valid", "idp-valid.fibernet.net", null, 365);
+        String expiredPem = generateTestPemCert(tempDir, "expired", "idp-exp.fibernet.net", "-10d", 5);
+
+        when(ssoConfigRepository.findFirstByOrganizationIdNative(testOrgId)).thenReturn(Optional.empty());
+        UpdateTenantSsoConfigRequest expiredReq = UpdateTenantSsoConfigRequest.builder()
+                .providerType("SAML_CUSTOM")
+                .entityId("https://idp.fibernet.net")
+                .singleSignOnUrl("https://idp.fibernet.net/sso")
+                .signingCertificate(expiredPem)
+                .build();
+
+        IllegalArgumentException expEx = assertThrows(IllegalArgumentException.class, () ->
+                ssoService.updateSsoConfig("fibernet", expiredReq, "admin@fibernet.net"));
+        assertTrue(expEx.getMessage().contains("kedaluwarsa"));
+
+        OrganizationSsoConfig existing = OrganizationSsoConfig.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .providerType("SAML_CUSTOM")
+                .entityId("https://idp.fibernet.net")
+                .singleSignOnUrl("https://idp.fibernet.net/sso")
+                .signingCertificate(validPem)
+                .clientId("https://idp.fibernet.net")
+                .build();
+        when(ssoConfigRepository.findFirstByOrganizationIdNative(testOrgId)).thenReturn(Optional.of(existing));
+
+        IllegalArgumentException stageExpEx = assertThrows(IllegalArgumentException.class, () ->
+                ssoService.stageSecondarySamlCertificate("fibernet", expiredPem, "admin@fibernet.net"));
+        assertTrue(stageExpEx.getMessage().contains("kedaluwarsa"));
+
+        IllegalArgumentException dupEx = assertThrows(IllegalArgumentException.class, () ->
+                ssoService.stageSecondarySamlCertificate("fibernet", validPem, "admin@fibernet.net"));
+        assertTrue(dupEx.getMessage().contains("duplikat"));
+    }
+
+    @Test
+    @DisplayName("S16 (Fase 7.16): Siklus Stage -> Promote (Clean & Rollback) -> Retire menyinkronkan DER comma-separated ke Keycloak 26.1.1")
+    void testSamlDualCertRotationLifecycle(@TempDir Path tempDir) throws Exception {
+        String pemA = generateTestPemCert(tempDir, "keya", "idp-key-a.fibernet.net", null, 15);
+        String pemB = generateTestPemCert(tempDir, "keyb", "idp-key-b.fibernet.net", null, 365);
+
+        OrganizationSsoConfig config = OrganizationSsoConfig.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .providerType("SAML_CUSTOM")
+                .displayName("Fibernet SAML")
+                .clientId("https://idp.fibernet.net")
+                .entityId("https://idp.fibernet.net")
+                .singleSignOnUrl("https://idp.fibernet.net/sso")
+                .signingCertificate(pemA)
+                .status("ACTIVE")
+                .consecutiveProbeFailures(0)
+                .healthStatus("DEGRADED")
+                .build();
+
+        when(ssoConfigRepository.findFirstByOrganizationIdNative(testOrgId)).thenReturn(Optional.of(config));
+        when(ssoConfigRepository.save(any(OrganizationSsoConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // 1. Stage Cert B -> Dual-Cert Overlap aktif (signingCertificate = derA,derB)
+        SamlCertificatesStatusDto staged = ssoService.stageSecondarySamlCertificate("fibernet", pemB, "sec@fibernet.net");
+        assertTrue(staged.isOverlapActive());
+        assertTrue(staged.getPrimary().isPresent());
+        assertTrue(staged.getSecondary().isPresent());
+        String fpA = staged.getPrimary().getSha256Fingerprint();
+        String fpB = staged.getSecondary().getSha256Fingerprint();
+        assertNotEquals(fpA, fpB);
+
+        // 2. Promote dengan keepPreviousAsSecondary = true -> B naik jadi Primary, A turun jadi Secondary rollback
+        SamlCertificatesStatusDto rollbackPromoted = ssoService.promoteSecondarySamlCertificate("fibernet", true, "sec@fibernet.net");
+        assertTrue(rollbackPromoted.isOverlapActive());
+        assertEquals(fpB, rollbackPromoted.getPrimary().getSha256Fingerprint());
+        assertEquals(fpA, rollbackPromoted.getSecondary().getSha256Fingerprint());
+        assertEquals("HEALTHY", config.getHealthStatus());
+
+        // 3. Retire Secondary -> A dilepas, kembali ke 1 cert (B saja)
+        SamlCertificatesStatusDto retired = ssoService.retireSecondarySamlCertificate("fibernet", "sec@fibernet.net");
+        assertFalse(retired.isOverlapActive());
+        assertEquals(fpB, retired.getPrimary().getSha256Fingerprint());
+        assertFalse(retired.getSecondary().isPresent());
+
+        // 4. Verifikasi Keycloak menerima CSV 2 DER saat Stage/Rollback dan 1 DER saat Retire
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> kcCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(keycloakAdminService, times(3)).upsertRealmIdentityProvider(
+                eq("k2net-tenants"), eq("sso-fibernet"), eq("saml"), eq("Fibernet SAML"), kcCaptor.capture());
+        List<Map<String, String>> syncs = kcCaptor.getAllValues();
+        assertEquals(2, syncs.get(0).get("signingCertificate").split(",").length);
+        assertEquals(2, syncs.get(1).get("signingCertificate").split(",").length);
+        assertEquals(1, syncs.get(2).get("signingCertificate").split(",").length);
+        assertEquals("true", syncs.get(2).get("validateSignature"));
+
+        // 5. Stage kembali A lalu Promote dengan clean cutover (keepPreviousAsSecondary = false)
+        ssoService.stageSecondarySamlCertificate("fibernet", pemA, "sec@fibernet.net");
+        SamlCertificatesStatusDto cleanPromoted = ssoService.promoteSecondarySamlCertificate("fibernet", false, "sec@fibernet.net");
+        assertFalse(cleanPromoted.isOverlapActive());
+        assertEquals(fpA, cleanPromoted.getPrimary().getSha256Fingerprint());
+        assertFalse(cleanPromoted.getSecondary().isPresent());
     }
 }
 

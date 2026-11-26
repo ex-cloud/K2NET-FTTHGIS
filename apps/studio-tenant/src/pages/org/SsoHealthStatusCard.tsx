@@ -12,6 +12,9 @@ export interface SsoHealthStatusCardProps {
   tlsCertDaysRemaining?: number | null;
   samlCertExpiresAt?: string | null;
   samlCertDaysRemaining?: number | null;
+  samlOverlapActive?: boolean;
+  secondarySamlCertExpiresAt?: string | null;
+  secondarySamlCertDaysRemaining?: number | null;
   clientSecretExpiresAt?: string | null;
   clientSecretDaysRemaining?: number | null;
 }
@@ -52,10 +55,14 @@ function ExpiryItemBox({
   label,
   expiresAt,
   daysRemaining,
+  overlapBadge,
+  secondaryNote,
 }: {
   label: string;
   expiresAt?: string | null;
   daysRemaining?: number | null;
+  overlapBadge?: string;
+  secondaryNote?: string;
 }) {
   const { t } = useTranslation();
   const isExpired = typeof daysRemaining === "number" && daysRemaining <= 0;
@@ -68,28 +75,41 @@ function ExpiryItemBox({
           <KeyRound className="size-3 text-muted-foreground" />
           {label}
         </span>
-        {typeof daysRemaining === "number" && (
-          <Badge
-            variant="outline"
-            className={
-              isExpired
-                ? "border-destructive/40 text-destructive bg-destructive/10 text-[10px] font-mono"
-                : isWarning
-                ? "border-border text-foreground bg-muted text-[10px] font-mono"
-                : "border-primary/30 text-primary bg-primary/10 text-[10px] font-mono"
-            }
-          >
-            {isExpired
-              ? t("settings.sso_health_expired_badge")
-              : t("settings.sso_health_days_left", { days: daysRemaining })}
-          </Badge>
-        )}
+        <div className="flex items-center gap-1">
+          {overlapBadge && (
+            <Badge
+              variant="outline"
+              className="border-primary/30 text-primary bg-primary/10 text-[10px] font-mono"
+            >
+              {overlapBadge}
+            </Badge>
+          )}
+          {typeof daysRemaining === "number" && (
+            <Badge
+              variant="outline"
+              className={
+                isExpired
+                  ? "border-destructive/40 text-destructive bg-destructive/10 text-[10px] font-mono"
+                  : isWarning
+                  ? "border-border text-foreground bg-muted text-[10px] font-mono"
+                  : "border-primary/30 text-primary bg-primary/10 text-[10px] font-mono"
+              }
+            >
+              {isExpired
+                ? t("settings.sso_health_expired_badge")
+                : t("settings.sso_health_days_left", { days: daysRemaining })}
+            </Badge>
+          )}
+        </div>
       </div>
       <div className="text-xs font-mono text-foreground">
         {expiresAt
           ? new Date(expiresAt).toLocaleDateString()
           : t("settings.sso_health_not_tracked")}
       </div>
+      {secondaryNote && (
+        <div className="text-[11px] font-mono text-muted-foreground">{secondaryNote}</div>
+      )}
     </div>
   );
 }
@@ -104,12 +124,25 @@ export function SsoHealthStatusCard({
   tlsCertDaysRemaining,
   samlCertExpiresAt,
   samlCertDaysRemaining,
+  samlOverlapActive,
+  secondarySamlCertExpiresAt,
+  secondarySamlCertDaysRemaining,
   clientSecretExpiresAt,
   clientSecretDaysRemaining,
 }: SsoHealthStatusCardProps) {
   const { t } = useTranslation();
   const badge = getHealthBadgeMeta(healthStatus, t);
   const showWarningBanner = healthStatus === "DEGRADED" || healthStatus === "UNHEALTHY";
+  const secondarySummary =
+    samlOverlapActive && secondarySamlCertExpiresAt
+      ? `${t("settings.sso_health_secondary_cert_line")}: ${new Date(
+          secondarySamlCertExpiresAt
+        ).toLocaleDateString()}${
+          typeof secondarySamlCertDaysRemaining === "number"
+            ? ` (${t("settings.sso_health_days_left", { days: secondarySamlCertDaysRemaining })})`
+            : ""
+        }`
+      : undefined;
 
   return (
     <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
@@ -178,6 +211,8 @@ export function SsoHealthStatusCard({
           label={t("settings.sso_health_saml_cert")}
           expiresAt={samlCertExpiresAt}
           daysRemaining={samlCertDaysRemaining}
+          overlapBadge={samlOverlapActive ? t("settings.sso_health_overlap_badge") : undefined}
+          secondaryNote={secondarySummary}
         />
         <ExpiryItemBox
           label={t("settings.sso_health_secret_expiry")}

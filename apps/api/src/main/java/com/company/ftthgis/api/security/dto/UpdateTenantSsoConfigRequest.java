@@ -32,7 +32,6 @@ public class UpdateTenantSsoConfigRequest {
     @Size(max = 512, message = "Issuer URL cannot exceed 512 characters")
     private String issuerUrl;
 
-    @NotBlank(message = "Client ID must not be blank")
     @Size(max = 256, message = "Client ID cannot exceed 256 characters")
     private String clientId;
 

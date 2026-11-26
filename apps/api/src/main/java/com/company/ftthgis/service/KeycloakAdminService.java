@@ -595,6 +595,7 @@ public class KeycloakAdminService {
                 return newIdp;
             });
 
+            String previousProviderId = providerOpt.map(IdentityProviderRepresentation::getProviderId).orElse(null);
             if (displayName != null && !displayName.isBlank()) {
                 idp.setDisplayName(displayName);
             }
@@ -605,9 +606,17 @@ public class KeycloakAdminService {
             Map<String, String> config = idp.getConfig();
             if (config == null) {
                 config = new java.util.HashMap<>();
+            } else if (previousProviderId != null && !previousProviderId.equalsIgnoreCase(providerId)) {
+                config.clear();
             }
             if (customConfig != null) {
-                config.putAll(customConfig);
+                for (Map.Entry<String, String> entry : customConfig.entrySet()) {
+                    if (entry.getValue() == null || entry.getValue().isEmpty()) {
+                        config.remove(entry.getKey());
+                    } else {
+                        config.put(entry.getKey(), entry.getValue());
+                    }
+                }
             }
             if (!config.containsKey("syncMode")) {
                 config.put("syncMode", "IMPORT");

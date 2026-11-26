@@ -34,6 +34,9 @@ public class SystemSsoHealthSummaryDto {
     private Long tlsCertDaysRemaining;
     private LocalDateTime samlCertExpiresAt;
     private Long samlCertDaysRemaining;
+    private LocalDateTime secondarySamlCertExpiresAt;
+    private Long secondarySamlCertDaysRemaining;
+    private boolean samlOverlapActive;
     private LocalDateTime clientSecretExpiresAt;
     private Long clientSecretDaysRemaining;
     private String lastAlertStage;

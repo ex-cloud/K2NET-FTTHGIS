@@ -34,9 +34,16 @@ export interface TenantSsoHealthCardProps {
 }
 
 function getNearestExpiryDays(item: TenantSsoHealthSummary): number | null {
+  const effectiveSamlDays =
+    item.samlOverlapActive &&
+    typeof item.secondarySamlCertDaysRemaining === "number" &&
+    item.secondarySamlCertDaysRemaining > 0
+      ? Math.max(item.samlCertDaysRemaining ?? -1, item.secondarySamlCertDaysRemaining)
+      : item.samlCertDaysRemaining;
+
   const candidates = [
     item.tlsCertDaysRemaining,
-    item.samlCertDaysRemaining,
+    effectiveSamlDays,
     item.clientSecretDaysRemaining,
   ].filter((v): v is number => typeof v === "number");
   if (candidates.length === 0) return null;
@@ -187,16 +194,23 @@ export function TenantSsoHealthCard({
             );
           }
           return (
-            <Badge
-              variant="outline"
-              className={
-                minDays <= 30
-                  ? "border-border text-foreground bg-muted text-[10px] font-mono"
-                  : "border-primary/30 text-primary bg-primary/10 text-[10px] font-mono"
-              }
-            >
-              {t("security.sso_health_days_remaining", { days: minDays })}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge
+                variant="outline"
+                className={
+                  minDays <= 30
+                    ? "border-border text-foreground bg-muted text-[10px] font-mono"
+                    : "border-primary/30 text-primary bg-primary/10 text-[10px] font-mono"
+                }
+              >
+                {t("security.sso_health_days_remaining", { days: minDays })}
+              </Badge>
+              {row.original.samlOverlapActive && (
+                <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 text-[10px] font-mono">
+                  {t("security.sso_health_overlap_badge")}
+                </Badge>
+              )}
+            </div>
           );
         },
       },

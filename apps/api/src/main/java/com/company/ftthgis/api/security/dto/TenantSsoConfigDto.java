@@ -51,6 +51,14 @@ public class TenantSsoConfigDto {
     private LocalDateTime samlCertExpiresAt;
     private String samlCertSubject;
     private Long samlCertDaysRemaining;
+    private String samlCertFingerprint;
+    private LocalDateTime secondarySamlCertExpiresAt;
+    private String secondarySamlCertSubject;
+    private Long secondarySamlCertDaysRemaining;
+    private String secondarySamlCertFingerprint;
+    private boolean samlOverlapActive;
+    private LocalDateTime samlCertOverlapStartedAt;
+    private LocalDateTime samlCertRotatedAt;
     private LocalDateTime clientSecretExpiresAt;
     private Long clientSecretDaysRemaining;
     private String lastAlertStage;

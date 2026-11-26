@@ -21,6 +21,7 @@ export interface SsoFormFieldsProps {
   clientSecret: string;
   hasExistingSecret: boolean;
   issuerUrl: string;
+  metadataUrl: string;
   singleSignOnUrl: string;
   entityId: string;
   signingCertificate: string;
@@ -30,6 +31,7 @@ export interface SsoFormFieldsProps {
   onClientIdChange: (val: string) => void;
   onClientSecretChange: (val: string) => void;
   onIssuerUrlChange: (val: string) => void;
+  onMetadataUrlChange: (val: string) => void;
   onSingleSignOnUrlChange: (val: string) => void;
   onEntityIdChange: (val: string) => void;
   onSigningCertificateChange: (val: string) => void;
@@ -45,6 +47,7 @@ export function SsoFormFields({
   clientSecret,
   hasExistingSecret,
   issuerUrl,
+  metadataUrl,
   singleSignOnUrl,
   entityId,
   signingCertificate,
@@ -54,6 +57,7 @@ export function SsoFormFields({
   onClientIdChange,
   onClientSecretChange,
   onIssuerUrlChange,
+  onMetadataUrlChange,
   onSingleSignOnUrlChange,
   onEntityIdChange,
   onSigningCertificateChange,
@@ -97,78 +101,78 @@ export function SsoFormFields({
         />
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold">{t("settings.sso_client_id_label")}</Label>
-        <Input
-          disabled={!isSsoAllowed || isLoading}
-          value={clientId}
-          onChange={(e) => onClientIdChange(e.target.value)}
-          placeholder="e.g. k2net-enterprise-client"
-          className="h-8.5 text-xs font-mono bg-background border-border/80"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold flex items-center justify-between">
-          <span>{t("settings.sso_client_secret_label")}</span>
-          {hasExistingSecret && (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <KeyRound className="size-3 text-primary" />
-              {t("settings.sso_encrypted_badge")}
-            </span>
-          )}
-        </Label>
-        <Input
-          type="password"
-          disabled={!isSsoAllowed || isLoading}
-          value={clientSecret}
-          onChange={(e) => onClientSecretChange(e.target.value)}
-          placeholder={hasExistingSecret ? t("settings.sso_client_secret_placeholder") : "••••••••••••••••"}
-          className="h-8.5 text-xs font-mono bg-background border-border/80"
-        />
-      </div>
-
       {!isSaml ? (
         <>
-        <div className="space-y-1.5 md:col-span-2">
-          <Label className="text-xs font-semibold">{t("settings.sso_discovery_url_label")}</Label>
-          <Input
-            disabled={!isSsoAllowed || isLoading}
-            value={issuerUrl}
-            onChange={(e) => onIssuerUrlChange(e.target.value)}
-            placeholder={
-              providerType === "GOOGLE"
-                ? "https://accounts.google.com"
-                : providerType === "GITHUB"
-                  ? "https://github.com/login/oauth"
-                  : providerType === "OKTA"
-                    ? "https://{your-domain}.okta.com/oauth2/default"
-                    : providerType === "KEYCLOAK_OIDC"
-                      ? "https://idp.company.com/realms/{realm}"
-                      : providerType === "OIDC_CUSTOM"
-                        ? "https://idp.company.com/.well-known/openid-configuration"
-                        : "https://login.microsoftonline.com/{tenant-id}/v2.0"
-            }
-            className="h-8.5 text-xs font-mono bg-background border-border/80"
-          />
-        </div>
-        <div className="space-y-1.5 md:col-span-2">
-          <Label htmlFor="sso-secret-expiry" className="text-xs font-semibold">
-            {t("settings.sso_client_secret_expiry_label")}
-          </Label>
-          <Input
-            id="sso-secret-expiry"
-            type="date"
-            disabled={!isSsoAllowed || isLoading}
-            value={clientSecretExpiresAt}
-            onChange={(e) => onClientSecretExpiresAtChange(e.target.value)}
-            className="h-8.5 text-xs font-mono bg-background border-border/80 max-w-xs"
-          />
-          <p className="text-[11px] text-muted-foreground">
-            {t("settings.sso_client_secret_expiry_desc")}
-          </p>
-        </div>
-      </>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">{t("settings.sso_client_id_label")}</Label>
+            <Input
+              disabled={!isSsoAllowed || isLoading}
+              value={clientId}
+              onChange={(e) => onClientIdChange(e.target.value)}
+              placeholder="e.g. k2net-enterprise-client"
+              className="h-8.5 text-xs font-mono bg-background border-border/80"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold flex items-center justify-between">
+              <span>{t("settings.sso_client_secret_label")}</span>
+              {hasExistingSecret && (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <KeyRound className="size-3 text-primary" />
+                  {t("settings.sso_encrypted_badge")}
+                </span>
+              )}
+            </Label>
+            <Input
+              type="password"
+              disabled={!isSsoAllowed || isLoading}
+              value={clientSecret}
+              onChange={(e) => onClientSecretChange(e.target.value)}
+              placeholder={hasExistingSecret ? t("settings.sso_client_secret_placeholder") : "••••••••••••••••"}
+              className="h-8.5 text-xs font-mono bg-background border-border/80"
+            />
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className="text-xs font-semibold">{t("settings.sso_discovery_url_label")}</Label>
+            <Input
+              disabled={!isSsoAllowed || isLoading}
+              value={issuerUrl}
+              onChange={(e) => onIssuerUrlChange(e.target.value)}
+              placeholder={
+                providerType === "GOOGLE"
+                  ? "https://accounts.google.com"
+                  : providerType === "GITHUB"
+                    ? "https://github.com/login/oauth"
+                    : providerType === "OKTA"
+                      ? "https://{your-domain}.okta.com/oauth2/default"
+                      : providerType === "KEYCLOAK_OIDC"
+                        ? "https://idp.company.com/realms/{realm}"
+                        : providerType === "OIDC_CUSTOM"
+                          ? "https://idp.company.com/.well-known/openid-configuration"
+                          : "https://login.microsoftonline.com/{tenant-id}/v2.0"
+              }
+              className="h-8.5 text-xs font-mono bg-background border-border/80"
+            />
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label htmlFor="sso-secret-expiry" className="text-xs font-semibold">
+              {t("settings.sso_client_secret_expiry_label")}
+            </Label>
+            <Input
+              id="sso-secret-expiry"
+              type="date"
+              disabled={!isSsoAllowed || isLoading}
+              value={clientSecretExpiresAt}
+              onChange={(e) => onClientSecretExpiresAtChange(e.target.value)}
+              className="h-8.5 text-xs font-mono bg-background border-border/80 max-w-xs"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t("settings.sso_client_secret_expiry_desc")}
+            </p>
+          </div>
+        </>
       ) : (
         <>
           <div className="space-y-1.5 md:col-span-2">
@@ -191,6 +195,19 @@ export function SsoFormFields({
               className="h-8.5 text-xs font-mono bg-background border-border/80"
             />
           </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">{t("settings.sso_metadata_url_label")}</Label>
+            <Input
+              disabled={!isSsoAllowed || isLoading}
+              value={metadataUrl}
+              onChange={(e) => onMetadataUrlChange(e.target.value)}
+              placeholder={t("settings.sso_metadata_url_placeholder")}
+              className="h-8.5 text-xs font-mono bg-background border-border/80"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t("settings.sso_metadata_url_desc")}
+            </p>
+          </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label className="text-xs font-semibold">{t("settings.sso_signing_cert_label")}</Label>
             <Textarea
@@ -200,6 +217,9 @@ export function SsoFormFields({
               placeholder="-----BEGIN CERTIFICATE----- ... -----END CERTIFICATE-----"
               className="min-h-24 text-xs font-mono bg-background border-border/80"
             />
+            <p className="text-[11px] text-muted-foreground">
+              {t("settings.sso_signing_cert_rotation_hint")}
+            </p>
           </div>
         </>
       )}

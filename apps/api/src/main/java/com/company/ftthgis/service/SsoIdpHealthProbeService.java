@@ -29,6 +29,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -200,10 +201,7 @@ public class SsoIdpHealthProbeService {
             config.setTlsCertExpiresAt(outcome.tlsCertInfo().expiresAt());
             config.setTlsCertSubject(truncateSubject(outcome.tlsCertInfo().subject()));
         }
-        if (outcome.samlCertInfo() != null) {
-            config.setSamlCertExpiresAt(outcome.samlCertInfo().expiresAt());
-            config.setSamlCertSubject(truncateSubject(outcome.samlCertInfo().subject()));
-        }
+        refreshSamlCertificateMetadata(config);
 
         int currentFailures = config.getConsecutiveProbeFailures() != null ? config.getConsecutiveProbeFailures() : 0;
         String newHealthStatus;
@@ -365,23 +363,103 @@ public class SsoIdpHealthProbeService {
      * Mem-parse sertifikat X.509 SAML (format PEM atau Base64 mentah).
      */
     public CertInfo parsePemCertificate(String rawCert) throws Exception {
+        DetailedCertInfo detailed = parseX509CertificateDetailed(rawCert);
+        return detailed != null ? new CertInfo(detailed.expiresAt(), detailed.subject()) : null;
+    }
+
+    /**
+     * Mem-parse sertifikat X.509 SAML secara lengkap (Subject, Issuer, Serial, NotBefore/NotAfter,
+     * SHA-256 fingerprint, compact Base64 DER untuk Keycloak 26.1.1, dan PEM ternormalisasi).
+     */
+    public DetailedCertInfo parseX509CertificateDetailed(String rawCert) throws Exception {
         if (rawCert == null || rawCert.isBlank()) {
             return null;
         }
-        String trimmed = rawCert.trim();
-        String pem;
-        if (trimmed.contains("-----BEGIN CERTIFICATE-----")) {
-            pem = trimmed;
-        } else {
-            String compact = trimmed.replaceAll("\\s+", "");
-            pem = "-----BEGIN CERTIFICATE-----\n" + compact + "\n-----END CERTIFICATE-----";
+        String compact = stripPemHeadersAndWhitespace(rawCert);
+        if (compact.isBlank()) {
+            throw new IllegalArgumentException("Konten sertifikat X.509 kosong.");
         }
+        byte[] derBytes = Base64.getDecoder().decode(compact);
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(pem.getBytes(StandardCharsets.UTF_8))) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(derBytes)) {
             X509Certificate x509 = (X509Certificate) cf.generateCertificate(bais);
-            LocalDateTime expiresAt = LocalDateTime.ofInstant(x509.getNotAfter().toInstant(), ZoneId.systemDefault());
+            byte[] encoded = x509.getEncoded();
+            String canonicalDerBase64 = Base64.getEncoder().encodeToString(encoded);
+            String formattedBody = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII))
+                    .encodeToString(encoded);
+            String normalizedPem = "-----BEGIN CERTIFICATE-----\n" + formattedBody + "\n-----END CERTIFICATE-----";
+
+            LocalDateTime notBefore = x509.getNotBefore() != null
+                    ? LocalDateTime.ofInstant(x509.getNotBefore().toInstant(), ZoneId.systemDefault())
+                    : null;
+            LocalDateTime expiresAt = x509.getNotAfter() != null
+                    ? LocalDateTime.ofInstant(x509.getNotAfter().toInstant(), ZoneId.systemDefault())
+                    : null;
             String subject = x509.getSubjectX500Principal() != null ? x509.getSubjectX500Principal().getName() : "";
-            return new CertInfo(expiresAt, subject);
+            String issuer = x509.getIssuerX500Principal() != null ? x509.getIssuerX500Principal().getName() : "";
+            String serialNumber = x509.getSerialNumber() != null
+                    ? x509.getSerialNumber().toString(16).toUpperCase(Locale.ROOT)
+                    : "";
+            String sha256Fingerprint = computeSha256Fingerprint(encoded);
+            return new DetailedCertInfo(
+                    notBefore,
+                    expiresAt,
+                    subject,
+                    issuer,
+                    serialNumber,
+                    sha256Fingerprint,
+                    canonicalDerBase64,
+                    normalizedPem
+            );
+        }
+    }
+
+    public String stripPemHeadersAndWhitespace(String rawCert) {
+        if (rawCert == null) {
+            return "";
+        }
+        return rawCert
+                .replace("-----BEGIN CERTIFICATE-----", "")
+                .replace("-----END CERTIFICATE-----", "")
+                .replaceAll("\\s+", "");
+    }
+
+    private String computeSha256Fingerprint(byte[] encoded) throws Exception {
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest(encoded);
+        StringBuilder sb = new StringBuilder(digest.length * 3 - 1);
+        for (int i = 0; i < digest.length; i++) {
+            if (i > 0) {
+                sb.append(':');
+            }
+            sb.append(String.format("%02X", digest[i]));
+        }
+        return sb.toString();
+    }
+
+    private void refreshSamlCertificateMetadata(OrganizationSsoConfig config) {
+        if (config.getSigningCertificate() != null && !config.getSigningCertificate().isBlank()) {
+            try {
+                DetailedCertInfo primary = parseX509CertificateDetailed(config.getSigningCertificate());
+                if (primary != null) {
+                    config.setSamlCertExpiresAt(primary.expiresAt());
+                    config.setSamlCertSubject(truncateSubject(primary.subject()));
+                    config.setSamlCertFingerprint(primary.sha256Fingerprint());
+                }
+            } catch (Exception e) {
+                log.debug("Could not parse primary SAML cert during probe: {}", e.getMessage());
+            }
+        }
+        if (config.getSecondarySigningCertificate() != null && !config.getSecondarySigningCertificate().isBlank()) {
+            try {
+                DetailedCertInfo secondary = parseX509CertificateDetailed(config.getSecondarySigningCertificate());
+                if (secondary != null) {
+                    config.setSecondarySamlCertExpiresAt(secondary.expiresAt());
+                    config.setSecondarySamlCertSubject(truncateSubject(secondary.subject()));
+                    config.setSecondarySamlCertFingerprint(secondary.sha256Fingerprint());
+                }
+            } catch (Exception e) {
+                log.debug("Could not parse secondary SAML cert during probe: {}", e.getMessage());
+            }
         }
     }
 
@@ -498,7 +576,12 @@ public class SsoIdpHealthProbeService {
 
     private ExpiryAssessment assessExpiries(OrganizationSsoConfig config, LocalDateTime now) {
         Long tlsDays = computeDaysRemaining(config.getTlsCertExpiresAt(), now);
-        Long samlDays = computeDaysRemaining(config.getSamlCertExpiresAt(), now);
+        Long primarySamlDays = computeDaysRemaining(config.getSamlCertExpiresAt(), now);
+        boolean hasSecondary = config.getSecondarySigningCertificate() != null
+                && !config.getSecondarySigningCertificate().isBlank();
+        Long secondarySamlDays = hasSecondary
+                ? computeDaysRemaining(config.getSecondarySamlCertExpiresAt(), now)
+                : null;
         Long secretDays = computeDaysRemaining(config.getClientSecretExpiresAt(), now);
 
         List<String> expiredParts = new ArrayList<>();
@@ -508,7 +591,6 @@ public class SsoIdpHealthProbeService {
 
         for (ExpiryEntry entry : List.of(
                 new ExpiryEntry("TLS_CERT", "Sertifikat TLS IdP", tlsDays),
-                new ExpiryEntry("SAML_CERT", "Sertifikat SAML Signing", samlDays),
                 new ExpiryEntry("CLIENT_SECRET", "Client Secret OAuth", secretDays)
         )) {
             if (entry.days() == null) continue;
@@ -523,6 +605,15 @@ public class SsoIdpHealthProbeService {
             }
         }
 
+        if (primarySamlDays != null || secondarySamlDays != null) {
+            Long effectiveAlertDays = evaluateSamlOverlapExpiry(
+                    primarySamlDays, secondarySamlDays, expiredParts, warningParts);
+            if (effectiveAlertDays != null && (minDays == null || effectiveAlertDays < minDays)) {
+                minDays = effectiveAlertDays;
+                minSource = "SAML_CERT";
+            }
+        }
+
         if (!expiredParts.isEmpty()) {
             return new ExpiryAssessment(true, false, minDays, minSource, String.join("; ", expiredParts));
         }
@@ -530,6 +621,66 @@ public class SsoIdpHealthProbeService {
             return new ExpiryAssessment(false, true, minDays, minSource, String.join("; ", warningParts));
         }
         return new ExpiryAssessment(false, false, minDays, minSource, null);
+    }
+
+    /**
+     * Evaluasi masa berlaku Dual-Cert SAML 2.0 Overlap:
+     * - Jika Primary sudah expired namun Secondary masih valid (> 0 hari), sistem berstatus DEGRADED (WARNING), bukan UNHEALTHY.
+     * - Status UNHEALTHY hanya terpicu bila tidak ada satupun sertifikat SAML valid tersisa.
+     */
+    private Long evaluateSamlOverlapExpiry(
+            Long primarySamlDays,
+            Long secondarySamlDays,
+            List<String> expiredParts,
+            List<String> warningParts) {
+
+        boolean primaryPresent = primarySamlDays != null;
+        boolean secondaryPresent = secondarySamlDays != null;
+
+        if (!secondaryPresent) {
+            if (primarySamlDays <= 0) {
+                expiredParts.add("Sertifikat SAML Signing telah kedaluwarsa");
+            } else if (primarySamlDays <= CERT_WARNING_DAYS) {
+                warningParts.add("Sertifikat SAML Signing akan kedaluwarsa dalam " + primarySamlDays + " hari");
+            }
+            return primarySamlDays;
+        }
+
+        if (!primaryPresent) {
+            if (secondarySamlDays <= 0) {
+                expiredParts.add("Sertifikat SAML Secondary telah kedaluwarsa");
+            } else if (secondarySamlDays <= CERT_WARNING_DAYS) {
+                warningParts.add("Sertifikat SAML Secondary akan kedaluwarsa dalam " + secondarySamlDays + " hari");
+            }
+            return secondarySamlDays;
+        }
+
+        boolean primaryValid = primarySamlDays > 0;
+        boolean secondaryValid = secondarySamlDays > 0;
+
+        if (!primaryValid && !secondaryValid) {
+            expiredParts.add("Seluruh sertifikat SAML Signing (Primary & Secondary) telah kedaluwarsa");
+            return Math.min(primarySamlDays, secondarySamlDays);
+        }
+        if (!primaryValid) {
+            warningParts.add("Sertifikat SAML Primary kedaluwarsa, namun Secondary masih valid "
+                    + secondarySamlDays + " hari (Dual-Cert Overlap aktif — segera promosikan Secondary)");
+            return Math.max(2L, Math.min(7L, secondarySamlDays));
+        }
+        if (!secondaryValid) {
+            warningParts.add("Sertifikat SAML Secondary telah kedaluwarsa sementara Primary masih valid "
+                    + primarySamlDays + " hari — pensiunkan Secondary atau stage sertifikat baru");
+            return Math.min(CERT_WARNING_DAYS, Math.max(2L, primarySamlDays));
+        }
+
+        long nearest = Math.min(primarySamlDays, secondarySamlDays);
+        if (primarySamlDays <= CERT_WARNING_DAYS) {
+            warningParts.add("Sertifikat SAML Primary akan kedaluwarsa dalam " + primarySamlDays
+                    + " hari (Dual-Cert Overlap aktif dengan Secondary valid " + secondarySamlDays + " hari)");
+        } else if (secondarySamlDays <= CERT_WARNING_DAYS) {
+            warningParts.add("Sertifikat SAML Secondary akan kedaluwarsa dalam " + secondarySamlDays + " hari");
+        }
+        return nearest;
     }
 
     private void dispatchAlertIfNeeded(
@@ -688,6 +839,8 @@ public class SsoIdpHealthProbeService {
     public SystemSsoHealthSummaryDto toSummaryDto(OrganizationSsoConfig entity) {
         LocalDateTime now = LocalDateTime.now();
         Organization org = entity.getOrganization();
+        boolean overlapActive = entity.getSecondarySigningCertificate() != null
+                && !entity.getSecondarySigningCertificate().isBlank();
         return SystemSsoHealthSummaryDto.builder()
                 .configId(entity.getId())
                 .organizationId(org != null ? org.getId() : entity.getOrganizationIdValue())
@@ -706,6 +859,9 @@ public class SsoIdpHealthProbeService {
                 .tlsCertDaysRemaining(computeDaysRemaining(entity.getTlsCertExpiresAt(), now))
                 .samlCertExpiresAt(entity.getSamlCertExpiresAt())
                 .samlCertDaysRemaining(computeDaysRemaining(entity.getSamlCertExpiresAt(), now))
+                .secondarySamlCertExpiresAt(overlapActive ? entity.getSecondarySamlCertExpiresAt() : null)
+                .secondarySamlCertDaysRemaining(overlapActive ? computeDaysRemaining(entity.getSecondarySamlCertExpiresAt(), now) : null)
+                .samlOverlapActive(overlapActive)
                 .clientSecretExpiresAt(entity.getClientSecretExpiresAt())
                 .clientSecretDaysRemaining(computeDaysRemaining(entity.getClientSecretExpiresAt(), now))
                 .lastAlertStage(entity.getLastAlertStage())
@@ -732,6 +888,16 @@ public class SsoIdpHealthProbeService {
     }
 
     public record CertInfo(LocalDateTime expiresAt, String subject) {}
+
+    public record DetailedCertInfo(
+            LocalDateTime notBefore,
+            LocalDateTime expiresAt,
+            String subject,
+            String issuer,
+            String serialNumber,
+            String sha256Fingerprint,
+            String compactDerBase64,
+            String normalizedPem) {}
 
     public record ProbeOutcome(
             boolean networkOk,

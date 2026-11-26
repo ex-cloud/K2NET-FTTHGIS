@@ -76,6 +76,9 @@ export interface TenantSsoHealthSummary {
   tlsCertDaysRemaining?: number | null;
   samlCertExpiresAt?: string | null;
   samlCertDaysRemaining?: number | null;
+  secondarySamlCertExpiresAt?: string | null;
+  secondarySamlCertDaysRemaining?: number | null;
+  samlOverlapActive?: boolean;
   clientSecretExpiresAt?: string | null;
   clientSecretDaysRemaining?: number | null;
   lastAlertStage?: string | null;

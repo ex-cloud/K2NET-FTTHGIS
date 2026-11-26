@@ -294,6 +294,7 @@
   "sso_health_days_remaining": "{{days}}d remaining",
   "sso_health_expired": "EXPIRED",
   "sso_health_no_expiry": "Not tracked",
+  "sso_health_overlap_badge": "OVERLAP",
   "iam_integrity_title": "Keycloak IAM Integrity & Orphan Account Monitor",
   "iam_integrity_desc": "Automated 24h integrity audit between Keycloak realms and PostgreSQL users with UUID Drift protection, Fail-Close Circuit Breaker, and Sudo Mode purge.",
   "iam_integrity_scan_btn": "Scan Keycloak Integrity",

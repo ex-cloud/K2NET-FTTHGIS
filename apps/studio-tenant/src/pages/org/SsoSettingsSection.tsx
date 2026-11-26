@@ -28,6 +28,7 @@ import {
 } from "./SsoSettingsParts";
 import { SsoVerifiedDomainsCard } from "./SsoVerifiedDomainsCard";
 import { SsoScimProvisioningCard } from "./SsoScimProvisioningCard";
+import { SsoSamlCertRotationCard } from "./SsoSamlCertRotationCard";
 
 export interface SsoConfigResponse {
   providerType: string;
@@ -57,10 +58,210 @@ export interface SsoConfigResponse {
   samlCertExpiresAt?: string | null;
   samlCertSubject?: string | null;
   samlCertDaysRemaining?: number | null;
+  samlCertFingerprint?: string | null;
+  secondarySamlCertExpiresAt?: string | null;
+  secondarySamlCertSubject?: string | null;
+  secondarySamlCertDaysRemaining?: number | null;
+  secondarySamlCertFingerprint?: string | null;
+  samlOverlapActive?: boolean;
+  samlCertOverlapStartedAt?: string | null;
+  samlCertRotatedAt?: string | null;
   clientSecretExpiresAt?: string | null;
   clientSecretDaysRemaining?: number | null;
   lastAlertStage?: string | null;
   version?: number;
+}
+
+interface SsoPayloadInputs {
+  providerType: string;
+  displayName: string;
+  clientId: string;
+  clientSecret: string;
+  issuerUrl: string;
+  metadataUrl: string;
+  singleSignOnUrl: string;
+  entityId: string;
+  signingCertificate: string;
+  clientSecretExpiresAt: string;
+  enforceSso: boolean;
+  allowBreakGlassBypass: boolean;
+  version?: number;
+}
+
+function trimOrUndefined(val: string): string | undefined {
+  const trimmed = val.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function resolveEffectiveClientId(
+  providerType: string,
+  clientId: string,
+  entityId: string,
+  singleSignOnUrl: string
+): string {
+  if (providerType !== "SAML_CUSTOM") {
+    return clientId.trim();
+  }
+  return clientId.trim() || entityId.trim() || singleSignOnUrl.trim();
+}
+
+function isSsoFormSubmittable(
+  providerType: string,
+  clientId: string,
+  entityId: string,
+  singleSignOnUrl: string
+): boolean {
+  if (providerType === "SAML_CUSTOM") {
+    return Boolean(entityId.trim() || singleSignOnUrl.trim() || clientId.trim());
+  }
+  return Boolean(clientId.trim());
+}
+
+function buildSsoProbePayload(inputs: SsoPayloadInputs, effectiveClientId: string) {
+  return {
+    providerType: inputs.providerType,
+    issuerUrl: trimOrUndefined(inputs.issuerUrl),
+    metadataUrl: inputs.providerType === "SAML_CUSTOM" ? trimOrUndefined(inputs.metadataUrl) : undefined,
+    singleSignOnUrl: trimOrUndefined(inputs.singleSignOnUrl),
+    signingCertificate: trimOrUndefined(inputs.signingCertificate),
+    clientId: effectiveClientId,
+    clientSecret: trimOrUndefined(inputs.clientSecret),
+  };
+}
+
+function buildSsoSavePayload(inputs: SsoPayloadInputs, effectiveClientId: string) {
+  return {
+    providerType: inputs.providerType,
+    displayName: inputs.displayName || undefined,
+    clientId: effectiveClientId,
+    clientSecret: trimOrUndefined(inputs.clientSecret),
+    issuerUrl: trimOrUndefined(inputs.issuerUrl),
+    metadataUrl: inputs.providerType === "SAML_CUSTOM" ? trimOrUndefined(inputs.metadataUrl) : undefined,
+    singleSignOnUrl: trimOrUndefined(inputs.singleSignOnUrl),
+    entityId: trimOrUndefined(inputs.entityId),
+    signingCertificate: trimOrUndefined(inputs.signingCertificate),
+    clientSecretExpiresAt: inputs.clientSecretExpiresAt ? `${inputs.clientSecretExpiresAt}T23:59:59` : undefined,
+    enforceSso: inputs.enforceSso,
+    allowBreakGlassBypass: inputs.allowBreakGlassBypass,
+    status: "ACTIVE",
+    version: inputs.version,
+  };
+}
+
+function SsoDeleteConfirmDialog({
+  open,
+  onOpenChange,
+  isDeleting,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isDeleting: boolean;
+  onConfirm: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md border-border/80 bg-card">
+        <DialogHeader>
+          <DialogTitle className="text-sm font-semibold">
+            {t("settings.sso_delete_title")}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            {t("settings.sso_delete_confirm")}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            className="h-7 px-2.5 text-xs"
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={isDeleting}
+            onClick={onConfirm}
+            className="h-7 px-2.5 text-xs gap-1.5"
+          >
+            {isDeleting && <Loader2 className="size-3.5 animate-spin" />}
+            {t("settings.sso_delete_btn")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function isSsoProbeable(
+  providerType: string,
+  issuerUrl: string,
+  metadataUrl: string,
+  singleSignOnUrl: string
+): boolean {
+  return Boolean(
+    issuerUrl ||
+      metadataUrl ||
+      singleSignOnUrl ||
+      providerType === "GOOGLE" ||
+      providerType === "GITHUB"
+  );
+}
+
+function SsoActionBar({
+  canDelete,
+  isSsoInteractive,
+  isDeleting,
+  isSaving,
+  canSubmit,
+  onRequestDelete,
+  onSave,
+}: {
+  canDelete: boolean;
+  isSsoInteractive: boolean;
+  isDeleting: boolean;
+  isSaving: boolean;
+  canSubmit: boolean;
+  onRequestDelete: () => void;
+  onSave: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center justify-between pt-2 border-t border-border/50">
+      <div>
+        {canDelete && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!isSsoInteractive || isDeleting}
+            onClick={onRequestDelete}
+            className="h-7 px-2.5 text-xs font-medium gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60 hover:bg-destructive/10"
+          >
+            <Trash2 className="size-3.5" />
+            {t("settings.sso_delete_btn")}
+          </Button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          variant="default"
+          size="sm"
+          disabled={!isSsoInteractive || isSaving || !canSubmit}
+          onClick={onSave}
+          className="h-7 px-2.5 text-xs font-medium gap-1.5"
+        >
+          {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+          {t("settings.sso_save_btn")}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function SsoSettingsSection({ slug }: { slug?: string }) {
@@ -215,10 +416,31 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
 
   const handleSave = async () => {
     if (!slug) return;
-    if (!clientId.trim()) {
-      toast.error(t("settings.sso_client_id_required"));
+    if (!isSsoFormSubmittable(providerType, clientId, entityId, singleSignOnUrl)) {
+      toast.error(
+        providerType === "SAML_CUSTOM"
+          ? t("settings.sso_saml_required_fields")
+          : t("settings.sso_client_id_required")
+      );
       return;
     }
+
+    const effectiveClientId = resolveEffectiveClientId(providerType, clientId, entityId, singleSignOnUrl);
+    const payloadInputs: SsoPayloadInputs = {
+      providerType,
+      displayName,
+      clientId,
+      clientSecret,
+      issuerUrl,
+      metadataUrl,
+      singleSignOnUrl,
+      entityId,
+      signingCertificate,
+      clientSecretExpiresAt,
+      enforceSso,
+      allowBreakGlassBypass,
+      version,
+    };
 
     setIsSaving(true);
     try {
@@ -229,15 +451,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           `/api/v1/organizations/${encodeURIComponent(slug)}/sso/test-probe`,
           {
             method: "POST",
-            body: JSON.stringify({
-              providerType,
-              issuerUrl: issuerUrl.trim() || undefined,
-              metadataUrl: providerType === "SAML_CUSTOM" ? (metadataUrl.trim() || undefined) : undefined,
-              singleSignOnUrl: singleSignOnUrl.trim() || undefined,
-              signingCertificate: signingCertificate.trim() || undefined,
-              clientId: clientId.trim(),
-              clientSecret: clientSecret.trim() || undefined,
-            }),
+            body: JSON.stringify(buildSsoProbePayload(payloadInputs, effectiveClientId)),
           }
         );
         if (!probeRes.success) {
@@ -249,28 +463,11 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         setLastTestAt(new Date().toISOString());
       }
 
-      const payload = {
-        providerType,
-        displayName: displayName || undefined,
-        clientId: clientId.trim(),
-        clientSecret: clientSecret.trim() || undefined,
-        issuerUrl: issuerUrl.trim() || undefined,
-        metadataUrl: providerType === "SAML_CUSTOM" ? (metadataUrl.trim() || undefined) : undefined,
-        singleSignOnUrl: singleSignOnUrl.trim() || undefined,
-        entityId: entityId.trim() || undefined,
-        signingCertificate: signingCertificate.trim() || undefined,
-        clientSecretExpiresAt: clientSecretExpiresAt ? `${clientSecretExpiresAt}T23:59:59` : undefined,
-        enforceSso,
-        allowBreakGlassBypass,
-        status: "ACTIVE",
-        version,
-      };
-
       const updated = await apiClient<SsoConfigResponse>(
         `/api/v1/organizations/${encodeURIComponent(slug)}/sso`,
         {
           method: "PUT",
-          body: JSON.stringify(payload),
+          body: JSON.stringify(buildSsoSavePayload(payloadInputs, effectiveClientId)),
         }
       );
 
@@ -283,8 +480,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
       }
       toast.success(t("settings.sso_saved_success"));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSaving(false);
     }
@@ -338,6 +534,9 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           tlsCertDaysRemaining={healthTelemetry.tlsCertDaysRemaining}
           samlCertExpiresAt={healthTelemetry.samlCertExpiresAt}
           samlCertDaysRemaining={healthTelemetry.samlCertDaysRemaining}
+          samlOverlapActive={healthTelemetry.samlOverlapActive}
+          secondarySamlCertExpiresAt={healthTelemetry.secondarySamlCertExpiresAt}
+          secondarySamlCertDaysRemaining={healthTelemetry.secondarySamlCertDaysRemaining}
           clientSecretExpiresAt={healthTelemetry.clientSecretExpiresAt}
           clientSecretDaysRemaining={healthTelemetry.clientSecretDaysRemaining}
         />
@@ -347,13 +546,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         <SsoProbeHeader
           isSsoAllowed={isSsoInteractive}
           isTesting={isTesting}
-          canProbe={Boolean(
-            issuerUrl ||
-              metadataUrl ||
-              singleSignOnUrl ||
-              providerType === "GOOGLE" ||
-              providerType === "GITHUB"
-          )}
+          canProbe={isSsoProbeable(providerType, issuerUrl, metadataUrl, singleSignOnUrl)}
           lastTestStatus={lastTestStatus}
           lastTestAt={lastTestAt}
           onTestProbe={handleTestProbe}
@@ -368,6 +561,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           clientSecret={clientSecret}
           hasExistingSecret={hasExistingSecret}
           issuerUrl={issuerUrl}
+          metadataUrl={metadataUrl}
           singleSignOnUrl={singleSignOnUrl}
           entityId={entityId}
           signingCertificate={signingCertificate}
@@ -376,6 +570,7 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
           onClientIdChange={setClientId}
           onClientSecretChange={setClientSecret}
           onIssuerUrlChange={handleIssuerUrlChange}
+          onMetadataUrlChange={setMetadataUrl}
           onSingleSignOnUrlChange={setSingleSignOnUrl}
           onEntityIdChange={setEntityId}
           onSigningCertificateChange={setSigningCertificate}
@@ -394,37 +589,26 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         />
 
         {canManageSso && (
-          <div className="flex items-center justify-between pt-2 border-t border-border/50">
-            <div>
-              {clientId && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!isSsoInteractive || isDeleting}
-                  onClick={() => setConfirmDeleteOpen(true)}
-                  className="h-7 px-2.5 text-xs font-medium gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60 hover:bg-destructive/10"
-                >
-                  <Trash2 className="size-3.5" />
-                  {t("settings.sso_delete_btn")}
-                </Button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                disabled={!isSsoInteractive || isSaving || !clientId.trim()}
-                onClick={handleSave}
-                className="h-7 px-2.5 text-xs font-medium gap-1.5"
-              >
-                {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-                {t("settings.sso_save_btn")}
-              </Button>
-            </div>
-          </div>
+          <SsoActionBar
+            canDelete={Boolean(clientId)}
+            isSsoInteractive={isSsoInteractive}
+            isDeleting={isDeleting}
+            isSaving={isSaving}
+            canSubmit={isSsoFormSubmittable(providerType, clientId, entityId, singleSignOnUrl)}
+            onRequestDelete={() => setConfirmDeleteOpen(true)}
+            onSave={handleSave}
+          />
         )}
       </Card>
+
+      {isSsoAllowed && providerType === "SAML_CUSTOM" && version !== undefined && (
+        <SsoSamlCertRotationCard
+          slug={slug}
+          isSsoInteractive={isSsoInteractive}
+          canManageSso={canManageSso}
+          onCertificatesChanged={loadSsoConfig}
+        />
+      )}
 
       <SsoVerifiedDomainsCard
         slug={slug}
@@ -440,40 +624,12 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         />
       )}
 
-      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
-        <DialogContent className="sm:max-w-md border-border/80 bg-card">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-semibold">
-              {t("settings.sso_delete_title")}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              {t("settings.sso_delete_confirm")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setConfirmDeleteOpen(false)}
-              className="h-7 px-2.5 text-xs"
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={isDeleting}
-              onClick={handleDelete}
-              className="h-7 px-2.5 text-xs gap-1.5"
-            >
-              {isDeleting && <Loader2 className="size-3.5 animate-spin" />}
-              {t("settings.sso_delete_btn")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SsoDeleteConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

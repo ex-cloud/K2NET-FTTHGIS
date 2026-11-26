@@ -294,6 +294,7 @@
   "sso_health_days_remaining": "Sisa {{days}}h",
   "sso_health_expired": "KEDALUWARSA",
   "sso_health_no_expiry": "Tidak dilacak",
+  "sso_health_overlap_badge": "OVERLAP",
   "iam_integrity_title": "Monitor Integritas IAM Keycloak & Akun Yatim",
   "iam_integrity_desc": "Audit integritas otomatis 24 jam antara realm Keycloak dan tabel users PostgreSQL dengan proteksi UUID Drift, Circuit Breaker Fail-Close, serta pembersihan via Sudo Mode.",
   "iam_integrity_scan_btn": "Pindai Integritas Keycloak",

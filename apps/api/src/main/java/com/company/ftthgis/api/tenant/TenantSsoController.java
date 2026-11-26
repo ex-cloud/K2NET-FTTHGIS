@@ -198,6 +198,90 @@ public class TenantSsoController {
         }
     }
 
+    /**
+     * Mengambil status Dual-Certificate SAML 2.0 (Primary & Secondary) serta metadata SP K2NET.
+     */
+    @GetMapping("/saml/certificates")
+    @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.sso.view') or hasAuthority('organizations.view'))")
+    public ResponseEntity<?> getSamlCertificatesStatus(@PathVariable String slug) {
+        try {
+            return ResponseEntity.ok(tenantSsoService.getSamlCertificatesStatus(slug));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Tahap 1 Zero-Downtime SAML Key Rotation: Men-stage sertifikat Secondary X.509 baru.
+     */
+    @PostMapping("/saml/certificates/stage")
+    @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.sso.manage') or hasAuthority('organizations.update'))")
+    @RequireSudoMode(action = "tenant.sso.saml.stage")
+    public ResponseEntity<?> stageSecondarySamlCertificate(
+            @PathVariable String slug,
+            @Valid @RequestBody StageSamlCertificateRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        try {
+            String actor = resolveActor(jwt);
+            return ResponseEntity.ok(
+                    tenantSsoService.stageSecondarySamlCertificate(slug, request.getCertificatePem(), actor));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Tahap 2 Zero-Downtime SAML Key Rotation: Mempromosikan sertifikat Secondary menjadi Primary secara atomik.
+     */
+    @PostMapping("/saml/certificates/promote")
+    @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.sso.manage') or hasAuthority('organizations.update'))")
+    @RequireSudoMode(action = "tenant.sso.saml.promote")
+    public ResponseEntity<?> promoteSecondarySamlCertificate(
+            @PathVariable String slug,
+            @RequestBody(required = false) PromoteSamlCertificateRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        try {
+            String actor = resolveActor(jwt);
+            boolean keepPrevious = request != null && request.isKeepPreviousAsSecondary();
+            return ResponseEntity.ok(
+                    tenantSsoService.promoteSecondarySamlCertificate(slug, keepPrevious, actor));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Tahap 3 Zero-Downtime SAML Key Rotation: Memensiunkan sertifikat Secondary setelah cutover selesai.
+     */
+    @DeleteMapping("/saml/certificates/secondary")
+    @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.sso.manage') or hasAuthority('organizations.update'))")
+    @RequireSudoMode(action = "tenant.sso.saml.retire")
+    public ResponseEntity<?> retireSecondarySamlCertificate(
+            @PathVariable String slug,
+            @AuthenticationPrincipal Jwt jwt) {
+        try {
+            String actor = resolveActor(jwt);
+            return ResponseEntity.ok(tenantSsoService.retireSecondarySamlCertificate(slug, actor));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     private String resolveActor(Jwt jwt) {
         if (jwt == null) {
             return "system";

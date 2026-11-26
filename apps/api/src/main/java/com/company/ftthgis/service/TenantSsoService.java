@@ -58,6 +58,9 @@ public class TenantSsoService {
     @Autowired(required = false)
     private SsoIdpHealthProbeService healthProbeService;
 
+    @Autowired(required = false)
+    private AuditLoggingService auditLoggingService;
+
     @org.springframework.beans.factory.annotation.Value("${keycloak.server-url:https://auth-gis.kdua.net}")
     private String keycloakPublicUrl = "https://auth-gis.kdua.net";
 
@@ -127,13 +130,10 @@ public class TenantSsoService {
         Organization org = findOrganization(orgSlug);
 
         // 0. Validasi Entitlement Lisensi & Paket Langganan
-        if (licenseManagementService != null && !org.isPlatformRootOrg()) {
-            var entitlements = licenseManagementService.getEffectiveLicenseEntitlements(org.getId());
-            if (entitlements != null && !entitlements.isSsoEnabled()) {
-                throw new IllegalStateException(
-                        "Paket langganan atau lisensi organisasi Anda saat ini tidak mencakup fitur Single Sign-On (SSO).");
-            }
-        }
+        verifySsoLicenseAllowed(org);
+
+        boolean isSaml = isSamlProvider(request.getProviderType());
+        String effectiveClientId = resolveEffectiveClientId(org.getSlug(), request, isSaml);
 
         OrganizationSsoConfig config = ssoConfigRepository.findFirstByOrganizationIdNative(org.getId())
                 .orElseGet(() -> OrganizationSsoConfig.builder()
@@ -178,26 +178,51 @@ public class TenantSsoService {
         config.setProviderType(request.getProviderType());
         config.setDisplayName(request.getDisplayName() != null ? request.getDisplayName() : request.getProviderType() + " SSO");
         config.setIssuerUrl(request.getIssuerUrl());
-        config.setClientId(request.getClientId());
+        config.setClientId(effectiveClientId);
         config.setMetadataUrl(request.getMetadataUrl());
         config.setEntityId(request.getEntityId());
         config.setSingleSignOnUrl(request.getSingleSignOnUrl());
-        config.setSigningCertificate(request.getSigningCertificate());
         config.setClientSecretExpiresAt(request.getClientSecretExpiresAt());
         if (request.getSigningCertificate() != null && !request.getSigningCertificate().isBlank()) {
             try {
-                SsoIdpHealthProbeService.CertInfo certInfo = getHealthProbeHelper().parsePemCertificate(request.getSigningCertificate());
+                LocalDateTime now = LocalDateTime.now();
+                SsoIdpHealthProbeService.DetailedCertInfo certInfo =
+                        getHealthProbeHelper().parseX509CertificateDetailed(request.getSigningCertificate());
                 if (certInfo != null) {
+                    if (certInfo.expiresAt() != null && !certInfo.expiresAt().isAfter(now)) {
+                        throw new IllegalArgumentException(
+                                "Sertifikat SAML X.509 sudah kedaluwarsa dan tidak dapat disimpan.");
+                    }
+                    if (config.getSecondarySigningCertificate() != null
+                            && !config.getSecondarySigningCertificate().isBlank()
+                            && certInfo.sha256Fingerprint() != null
+                            && certInfo.sha256Fingerprint().equalsIgnoreCase(config.getSecondarySamlCertFingerprint())) {
+                        throw new IllegalArgumentException(
+                                "Sertifikat SAML Primary tidak boleh identik dengan sertifikat Secondary yang sedang di-stage.");
+                    }
+                    config.setSigningCertificate(certInfo.normalizedPem());
                     config.setSamlCertExpiresAt(certInfo.expiresAt());
                     String sub = certInfo.subject();
                     config.setSamlCertSubject(sub != null && sub.length() > 250 ? sub.substring(0, 250) : sub);
+                    config.setSamlCertFingerprint(certInfo.sha256Fingerprint());
                 }
+            } catch (IllegalArgumentException e) {
+                throw e;
             } catch (Exception e) {
                 throw new IllegalArgumentException("Format sertifikat SAML X.509 tidak valid: " + e.getMessage());
             }
         } else {
+            if (config.getSecondarySigningCertificate() != null && !config.getSecondarySigningCertificate().isBlank()) {
+                throw new IllegalStateException(
+                        "Tidak dapat menghapus sertifikat SAML Primary saat sertifikat Secondary masih aktif. Pensiunkan sertifikat Secondary terlebih dahulu.");
+            }
+            config.setSigningCertificate(null);
             config.setSamlCertExpiresAt(null);
             config.setSamlCertSubject(null);
+            config.setSamlCertFingerprint(null);
+        }
+        if (!isSaml && config.getSecondarySigningCertificate() != null) {
+            clearSecondarySamlState(config);
         }
         config.setEnforceSso(request.isEnforceSso());
         config.setAllowBreakGlassBypass(request.isAllowBreakGlassBypass());
@@ -312,12 +337,26 @@ public class TenantSsoService {
         List<String> warnings = new ArrayList<>();
         Long tlsDays = outcome.tlsCertInfo() != null ? helper.computeDaysRemaining(outcome.tlsCertInfo().expiresAt(), now) : null;
         Long samlDays = outcome.samlCertInfo() != null ? helper.computeDaysRemaining(outcome.samlCertInfo().expiresAt(), now) : null;
+        Long secondarySamlDays = existingOpt
+                .filter(c -> c.getSecondarySigningCertificate() != null && !c.getSecondarySigningCertificate().isBlank())
+                .map(c -> helper.computeDaysRemaining(c.getSecondarySamlCertExpiresAt(), now))
+                .orElse(null);
         Long secretDays = existingOpt.map(c -> helper.computeDaysRemaining(c.getClientSecretExpiresAt(), now)).orElse(null);
+
+        boolean samlFullyExpired = samlDays != null && samlDays <= 0
+                && (secondarySamlDays == null || secondarySamlDays <= 0);
+        boolean samlCoveredBySecondary = samlDays != null && samlDays <= 0
+                && secondarySamlDays != null && secondarySamlDays > 0;
+        boolean samlExpiringSoon = (samlDays != null && samlDays > 0 && samlDays <= 30)
+                || (secondarySamlDays != null && secondarySamlDays <= 30)
+                || samlCoveredBySecondary;
 
         if (tlsDays != null && tlsDays <= 30) {
             warnings.add(tlsDays <= 0 ? "Sertifikat TLS server IdP telah kedaluwarsa!" : "Sertifikat TLS IdP akan kedaluwarsa dalam " + tlsDays + " hari.");
         }
-        if (samlDays != null && samlDays <= 30) {
+        if (samlCoveredBySecondary) {
+            warnings.add("Sertifikat SAML Primary kedaluwarsa, namun Secondary masih valid " + secondarySamlDays + " hari (Dual-Cert Overlap aktif).");
+        } else if (samlDays != null && samlDays <= 30) {
             warnings.add(samlDays <= 0 ? "Sertifikat SAML signing telah kedaluwarsa!" : "Sertifikat SAML signing akan kedaluwarsa dalam " + samlDays + " hari.");
         }
         if (secretDays != null && secretDays <= 30) {
@@ -331,11 +370,11 @@ public class TenantSsoService {
             recentSuccessfulProbes.put(org.getId(), now);
 
             String computedHealth = ((tlsDays != null && tlsDays <= 0)
-                    || (samlDays != null && samlDays <= 0)
+                    || samlFullyExpired
                     || (secretDays != null && secretDays <= 0))
                     ? "UNHEALTHY"
                     : (((tlsDays != null && tlsDays <= 30)
-                            || (samlDays != null && samlDays <= 30)
+                            || samlExpiringSoon
                             || (secretDays != null && secretDays <= 30)) ? "DEGRADED" : "HEALTHY");
 
             existingOpt.ifPresent(c -> {
@@ -475,10 +514,14 @@ public class TenantSsoService {
     }
 
     private void syncIdpToKeycloak(String orgSlug, OrganizationSsoConfig config, String plaintextSecret) {
+        syncIdpToKeycloak(orgSlug, config, plaintextSecret, false);
+    }
+
+    private void syncIdpToKeycloak(String orgSlug, OrganizationSsoConfig config, String plaintextSecret, boolean throwOnFailure) {
         String alias = resolveKeycloakAlias(orgSlug);
         String providerType = config.getProviderType();
         String keycloakProviderId;
-        if ("saml".equalsIgnoreCase(providerType) || "SAML_CUSTOM".equalsIgnoreCase(providerType)) {
+        if (isSamlProvider(providerType)) {
             keycloakProviderId = "saml";
         } else if ("github".equalsIgnoreCase(providerType)) {
             keycloakProviderId = "github";
@@ -487,16 +530,52 @@ public class TenantSsoService {
         }
 
         Map<String, String> keycloakConfig = new HashMap<>();
-        keycloakConfig.put("clientId", config.getClientId());
-        if (plaintextSecret != null && !plaintextSecret.isBlank()) {
-            keycloakConfig.put("clientSecret", plaintextSecret);
-        }
 
         if ("saml".equalsIgnoreCase(keycloakProviderId)) {
-            if (config.getSingleSignOnUrl() != null) keycloakConfig.put("singleSignOnServiceUrl", config.getSingleSignOnUrl());
-            if (config.getEntityId() != null) keycloakConfig.put("idpEntityId", config.getEntityId());
-            if (config.getSigningCertificate() != null) keycloakConfig.put("signingCertificate", config.getSigningCertificate());
-        } else if (!"github".equalsIgnoreCase(keycloakProviderId)) {
+            keycloakConfig.put("singleSignOnServiceUrl", config.getSingleSignOnUrl() != null ? config.getSingleSignOnUrl() : "");
+            keycloakConfig.put("idpEntityId", config.getEntityId() != null ? config.getEntityId() : "");
+            keycloakConfig.put("nameIDPolicyFormat", "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress");
+            keycloakConfig.put("useMetadataDescriptorUrl", "false");
+
+            List<String> derCerts = new ArrayList<>();
+            String primaryDer = extractCompactDerBase64(config.getSigningCertificate());
+            if (!primaryDer.isBlank()) {
+                derCerts.add(primaryDer);
+            }
+            String secondaryDer = extractCompactDerBase64(config.getSecondarySigningCertificate());
+            if (!secondaryDer.isBlank() && !derCerts.contains(secondaryDer)) {
+                derCerts.add(secondaryDer);
+            }
+
+            if (!derCerts.isEmpty()) {
+                keycloakConfig.put("signingCertificate", String.join(",", derCerts));
+                keycloakConfig.put("validateSignature", "true");
+                keycloakConfig.put("wantAssertionsSigned", "true");
+            } else {
+                keycloakConfig.put("signingCertificate", "");
+                keycloakConfig.put("validateSignature", "false");
+                keycloakConfig.put("wantAssertionsSigned", "false");
+            }
+
+            // Bersihkan key OIDC agar tidak tersisa bila sebelumnya memakai OIDC
+            for (String staleKey : List.of("clientId", "clientSecret", "discoveryUrl", "issuer",
+                    "authorizationUrl", "tokenUrl", "jwksUrl", "userInfoUrl", "logoutUrl", "useJwksUrl")) {
+                keycloakConfig.put(staleKey, "");
+            }
+        } else {
+            if (config.getClientId() != null && !config.getClientId().isBlank()) {
+                keycloakConfig.put("clientId", config.getClientId());
+            }
+            if (plaintextSecret != null && !plaintextSecret.isBlank()) {
+                keycloakConfig.put("clientSecret", plaintextSecret);
+            }
+            for (String staleSamlKey : List.of("signingCertificate", "singleSignOnServiceUrl",
+                    "idpEntityId", "wantAssertionsSigned", "useMetadataDescriptorUrl", "nameIDPolicyFormat")) {
+                keycloakConfig.put(staleSamlKey, "");
+            }
+        }
+
+        if (!"saml".equalsIgnoreCase(keycloakProviderId) && !"github".equalsIgnoreCase(keycloakProviderId)) {
             // OIDC Configuration (auto-default Google OIDC discovery when GOOGLE provider has empty issuerUrl)
             String effectiveIssuer = config.getIssuerUrl();
             if ((effectiveIssuer == null || effectiveIssuer.isBlank()) && "GOOGLE".equalsIgnoreCase(providerType)) {
@@ -552,6 +631,9 @@ public class TenantSsoService {
                     keycloakConfig
             );
         } catch (Exception e) {
+            if (throwOnFailure) {
+                throw new IllegalStateException("Gagal menyinkronkan sertifikat SAML ke Keycloak: " + e.getMessage(), e);
+            }
             log.warn("⚠️ Peringatan: Gagal sinkronisasi IdP ke Keycloak (akan dicoba lagi pada runtime): {}", e.getMessage());
         }
     }
@@ -631,6 +713,16 @@ public class TenantSsoService {
                 .samlCertExpiresAt(entity.getSamlCertExpiresAt())
                 .samlCertSubject(entity.getSamlCertSubject())
                 .samlCertDaysRemaining(helper.computeDaysRemaining(entity.getSamlCertExpiresAt(), now))
+                .samlCertFingerprint(entity.getSamlCertFingerprint())
+                .secondarySamlCertExpiresAt(entity.getSecondarySamlCertExpiresAt())
+                .secondarySamlCertSubject(entity.getSecondarySamlCertSubject())
+                .secondarySamlCertDaysRemaining(entity.getSecondarySigningCertificate() != null && !entity.getSecondarySigningCertificate().isBlank()
+                        ? helper.computeDaysRemaining(entity.getSecondarySamlCertExpiresAt(), now)
+                        : null)
+                .secondarySamlCertFingerprint(entity.getSecondarySamlCertFingerprint())
+                .samlOverlapActive(entity.getSecondarySigningCertificate() != null && !entity.getSecondarySigningCertificate().isBlank())
+                .samlCertOverlapStartedAt(entity.getSamlCertOverlapStartedAt())
+                .samlCertRotatedAt(entity.getSamlCertRotatedAt())
                 .clientSecretExpiresAt(entity.getClientSecretExpiresAt())
                 .clientSecretDaysRemaining(helper.computeDaysRemaining(entity.getClientSecretExpiresAt(), now))
                 .lastAlertStage(entity.getLastAlertStage())
@@ -757,6 +849,405 @@ public class TenantSsoService {
                 .redirectUrl("/auth/sso/redirect?provider=" + idpHint)
                 .emailDomain(domain)
                 .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fase 7.16 — Dual-Certificate SAML 2.0 Overlap & Zero-Downtime Key Rotation
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Mengambil status Dual-Certificate SAML 2.0 (Primary & Secondary) serta metadata SP K2NET.
+     */
+    @Transactional(readOnly = true)
+    public SamlCertificatesStatusDto getSamlCertificatesStatus(String orgSlug) {
+        Organization org = findOrganization(orgSlug);
+        String alias = resolveKeycloakAlias(org.getSlug());
+        String pub = (keycloakPublicUrl != null && !keycloakPublicUrl.isBlank())
+                ? keycloakPublicUrl.replaceAll("/+$", "")
+                : "https://auth-gis.kdua.net";
+        String brokerBase = pub + "/realms/" + TENANT_REALM + "/broker/" + alias + "/endpoint";
+        String spEntityId = pub + "/realms/" + TENANT_REALM;
+
+        Optional<OrganizationSsoConfig> configOpt = ssoConfigRepository.findFirstByOrganizationIdNative(org.getId());
+        if (configOpt.isEmpty()) {
+            return SamlCertificatesStatusDto.builder()
+                    .organizationSlug(org.getSlug())
+                    .configured(false)
+                    .overlapActive(false)
+                    .keycloakAlias(alias)
+                    .spEntityId(spEntityId)
+                    .spAcsUrl(brokerBase)
+                    .spMetadataUrl(brokerBase + "/descriptor")
+                    .primary(SamlCertificateSlotDto.builder().slot("PRIMARY").present(false).status("EMPTY").build())
+                    .secondary(SamlCertificateSlotDto.builder().slot("SECONDARY").present(false).status("EMPTY").build())
+                    .build();
+        }
+
+        OrganizationSsoConfig config = configOpt.get();
+        LocalDateTime now = LocalDateTime.now();
+        boolean overlapActive = config.getSecondarySigningCertificate() != null
+                && !config.getSecondarySigningCertificate().isBlank();
+
+        return SamlCertificatesStatusDto.builder()
+                .organizationSlug(org.getSlug())
+                .providerType(config.getProviderType())
+                .configured(isSamlProvider(config.getProviderType()))
+                .overlapActive(overlapActive)
+                .overlapStartedAt(config.getSamlCertOverlapStartedAt())
+                .lastRotatedAt(config.getSamlCertRotatedAt())
+                .keycloakAlias(alias)
+                .spEntityId(spEntityId)
+                .spAcsUrl(brokerBase)
+                .spMetadataUrl(brokerBase + "/descriptor")
+                .primary(buildSamlSlotDto("PRIMARY", config.getSigningCertificate(),
+                        config.getSamlCertExpiresAt(), config.getSamlCertSubject(),
+                        config.getSamlCertFingerprint(), now))
+                .secondary(buildSamlSlotDto("SECONDARY", config.getSecondarySigningCertificate(),
+                        config.getSecondarySamlCertExpiresAt(), config.getSecondarySamlCertSubject(),
+                        config.getSecondarySamlCertFingerprint(), now))
+                .version(config.getVersion())
+                .build();
+    }
+
+    /**
+     * Tahap 1 Rotasi: Men-stage sertifikat X.509 Secondary baru untuk Dual-Cert Overlap.
+     */
+    @Transactional
+    public SamlCertificatesStatusDto stageSecondarySamlCertificate(String orgSlug, String certificatePem, String actor) {
+        Organization org = findOrganization(orgSlug);
+        verifySsoLicenseAllowed(org);
+
+        OrganizationSsoConfig config = ssoConfigRepository.findFirstByOrganizationIdNative(org.getId())
+                .orElseThrow(() -> new IllegalStateException("Konfigurasi SSO SAML 2.0 belum dibuat untuk organisasi ini."));
+
+        if (!isSamlProvider(config.getProviderType())) {
+            throw new IllegalStateException("Rotasi Dual-Certificate hanya tersedia untuk penyedia SAML 2.0 (SAML_CUSTOM).");
+        }
+        if (config.getSigningCertificate() == null || config.getSigningCertificate().isBlank()) {
+            throw new IllegalStateException("Harap simpan sertifikat SAML Primary terlebih dahulu sebelum men-stage sertifikat Secondary.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        SsoIdpHealthProbeService helper = getHealthProbeHelper();
+        SsoIdpHealthProbeService.DetailedCertInfo primaryInfo;
+        try {
+            primaryInfo = helper.parseX509CertificateDetailed(config.getSigningCertificate());
+        } catch (Exception e) {
+            throw new IllegalStateException("Sertifikat SAML Primary saat ini tidak dapat di-parse sebagai X.509 valid: " + e.getMessage());
+        }
+        if (primaryInfo != null) {
+            config.setSigningCertificate(primaryInfo.normalizedPem());
+            config.setSamlCertExpiresAt(primaryInfo.expiresAt());
+            config.setSamlCertSubject(truncateSubject(primaryInfo.subject()));
+            config.setSamlCertFingerprint(primaryInfo.sha256Fingerprint());
+        }
+
+        SsoIdpHealthProbeService.DetailedCertInfo secondaryInfo;
+        try {
+            secondaryInfo = helper.parseX509CertificateDetailed(certificatePem);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Format sertifikat SAML X.509 Secondary tidak valid: " + e.getMessage());
+        }
+        if (secondaryInfo == null) {
+            throw new IllegalArgumentException("Sertifikat SAML X.509 Secondary wajib diisi.");
+        }
+        if (secondaryInfo.expiresAt() != null && !secondaryInfo.expiresAt().isAfter(now)) {
+            throw new IllegalArgumentException("Sertifikat SAML X.509 Secondary sudah kedaluwarsa dan ditolak.");
+        }
+        if (primaryInfo != null && secondaryInfo.sha256Fingerprint() != null
+                && secondaryInfo.sha256Fingerprint().equalsIgnoreCase(primaryInfo.sha256Fingerprint())) {
+            throw new IllegalArgumentException("Sertifikat Secondary identik dengan sertifikat Primary saat ini (duplikat SHA-256 fingerprint).");
+        }
+
+        config.setSecondarySigningCertificate(secondaryInfo.normalizedPem());
+        config.setSecondarySamlCertExpiresAt(secondaryInfo.expiresAt());
+        config.setSecondarySamlCertSubject(truncateSubject(secondaryInfo.subject()));
+        config.setSecondarySamlCertFingerprint(secondaryInfo.sha256Fingerprint());
+        config.setSamlCertOverlapStartedAt(now);
+
+        syncIdpToKeycloak(org.getSlug(), config, decryptSecretQuietly(config), true);
+        OrganizationSsoConfig saved = ssoConfigRepository.save(config);
+        evictTenantAuthCache(org.getSlug(), parseDomainList(saved.getDomainMappings()));
+
+        logSamlAuditEvent(org.getSlug(), "SSO_SAML_SECONDARY_CERT_STAGED", saved.getId(), actor,
+                Map.of("primaryFingerprint", safeStr(saved.getSamlCertFingerprint())),
+                Map.of("secondaryFingerprint", safeStr(saved.getSecondarySamlCertFingerprint()),
+                        "secondaryExpiresAt", String.valueOf(saved.getSecondarySamlCertExpiresAt())));
+
+        log.info("🔐 Dual-Cert SAML Overlap diaktifkan untuk '{}' (Secondary SHA-256={}) oleh {}",
+                orgSlug, secondaryInfo.sha256Fingerprint(), actor);
+        return getSamlCertificatesStatus(orgSlug);
+    }
+
+    /**
+     * Tahap 2 Rotasi: Promosikan sertifikat Secondary menjadi Primary secara atomik.
+     */
+    @Transactional
+    public SamlCertificatesStatusDto promoteSecondarySamlCertificate(
+            String orgSlug, boolean keepPreviousAsSecondary, String actor) {
+        Organization org = findOrganization(orgSlug);
+        verifySsoLicenseAllowed(org);
+
+        OrganizationSsoConfig config = ssoConfigRepository.findFirstByOrganizationIdNative(org.getId())
+                .orElseThrow(() -> new IllegalStateException("Konfigurasi SSO SAML 2.0 belum ditemukan."));
+
+        if (!isSamlProvider(config.getProviderType())) {
+            throw new IllegalStateException("Rotasi Dual-Certificate hanya tersedia untuk penyedia SAML 2.0.");
+        }
+        if (config.getSecondarySigningCertificate() == null || config.getSecondarySigningCertificate().isBlank()) {
+            throw new IllegalStateException("Tidak ada sertifikat SAML Secondary yang di-stage untuk dipromosikan.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        SsoIdpHealthProbeService helper = getHealthProbeHelper();
+        SsoIdpHealthProbeService.DetailedCertInfo newPrimaryInfo;
+        try {
+            newPrimaryInfo = helper.parseX509CertificateDetailed(config.getSecondarySigningCertificate());
+        } catch (Exception e) {
+            throw new IllegalStateException("Sertifikat Secondary tidak valid: " + e.getMessage());
+        }
+        if (newPrimaryInfo.expiresAt() != null && !newPrimaryInfo.expiresAt().isAfter(now)) {
+            throw new IllegalStateException("Sertifikat Secondary sudah kedaluwarsa dan tidak dapat dipromosikan menjadi Primary.");
+        }
+
+        String oldPrimaryPem = config.getSigningCertificate();
+        LocalDateTime oldPrimaryExp = config.getSamlCertExpiresAt();
+        String oldPrimarySub = config.getSamlCertSubject();
+        String oldPrimaryFp = config.getSamlCertFingerprint();
+
+        config.setSigningCertificate(newPrimaryInfo.normalizedPem());
+        config.setSamlCertExpiresAt(newPrimaryInfo.expiresAt());
+        config.setSamlCertSubject(truncateSubject(newPrimaryInfo.subject()));
+        config.setSamlCertFingerprint(newPrimaryInfo.sha256Fingerprint());
+        config.setSamlCertRotatedAt(now);
+
+        if (keepPreviousAsSecondary && oldPrimaryPem != null && !oldPrimaryPem.isBlank()) {
+            config.setSecondarySigningCertificate(oldPrimaryPem);
+            config.setSecondarySamlCertExpiresAt(oldPrimaryExp);
+            config.setSecondarySamlCertSubject(oldPrimarySub);
+            config.setSecondarySamlCertFingerprint(oldPrimaryFp);
+            config.setSamlCertOverlapStartedAt(now);
+        } else {
+            clearSecondarySamlState(config);
+        }
+
+        if (newPrimaryInfo.expiresAt() != null && helper.computeDaysRemaining(newPrimaryInfo.expiresAt(), now) > 30
+                && !"HEALTHY".equalsIgnoreCase(config.getHealthStatus())
+                && Integer.valueOf(0).equals(config.getConsecutiveProbeFailures())) {
+            config.setHealthStatus("HEALTHY");
+            config.setLastHealthError(null);
+            config.setLastAlertStage(null);
+        }
+
+        syncIdpToKeycloak(org.getSlug(), config, decryptSecretQuietly(config), true);
+        OrganizationSsoConfig saved = ssoConfigRepository.save(config);
+        evictTenantAuthCache(org.getSlug(), parseDomainList(saved.getDomainMappings()));
+
+        logSamlAuditEvent(org.getSlug(), "SSO_SAML_CERT_ROTATED", saved.getId(), actor,
+                Map.of("previousPrimaryFingerprint", safeStr(oldPrimaryFp)),
+                Map.of("newPrimaryFingerprint", safeStr(saved.getSamlCertFingerprint()),
+                        "keepPreviousAsSecondary", keepPreviousAsSecondary));
+
+        log.info("🔄 Sertifikat SAML Secondary dipromosikan menjadi Primary untuk '{}' (keepPreviousAsSecondary={}) oleh {}",
+                orgSlug, keepPreviousAsSecondary, actor);
+        return getSamlCertificatesStatus(orgSlug);
+    }
+
+    /**
+     * Tahap 3 Rotasi: Pensiunkan sertifikat Secondary dan kembalikan Keycloak ke mode 1 sertifikat Primary.
+     */
+    @Transactional
+    public SamlCertificatesStatusDto retireSecondarySamlCertificate(String orgSlug, String actor) {
+        Organization org = findOrganization(orgSlug);
+        verifySsoLicenseAllowed(org);
+
+        OrganizationSsoConfig config = ssoConfigRepository.findFirstByOrganizationIdNative(org.getId())
+                .orElseThrow(() -> new IllegalStateException("Konfigurasi SSO SAML 2.0 belum ditemukan."));
+
+        if (config.getSecondarySigningCertificate() == null || config.getSecondarySigningCertificate().isBlank()) {
+            throw new IllegalStateException("Tidak ada sertifikat SAML Secondary yang aktif untuk dipensiunkan.");
+        }
+
+        String retiredFp = config.getSecondarySamlCertFingerprint();
+        clearSecondarySamlState(config);
+
+        LocalDateTime now = LocalDateTime.now();
+        SsoIdpHealthProbeService helper = getHealthProbeHelper();
+        Long primaryDays = helper.computeDaysRemaining(config.getSamlCertExpiresAt(), now);
+        if (primaryDays != null && primaryDays > 30 && Integer.valueOf(0).equals(config.getConsecutiveProbeFailures())) {
+            config.setHealthStatus("HEALTHY");
+            config.setLastHealthError(null);
+            config.setLastAlertStage(null);
+        }
+
+        syncIdpToKeycloak(org.getSlug(), config, decryptSecretQuietly(config), true);
+        OrganizationSsoConfig saved = ssoConfigRepository.save(config);
+        evictTenantAuthCache(org.getSlug(), parseDomainList(saved.getDomainMappings()));
+
+        logSamlAuditEvent(org.getSlug(), "SSO_SAML_SECONDARY_CERT_RETIRED", saved.getId(), actor,
+                Map.of("retiredSecondaryFingerprint", safeStr(retiredFp)),
+                Map.of("activePrimaryFingerprint", safeStr(saved.getSamlCertFingerprint())));
+
+        log.info("🧹 Sertifikat SAML Secondary dipensiunkan untuk '{}' (retired SHA-256={}) oleh {}",
+                orgSlug, retiredFp, actor);
+        return getSamlCertificatesStatus(orgSlug);
+    }
+
+    private SamlCertificateSlotDto buildSamlSlotDto(
+            String slotName,
+            String rawPem,
+            LocalDateTime fallbackExpiresAt,
+            String fallbackSubject,
+            String fallbackFingerprint,
+            LocalDateTime now) {
+        if (rawPem == null || rawPem.isBlank()) {
+            return SamlCertificateSlotDto.builder()
+                    .slot(slotName)
+                    .present(false)
+                    .status("EMPTY")
+                    .build();
+        }
+        SsoIdpHealthProbeService helper = getHealthProbeHelper();
+        try {
+            SsoIdpHealthProbeService.DetailedCertInfo info = helper.parseX509CertificateDetailed(rawPem);
+            Long days = info.expiresAt() != null ? helper.computeDaysRemaining(info.expiresAt(), now) : null;
+            String certStatus = (days != null && days <= 0)
+                    ? "EXPIRED"
+                    : (days != null && days <= 30 ? "EXPIRING_SOON" : "VALID");
+            return SamlCertificateSlotDto.builder()
+                    .slot(slotName)
+                    .present(true)
+                    .subject(info.subject())
+                    .issuer(info.issuer())
+                    .serialNumber(info.serialNumber())
+                    .sha256Fingerprint(info.sha256Fingerprint())
+                    .notBefore(info.notBefore())
+                    .expiresAt(info.expiresAt())
+                    .daysRemaining(days)
+                    .status(certStatus)
+                    .build();
+        } catch (Exception e) {
+            Long days = fallbackExpiresAt != null ? helper.computeDaysRemaining(fallbackExpiresAt, now) : null;
+            String certStatus = (days != null && days <= 0)
+                    ? "EXPIRED"
+                    : (days != null && days <= 30 ? "EXPIRING_SOON" : "VALID");
+            return SamlCertificateSlotDto.builder()
+                    .slot(slotName)
+                    .present(true)
+                    .subject(fallbackSubject)
+                    .sha256Fingerprint(fallbackFingerprint)
+                    .expiresAt(fallbackExpiresAt)
+                    .daysRemaining(days)
+                    .status(certStatus)
+                    .build();
+        }
+    }
+
+    private void verifySsoLicenseAllowed(Organization org) {
+        if (licenseManagementService != null && !org.isPlatformRootOrg()) {
+            var entitlements = licenseManagementService.getEffectiveLicenseEntitlements(org.getId());
+            if (entitlements != null && !entitlements.isSsoEnabled()) {
+                throw new IllegalStateException(
+                        "Paket langganan atau lisensi organisasi Anda saat ini tidak mencakup fitur Single Sign-On (SSO).");
+            }
+        }
+    }
+
+    private boolean isSamlProvider(String providerType) {
+        return "SAML_CUSTOM".equalsIgnoreCase(providerType) || "saml".equalsIgnoreCase(providerType);
+    }
+
+    private String resolveEffectiveClientId(String orgSlug, UpdateTenantSsoConfigRequest request, boolean isSaml) {
+        if (request.getClientId() != null && !request.getClientId().isBlank()) {
+            String trimmed = request.getClientId().trim();
+            return trimmed.length() > 256 ? trimmed.substring(0, 256) : trimmed;
+        }
+        if (!isSaml) {
+            throw new IllegalArgumentException("Client ID wajib diisi untuk penyedia SSO OIDC / OAuth.");
+        }
+        if (request.getEntityId() != null && !request.getEntityId().isBlank()) {
+            String ent = request.getEntityId().trim();
+            return ent.length() > 256 ? ent.substring(0, 256) : ent;
+        }
+        if (request.getSingleSignOnUrl() != null && !request.getSingleSignOnUrl().isBlank()) {
+            String sso = request.getSingleSignOnUrl().trim();
+            return sso.length() > 256 ? sso.substring(0, 256) : sso;
+        }
+        if (request.getMetadataUrl() != null && !request.getMetadataUrl().isBlank()) {
+            String meta = request.getMetadataUrl().trim();
+            return meta.length() > 256 ? meta.substring(0, 256) : meta;
+        }
+        return "saml-" + orgSlug;
+    }
+
+    private String extractCompactDerBase64(String rawCert) {
+        if (rawCert == null || rawCert.isBlank()) {
+            return "";
+        }
+        SsoIdpHealthProbeService helper = getHealthProbeHelper();
+        try {
+            SsoIdpHealthProbeService.DetailedCertInfo info = helper.parseX509CertificateDetailed(rawCert);
+            if (info != null && info.compactDerBase64() != null) {
+                return info.compactDerBase64();
+            }
+        } catch (Exception ignored) {
+            // Fallback strip PEM headers & whitespace untuk input non-X509 pada skenario test ringan
+        }
+        return helper.stripPemHeadersAndWhitespace(rawCert);
+    }
+
+    private void clearSecondarySamlState(OrganizationSsoConfig config) {
+        config.setSecondarySigningCertificate(null);
+        config.setSecondarySamlCertExpiresAt(null);
+        config.setSecondarySamlCertSubject(null);
+        config.setSecondarySamlCertFingerprint(null);
+        config.setSamlCertOverlapStartedAt(null);
+    }
+
+    private String decryptSecretQuietly(OrganizationSsoConfig config) {
+        if (config.getClientSecretEncrypted() == null || config.getClientSecretEncrypted().isBlank()) {
+            return null;
+        }
+        try {
+            return licenseCryptoService.decryptSecret(config.getClientSecretEncrypted());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String truncateSubject(String subject) {
+        if (subject == null || subject.isBlank()) {
+            return null;
+        }
+        return subject.length() > 250 ? subject.substring(0, 250) : subject;
+    }
+
+    private String safeStr(String value) {
+        return value != null ? value : "";
+    }
+
+    private void logSamlAuditEvent(
+            String orgSlug,
+            String action,
+            UUID configId,
+            String actor,
+            Map<String, Object> oldValue,
+            Map<String, Object> newValue) {
+        if (auditLoggingService == null) {
+            return;
+        }
+        try {
+            auditLoggingService.logEvent(
+                    orgSlug,
+                    action,
+                    "ORGANIZATION_SSO_CONFIG",
+                    configId != null ? configId.toString() : "unknown",
+                    oldValue,
+                    newValue,
+                    Map.of("actor", safeStr(actor))
+            );
+        } catch (Exception ignored) {
+        }
     }
 }
 

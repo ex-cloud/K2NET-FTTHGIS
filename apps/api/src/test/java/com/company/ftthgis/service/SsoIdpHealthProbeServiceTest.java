@@ -259,4 +259,64 @@ class SsoIdpHealthProbeServiceTest {
         );
         assertEquals("https://idp.company.com/saml/sso", resolvedSso);
     }
+
+    @Test
+    @DisplayName("Dual-Cert Overlap (BUG-SAML-02): Primary expired + Secondary valid -> DEGRADED (bukan UNHEALTHY)")
+    void dualCertOverlapWithValidSecondaryYieldsDegradedNotUnhealthy() {
+        OrganizationSsoConfig config = OrganizationSsoConfig.builder()
+                .id(UUID.randomUUID())
+                .organization(org)
+                .providerType("SAML_CUSTOM")
+                .singleSignOnUrl("https://8.8.8.8/saml/sso")
+                .clientId("https://8.8.8.8/idp")
+                .status("ACTIVE")
+                .samlCertExpiresAt(LocalDateTime.now().minusDays(2))
+                .secondarySigningCertificate("DUMMY_SECONDARY")
+                .secondarySamlCertExpiresAt(LocalDateTime.now().plusDays(300))
+                .build();
+
+        doReturn(new SsoIdpHealthProbeService.ProbeOutcome(
+                true, null, "8.8.8.8", "https://8.8.8.8/saml/sso", null, null, null, null, null, null
+        )).when(probeService).executeHttpAndCertProbe(any(), any(), any(), any());
+
+        SystemSsoHealthSummaryDto summary = probeService.probeConfig(config, "scheduled-worker");
+        assertEquals("DEGRADED", summary.getHealthStatus());
+        assertTrue(summary.isSamlOverlapActive());
+        assertTrue(summary.getLastHealthError().contains("Dual-Cert Overlap aktif"));
+        assertNotEquals("EXPIRED", summary.getLastAlertStage());
+
+        ArgumentCaptor<SecurityEvent> eventCaptor = ArgumentCaptor.forClass(SecurityEvent.class);
+        verify(securityEventRepository, times(1)).save(eventCaptor.capture());
+        assertEquals("WARNING", eventCaptor.getValue().getSeverity());
+        assertEquals("SSO_CERT_EXPIRING", eventCaptor.getValue().getEventType());
+    }
+
+    @Test
+    @DisplayName("Dual-Cert Overlap: Kedua sertifikat (Primary & Secondary) kedaluwarsa -> UNHEALTHY & CRITICAL")
+    void dualCertOverlapBothExpiredYieldsUnhealthyCritical() {
+        OrganizationSsoConfig config = OrganizationSsoConfig.builder()
+                .id(UUID.randomUUID())
+                .organization(org)
+                .providerType("SAML_CUSTOM")
+                .singleSignOnUrl("https://8.8.8.8/saml/sso")
+                .clientId("https://8.8.8.8/idp")
+                .status("ACTIVE")
+                .samlCertExpiresAt(LocalDateTime.now().minusDays(2))
+                .secondarySigningCertificate("DUMMY_SECONDARY")
+                .secondarySamlCertExpiresAt(LocalDateTime.now().minusDays(1))
+                .build();
+
+        doReturn(new SsoIdpHealthProbeService.ProbeOutcome(
+                true, null, "8.8.8.8", "https://8.8.8.8/saml/sso", null, null, null, null, null, null
+        )).when(probeService).executeHttpAndCertProbe(any(), any(), any(), any());
+
+        SystemSsoHealthSummaryDto summary = probeService.probeConfig(config, "scheduled-worker");
+        assertEquals("UNHEALTHY", summary.getHealthStatus());
+        assertEquals("EXPIRED", summary.getLastAlertStage());
+
+        ArgumentCaptor<SecurityEvent> eventCaptor = ArgumentCaptor.forClass(SecurityEvent.class);
+        verify(securityEventRepository, times(1)).save(eventCaptor.capture());
+        assertEquals("CRITICAL", eventCaptor.getValue().getSeverity());
+        assertEquals("SSO_CERT_EXPIRED", eventCaptor.getValue().getEventType());
+    }
 }
