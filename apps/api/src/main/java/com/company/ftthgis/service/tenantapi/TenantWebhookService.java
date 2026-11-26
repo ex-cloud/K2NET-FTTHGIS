@@ -70,7 +70,7 @@ public class TenantWebhookService {
 
         TenantWebhook saved = webhookRepository.save(webhook);
         log.info("📡 Tenant Webhook '{}' created for org '{}' (URL: {})", saved.getName(), org.getSlug(), saved.getUrl());
-        return mapToDto(saved);
+        return mapToDto(saved, true);
     }
 
     @Transactional
@@ -266,15 +266,23 @@ public class TenantWebhookService {
     }
 
     private WebhookResponseDto mapToDto(TenantWebhook webhook) {
+        return mapToDto(webhook, false);
+    }
+
+    private WebhookResponseDto mapToDto(TenantWebhook webhook, boolean includePlaintextSecret) {
         List<String> eventList = webhook.getEvents() != null && !webhook.getEvents().isBlank()
                 ? Arrays.stream(webhook.getEvents().split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList()
                 : List.of();
+
+        String exposedSecret = includePlaintextSecret
+                ? webhook.getSigningSecret()
+                : maskSigningSecret(webhook.getSigningSecret());
 
         return WebhookResponseDto.builder()
                 .id(webhook.getId())
                 .name(webhook.getName())
                 .url(webhook.getUrl())
-                .signingSecret(webhook.getSigningSecret())
+                .signingSecret(exposedSecret)
                 .events(eventList)
                 .isActive(webhook.isActive())
                 .headers(webhook.getHeaders())
@@ -283,6 +291,14 @@ public class TenantWebhookService {
                 .lastDeliveryStatus(webhook.getLastDeliveryStatus())
                 .createdAt(webhook.getCreatedAt())
                 .build();
+    }
+
+    private String maskSigningSecret(String rawSecret) {
+        if (rawSecret == null || rawSecret.isBlank()) {
+            return null;
+        }
+        String tail = rawSecret.length() > 4 ? rawSecret.substring(rawSecret.length() - 4) : rawSecret;
+        return "whsec_••••••••" + tail;
     }
 
     private WebhookDeliveryResponseDto mapDeliveryToDto(TenantWebhookDelivery delivery) {

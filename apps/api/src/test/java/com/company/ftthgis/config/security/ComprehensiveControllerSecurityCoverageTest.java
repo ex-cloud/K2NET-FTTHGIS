@@ -40,6 +40,7 @@ public class ComprehensiveControllerSecurityCoverageTest {
             "OAuthGateController.exchangeToken",
             "OAuthGateController.getOAuthConfig",
             "InternalTenantMembershipController.acceptMemberByEmail",
+            "InternalSiemIngestController.ingestEvent",
             
             // Webhook eksternal (Divalidasi via HMAC cryptographic signature di service/filter)
             "GithubWebhookController.handleWebhook",

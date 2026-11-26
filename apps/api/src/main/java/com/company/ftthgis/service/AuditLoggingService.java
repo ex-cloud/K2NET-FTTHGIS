@@ -2,9 +2,13 @@ package com.company.ftthgis.service;
 
 import com.company.ftthgis.domain.common.entity.AuditLog;
 import com.company.ftthgis.domain.common.repository.AuditLogRepository;
+import com.company.ftthgis.service.siem.SecurityAuditEmittedEvent;
+import com.company.ftthgis.service.siem.SecuritySiemStreamingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,6 +45,9 @@ public class AuditLoggingService {
 
     private final AuditLogRepository auditLogRepository;
     private final RestTemplate restTemplate;
+
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
 
     /**
      * Log an authorization failure event (async, non-blocking)
@@ -275,6 +282,13 @@ public class AuditLoggingService {
                 }
             } catch (Exception ignored) {}
 
+            Map<String, Object> sanitizedMeta = sanitizeMap(metadata != null ? metadata : new HashMap<>());
+            boolean qualifyingSiem = eventPublisher != null && tenantSlug != null
+                    && SecuritySiemStreamingService.isQualifyingSecurityAction(action);
+            if (qualifyingSiem) {
+                sanitizedMeta.put("siemDispatched", true);
+            }
+
             Map<String, Object> payload = new HashMap<>();
             payload.put("tenantSlug", tenantSlug != null ? tenantSlug : "system");
             payload.put("actorId", actorId);
@@ -285,7 +299,7 @@ public class AuditLoggingService {
             payload.put("resourceId", resourceId != null ? resourceId : "");
             payload.put("oldValue", sanitizeMap(oldValue != null ? oldValue : new HashMap<>()));
             payload.put("newValue", sanitizeMap(newValue != null ? newValue : new HashMap<>()));
-            payload.put("metadata", sanitizeMap(metadata != null ? metadata : new HashMap<>()));
+            payload.put("metadata", sanitizedMeta);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -296,6 +310,20 @@ public class AuditLoggingService {
 
             restTemplate.postForEntity(url, entity, Map.class);
             log.info("[AuditGateway] Event dikirim: action={}, resource={}/{}", action, resourceType, resourceId);
+
+            if (qualifyingSiem) {
+                eventPublisher.publishEvent(new SecurityAuditEmittedEvent(
+                        tenantSlug,
+                        action,
+                        metadata != null && metadata.get("severity") != null ? String.valueOf(metadata.get("severity")) : null,
+                        actorId,
+                        actorRole,
+                        actorIp,
+                        resourceType,
+                        resourceId,
+                        sanitizeMap(metadata != null ? metadata : new HashMap<>())
+                ));
+            }
         } catch (Exception e) {
             log.warn("[AuditGateway] Gagal mengirim audit event (non-critical): {}", e.getMessage());
         }

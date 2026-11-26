@@ -30,6 +30,7 @@ import { usePermissions } from "../../hooks/use-permissions";
 import { parseDomain } from "../../lib/domain";
 import { useTranslation } from "@k2net/i18n";
 import { BrandingSettingsSection } from "../../components/settings/BrandingSettingsSection";
+import { SecuritySiemStreamingCard } from "../../components/settings/SecuritySiemStreamingCard";
 import { SsoSettingsSection } from "./SsoSettingsSection";
 
 type SettingsSection = "general" | "branding" | "security" | "sso" | "oauth";
@@ -211,6 +212,7 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
   };
 
   return (
+    <>
     <Card className="p-5 border-border/60 bg-card space-y-4 shadow-xs">
       <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
         <div className="space-y-0.5 max-w-lg">
@@ -316,6 +318,9 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         </div>
       )}
     </Card>
+
+    <SecuritySiemStreamingCard slug={slug} />
+  </>
   );
 }
 

@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.api.tenant.dto.*;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.service.TenantApiWebhookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class TenantApiWebhookController {
 
     @PostMapping("/api-key/regenerate")
     @PreAuthorize("hasAuthority('system.organizations.webhooks.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.webhooks.manage'))")
+    @RequireSudoMode(action = "tenant.api_key.regenerate")
     public ResponseEntity<RegenerateApiKeyResponse> regenerateApiKey(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(webhookService.regenerateApiKey(idOrSlug));
     }
@@ -39,6 +41,7 @@ public class TenantApiWebhookController {
 
     @PutMapping("/webhook-config")
     @PreAuthorize("hasAuthority('system.organizations.webhooks.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.webhooks.manage'))")
+    @RequireSudoMode(action = "tenant.webhook_config.update")
     public ResponseEntity<WebhookConfigResponse> updateWebhookConfig(
             @PathVariable String idOrSlug,
             @RequestBody WebhookConfigRequest request) {
@@ -47,6 +50,7 @@ public class TenantApiWebhookController {
 
     @PostMapping("/webhooks/roll-secret")
     @PreAuthorize("hasAuthority('system.organizations.webhooks.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.webhooks.manage'))")
+    @RequireSudoMode(action = "tenant.webhook_config.roll_secret")
     public ResponseEntity<RollSecretResponse> rollWebhookSecret(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(webhookService.rollWebhookSecret(idOrSlug));
     }

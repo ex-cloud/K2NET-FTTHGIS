@@ -102,6 +102,7 @@ class TenantWebhookServiceTest {
         assertEquals(1, result.size());
         assertEquals("NOC Alert Webhook", result.get(0).getName());
         assertEquals("https://noc.example.com/webhook", result.get(0).getUrl());
+        assertEquals("whsec_••••••••_123", result.get(0).getSigningSecret());
         assertEquals(2, result.get(0).getEvents().size());
         assertTrue(result.get(0).isActive());
     }

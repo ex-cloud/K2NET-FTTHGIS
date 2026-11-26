@@ -411,6 +411,49 @@ function useTenantSsoHealthSection(
   };
 }
 
+export interface TenantSiemOverviewItem {
+  endpointId: string;
+  organizationId: string;
+  organizationName: string;
+  organizationSlug: string;
+  endpointName: string;
+  targetUrl: string;
+  targetFormat: string;
+  minSeverity: string;
+  isActive: boolean;
+  autoDisabled: boolean;
+  consecutiveFailures: number;
+  autoDisabledAt?: string | null;
+  autoDisabledReason?: string | null;
+  lastDeliveryAt?: string | null;
+  lastDeliveryStatus?: string | null;
+  lastHttpStatus?: number | null;
+  dlqCount: number;
+}
+
+function useTenantSiemOverviewSection(
+  baseUrl: string,
+  token: string | null | undefined,
+  status: string
+) {
+  const siemQuery = useQuery<TenantSiemOverviewItem[]>({
+    queryKey: ['system-siem-overview', baseUrl, token],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await httpClient(`${baseUrl}/system/security/siem/overview`, { token });
+      if (!res.ok) throw new Error('Failed to fetch tenant SIEM overview');
+      return res.json();
+    },
+    enabled: status === 'authenticated' && !!token,
+  });
+
+  return {
+    tenantSiemOverview: siemQuery.data || [],
+    loadingTenantSiemOverview: siemQuery.isLoading,
+    refetchTenantSiemOverview: siemQuery.refetch,
+  };
+}
+
 export function useSecuritySettings() {
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
@@ -423,6 +466,7 @@ export function useSecuritySettings() {
   const alerts = useAlertsSection(baseUrl, token, status, queryClient);
   const blockedIps = useBlockedIpsSection(baseUrl, token, status, queryClient);
   const ssoHealth = useTenantSsoHealthSection(baseUrl, token, status, queryClient);
+  const siemOverview = useTenantSiemOverviewSection(baseUrl, token, status);
   const iamIntegrity = useIamIntegrity();
 
   return {
@@ -432,6 +476,7 @@ export function useSecuritySettings() {
     ...alerts,
     ...blockedIps,
     ...ssoHealth,
+    ...siemOverview,
     ...iamIntegrity,
   };
 }

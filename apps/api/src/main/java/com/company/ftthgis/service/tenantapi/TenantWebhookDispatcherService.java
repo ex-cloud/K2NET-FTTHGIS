@@ -151,14 +151,13 @@ public class TenantWebhookDispatcherService {
         String secret = null;
 
         if (request.getEndpointId() != null) {
-            Optional<TenantWebhookEndpoint> ep = endpointRepository.findById(request.getEndpointId());
-            if (ep.isPresent()) {
-                targetUrl = ep.get().getTargetUrl();
-                if (ep.get().getWebhookSecretEncrypted() != null) {
-                    try {
-                        secret = encryptionUtil.decrypt(ep.get().getWebhookSecretEncrypted());
-                    } catch (Exception ignored) {}
-                }
+            TenantWebhookEndpoint ep = endpointRepository.findByIdAndOrganizationIdNative(org.getId(), request.getEndpointId())
+                    .orElseThrow(() -> new IllegalArgumentException("Webhook endpoint tidak ditemukan atau tidak berada di organisasi ini."));
+            targetUrl = ep.getTargetUrl();
+            if (ep.getWebhookSecretEncrypted() != null) {
+                try {
+                    secret = encryptionUtil.decrypt(ep.getWebhookSecretEncrypted());
+                } catch (Exception ignored) {}
             }
         }
 

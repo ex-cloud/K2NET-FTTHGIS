@@ -439,3 +439,96 @@ func TestAlertDispatcher_BreakGlassDualChannelDispatch(t *testing.T) {
 		t.Errorf("expected normalized WhatsApp phone 6281946702356, got %q", receivedWaPhone)
 	}
 }
+
+func TestSSRFGuardAndSiemPushBridge(t *testing.T) {
+	blockedTargets := []string{
+		"http://hooks.slack.com/services/insecure",
+		"https://127.0.0.1/webhook",
+		"https://169.254.169.254/latest/meta-data",
+		"https://172.18.0.5/internal",
+		"https://kong:8001/routes",
+		"https://localhost/admin",
+		"https://ftth-backend:9090/internal",
+	}
+
+	for _, target := range blockedTargets {
+		if err := ValidateWebhookURL(target); err == nil {
+			t.Errorf("expected ValidateWebhookURL(%q) to fail SSRF check, but succeeded", target)
+		}
+	}
+
+	dispatcher := NewAlertDispatcher(t.TempDir())
+	defer dispatcher.Close()
+
+	// Verify SaveConfig rejects SSRF URL
+	err := dispatcher.SaveConfig(AlertConfig{
+		Enabled:    true,
+		WebhookURL: "http://169.254.169.254/latest/meta-data",
+	})
+	if err == nil {
+		t.Errorf("expected SaveConfig to reject SSRF webhook URL")
+	}
+
+	// Verify TestAlert rejects SSRF URL
+	res := dispatcher.TestAlert(context.Background(), "generic", "https://127.0.0.1:8080/hook", "")
+	if res.Success || res.ResponseStatus != "BLOCKED_SSRF" {
+		t.Errorf("expected TestAlert to block loopback SSRF, got %+v", res)
+	}
+
+	// Verify mandatory high-risk security actions (BUG-SIEM-05)
+	hijackReq := &CreateAuditEventRequest{
+		TenantSlug:   "ops",
+		ActorID:      "attacker@test.io",
+		Action:       "SECURITY_SESSION_HIJACK_DETECTED",
+		ResourceType: "AUTH_SESSION",
+		Metadata:     map[string]any{"severity": "WARNING"},
+	}
+	if ok, _ := dispatcher.ShouldAlert(hijackReq); !ok {
+		t.Errorf("expected SECURITY_SESSION_HIJACK_DETECTED to trigger high-risk alert evaluation")
+	}
+
+	// Verify real-time SIEM bridge forwards qualifying events and skips siemDispatched duplicates
+	var siemHits atomic.Int32
+	var lastAction string
+	mockBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/internal/siem/ingest" {
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if act, ok := body["action"].(string); ok {
+				lastAction = act
+			}
+			siemHits.Add(1)
+			w.WriteHeader(http.StatusAccepted)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mockBackend.Close()
+
+	dispatcher.SetBackendURL(mockBackend.URL)
+
+	dispatcher.Dispatch(hijackReq, time.Now())
+	dispatcher.Dispatch(&CreateAuditEventRequest{
+		TenantSlug:   "ops",
+		ActorID:      "admin@kdua.net",
+		Action:       "SSO_SAML_CERT_ROTATED",
+		ResourceType: "SSO",
+		Metadata:     map[string]any{"siemDispatched": true},
+	}, time.Now())
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if siemHits.Load() >= 1 {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	time.Sleep(100 * time.Millisecond)
+
+	if siemHits.Load() != 1 {
+		t.Errorf("expected exactly 1 SIEM bridge push (skipping siemDispatched duplicate), got %d", siemHits.Load())
+	}
+	if lastAction != "SECURITY_SESSION_HIJACK_DETECTED" {
+		t.Errorf("expected lastAction SECURITY_SESSION_HIJACK_DETECTED, got %q", lastAction)
+	}
+}

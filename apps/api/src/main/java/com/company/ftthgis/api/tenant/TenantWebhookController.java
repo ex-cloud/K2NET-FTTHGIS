@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.api.tenant.dto.*;
+import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.service.tenantapi.TenantWebhookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class TenantWebhookController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('system.organizations.webhooks.manage') or (@tenantSecurity.isOwner(#idOrSlug) and (hasAuthority('feature.integration.open_api') or hasAuthority('organizations.webhooks.manage')))")
+    @RequireSudoMode(action = "tenant.webhooks.create")
     public ResponseEntity<WebhookResponseDto> createWebhook(
             @PathVariable String idOrSlug,
             @Valid @RequestBody CreateWebhookRequest request) {
@@ -37,6 +39,7 @@ public class TenantWebhookController {
 
     @PutMapping("/{webhookId}")
     @PreAuthorize("hasAuthority('system.organizations.webhooks.manage') or (@tenantSecurity.isOwner(#idOrSlug) and (hasAuthority('feature.integration.open_api') or hasAuthority('organizations.webhooks.manage')))")
+    @RequireSudoMode(action = "tenant.webhooks.update")
     public ResponseEntity<WebhookResponseDto> updateWebhook(
             @PathVariable String idOrSlug,
             @PathVariable UUID webhookId,
@@ -46,6 +49,7 @@ public class TenantWebhookController {
 
     @DeleteMapping("/{webhookId}")
     @PreAuthorize("hasAuthority('system.organizations.webhooks.manage') or (@tenantSecurity.isOwner(#idOrSlug) and (hasAuthority('feature.integration.open_api') or hasAuthority('organizations.webhooks.manage')))")
+    @RequireSudoMode(action = "tenant.webhooks.delete")
     public ResponseEntity<Void> deleteWebhook(
             @PathVariable String idOrSlug,
             @PathVariable UUID webhookId) {
@@ -55,6 +59,7 @@ public class TenantWebhookController {
 
     @PostMapping("/{webhookId}/roll-secret")
     @PreAuthorize("hasAuthority('system.organizations.webhooks.manage') or (@tenantSecurity.isOwner(#idOrSlug) and (hasAuthority('feature.integration.open_api') or hasAuthority('organizations.webhooks.manage')))")
+    @RequireSudoMode(action = "tenant.webhooks.roll_secret")
     public ResponseEntity<RollSecretResponse> rollSecret(
             @PathVariable String idOrSlug,
             @PathVariable UUID webhookId) {

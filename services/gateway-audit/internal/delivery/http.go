@@ -599,10 +599,16 @@ func (h *HTTPHandler) UpdateAlertConfig(c *gin.Context) {
 	}
 
 	if err := h.dispatcher.SaveConfig(req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		statusCode := http.StatusInternalServerError
+		errCode := "SAVE_ERROR"
+		if strings.Contains(err.Error(), "SSRF") || strings.Contains(err.Error(), "HTTPS") {
+			statusCode = http.StatusBadRequest
+			errCode = "SSRF_BLOCKED"
+		}
+		c.JSON(statusCode, gin.H{
 			"success": false,
 			"error": gin.H{
-				"code":    "SAVE_ERROR",
+				"code":    errCode,
 				"message": err.Error(),
 			},
 		})

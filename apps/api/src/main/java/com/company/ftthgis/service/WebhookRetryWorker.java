@@ -2,24 +2,26 @@ package com.company.ftthgis.service;
 
 import com.company.ftthgis.config.security.SSRFSafeHttpClient;
 import com.company.ftthgis.config.security.WebhookSecurityValidator;
+import com.company.ftthgis.domain.tenant.entity.TenantWebhookConfig;
 import com.company.ftthgis.domain.tenant.entity.TenantWebhookLog;
+import com.company.ftthgis.domain.tenant.repository.TenantWebhookConfigRepository;
 import com.company.ftthgis.domain.tenant.repository.TenantWebhookLogRepository;
 import com.company.ftthgis.util.SecretEncryptionUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * WebhookRetryWorker — Background daemon implementing Exponential Backoff retries and Dead Letter Queue (DLQ).
@@ -36,28 +38,62 @@ import java.util.Map;
 @Slf4j
 public class WebhookRetryWorker {
 
+    private static final String LOCK_KEY = "k2net:lock:webhook-retry-worker";
+
     private final TenantWebhookLogRepository logRepository;
     private final WebhookSecurityValidator securityValidator;
     private final SecretEncryptionUtil encryptionUtil;
     private final SSRFSafeHttpClient ssrfSafeHttpClient;
+
+    @Autowired(required = false)
+    private TenantWebhookConfigRepository webhookConfigRepository;
+
+    @Autowired(required = false)
+    private StringRedisTemplate redisTemplate;
 
     private static final int[] BACKOFF_SECONDS = {0, 30, 300, 1800};
 
     @Scheduled(fixedDelay = 15000) // Poll every 15s
     @Transactional
     public void processPendingRetries() {
-        List<TenantWebhookLog> pendingLogs = logRepository.findByDeliveryStatusAndNextRetryAtLessThanEqual(
-                "RETRYING", LocalDateTime.now()
-        );
-
-        if (pendingLogs.isEmpty()) {
+        String lockToken = UUID.randomUUID().toString();
+        boolean lockAcquired = true;
+        if (redisTemplate != null) {
+            try {
+                Boolean acquired = redisTemplate.opsForValue().setIfAbsent(LOCK_KEY, lockToken, Duration.ofSeconds(45));
+                lockAcquired = Boolean.TRUE.equals(acquired);
+            } catch (Exception e) {
+                log.debug("Redis lock unavailable for WebhookRetryWorker, proceeding locally: {}", e.getMessage());
+            }
+        }
+        if (!lockAcquired) {
             return;
         }
 
-        log.info("Processing {} pending webhook retries from queue...", pendingLogs.size());
+        try {
+            List<TenantWebhookLog> pendingLogs = logRepository.findByDeliveryStatusAndNextRetryAtLessThanEqual(
+                    "RETRYING", LocalDateTime.now()
+            );
 
-        for (TenantWebhookLog item : pendingLogs) {
-            retrySingleDelivery(item);
+            if (pendingLogs.isEmpty()) {
+                return;
+            }
+
+            log.info("Processing {} pending webhook retries from queue...", pendingLogs.size());
+
+            for (TenantWebhookLog item : pendingLogs) {
+                retrySingleDelivery(item);
+            }
+        } finally {
+            if (redisTemplate != null) {
+                try {
+                    String current = redisTemplate.opsForValue().get(LOCK_KEY);
+                    if (lockToken.equals(current)) {
+                        redisTemplate.delete(LOCK_KEY);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
         }
     }
 
@@ -84,6 +120,7 @@ public class WebhookRetryWorker {
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("X-K2NET-Event", item.getEventName());
         headers.put("X-K2NET-Retry-Count", String.valueOf(currentAttempt));
+        attachHmacSignature(item, payload, headers);
 
         SSRFSafeHttpClient.HttpResponse httpResp = ssrfSafeHttpClient.executePost(targetUrl, payload, headers);
         int httpStatus = httpResp.getStatusCode();
@@ -116,5 +153,31 @@ public class WebhookRetryWorker {
         }
 
         logRepository.save(item);
+    }
+
+    private void attachHmacSignature(TenantWebhookLog item, String payload, Map<String, String> headers) {
+        try {
+            String encryptedSecret = null;
+            if (item.getEndpoint() != null && item.getEndpoint().getWebhookSecretEncrypted() != null
+                    && !item.getEndpoint().getWebhookSecretEncrypted().isBlank()) {
+                encryptedSecret = item.getEndpoint().getWebhookSecretEncrypted();
+            } else if (webhookConfigRepository != null && item.getOrganization() != null && item.getOrganization().getId() != null) {
+                Optional<TenantWebhookConfig> cfg = webhookConfigRepository.findByOrganizationIdNative(item.getOrganization().getId());
+                if (cfg.isPresent()) {
+                    encryptedSecret = cfg.get().getWebhookSecretEncrypted();
+                }
+            }
+
+            if (encryptedSecret != null && !encryptedSecret.isBlank()) {
+                String plainSecret = encryptionUtil.decrypt(encryptedSecret);
+                String sig = encryptionUtil.computeHmacSha256(plainSecret, payload);
+                if (!sig.isBlank()) {
+                    headers.put("X-K2NET-Signature", sig);
+                    headers.put("X-K2NET-Signature-256", sig);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to compute HMAC signature during webhook retry for log '{}': {}", item.getId(), e.getMessage());
+        }
     }
 }

@@ -331,5 +331,21 @@
   "iam_integrity_confirm_single_desc": "Hapus permanen akun Keycloak {{user}} ({{realm}}) setelah mencabut sesinya? Memerlukan verifikasi Sudo Mode.",
   "iam_integrity_confirm_cancel": "Batal",
   "iam_integrity_confirm_submit": "Konfirmasi Hapus",
-  "iam_integrity_last_scanned": "Pindai terakhir: {{time}}"
+  "iam_integrity_last_scanned": "Pindai terakhir: {{time}}",
+  "siem_overview": {
+    "title": "Kesehatan Streaming SIEM Enterprise Tenant",
+    "desc": "Pemantauan terpusat Control Plane untuk tujuan streaming SIEM tenant, status circuit breaker 20x kegagalan, dan antrean Dead Letter Queue.",
+    "refresh_btn": "Muat Ulang",
+    "col_org": "Organisasi",
+    "col_endpoint": "Endpoint & Format",
+    "col_severity": "Filter",
+    "col_status": "Status Circuit",
+    "col_last_delivery": "Pengiriman Terakhir",
+    "col_dlq": "DLQ",
+    "status_active": "AKTIF",
+    "status_paused": "DIJEDA",
+    "status_auto_disabled": "AUTO-NONAKTIF",
+    "empty_title": "Belum Ada Stream SIEM Tenant",
+    "empty_desc": "Endpoint SIEM yang dikonfigurasi oleh tenant Enterprise pada menu Pengaturan -> Keamanan akan tampil di sini."
+  }
 }

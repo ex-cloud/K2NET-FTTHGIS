@@ -331,5 +331,21 @@
   "iam_integrity_confirm_single_desc": "Permanently remove Keycloak account {{user}} ({{realm}}) after revoking its sessions? Requires active Sudo Mode.",
   "iam_integrity_confirm_cancel": "Cancel",
   "iam_integrity_confirm_submit": "Confirm Purge",
-  "iam_integrity_last_scanned": "Last scan: {{time}}"
+  "iam_integrity_last_scanned": "Last scan: {{time}}",
+  "siem_overview": {
+    "title": "Enterprise Tenant SIEM Event Streaming Health",
+    "desc": "Read-only platform visibility into tenant SIEM streaming destinations, 20-failure circuit breakers, and Dead Letter Queue backlogs.",
+    "refresh_btn": "Refresh Streams",
+    "col_org": "Organization",
+    "col_endpoint": "Endpoint & Format",
+    "col_severity": "Filter",
+    "col_status": "Circuit State",
+    "col_last_delivery": "Last Delivery",
+    "col_dlq": "DLQ",
+    "status_active": "ACTIVE",
+    "status_paused": "PAUSED",
+    "status_auto_disabled": "AUTO-DISABLED",
+    "empty_title": "No Tenant SIEM Streams Registered",
+    "empty_desc": "Enterprise tenants that configure SIEM webhooks in Settings -> Security will appear here."
+  }
 }

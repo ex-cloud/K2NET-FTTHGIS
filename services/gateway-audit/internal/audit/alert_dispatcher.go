@@ -82,17 +82,27 @@ type cooldownEntry struct {
 }
 
 type AlertDispatcher struct {
-	mu                sync.RWMutex
-	cfg               AlertConfig
-	configPath        string
-	db                *pgxpool.Pool
-	recipientResolver RecipientResolverFunc
-	cooldownMu        sync.Mutex
-	cooldownMap       map[string]*cooldownEntry
-	httpClient        *http.Client
-	eventQueue        chan *IncidentAlertPayload
-	stopChan          chan struct{}
-	wg                sync.WaitGroup
+	mu                 sync.RWMutex
+	cfg                AlertConfig
+	configPath         string
+	db                 *pgxpool.Pool
+	recipientResolver  RecipientResolverFunc
+	backendURL         string
+	cooldownMu         sync.Mutex
+	cooldownMap        map[string]*cooldownEntry
+	httpClient         *http.Client
+	externalHTTPClient *http.Client
+	eventQueue         chan *IncidentAlertPayload
+	siemQueue          chan *CreateAuditEventRequest
+	stopChan           chan struct{}
+	wg                 sync.WaitGroup
+}
+
+func defaultBackendURL() string {
+	if envURL := strings.TrimSpace(os.Getenv("BACKEND_URL")); envURL != "" {
+		return strings.TrimRight(envURL, "/")
+	}
+	return "http://backend:9090"
 }
 
 func defaultNotificationGatewayURL() string {
@@ -127,6 +137,14 @@ func DefaultAlertConfig() AlertConfig {
 			"SECURITY_BREAK_GLASS_LOGIN",
 			"SECURITY_BREAK_GLASS_UNAUTHORIZED",
 			"AUTH_BREAK_GLASS_LOGIN_SUCCESS",
+			"SECURITY_SESSION_HIJACK_DETECTED",
+			"SSO_IDP_UNHEALTHY",
+			"SSO_CERT_EXPIRED",
+			"SSO_CERT_EXPIRING",
+			"SSO_SAML_CERT_ROTATED",
+			"SCIM_USER_DEPROVISIONED",
+			"SECURITY_ORPHAN_ACCOUNT_PURGED",
+			"SECURITY_SIEM_ENDPOINT_AUTO_DISABLED",
 			"impersonation.stepup_failed",
 			"impersonation.unauthorized_attempt",
 			"impersonation.force_revoked",
@@ -146,6 +164,14 @@ func ensureMandatoryHighRiskActions(actions []string) []string {
 		"SECURITY_BREAK_GLASS_LOGIN",
 		"SECURITY_BREAK_GLASS_UNAUTHORIZED",
 		"AUTH_BREAK_GLASS_LOGIN_SUCCESS",
+		"SECURITY_SESSION_HIJACK_DETECTED",
+		"SSO_IDP_UNHEALTHY",
+		"SSO_CERT_EXPIRED",
+		"SSO_CERT_EXPIRING",
+		"SSO_SAML_CERT_ROTATED",
+		"SCIM_USER_DEPROVISIONED",
+		"SECURITY_ORPHAN_ACCOUNT_PURGED",
+		"SECURITY_SIEM_ENDPOINT_AUTO_DISABLED",
 	}
 	existing := make(map[string]bool, len(actions))
 	for _, a := range actions {
@@ -170,18 +196,28 @@ func NewAlertDispatcher(configDir string) *AlertDispatcher {
 	dispatcher := &AlertDispatcher{
 		cfg:         DefaultAlertConfig(),
 		configPath:  configPath,
+		backendURL:  defaultBackendURL(),
 		cooldownMap: make(map[string]*cooldownEntry),
 		httpClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
-		eventQueue: make(chan *IncidentAlertPayload, 500),
-		stopChan:   make(chan struct{}),
+		externalHTTPClient: NewSafeWebhookHTTPClient(5 * time.Second),
+		eventQueue:         make(chan *IncidentAlertPayload, 500),
+		siemQueue:          make(chan *CreateAuditEventRequest, 500),
+		stopChan:           make(chan struct{}),
 	}
 
 	dispatcher.loadConfig()
 	dispatcher.startWorker()
 
 	return dispatcher
+}
+
+// SetBackendURL overrides the internal Spring Boot backend base URL (used in tests).
+func (d *AlertDispatcher) SetBackendURL(url string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.backendURL = strings.TrimRight(strings.TrimSpace(url), "/")
 }
 
 // SetDBPool wires the live PostgreSQL connection pool for dynamic tenant Security Officer / Owner lookup.
@@ -227,6 +263,12 @@ func (d *AlertDispatcher) loadConfig() {
 }
 
 func (d *AlertDispatcher) SaveConfig(newCfg AlertConfig) error {
+	if strings.TrimSpace(newCfg.WebhookURL) != "" {
+		if err := ValidateWebhookURL(newCfg.WebhookURL); err != nil {
+			return err
+		}
+	}
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -301,8 +343,16 @@ func (d *AlertDispatcher) ShouldAlert(req *CreateAuditEventRequest) (bool, strin
 	return false, ""
 }
 
-// Dispatch evaluates and non-blockingly queues incident notifications
+// Dispatch evaluates and non-blockingly queues incident notifications and SIEM stream forwarding
 func (d *AlertDispatcher) Dispatch(req *CreateAuditEventRequest, occurredAt time.Time) {
+	if d.shouldForwardToTenantSiem(req) {
+		select {
+		case d.siemQueue <- req:
+		default:
+			// Drop gracefully if SIEM queue is saturated
+		}
+	}
+
 	shouldAlert, reason := d.ShouldAlert(req)
 	if !shouldAlert {
 		return
@@ -375,7 +425,7 @@ func (d *AlertDispatcher) Dispatch(req *CreateAuditEventRequest, occurredAt time
 }
 
 func (d *AlertDispatcher) startWorker() {
-	d.wg.Add(1)
+	d.wg.Add(2)
 	go func() {
 		defer d.wg.Done()
 		for {
@@ -387,6 +437,109 @@ func (d *AlertDispatcher) startWorker() {
 			}
 		}
 	}()
+	go func() {
+		defer d.wg.Done()
+		for {
+			select {
+			case <-d.stopChan:
+				return
+			case ev := <-d.siemQueue:
+				d.forwardToBackendSiem(ev)
+			}
+		}
+	}()
+}
+
+func (d *AlertDispatcher) shouldForwardToTenantSiem(req *CreateAuditEventRequest) bool {
+	if req == nil || strings.TrimSpace(req.TenantSlug) == "" {
+		return false
+	}
+	if strings.EqualFold(strings.TrimSpace(req.TenantSlug), "system") {
+		return false
+	}
+	if req.Metadata != nil {
+		if dispatched, ok := req.Metadata["siemDispatched"].(bool); ok && dispatched {
+			return false
+		}
+	}
+	upAction := strings.ToUpper(strings.TrimSpace(req.Action))
+	if strings.HasPrefix(upAction, "SECURITY_SIEM_") {
+		return false
+	}
+	if strings.HasPrefix(upAction, "SECURITY_") ||
+		strings.HasPrefix(upAction, "SSO_") ||
+		strings.HasPrefix(upAction, "SCIM_") ||
+		strings.HasPrefix(upAction, "AUTH_") ||
+		strings.HasPrefix(upAction, "MFA_") ||
+		strings.HasPrefix(upAction, "PASSKEY_") ||
+		strings.HasPrefix(upAction, "IMPERSONATION") {
+		return true
+	}
+	if req.Metadata != nil {
+		if sev, ok := req.Metadata["severity"].(string); ok {
+			upSev := strings.ToUpper(strings.TrimSpace(sev))
+			if upSev == "CRITICAL" || upSev == "ERROR" || upSev == "WARN" || upSev == "WARNING" {
+				// Forward HTTP 5xx/4xx Edge or explicit security warnings only if security resource or auth action
+				return strings.EqualFold(req.ResourceType, "AUTH_SESSION") || strings.EqualFold(req.ResourceType, "SECURITY")
+			}
+		}
+	}
+	return false
+}
+
+func (d *AlertDispatcher) forwardToBackendSiem(req *CreateAuditEventRequest) {
+	if req == nil {
+		return
+	}
+	d.mu.RLock()
+	baseURL := d.backendURL
+	d.mu.RUnlock()
+	if baseURL == "" {
+		return
+	}
+
+	severity := "WARNING"
+	if req.Metadata != nil {
+		if s, ok := req.Metadata["severity"].(string); ok && s != "" {
+			severity = strings.ToUpper(s)
+		}
+	}
+
+	payload := map[string]any{
+		"tenantSlug":   req.TenantSlug,
+		"action":       req.Action,
+		"severity":     severity,
+		"actorId":      req.ActorID,
+		"actorRole":    req.ActorRole,
+		"actorIp":      req.ActorIP,
+		"resourceType": req.ResourceType,
+		"resourceId":   req.ResourceID,
+		"occurredAt":   time.Now().UTC().Format(time.RFC3339),
+		"metadata":     req.Metadata,
+	}
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/api/v1/internal/siem/ingest", bytes.NewReader(bodyBytes))
+	if err != nil {
+		return
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if tok := strings.TrimSpace(os.Getenv("GATEWAY_TOKEN")); tok != "" {
+		httpReq.Header.Set("X-Gateway-Token", tok)
+	}
+
+	resp, err := d.httpClient.Do(httpReq)
+	if err != nil {
+		logger.Warn(ctx, "SIEM push bridge request skipped/failed", zap.String("action", req.Action), zap.Error(err))
+		return
+	}
+	defer resp.Body.Close()
 }
 
 func isBreakGlassAction(action string) bool {
@@ -738,6 +891,10 @@ func (d *AlertDispatcher) sendBreakGlassWhatsAppAlert(ctx context.Context, cfg A
 }
 
 func (d *AlertDispatcher) sendWebhook(cfg AlertConfig, payload *IncidentAlertPayload) error {
+	if err := ValidateWebhookURL(cfg.WebhookURL); err != nil {
+		return err
+	}
+
 	var body []byte
 	var contentType string = "application/json"
 
@@ -782,7 +939,7 @@ func (d *AlertDispatcher) sendWebhook(cfg AlertConfig, payload *IncidentAlertPay
 		body, _ = json.Marshal(discordMsg)
 
 	case "telegram":
-		text := fmt.Sprintf("🚨 *CRITICAL AUDIN INCIDENT*\n\n*Reason:* %s\n*Actor:* `%s`\n*Tenant:* `%s`\n*Action:* `%s`\n*Severity:* `%s`\n*Time:* %s",
+		text := fmt.Sprintf("🚨 *CRITICAL AUDIT INCIDENT*\n\n*Reason:* %s\n*Actor:* `%s`\n*Tenant:* `%s`\n*Action:* `%s`\n*Severity:* `%s`\n*Time:* %s",
 			payload.Reason, payload.ActorID, payload.TenantSlug, payload.Action, payload.Severity, payload.OccurredAt.Format(time.RFC3339))
 		tgMsg := map[string]any{
 			"text":       text,
@@ -811,7 +968,11 @@ func (d *AlertDispatcher) sendWebhook(cfg AlertConfig, payload *IncidentAlertPay
 		req.Header.Set("X-Audit-Signature", "sha256="+signature)
 	}
 
-	resp, err := d.httpClient.Do(req)
+	client := d.externalHTTPClient
+	if client == nil {
+		client = NewSafeWebhookHTTPClient(5 * time.Second)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -861,6 +1022,17 @@ func (d *AlertDispatcher) sendNotificationGateway(cfg AlertConfig, channel, reci
 // TestAlert synchronously fires a mock incident payload to verify delivery
 func (d *AlertDispatcher) TestAlert(ctx context.Context, targetType, targetURL, secretKey string) AlertTestResult {
 	start := time.Now()
+	if err := ValidateWebhookURL(targetURL); err != nil {
+		return AlertTestResult{
+			Success:        false,
+			Channel:        targetType,
+			Target:         targetURL,
+			ResponseCode:   400,
+			ResponseStatus: "BLOCKED_SSRF",
+			LatencyMs:      time.Since(start).Milliseconds(),
+			Error:          err.Error(),
+		}
+	}
 
 	testPayload := &IncidentAlertPayload{
 		EventID:       fmt.Sprintf("test-%d", time.Now().UnixNano()),
