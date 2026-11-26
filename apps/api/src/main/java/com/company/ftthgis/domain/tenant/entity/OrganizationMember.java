@@ -63,5 +63,12 @@ public class OrganizationMember extends AuditableEntity {
 
     @Column(name = "invitation_expires_at")
     private LocalDateTime invitationExpiresAt;
+
+    @Column(name = "scim_external_id", length = 255)
+    private String scimExternalId;
+
+    @Column(name = "scim_managed", nullable = false)
+    @Builder.Default
+    private boolean scimManaged = false;
 }
 

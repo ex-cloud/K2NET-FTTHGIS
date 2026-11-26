@@ -27,6 +27,7 @@ import {
   SsoProbeHeader,
 } from "./SsoSettingsParts";
 import { SsoVerifiedDomainsCard } from "./SsoVerifiedDomainsCard";
+import { SsoScimProvisioningCard } from "./SsoScimProvisioningCard";
 
 export interface SsoConfigResponse {
   providerType: string;
@@ -430,6 +431,14 @@ export function SsoSettingsSection({ slug }: { slug?: string }) {
         isSsoInteractive={isSsoInteractive}
         canManageSso={canManageSso}
       />
+
+      {isSsoAllowed && (
+        <SsoScimProvisioningCard
+          slug={slug}
+          isSsoInteractive={isSsoInteractive}
+          canManageSso={canManageSso}
+        />
+      )}
 
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
         <DialogContent className="sm:max-w-md border-border/80 bg-card">

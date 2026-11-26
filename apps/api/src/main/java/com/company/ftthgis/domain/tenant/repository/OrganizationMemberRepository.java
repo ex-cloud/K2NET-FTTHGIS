@@ -75,6 +75,10 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
            "AND (om.invitationExpiresAt IS NULL OR om.invitationExpiresAt > CURRENT_TIMESTAMP)")
     int acceptInvitedMemberAtomically(@Param("orgId") UUID orgId, @Param("userId") UUID userId);
 
+    Optional<OrganizationMember> findByOrganizationIdAndScimExternalId(UUID organizationId, String scimExternalId);
+
+    long countByOrganizationIdAndScimManagedTrue(UUID organizationId);
+
     long countByRoleId(Long roleId);
 }
 

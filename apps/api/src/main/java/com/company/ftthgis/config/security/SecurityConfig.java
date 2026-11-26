@@ -43,6 +43,7 @@ public class SecurityConfig {
             BearerTokenResolver bearerTokenResolver,
             RateLimitingFilter rateLimitingFilter,
             IpBlockingFilter ipBlockingFilter,
+            ScimTokenAuthenticationFilter scimTokenAuthenticationFilter,
             ScopedTokenAuthenticationFilter scopedTokenAuthenticationFilter,
             com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter,
             com.company.ftthgis.config.tenant.TenantFilter tenantFilter,
@@ -58,6 +59,7 @@ public class SecurityConfig {
                 .addFilterBefore(apiRequestLoggingFilter, IpBlockingFilter.class)
                 .addFilterBefore(scopedTokenAuthenticationFilter,
                         org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
+                .addFilterBefore(scimTokenAuthenticationFilter, ScopedTokenAuthenticationFilter.class)
                 .addFilterAfter(organizationStatusFilter,
                         org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(tenantFilter, com.company.ftthgis.config.tenant.OrganizationStatusFilter.class)
@@ -109,13 +111,19 @@ public class SecurityConfig {
         DefaultBearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
         defaultResolver.setAllowUriQueryParameter(false);
         return request -> {
+            String uri = request.getRequestURI();
+            if (uri != null && uri.startsWith(ScimTokenAuthenticationFilter.SCIM_PATH_PREFIX)) {
+                return null; // Handled exclusively by ScimTokenAuthenticationFilter
+            }
+
             // 1. Resolve Bearer token from standard Authorization header
             String token = defaultResolver.resolve(request);
             if (token != null) {
-                if (token.startsWith(ScopedTokenAuthenticationFilter.SCOPED_TOKEN_PREFIX)
+                if (token.startsWith(ScimTokenAuthenticationFilter.SCIM_TOKEN_PREFIX)
+                        || token.startsWith(ScopedTokenAuthenticationFilter.SCOPED_TOKEN_PREFIX)
                         || token.startsWith(ScopedTokenAuthenticationFilter.API_KEY_PREFIX_LIVE)
                         || token.startsWith(ScopedTokenAuthenticationFilter.API_KEY_PREFIX_TEST)) {
-                    return null; // Handled by ScopedTokenAuthenticationFilter
+                    return null; // Handled by ScimTokenAuthenticationFilter / ScopedTokenAuthenticationFilter
                 }
                 return token;
             }
@@ -228,7 +236,7 @@ public class SecurityConfig {
         // Permissive patterns for development to avoid localhost vs 127.0.0.1 issues
         configuration.setAllowedOriginPatterns(List.of("*"));
 
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
@@ -316,6 +324,11 @@ public class SecurityConfig {
                 var userOpt = userRepository.findById(userId);
                 if (userOpt.isPresent()) {
                     var user = userOpt.get();
+                    String uStatus = user.getStatus() != null ? user.getStatus().trim().toUpperCase(java.util.Locale.ROOT) : "ACTIVE";
+                    if ("SUSPENDED".equals(uStatus) || "INACTIVE".equals(uStatus) || "DELETED".equals(uStatus)) {
+                        log.warn("🚫 Blocked authorities for offboarded/suspended user {} (status={})", jwt.getSubject(), uStatus);
+                        return java.util.Collections.emptySet();
+                    }
                     if (orgId == null) {
                         if (user.getLastActiveOrganization() != null) {
                             orgId = user.getLastActiveOrganization().getId();
@@ -326,9 +339,19 @@ public class SecurityConfig {
                     if (!isPlatformRealm) {
                         if (organizationMemberRepository != null && orgId != null) {
                             var memberOpt = organizationMemberRepository.findByUserIdAndOrganizationId(userId, orgId);
-                            if (memberOpt.isPresent() && "ACTIVE".equalsIgnoreCase(memberOpt.get().getStatus())) {
-                                authoritativeDbTenantRole = memberOpt.get().getRole();
-                                authoritativeDbTenantRoleName = memberOpt.get().getRoleName();
+                            if (memberOpt.isPresent()) {
+                                String mStatus = memberOpt.get().getStatus() != null
+                                        ? memberOpt.get().getStatus().trim().toUpperCase(java.util.Locale.ROOT)
+                                        : "ACTIVE";
+                                if ("SUSPENDED".equals(mStatus) || "INACTIVE".equals(mStatus) || "REVOKED".equals(mStatus)) {
+                                    log.warn("🚫 Blocked authorities for offboarded member {} in org {} (memberStatus={})",
+                                            jwt.getSubject(), orgId, mStatus);
+                                    return java.util.Collections.emptySet();
+                                }
+                                if ("ACTIVE".equals(mStatus)) {
+                                    authoritativeDbTenantRole = memberOpt.get().getRole();
+                                    authoritativeDbTenantRoleName = memberOpt.get().getRoleName();
+                                }
                             }
                         }
                         if (authoritativeDbTenantRole == null && user.getRole() != null

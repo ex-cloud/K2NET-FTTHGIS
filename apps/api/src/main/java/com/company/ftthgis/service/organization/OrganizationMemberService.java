@@ -745,7 +745,20 @@ public class OrganizationMemberService {
                     targetUser.setStatus("SUSPENDED");
                     targetUser.setOrganization(null);
                     userRepository.save(targetUser);
+                    // Fix BUG-02: disable Keycloak account when 0 workspaces remain
+                    if (keycloakAdminService != null && targetUser.getEmail() != null) {
+                        keycloakAdminService.setUserEnabledInRealm("k2net-tenants", targetUser.getEmail(), false);
+                    }
                 }
+            }
+        }
+
+        // Fix BUG-02: Always immediately terminate active Keycloak sessions upon member offboarding/removal
+        if (targetUser != null && keycloakAdminService != null && targetUser.getEmail() != null) {
+            try {
+                keycloakAdminService.logoutAllUserSessionsInRealm("k2net-tenants", targetUser.getEmail());
+            } catch (Exception e) {
+                log.warn("Non-fatal: failed revoking Keycloak sessions during removeMember for {}: {}", targetUser.getEmail(), e.getMessage());
             }
         }
 

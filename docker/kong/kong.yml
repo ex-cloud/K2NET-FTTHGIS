@@ -165,6 +165,25 @@ services:
               anonymous: anonymous-stream-consumer
               run_on_preflight: false
 
+      # --- 3b. Enterprise SCIM 2.0 Provisioning Routes (Scoped Opaque Bearer Token k2_scim_...) ---
+      # Must sit above backend-api-route so Kong does NOT reject opaque Okta/Entra SCIM tokens as JWTs.
+      # Spring ScimTokenAuthenticationFilter handles SHA-256 verification, tenant boundary & Enterprise SSO guard.
+      - name: backend-scim-routes
+        paths:
+          - "~/api/v1/scim/v2(/[^/]+)?(/|$)"
+        regex_priority: 125
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 300
+              policy: local
+              limit_by: ip
+              fault_tolerant: true
+          - name: request-size-limiting
+            config:
+              allowed_payload_size: 2
+
       # --- 4. Protected API Routes (Default Backend Fallback) ---
       - name: backend-api-route
         paths:

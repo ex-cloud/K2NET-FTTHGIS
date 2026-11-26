@@ -90,10 +90,12 @@ public class KeycloakAdminService {
         try (Response response = usersResource.create(user)) {
             if (response.getStatus() == 201) {
                 String userId = CreatedResponseUtil.getCreatedId(response);
-                log.info("Created user {} in Keycloak with ID: {}", email, userId);
+                log.info("Created user {} in Keycloak realm {} with ID: {}", email, targetRealm, userId);
 
-                // Assign Role
-                updateUserRole(email, roleName);
+                // Fix BUG-02: Assign Role in targetRealm (never hardcode defaultRealm)
+                if (roleName != null && !roleName.isBlank()) {
+                    updateUserRoleInRealm(targetRealm, email, roleName);
+                }
 
                 return userId;
             } else {
@@ -1266,5 +1268,141 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             log.debug("Skipping Google forwardParameters startup check: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Enables or disables a user account in the specified Keycloak realm (instant offboarding / reactivation).
+     */
+    public boolean setUserEnabledInRealm(String targetRealm, String emailOrId, boolean enabled) {
+        if (targetRealm == null || targetRealm.isBlank() || emailOrId == null || emailOrId.isBlank()) {
+            return false;
+        }
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            String resolvedId = resolveUserIdInRealm(usersResource, emailOrId.trim());
+            if (resolvedId == null) {
+                log.warn("Keycloak: User '{}' not found in realm '{}' while setting enabled={}", emailOrId, targetRealm, enabled);
+                return false;
+            }
+            UserResource userResource = usersResource.get(resolvedId);
+            UserRepresentation rep = userResource.toRepresentation();
+            rep.setEnabled(enabled);
+            userResource.update(rep);
+            log.info("🛡️ Keycloak: Set enabled={} for user '{}' (ID: {}) in realm '{}'", enabled, emailOrId, resolvedId, targetRealm);
+            return true;
+        } catch (Exception e) {
+            log.warn("Failed setting enabled={} for user '{}' in realm '{}': {}", enabled, emailOrId, targetRealm, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Immediately logs out all active & offline Keycloak sessions for a user in the target realm.
+     */
+    public boolean logoutAllUserSessionsInRealm(String targetRealm, String emailOrId) {
+        if (targetRealm == null || targetRealm.isBlank() || emailOrId == null || emailOrId.isBlank()) {
+            return false;
+        }
+        try {
+            UsersResource usersResource = keycloak.realm(targetRealm).users();
+            String resolvedId = resolveUserIdInRealm(usersResource, emailOrId.trim());
+            if (resolvedId == null) {
+                log.debug("Keycloak: User '{}' not found in realm '{}' during session logout", emailOrId, targetRealm);
+                return false;
+            }
+            usersResource.get(resolvedId).logout();
+            log.info("🔒 Keycloak: Logged out all sessions for user '{}' (ID: {}) in realm '{}'", emailOrId, resolvedId, targetRealm);
+            return true;
+        } catch (Exception e) {
+            log.warn("Failed logging out sessions for user '{}' in realm '{}': {}", emailOrId, targetRealm, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Creates or updates a SCIM-provisioned user inside the tenant Keycloak realm and returns Keycloak UUID.
+     */
+    public String provisionScimUserInRealm(
+            String targetRealm,
+            String email,
+            String username,
+            String firstName,
+            String lastName,
+            String roleName,
+            boolean active
+    ) {
+        if (targetRealm == null || targetRealm.isBlank() || email == null || email.isBlank()) {
+            return null;
+        }
+        UsersResource usersResource = keycloak.realm(targetRealm).users();
+        List<UserRepresentation> existing = usersResource.searchByEmail(email, true);
+        if (existing != null && !existing.isEmpty()) {
+            UserRepresentation existingRep = existing.get(0);
+            existingRep.setEnabled(active);
+            existingRep.setEmailVerified(true);
+            if (firstName != null && !firstName.isBlank()) {
+                existingRep.setFirstName(firstName);
+            }
+            if (lastName != null && !lastName.isBlank()) {
+                existingRep.setLastName(lastName);
+            }
+            usersResource.get(existingRep.getId()).update(existingRep);
+            if (roleName != null && !roleName.isBlank()) {
+                updateUserRoleInRealm(targetRealm, email, roleName);
+            }
+            return existingRep.getId();
+        }
+
+        UserRepresentation user = new UserRepresentation();
+        user.setEnabled(active);
+        user.setUsername(username != null && !username.isBlank() ? username : email);
+        user.setEmail(email);
+        user.setFirstName(firstName != null && !firstName.isBlank() ? firstName : email.split("@")[0]);
+        user.setLastName(lastName != null ? lastName : "");
+        user.setEmailVerified(true);
+
+        // Random unguessable credential so Keycloak account is ready for OIDC SSO / Passkey without temporary password prompt
+        byte[] entropy = new byte[24];
+        new java.security.SecureRandom().nextBytes(entropy);
+        String randomSecret = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(entropy) + "!A1a";
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue(randomSecret);
+        credential.setTemporary(false);
+        user.setCredentials(Collections.singletonList(credential));
+
+        try (Response response = usersResource.create(user)) {
+            if (response.getStatus() == 201) {
+                String kcId = CreatedResponseUtil.getCreatedId(response);
+                if (roleName != null && !roleName.isBlank()) {
+                    updateUserRoleInRealm(targetRealm, email, roleName);
+                }
+                log.info("✅ Provisioned SCIM user '{}' (ID: {}) in realm '{}' (active={})", email, kcId, targetRealm, active);
+                return kcId;
+            }
+            log.warn("⚠️ Failed to create SCIM user '{}' in realm '{}': HTTP {}", email, targetRealm, response.getStatus());
+        } catch (Exception e) {
+            log.warn("⚠️ Exception creating SCIM user '{}' in realm '{}': {}", email, targetRealm, e.getMessage());
+        }
+        return null;
+    }
+
+    private String resolveUserIdInRealm(UsersResource usersResource, String emailOrId) {
+        try {
+            UserRepresentation direct = usersResource.get(emailOrId).toRepresentation();
+            if (direct != null && direct.getId() != null) {
+                return direct.getId();
+            }
+        } catch (Exception ignored) {}
+
+        List<UserRepresentation> byEmail = usersResource.searchByEmail(emailOrId, true);
+        if (byEmail != null && !byEmail.isEmpty()) {
+            return byEmail.get(0).getId();
+        }
+        List<UserRepresentation> byUsername = usersResource.searchByUsername(emailOrId, true);
+        if (byUsername != null && !byUsername.isEmpty()) {
+            return byUsername.get(0).getId();
+        }
+        return null;
     }
 }

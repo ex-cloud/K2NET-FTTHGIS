@@ -237,9 +237,35 @@ public class UserSyncService {
             );
         }
 
-        // 2. Strict Tenant Domain / Realm Alignment Check (2-Realm Air-Gap)
+        // 2. Strict Offboarded / Suspended Account Check & Tenant Domain / Realm Alignment Check (BUG-01 Fix)
         User targetUser = existingUser.orElseGet(() -> userByEmail.orElse(null));
         if (targetUser != null) {
+            String targetStatus = targetUser.getStatus() != null
+                    ? targetUser.getStatus().trim().toUpperCase(java.util.Locale.ROOT)
+                    : "ACTIVE";
+            if ("SUSPENDED".equals(targetStatus) || "INACTIVE".equals(targetStatus) || "DELETED".equals(targetStatus)) {
+                log.warn("🚫 Blocking active JWT for offboarded/suspended user {} (status={})", email, targetStatus);
+                throw new org.springframework.security.authentication.DisabledException(
+                    "Akun Anda sedang ditangguhkan atau telah dinonaktifkan oleh administrator."
+                );
+            }
+
+            if (!isSystemRealm && org != null && organizationMemberRepository != null) {
+                var memberOpt = organizationMemberRepository.findByUserIdAndOrganizationId(targetUser.getId(), org.getId());
+                if (memberOpt.isPresent()) {
+                    String memberStatus = memberOpt.get().getStatus() != null
+                            ? memberOpt.get().getStatus().trim().toUpperCase(java.util.Locale.ROOT)
+                            : "ACTIVE";
+                    if ("SUSPENDED".equals(memberStatus) || "INACTIVE".equals(memberStatus) || "REVOKED".equals(memberStatus)) {
+                        log.warn("🚫 Blocking active JWT for offboarded member {} in org '{}' (memberStatus={})",
+                                email, org.getSlug(), memberStatus);
+                        throw new org.springframework.security.authentication.DisabledException(
+                            "Keanggotaan Anda pada workspace ini telah dinonaktifkan."
+                        );
+                    }
+                }
+            }
+
             Organization userOrg = targetUser.getOrganization();
             String userOrgSlug = (userOrg != null) ? userOrg.getSlug() : "system";
             boolean isSystemOrg = userOrg == null || "system".equalsIgnoreCase(userOrgSlug);
