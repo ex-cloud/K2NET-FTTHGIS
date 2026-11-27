@@ -11,7 +11,9 @@ import com.company.ftthgis.service.AuditLoggingService;
 import com.company.ftthgis.service.EmailService;
 import com.company.ftthgis.service.LicenseManagementService;
 import com.company.ftthgis.util.SecretEncryptionUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -250,5 +254,75 @@ class SecuritySiemStreamingServiceTest {
                 .build());
         assertEquals(0, count);
         verify(deliveryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("BUG-SIEM-06: Serializes and deserializes SIEM DTO isActive field without dropping 'is' prefix")
+    void testSiemDtosSerializeIsActivePropertyName() throws Exception {
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
+        SiemEndpointDto endpointDto = SiemEndpointDto.builder()
+                .id(UUID.randomUUID())
+                .name("SOC Receiver")
+                .isActive(true)
+                .build();
+        JsonNode endpointJson = mapper.readTree(mapper.writeValueAsString(endpointDto));
+        assertTrue(endpointJson.has("isActive"));
+        assertTrue(endpointJson.get("isActive").asBoolean());
+        assertFalse(endpointJson.has("active"));
+
+        SystemSiemOverviewDto overviewDto = SystemSiemOverviewDto.builder()
+                .endpointId(UUID.randomUUID())
+                .endpointName("SOC Receiver")
+                .isActive(true)
+                .autoDisabled(false)
+                .build();
+        JsonNode overviewJson = mapper.readTree(mapper.writeValueAsString(overviewDto));
+        assertTrue(overviewJson.has("isActive"));
+        assertTrue(overviewJson.get("isActive").asBoolean());
+        assertFalse(overviewJson.has("active"));
+
+        UpsertSiemEndpointRequest parsed = mapper.readValue(
+                "{\"name\":\"Test\",\"targetUrl\":\"https://httpbin.org/post\",\"isActive\":false}",
+                UpsertSiemEndpointRequest.class
+        );
+        assertEquals(Boolean.FALSE, parsed.getIsActive());
+    }
+
+    @Test
+    @DisplayName("BUG-SIEM-07: Successful test ping on auto-disabled endpoint preserves autoDisabledAt and reason")
+    void testSendTestOnAutoDisabledEndpointPreservesAutoDisabledState() {
+        OffsetDateTime disabledAt = OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(5);
+        TenantSiemEndpoint ep = TenantSiemEndpoint.builder()
+                .id(UUID.randomUUID())
+                .organization(opsOrg)
+                .name("Paused Receiver")
+                .targetUrl("https://httpbin.org/post")
+                .targetFormat(SiemTargetFormat.GENERIC_JSON)
+                .signingSecretEncrypted(encryptionUtil.encrypt("whsec_siem_testsecret001122334455"))
+                .signingSecretPrefix("whsec_siem_test••••4455")
+                .eventCategories("AUTH,SECURITY")
+                .minSeverity("INFO")
+                .isActive(false)
+                .consecutiveFailures(20)
+                .autoDisabledAt(disabledAt)
+                .autoDisabledReason("Auto-paused after 20 consecutive delivery failures")
+                .build();
+
+        when(endpointRepository.findByIdAndOrganizationId(ep.getId(), opsOrg.getId())).thenReturn(Optional.of(ep));
+        when(ssrfSafeHttpClient.executePost(eq("https://httpbin.org/post"), anyString(), anyMap()))
+                .thenReturn(SSRFSafeHttpClient.HttpResponse.builder()
+                        .statusCode(200)
+                        .body("{\"ok\":true}")
+                        .latencyMs(35)
+                        .success(true)
+                        .build());
+
+        SiemTestResultDto res = service.sendTestEvent("ops", ep.getId(), "admin@kdua.net");
+        assertTrue(res.isSuccess());
+        assertFalse(ep.isActive());
+        assertEquals(0, ep.getConsecutiveFailures());
+        assertEquals(disabledAt, ep.getAutoDisabledAt());
+        assertNotNull(ep.getAutoDisabledReason());
     }
 }

@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.security.dto;
 
 import com.company.ftthgis.domain.tenant.entity.SiemTargetFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -44,5 +45,6 @@ public class UpsertSiemEndpointRequest {
 
     private Boolean clearCustomAuthHeader;
 
+    @JsonProperty("isActive")
     private Boolean isActive;
 }

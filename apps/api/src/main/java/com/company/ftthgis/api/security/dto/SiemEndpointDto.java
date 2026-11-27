@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.security.dto;
 
 import com.company.ftthgis.domain.tenant.entity.SiemTargetFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +26,7 @@ public class SiemEndpointDto {
     private boolean hasCustomAuthHeader;
     private List<String> eventCategories;
     private String minSeverity;
+    @JsonProperty("isActive")
     private boolean isActive;
     private int consecutiveFailures;
     private OffsetDateTime autoDisabledAt;

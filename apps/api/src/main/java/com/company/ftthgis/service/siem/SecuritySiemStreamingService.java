@@ -611,8 +611,10 @@ public class SecuritySiemStreamingService {
 
         if (success) {
             endpoint.setConsecutiveFailures(0);
-            endpoint.setAutoDisabledAt(null);
-            endpoint.setAutoDisabledReason(null);
+            if (endpoint.isActive()) {
+                endpoint.setAutoDisabledAt(null);
+                endpoint.setAutoDisabledReason(null);
+            }
             endpointRepository.save(endpoint);
             return;
         }
