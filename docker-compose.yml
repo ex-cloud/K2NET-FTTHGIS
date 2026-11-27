@@ -11,6 +11,8 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.forwardedHeaders.trustedIPs=172.18.0.0/16"
+      - "--entrypoints.websecure.forwardedHeaders.trustedIPs=172.18.0.0/16"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--providers.file.directory=/etc/traefik/dynamic"

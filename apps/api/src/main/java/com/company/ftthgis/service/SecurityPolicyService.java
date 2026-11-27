@@ -420,10 +420,35 @@ public class SecurityPolicyService {
         List<String> normalizedCidrs = ClientIpResolver.parseAndNormalizeCidrListStrict(request.ipAllowlistCidrs());
         List<String> normalizedCountries = ClientIpResolver.normalizeCountriesStrict(request.allowedCountries());
 
-        String evalIp = (request.testIp() != null && !request.testIp().isBlank()) ? request.testIp().trim() : callerIp;
-        String evalCountry = (request.testCountry() != null && !request.testCountry().isBlank())
-                ? ClientIpResolver.normalizeSingleCountry(request.testCountry())
-                : callerCountry;
+        String evalIp = callerIp;
+        if (request.testIp() != null && !request.testIp().isBlank()) {
+            String rawTestIp = request.testIp().trim();
+            String candidate = rawTestIp;
+            if (rawTestIp.endsWith("/32")) {
+                String base = rawTestIp.substring(0, rawTestIp.length() - 3).trim();
+                var addr = ClientIpResolver.parseLiteralInetAddress(base);
+                candidate = (addr instanceof java.net.Inet4Address) ? base : "";
+            } else if (rawTestIp.endsWith("/128")) {
+                String base = rawTestIp.substring(0, rawTestIp.length() - 4).trim();
+                var addr = ClientIpResolver.parseLiteralInetAddress(base);
+                candidate = (addr instanceof java.net.Inet6Address) ? base : "";
+            }
+            if (candidate.isEmpty() || !ClientIpResolver.isLiteralIpAddress(candidate)) {
+                throw new IllegalArgumentException(
+                        "Invalid Test IP format: '" + rawTestIp + "'. Enter a single IPv4/IPv6 address (e.g. 203.0.113.10 or 203.0.113.10/32)."
+                );
+            }
+            evalIp = candidate;
+        }
+        String evalCountry = callerCountry;
+        if (request.testCountry() != null && !request.testCountry().isBlank()) {
+            evalCountry = ClientIpResolver.normalizeSingleCountry(request.testCountry());
+            if (evalCountry == null) {
+                throw new IllegalArgumentException(
+                        "Invalid Test Country code: '" + request.testCountry().trim() + "'. Use a 2-letter ISO-3166 code (e.g. ID, SG, US)."
+                );
+            }
+        }
 
         if ("DISABLED".equals(mode)) {
             return IpPolicyDryRunResponse.builder()

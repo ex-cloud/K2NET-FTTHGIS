@@ -234,13 +234,18 @@ export function TenantIpGeofencingCard({
   const { t } = useTranslation();
   const effectiveDisabled = disabled || !platformAllowed;
 
+  const callerCidr = callerIp
+    ? callerIp.includes("/")
+      ? callerIp
+      : `${callerIp}${callerIp.includes(":") ? "/128" : "/32"}`
+    : "";
+
   const handleAddCurrentIp = () => {
-    if (!callerIp) return;
-    const entry = callerIp.includes("/") ? callerIp : `${callerIp}${callerIp.includes(":") ? "/128" : "/32"}`;
+    if (!callerIp || !callerCidr) return;
     const existing = ipAllowlistCidrs.split(/[,\s\n\r;]+/).map((s) => s.trim()).filter(Boolean);
-    if (!existing.includes(entry) && !existing.includes(callerIp)) {
-      onChangeIpAllowlistCidrs(existing.length > 0 ? `${existing.join(", ")}, ${entry}` : entry);
-      toast.success(t("settings.ip_policy.ip_added_toast", { ip: callerIp }));
+    if (!existing.includes(callerCidr) && !existing.includes(callerIp)) {
+      onChangeIpAllowlistCidrs(existing.length > 0 ? `${existing.join(", ")}, ${callerCidr}` : callerCidr);
+      toast.success(t("settings.ip_policy.ip_added_toast", { cidr: callerCidr }));
     }
   };
 
@@ -277,7 +282,7 @@ export function TenantIpGeofencingCard({
           {canManage && callerIp && !effectiveDisabled && (
             <Button type="button" size="xs" variant="outline" onClick={handleAddCurrentIp} className="gap-1">
               <Plus className="size-3" />
-              {t("settings.ip_policy.add_current_ip_btn", { ip: callerIp })}
+              {t("settings.ip_policy.add_current_ip_btn", { cidr: callerCidr })}
             </Button>
           )}
           {canManage && callerCountry && !allowedCountries.includes(callerCountry) && !effectiveDisabled && (

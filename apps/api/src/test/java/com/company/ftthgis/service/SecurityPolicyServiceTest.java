@@ -538,5 +538,23 @@ public class SecurityPolicyServiceTest {
         assertTrue(dryOk.isAllowed());
         assertFalse(dryOk.isWouldBlockInEnforce());
         assertEquals("allowed", dryOk.getReason());
+
+        // 6. Dry-run strips single-host /32 suffix (BUG-GEO-09) and rejects subnet ranges as Test IP
+        IpPolicyDryRunResponse dryHostCidr = securityPolicyService.dryRunIpPolicy(
+                "fibernet",
+                new IpPolicyDryRunRequest("203.0.113.0/24", List.of("ID"), "ENFORCE", "203.0.113.99/32", "ID"),
+                "203.0.113.10",
+                "ID"
+        );
+        assertTrue(dryHostCidr.isAllowed());
+        assertFalse(dryHostCidr.isWouldBlockInEnforce());
+        assertEquals("203.0.113.99", dryHostCidr.getEvaluatedIp());
+
+        assertThrows(IllegalArgumentException.class, () -> securityPolicyService.dryRunIpPolicy(
+                "fibernet",
+                new IpPolicyDryRunRequest("203.0.113.0/24", List.of("ID"), "ENFORCE", "203.0.113.0/24", "ID"),
+                "203.0.113.10",
+                "ID"
+        ));
     }
 }
