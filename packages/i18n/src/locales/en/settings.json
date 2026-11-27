@@ -820,6 +820,37 @@
     "roll_confirm_title": "Roll HMAC Signing Secret?",
     "roll_confirm_desc": "Generate a new signing secret for {{name}}? Your receiver must be updated immediately with the new secret to avoid signature validation errors.",
     "roll_confirm_submit": "Roll Secret"
+  },
+  "ip_policy": {
+    "title": "IP Allowlist & Country Geofencing",
+    "platform_disabled_banner": "Tenant IP allowlist and geofencing configuration is currently disabled by Platform Super Admin policy.",
+    "caller_context_label": "Your Current Connection",
+    "caller_country_unknown": "Internal / Direct",
+    "add_current_ip_btn": "+ Add My IP ({{ip}}/32)",
+    "add_current_country_btn": "+ Add Country ({{country}})",
+    "ip_added_toast": "Added {{ip}}/32 to IP allowlist.",
+    "country_added_toast": "Added country {{country}} to geofencing list.",
+    "mode_label": "Enforcement Mode",
+    "mode_disabled": "Disabled",
+    "mode_disabled_hint": "No IP or country restrictions are enforced.",
+    "mode_monitor": "Monitor Only (Shadow Audit)",
+    "mode_monitor_hint": "Logs violations to SIEM & sets shadow header without blocking users.",
+    "mode_enforce": "Enforce (Strict Blocking)",
+    "mode_enforce_hint": "Blocks unauthorized IPs/countries at Auth Edge & REST API (HTTP 403/419).",
+    "countries_label": "Allowed Countries (ISO-2 Geofencing)",
+    "countries_desc": "Uses Cloudflare Edge CF-IPCountry. Leave empty to allow all countries. When both CIDRs and countries are set, BOTH must match (AND rule).",
+    "country_input_placeholder": "ISO-2 (e.g. TH)",
+    "country_add_btn": "Add",
+    "break_glass_label": "Allow Break-Glass Emergency IP Bypass",
+    "break_glass_desc": "Permit verified Emergency Break-Glass Admin logins to bypass IP & geofence blocks during ISP outages.",
+    "dry_run_title": "Dry-Run Policy Simulator",
+    "dry_run_ip_placeholder": "Test IP (default: current IP)",
+    "dry_run_country_placeholder": "Country (e.g. US)",
+    "dry_run_btn": "Test Policy",
+    "dry_run_testing": "Testing...",
+    "dry_run_allowed": "ALLOWED ({{reason}})",
+    "dry_run_shadow": "WOULD BLOCK IN ENFORCE — Allowed in MONITOR_ONLY ({{reason}})",
+    "dry_run_blocked": "BLOCKED IN ENFORCE ({{reason}})"
   }
 }
 

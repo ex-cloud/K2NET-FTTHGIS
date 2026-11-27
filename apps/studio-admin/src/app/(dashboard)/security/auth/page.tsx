@@ -9,6 +9,7 @@ import { AuthSsoProvidersCard } from "@/components/security/auth-sso-providers-c
 import { AuthActiveSessionsCard } from "@/components/security/auth-active-sessions-card";
 import { TenantSsoHealthCard } from "@/components/security/tenant-sso-health-card";
 import { TenantSiemHealthCard } from "@/components/security/tenant-siem-health-card";
+import { TenantIpPolicyOverviewCard } from "@/components/security/tenant-ip-policy-overview-card";
 import { IamIntegrityMonitorCard } from "@/components/security/iam-integrity-monitor-card";
 
 export default function SystemAuthPage() {
@@ -38,6 +39,10 @@ export default function SystemAuthPage() {
     tenantSiemOverview,
     loadingTenantSiemOverview,
     refetchTenantSiemOverview,
+
+    tenantIpPolicyOverview,
+    loadingTenantIpPolicyOverview,
+    refetchTenantIpPolicyOverview,
 
     iamIntegrity,
     loadingIamIntegrity,
@@ -180,6 +185,14 @@ export default function SystemAuthPage() {
           isLoading={loadingTenantSiemOverview}
           onRefresh={() => {
             void refetchTenantSiemOverview();
+          }}
+        />
+
+        <TenantIpPolicyOverviewCard
+          items={tenantIpPolicyOverview}
+          isLoading={loadingTenantIpPolicyOverview}
+          onRefresh={() => {
+            void refetchTenantIpPolicyOverview();
           }}
         />
 

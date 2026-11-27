@@ -55,5 +55,16 @@ public class TenantSecurityPolicy extends OrganizationAwareEntity {
 
     @Column(name = "ip_allowlist_cidrs", columnDefinition = "TEXT")
     private String ipAllowlistCidrs;
+
+    @Column(name = "ip_policy_mode", nullable = false, length = 24)
+    @Builder.Default
+    private String ipPolicyMode = "ENFORCE";
+
+    @Column(name = "allowed_countries", length = 255)
+    private String allowedCountries;
+
+    @Column(name = "allow_break_glass_ip_bypass", nullable = false)
+    @Builder.Default
+    private boolean allowBreakGlassIpBypass = true;
 }
 

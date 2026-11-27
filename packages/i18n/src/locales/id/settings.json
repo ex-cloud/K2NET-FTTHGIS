@@ -820,6 +820,37 @@
     "roll_confirm_title": "Putar Signing Secret HMAC?",
     "roll_confirm_desc": "Buat signing secret baru untuk {{name}}? Sistem penerima SIEM Anda harus segera diperbarui agar validasi tanda tangan tidak gagal.",
     "roll_confirm_submit": "Putar Secret"
+  },
+  "ip_policy": {
+    "title": "IP Allowlist & Geofencing Negara",
+    "platform_disabled_banner": "Konfigurasi IP allowlist dan geofencing tenant saat ini dinonaktifkan oleh kebijakan Platform Super Admin.",
+    "caller_context_label": "Koneksi Anda Saat Ini",
+    "caller_country_unknown": "Internal / Langsung",
+    "add_current_ip_btn": "+ Tambah IP Saya ({{ip}}/32)",
+    "add_current_country_btn": "+ Tambah Negara ({{country}})",
+    "ip_added_toast": "{{ip}}/32 ditambahkan ke daftar IP allowlist.",
+    "country_added_toast": "Kode negara {{country}} ditambahkan ke daftar geofencing.",
+    "mode_label": "Mode Penegakan",
+    "mode_disabled": "Nonaktif",
+    "mode_disabled_hint": "Tidak ada pembatasan IP maupun negara yang ditegakkan.",
+    "mode_monitor": "Monitor Saja (Audit Bayangan)",
+    "mode_monitor_hint": "Mencatat pelanggaran ke SIEM tanpa memblokir pengguna.",
+    "mode_enforce": "Tegakkan (Blokir Ketat)",
+    "mode_enforce_hint": "Memblokir IP/negara di luar daftar pada Auth Edge & REST API (HTTP 403/419).",
+    "countries_label": "Negara yang Diizinkan (Geofencing ISO-2)",
+    "countries_desc": "Menggunakan header CF-IPCountry Cloudflare Edge. Kosongkan untuk mengizinkan semua negara. Jika CIDR dan negara diisi keduanya, KEDUANYA wajib cocok (logika AND).",
+    "country_input_placeholder": "ISO-2 (mis. TH)",
+    "country_add_btn": "Tambah",
+    "break_glass_label": "Izinkan Bypass IP untuk Darurat Break-Glass",
+    "break_glass_desc": "Izinkan Admin Break-Glass darurat yang terverifikasi melewati blokir IP & geofence saat insiden gangguan ISP.",
+    "dry_run_title": "Simulator Uji Coba Kebijakan (Dry-Run)",
+    "dry_run_ip_placeholder": "IP uji (bawaan: IP saat ini)",
+    "dry_run_country_placeholder": "Negara (mis. US)",
+    "dry_run_btn": "Uji Kebijakan",
+    "dry_run_testing": "Menguji...",
+    "dry_run_allowed": "DIIZINKAN ({{reason}})",
+    "dry_run_shadow": "AKAN DIBLOKIR SAAT ENFORCE — Lolos di MONITOR_ONLY ({{reason}})",
+    "dry_run_blocked": "DIBLOKIR SAAT ENFORCE ({{reason}})"
   }
 }
 

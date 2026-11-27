@@ -1,7 +1,9 @@
 package com.company.ftthgis.api.tenant;
 
+import com.company.ftthgis.api.security.dto.IpPolicyDryRunRequest;
 import com.company.ftthgis.api.security.dto.TenantSecurityPolicyDto;
 import com.company.ftthgis.api.security.dto.UpdateTenantSecurityPolicyRequest;
+import com.company.ftthgis.config.security.ClientIpResolver;
 import com.company.ftthgis.config.security.RequireSudoMode;
 import com.company.ftthgis.service.SecurityPolicyService;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +22,12 @@ public class TenantSecurityPolicyController {
 
     @GetMapping
     @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.policy.view') or hasAuthority('organizations.view'))")
-    public ResponseEntity<TenantSecurityPolicyDto> getTenantPolicy(@PathVariable String slug) {
-        return ResponseEntity.ok(policyService.getTenantPolicy(slug));
+    public ResponseEntity<TenantSecurityPolicyDto> getTenantPolicy(
+            @PathVariable String slug,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String callerIp = ClientIpResolver.resolveClientIp(httpRequest);
+        String callerCountry = ClientIpResolver.resolveCountryCode(httpRequest);
+        return ResponseEntity.ok(policyService.getTenantPolicy(slug, callerIp, callerCountry));
     }
 
     @PutMapping
@@ -34,8 +40,9 @@ public class TenantSecurityPolicyController {
             jakarta.servlet.http.HttpServletRequest httpRequest) {
         try {
             String actor = jwt != null ? (jwt.getClaimAsString("email") != null ? jwt.getClaimAsString("email") : jwt.getSubject()) : "admin";
-            String clientIp = resolveClientIp(httpRequest);
-            return ResponseEntity.ok(policyService.updateTenantPolicy(slug, request, actor, clientIp));
+            String clientIp = ClientIpResolver.resolveClientIp(httpRequest);
+            String clientCountry = ClientIpResolver.resolveCountryCode(httpRequest);
+            return ResponseEntity.ok(policyService.updateTenantPolicy(slug, request, actor, clientIp, clientCountry));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(java.util.Map.of(
                     "success", false,
@@ -44,22 +51,22 @@ public class TenantSecurityPolicyController {
         }
     }
 
-    private String resolveClientIp(jakarta.servlet.http.HttpServletRequest req) {
-        if (req == null) return null;
-        String ip = req.getHeader("CF-Connecting-IP");
-        if (ip == null || ip.isBlank()) {
-            ip = req.getHeader("X-Forwarded-For");
-            if (ip != null && !ip.isBlank() && ip.contains(",")) {
-                ip = ip.split(",")[0].trim();
-            }
+    @PostMapping("/ip-policy/dry-run")
+    @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('security.policy.view') or hasAuthority('organizations.view'))")
+    public ResponseEntity<?> dryRunIpPolicy(
+            @PathVariable String slug,
+            @RequestBody IpPolicyDryRunRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            String callerIp = ClientIpResolver.resolveClientIp(httpRequest);
+            String callerCountry = ClientIpResolver.resolveCountryCode(httpRequest);
+            return ResponseEntity.ok(policyService.dryRunIpPolicy(slug, request, callerIp, callerCountry));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
         }
-        if (ip == null || ip.isBlank()) {
-            ip = req.getHeader("X-Real-IP");
-        }
-        if (ip == null || ip.isBlank()) {
-            ip = req.getRemoteAddr();
-        }
-        return ip != null ? ip.trim() : null;
     }
 
     @PostMapping("/members/{memberId}/reset-mfa")
@@ -84,4 +91,3 @@ public class TenantSecurityPolicyController {
         }
     }
 }
-

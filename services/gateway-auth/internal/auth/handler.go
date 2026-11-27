@@ -16,7 +16,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -136,7 +135,7 @@ func (h *Handler) GetTenantContext(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, tenantCtx)
+	c.JSON(http.StatusOK, tenantCtx.ToPublic())
 }
 
 // GetSsoDiscovery handles GET /api/v1/auth/sso-discovery?email={email}&tenant={tenant} (Domain-based HRD).
@@ -200,46 +199,10 @@ func (h *Handler) GetSsoDiscovery(c *gin.Context) {
 
 // isIPInCIDRList checks whether the client IP matches any allowed CIDRs (IPv4 and IPv6).
 func isIPInCIDRList(clientIPStr string, cidrListStr string) bool {
-	clientIPStr = strings.TrimSpace(clientIPStr)
-	if clientIPStr == "" {
+	if strings.TrimSpace(cidrListStr) == "" {
 		return true
 	}
-	clientIP := net.ParseIP(clientIPStr)
-	if clientIP == nil {
-		return false
-	}
-
-	rawTokens := strings.FieldsFunc(cidrListStr, func(r rune) bool {
-		return r == ',' || r == '\n' || r == '\r' || r == ';'
-	})
-
-	validCIDRsCount := 0
-	for _, token := range rawTokens {
-		token = strings.TrimSpace(token)
-		if token == "" {
-			continue
-		}
-		if !strings.Contains(token, "/") {
-			if strings.Contains(token, ":") {
-				token = token + "/128"
-			} else {
-				token = token + "/32"
-			}
-		}
-		_, ipNet, err := net.ParseCIDR(token)
-		if err != nil {
-			continue
-		}
-		validCIDRsCount++
-		if ipNet.Contains(clientIP) {
-			return true
-		}
-	}
-
-	if validCIDRsCount == 0 {
-		return true
-	}
-	return false
+	return isIPInCIDRListStrict(clientIPStr, cidrListStr)
 }
 
 // Login handles POST /api/v1/auth/login (Cloudflare-style native credentials + Turnstile + MFA + JIT Sync).
@@ -351,19 +314,9 @@ func (h *Handler) Login(c *gin.Context) {
 			return
 		}
 
-		// Enforce IP Allowlist / CIDR restriction
-		if tenantCtx.IPAllowlistCIDRs != "" {
-			if !isIPInCIDRList(clientIP, tenantCtx.IPAllowlistCIDRs) {
-				h.emitAudit(c.Request.Context(), auditSlug, req.Username, "", clientIP, "AUTH_LOGIN_BLOCKED_IP_CIDR", map[string]any{
-					"clientIP": clientIP,
-					"plane":    plane,
-				})
-				c.JSON(http.StatusForbidden, gin.H{
-					"error":   "IP_NOT_ALLOWED",
-					"message": "Akses ditolak: Alamat IP perangkat Anda tidak terdaftar dalam daftar IP yang diizinkan organisasi.",
-				})
-				return
-			}
+		// Enforce IP Allowlist & Country Geofencing (Dual-Layer Defense-in-Depth)
+		if !h.enforceTenantIPAndGeofence(c, tenantCtx, req.Username, "", "login_password", req.IsBreakGlass, nil) {
+			return
 		}
 
 		// Enforce SSO & Break-Glass Emergency Access
@@ -1425,16 +1378,7 @@ func (h *Handler) VerifyDiscoverableWebauthnLogin(c *gin.Context) {
 			return
 		}
 
-		if tenantCtx.IPAllowlistCIDRs != "" && !isIPInCIDRList(clientIP, tenantCtx.IPAllowlistCIDRs) {
-			h.emitAudit(ctx, auditSlug, owner.UserID, owner.RoleName, clientIP, "AUTH_LOGIN_BLOCKED_IP_CIDR", map[string]any{
-				"clientIP": clientIP,
-				"plane":    plane,
-				"method":   "webauthn_passwordless",
-			})
-			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "IP_NOT_ALLOWED",
-				"message": "Akses ditolak: Alamat IP perangkat Anda tidak terdaftar dalam daftar IP yang diizinkan organisasi.",
-			})
+		if !h.enforceTenantIPAndGeofence(c, tenantCtx, owner.UserID, owner.RoleName, "webauthn_passwordless", req.IsBreakGlass, nil) {
 			return
 		}
 
@@ -1909,6 +1853,35 @@ func (h *Handler) Refresh(c *gin.Context) {
 	if sid == "" {
 		sid = strings.TrimSpace(claims.SessionState)
 	}
+	if targetRealm != config.PlatformRealm {
+		refreshSlug := strings.ToLower(strings.TrimSpace(claims.TenantSlug))
+		if refreshSlug == "" {
+			rawHost := strings.ToLower(strings.TrimSpace(c.GetHeader("X-Forwarded-Host")))
+			if rawHost == "" {
+				rawHost = strings.ToLower(strings.TrimSpace(c.Request.Host))
+			}
+			if idx := strings.IndexByte(rawHost, ':'); idx > 0 {
+				rawHost = rawHost[:idx]
+			}
+			if parts := strings.Split(rawHost, "."); len(parts) >= 3 {
+				cand := parts[0]
+				if cand != "system-gis" && cand != "auth-gis" && cand != "www" {
+					refreshSlug = cand
+				}
+			}
+		}
+		if refreshSlug != "" && validSlugRegex.MatchString(refreshSlug) {
+			if refreshTenantCtx, ctxErr := h.repo.ResolveTenantContext(c.Request.Context(), refreshSlug); ctxErr == nil && refreshTenantCtx != nil {
+				rolesJoined := joinRoles(claims.ExtractRoles(h.cfg.KeycloakClientID))
+				if !h.enforceTenantIPAndGeofence(c, refreshTenantCtx, claims.Sub, rolesJoined, "token_refresh", isBreakGlass, func() {
+					h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+					h.clearSessionCookies(c)
+				}) {
+					return
+				}
+			}
+		}
+	}
 	if !h.enforceNetworkBindingOnRefresh(c, targetRealm, claims, sid, kcTokens.RefreshToken, maxAge) {
 		return
 	}
@@ -2050,6 +2023,14 @@ func (h *Handler) SsoExchange(c *gin.Context) {
 			"message": "Email akun sosial Anda belum terverifikasi oleh penyedia identitas.",
 		})
 		return
+	}
+
+	if plane == "TENANT" && tenantCtx != nil {
+		if !h.enforceTenantIPAndGeofence(c, tenantCtx, claims.Sub, "", "sso_exchange", false, func() {
+			h.revokeKeycloakSession(c.Request.Context(), targetRealm, kcTokens.RefreshToken)
+		}) {
+			return
+		}
 	}
 
 	idp := strings.ToLower(strings.TrimSpace(claims.IdentityProvider))
@@ -2857,6 +2838,12 @@ func (h *Handler) SwitchContext(c *gin.Context) {
 		logger.Warn(c.Request.Context(), "context switch rejected", zap.Error(err), zap.String("userId", claims.Sub), zap.String("targetOrgId", req.TargetOrganizationID))
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": err.Error()})
 		return
+	}
+
+	if fullTenantCtx, ctxErr := h.repo.ResolveTenantContext(c.Request.Context(), tenantCtx.Slug); ctxErr == nil && fullTenantCtx != nil {
+		if !h.enforceTenantIPAndGeofence(c, fullTenantCtx, claims.Sub, "member", "switch_context", false, nil) {
+			return
+		}
 	}
 
 	redirectURL := fmt.Sprintf("https://%s.kdua.net", tenantCtx.Slug)

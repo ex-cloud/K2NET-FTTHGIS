@@ -1,6 +1,8 @@
 package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.security.dto.EffectiveSecurityPolicyDto;
+import com.company.ftthgis.api.security.dto.IpPolicyDryRunRequest;
+import com.company.ftthgis.api.security.dto.IpPolicyDryRunResponse;
 import com.company.ftthgis.api.security.dto.PlatformSecurityPolicyDto;
 import com.company.ftthgis.api.security.dto.TenantSecurityPolicyDto;
 import com.company.ftthgis.api.security.dto.UpdatePlatformSecurityPolicyRequest;
@@ -467,5 +469,74 @@ public class SecurityPolicyServiceTest {
         );
         TenantSecurityPolicyDto clearedDto = securityPolicyService.updateTenantPolicy("fibernet", clearReq, "admin@ispnusantara.net");
         assertNull(clearedDto.getGoogleHostedDomain());
+    }
+
+    @Test
+    @DisplayName("S17 (BUG-GEO-05): Rejects hostname DNS injection in CIDR list, respects platform gate, and validates MONITOR_ONLY vs ENFORCE")
+    void testIpAllowlistAndGeofencingValidationAndPlatformGate() {
+        TenantSecurityPolicy existing = TenantSecurityPolicy.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .ipPolicyMode("ENFORCE")
+                .allowBreakGlassIpBypass(true)
+                .build();
+        when(tenantPolicyRepository.findByOrganizationIdNative(testOrgId)).thenReturn(Optional.of(existing));
+        when(tenantPolicyRepository.save(any(TenantSecurityPolicy.class))).thenAnswer(i -> i.getArgument(0));
+
+        // 1. Rejects DNS hostname "google.com" (no DNS lookup!)
+        UpdateTenantSecurityPolicyRequest dnsReq = new UpdateTenantSecurityPolicyRequest(
+                null, null, null, null, null, null, "google.com", null, "MONITOR_ONLY", List.of("ID"), true
+        );
+        assertThrows(IllegalArgumentException.class, () ->
+                securityPolicyService.updateTenantPolicy("fibernet", dnsReq, "admin@fibernet.net", "203.0.113.10", "ID"));
+
+        // 2. Rejects modification when platform toggle ipAllowlistTenantAllowed is false
+        when(settingService.getSettingBoolean("security.ip_allowlist.tenant_allowed", true)).thenReturn(false);
+        UpdateTenantSecurityPolicyRequest blockedByPlatformReq = new UpdateTenantSecurityPolicyRequest(
+                null, null, null, null, null, null, "203.0.113.0/24", null, "MONITOR_ONLY", List.of("ID"), true
+        );
+        IllegalArgumentException platEx = assertThrows(IllegalArgumentException.class, () ->
+                securityPolicyService.updateTenantPolicy("fibernet", blockedByPlatformReq, "admin@fibernet.net", "203.0.113.10", "ID"));
+        assertTrue(platEx.getMessage().contains("Platform policy disables"));
+
+        // 3. Allows saving non-matching CIDR/country safely when ipPolicyMode = MONITOR_ONLY
+        when(settingService.getSettingBoolean("security.ip_allowlist.tenant_allowed", true)).thenReturn(true);
+        UpdateTenantSecurityPolicyRequest monitorReq = new UpdateTenantSecurityPolicyRequest(
+                null, null, null, null, null, null, "198.51.100.0/24", null, "MONITOR_ONLY", List.of("sg", "id"), false
+        );
+        TenantSecurityPolicyDto monitorDto = securityPolicyService.updateTenantPolicy(
+                "fibernet", monitorReq, "admin@fibernet.net", "203.0.113.10", "US");
+        assertEquals("MONITOR_ONLY", monitorDto.getIpPolicyMode());
+        assertEquals(List.of("SG", "ID"), monitorDto.getAllowedCountries());
+        assertFalse(monitorDto.isAllowBreakGlassIpBypass());
+
+        // 4. Blocks caller country mismatch in ENFORCE mode (Anti-Lockout for Country)
+        UpdateTenantSecurityPolicyRequest countryLockoutReq = new UpdateTenantSecurityPolicyRequest(
+                null, null, null, null, null, null, "", null, "ENFORCE", List.of("ID"), true
+        );
+        IllegalArgumentException ccEx = assertThrows(IllegalArgumentException.class, () ->
+                securityPolicyService.updateTenantPolicy("fibernet", countryLockoutReq, "admin@fibernet.net", "203.0.113.10", "US"));
+        assertTrue(ccEx.getMessage().contains("Anti-Lockout Protection"));
+
+        // 5. Dry-run evaluates AND logic accurately
+        IpPolicyDryRunResponse dryFailIp = securityPolicyService.dryRunIpPolicy(
+                "fibernet",
+                new IpPolicyDryRunRequest("203.0.113.0/24", List.of("ID"), "ENFORCE", "198.51.100.5", "ID"),
+                "203.0.113.10",
+                "ID"
+        );
+        assertFalse(dryFailIp.isAllowed());
+        assertTrue(dryFailIp.isWouldBlockInEnforce());
+        assertEquals("ip_not_in_allowlist", dryFailIp.getReason());
+
+        IpPolicyDryRunResponse dryOk = securityPolicyService.dryRunIpPolicy(
+                "fibernet",
+                new IpPolicyDryRunRequest("203.0.113.0/24", List.of("ID"), "ENFORCE", "203.0.113.99", "id"),
+                "203.0.113.10",
+                "ID"
+        );
+        assertTrue(dryOk.isAllowed());
+        assertFalse(dryOk.isWouldBlockInEnforce());
+        assertEquals("allowed", dryOk.getReason());
     }
 }

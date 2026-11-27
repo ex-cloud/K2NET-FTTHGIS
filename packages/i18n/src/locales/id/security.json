@@ -347,5 +347,24 @@
     "status_auto_disabled": "AUTO-NONAKTIF",
     "empty_title": "Belum Ada Stream SIEM Tenant",
     "empty_desc": "Endpoint SIEM yang dikonfigurasi oleh tenant Enterprise pada menu Pengaturan -> Keamanan akan tampil di sini."
+  },
+  "ip_policy_overview": {
+    "title": "Postur IP Allowlist & Geofencing Tenant",
+    "desc": "Pemantauan terpusat Control Plane untuk daftar IP CIDR tepercaya, geofencing negara ISO-2, dan kebijakan bypass darurat per tenant.",
+    "refresh_btn": "Muat Ulang",
+    "col_org": "Organisasi",
+    "col_mode": "Mode",
+    "col_cidrs": "Aturan CIDR",
+    "col_countries": "Negara Diizinkan",
+    "col_break_glass": "Bypass Break-Glass",
+    "col_updated": "Diperbarui",
+    "mode_enforce": "ENFORCE",
+    "mode_monitor": "MONITOR SAJA",
+    "mode_disabled": "NONAKTIF",
+    "all_countries": "Semua Negara",
+    "bypass_enabled": "Diizinkan",
+    "bypass_strict": "Diblokir",
+    "empty_title": "Belum Ada Kebijakan IP Tenant",
+    "empty_desc": "Organisasi tenant yang memiliki kebijakan keamanan jaringan akan tampil di sini."
   }
 }

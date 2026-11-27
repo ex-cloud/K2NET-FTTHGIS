@@ -145,6 +145,7 @@ func DefaultAlertConfig() AlertConfig {
 			"SCIM_USER_DEPROVISIONED",
 			"SECURITY_ORPHAN_ACCOUNT_PURGED",
 			"SECURITY_SIEM_ENDPOINT_AUTO_DISABLED",
+			"SECURITY_IP_POLICY_BLOCKED",
 			"impersonation.stepup_failed",
 			"impersonation.unauthorized_attempt",
 			"impersonation.force_revoked",
@@ -172,6 +173,7 @@ func ensureMandatoryHighRiskActions(actions []string) []string {
 		"SCIM_USER_DEPROVISIONED",
 		"SECURITY_ORPHAN_ACCOUNT_PURGED",
 		"SECURITY_SIEM_ENDPOINT_AUTO_DISABLED",
+		"SECURITY_IP_POLICY_BLOCKED",
 	}
 	existing := make(map[string]bool, len(actions))
 	for _, a := range actions {

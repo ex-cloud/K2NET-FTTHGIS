@@ -103,11 +103,11 @@ public class IpBlockingFilter implements Filter {
     }
 
     private String getClientIP(HttpServletRequest request) {
-        String xfHeader = request.getHeader("X-Forwarded-For");
-        if (xfHeader == null || xfHeader.isEmpty()) {
-            return request.getRemoteAddr();
+        String resolved = ClientIpResolver.resolveClientIp(request);
+        if (resolved != null && !resolved.isBlank()) {
+            return resolved;
         }
-        return xfHeader.split(",")[0].trim();
+        return request != null ? request.getRemoteAddr() : "";
     }
 
     private static class CachedMatcher {

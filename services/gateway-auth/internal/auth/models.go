@@ -28,9 +28,74 @@ type TenantContextResponse struct {
 	MFARequired     bool     `json:"mfaRequired"`
 	EnforceSSO      bool     `json:"enforceSso"`
 	AllowBreakGlass bool     `json:"allowBreakGlass"`
-	SSOProviderType string   `json:"ssoProviderType,omitempty"`
-	SSODisplayName  string   `json:"ssoDisplayName,omitempty"`
-	IPAllowlistCIDRs string  `json:"ipAllowlistCidrs,omitempty"`
+	SSOProviderType            string   `json:"ssoProviderType,omitempty"`
+	SSODisplayName             string   `json:"ssoDisplayName,omitempty"`
+	IPAllowlistCIDRs           string   `json:"ipAllowlistCidrs,omitempty"`
+	AllowedCountries           string   `json:"allowedCountries,omitempty"`
+	IPPolicyMode               string   `json:"ipPolicyMode,omitempty"`
+	AllowBreakGlassIPBypass    bool     `json:"allowBreakGlassIpBypass"`
+	IPAllowlistPlatformAllowed bool     `json:"ipAllowlistPlatformAllowed"`
+}
+
+// PublicTenantContextResponse strips sensitive CIDR lists & country rules from anonymous HTTP responses (BUG-GEO-01).
+type PublicTenantContextResponse struct {
+	ID                   string   `json:"id"`
+	Name                 string   `json:"name"`
+	Slug                 string   `json:"slug"`
+	TargetSlug           string   `json:"targetSlug,omitempty"`
+	IsAlias              bool     `json:"isAlias"`
+	RealmKey             string   `json:"realmKey"`
+	LogoURL              string   `json:"logoUrl,omitempty"`
+	Plan                 string   `json:"plan"`
+	PlanDisplayName      string   `json:"planDisplayName"`
+	AuthMode             string   `json:"authMode"`
+	Status               string   `json:"status"`
+	HasSSO               bool     `json:"hasSso"`
+	AllowSocialLogin     bool     `json:"allowSocialLogin"`
+	GoogleHostedDomain   string   `json:"googleHostedDomain,omitempty"`
+	AllowedMethods       []string `json:"allowedMethods"`
+	MFARequired          bool     `json:"mfaRequired"`
+	EnforceSSO           bool     `json:"enforceSso"`
+	AllowBreakGlass      bool     `json:"allowBreakGlass"`
+	SSOProviderType      string   `json:"ssoProviderType,omitempty"`
+	SSODisplayName       string   `json:"ssoDisplayName,omitempty"`
+	IPPolicyMode         string   `json:"ipPolicyMode,omitempty"`
+	IPRestrictionEnabled bool     `json:"ipRestrictionEnabled"`
+}
+
+func (t *TenantContextResponse) ToPublic() *PublicTenantContextResponse {
+	if t == nil {
+		return nil
+	}
+	hasRules := strings.TrimSpace(t.IPAllowlistCIDRs) != "" || strings.TrimSpace(t.AllowedCountries) != ""
+	mode := strings.ToUpper(strings.TrimSpace(t.IPPolicyMode))
+	if mode == "" {
+		mode = "ENFORCE"
+	}
+	return &PublicTenantContextResponse{
+		ID:                   t.ID,
+		Name:                 t.Name,
+		Slug:                 t.Slug,
+		TargetSlug:           t.TargetSlug,
+		IsAlias:              t.IsAlias,
+		RealmKey:             t.RealmKey,
+		LogoURL:              t.LogoURL,
+		Plan:                 t.Plan,
+		PlanDisplayName:      t.PlanDisplayName,
+		AuthMode:             t.AuthMode,
+		Status:               t.Status,
+		HasSSO:               t.HasSSO,
+		AllowSocialLogin:     t.AllowSocialLogin,
+		GoogleHostedDomain:   t.GoogleHostedDomain,
+		AllowedMethods:       t.AllowedMethods,
+		MFARequired:          t.MFARequired,
+		EnforceSSO:           t.EnforceSSO,
+		AllowBreakGlass:      t.AllowBreakGlass,
+		SSOProviderType:      t.SSOProviderType,
+		SSODisplayName:       t.SSODisplayName,
+		IPPolicyMode:         mode,
+		IPRestrictionEnabled: t.IPAllowlistPlatformAllowed && mode == "ENFORCE" && hasRules,
+	}
 }
 
 // SsoDiscoveryResponse represents Domain-Based Home Realm Discovery metadata.

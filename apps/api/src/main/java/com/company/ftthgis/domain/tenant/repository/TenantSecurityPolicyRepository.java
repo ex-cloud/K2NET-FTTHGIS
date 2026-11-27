@@ -20,5 +20,8 @@ public interface TenantSecurityPolicyRepository extends JpaRepository<TenantSecu
 
     @Query(value = "SELECT tsp.* FROM tenant_security_policies tsp JOIN organizations o ON tsp.organization_id = o.id WHERE o.slug = :slug LIMIT 1", nativeQuery = true)
     Optional<TenantSecurityPolicy> findByOrganizationSlugNative(@Param("slug") String slug);
+
+    @Query("SELECT tsp FROM TenantSecurityPolicy tsp JOIN FETCH tsp.organization o WHERE o.deletedAt IS NULL ORDER BY tsp.updatedAt DESC")
+    java.util.List<TenantSecurityPolicy> findAllWithOrganizationOrderByUpdatedAtDesc();
 }
 

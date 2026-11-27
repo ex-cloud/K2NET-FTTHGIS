@@ -454,6 +454,41 @@ function useTenantSiemOverviewSection(
   };
 }
 
+export interface TenantIpPolicyOverviewItem {
+  organizationId: string;
+  organizationName: string;
+  organizationSlug: string;
+  ipPolicyMode: string;
+  cidrCount: number;
+  allowedCountries: string[];
+  allowBreakGlassIpBypass: boolean;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+}
+
+function useTenantIpPolicyOverviewSection(
+  baseUrl: string,
+  token: string | null | undefined,
+  status: string
+) {
+  const ipPolicyQuery = useQuery<TenantIpPolicyOverviewItem[]>({
+    queryKey: ['system-ip-policy-overview', baseUrl, token],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await httpClient(`${baseUrl}/system/security/ip-policies/overview`, { token });
+      if (!res.ok) throw new Error('Failed to fetch tenant IP policy overview');
+      return res.json();
+    },
+    enabled: status === 'authenticated' && !!token,
+  });
+
+  return {
+    tenantIpPolicyOverview: ipPolicyQuery.data || [],
+    loadingTenantIpPolicyOverview: ipPolicyQuery.isLoading,
+    refetchTenantIpPolicyOverview: ipPolicyQuery.refetch,
+  };
+}
+
 export function useSecuritySettings() {
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
@@ -467,6 +502,7 @@ export function useSecuritySettings() {
   const blockedIps = useBlockedIpsSection(baseUrl, token, status, queryClient);
   const ssoHealth = useTenantSsoHealthSection(baseUrl, token, status, queryClient);
   const siemOverview = useTenantSiemOverviewSection(baseUrl, token, status);
+  const ipPolicyOverview = useTenantIpPolicyOverviewSection(baseUrl, token, status);
   const iamIntegrity = useIamIntegrity();
 
   return {
@@ -477,6 +513,7 @@ export function useSecuritySettings() {
     ...blockedIps,
     ...ssoHealth,
     ...siemOverview,
+    ...ipPolicyOverview,
     ...iamIntegrity,
   };
 }

@@ -347,5 +347,24 @@
     "status_auto_disabled": "AUTO-DISABLED",
     "empty_title": "No Tenant SIEM Streams Registered",
     "empty_desc": "Enterprise tenants that configure SIEM webhooks in Settings -> Security will appear here."
+  },
+  "ip_policy_overview": {
+    "title": "Tenant IP Allowlist & Geofencing Posture",
+    "desc": "Read-only platform visibility into tenant network CIDR allowlists, ISO-2 country geofencing, and emergency bypass policies.",
+    "refresh_btn": "Refresh Policies",
+    "col_org": "Organization",
+    "col_mode": "Mode",
+    "col_cidrs": "CIDR Rules",
+    "col_countries": "Allowed Countries",
+    "col_break_glass": "Break-Glass Bypass",
+    "col_updated": "Updated",
+    "mode_enforce": "ENFORCE",
+    "mode_monitor": "MONITOR ONLY",
+    "mode_disabled": "DISABLED",
+    "all_countries": "All Countries",
+    "bypass_enabled": "Allowed",
+    "bypass_strict": "Blocked",
+    "empty_title": "No Tenant IP Policies Configured",
+    "empty_desc": "Tenant organizations with configured security policies will appear here."
   }
 }

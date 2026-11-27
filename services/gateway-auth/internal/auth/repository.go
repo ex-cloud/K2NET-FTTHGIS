@@ -148,6 +148,10 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 			COALESCE(osc.provider_type, '') AS sso_provider_type,
 			COALESCE(osc.display_name, '') AS sso_display_name,
 			COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs,
+			COALESCE(tsp.allowed_countries, '') AS allowed_countries,
+			COALESCE(NULLIF(UPPER(TRIM(tsp.ip_policy_mode)), ''), 'ENFORCE') AS ip_policy_mode,
+			COALESCE(tsp.allow_break_glass_ip_bypass, true) AS allow_break_glass_ip_bypass,
+			(COALESCE((SELECT config_value FROM system_settings WHERE config_key = 'security.ip_allowlist.tenant_allowed' LIMIT 1), 'true') = 'true') AS ip_allowlist_platform_allowed,
 			COALESCE(tsp.allow_social_login, false) AS allow_social_login,
 			COALESCE(NULLIF(TRIM(tsp.google_hosted_domain), ''), '') AS google_hosted_domain
 		FROM organizations o
@@ -205,6 +209,10 @@ func (r *PostgresRepository) ResolveTenantContext(ctx context.Context, rawSlug s
 				COALESCE(osc.provider_type, '') AS sso_provider_type,
 				COALESCE(osc.display_name, '') AS sso_display_name,
 				COALESCE(tsp.ip_allowlist_cidrs, '') AS ip_allowlist_cidrs,
+				COALESCE(tsp.allowed_countries, '') AS allowed_countries,
+				COALESCE(NULLIF(UPPER(TRIM(tsp.ip_policy_mode)), ''), 'ENFORCE') AS ip_policy_mode,
+				COALESCE(tsp.allow_break_glass_ip_bypass, true) AS allow_break_glass_ip_bypass,
+				(COALESCE((SELECT config_value FROM system_settings WHERE config_key = 'security.ip_allowlist.tenant_allowed' LIMIT 1), 'true') = 'true') AS ip_allowlist_platform_allowed,
 				COALESCE(tsp.allow_social_login, false) AS allow_social_login,
 				COALESCE(NULLIF(TRIM(tsp.google_hosted_domain), ''), '') AS google_hosted_domain
 			FROM organization_slug_aliases osa
@@ -269,11 +277,15 @@ func (r *PostgresRepository) scanTenantRow(
 		effectiveMfaRequired bool
 		enforceSso           bool
 		allowBreakGlass      bool
-		ssoProviderType      string
-		ssoDisplayName       string
-		ipAllowlistCidrs     string
-		allowSocialLogin     bool
-		googleHostedDomain   string
+		ssoProviderType            string
+		ssoDisplayName             string
+		ipAllowlistCidrs           string
+		allowedCountries           string
+		ipPolicyMode               string
+		allowBreakGlassIPBypass    bool
+		ipAllowlistPlatformAllowed bool
+		allowSocialLogin           bool
+		googleHostedDomain         string
 	)
 	err := r.db.QueryRow(ctx, query, querySlug).Scan(
 		&id,
@@ -290,6 +302,10 @@ func (r *PostgresRepository) scanTenantRow(
 		&ssoProviderType,
 		&ssoDisplayName,
 		&ipAllowlistCidrs,
+		&allowedCountries,
+		&ipPolicyMode,
+		&allowBreakGlassIPBypass,
+		&ipAllowlistPlatformAllowed,
 		&allowSocialLogin,
 		&googleHostedDomain,
 	)
@@ -338,9 +354,13 @@ func (r *PostgresRepository) scanTenantRow(
 		MFARequired:        effectiveMfaRequired,
 		EnforceSSO:         enforceSso && effectiveSSO,
 		AllowBreakGlass:    allowBreakGlass,
-		SSOProviderType:    cleanProviderType,
-		SSODisplayName:     cleanDisplayName,
-		IPAllowlistCIDRs:   ipAllowlistCidrs,
+		SSOProviderType:            cleanProviderType,
+		SSODisplayName:             cleanDisplayName,
+		IPAllowlistCIDRs:           ipAllowlistCidrs,
+		AllowedCountries:           allowedCountries,
+		IPPolicyMode:               ipPolicyMode,
+		AllowBreakGlassIPBypass:    allowBreakGlassIPBypass,
+		IPAllowlistPlatformAllowed: ipAllowlistPlatformAllowed,
 	}
 	if isAlias && activeSlg != requestedSlug {
 		out.TargetSlug = activeSlg

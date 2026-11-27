@@ -1,5 +1,6 @@
 package com.company.ftthgis.api.security.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,8 +22,16 @@ public class TenantSecurityPolicyDto {
     private int sessionIdleMinutes;
     private boolean deviceVerificationRequired;
     private String ipAllowlistCidrs;
+    private String ipPolicyMode;
+    private List<String> allowedCountries;
+    private boolean allowBreakGlassIpBypass;
+    private boolean ipAllowlistPlatformAllowed;
+    private String callerIp;
+    private String callerCountry;
     private boolean effectiveMfaEnforced;
+
+    @JsonProperty("isLockedByPlatform")
     private boolean isLockedByPlatform;
+
     private LocalDateTime updatedAt;
 }
-

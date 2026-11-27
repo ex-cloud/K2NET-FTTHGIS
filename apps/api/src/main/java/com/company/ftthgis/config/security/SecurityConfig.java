@@ -48,6 +48,7 @@ public class SecurityConfig {
             com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter,
             com.company.ftthgis.config.tenant.TenantFilter tenantFilter,
             com.company.ftthgis.config.tenant.ImpersonationContextFilter impersonationContextFilter,
+            TenantIpPolicyFilter tenantIpPolicyFilter,
             com.company.ftthgis.config.logging.ApiRequestLoggingFilter apiRequestLoggingFilter,
             AuditingAccessDeniedHandler auditingAccessDeniedHandler) throws Exception {
         http
@@ -64,6 +65,7 @@ public class SecurityConfig {
                         org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(tenantFilter, com.company.ftthgis.config.tenant.OrganizationStatusFilter.class)
                 .addFilterAfter(impersonationContextFilter, com.company.ftthgis.config.tenant.TenantFilter.class)
+                .addFilterAfter(tenantIpPolicyFilter, com.company.ftthgis.config.tenant.ImpersonationContextFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/network/map/**").permitAll()
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()

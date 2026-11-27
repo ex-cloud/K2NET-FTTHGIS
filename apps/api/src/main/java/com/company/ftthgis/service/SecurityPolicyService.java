@@ -1,20 +1,18 @@
 package com.company.ftthgis.service;
 
-import com.company.ftthgis.api.security.dto.EffectiveSecurityPolicyDto;
-import com.company.ftthgis.api.security.dto.PlatformSecurityPolicyDto;
-import com.company.ftthgis.api.security.dto.TenantSecurityPolicyDto;
-import com.company.ftthgis.api.security.dto.UpdatePlatformSecurityPolicyRequest;
-import com.company.ftthgis.api.security.dto.UpdateTenantSecurityPolicyRequest;
+import com.company.ftthgis.api.security.dto.*;
+import com.company.ftthgis.config.security.ClientIpResolver;
+import com.company.ftthgis.config.security.TenantIpPolicyFilter;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.TenantSecurityPolicy;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.tenant.repository.TenantSecurityPolicyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.InetAddress;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,6 +40,10 @@ public class SecurityPolicyService {
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @Lazy
+    private TenantIpPolicyFilter tenantIpPolicyFilter;
 
     // Default constants
     private static final String DEFAULT_ALLOWED_METHODS = "totp,webauthn";
@@ -143,6 +145,9 @@ public class SecurityPolicyService {
         }
 
         settingService.updateSettings(updates);
+        if (tenantIpPolicyFilter != null) {
+            tenantIpPolicyFilter.evictPlatformFlag();
+        }
 
         auditLoggingService.logEvent("system", "SECURITY_POLICY_UPDATE", "PLATFORM_POLICY", "global",
                 Map.of(), Map.of("updatedKeys", updates.keySet()), Map.of("actor", actor != null ? actor : "system"));
@@ -156,6 +161,14 @@ public class SecurityPolicyService {
      */
     @Transactional
     public TenantSecurityPolicyDto getTenantPolicy(String orgSlug) {
+        return getTenantPolicy(orgSlug, null, null);
+    }
+
+    /**
+     * Retrieves the security policy for a specific tenant organization with caller IP/Country context.
+     */
+    @Transactional
+    public TenantSecurityPolicyDto getTenantPolicy(String orgSlug, String callerIp, String callerCountry) {
         Organization org = organizationRepository.findBySlug(orgSlug)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant organization not found: " + orgSlug));
 
@@ -172,12 +185,15 @@ public class SecurityPolicyService {
                             .gracePeriodDays(platform.getGracePeriodDays())
                             .sessionIdleMinutes(platform.getSessionIdleTimeout())
                             .deviceVerificationRequired(false)
+                            .ipPolicyMode("ENFORCE")
+                            .allowBreakGlassIpBypass(true)
                             .build();
                     return tenantPolicyRepository.save(newPolicy);
                 });
 
         boolean effectiveMfa = platform.isMfaEnforced() || policy.isMfaEnforced();
         boolean isLockedByPlatform = platform.isMfaEnforced();
+        String effectiveIpMode = normalizeIpPolicyMode(policy.getIpPolicyMode());
 
         return TenantSecurityPolicyDto.builder()
                 .id(policy.getId())
@@ -191,6 +207,12 @@ public class SecurityPolicyService {
                 .sessionIdleMinutes(policy.getSessionIdleMinutes())
                 .deviceVerificationRequired(policy.isDeviceVerificationRequired())
                 .ipAllowlistCidrs(policy.getIpAllowlistCidrs())
+                .ipPolicyMode(effectiveIpMode)
+                .allowedCountries(ClientIpResolver.parseCountriesCsv(policy.getAllowedCountries()))
+                .allowBreakGlassIpBypass(policy.isAllowBreakGlassIpBypass())
+                .ipAllowlistPlatformAllowed(platform.isIpAllowlistTenantAllowed())
+                .callerIp(callerIp)
+                .callerCountry(callerCountry)
                 .effectiveMfaEnforced(effectiveMfa)
                 .isLockedByPlatform(isLockedByPlatform)
                 .updatedAt(policy.getUpdatedAt() != null ? policy.getUpdatedAt() : policy.getCreatedAt())
@@ -202,7 +224,7 @@ public class SecurityPolicyService {
      */
     @Transactional
     public TenantSecurityPolicyDto updateTenantPolicy(String orgSlug, UpdateTenantSecurityPolicyRequest request, String actor) {
-        return updateTenantPolicy(orgSlug, request, actor, null);
+        return updateTenantPolicy(orgSlug, request, actor, null, null);
     }
 
     /**
@@ -210,6 +232,14 @@ public class SecurityPolicyService {
      */
     @Transactional
     public TenantSecurityPolicyDto updateTenantPolicy(String orgSlug, UpdateTenantSecurityPolicyRequest request, String actor, String clientIp) {
+        return updateTenantPolicy(orgSlug, request, actor, clientIp, null);
+    }
+
+    /**
+     * Updates tenant security policy with Anti-Loosening and IP/Country Anti-Lockout validation.
+     */
+    @Transactional
+    public TenantSecurityPolicyDto updateTenantPolicy(String orgSlug, UpdateTenantSecurityPolicyRequest request, String actor, String clientIp, String clientCountry) {
         Organization org = organizationRepository.findBySlug(orgSlug)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant organization not found: " + orgSlug));
 
@@ -302,40 +332,46 @@ public class SecurityPolicyService {
             }
         }
 
-        // IP Allowlist & Anti-Lockout Validation
+        // IP Allowlist & Country Geofencing Policy (Platform Toggle + Anti-Lockout Validation)
+        boolean touchesIpPolicy = request.ipAllowlistCidrs() != null
+                || request.ipPolicyMode() != null
+                || request.allowedCountries() != null
+                || request.allowBreakGlassIpBypass() != null;
+        if (touchesIpPolicy && !platform.isIpAllowlistTenantAllowed()) {
+            throw new IllegalArgumentException(
+                    "Platform policy disables tenant IP allowlist & geofencing configuration."
+            );
+        }
+
+        if (request.ipPolicyMode() != null) {
+            String normalizedMode = normalizeIpPolicyModeStrict(request.ipPolicyMode());
+            policy.setIpPolicyMode(normalizedMode);
+        } else if (policy.getIpPolicyMode() == null || policy.getIpPolicyMode().isBlank()) {
+            policy.setIpPolicyMode("ENFORCE");
+        }
+
+        if (request.allowBreakGlassIpBypass() != null) {
+            policy.setAllowBreakGlassIpBypass(request.allowBreakGlassIpBypass());
+        }
+
         if (request.ipAllowlistCidrs() != null) {
             String rawCidrs = request.ipAllowlistCidrs().trim();
             if (!rawCidrs.isBlank()) {
-                String[] entries = rawCidrs.split("[,\\s\n\r]+");
-                List<String> validCidrs = new ArrayList<>();
-                for (String entry : entries) {
-                    if (entry.isBlank()) continue;
-                    String normalized = normalizeCidr(entry);
-                    if (normalized == null) {
-                        throw new IllegalArgumentException("Format CIDR subnet tidak valid: " + entry + ". Contoh format valid: 192.168.1.0/24 atau 10.0.0.1/32");
-                    }
-                    validCidrs.add(normalized);
-                }
-
-                // Anti-Lockout: Jangan biarkan admin mengunci diri sendiri keluar!
-                if (clientIp != null && !clientIp.isBlank() && !clientIp.equals("127.0.0.1") && !clientIp.equals("0:0:0:0:0:0:0:1")) {
-                    boolean callerMatches = false;
-                    for (String cidr : validCidrs) {
-                        if (isIpInCidr(clientIp, cidr)) {
-                            callerMatches = true;
-                            break;
-                        }
-                    }
-                    if (!callerMatches) {
-                        throw new IllegalArgumentException(String.format(
-                                "Anti-Lockout Protection: Alamat IP Anda saat ini (%s) tidak termasuk dalam daftar CIDR yang dimasukkan. Penyimpanan dibatalkan untuk mencegah Anda terkunci dari sistem.",
-                                clientIp));
-                    }
-                }
+                List<String> validCidrs = ClientIpResolver.parseAndNormalizeCidrListStrict(rawCidrs);
                 policy.setIpAllowlistCidrs(String.join(",", validCidrs));
             } else {
                 policy.setIpAllowlistCidrs(null);
             }
+        }
+
+        if (request.allowedCountries() != null) {
+            List<String> cleanCountries = ClientIpResolver.normalizeCountriesStrict(request.allowedCountries());
+            policy.setAllowedCountries(cleanCountries.isEmpty() ? null : String.join(",", cleanCountries));
+        }
+
+        String targetMode = normalizeIpPolicyMode(policy.getIpPolicyMode());
+        if ("ENFORCE".equals(targetMode)) {
+            validateCallerAntiLockout(policy, clientIp, clientCountry);
         }
 
         TenantSecurityPolicy saved = tenantPolicyRepository.save(policy);
@@ -344,6 +380,9 @@ public class SecurityPolicyService {
             reconcileOrganizationMfa(org, saved.isMfaEnforced());
         }
 
+        if (tenantIpPolicyFilter != null) {
+            tenantIpPolicyFilter.evictTenant(org.getId(), org.getSlug());
+        }
         if (redisTemplate != null && org.getSlug() != null) {
             try {
                 redisTemplate.delete("auth:tenant-ctx:" + org.getSlug().toLowerCase(Locale.ROOT));
@@ -355,80 +394,150 @@ public class SecurityPolicyService {
                 Map.of(
                         "mfaEnforced", saved.isMfaEnforced(),
                         "allowSocialLogin", saved.isAllowSocialLogin(),
-                        "googleHostedDomain", saved.getGoogleHostedDomain() != null ? saved.getGoogleHostedDomain() : ""
+                        "googleHostedDomain", saved.getGoogleHostedDomain() != null ? saved.getGoogleHostedDomain() : "",
+                        "ipPolicyMode", normalizeIpPolicyMode(saved.getIpPolicyMode()),
+                        "ipAllowlistCount", saved.getIpAllowlistCidrs() != null && !saved.getIpAllowlistCidrs().isBlank()
+                                ? saved.getIpAllowlistCidrs().split(",").length : 0,
+                        "allowedCountries", saved.getAllowedCountries() != null ? saved.getAllowedCountries() : "",
+                        "allowBreakGlassIpBypass", saved.isAllowBreakGlassIpBypass()
                 ),
                 Map.of("actor", actor != null ? actor : "admin"));
 
-        log.info("🛡️ Tenant security policy updated for org '{}' by {}: MFA={}, Social={}, GoogleHD={}, SessionIdle={}m",
-                orgSlug, actor, saved.isMfaEnforced(), saved.isAllowSocialLogin(), saved.getGoogleHostedDomain(), saved.getSessionIdleMinutes());
+        log.info("🛡️ Tenant security policy updated for org '{}' by {}: MFA={}, Social={}, IPMode={}, Countries={}, SessionIdle={}m",
+                orgSlug, actor, saved.isMfaEnforced(), saved.isAllowSocialLogin(), saved.getIpPolicyMode(), saved.getAllowedCountries(), saved.getSessionIdleMinutes());
 
-        return getTenantPolicy(orgSlug);
+        return getTenantPolicy(orgSlug, clientIp, clientCountry);
+    }
+
+    @Transactional(readOnly = true)
+    public IpPolicyDryRunResponse dryRunIpPolicy(String orgSlug, IpPolicyDryRunRequest request, String callerIp, String callerCountry) {
+        organizationRepository.findBySlug(orgSlug)
+                .orElseThrow(() -> new IllegalArgumentException("Tenant organization not found: " + orgSlug));
+
+        String mode = request.ipPolicyMode() != null && !request.ipPolicyMode().isBlank()
+                ? normalizeIpPolicyModeStrict(request.ipPolicyMode())
+                : "ENFORCE";
+        List<String> normalizedCidrs = ClientIpResolver.parseAndNormalizeCidrListStrict(request.ipAllowlistCidrs());
+        List<String> normalizedCountries = ClientIpResolver.normalizeCountriesStrict(request.allowedCountries());
+
+        String evalIp = (request.testIp() != null && !request.testIp().isBlank()) ? request.testIp().trim() : callerIp;
+        String evalCountry = (request.testCountry() != null && !request.testCountry().isBlank())
+                ? ClientIpResolver.normalizeSingleCountry(request.testCountry())
+                : callerCountry;
+
+        if ("DISABLED".equals(mode)) {
+            return IpPolicyDryRunResponse.builder()
+                    .allowed(true)
+                    .wouldBlockInEnforce(false)
+                    .mode(mode)
+                    .reason("policy_disabled")
+                    .evaluatedIp(evalIp)
+                    .evaluatedCountry(evalCountry)
+                    .normalizedCidrs(normalizedCidrs)
+                    .normalizedCountries(normalizedCountries)
+                    .callerIp(callerIp)
+                    .callerCountry(callerCountry)
+                    .build();
+        }
+
+        String cidrCsv = normalizedCidrs.isEmpty() ? null : String.join(",", normalizedCidrs);
+        ClientIpResolver.PolicyDecision decision = ClientIpResolver.evaluateAndPolicy(
+                evalIp, evalCountry, cidrCsv, normalizedCountries
+        );
+        boolean effectiveAllowed = "MONITOR_ONLY".equals(mode) || decision.allowed();
+
+        return IpPolicyDryRunResponse.builder()
+                .allowed(effectiveAllowed)
+                .wouldBlockInEnforce(!decision.allowed())
+                .mode(mode)
+                .reason(decision.reason())
+                .evaluatedIp(evalIp)
+                .evaluatedCountry(evalCountry)
+                .normalizedCidrs(normalizedCidrs)
+                .normalizedCountries(normalizedCountries)
+                .callerIp(callerIp)
+                .callerCountry(callerCountry)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SystemIpPolicyOverviewDto> getSystemIpPolicyOverview() {
+        return tenantPolicyRepository.findAllWithOrganizationOrderByUpdatedAtDesc()
+                .stream()
+                .map(p -> {
+                    int cidrCount = 0;
+                    if (p.getIpAllowlistCidrs() != null && !p.getIpAllowlistCidrs().isBlank()) {
+                        cidrCount = (int) Arrays.stream(p.getIpAllowlistCidrs().split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .count();
+                    }
+                    return SystemIpPolicyOverviewDto.builder()
+                            .organizationId(p.getOrganization().getId())
+                            .organizationName(p.getOrganization().getName())
+                            .organizationSlug(p.getOrganization().getSlug())
+                            .ipPolicyMode(normalizeIpPolicyMode(p.getIpPolicyMode()))
+                            .cidrCount(cidrCount)
+                            .allowedCountries(ClientIpResolver.parseCountriesCsv(p.getAllowedCountries()))
+                            .allowBreakGlassIpBypass(p.isAllowBreakGlassIpBypass())
+                            .updatedAt(p.getUpdatedAt() != null ? p.getUpdatedAt() : p.getCreatedAt())
+                            .updatedBy(p.getUpdatedBy())
+                            .build();
+                })
+                .toList();
+    }
+
+    private void validateCallerAntiLockout(TenantSecurityPolicy policy, String clientIp, String clientCountry) {
+        String cidrs = policy.getIpAllowlistCidrs();
+        if (cidrs != null && !cidrs.isBlank()
+                && clientIp != null && !clientIp.isBlank()
+                && !clientIp.equals("127.0.0.1") && !clientIp.equals("0:0:0:0:0:0:0:1") && !clientIp.equals("::1")) {
+            if (!ClientIpResolver.isIpInCidrList(clientIp, cidrs)) {
+                throw new IllegalArgumentException(String.format(
+                        "Anti-Lockout Protection: Alamat IP Anda saat ini (%s) tidak termasuk dalam daftar CIDR yang dimasukkan. Penyimpanan dibatalkan untuk mencegah Anda terkunci dari sistem.",
+                        clientIp));
+            }
+        }
+        List<String> allowedCountries = ClientIpResolver.parseCountriesCsv(policy.getAllowedCountries());
+        String normalizedCallerCountry = ClientIpResolver.normalizeSingleCountry(clientCountry);
+        if (!allowedCountries.isEmpty() && normalizedCallerCountry != null && !allowedCountries.contains(normalizedCallerCountry)) {
+            throw new IllegalArgumentException(String.format(
+                    "Anti-Lockout Protection: Kode negara Anda saat ini (%s) tidak termasuk dalam daftar negara yang diizinkan (%s).",
+                    normalizedCallerCountry, String.join(", ", allowedCountries)));
+        }
+    }
+
+    private static String normalizeIpPolicyMode(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "ENFORCE";
+        }
+        String up = raw.trim().toUpperCase(Locale.ROOT);
+        if ("DISABLED".equals(up) || "MONITOR_ONLY".equals(up) || "ENFORCE".equals(up)) {
+            return up;
+        }
+        return "ENFORCE";
+    }
+
+    private static String normalizeIpPolicyModeStrict(String raw) {
+        String up = raw != null ? raw.trim().toUpperCase(Locale.ROOT) : "";
+        if (!"DISABLED".equals(up) && !"MONITOR_ONLY".equals(up) && !"ENFORCE".equals(up)) {
+            throw new IllegalArgumentException("Mode kebijakan IP harus bernilai DISABLED, MONITOR_ONLY, atau ENFORCE.");
+        }
+        return up;
     }
 
     /**
-     * Memvalidasi dan menormalkan format CIDR (IPv4/IPv6).
+     * Memvalidasi dan menormalkan format CIDR (IPv4/IPv6 literal, tanpa resolusi DNS).
      */
     public static String normalizeCidr(String input) {
-        if (input == null) return null;
-        input = input.trim();
-        try {
-            if (!input.contains("/")) {
-                InetAddress addr = InetAddress.getByName(input);
-                return input + (addr.getAddress().length == 16 ? "/128" : "/32");
-            }
-            String[] parts = input.split("/");
-            if (parts.length != 2) return null;
-            InetAddress addr = InetAddress.getByName(parts[0].trim());
-            int prefix = Integer.parseInt(parts[1].trim());
-            int maxBits = addr.getAddress().length == 16 ? 128 : 32;
-            if (prefix < 0 || prefix > maxBits) return null;
-            return addr.getHostAddress() + "/" + prefix;
-        } catch (Exception e) {
-            return null;
-        }
+        return ClientIpResolver.normalizeCidrStrict(input);
     }
 
     /**
-     * Memeriksa apakah alamat IP berada di dalam jangkauan subnet CIDR.
+     * Memeriksa apakah alamat IP berada di dalam jangkauan subnet CIDR secara fail-closed.
      */
     public static boolean isIpInCidr(String ipStr, String cidr) {
-        try {
-            cidr = cidr.trim();
-            if (!cidr.contains("/")) {
-                cidr = cidr + (cidr.contains(":") ? "/128" : "/32");
-            }
-            String[] parts = cidr.split("/");
-            InetAddress ip = InetAddress.getByName(ipStr.trim());
-            InetAddress network = InetAddress.getByName(parts[0].trim());
-            int prefixLength = Integer.parseInt(parts[1].trim());
-
-            byte[] ipBytes = ip.getAddress();
-            byte[] netBytes = network.getAddress();
-
-            if (ipBytes.length != netBytes.length) {
-                return false;
-            }
-
-            int byteCount = prefixLength / 8;
-            int bitCount = prefixLength % 8;
-
-            for (int i = 0; i < byteCount; i++) {
-                if (ipBytes[i] != netBytes[i]) {
-                    return false;
-                }
-            }
-
-            if (bitCount > 0 && byteCount < ipBytes.length) {
-                int mask = (0xFF << (8 - bitCount)) & 0xFF;
-                if ((ipBytes[byteCount] & mask) != (netBytes[byteCount] & mask)) {
-                    return false;
-                }
-            }
-
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        return ClientIpResolver.isIpInCidrList(ipStr, cidr);
     }
 
     /**

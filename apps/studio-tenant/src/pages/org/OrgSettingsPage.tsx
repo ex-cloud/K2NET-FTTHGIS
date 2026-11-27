@@ -31,6 +31,7 @@ import { parseDomain } from "../../lib/domain";
 import { useTranslation } from "@k2net/i18n";
 import { BrandingSettingsSection } from "../../components/settings/BrandingSettingsSection";
 import { SecuritySiemStreamingCard } from "../../components/settings/SecuritySiemStreamingCard";
+import { TenantIpGeofencingCard, type IpPolicyMode } from "../../components/settings/TenantIpGeofencingCard";
 import { SsoSettingsSection } from "./SsoSettingsSection";
 
 type SettingsSection = "general" | "branding" | "security" | "sso" | "oauth";
@@ -130,6 +131,12 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
   const [sessionTimeout, setSessionTimeout] = React.useState(30);
   const [isPlatformEnforced, setIsPlatformEnforced] = React.useState(false);
   const [ipAllowlistCidrs, setIpAllowlistCidrs] = React.useState<string>("");
+  const [ipPolicyMode, setIpPolicyMode] = React.useState<IpPolicyMode>("ENFORCE");
+  const [allowedCountries, setAllowedCountries] = React.useState<string[]>([]);
+  const [allowBreakGlassIpBypass, setAllowBreakGlassIpBypass] = React.useState<boolean>(true);
+  const [ipAllowlistPlatformAllowed, setIpAllowlistPlatformAllowed] = React.useState<boolean>(true);
+  const [callerIp, setCallerIp] = React.useState<string | null>(null);
+  const [callerCountry, setCallerCountry] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!slug) return;
@@ -146,6 +153,12 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           isLockedByPlatform?: boolean;
           isMfaEnforcedByPlatform?: boolean;
           ipAllowlistCidrs?: string;
+          ipPolicyMode?: IpPolicyMode;
+          allowedCountries?: string[];
+          allowBreakGlassIpBypass?: boolean;
+          ipAllowlistPlatformAllowed?: boolean;
+          callerIp?: string | null;
+          callerCountry?: string | null;
           allowSocialLogin?: boolean;
           googleHostedDomain?: string;
         }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`);
@@ -158,6 +171,12 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
             Boolean(res.lockedByPlatform ?? res.isLockedByPlatform ?? res.isMfaEnforcedByPlatform)
           );
           setIpAllowlistCidrs(res.ipAllowlistCidrs || "");
+          setIpPolicyMode(res.ipPolicyMode || "ENFORCE");
+          setAllowedCountries(Array.isArray(res.allowedCountries) ? res.allowedCountries : []);
+          setAllowBreakGlassIpBypass(res.allowBreakGlassIpBypass ?? true);
+          setIpAllowlistPlatformAllowed(res.ipAllowlistPlatformAllowed ?? true);
+          setCallerIp(res.callerIp ?? null);
+          setCallerCountry(res.callerCountry ?? null);
         }
       } catch (e) {
         console.warn("Failed to load tenant security policy:", e);
@@ -181,6 +200,12 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         lockedByPlatform?: boolean;
         isLockedByPlatform?: boolean;
         ipAllowlistCidrs?: string;
+        ipPolicyMode?: IpPolicyMode;
+        allowedCountries?: string[];
+        allowBreakGlassIpBypass?: boolean;
+        ipAllowlistPlatformAllowed?: boolean;
+        callerIp?: string | null;
+        callerCountry?: string | null;
         allowSocialLogin?: boolean;
         googleHostedDomain?: string;
       }>(`/api/v1/organizations/${encodeURIComponent(slug)}/security-policy`, {
@@ -189,6 +214,9 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
           mfaEnforced: isPlatformEnforced ? true : mfaEnforced,
           sessionIdleMinutes: sessionTimeout,
           ipAllowlistCidrs: ipAllowlistCidrs.trim(),
+          ipPolicyMode,
+          allowedCountries,
+          allowBreakGlassIpBypass,
           allowSocialLogin,
           googleHostedDomain: googleHostedDomain.trim(),
         }),
@@ -202,6 +230,12 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         }
         setIsPlatformEnforced(Boolean(updated.lockedByPlatform ?? updated.isLockedByPlatform));
         setIpAllowlistCidrs(updated.ipAllowlistCidrs || "");
+        setIpPolicyMode(updated.ipPolicyMode || "ENFORCE");
+        setAllowedCountries(Array.isArray(updated.allowedCountries) ? updated.allowedCountries : []);
+        setAllowBreakGlassIpBypass(updated.allowBreakGlassIpBypass ?? true);
+        setIpAllowlistPlatformAllowed(updated.ipAllowlistPlatformAllowed ?? true);
+        if (updated.callerIp !== undefined) setCallerIp(updated.callerIp);
+        if (updated.callerCountry !== undefined) setCallerCountry(updated.callerCountry);
       }
       toast.success(t("common.saved_successfully"));
     } catch (err: unknown) {
@@ -286,23 +320,22 @@ function SecuritySettingsSection({ slug }: { slug?: string }) {
         <p className="text-[10px] text-muted-foreground">{t("settings.session_timeout_desc")}</p>
       </div>
 
-      <div className="space-y-1.5 pt-2 border-t border-border/40">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold">{t("settings.ip_allowlist_label")}</Label>
-          <span className="text-[10px] text-muted-foreground font-mono">IPv4 / IPv6 CIDR</span>
-        </div>
-        <textarea
-          rows={3}
-          value={ipAllowlistCidrs}
-          onChange={(e) => setIpAllowlistCidrs(e.target.value)}
-          disabled={loading || isSaving || !canManageSecurity}
-          placeholder={t("settings.ip_allowlist_placeholder")}
-          className="w-full rounded-md border border-border/60 bg-background/50 px-3 py-2 text-xs font-mono placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-        />
-        <p className="text-[10px] text-muted-foreground leading-relaxed">
-          {t("settings.ip_allowlist_desc")}
-        </p>
-      </div>
+      <TenantIpGeofencingCard
+        slug={slug}
+        callerIp={callerIp}
+        callerCountry={callerCountry}
+        platformAllowed={ipAllowlistPlatformAllowed}
+        ipAllowlistCidrs={ipAllowlistCidrs}
+        onChangeIpAllowlistCidrs={setIpAllowlistCidrs}
+        ipPolicyMode={ipPolicyMode}
+        onChangeIpPolicyMode={setIpPolicyMode}
+        allowedCountries={allowedCountries}
+        onChangeAllowedCountries={setAllowedCountries}
+        allowBreakGlassIpBypass={allowBreakGlassIpBypass}
+        onChangeAllowBreakGlassIpBypass={setAllowBreakGlassIpBypass}
+        disabled={loading || isSaving || !canManageSecurity}
+        canManage={canManageSecurity}
+      />
 
       {canManageSecurity && (
         <div className="flex justify-end pt-2 border-t border-border/40">
